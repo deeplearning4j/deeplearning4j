@@ -1605,8 +1605,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         DataSetIterator iter;
         boolean destructable = false;
         if (iterator.asyncSupported()) {
-            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
-                    layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2), true);
             destructable = true;
         } else {
             iter = iterator;

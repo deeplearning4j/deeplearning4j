@@ -171,10 +171,10 @@ public class Configuration implements Serializable {
     private int minimumBlockSize = 32;
 
     @Getter
-    private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
+    private long maximumHostCache = 1024 * 1024 * 1024L;
 
     @Getter
-    private long maximumDeviceCache = 1L; //512L * 1024L * 1024L;
+    private long maximumDeviceCache = 512L * 1024L * 1024L;
 
     @Getter
     private boolean usePreallocation = false;
@@ -186,7 +186,7 @@ public class Configuration implements Serializable {
     private long maximumHostCacheableLength = 100663296;
 
     @Getter
-    private long maximumDeviceCacheableLength = 1L; //16L * 1024L * 1024L;
+    private long maximumDeviceCacheableLength = 16L * 1024L * 1024L;
 
     @Getter
     private int commandQueueLength = 3;

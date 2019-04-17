@@ -34,13 +34,13 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
-import org.nd4j.jita.flow.impl.AsynchronousFlowController;
 import org.nd4j.jita.flow.impl.GridFlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.MemoryProvider;
@@ -139,12 +139,6 @@ public class CudaZeroHandler implements MemoryHandler {
         this.INITIAL_LOCATION = configuration.getFirstMemory();
 
         switch (configuration.getExecutionModel()) {
-            case OPTIMIZED:
-            case ASYNCHRONOUS: {
-                this.flowController = new AsynchronousFlowController();
-                this.contextPool = new PackedContextPool();
-            }
-                break;
             case SEQUENTIAL: {
                 this.flowController = new GridFlowController();
                 this.contextPool = new LimitedContextPool();
@@ -230,24 +224,28 @@ public class CudaZeroHandler implements MemoryHandler {
         CudaContext context = getCudaContext();
         switch (targetMode) {
             case HOST: {
-                if (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                    if (reqMemory > configuration.getMaximumZeroAllocation()) {
-                        throw new IllegalStateException(
-                                        "You can't allocate more memory, then allowed with configured value: ["
-                                                        + configuration.getMaximumZeroAllocation() + "]");
-                    }
+                if (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
 
+                    while (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
 
-                    while (zeroUseCounter.get() + reqMemory >= configuration.getMaximumZeroAllocation()) {
-                        try {
-                            log.warn("No available [HOST] memory, sleeping for a while...");
-                            log.debug("Currently used: [" + zeroUseCounter.get() + "], allocated objects: ["
-                                            + zeroAllocations.get(0) + "]");
+                        val before = MemoryTracker.getInstance().getActiveHostAmount();
+                        memoryProvider.purgeCache();
+                        Nd4j.getMemoryManager().invokeGc();
+                        val after = MemoryTracker.getInstance().getActiveHostAmount();
 
-                            Nd4j.getMemoryManager().invokeGc();
-                            Thread.sleep(1000);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                        log.debug("[HOST] before: {}; after: {};", before, after);
+
+                        if (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
+                            try {
+                                log.warn("No available [HOST] memory, sleeping for a while... Consider increasing -Xmx next time.");
+                                log.debug("Currently used: [" + zeroUseCounter.get() + "], allocated objects: [" + zeroAllocations.get(0) + "]");
+
+                                memoryProvider.purgeCache();
+                                Nd4j.getMemoryManager().invokeGc();
+                                Thread.sleep(1000);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }
@@ -287,18 +285,24 @@ public class CudaZeroHandler implements MemoryHandler {
                                 && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration
                                                 .getMaximumDeviceAllocation()) {
 */
-                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId,
-                                    reqMemory)) {
+
+
+                    //val timeStart = System.nanoTime();
+                    //long free = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory();
+                    //val timeEnd = System.nanoTime();
+
+                    //log.info("Free time: {} ns; Free memory: {} bytes", (timeEnd - timeStart), free);
+
+                    if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId, reqMemory)) {
                         point.setDeviceId(deviceId);
-                        PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
+                        val pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
-                            //  log.info("PEWPEW");
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
                             point.setAllocationStatus(AllocationStatus.DEVICE);
 
                             if (point.getPointers() == null)
-                                throw new RuntimeException("WTF?");
+                                throw new RuntimeException("PointersPair can't be null");
 
                             point.getPointers().setDevicePointer(pair.getDevicePointer());
 
@@ -324,8 +328,6 @@ public class CudaZeroHandler implements MemoryHandler {
                                 point.tickDeviceWrite();
                                 point.tickHostRead();
                             } else {
-                                //CudaContext ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(point);
-
                                 nativeOps.memsetAsync(pair.getDevicePointer(), 0, reqMemory, 0,
                                                 context.getSpecialStream());
                                 context.getSpecialStream().synchronize();
@@ -336,8 +338,12 @@ public class CudaZeroHandler implements MemoryHandler {
                                 //AtomicAllocator.getInstance().getFlowController().registerAction(ctx, point);
                             }
                         } else {
-                            log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]",
-                                            deviceId, reqMemory);
+                            log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]; Approximate free bytes: {}; Real free bytes: {}", deviceId, reqMemory, MemoryTracker.getInstance().getApproximateFreeMemory(deviceId), MemoryTracker.getInstance().getPreciseFreeMemory(deviceId));
+                            log.info("Total allocated dev_0: {}", MemoryTracker.getInstance().getActiveMemory(0));
+                            log.info("Cached dev_0: {}", MemoryTracker.getInstance().getCachedAmount(0));
+                            log.info("Allocated dev_0: {}", MemoryTracker.getInstance().getAllocatedAmount(0));
+                            log.info("Workspace dev_0: {}", MemoryTracker.getInstance().getWorkspaceAllocatedAmount(0));
+                            //log.info("Total allocated dev_1: {}", MemoryTracker.getInstance().getActiveMemory(1));
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
                             returnPair.setDevicePointer(tmpPair.getHostPointer());
@@ -358,21 +364,10 @@ public class CudaZeroHandler implements MemoryHandler {
                         Nd4j.getMemoryManager().invokeGc();
                         try {
                             Thread.sleep(100);
-                        } catch (Exception e) {
-
+                        } catch (InterruptedException e) {
+                            //
                         }
                     }
-               /* } else {
-                    log.warn("Soft limit on [DEVICE] memory hit, please consider tuning memory parameters, deviceId [{}]",
-                                    deviceId);
-
-                    Nd4j.getMemoryManager().invokeGc();
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-
-                    }
-                }*/
 
                 return returnPair;
             }
@@ -801,18 +796,6 @@ public class CudaZeroHandler implements MemoryHandler {
             }
         }
         */
-        // here's the place, where we do care about promotion. but we only care about promotion of original  buffers
-        if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && buffer.offset() == 0 && 1 < 0) {
-            if (dstPoint.getDeviceTicks() > configuration.getMinimumRelocationThreshold()) {
-                // at this point we know, that this request is done withing some existent context
-                long requiredMemory = AllocationUtils.getRequiredMemory(dstPoint.getShape());
-                if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), getDeviceId(),
-                                requiredMemory) && pingDeviceForFreeMemory(getDeviceId(), requiredMemory)) {
-                    // so, memory is reserved
-                    promoteObject(buffer);
-                }
-            }
-        }
 
 
         // if that's device state, we probably might want to update device memory state

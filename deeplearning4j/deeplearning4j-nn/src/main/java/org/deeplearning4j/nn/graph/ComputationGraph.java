@@ -1065,9 +1065,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multi,
-                    Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
-                    configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2), true);
             destructable = true;
         } else
             multiDataSetIterator = multi;

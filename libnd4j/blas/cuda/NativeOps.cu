@@ -1465,13 +1465,22 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 
         Nd4jPointer maskedAllocPointer;
         auto length = shape::length(hZShapeInfo);
-        cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
+        bool onDevice = true;
+        auto res = cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
+        if (res != 0) {
+            onDevice = false;
+            cudaHostAlloc(&maskedAllocPointer, length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64), cudaHostAllocDefault);
+        }
         auto imaskedAllocPointer = reinterpret_cast<int *>(maskedAllocPointer);
 
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, imaskedAllocPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
         checkCudaErrors(cudaStreamSynchronize(*stream));
-        cudaFree(maskedAllocPointer);
+
+        if (onDevice)
+            cudaFree(maskedAllocPointer);
+        else
+            cudaFreeHost(maskedAllocPointer);
     } else {
         dim3 launchDims(512, 512, 16384);
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
@@ -1673,7 +1682,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  */
 Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
 	Nd4jPointer pointer;
-	cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
+	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
 		pointer = 0L;
 	return pointer;
@@ -1756,6 +1765,15 @@ int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
 		throw std::runtime_error("cudaSetDevice(...) failed");
 
 	return 1;
+}
+
+Nd4jLong NativeOps::getDeviceFreeMemory() {
+    size_t memFree = 0;
+    size_t memTotal = 0;
+
+    cudaMemGetInfo(&memFree, &memTotal);
+
+    return (Nd4jLong) memFree;
 }
 
 Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
@@ -2741,17 +2759,26 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
     auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
 
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
-    checkCudaErrors(cudaStreamSynchronize(*stream));
-    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
-
-    dim3 launchDims = dim3(512, 512, 32768);
+    bool onDevice = false;
+    dim3 launchDims(512, 512, 32768);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
+    auto res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    if (res == 0) {
+        onDevice = true;
+        checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+    } else {
+        cudaHostAlloc(&stateDevice, sizeOf, cudaHostAllocDefault);
+        std::memcpy(stateDevice, stateHost, sizeOf);
+    }
+
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, extraPointers, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
     checkCudaErrors(cudaStreamSynchronize(*stream));
-    cudaFree(stateDevice);
+
+    if (onDevice)
+        cudaFree(stateDevice);
+    else
+        cudaFreeHost(stateDevice);
 
     rng->rewindH(shape::length(hZShapeInfo));
 }
@@ -2768,18 +2795,28 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
     auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
-
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
-    checkCudaErrors(cudaStreamSynchronize(*stream));
-    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
-
-    dim3 launchDims = dim3(512, 512, 32768);
+    dim3 launchDims(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-    // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
+    bool onDevice = false;
+
+    auto res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    if (res == 0) {
+        onDevice = true;
+        checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+    }else {
+        cudaHostAlloc(&stateDevice, sizeOf, cudaHostAllocDefault);
+        std::memcpy(stateDevice, stateHost, sizeOf);
+    }
+
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
-    cudaFree(stateDevice);
+
+    if (onDevice)
+        cudaFree(stateDevice);
+    else
+        cudaFreeHost(stateDevice);
+
     rng->rewindH(shape::length(hZShapeInfo));
 }
 
@@ -2796,17 +2833,26 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
     auto rng = reinterpret_cast<nd4j::graph::RandomGenerator *>(stateHost);
     Nd4jPointer stateDevice;
-
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
-    checkCudaErrors(cudaStreamSynchronize(*stream));
-    checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
-
-    dim3 launchDims = dim3(512, 512, 32768);
+    dim3 launchDims(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-    // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
+    bool onDevice = false;
+
+    auto res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    if (res == 0) {
+        onDevice = true;
+        checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
+    } else {
+        cudaHostAlloc(&stateDevice, sizeOf, cudaHostAllocDefault);
+        std::memcpy(stateDevice, stateHost, sizeOf);
+    }
+
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
     checkCudaErrors(cudaStreamSynchronize(*stream));
-    cudaFree(stateDevice);
+
+    if (onDevice)
+        cudaFree(stateDevice);
+    else
+        cudaFreeHost(stateDevice);
 
     rng->rewindH(shape::length(hZShapeInfo));
 }
