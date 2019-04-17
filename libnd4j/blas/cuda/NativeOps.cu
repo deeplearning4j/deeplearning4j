@@ -2110,25 +2110,25 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
 //        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
     }
 //    nd4j_printf(" done\n", "");
-
+    LaunchContext context(stream);
     // allocate and copy all buffers and shapes arrays to global memory
-    PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
+    PointersManager manager(&context, "NativeOps::concat");
     void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
     void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
     void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
-    manager.synchronize();
 //    nd4j_printf("Concat itself run...", "");
 
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
+    manager.synchronize();
 //    nd4j_printf(" done\n", "");
 
 //    nd4j_printf("Postprocessing...", "");
 
-    cudaError_t res = cudaStreamSynchronize(*stream);
-    checkCudaErrors(res);
-    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
+//    cudaError_t res = cudaStreamSynchronize(*stream);
+//    checkCudaErrors(res);
+//    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 //    nd4j_printf(" done\n", "");
 //    nd4j_printf("Free up rest...", "");
     cudaError_t err;
