@@ -29,9 +29,12 @@ namespace nd4j {
         ShapeDescriptor _originalShape;
 
         std::vector<int> _axis;
+
+        bool _unitiesInShape;
+
     public:
-        explicit TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length);
-        explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions);
+        explicit TadDescriptor(const Nd4jLong *originalShape, const int *dimensions, const int length, const bool keepUnitiesInShape = false);
+        explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
         explicit TadDescriptor(const TadDescriptor &other);
         ~TadDescriptor() = default;
 
@@ -49,6 +52,7 @@ namespace nd4j {
 
         std::vector<int>& axis();
         ShapeDescriptor& originalShape();
+        bool areUnitiesinShape() const;
     };
 }
 

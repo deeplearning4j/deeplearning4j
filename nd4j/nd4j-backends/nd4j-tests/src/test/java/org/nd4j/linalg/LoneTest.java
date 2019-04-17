@@ -169,16 +169,6 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println(b);
     }
 
-    @Test
-    public void testTad() {
-        int[] someShape = {2, 1, 3, 3};
-        INDArray a = Nd4j.linspace(1, 18, 18).reshape(someShape);
-        INDArray java = a.javaTensorAlongDimension(0, 2, 3);
-        INDArray tad = a.tensorAlongDimension(0, 2, 3);
-        //assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
-        assertEquals(java, tad);
-    }
-
     @Test(expected = IllegalStateException.class)
     @Ignore // test is outdated
     public void opsNotAllowed() {

@@ -74,6 +74,8 @@ namespace nd4j {
         NDArray* pick(std::vector<int>& indices);
         bool isWritten(int index);
 
+        std::vector<Nd4jLong>& shape();
+
         NDArray* stack();
         void unstack(NDArray* array, int axis);
 

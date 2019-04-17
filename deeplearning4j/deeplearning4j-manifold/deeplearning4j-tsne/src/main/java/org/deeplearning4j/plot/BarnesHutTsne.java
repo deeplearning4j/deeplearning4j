@@ -581,8 +581,9 @@ public class BarnesHutTsne implements Model {
 
             INDArray yGrads = gradient;
 
-            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+            // TODO: make this single op
+            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));
 
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 

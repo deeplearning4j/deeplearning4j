@@ -1115,6 +1115,10 @@ public class DifferentialFunctionFactory {
         return new SoftMax(sameDiff(), new SDVariable[]{iX}).outputVariable();
     }
 
+    public SDVariable softmax(SDVariable iX, int dimension) {
+        return new SoftMax(sameDiff(), new SDVariable[]{iX}, dimension).outputVariable();
+    }
+
 
     public SDVariable hardTanh(SDVariable iX) {
         return new HardTanh(sameDiff(), iX, false).outputVariable();
@@ -1512,6 +1516,10 @@ public class DifferentialFunctionFactory {
         return mmul(x, y, MMulTranspose.allFalse());
     }
 
+    public List<SDVariable> mmulBp(SDVariable x, SDVariable y, SDVariable eps, MMulTranspose mt) {
+        return Arrays.asList(new MmulBp(sameDiff(), x, y, eps, mt).outputVariables());
+    }
+
     public SDVariable[] batchMmul(SDVariable[] matricesA,
                                 SDVariable[] matricesB) {
         return batchMmul(matricesA, matricesB, false, false);
@@ -1541,6 +1549,29 @@ public class DifferentialFunctionFactory {
         return new TensorMmul(sameDiff(), x, y, dimensions).outputVariable();
     }
 
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled) {
+        return new DotProductAttention(sameDiff(), queries, keys, values, mask, scaled, false).outputVariable();
+    }
+
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new DotProductAttention(sameDiff(), queries, keys, values, mask, scaled, withWeights).outputVariables());
+    }
+
+    public List<SDVariable> dotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values, SDVariable gradient, SDVariable mask,  boolean scaled) {
+        return Arrays.asList(new DotProductAttentionBp(sameDiff(), queries, keys, values, gradient, mask, scaled).outputVariables());
+    }
+
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled) {
+        return new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false).outputVariable();
+    }
+
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights) {
+        return Arrays.asList(new MultiHeadDotProductAttention(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights).outputVariables());
+    }
+
+    public List<SDVariable> multiHeadDotProductAttentionBp(SDVariable queries, SDVariable keys, SDVariable values,SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable gradient, SDVariable mask,  boolean scaled) {
+        return Arrays.asList(new MultiHeadDotProductAttentionBp(sameDiff(), queries, keys, values, Wq, Wk, Wv, Wo, gradient, mask, scaled).outputVariables());
+    }
 
     public SDVariable softmaxDerivative(SDVariable functionInput, SDVariable wrt, Integer dimension) {
         validateDifferentialFunctionsameDiff(functionInput);
@@ -2235,7 +2266,4 @@ public class DifferentialFunctionFactory {
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
-
-
-
 }

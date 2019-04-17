@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -39,8 +38,7 @@ import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -58,11 +56,14 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     protected ExternalErrorsFunction fn;
     protected String outputKey;
     protected Map<String,SDVariable> inputVars;
+    protected INDArray[] maskArrays;
 
     protected INDArray params;
     protected INDArray gradients;
     protected Map<String,INDArray> paramTable;
     protected Map<String,INDArray> gradTable;
+    private MaskState currentMaskState;
+    private int minibatchSize;
 
     public SameDiffGraphVertex(SameDiffVertex config, ComputationGraph graph, String name, int vertexIndex,
                                   INDArray paramsView, boolean initParams) {
@@ -100,10 +101,18 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
 //            sameDiff.clearExecutionCache();
+            config.validateInput(inputs);
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
+                final String maskName = name + "_mask";
                 sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
+                if(maskArrays != null && maskArrays[i] != null) {
+                    sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
+                }else{
+                    sameDiff.associateArrayWithVariable(createMask(inputs[i].shape()), maskName);
+                }
             }
+
             if(paramTable != null && paramTable.size() > 0) {
                 for (String s : paramTable.keySet()) {
                     sameDiff.associateArrayWithVariable(paramTable.get(s), s);
@@ -122,10 +131,17 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         INDArray[] dLdIns;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
 //            sameDiff.clearExecutionCache();
+            config.validateInput(inputs);
             //Set inputs
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
+                final String maskName = name + "_mask";
                 sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
+                if(maskArrays != null && maskArrays[i] != null) {
+                    sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
+                }else{
+                    sameDiff.associateArrayWithVariable(createMask(inputs[i].shape()), maskName);
+                }
             }
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
@@ -134,7 +150,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
+            sameDiff.execBackwards(null);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -166,7 +182,10 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        throw new UnsupportedOperationException("Not yet supported");
+        this.maskArrays = maskArrays;
+        this.currentMaskState = currentMaskState;
+
+        return config.feedForwardMaskArrays(maskArrays, currentMaskState, minibatchSize);
     }
 
 
@@ -175,11 +194,14 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             sameDiff = SameDiff.create();
 
             inputVars = new LinkedHashMap<>();
+            LinkedHashMap<String, SDVariable> maskVars = new LinkedHashMap<>();
             int i=0;
             for(String s : config.getVertexParams().getInputs()){
                 val inputShape = inputs[i++].shape().clone();
                 SDVariable inputVar = sameDiff.var(s, inputShape);
                 inputVars.put(s, inputVar);
+                SDVariable maskVar = sameDiff.constant(s + "_mask", createMask(inputShape));
+                maskVars.put(s, maskVar);
             }
 
             Map<String, long[]> paramShapes = config.getVertexParams().getParamShapes();
@@ -189,7 +211,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 SDVariable v = sameDiff.var(s, ps);
                 params.put(s, v);
             }
-            SDVariable layerOutput = config.defineVertex(sameDiff, inputVars, params);
+            SDVariable layerOutput = config.defineVertex(sameDiff, inputVars, params, maskVars);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 
@@ -228,6 +250,18 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     @Override
     public INDArray getGradientsViewArray() {
         return gradients;
+    }
+
+    static INDArray createMask(long[] shape){
+        switch (shape.length){
+            case 2: // FF-Type input
+                return Nd4j.ones(shape[0], 1);
+            case 3: // RNN-Type input
+                return Nd4j.ones(shape[0], shape[2]);
+            default:
+                Preconditions.throwEx("Can not create all-ones-mask for given input shape %s.", Arrays.toString(shape));
+                return null;
+        }
     }
 }
 

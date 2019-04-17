@@ -239,6 +239,9 @@ void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xS
 
         if (xType != zType)
             throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform result must have the same type as X", xType, zType);
+
+        if (xType != yType)
+            throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform Y must have the same type as X", xType, yType);
     }
 
 #ifdef __ND4J_EXPERIMENTAL__
