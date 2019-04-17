@@ -108,13 +108,10 @@ public class CudaDirectProvider implements MemoryProvider {
                 var pointer = nativeOps.mallocDevice(reqMem, null, 0);
                 if (pointer == null) {
                     // try to purge stuff if we're low on memory
-                    val freeDev = MemoryTracker.getInstance().getPreciseFreeMemory(deviceId);
-                    if (freeDev < 128 * 104L * 1024L)
-                        purgeCache(deviceId);
+                    purgeCache(deviceId);
 
                     // call for gc
                     Nd4j.getMemoryManager().invokeGc();
-
 
                     pointer = nativeOps.mallocDevice(reqMem, null, 0);
                     if (pointer == null)

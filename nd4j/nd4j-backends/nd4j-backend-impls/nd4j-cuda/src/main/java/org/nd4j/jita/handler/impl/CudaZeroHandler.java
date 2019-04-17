@@ -295,7 +295,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId, reqMemory)) {
                         point.setDeviceId(deviceId);
-                        PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
+                        val pair = memoryProvider.malloc(shape, point, targetMode);
                         if (pair != null) {
                             returnPair.setDevicePointer(pair.getDevicePointer());
 
