@@ -73,7 +73,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
-                        .asSubclass(ConvolutionHelper.class).newInstance();
+                        .asSubclass(ConvolutionHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnConvolutionHelper successfully initialized");
                 if (!helper.checkSupported()) {
                     helper = null;
@@ -88,7 +88,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNConvHelper();
+            helper = new MKLDNNConvHelper(dataType);
             log.debug("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported()) {

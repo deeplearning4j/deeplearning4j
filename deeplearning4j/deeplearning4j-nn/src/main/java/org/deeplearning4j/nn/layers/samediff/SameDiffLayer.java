@@ -89,7 +89,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             if(maskArray != null){
                 sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
             }else{
-                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(input.shape()), sameDiff.getVariable(MASK_KEY));
+                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
             }
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
@@ -118,7 +118,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             if(maskArray != null){
                 sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
             }else{
-                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(input.shape()), sameDiff.getVariable(MASK_KEY));
+                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
             }
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
@@ -235,7 +235,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 params.put(s, v);
             }
 
-            SDVariable mask = sameDiff.constant(MASK_KEY, SameDiffGraphVertex.createMask(inputShape));
+            SDVariable mask = sameDiff.constant(MASK_KEY, SameDiffGraphVertex.createMask(dataType, inputShape));
 
             SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");

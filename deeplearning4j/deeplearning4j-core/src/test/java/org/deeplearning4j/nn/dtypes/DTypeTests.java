@@ -363,7 +363,7 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore
+    @Test @Ignore   //TODO JVM crash
     public void testDtypesModelVsGlobalDtypeCnn() {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);

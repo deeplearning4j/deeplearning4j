@@ -110,7 +110,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 if(maskArrays != null && maskArrays[i] != null) {
                     sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
                 }else{
-                    sameDiff.associateArrayWithVariable(createMask(inputs[i].shape()), maskName);
+                    sameDiff.associateArrayWithVariable(createMask(dataType, inputs[i].shape()), maskName);
                 }
             }
 
@@ -141,7 +141,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 if(maskArrays != null && maskArrays[i] != null) {
                     sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
                 }else{
-                    sameDiff.associateArrayWithVariable(createMask(inputs[i].shape()), maskName);
+                    sameDiff.associateArrayWithVariable(createMask(dataType, inputs[i].shape()), maskName);
                 }
             }
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
@@ -201,7 +201,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 val inputShape = inputs[i++].shape().clone();
                 SDVariable inputVar = sameDiff.var(s, inputShape);
                 inputVars.put(s, inputVar);
-                SDVariable maskVar = sameDiff.constant(s + "_mask", createMask(inputShape));
+                SDVariable maskVar = sameDiff.constant(s + "_mask", createMask(dataType, inputShape));
                 maskVars.put(s, maskVar);
             }
 
@@ -253,12 +253,15 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         return gradients;
     }
 
-    static INDArray createMask(long[] shape){
+    //Package private
+    static INDArray createMask(DataType dataType, long[] shape){
         switch (shape.length){
             case 2: // FF-Type input
-                return Nd4j.ones(shape[0], 1);
+                return Nd4j.ones(dataType,shape[0], 1);
             case 3: // RNN-Type input
-                return Nd4j.ones(shape[0], shape[2]);
+                return Nd4j.ones(dataType, shape[0], shape[2]);
+            case 4: //CNN input
+                return Nd4j.ones(dataType, shape[0], 1, 1, 1);
             default:
                 Preconditions.throwEx("Can not create all-ones-mask for given input shape %s.", Arrays.toString(shape));
                 return null;

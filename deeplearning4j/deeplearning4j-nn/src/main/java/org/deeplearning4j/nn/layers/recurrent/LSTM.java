@@ -61,7 +61,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
-                        .asSubclass(LSTMHelper.class).newInstance();
+                        .asSubclass(LSTMHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnLSTMHelper successfully initialized");
                 if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
                     helper = null;

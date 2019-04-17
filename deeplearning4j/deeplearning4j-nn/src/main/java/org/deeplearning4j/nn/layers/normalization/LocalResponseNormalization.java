@@ -89,7 +89,7 @@ public class LocalResponseNormalization
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
-                        .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
+                        .asSubclass(LocalResponseNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
             } catch (Throwable t) {
                 if (!(t instanceof ClassNotFoundException)) {

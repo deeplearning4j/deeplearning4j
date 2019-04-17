@@ -46,6 +46,10 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private INDArray meanCache;
     private INDArray varCache;
 
+    public MKLDNNBatchNormHelper(DataType dataType){
+
+    }
+
     @Override
     public boolean checkSupported(double eps, boolean fixedGammaBeta) {
         return !fixedGammaBeta && BaseMKLDNNHelper.mklDnnEnabled();

@@ -77,7 +77,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
-                        .asSubclass(BatchNormalizationHelper.class).newInstance();
+                        .asSubclass(BatchNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnBatchNormalizationHelper successfully initialized");
             } catch (Throwable t) {
                 if (!(t instanceof ClassNotFoundException)) {
@@ -89,7 +89,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNBatchNormHelper();
+            helper = new MKLDNNBatchNormHelper(dataType);
             log.debug("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
@@ -210,7 +210,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     //First: we have log10(var[i]) from last iteration, hence can calculate var[i] and stdev[i]
                     //Need to calculate log10{std[i]) - log10(std[i+1]) as the "update"
                     //Note, var[i+1] = d*var[i] + (1-d)*batchVar
-                    INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0);
+                    INDArray vari = Nd4j.createUninitialized(dataType, globalLog10Std.shape()).assign(10.0);
                     Transforms.pow(vari, globalLog10Std, false);     //variance = (10^log10(s))^2
                     vari.muli(vari);
 

@@ -75,7 +75,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
-                        .asSubclass(SubsamplingHelper.class).newInstance();
+                        .asSubclass(SubsamplingHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnSubsamplingHelper successfully initialized");
                 if (!helper.checkSupported()) {
                     helper = null;
@@ -90,7 +90,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend) ){
-            helper = new MKLDNNSubsamplingHelper();
+            helper = new MKLDNNSubsamplingHelper(dataType);
             log.debug("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported()) {
