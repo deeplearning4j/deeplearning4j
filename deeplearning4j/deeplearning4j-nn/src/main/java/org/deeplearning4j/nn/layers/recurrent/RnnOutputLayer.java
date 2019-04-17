@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -43,12 +44,8 @@ import java.util.Arrays;
  */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
-    public RnnOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public RnnOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public RnnOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -116,7 +113,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (labels.rank() == 3)
             return TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, arrayType);
-        return workspaceMgr.castTo(arrayType, Nd4j.defaultFloatingPointType(), labels, false);
+        return labels;
     }
 
     @Override
@@ -134,10 +131,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (maskArray != null) {
             if(!maskArray.isColumnVectorOrScalar() || Arrays.equals(maskArray.shape(), act2d.shape())){
                 //Per output masking
-                act2d.muli(maskArray);
+                act2d.muli(maskArray.castTo(act2d.dataType()));
             } else {
                 //Per time step masking
-                act2d.muliColumnVector(maskArray);
+                act2d.muliColumnVector(maskArray.castTo(act2d.dataType()));
             }
         }
 

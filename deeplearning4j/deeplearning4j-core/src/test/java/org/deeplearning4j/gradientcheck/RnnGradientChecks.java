@@ -99,6 +99,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                             System.out.println("Starting test: " + name);
 
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .weightInit(WeightInit.XAVIER)
                                     .list()
@@ -173,6 +174,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                                     System.out.println("Starting test: " + name);
 
                                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                            .dataType(DataType.DOUBLE)
                                             .updater(new NoOp())
                                             .weightInit(WeightInit.XAVIER)
                                             .activation(Activation.TANH)
@@ -245,6 +247,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .activation(Activation.TANH)
                                 .updater(new NoOp())
                                 .weightInit(WeightInit.XAVIER)

@@ -65,7 +65,7 @@ public class TestSetGetParameters extends BaseDL4JTest {
         assertEquals(initParams, initParamsAfter);
 
         //Now, try the other way: get(set(random))
-        INDArray randomParams = Nd4j.rand(initParams.shape());
+        INDArray randomParams = Nd4j.rand(initParams.dataType(), initParams.shape());
         net.setParams(randomParams.dup());
 
         assertEquals(net.params(), randomParams);
@@ -102,7 +102,7 @@ public class TestSetGetParameters extends BaseDL4JTest {
         assertEquals(initParams, initParamsAfter);
 
         //Now, try the other way: get(set(random))
-        INDArray randomParams = Nd4j.rand(initParams.shape());
+        INDArray randomParams = Nd4j.rand(initParams.dataType(), initParams.shape());
         net.setParams(randomParams.dup());
 
         assertEquals(net.params(), randomParams);

@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -336,7 +337,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
 
         @Override
         public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                          INDArray paramsView, boolean initializeParams) {
+                                                                          INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
             throw new UnsupportedOperationException("Not supported");
         }
 

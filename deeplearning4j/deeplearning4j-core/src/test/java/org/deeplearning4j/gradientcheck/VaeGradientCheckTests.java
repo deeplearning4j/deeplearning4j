@@ -95,6 +95,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
 
             MultiLayerConfiguration conf =
                     new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .l2Bias(biasL2[i]).l1Bias(biasL1[i])
                             .updater(new NoOp()).seed(12345L).list()
@@ -174,6 +175,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             Activation pxzAfn = pxzAfns[i];
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2)
+                    .dataType(DataType.DOUBLE)
                     .l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i]).updater(new NoOp())
                     .seed(12345L).weightInit(WeightInit.XAVIER).list()
                     .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3)
@@ -262,6 +264,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             }
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .seed(12345L).dist(new NormalDistribution(0, 1))
                     .list().layer(0,
@@ -307,6 +310,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             INDArray features = Nd4j.rand(minibatch, 4);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .seed(12345L).weightInit(WeightInit.XAVIER).list()
                     .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(5, 6)

@@ -19,6 +19,7 @@ package org.deeplearning4j.lstm;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,7 +39,7 @@ public class ValidateCudnnDropout extends BaseDL4JTest {
             double pRetain = 0.25;
             double valueIfKept = 1.0 / pRetain;
 
-            CudnnDropoutHelper d = new CudnnDropoutHelper();
+            CudnnDropoutHelper d = new CudnnDropoutHelper(DataType.DOUBLE);
 
             INDArray out = Nd4j.createUninitialized(shape);
             d.applyDropout(in, out, pRetain);

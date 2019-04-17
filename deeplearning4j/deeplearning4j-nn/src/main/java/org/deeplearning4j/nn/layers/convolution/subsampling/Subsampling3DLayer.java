@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.Convolution3DUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -47,14 +48,10 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     protected ConvolutionMode convolutionMode;
 
-    public Subsampling3DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Subsampling3DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.convolutionMode =
                 ((org.deeplearning4j.nn.conf.layers.Subsampling3DLayer) conf.getLayer()).getConvolutionMode();
-    }
-
-    public Subsampling3DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
     }
 
 
@@ -96,8 +93,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             pad = layerConf().getPadding();
         }
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
-                isNCDHW ? new int[]{miniBatch, inChannels, inD, inH, inW} : new int[]{miniBatch, inD, inH, inW, inChannels}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(),
+                isNCDHW ? new long[]{miniBatch, inChannels, inD, inH, inW} : new long[]{miniBatch, inD, inH, inW, inChannels}, 'c');
 
 
         int[] intArgs = new int[]{
@@ -179,8 +176,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew" : "avgpool3dnew";
 
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                isNCDHW ? new int[]{miniBatch, inChannels, outD, outH, outW} : new int[]{miniBatch, outD, outH, outW, inChannels}, 'c');
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(),
+                isNCDHW ? new long[]{miniBatch, inChannels, outD, outH, outW} : new long[]{miniBatch, outD, outH, outW, inChannels}, 'c');
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],

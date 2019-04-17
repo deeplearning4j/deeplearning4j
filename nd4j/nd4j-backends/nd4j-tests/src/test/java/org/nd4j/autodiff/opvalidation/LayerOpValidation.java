@@ -27,6 +27,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
@@ -1199,5 +1200,52 @@ public class LayerOpValidation extends BaseOpValidation {
                         .sD(1).sH(1).sW(-1).dW(-1)
                         .build());
         }
+    }
+
+    @Test
+    public void testLayerNormMixedOrders(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 8).dup('f');
+        INDArray gain = Nd4j.rand(DataType.DOUBLE, 1, 8).dup('f');
+        INDArray bias = Nd4j.rand(DataType.DOUBLE, 1, 8).dup('f');
+
+        INDArray outFF = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'f');
+        INDArray outCC = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'c');
+        INDArray outFC = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'c');
+        INDArray outCF = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'f');
+
+        //F in, F out case
+        Nd4j.exec(DynamicCustomOp.builder("layer_norm")
+                .addInputs(input, gain, bias)
+                .addOutputs(outFF)
+                .addIntegerArguments(1) //Axis
+                .build());
+
+        //C in, C out case
+        Nd4j.exec(DynamicCustomOp.builder("layer_norm")
+                .addInputs(input.dup('c'), gain.dup('c'), bias.dup('c'))
+                .addOutputs(outCC)
+                .addIntegerArguments(1) //Axis
+                .build());
+
+        assertEquals(outFF, outCC);       //OK
+
+        //C in, F out case
+        outFF.assign(0);
+        Nd4j.exec(DynamicCustomOp.builder("layer_norm")
+                .addInputs(input.dup('c'), gain.dup('c'), bias.dup('c'))
+                .addOutputs(outCF)
+                .addIntegerArguments(1) //Axis
+                .build());
+        assertEquals(outCC, outCF);       //Fails here
+
+        //F in, C out case
+        outFF.assign(0);
+        Nd4j.exec(DynamicCustomOp.builder("layer_norm")
+                .addInputs(input, gain, bias)
+                .addOutputs(outFC)
+                .addIntegerArguments(1) //Axis
+                .build());
+        assertEquals(outCC, outFC);       //Fails here
     }
 }

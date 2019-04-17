@@ -50,7 +50,7 @@ public class SeedTest extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         layer.fit(data.getFeatures(), LayerWorkspaceMgr.noWorkspaces());
 

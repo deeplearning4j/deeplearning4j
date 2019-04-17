@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,13 +40,13 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  */
 public class PoolHelperVertex extends BaseGraphVertex {
 
-    public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
+    public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, dataType);
     }
 
     public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
     }
 
     @Override
@@ -76,7 +77,11 @@ public class PoolHelperVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsilon.size(0), epsilon.size(1), 1+epsilon.size(2), 1+epsilon.size(2));
+        out.get(NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)))
+                .assign(epsilon);
+
+        return new Pair<>(null, new INDArray[] {out});
     }
 
     @Override

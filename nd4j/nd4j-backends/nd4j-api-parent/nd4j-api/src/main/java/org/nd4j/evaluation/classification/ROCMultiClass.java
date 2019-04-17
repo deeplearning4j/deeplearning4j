@@ -199,8 +199,8 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
 
         for (int i = 0; i < n; i++) {
-            INDArray prob = predictions2d.getColumn(i); //Probability of class i
-            INDArray label = labels2d.getColumn(i);
+            INDArray prob = predictions2d.getColumn(i, true); //Probability of class i
+            INDArray label = labels2d.getColumn(i, true);
             //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7305
             if(prob.rank() == 0)
                 prob = prob.reshape(1,1);

@@ -79,6 +79,7 @@ public class LossMSLE extends DifferentialFunction  implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray scoreArr;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         scoreArr = Transforms.log(output.addi(1.0).divi(labels.add(1.0)), false);
@@ -123,6 +124,7 @@ public class LossMSLE extends DifferentialFunction  implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray p1 = output.add(1.0);

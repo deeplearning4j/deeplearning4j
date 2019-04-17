@@ -186,7 +186,7 @@ public class ParagraphVectorsTest {
         File fullFile = File.createTempFile("paravec", "tests");
         fullFile.deleteOnExit();
 
-        INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17).dup();
+        INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17, true).dup();
 
         WordVectorSerializer.writeParagraphVectors(vec, fullFile);
 
@@ -322,7 +322,7 @@ public class ParagraphVectorsTest {
         ParagraphVectors restoredVectors = WordVectorSerializer.readParagraphVectors(fullFile);
         restoredVectors.setTokenizerFactory(t);
 
-        INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17).dup();
+        INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17, true).dup();
 
         assertEquals(originalSyn1_17, restoredSyn1_17);
 

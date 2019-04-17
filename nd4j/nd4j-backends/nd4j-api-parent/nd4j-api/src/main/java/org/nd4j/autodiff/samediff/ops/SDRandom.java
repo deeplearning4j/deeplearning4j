@@ -3,6 +3,8 @@ package org.nd4j.autodiff.samediff.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import static org.nd4j.autodiff.samediff.ops.SDValidation.validateInteger;
+
 /**
  * SameDiff random number generator operations<br>
  * Accessible via {@link SameDiff#random()}
@@ -35,6 +37,7 @@ public class SDRandom extends SDOps {
      * @return New SDVariable
      */
     public SDVariable bernoulli(String name, double p, SDVariable shape) {
+        validateInteger("bernoulli random", shape);
         SDVariable ret = f().randomBernoulli(p, shape);
         return updateVariableNameAndReference(ret, name);
     }
@@ -113,6 +116,7 @@ public class SDRandom extends SDOps {
      * @return new SDVaribale
      */
     public SDVariable exponential(String name, double lambda, SDVariable shape) {
+        validateInteger("exponential random", shape);
         SDVariable ret = f().randomExponential(lambda, shape);
         return updateVariableNameAndReference(ret, name);
     }
@@ -159,6 +163,7 @@ public class SDRandom extends SDOps {
      * @return New SDVariable
      */
     public SDVariable normal(String name, double mean, double stddev, SDVariable shape) {
+        validateInteger("normal (Gaussian) random", shape);
         SDVariable ret = f().randomNormal(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
@@ -229,6 +234,7 @@ public class SDRandom extends SDOps {
      * @return New SDVariable
      */
     public SDVariable uniform(String name, double min, double max, SDVariable shape) {
+        validateInteger("uniform random", shape);
         SDVariable ret = f().randomUniform(min, max, shape);
         return updateVariableNameAndReference(ret, name);
     }

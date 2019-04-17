@@ -65,7 +65,7 @@ public class MaskZeroLayerTest {
         for (int i = 12; i < 16; i++) {
             params.putScalar(i, 1.0);
         }
-        Layer lstm = underlying.instantiate(conf, Collections.<TrainingListener>emptyList(), 0, params, false);
+        Layer lstm = underlying.instantiate(conf, Collections.<TrainingListener>emptyList(), 0, params, false, params.dataType());
         double maskingValue = 0.0;
 
         MaskZeroLayer l = new MaskZeroLayer(lstm, maskingValue);

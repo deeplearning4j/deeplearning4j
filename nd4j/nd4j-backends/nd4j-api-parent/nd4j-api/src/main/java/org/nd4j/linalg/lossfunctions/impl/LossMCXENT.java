@@ -106,6 +106,7 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         if(activationFn instanceof ActivationSoftmax && softmaxClipEps > 0.0){
@@ -156,6 +157,7 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
         }
         INDArray grad;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         if (activationFn instanceof ActivationSoftmax) {
 

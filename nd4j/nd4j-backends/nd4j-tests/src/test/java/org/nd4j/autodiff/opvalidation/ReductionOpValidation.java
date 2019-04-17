@@ -807,8 +807,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
-                    .expected(all, Nd4j.create(new boolean[]{expAll[i]}))
-                    .expected(any, Nd4j.create(new boolean[]{expAny[i]})));
+                    .expected(all, Nd4j.scalar(expAll[i]))
+                    .expected(any, Nd4j.scalar(expAny[i])));
 
             assertNull(err);
         }
@@ -866,7 +866,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         reduce = sd.math().lastIndex(s, Conditions.greaterThan(0), dim);
                         if (t == 0) exp = Nd4j.create(new double[]{2, 2, 2, 2});
                         else if (t == 1) exp = Nd4j.create(new double[]{3, 3, 3});
-                        else exp = Nd4j.create(new double[]{11});
+                        else exp = Nd4j.scalar(11.0);
                         exp = exp.castTo(DataType.DOUBLE);
                         name = "lastindex";
                         break;
@@ -874,7 +874,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
                         if (t == 0) exp = Nd4j.create(new double[]{3, 3, 3, 3});
                         else if (t == 1) exp = Nd4j.create(new double[]{4, 4, 4});
-                        else exp = Nd4j.create(new double[]{12});
+                        else exp = Nd4j.scalar(12.0);
                         exp = exp.castTo(DataType.DOUBLE);
                         name = "matchConditionCount";
                         break;

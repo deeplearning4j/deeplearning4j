@@ -180,7 +180,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         val nClasses = labels2d.size(1);
 
         if (rDiagBinPosCount == null) {
-            DataType dt = predictions.dataType();
+            DataType dt = DataType.DOUBLE;
             //Initialize
             rDiagBinPosCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
             rDiagBinTotalCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
@@ -239,7 +239,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
             INDArray numPredictionsCurrBin = currBinBitMask.sum(0);
 
-            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0));
+            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0).castTo(rDiagBinSumPredictions.dataType()));
             rDiagBinPosCount.getRow(j).addi(isPosLabelForBin.sum(0).castTo(rDiagBinPosCount.dataType()));
             rDiagBinTotalCount.getRow(j).addi(numPredictionsCurrBin.castTo(rDiagBinTotalCount.dataType()));
         }
@@ -299,14 +299,14 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
 
-            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0));
+            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0).castTo(residualPlotByLabelClass.dataType()));
 
             int probNewTotalCount = probHistogramOverall.getInt(0, j) + currBinBitMaskProbs.sumNumber().intValue();
             probHistogramOverall.putScalar(0, j, probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
             INDArray temp = isPosLabelForBinProbs.sum(0);
-            probHistogramByLabelClass.getRow(j).addi(temp);
+            probHistogramByLabelClass.getRow(j).addi(temp.castTo(probHistogramByLabelClass.dataType()));
         }
     }
 

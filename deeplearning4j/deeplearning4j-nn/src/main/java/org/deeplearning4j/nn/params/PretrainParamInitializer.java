@@ -57,7 +57,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
 
-        INDArray visibleBiasView = paramsView.get(NDArrayIndex.point(0),
+        INDArray visibleBiasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
         params.put(VISIBLE_BIAS_KEY, createVisibleBias(conf, visibleBiasView, initializeParams));
         conf.addVariable(VISIBLE_BIAS_KEY);
@@ -87,7 +87,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
 
-        INDArray vBiasView = gradientView.get(NDArrayIndex.point(0),
+        INDArray vBiasView = gradientView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
 
         out.put(VISIBLE_BIAS_KEY, vBiasView);
