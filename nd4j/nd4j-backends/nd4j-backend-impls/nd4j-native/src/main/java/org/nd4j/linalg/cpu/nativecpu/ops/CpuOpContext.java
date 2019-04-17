@@ -65,14 +65,14 @@ public class CpuOpContext extends BaseOpContext implements OpContext {
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        context.setInputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+        context.setInputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
 
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        context.setOutputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+        context.setOutputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
 
         super.setOutputArray(index, array);
     }

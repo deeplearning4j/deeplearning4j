@@ -786,11 +786,9 @@ namespace nd4j {
             if (block.width() == 0)
                 return ND4J_STATUS_OK;
 
-
-            NDArray *a0 = block.variable(0)->getNDArray();
-            for (auto p: *block.inputs()) {
-                auto v = block.variable(p);
-                NDArray *aV = v->getNDArray();
+            NDArray *a0 = block.array(0);
+            for (int e = 0; e < block.width(); e++) {
+                auto aV = block.array(e);
                 if (!shape::equalsSoft(a0->getShapeInfo(), aV->getShapeInfo()))
                     return ND4J_STATUS_BAD_DIMENSIONS;
             }
@@ -803,9 +801,9 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
 
 
-            Nd4jLong l0 = block.variable(0)->getNDArray()->lengthOf();
+            Nd4jLong l0 = block.array(0)->lengthOf();
             for (uint32_t e = 0; e < block.width(); e++) {
-                if (l0 != block.variable(e)->getNDArray()->lengthOf())
+                if (l0 != block.array(e)->lengthOf())
                     return ND4J_STATUS_BAD_LENGTH;
             }
 
