@@ -220,7 +220,7 @@ public class ModelTupleStream extends TupleStream implements Expressible {
     {
       inputs[ii] = tuple.getDouble(inputKeys[ii]).doubleValue();
     }
-    return Nd4j.create(inputs);
+    return Nd4j.create(new double[][]{ inputs });
   }
 
   protected Tuple applyOutputsToTuple(Tuple tuple, INDArray output) {

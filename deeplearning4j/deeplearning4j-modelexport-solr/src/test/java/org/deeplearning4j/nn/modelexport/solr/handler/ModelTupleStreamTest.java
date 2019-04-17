@@ -155,8 +155,9 @@ public class ModelTupleStreamTest {
 
         for (int ii=0; ii<outputKeys.length; ++ii)
         {
-          final double originalScore = NetworkUtils.output((Model)originalModel, Nd4j.create(floats)).getDouble(ii);
-          final double restoredScore = NetworkUtils.output((Model)restoredModel, Nd4j.create(floats)).getDouble(ii);
+          final INDArray inputs = Nd4j.create(new float[][] { floats });
+          final double originalScore = NetworkUtils.output((Model)originalModel, inputs).getDouble(ii);
+          final double restoredScore = NetworkUtils.output((Model)restoredModel, inputs).getDouble(ii);
           assertEquals(
             originalModel.getClass().getSimpleName()+" (originalScore-restoredScore)="+(originalScore-restoredScore),
             originalScore, restoredScore, 1e-5);
