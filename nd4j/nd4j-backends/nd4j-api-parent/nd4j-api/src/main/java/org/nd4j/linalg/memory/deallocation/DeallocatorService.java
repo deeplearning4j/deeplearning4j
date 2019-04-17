@@ -50,7 +50,7 @@ public class DeallocatorService {
             queues[e] = new ReferenceQueue<>();
 
             // attaching queue to its own thread
-            deallocatorThreads[e] = new DeallocatorServiceThread(queues[e]);
+            deallocatorThreads[e] = new DeallocatorServiceThread(queues[e], e);
             deallocatorThreads[e].setName("DeallocatorServiceThread_" + e);
             deallocatorThreads[e].setDaemon(true);
 
@@ -85,10 +85,12 @@ public class DeallocatorService {
 
 
     private class DeallocatorServiceThread extends Thread implements Runnable {
-        private ReferenceQueue<Deallocatable> queue;
+        private final ReferenceQueue<Deallocatable> queue;
+        private final int threadIdx;
 
-        private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue) {
+        private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx) {
             this.queue = queue;
+            this.threadIdx = threadIdx;
         }
 
         @Override
@@ -96,18 +98,36 @@ public class DeallocatorService {
             boolean canRun = true;
             long cnt = 0;
             while (canRun) {
-                try {
-                    val reference = (DeallocatableReference) queue.remove();
-                    if (reference == null)
-                        continue;
+                // if periodicGc is enabled, only first thread will call for it
+                if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
+                    val reference = (DeallocatableReference) queue.poll();
+                    if (reference == null) {
+                        val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
+                        try {
+                            Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
+                            Nd4j.getMemoryManager().invokeGc();
+                        } catch (InterruptedException e) {
+                            canRun = false;
+                        }
+                    } else {
+                        // invoking deallocator
+                        reference.getDeallocator().deallocate();
+                        referenceMap.remove(reference.getId());
+                    }
+                } else {
+                    try {
+                        val reference = (DeallocatableReference) queue.remove();
+                        if (reference == null)
+                            continue;
 
-                    // invoking deallocator
-                    reference.getDeallocator().deallocate();
-                    referenceMap.remove(reference.getId());
-                } catch (InterruptedException e) {
-                    canRun = false;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                        // invoking deallocator
+                        reference.getDeallocator().deallocate();
+                        referenceMap.remove(reference.getId());
+                    } catch (InterruptedException e) {
+                        canRun = false;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }
