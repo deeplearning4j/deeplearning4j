@@ -1171,6 +1171,10 @@ Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
+Nd4jLong NativeOps::getDeviceFreeMemory() {
+    return 0L;
+}
+
 Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }

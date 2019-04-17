@@ -46,10 +46,10 @@ namespace nd4j {
 
         static ConstantTadHelper* getInstance();
 
-        TadPack& tadForDimensions(Nd4jLong *originalShape, const std::vector<int> &dimensions);
-        TadPack& tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength);
-        TadPack& tadForDimensions(Nd4jLong *originalShape, int dimensions);
-        TadPack& tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions);
+        TadPack& tadForDimensions(Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
+        TadPack& tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape = false);
+        TadPack& tadForDimensions(Nd4jLong *originalShape, int dimensions, const bool keepUnitiesInShape = false);
+        TadPack& tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
         TadPack& tadForDimensions(TadDescriptor &descriptor);
     };
 }

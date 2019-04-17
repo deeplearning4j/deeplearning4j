@@ -84,6 +84,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer,
                                        boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
+        //super(iterator, transformer);
         this.allowMultithreading = allowMultithreading;
         //this.stringBuffer = new LinkedBlockingQueue<>(512);
 
@@ -92,53 +93,16 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
 
         prefetchIterator();
-
-        //List<Future<Sequence<VocabWord>>> futureList = new ArrayList<>();
-        /*try {
-            int cnt = 0;
-            while (cnt < 256) {
-                boolean before = underlyingHas;
-
-                if (before)
-                    underlyingHas = this.iterator.hasNextDocument();
-
-                if (underlyingHas) {
-                    stringBuffer.put(this.iterator.nextDocument());
-                }
-                else
-                    cnt += 257;
-
-                cnt++;
-            }
-        } catch (Exception e) {
-            //
-        }*/
-
-
-        /*for (int x = 0; x < threads.length; x++) {
-           threads[x] = new TokenizerThread(x, transformer, stringBuffer, buffer, processing);
-           threads[x].setDaemon(true);
-           threads[x].setName("ParallelTransformer thread " + x);
-           threads[x].start();
-        }*/
     }
 
     @Override
     public void reset() {
+        this.executorService.shutdownNow();
         this.iterator.reset();
         underlyingHas.set(true);
         prefetchIterator();
-
-        /*for (int x = 0; x < threads.length; x++) {
-            if (threads[x] != null) {
-                threads[x].shutdown();
-                try {
-                    threads[x].interrupt();
-                } catch (Exception e) {
-                    //
-                }
-            }
-        }*/
+        this.buffer.clear();
+        this.executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
     }
 
     public void shutdown() {
@@ -170,7 +134,6 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             }
             return sequence;
         }
-
     }
 
     @Override
@@ -213,63 +176,4 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             throw new RuntimeException(e);
         }
     }
-
-
-    /*private static class TokenizerThread extends Thread implements Runnable {
-        protected BlockingQueue<Future<Sequence<VocabWord>>> sequencesBuffer;
-        protected BlockingQueue<LabelledDocument> stringsBuffer;
-        protected SentenceTransformer sentenceTransformer;
-        protected AtomicBoolean shouldWork = new AtomicBoolean(true);
-        protected AtomicInteger processing;
-
-        private LabelledDocument document;
-
-        public TokenizerThread(int threadIdx, SentenceTransformer transformer,
-                        BlockingQueue<LabelledDocument> stringsBuffer,
-                        BlockingQueue<Future<Sequence<VocabWord>>> sequencesBuffer, AtomicInteger processing) {
-            this.stringsBuffer = stringsBuffer;
-            this.sequencesBuffer = sequencesBuffer;
-            this.sentenceTransformer = transformer;
-            this.processing = processing;
-
-            this.setDaemon(true);
-            this.setName("Tokenization thread " + threadIdx);
-        }
-
-        @Override
-        public void run() {
-            try {
-                while (shouldWork.get()) {
-                    document = stringsBuffer.take();
-
-                    if (document == null || document.getContent() == null)
-                        continue;
-
-                    processing.incrementAndGet();
-
-                    if (document.getLabels() != null)
-                        for (String label : document.getLabels()) {
-                            if (label != null && !label.isEmpty())
-                                sequence.addSequenceLabel(new VocabWord(1.0, label));
-                        }
-
-                    if (sequence != null)
-                        sequencesBuffer.put(sequence);
-
-                    processing.decrementAndGet();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                // do nothing
-                shutdown();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public void shutdown() {
-            shouldWork.set(false);
-        }
-      }*/
-
 }

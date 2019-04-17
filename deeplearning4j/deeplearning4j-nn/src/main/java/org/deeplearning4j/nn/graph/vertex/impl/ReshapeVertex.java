@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -44,13 +45,13 @@ public class ReshapeVertex extends BaseGraphVertex {
     private int[] maskShape;
 
 
-    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, char order, int[] newShape, int[] maskShape) {
-        this(graph, name, vertexIndex, null, null, order, newShape, maskShape);
+    public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, char order, int[] newShape, int[] maskShape, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, order, newShape, maskShape, dataType);
     }
 
     public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, char order, int[] newShape, int[] maskShape) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, char order, int[] newShape, int[] maskShape, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.order = order;
         this.newShape = newShape;
         this.maskShape = maskShape;

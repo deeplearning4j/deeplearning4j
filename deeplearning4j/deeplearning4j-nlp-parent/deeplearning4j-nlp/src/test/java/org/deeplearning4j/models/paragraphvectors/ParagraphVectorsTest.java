@@ -24,6 +24,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
+import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -185,7 +186,7 @@ public class ParagraphVectorsTest {
         File fullFile = File.createTempFile("paravec", "tests");
         fullFile.deleteOnExit();
 
-        INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17).dup();
+        INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17, true).dup();
 
         WordVectorSerializer.writeParagraphVectors(vec, fullFile);
 
@@ -321,7 +322,7 @@ public class ParagraphVectorsTest {
         ParagraphVectors restoredVectors = WordVectorSerializer.readParagraphVectors(fullFile);
         restoredVectors.setTokenizerFactory(t);
 
-        INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17).dup();
+        INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17, true).dup();
 
         assertEquals(originalSyn1_17, restoredSyn1_17);
 
@@ -638,7 +639,7 @@ public class ParagraphVectorsTest {
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
-        ParallelTransformerIterator iter = (ParallelTransformerIterator)transformer.iterator();
+        BasicTransformerIterator iter = (BasicTransformerIterator)transformer.iterator();
         for (int i = 0; i < 100; ++i) {
             int cnt = 0;
             long counter = 0;

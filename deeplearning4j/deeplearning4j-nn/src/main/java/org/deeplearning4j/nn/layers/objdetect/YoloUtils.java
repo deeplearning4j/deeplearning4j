@@ -51,7 +51,7 @@ public class YoloUtils {
         int b = (int) boundingBoxPriors.size(0);
         int c = (int) (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
-        INDArray output = layerWorkspaceMgr.create(ArrayType.ACTIVATIONS, input.shape(), 'c');
+        INDArray output = layerWorkspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), input.shape(), 'c');
         INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
         INDArray output4 = output;  //output.get(all(), interval(0,5*b), all(), all());
         INDArray input4 = input.dup('c');    //input.get(all(), interval(0,5*b), all(), all()).dup('c');

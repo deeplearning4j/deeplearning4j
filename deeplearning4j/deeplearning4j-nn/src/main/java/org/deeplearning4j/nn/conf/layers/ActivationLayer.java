@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -72,8 +73,8 @@ public class ActivationLayer extends NoParamLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
+        org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

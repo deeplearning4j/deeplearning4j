@@ -24,6 +24,7 @@
 #include <functional>
 #include <pointercast.h>
 #include <shape.h>
+#include <LoopKind.h>
 #include <OmpLaunchHelper.h>
 #include <DataTypeUtils.h>
 #include <ops.h>
@@ -32,15 +33,11 @@
 #include <openmp_pragmas.h>
 
 namespace nd4j {
-    enum LoopKind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Z_EWSNONZERO, COMMON};
-
 
     template <typename X, typename Z, typename E>
     class ND4J_EXPORT ReductionLoops {
     protected:
     public:
-
-        static FORCEINLINE LoopKind deduceKindOfLoopTadXZ(Nd4jLong* xShapeInfo, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo);
 
         template <typename OpType>
         static FORCEINLINE void loopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams);
@@ -96,9 +93,7 @@ namespace nd4j {
 
     template <typename X, typename Z, typename E>
     class ND4J_EXPORT TransformLoops {
-    private:
 
-        static FORCEINLINE LoopKind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
     public:
         
         template<typename OpType, bool doParallel>
@@ -108,8 +103,6 @@ namespace nd4j {
     template <typename X, typename Z>
     class ND4J_EXPORT Reduction3Loops {    
     public:
-                
-        static FORCEINLINE LoopKind deduceKindOfLoopTadXYZ(const Nd4jLong* xTadShapeInfo, const Nd4jLong* yTadShapeInfo, const Nd4jLong* zShapeInfo);
         
         template <typename OpType>
         static FORCEINLINE void loopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams);
@@ -129,124 +122,7 @@ namespace nd4j {
     };
 
 
-//////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Z, typename E>
-LoopKind TransformLoops<X, Z, E>::deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo) {
 
-    const int xRank = shape::rank(xShapeInfo);
-    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
-    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-
-    int temp;
-    const bool xVector = shape::isCommonVector(xShapeInfo, temp);
-    const bool zVector = shape::isCommonVector(zShapeInfo, temp);
-
-    const char xOrder = shape::order(xShapeInfo);
-    const char zOrder = shape::order(zShapeInfo);
-
-    const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
-
-    if (xEws == 1 && zEws == 1 && xOrder == zOrder)
-        return EWS1;
-    if(xEws > 0 && zEws > 0 && ((xOrder == zOrder) || ((xVector || xOrder == 'c') && (zVector || zOrder == 'c'))))
-        return EWSNONZERO;
-    if(xRank == 1 && shapesSame)
-        return RANK1;
-    if(xRank == 2 && shapesSame)
-        return RANK2;
-    if(xRank == 3 && shapesSame)
-        return RANK3;
-    if(xRank == 4 && shapesSame)
-        return RANK4;
-    if(xRank == 5 && shapesSame)
-        return RANK5;
-    if(xEws > 0 && (xVector || xOrder == 'c'))
-        return X_EWSNONZERO;
-    if(zEws > 0 && (zVector || zOrder == 'c'))
-        return Z_EWSNONZERO;
-    return COMMON;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Z, typename E>
-LoopKind ReductionLoops<X, Z, E>::deduceKindOfLoopTadXZ(Nd4jLong* xShapeInfo, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo) {
-
-    const int xRank = shape::rank(xShapeInfo);
-    const int tRank = shape::rank(tadShapeInfo);
-
-    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
-    const Nd4jLong tEws = shape::elementWiseStride(tadShapeInfo);
-    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-
-    const char xOrder = shape::order(xShapeInfo);
-    const char tOrder = shape::order(tadShapeInfo);
-    const char zOrder = shape::order(zShapeInfo);
-
-    int temp;
-    const bool tVector = shape::isCommonVector(tadShapeInfo, temp);
-    const bool zVector = shape::isCommonVector(zShapeInfo, temp);
-
-    if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && shape::rank(xShapeInfo) == 2 && xEws == 1 && xOrder == 'c' && xRank == 2 &&
-        tEws > 1 && zEws == 1 && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
-        return SMALLARR2DX;
-    if(tEws == 1 && zEws == 1 && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
-        return EWS1;
-    if(tEws > 0 && zEws > 0   && ((tOrder == zOrder && zOrder == 'c') || ((tVector || tOrder == 'c') && (zVector || zOrder == 'c'))))
-        return EWSNONZERO;
-    if(tRank == 1 && zEws == 1 && (zVector || zOrder == 'c'))
-        return RANK1;
-    if(tRank == 2 && zEws == 1 && (zVector || zOrder == 'c'))
-        return RANK2;
-    if(tRank == 3 && zEws == 1 && (zVector || zOrder == 'c'))
-        return RANK3;
-    if(tRank == 4 && zEws == 1 && (zVector || zOrder == 'c'))
-        return RANK4;
-    if(tRank == 5 && zEws == 1 && (zVector || zOrder == 'c'))
-        return RANK5;
-    if(tEws > 0 && (tVector || tOrder == 'c') && zEws == 0)
-        return X_EWSNONZERO;
-    if(zEws > 0 && (zOrder == 'c' || zVector) && tEws == 0)
-        return Z_EWSNONZERO;
-    return COMMON;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-template <typename X, typename Z>
-LoopKind Reduction3Loops<X, Z>::deduceKindOfLoopTadXYZ(const Nd4jLong* xTadShapeInfo, const Nd4jLong* yTadShapeInfo, const Nd4jLong* zShapeInfo) {
-
-    // both tad shapes are the same, but strides and ews may be different    
-
-    const int tadRank = shape::rank(xTadShapeInfo);
-
-    const Nd4jLong xTadEws = shape::elementWiseStride(xTadShapeInfo);
-    const Nd4jLong yTadEws = shape::elementWiseStride(yTadShapeInfo);    
-    const Nd4jLong zEws    = shape::elementWiseStride(zShapeInfo);    
-
-    const char xTadOrder = shape::order(xTadShapeInfo);
-    const char yTadOrder = shape::order(xTadShapeInfo);
-    const char zOrder    = shape::order(zShapeInfo);
-    
-    int position;
-    const bool xTadVector = shape::isCommonVector(xTadShapeInfo, position);
-    const bool yTadVector = shape::isCommonVector(yTadShapeInfo, position);
-    const bool zVector    = shape::isCommonVector(zShapeInfo, position);
-
-    if(xTadEws == 1 && yTadEws == 1 && zEws == 1 && xTadOrder == yTadOrder && xTadOrder == zOrder && zOrder == 'c')
-        return EWS1;
-    if(xTadEws >  0 && yTadEws  > 0 && zEws  > 0 && ((xTadOrder == yTadOrder && xTadOrder == zOrder && zOrder == 'c') || ((xTadVector || xTadOrder == 'c') && (yTadVector || yTadOrder == 'c') && (zVector || zOrder == 'c'))))
-        return EWSNONZERO;
-    if(tadRank == 1 && zEws > 0 && (zVector || zOrder == 'c'))
-        return RANK1;
-    if(tadRank == 2 && zEws > 0 && (zVector || zOrder == 'c'))
-        return RANK2;
-    if(tadRank == 3 && zEws > 0 && (zVector || zOrder == 'c'))
-        return RANK3;
-    if(tadRank == 4 && zEws > 0 && (zVector || zOrder == 'c'))
-        return RANK4;
-    if(tadRank == 5 && zEws > 0 && (zVector || zOrder == 'c'))
-        return RANK5;
-    return COMMON;  
-}
 
 /*
 //////////////////////////////////////////////////////////////////////////////
@@ -257,7 +133,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                           Z* extraParams,
                           std::function<Z(X,Y,Z*)> op) {
 
-    const LoopKind kindOfLoop = Loops::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+    const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
 
     const Nd4jLong* xShape  = shape::shapeOf(xShapeInfo);
     const Nd4jLong* xStride = shape::stride(xShapeInfo);
@@ -270,7 +146,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
     switch (kindOfLoop) {
 
-        case EWS1: {
+        case LoopKind::EWS1: {
             PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
             {
                 const auto threadNum = omp_get_thread_num();
@@ -288,7 +164,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
             break;
 
-        case EWSNONZERO: {
+        case LoopKind::EWSNONZERO: {
             const uint xEws = shape::elementWiseStride(xShapeInfo);
             const uint yEws = shape::elementWiseStride(yShapeInfo);
             const uint zEws = shape::elementWiseStride(zShapeInfo);
@@ -309,14 +185,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
             break;
 
-        case RANK1: {
+        case LoopKind::RANK1: {
             PRAGMA_OMP_PARALLEL_FOR
             for (uint i0 = 0; i0 < len; ++i0)
                 z[i0 * zStride[0]] = op(x[i0 * xStride[0]], y[i0 * yStride[0]], extraParams);
         }
             break;
         
-        case RANK2: {
+        case LoopKind::RANK2: {
             PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -324,7 +200,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
             break;
         
-        case RANK3: {
+        case LoopKind::RANK3: {
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -333,7 +209,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
             break;
 
-        case RANK4: {
+        case LoopKind::RANK4: {
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(3)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -343,7 +219,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
             break;
         
-        case RANK5: {
+        case LoopKind::RANK5: {
             PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(4)
             for (uint i0 = 0; i0 < xShape[0]; ++i0)
                 for (uint i1 = 0; i1 < xShape[1]; ++i1)
@@ -391,7 +267,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                                   Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                                                   E* extraParams) {
 
-        const LoopKind kindOfLoop = deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+        const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
         const Nd4jLong zLen   = shape::length(zShapeInfo);
         const Nd4jLong tadLen = shape::length(tadShapeInfo);
@@ -406,7 +282,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         switch (kindOfLoop) {
             //*********************************************//
-            // case SMALLARR2DX: {
+            // case LoopKind::SMALLARR2DX: {
             //         shape::printShapeInfoLinear(xShapeInfo);
             //     shape::printShapeInfoLinear(zShapeInfo);
             //     const auto xLen = zLen * tadLen;
@@ -420,7 +296,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //         printf("%u - %lld\n", i, zOffset);
             //     }
             // }
-            case SMALLARR2DX: {
+            case LoopKind::SMALLARR2DX: {
                 const auto uTadLen        = static_cast<uint>(tadLen);
                 const auto uZLenMinusOne  = static_cast<uint>(zLen - 1);
                 const auto xLen           = static_cast<uint>(zLen * uTadLen);
@@ -441,7 +317,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case EWS1: {
+            case LoopKind::EWS1: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; i++) {
@@ -457,7 +333,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case EWSNONZERO: {
+            case LoopKind::EWSNONZERO: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; i++) {
@@ -473,7 +349,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK1: {
+            case LoopKind::RANK1: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; i++) {
@@ -489,7 +365,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK2: {
+            case LoopKind::RANK2: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; ++i) {
@@ -506,7 +382,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK3: {
+            case LoopKind::RANK3: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; ++i) {
@@ -524,7 +400,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK4: {
+            case LoopKind::RANK4: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; ++i) {
@@ -543,7 +419,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK5: {
+            case LoopKind::RANK5: {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; ++i) {
@@ -563,7 +439,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case X_EWSNONZERO: {
+            case LoopKind::X_EWSNONZERO: {
                 uint castZShapeInfo[MAX_RANK];
                 const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
@@ -582,7 +458,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case Z_EWSNONZERO: {
+            case LoopKind::Z_EWSNONZERO: {
                 uint castTadShapeInfo[MAX_RANK];
                 const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
@@ -634,7 +510,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
                                              E* extraParams) {
 
-        const LoopKind kindOfLoop = deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+        const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
         const Nd4jLong* xShape  = shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo));
         const Nd4jLong* xStride = shape::stride(const_cast<Nd4jLong*>(xShapeInfo));
@@ -647,7 +523,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         switch (kindOfLoop) {
 
             //*********************************************//
-            case EWS1: {
+            case LoopKind::EWS1: {
 
                 PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
                 {
@@ -666,7 +542,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case EWSNONZERO: {
+            case LoopKind::EWSNONZERO: {
                 const uint xEws = shape::elementWiseStride(xShapeInfo);
                 const uint zEws = shape::elementWiseStride(zShapeInfo);
 
@@ -687,7 +563,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case Z_EWSNONZERO: {
+            case LoopKind::Z_EWSNONZERO: {
                 const uint zEws = shape::elementWiseStride(zShapeInfo);
                 uint castXShapeInfo[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
@@ -719,7 +595,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK1: {
+            case LoopKind::RANK1: {
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(threadsInfo._numThreads)
                 for (uint i0 = 0; i0 < len; ++i0)
                     z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
@@ -727,7 +603,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK2: {
+            case LoopKind::RANK2: {
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
 
@@ -744,7 +620,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK3: {
+            case LoopKind::RANK3: {
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
                 auto uXShape2 = static_cast<uint>(xShape[2]);
@@ -763,7 +639,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK4: {
+            case LoopKind::RANK4: {
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
                 auto uXShape2 = static_cast<uint>(xShape[2]);
@@ -784,7 +660,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
                 //*********************************************//
-            case RANK5: {
+            case LoopKind::RANK5: {
                 auto uXShape0 = static_cast<uint>(xShape[0]);
                 auto uXShape1 = static_cast<uint>(xShape[1]);
                 auto uXShape2 = static_cast<uint>(xShape[2]);
@@ -881,7 +757,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         }
         
 
-        const LoopKind kindOfLoop = deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
+        const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
 
         const auto xTadEws = shape::elementWiseStride(xTadShapeInfo);
         const auto yTadEws = shape::elementWiseStride(yTadShapeInfo);    
@@ -899,7 +775,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         switch (kindOfLoop) {
             
             //*********************************************//
-            case EWS1: {
+            case LoopKind::EWS1: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
@@ -921,7 +797,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case EWSNONZERO: {
+            case LoopKind::EWSNONZERO: {
 
                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
@@ -943,7 +819,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK1: {
+            case LoopKind::RANK1: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
@@ -967,7 +843,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK2: {
+            case LoopKind::RANK2: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
@@ -993,7 +869,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK3: {
+            case LoopKind::RANK3: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
@@ -1021,7 +897,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK4: {
+            case LoopKind::RANK4: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
@@ -1051,7 +927,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK5: {
+            case LoopKind::RANK5: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
@@ -1153,7 +1029,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)), param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
         Z extraParams[3] = {param0, param1, param2};
 
-        const LoopKind kindOfLoop = deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);        
+        const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);        
 
         const auto xTadEws = shape::elementWiseStride(xTadShapeInfo);
         const auto yTadEws = shape::elementWiseStride(yTadShapeInfo);    
@@ -1176,7 +1052,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         switch (kindOfLoop) {
             
             //*********************************************//
-            case EWS1: {
+            case LoopKind::EWS1: {
                                 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1201,7 +1077,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
             
             //*********************************************//
-            case EWSNONZERO: {
+            case LoopKind::EWSNONZERO: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1228,7 +1104,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK1: {
+            case LoopKind::RANK1: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1255,7 +1131,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK2: {
+            case LoopKind::RANK2: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1284,7 +1160,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
            
             //*********************************************//
-            case RANK3: {
+            case LoopKind::RANK3: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1315,7 +1191,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
            
             //*********************************************//
-            case RANK4: {
+            case LoopKind::RANK4: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
@@ -1348,7 +1224,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 break;
 
             //*********************************************//
-            case RANK5: {
+            case LoopKind::RANK5: {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {

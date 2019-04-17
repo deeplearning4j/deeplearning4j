@@ -19,6 +19,7 @@ package org.datavec.spark.transform.misc;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -53,13 +54,13 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
             }
         }
 
-        INDArray arr = Nd4j.zeros(length);
+        INDArray arr = Nd4j.zeros(DataType.FLOAT, 1, length);
         int idx = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {
                 INDArray subArr = ((NDArrayWritable) w).get();
                 int subLength = subArr.columns();
-                arr.get(NDArrayIndex.interval(idx, idx + subLength)).assign(subArr);
+                arr.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + subLength)).assign(subArr);
                 idx += subLength;
             } else {
                 arr.putScalar(idx++, w.toDouble());

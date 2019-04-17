@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 @AllArgsConstructor
@@ -58,7 +59,7 @@ public class TestGraphVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+                                                                      INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
         throw new UnsupportedOperationException("Not supported");
     }
 

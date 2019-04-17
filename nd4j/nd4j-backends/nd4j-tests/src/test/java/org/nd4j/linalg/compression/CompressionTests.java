@@ -124,7 +124,7 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testJVMCompression3() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
-        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f}).reshape(1,-1);
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
 
@@ -164,7 +164,7 @@ public class CompressionTests extends BaseNd4jTest {
         log.info("Compressed length: {}", compressed.data().length());
         //        log.info("Compressed: {}", Arrays.toString(compressed.data().asInt()));
 
-        INDArray decompressed = Nd4j.create(initial.length());
+        INDArray decompressed = Nd4j.create(1, initial.length());
         Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
 
         log.info("Decompressed length: {}", decompressed.lengthLong());

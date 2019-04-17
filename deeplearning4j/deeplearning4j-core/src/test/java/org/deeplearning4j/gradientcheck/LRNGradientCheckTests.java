@@ -69,6 +69,7 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .dataType(DataType.DOUBLE)
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)

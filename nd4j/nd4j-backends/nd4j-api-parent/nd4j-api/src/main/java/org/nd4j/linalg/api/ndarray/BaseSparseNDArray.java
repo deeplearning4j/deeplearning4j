@@ -1518,7 +1518,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray getColumn(long i, boolean keepDim) {
+        return null;
+    }
+
+    @Override
     public INDArray getRow(long i) {
+        return null;
+    }
+
+    @Override
+    public INDArray getRow(long i, boolean keepDim) {
         return null;
     }
 

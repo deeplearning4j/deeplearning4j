@@ -194,7 +194,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             destroyWorkspace(workspace);
         }
 
-        System.gc();
+        Nd4j.getMemoryManager().invokeGc();
     }
 
     protected void ensureThreadExistense() {

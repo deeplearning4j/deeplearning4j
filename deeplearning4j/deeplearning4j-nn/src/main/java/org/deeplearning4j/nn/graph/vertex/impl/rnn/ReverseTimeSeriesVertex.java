@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -45,8 +46,8 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
     private final String inputName;
     private final int inputIdx;
 
-    public ReverseTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputName) {
-        super(graph, name, vertexIndex, null, null);
+    public ReverseTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputName, DataType dataType) {
+        super(graph, name, vertexIndex, null, null, dataType);
         this.inputName = inputName;
 
 
@@ -136,7 +137,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         val m = input.size(2);
 
         // Create empty output
-        INDArray out = workspaceMgr.create(type, input.shape(), 'f');
+        INDArray out = workspaceMgr.create(type, input.dataType(), input.shape(), 'f');
 
         // Iterate over all samples
         for (int s = 0; s < n; s++) {

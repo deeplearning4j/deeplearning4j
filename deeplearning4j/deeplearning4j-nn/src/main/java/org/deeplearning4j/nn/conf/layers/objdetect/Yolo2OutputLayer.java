@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -95,9 +96,9 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret =
-                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

@@ -22,7 +22,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import lombok.NonNull;
@@ -74,8 +76,8 @@ public class MaskZeroLayer extends BaseWrapperLayer {
             throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], " +
                     "got shape "+Arrays.toString(input.shape()) + " instead");
         }
-        INDArray mask = input.eq(maskingValue).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        INDArray mask = input.eq(maskingValue).castTo(input.dataType()).sum(1).neq(input.shape()[1]);
+        underlying.setMaskArray(mask.detach());
     }
 
     @Override

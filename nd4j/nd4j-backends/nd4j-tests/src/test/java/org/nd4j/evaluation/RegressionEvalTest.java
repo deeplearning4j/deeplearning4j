@@ -17,8 +17,10 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -82,33 +84,56 @@ public class RegressionEvalTest  extends BaseNd4jTest {
 
     @Test
     public void testKnownValues() {
-        double[][] labelsD = new double[][] {{1, 2, 3}, {0.1, 0.2, 0.3}, {6, 5, 4}};
-        double[][] predictedD = new double[][] {{2.5, 3.2, 3.8}, {2.15, 1.3, -1.2}, {7, 4.5, 3}};
 
-        double[] expMSE = {2.484166667, 0.966666667, 1.296666667};
-        double[] expMAE = {1.516666667, 0.933333333, 1.1};
-        double[] expRSE = {0.368813923, 0.246598639, 0.530937216};
-        double[] expCorrs = {0.997013483, 0.968619605, 0.915603032};
-        double[] expR2 = {0.63118608, 0.75340136 , 0.46906278};
+        DataType dtypeBefore = Nd4j.defaultFloatingPointType();
+        RegressionEvaluation first = null;
+        String sFirst = null;
+        try {
+            for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
+                for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
 
-        INDArray labels = Nd4j.create(labelsD);
-        INDArray predicted = Nd4j.create(predictedD);
+                    double[][] labelsD = new double[][]{{1, 2, 3}, {0.1, 0.2, 0.3}, {6, 5, 4}};
+                    double[][] predictedD = new double[][]{{2.5, 3.2, 3.8}, {2.15, 1.3, -1.2}, {7, 4.5, 3}};
 
-        RegressionEvaluation eval = new RegressionEvaluation(3);
+                    double[] expMSE = {2.484166667, 0.966666667, 1.296666667};
+                    double[] expMAE = {1.516666667, 0.933333333, 1.1};
+                    double[] expRSE = {0.368813923, 0.246598639, 0.530937216};
+                    double[] expCorrs = {0.997013483, 0.968619605, 0.915603032};
+                    double[] expR2 = {0.63118608, 0.75340136, 0.46906278};
 
-        for (int xe = 0; xe < 2; xe++) {
-            eval.eval(labels, predicted);
+                    INDArray labels = Nd4j.create(labelsD).castTo(lpDtype);
+                    INDArray predicted = Nd4j.create(predictedD).castTo(lpDtype);
 
-            for (int col = 0; col < 3; col++) {
-                assertEquals(expMSE[col], eval.meanSquaredError(col), 1e-5);
-                assertEquals(expMAE[col], eval.meanAbsoluteError(col), 1e-5);
-                assertEquals(Math.sqrt(expMSE[col]), eval.rootMeanSquaredError(col), 1e-5);
-                assertEquals(expRSE[col], eval.relativeSquaredError(col), 1e-5);
-                assertEquals(expCorrs[col], eval.pearsonCorrelation(col), 1e-5);
-                assertEquals(expR2[col], eval.rSquared(col), 1e-5);
+                    RegressionEvaluation eval = new RegressionEvaluation(3);
+
+                    for (int xe = 0; xe < 2; xe++) {
+                        eval.eval(labels, predicted);
+
+                        for (int col = 0; col < 3; col++) {
+                            assertEquals(expMSE[col], eval.meanSquaredError(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                            assertEquals(expMAE[col], eval.meanAbsoluteError(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                            assertEquals(Math.sqrt(expMSE[col]), eval.rootMeanSquaredError(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                            assertEquals(expRSE[col], eval.relativeSquaredError(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                            assertEquals(expCorrs[col], eval.pearsonCorrelation(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                            assertEquals(expR2[col], eval.rSquared(col), lpDtype == DataType.HALF ? 1e-2 : 1e-4);
+                        }
+
+                        String s = eval.stats();
+                        if(first == null) {
+                            first = eval;
+                            sFirst = s;
+                        } else if(lpDtype != DataType.HALF) {   //Precision issues with FP16
+                            assertEquals(sFirst, s);
+                            assertEquals(first, eval);
+                        }
+
+                        eval = new RegressionEvaluation(3);
+                    }
+                }
             }
-
-            eval.reset();
+        } finally {
+            Nd4j.setDefaultDataTypes(dtypeBefore, dtypeBefore);
         }
     }
 

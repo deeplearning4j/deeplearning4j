@@ -1204,8 +1204,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 5, 3);
 
         DataSet ds = iter.next();
-        INDArray expF = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
-        INDArray expL = Nd4j.create(new float[] {0, 1, 0});
+        INDArray expF = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9}, new int[]{1,9});
+        INDArray expL = Nd4j.create(new float[] {0, 1, 0}, new int[]{1,3});
 
         assertEquals(expF, ds.getFeatures());
         assertEquals(expL, ds.getLabels());
@@ -1222,7 +1222,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1);
 
         DataSet ds = iter.next();
-        INDArray expF = Nd4j.create(new float[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray expF = Nd4j.create(new float[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, new int[]{1,10});
 
         assertEquals(expF, ds.getFeatures());
     }

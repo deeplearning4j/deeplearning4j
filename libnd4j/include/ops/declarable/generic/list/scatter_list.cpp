@@ -49,7 +49,7 @@ namespace nd4j {
             REQUIRE_TRUE(indices->isVector() || indices->rankOf() == 1, 0, "ScatterList: Indices for Scatter should be a vector")
             REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
 
-            std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(array->rankOf(), {0});
+            std::vector<int> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
             auto tads = array->allTensorsAlongDimension( axis);
             for (int e = 0; e < tads->size(); e++) {
                 auto idx = indices->e<int>(e);

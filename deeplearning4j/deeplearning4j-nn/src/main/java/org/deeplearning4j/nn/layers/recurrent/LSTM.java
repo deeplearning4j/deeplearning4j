@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -50,13 +51,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     protected LSTMHelper helper = null;
     protected FwdPassReturn cachedFwdPass;
 
-    public LSTM(NeuralNetConfiguration conf) {
-        super(conf);
-        initializeHelper();
-    }
-
-    public LSTM(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public LSTM(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         initializeHelper();
     }
 
@@ -65,7 +61,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
-                        .asSubclass(LSTMHelper.class).newInstance();
+                        .asSubclass(LSTMHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnLSTMHelper successfully initialized");
                 if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
                     helper = null;
