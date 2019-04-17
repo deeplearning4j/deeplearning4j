@@ -342,6 +342,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             log.info("Total allocated dev_0: {}", MemoryTracker.getInstance().getActiveMemory(0));
                             log.info("Cached dev_0: {}", MemoryTracker.getInstance().getCachedAmount(0));
                             log.info("Allocated dev_0: {}", MemoryTracker.getInstance().getAllocatedAmount(0));
+                            log.info("Workspace dev_0: {}", MemoryTracker.getInstance().getWorkspaceAllocatedAmount(0));
                             //log.info("Total allocated dev_1: {}", MemoryTracker.getInstance().getActiveMemory(1));
                             // if device memory allocation failed (aka returned NULL), keep using host memory instead
 
