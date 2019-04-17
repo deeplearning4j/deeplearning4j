@@ -20,6 +20,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -68,6 +69,18 @@ public interface OpContext {
     void setInputArray(int index, INDArray array);
 
     /**
+     * This method sets provided arrays as input arrays
+     * @param arrays
+     */
+    void setInputArrays(List<INDArray> arrays);
+
+    /**
+     * This method sets provided arrays as input arrays
+     * @param arrays
+     */
+    void setInputArrays(INDArray... arrays);
+
+    /**
      * This method returns List of input arrays defined within this context
      * @return
      */
@@ -79,6 +92,18 @@ public interface OpContext {
      * @param array
      */
     void setOutputArray(int index, INDArray array);
+
+    /**
+     * This method sets provided arrays as output arrays
+     * @param arrays
+     */
+    void setOutputArrays(List<INDArray> arrays);
+
+    /**
+     * This method sets provided arrays as output arrays
+     * @param arrays
+     */
+    void setOutputArrays(INDArray... arrays);
 
     /**
      * This method returns List of output arrays defined within this context
