@@ -1413,6 +1413,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         uint xShapeInfoCast[MAX_RANK];
                         bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, xShapeInfoCast);
 
+                        auto offsets = new Nd4jLong[tadLen];
+                        shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+
                         PRAGMA_OMP_PARALLEL_FOR_SIMD
                         for (uint i = 0; i < numOfTads; ++i) {                        
 
@@ -1420,10 +1423,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                             X* outBuff = z + tadOffsets[i];
 
                             X max = -nd4j::DataTypeUtils::max<X>();
-                            X sum = 0.f;
-            
-                            auto offsets = new Nd4jLong[tadLen];
-                            shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+                            X sum = 0.f;                                
 
                             for(uint j = 0; j < tadLen; ++j)                                 
                                 max = nd4j::math::nd4j_max<X>(max, inBuff[offsets[j]]);                            
@@ -1435,10 +1435,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                             }
 
                             for (uint j = 0; j < tadLen; ++j)
-                                outBuff[offsets[j]] /= sum;                
-            
-                            delete []offsets;
-                        }            
+                                outBuff[offsets[j]] /= sum;
+                        }
+                        delete []offsets;
                     }
                 }
                 else {

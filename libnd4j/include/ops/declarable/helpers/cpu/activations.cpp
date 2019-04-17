@@ -197,6 +197,9 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
             uint inShapeInfoCast[MAX_RANK];
             bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
 
+            auto offsets = new Nd4jLong[tadLen];
+            shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+
             PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i = 0; i < numOfSubArrs; ++i) {                        
 
@@ -206,8 +209,7 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0.f;
             
-                auto offsets = new Nd4jLong[tadLen];
-                shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+                
  
                 for(uint j = 0; j < tadLen; ++j)                    
                     max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);                
@@ -219,10 +221,9 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
                 }
 
                 for (uint j = 0; j < tadLen; ++j)
-                    outBuff[offsets[j]] /= sum;                
-            
-                delete []offsets;
-            }            
+                    outBuff[offsets[j]] /= sum;                    
+            }
+            delete []offsets;
         }
     }
     else {
