@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.sptree;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -41,10 +42,10 @@ public class SPTreeTest {
 
     @Test
     public void testStructure() {
-        INDArray data = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
+        INDArray data = Nd4j.create(new float[][] {{1, 2, 3}, {4, 5, 6}});
         SpTree tree = new SpTree(data);
         try (MemoryWorkspace ws = tree.workspace().notifyScopeEntered()) {
-            assertEquals(Nd4j.create(new double[]{2.5, 3.5, 4.5}), tree.getCenterOfMass());
+            assertEquals(Nd4j.create(new float[]{2.5f, 3.5f, 4.5f}), tree.getCenterOfMass());
             assertEquals(2, tree.getCumSize());
             assertEquals(8, tree.getNumChildren());
             assertTrue(tree.isCorrect());
@@ -52,11 +53,15 @@ public class SPTreeTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testLargeTree() {
         int num = 100000;
+        StopWatch watch = new StopWatch();
+        watch.start();
         INDArray arr = Nd4j.linspace(1, num, num, Nd4j.dataType()).reshape(num, 1);
         SpTree tree = new SpTree(arr);
+        watch.stop();
+        System.out.println("Tree created in " + watch);
     }
 
 }
