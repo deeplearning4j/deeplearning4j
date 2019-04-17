@@ -4994,8 +4994,9 @@ template void NDArray::operator/=(const bool scalar);
     }
 
     ////////////////////////////////////////////////////////////////////////
-    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
-        auto result = new ResultSet();
+    ResultSet NDArray::allTensorsAlongDims(const std::vector<int> &dimensions) const {
+        
+        ResultSet result;
 
         if(dimensions.size() == 0)
             return result;
@@ -5017,22 +5018,27 @@ template void NDArray::operator/=(const bool scalar);
         std::memcpy(shapeInfo, tadPack.primaryShapeInfo(), shape::shapeInfoByteLength(tadPack.primaryShapeInfo()));
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), shapeInfo);
-            result->push_back(array);
+            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), shapeInfo, getWorkspace(), false, false);
+            result.push_back(array);
         }
 
         // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
+        if (result.size() > 0)
+            result.at(0)->triggerAllocationFlag(false, true);
         else
             delete[] shapeInfo;
 
-        return result;
+        result;
     }
 
     ////////////////////////////////////////////////////////////////////////
     ResultSet* NDArray::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
         return allTensorsAlongDimension(std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+        return new ResultSet(std::move(allTensorsAlongDims(dimensions)));
     }
 
     ////////////////////////////////////////////////////////////////////////
