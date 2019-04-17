@@ -104,6 +104,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * NDArrayTests
@@ -902,16 +903,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         op = new BroadcastAddOp(z, bias, z, 3);
         Nd4j.getExecutioner().exec(op); //Crashing here, when we are doing exactly the same thing as before...
         System.out.println("Second: OK");
-    }
-
-    @Test
-    public void testTadShape() {
-        INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(4, 3, 1, 1);
-        INDArray javaTad = arr.javaTensorAlongDimension(0, 0, 2, 3);
-        assertArrayEquals(new long[] {4, 1, 1}, javaTad.shape());
-        INDArray tad = arr.tensorAlongDimension(0, 0, 2, 3);
-        assertArrayEquals(javaTad.shapeInfoDataBuffer().asLong(), tad.shapeInfoDataBuffer().asLong());
-        assertEquals(javaTad.shapeInfoDataBuffer(), tad.shapeInfoDataBuffer());
     }
 
     @Test
@@ -7537,6 +7528,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         } finally {
             Nd4j.factory().setOrder(origOrder);
         }
+    }
+
+    @Test
+    public void testReduceKeepDimsShape(){
+        INDArray arr = Nd4j.create(3,4);
+        INDArray out = arr.sum(true, 1);
+        assertArrayEquals(new long[]{3, 1}, out.shape());
+
+        INDArray out2 = arr.sum(true, 0);
+        assertArrayEquals(new long[]{1, 4}, out2.shape());
     }
 
     ///////////////////////////////////////////////////////

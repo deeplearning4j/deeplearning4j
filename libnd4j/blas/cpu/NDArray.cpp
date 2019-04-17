@@ -1153,29 +1153,22 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     NDArray* NDArray::detach() {
+
         if (!isAttached())
             return this;
 
         void* newBuffer;
-        Nd4jLong* newShapeInfo;
-
-        auto l = lengthOf();
-
 
         newBuffer = new int8_t[lengthOf() * sizeOfT()];
 
-        if (this->ordering() == 'f')
-            newShapeInfo = shape::shapeBufferFortran(rankOf(), dataType(), shapeOf());
-        else
-            newShapeInfo = shape::shapeBuffer(rankOf(), dataType(), shapeOf());
+        Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, false, nullptr);
 
-        auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
-        result->_isBuffAlloc = true;
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(newBuffer, newShapeInfo, nullptr, true, true);
 
         result->assign(this);
 
         return result;
+
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2387,16 +2380,10 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             nd4j_printf("Can't enforce new shape, lengths mismatch. Original shape: %s; Requested shape: %s\n", current.c_str(), enforced.c_str());
             throw std::runtime_error("Incompatible shape");
         }
-
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(dimensions.size()), Nd4jLong);
-
+        
         char order = o == 'a' ? this->ordering() : o;
 
-        if (order == 'c')
-            shape::shapeBuffer(dimensions.size(), dataType(), dimensions.data(), newShape);
-        else
-            shape::shapeBufferFortran(dimensions.size(), dataType(), dimensions.data(), newShape);
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType(), order, dimensions, _workspace);        
 
         if (_isShapeAlloc)
             RELEASE(_shapeInfo, _workspace);
@@ -2979,12 +2966,13 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != min->lengthOf())
             throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, copy);
 
         if(max == this)
-            NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
         else
-            NativeOpExcutioner::execInverseBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execInverseBroadcast(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -3003,7 +2991,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         auto result = target == nullptr ? this : target;
 
         if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
-            NativeOpExcutioner::execPairwiseTransform(fromBroadcastToPairwiseBool(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
+            NativeOpExcutioner::execPairwiseBoolTransform(fromBroadcastToPairwiseBool(op), this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, nullptr);
             return;
         }
 
@@ -3033,13 +3021,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if (tadLength != min->lengthOf())
             throw std::runtime_error("Tad length mismatch");
 
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->_shapeInfo, copy);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->_shapeInfo, copy);
 
         // TODO: eventually we want separate tads here
         if(this == max)
-            NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
         else
-            NativeOpExcutioner::execInverseBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+            NativeOpExcutioner::execInverseBroadcastBool(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, result->_buffer, result->_shapeInfo, copy.data(), (int)copy.size(), tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -3070,7 +3059,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             int dim = 0;
             if (shape::isCommonVector(this->_shapeInfo, dim)) {
                 if (this->shapeOf()[dim] == other->lengthOf() && dim == this->rankOf() - 1) {
-                    NativeOpExcutioner::execPairwiseTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
+                    NativeOpExcutioner::execPairwiseBoolTransform(op.p, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraArgs);
                     return;
                 }
             }
@@ -3166,6 +3155,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
+
+        if (!Environment::getInstance()->isExperimentalBuild()) {
+            if (!(this->dataType() == other->dataType() && other->dataType() == target->dataType()))
+                throw datatype_exception::build("NDArray::applyTrueBroadcast all ", target->dataType(), this->dataType(), other->dataType());
+        }
 
         if(isEmpty() || other->isEmpty()) {
             if(!target->isEmpty())
@@ -3277,7 +3271,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
 //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, &other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         NDArray result(newShapeInfo, true, this->_workspace);
 
@@ -3891,6 +3885,32 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
             return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDims: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        NDArray result(newShape, true, _workspace, true);
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, result.buffer(), result.shapeInfo(), biasCorrected);
+        else
+            NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, result._buffer, result._shapeInfo, copy.data(), copy.size(), biasCorrected);
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+        return varianceAlongDims(op, biasCorrected, std::vector<int>(dimensions));
     }
 
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
@@ -4780,20 +4800,14 @@ template void NDArray::operator/=(const bool scalar);
     void NDArray::streamline(char o) {
         char order = o == 'a' ? this->ordering() : o;
     
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, this->_workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
-
         int8_t *newBuffer;
         ALLOCATE(newBuffer, this->_workspace, this->lengthOf() * sizeOfT(), int8_t);
 
         std::vector<Nd4jLong> shape(this->rankOf());
         for (int e = 0; e < this->rankOf(); e++)
             shape[e] = this->sizeAt(e);
-
-        if (order == 'c')
-            shape::shapeBuffer(this->rankOf(),dataType(),  shape.data(), newShape);
-        else
-            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
+        
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dataType(), order, shape, _workspace);        
 
         if (!isView()) {
             NativeOpExcutioner::execTransformSame(transform::Copy, _buffer, _shapeInfo, newBuffer, newShape, nullptr, nullptr, nullptr);
@@ -4994,9 +5008,8 @@ template void NDArray::operator/=(const bool scalar);
 
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
+        
+        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 
@@ -5158,44 +5171,15 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
 
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
     const int rank = rankOf();
-    const int dimsSize = dimsToExclude.size();
+    const int subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
 
     // allocate memory
-    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(rank - dimsSize), Nd4jLong);
+    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(subArrRank), Nd4jLong);
     ALLOCATE(subArrOffsets,   _workspace, numOfSubArrs, Nd4jLong);
 
-    Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);
-    std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
-    
-    Nd4jLong subArrLen = 1;
-
-    for(int j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
-        if(j >= 0 && i == dimsToExclude[j]) {
-            strides[j] = shape::stride(outShapeInfo)[i];
-            shape[j--] = shape::shapeOf(outShapeInfo)[i];
-            shape::shapeOf(outShapeInfo)[i] = 1;
-        }
-        else
-            subArrLen *= shape::shapeOf(outShapeInfo)[i];
-    }
-
-    // evaluate ews
-    shape::setEws(outShapeInfo, subArrLen);
-
-    // calculation of sub-array offsets (subArrOffsets)
-    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
-
-    // remove unities from outShapeInfo if required
-    if(!keepUnitiesInShape) {
-        std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
-        shape::reshapeC(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), subArrShapeInfo);
-    }
-    else
-        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
-
-    RELEASE(outShapeInfo, _workspace);
+    shape::calcSubArrShapeAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), subArrShapeInfo, subArrOffsets, keepUnitiesInShape);
 }
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);

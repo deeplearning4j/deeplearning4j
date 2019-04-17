@@ -34,6 +34,7 @@
 
 #include <helpers/BenchmarkHelper.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -1737,14 +1738,35 @@ TEST_F(PlaygroundTests, loops_1) {
 */
 }
 
-TEST_F(PlaygroundTests, my_1) {
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, newTads_1) {
 
-    Nd4jLong xShapeInfo[] = {2, 8, 256, 1024, 1, 8192, 0, 99};
-    Nd4jLong yShapeInfo[] = {2, 8, 256, 256, 1, 8192, 1, 99};
-    float xBuff[8*1024];
+    const int N = 1000;
+    
+    Nd4jLong shapeInfo[] = {4, 1024,1024,1024,1024,  1024*1024*1024,1024*1024,1024,1,  16384,1,99};
+    const int rank = shape::rank(shapeInfo);
+    const std::vector<int> dimsToExclude = {1,3};
+    const std::vector<int> tadDims       = {0,2};
+    const bool keepUnitesInShape = false;
 
-    NDArray x(xBuff, xShapeInfo);
-    NDArray y(yShapeInfo, nd4j::DataType::FLOAT32, true);
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
+    const int subArrRank = (rank == dimsToExclude.size() || keepUnitesInShape) ? rank : rank - dimsToExclude.size();
 
-    x.applyTransform(transform::StrictOps::Sin, &y);
+    auto sPtr = new Nd4jLong[shape::shapeInfoLength(subArrRank)];
+    auto oPtr = new Nd4jLong[numOfSubArrs];
+
+    // warm up
+    for (int i = 0; i < 1000; ++i)
+        32*512;
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < N ; i++)
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(shapeInfo, tadDims);  
+    auto timeEnd  = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+
+    printf("duration old: %ld\n", duration);
+    delete []sPtr;
+    delete []oPtr;
 }
+

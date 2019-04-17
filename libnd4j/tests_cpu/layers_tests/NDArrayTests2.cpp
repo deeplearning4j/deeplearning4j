@@ -1234,18 +1234,19 @@ TEST_F(NDArrayTest2, reshapei_2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, Test_apply_true_scalar_1) {
+TEST_F(NDArrayTest2, trueBroadcast_1) {
+
     NDArray x('f', {2, 3}, {1., 2., 3., 4., 5., 6.});
-    NDArray y('f', {2, 3}, {5., 4., 3., 2., 1., 0.});
+    NDArray y('f', {1, 3}, {5., 4., 3.});
     NDArray z('c', {2, 3}, nd4j::DataType::DOUBLE);
 
-    auto expected = x - y;
+    auto exp = x - y;
+    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &y, &z, true);
 
-    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &y, &z, true);    
-    // expected.printIndexedBuffer();
+    // exp.printIndexedBuffer();
     // z.printIndexedBuffer();
 
-    ASSERT_TRUE(expected.equalsTo(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1282,3 +1283,19 @@ TEST_F(NDArrayTest2, reduce_1) {
     delete arr6s;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, reduce3_1) {
+
+    NDArray x('c', {1,4}, {1,2,3,4});
+    NDArray y('c', {1,4}, {2,3,4,5});
+    NDArray exp('c', {4}, {1,1,1,1});
+
+    NDArray* z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, &y, {0}, nullptr);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}

@@ -20,14 +20,15 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
 import java.util.Map;
@@ -72,10 +73,24 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
      * @param sameDiff SameDiff instance
      * @param layerInput Input to the layer
      * @param paramTable Parameter table - keys as defined by {@link #defineParameters(SDLayerParams)}
+     * @param mask Optional, maybe null. Mask to apply if supported
      * @return The final layer variable corresponding to the activations/output from the forward pass
      */
     public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput,
-                    Map<String, SDVariable> paramTable);
+                                           Map<String, SDVariable> paramTable, SDVariable mask);
+
+    /**
+     * @see Layer#feedForwardMaskArray(INDArray, MaskState, int)
+     */
+    public Pair<INDArray, MaskState> feedForwardMaskArray(org.nd4j.linalg.api.ndarray.INDArray maskArray, org.deeplearning4j.nn.api.MaskState currentMaskState, int minibatchSize){
+        return new Pair<>(maskArray, currentMaskState);
+    }
+
+    /**
+     * Validate input arrays to confirm that they fulfill the assumptions of the layer. If they don't, throw an exception.
+     * @param input input to the layer
+     */
+    public void validateInput(INDArray input){/* no-op */}
 
     //==================================================================================================================
 

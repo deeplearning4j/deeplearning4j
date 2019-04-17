@@ -21,6 +21,7 @@
 #include "../scalar.h"
 #include <op_boilerplate.h>
 #include <types/types.h>
+#include <LoopKind.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -37,51 +38,52 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                                 void *vz, Nd4jLong *zShapeInfo, 
                                                 void *vscalars, 
                                                 int *dimension, int dimensionLength, 
-                                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
-                                                Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, 
+                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
         
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalars = reinterpret_cast<Y *>(vscalars);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    if (tadShapeInfoZ == nullptr) {
-        tadShapeInfoZ = tadShapeInfo;
-        tadOffsetsZ = tadOffsets;
+    if (zTadShapeInfo == nullptr) {
+        zTadShapeInfo = xTadShapeInfo;
+        zTadOffsets   = xTadOffsets;
     }
 
-    // tad preparation
-    int tadEws = shape::elementWiseStride(tadShapeInfo);
-    int zEws = shape::elementWiseStride(zShapeInfo);
-    int tadLength = shape::length(tadShapeInfo);
-    int numTads =shape::length(xShapeInfo) / tadLength;
+    const int xTadEws    = shape::elementWiseStride(xTadShapeInfo);
+    const int zTadEws    = shape::elementWiseStride(zTadShapeInfo);
+    const int tadLength  = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    const int numTads    = shape::length(xShapeInfo) / tadLength;
 
-    if(tadEws < 1 || zEws < 1) {
-        printf("ScalarTransform<X, Y, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
-        return;
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
+
+    if (kindOfLoop != nd4j::LoopKind::EWS1 || kindOfLoop != nd4j::LoopKind::EWSNONZERO) {
+        printf("ScalarTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
     }
 
     int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
 
-    if (tadEws == 1) {
+    if (kindOfLoop == nd4j::LoopKind::EWS1) {
         PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
         for (unsigned int r = 0; r < numTads; r++) {
-            auto oZ = z + tadOffsetsZ[r];
-            auto oX = x + tadOffsets[r];
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
             for (unsigned int f = 0; f < tadLength; f++)
                 oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
         }
-    } else {
+    } 
+    else {
         PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
         for (unsigned int r = 0; r < numTads; r++) {
-            auto oZ = z + tadOffsetsZ[r];
-            auto oX = x + tadOffsets[r];
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
             for (unsigned int f = 0; f < tadLength; f++)
-                oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
+                oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
         }
     }
 }
@@ -94,10 +96,10 @@ void ScalarTransform<X,Y,Z>::transform(int opNum,
                               void *z, Nd4jLong *zShapeInfo,
                               void *scalars,
                               int *dimension, int dimensionLength,
-                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                              Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                              Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
+                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -139,16 +141,13 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     const auto len = shape::length(xShapeInfo);
     const auto xEws = shape::elementWiseStride(xShapeInfo);
     const auto zEws = shape::elementWiseStride(zShapeInfo);
-    const auto xOrder = shape::order(xShapeInfo);
-    const auto zOrder = shape::order(zShapeInfo);
+    
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
-    if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+    if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
         transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len);              
     }
     else {
-                
-        const bool xSimpe = shape::isStrideSimple(xShapeInfo);
-        const bool zSimpe = shape::isStrideSimple(zShapeInfo);
 
         uint xShapeInfoCast[MAX_RANK];
         const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
@@ -222,7 +221,8 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
             for (unsigned int i = 0; i < ulen; i++)
                 zi[i] = OpType::op(xi[i], scalar, extraParams);
         }
-    } else {
+    } 
+    else {
 
         PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {

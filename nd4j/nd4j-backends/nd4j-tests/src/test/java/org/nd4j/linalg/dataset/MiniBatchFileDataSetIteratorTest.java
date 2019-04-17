@@ -17,7 +17,9 @@
 package org.nd4j.linalg.dataset;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -35,6 +37,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public MiniBatchFileDataSetIteratorTest(Nd4jBackend backend) {
         super(backend);
     }
@@ -43,7 +48,7 @@ public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
     @Test
     public void testMiniBatches() throws Exception {
         DataSet load = new IrisDataSetIterator(150, 150).next();
-        final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false);
+        final MiniBatchFileDataSetIterator iter = new MiniBatchFileDataSetIterator(load, 10, false, testDir.newFolder());
         while (iter.hasNext())
             assertEquals(10, iter.next().numExamples());
         if (iter.getRootDir() == null)
@@ -51,19 +56,6 @@ public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
         DataSetIterator existing = new ExistingMiniBatchDataSetIterator(iter.getRootDir());
         while (iter.hasNext())
             assertEquals(10, existing.next().numExamples());
-
-
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    FileUtils.deleteDirectory(iter.getRootDir());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }));
-
     }
 
     @Override

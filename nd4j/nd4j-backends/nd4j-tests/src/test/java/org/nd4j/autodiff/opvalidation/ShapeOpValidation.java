@@ -2220,4 +2220,29 @@ public class ShapeOpValidation extends BaseOpValidation {
         boolean isEmpty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
         assertTrue(isEmpty);
     }
+
+    @Test
+    public void testStridedSliceEdgeCase(){
+        INDArray in = Nd4j.scalar(10).reshape(1);   //Int [1]
+        INDArray begin = Nd4j.ones(DataType.INT, 1);
+        INDArray end = Nd4j.zeros(DataType.INT, 1);
+        INDArray stride = Nd4j.ones(DataType.INT, 1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(0, //Begin mask
+                        0,  //Ellipsis mask
+                        1,  //End mask
+                        0,  //New axis mask
+                        0)  //Shrink axis mask
+                .addOutputs(Nd4j.empty(DataType.INT))
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertEquals(DataType.INT, l.get(0).dataType());
+        assertTrue(l.get(0).isEmpty()); //Should be empty array, is rank 0 scalar
+
+        Nd4j.exec(op);  //Execution is OK
+    }
 }
