@@ -534,7 +534,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if (idx < 0)
                 return null;
         }
-        return syn0.getRow(idx);
+        return syn0.getRow(idx, true);
     }
 
     @Override

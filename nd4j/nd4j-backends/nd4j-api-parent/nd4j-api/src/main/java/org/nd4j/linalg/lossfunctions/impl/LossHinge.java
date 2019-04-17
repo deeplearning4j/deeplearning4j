@@ -47,6 +47,7 @@ public class LossHinge extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
@@ -83,6 +84,8 @@ public class LossHinge extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
+
         /*
         gradient is 0 if yhaty is >= 1
         else gradient is gradient of the loss function = (1-yhaty) wrt preOutput = -y*derivative_of_yhat wrt preout

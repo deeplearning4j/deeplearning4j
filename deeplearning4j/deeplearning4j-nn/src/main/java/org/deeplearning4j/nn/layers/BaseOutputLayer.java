@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -59,12 +60,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     protected INDArray inputMaskArray;
     protected MaskState inputMaskArrayState;
 
-    public BaseOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public BaseOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public BaseOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     /** Compute score after labels and input have been set.
@@ -149,7 +146,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray delta = pair.getSecond();
 
         INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{w.size(0), delta.size(0)}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{w.size(0), delta.size(0)}, 'f');
         epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
@@ -336,9 +333,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     protected void applyMask(INDArray to) {
         //For output layers: can be either per-example masking, or per-
         if (maskArray.isColumnVectorOrScalar()) {
-            to.muliColumnVector(maskArray);
+            to.muliColumnVector(maskArray.castTo(to.dataType()));
         } else if (Arrays.equals(to.shape(), maskArray.shape())) {
-            to.muli(maskArray);
+            to.muli(maskArray.castTo(to.dataType()));
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
                     + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "

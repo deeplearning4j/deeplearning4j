@@ -28,9 +28,9 @@ import org.deeplearning4j.nn.layers.convolution.Cropping1DLayer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -75,9 +75,9 @@ public class Cropping1D extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
-        Cropping1DLayer ret = new Cropping1DLayer(conf);
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
+        Cropping1DLayer ret = new Cropping1DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

@@ -58,8 +58,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         int timeSteps = 15;
         int samples = 100;
         //multiplier for the features
-        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3, 1);
-        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3, 1);
+        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3});
+        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3});
 
         Construct3dDataSet caseA = new Construct3dDataSet(featureScaleA, timeSteps, samples, 1);
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
@@ -352,18 +352,18 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(featureScale.dataType());
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).castTo(featureScale.dataType());
             expectedMean.muliColumnVector(featureScale);
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);
-            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).reshape(3, 1).castTo(Nd4j.defaultFloatingPointType());
+            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).castTo(Nd4j.defaultFloatingPointType());
             expectedStd.muliColumnVector(Transforms.abs(featureScale, true));
             //preprocessors use the population std so divides by n not (n-1)
-            expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN)).transpose();
+            expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN));
 
             //min max assumes all scaling values are +ve
-            expectedMin = Nd4j.ones(Nd4j.defaultFloatingPointType(), 3, 1).muliColumnVector(featureScale);
-            expectedMax = Nd4j.ones(Nd4j.defaultFloatingPointType(),3, 1).muli(samples * timeSteps).muliColumnVector(featureScale);
+            expectedMin = Nd4j.ones(Nd4j.defaultFloatingPointType(), 3).muliColumnVector(featureScale);
+            expectedMax = Nd4j.ones(Nd4j.defaultFloatingPointType(),3).muli(samples * timeSteps).muliColumnVector(featureScale);
         }
 
     }

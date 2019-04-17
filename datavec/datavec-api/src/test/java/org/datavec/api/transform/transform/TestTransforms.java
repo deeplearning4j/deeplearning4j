@@ -56,6 +56,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.ByteArrayInputStream;
@@ -1438,7 +1439,8 @@ public class TestTransforms {
 
         List<Writable> out = t.map(l);
 
-        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}, new long[]{1,3}, Nd4j.dataType()))), out);
+        INDArray exp = Nd4j.create(new double[]{2,3,0}, new long[]{1,3}, Nd4j.dataType());
+        assertEquals(Collections.singletonList(new NDArrayWritable(exp)), out);
 
         String json = JsonMappers.getMapper().writeValueAsString(t);
         Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToCountsNDArrayTransform.class);

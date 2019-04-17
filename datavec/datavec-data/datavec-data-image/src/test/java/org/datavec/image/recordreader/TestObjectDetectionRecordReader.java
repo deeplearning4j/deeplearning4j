@@ -173,7 +173,7 @@ public class TestObjectDetectionRecordReader {
             assertEquals(42, transform.getCurrentImage().getHeight());
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
             BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
-            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
+            assertEquals(nonzeroCount[i++], labelArray.sum().getInt(0));
         }
 
         ImageTransform transform2 = new ResizeImageTransform(1024, 2048);
@@ -186,7 +186,7 @@ public class TestObjectDetectionRecordReader {
             assertEquals(2048, transform2.getCurrentImage().getHeight());
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
             BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
-            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
+            assertEquals(nonzeroCount[i++], labelArray.sum().getInt(0));
         }
         
         //Make sure image flip does not break labels and are correct for new image size dimensions:
@@ -201,7 +201,7 @@ public class TestObjectDetectionRecordReader {
             List<Writable> next = rrTransform3.next();
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
             BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
-            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
+            assertEquals(nonzeroCount[i++], labelArray.sum().getInt(0));
         }
         
         //Test that doing a downscale with the native image loader directly instead of a transform does not cause an exception:
@@ -217,7 +217,7 @@ public class TestObjectDetectionRecordReader {
             
             INDArray labelArray = ((NDArrayWritable)next.get(1)).get();
             BooleanIndexing.replaceWhere(labelArray, 1, Conditions.notEquals(0));
-            assertEquals(nonzeroCount[i++], labelArray.ravel().sum(1).getInt(0));
+            assertEquals(nonzeroCount[i++], labelArray.sum().getInt(0));
         }
     }
 

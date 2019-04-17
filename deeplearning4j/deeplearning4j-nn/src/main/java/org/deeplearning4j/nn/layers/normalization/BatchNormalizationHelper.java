@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -36,7 +37,7 @@ public interface BatchNormalizationHelper extends LayerHelper {
     INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr);
 
-    INDArray getMeanCache();
+    INDArray getMeanCache(DataType dataType);
 
-    INDArray getVarCache();
+    INDArray getVarCache(DataType dataType);
 }

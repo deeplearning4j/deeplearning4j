@@ -440,9 +440,12 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     protected static INDArrayIndex validate(long size, INDArrayIndex index) {
-        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current() && size > 1)
+        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current())
             throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.current()
                             + " must be less than its size: " + size);
+        if (index instanceof IntervalIndex && index.end() > size)
+            throw new IllegalArgumentException("NDArrayIndex is out of range. End index: " + index.end()
+                    + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && size < index.end()) {
             long begin = ((IntervalIndex) index).begin;
             index = NDArrayIndex.interval(begin, index.stride(), size);

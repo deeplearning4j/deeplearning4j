@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -61,12 +62,8 @@ import java.util.Arrays;
  */
 public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
-    public SeparableConvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public SeparableConvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public SeparableConvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 
@@ -117,7 +114,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray depthWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
         INDArray pointWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
-        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, depthWiseWeights.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -232,7 +229,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outW = outSize[1];
 
         val miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new long[]{miniBatch, outDepth, outH, outW}, 'c');
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), new long[]{miniBatch, outDepth, outH, outW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

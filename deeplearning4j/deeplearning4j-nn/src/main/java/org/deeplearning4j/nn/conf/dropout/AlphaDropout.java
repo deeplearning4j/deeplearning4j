@@ -133,7 +133,7 @@ public class AlphaDropout implements IDropout {
         }
         lastPValue = pValue;
 
-        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering());
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.dataType(), output.shape(), output.ordering());
         Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
         //a * (x * d + alphaPrime * (1-d)) + b

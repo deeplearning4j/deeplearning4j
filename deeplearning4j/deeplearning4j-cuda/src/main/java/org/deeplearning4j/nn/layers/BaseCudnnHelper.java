@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -179,14 +180,23 @@ public abstract class BaseCudnnHelper {
 
     protected static final int TENSOR_FORMAT = CUDNN_TENSOR_NCHW;
 
-    protected int dataType = Nd4j.dataType() == DataType.DOUBLE ? CUDNN_DATA_DOUBLE
-                    : Nd4j.dataType() == DataType.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    protected int dataTypeSize =
-                    Nd4j.dataType() == DataType.DOUBLE ? 8 : Nd4j.dataType() == DataType.FLOAT ? 4 : 2;
+    protected final DataType nd4jDataType;
+    protected final int dataType;
+    protected final int dataTypeSize;
     // both CUDNN_DATA_HALF and CUDNN_DATA_FLOAT need a float value for alpha and beta
-    protected Pointer alpha = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(1.0) : new FloatPointer(1.0f);
-    protected Pointer beta = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
+    protected final Pointer alpha;
+    protected final Pointer beta;
     protected SizeTPointer sizeInBytes = new SizeTPointer(1);
+
+    public BaseCudnnHelper(@NonNull DataType dataType){
+        this.nd4jDataType = dataType;
+        this.dataType = dataType == DataType.DOUBLE ? CUDNN_DATA_DOUBLE
+                : dataType == DataType.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+        this.dataTypeSize = dataType == DataType.DOUBLE ? 8 : dataType == DataType.FLOAT ? 4 : 2;
+        // both CUDNN_DATA_HALF and CUDNN_DATA_FLOAT need a float value for alpha and beta
+        this.alpha = this.dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(1.0) : new FloatPointer(1.0f);
+        this.beta = this.dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
+    }
 
     public static int toCudnnDataType(DataType type){
         switch (type){

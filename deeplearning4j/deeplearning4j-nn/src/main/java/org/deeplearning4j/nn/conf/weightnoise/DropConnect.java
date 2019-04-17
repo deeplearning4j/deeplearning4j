@@ -92,7 +92,7 @@ public class DropConnect implements IWeightNoise {
 
         if (train && init.isWeightParam(layer.conf().getLayer(), paramKey)
                 || (applyToBiases && init.isBiasParam(layer.conf().getLayer(), paramKey))) {
-            INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.shape(), param.ordering());
+            INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.dataType(), param.shape(), param.ordering());
             Nd4j.getExecutioner().exec(new DropOut(param, out, p));
             return out;
         }

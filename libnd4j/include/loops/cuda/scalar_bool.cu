@@ -148,26 +148,34 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
     }
 
     // tad preparation
-    auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadShapeInfo);
+    auto tadEws = shape::elementWiseStride(tadShapeInfo);
+    auto zEws = shape::elementWiseStride(tadShapeInfoZ);
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        auto offset = tadOffsets[r];
-        auto offsetZ = tadOffsetsZ[r];
-        X scalar = scalars[r];
+    if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {
 
-        if (tadEWS >= 1 && zEWS >= 1) {
-            Z *oZ = z + offsetZ;
-            X *oX = x + offset;
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
 
-            for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
-                oZ[f] = OpType::op(oX[f], scalar, extraParams);
-        } 
-        else        
-            printf("Super-bad loop visited. Shouldn't ever happen\n");
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
+        }
+    } else {
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
+
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+        }
     }
 }
 

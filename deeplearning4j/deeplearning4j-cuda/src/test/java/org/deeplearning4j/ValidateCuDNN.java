@@ -27,11 +27,13 @@ import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.CuDNNValidationUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.dataset.DataSet;
@@ -60,9 +62,10 @@ public class ValidateCuDNN extends BaseDL4JTest {
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .weightInit(WeightInit.XAVIER).seed(42)
                 .activation(new ActivationELU())
-                .updater(new Nesterovs(1e-2, 0.9))
+                .updater(new Nesterovs(1e-3, 0.9))
                 .list(
                         new Convolution2D.Builder().nOut(96)
                                 .kernelSize(11, 11).biasInit(0.0)
@@ -132,6 +135,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .weightInit(WeightInit.XAVIER).seed(42)
                 .activation(new ActivationELU())
                 .updater(Nesterovs.builder()
@@ -187,6 +191,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .weightInit(WeightInit.XAVIER).seed(42)
                 .activation(new ActivationELU())
                 .updater(Nesterovs.builder()

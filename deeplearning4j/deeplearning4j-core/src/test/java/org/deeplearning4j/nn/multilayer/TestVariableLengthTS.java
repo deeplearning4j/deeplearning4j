@@ -543,7 +543,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                                     NDArrayIndex.interval(0, tsLength - i)};
                     INDArray inputSubset = input.get(idx);
                     INDArray expExampleOut = net.output(inputSubset);
-                    INDArray actualExampleOut = outMasked.getRow(i);
+                    INDArray actualExampleOut = outMasked.getRow(i, true);
                     //                    System.out.println(i);
                     assertEquals(expExampleOut, actualExampleOut);
                 }
@@ -554,7 +554,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                 for (int i = 0; i < minibatch; i++) {
                     INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
                                     NDArrayIndex.interval(0, tsLength - i)};
-                    DataSet dsSingle = new DataSet(input.get(idx), labels.getRow(i));
+                    DataSet dsSingle = new DataSet(input.get(idx), labels.getRow(i,true));
 
                     INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
                     double exp = exampleSingleScore.getDouble(0);

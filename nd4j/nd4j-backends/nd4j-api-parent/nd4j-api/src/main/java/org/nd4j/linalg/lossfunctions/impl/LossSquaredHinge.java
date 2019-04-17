@@ -48,6 +48,7 @@ public class LossSquaredHinge extends DifferentialFunction implements ILossFunct
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
@@ -85,6 +86,7 @@ public class LossSquaredHinge extends DifferentialFunction implements ILossFunct
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         INDArray bitMaskRowCol = scoreArr.dup();

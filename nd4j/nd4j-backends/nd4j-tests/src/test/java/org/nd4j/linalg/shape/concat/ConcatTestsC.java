@@ -64,13 +64,10 @@ public class ConcatTestsC extends BaseNd4jTest {
         INDArray vstack = Nd4j.vstack(slice1, slice2);
         assertEquals(arr3, vstack);
 
-        INDArray col1 = arr2.getColumn(0);
-        INDArray col2 = arr2.getColumn(1);
+        INDArray col1 = arr2.getColumn(0).reshape(5, 1);
+        INDArray col2 = arr2.getColumn(1).reshape(5, 1);
         INDArray vstacked = Nd4j.vstack(col1, col2);
         assertEquals(Nd4j.create(10, 1), vstacked);
-
-
-
     }
 
 

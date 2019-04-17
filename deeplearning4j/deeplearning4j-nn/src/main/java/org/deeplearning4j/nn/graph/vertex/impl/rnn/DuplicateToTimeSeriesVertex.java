@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -45,13 +46,13 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     private String inputName;
     private int inputVertexIndex;
 
-    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName) {
-        this(graph, name, vertexIndex, null, null, inputVertexName);
+    public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex, String inputVertexName, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, inputVertexName, dataType);
     }
 
     public DuplicateToTimeSeriesVertex(ComputationGraph graph, String name, int vertexIndex,
-                    VertexIndices[] inputVertices, VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] inputVertices, VertexIndices[] outputVertices, String inputName, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.inputName = inputName;
         this.inputVertexIndex = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputVertexIndex == -1)
@@ -81,7 +82,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         val tsLength = graph.getInput(inputVertexIndex).size(2);
         val outShape = new long[] {inputs[0].size(0), inputs[0].size(1), tsLength};
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'f');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape, 'f');
         for (int i = 0; i < tsLength; i++) {
             out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
         }
@@ -91,7 +92,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
-        INDArray ret = epsilon.sum(workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.size(0), epsilon.size(1)), 2);
+        INDArray ret = epsilon.sum(workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsilon.size(0), epsilon.size(1)), 2);
         return new Pair<>(null, new INDArray[] {ret});
     }
 

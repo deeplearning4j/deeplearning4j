@@ -80,6 +80,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
             MultiLayerConfiguration.Builder builder =
                     new NeuralNetConfiguration.Builder().updater(new NoOp())
+                            .dataType(DataType.DOUBLE)
                             .seed(12345L)
                             .dist(new NormalDistribution(0, 1)).list()
                             .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
@@ -125,6 +126,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         for(boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
                     .updater(new NoOp()).seed(12345L)
                     .dist(new NormalDistribution(0, 2)).list()
                     .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
@@ -201,6 +203,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             Activation outputActivation = outputActivations[i];
 
                             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .dataType(DataType.DOUBLE)
                                     .l2(l2vals[j])
                                     .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                     .updater(new NoOp())
@@ -310,6 +313,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             Activation outputActivation = outputActivations[i];
 
                             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .dataType(DataType.DOUBLE)
                                     .l2(l2vals[j])
                                     .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                     .updater(new NoOp())
@@ -419,6 +423,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
                             MultiLayerConfiguration.Builder builder =
                                     new NeuralNetConfiguration.Builder()
+                                            .dataType(DataType.DOUBLE)
                                             .l2(l2vals[j])
                                             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                             .updater(new NoOp())
@@ -495,6 +500,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         for(boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                    .dataType(DataType.DOUBLE)
                     .seed(12345L)
                     .dist(new NormalDistribution(0, 1)).list()
                     .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build())
@@ -540,6 +546,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         for(boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                    .dataType(DataType.DOUBLE)
                     .seed(12345L)
                     .dist(new NormalDistribution(0, 2)).list()
                     .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
@@ -584,6 +591,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         for(boolean useLogStd : new boolean[]{true, false}) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new NoOp())
+                    .dataType(DataType.DOUBLE)
                     .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                     .setInputTypes(InputType.convolutional(height, width, channels))
                     .addLayer("bn", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "in")
@@ -655,6 +663,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             Activation outputActivation = outputActivations[i];
 
                             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                                    .dataType(DataType.DOUBLE)
                                     .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                     .updater(new NoOp())
                                     .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()

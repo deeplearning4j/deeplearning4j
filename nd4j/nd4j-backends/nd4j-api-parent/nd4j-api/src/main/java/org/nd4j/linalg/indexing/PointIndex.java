@@ -133,4 +133,9 @@ public class PointIndex implements INDArrayIndex {
         result = 31 * result + (notUsed ? 1 : 0);
         return result;
     }
+
+    @Override
+    public String toString(){
+        return "Point(" + point + ")";
+    }
 }

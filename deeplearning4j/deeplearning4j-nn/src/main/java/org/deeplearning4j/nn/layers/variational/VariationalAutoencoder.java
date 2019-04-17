@@ -38,6 +38,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,6 +89,7 @@ public class VariationalAutoencoder implements Layer {
     protected IActivation pzxActivationFn;
     protected int numSamples;
     protected CacheMode cacheMode = CacheMode.NONE;
+    protected DataType dataType;
 
     protected boolean zeroedPretrainParamGradients = false;
 
@@ -98,8 +100,9 @@ public class VariationalAutoencoder implements Layer {
     @Getter @Setter
     protected int epochCount;
 
-    public VariationalAutoencoder(NeuralNetConfiguration conf) {
+    public VariationalAutoencoder(NeuralNetConfiguration conf, DataType dataType) {
         this.conf = conf;
+        this.dataType = dataType;
 
         this.encoderLayerSizes =
                         ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
@@ -213,7 +216,7 @@ public class VariationalAutoencoder implements Layer {
         for (int l = 0; l < numSamples; l++) { //Default (and in most cases) numSamples == 1
             double gemmCConstant = (l == 0 ? 0.0 : 1.0); //0 for first one (to get rid of previous buffer data), otherwise 1 (for adding)
 
-            INDArray e = Nd4j.randn(minibatch, size);
+            INDArray e = Nd4j.randn(dataType, minibatch, size);
             INDArray z = pzxSigma.mul(e).addi(meanZ); //z = mu + sigma * e, with e ~ N(0,1)
 
 
@@ -666,6 +669,8 @@ public class VariationalAutoencoder implements Layer {
             zeroedPretrainParamGradients = true;
         }
 
+        INDArray input = this.input.castTo(dataType);
+
         Gradient gradient = new DefaultGradient();
 
         VAEFwdHelper fwd = doForward(true, true, workspaceMgr);
@@ -713,7 +718,7 @@ public class VariationalAutoencoder implements Layer {
             gradient.gradientForVariable().put(bKey, dLdB);
 
             if(i == 0) {
-                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{weights.size(0), currentDelta.size(0)}, 'f');
+                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, currentDelta.dataType(), new long[]{weights.size(0), currentDelta.size(0)}, 'f');
                 weights.mmuli(currentDelta.transpose(), epsilon);
                 epsilon = epsilon.transpose();
             } else {
@@ -767,7 +772,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training, workspaceMgr);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training, workspaceMgr);
 
-        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{current.size(0), mW.size(1)}, 'f');
+        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, mW.dataType(), new long[]{current.size(0), mW.size(1)}, 'f');
         pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
 
 
@@ -937,7 +942,7 @@ public class VariationalAutoencoder implements Layer {
      */
     public INDArray reconstructionProbability(INDArray data, int numSamples) {
         INDArray reconstructionLogProb = reconstructionLogProbability(data, numSamples);
-        return Transforms.exp(reconstructionLogProb, false);
+        return Transforms.exp(reconstructionLogProb.castTo(DataType.DOUBLE), false);    //Cast to double to reduce risk of numerical underflow
     }
 
     /**
@@ -959,6 +964,8 @@ public class VariationalAutoencoder implements Layer {
                             + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability "
                             + layerId());
         }
+
+        data = data.castTo(dataType);
 
         //Forward pass through the encoder and mean for P(Z|X)
         LayerWorkspaceMgr workspaceMgr = LayerWorkspaceMgr.noWorkspaces();  //TODO add workspace support to this method
@@ -997,7 +1004,7 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray sumReconstructionNegLogProbability = null;
         for (int i = 0; i < numSamples; i++) {
-            INDArray e = Nd4j.randn(minibatch, size);
+            INDArray e = Nd4j.randn(dataType, minibatch, size);
             INDArray z = e.muli(pzxSigma).addi(meanZ); //z = mu + sigma * e, with e ~ N(0,1)
 
             //Do forward pass through decoder

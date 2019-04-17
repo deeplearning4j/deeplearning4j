@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -55,14 +56,14 @@ public class LayerVertex extends BaseGraphVertex {
      * Create a network input vertex:
      */
     public LayerVertex(ComputationGraph graph, String name, int vertexIndex, Layer layer,
-                    InputPreProcessor layerPreProcessor, boolean outputVertex) {
-        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor, outputVertex);
+                    InputPreProcessor layerPreProcessor, boolean outputVertex, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, layer, layerPreProcessor, outputVertex, dataType);
     }
 
     public LayerVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
                     VertexIndices[] outputVertices, Layer layer, InputPreProcessor layerPreProcessor,
-                    boolean outputVertex) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    boolean outputVertex, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;

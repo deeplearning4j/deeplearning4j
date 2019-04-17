@@ -48,13 +48,15 @@ public class MaskedReductionUtil {
     private MaskedReductionUtil(){ }
 
     public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask,
-                    int pnorm) {
+                    int pnorm, DataType dataType) {
         if (toReduce.rank() != 3) {
             throw new IllegalArgumentException("Expect rank 3 array: got " + toReduce.rank());
         }
         if (mask.rank() != 2) {
             throw new IllegalArgumentException("Expect rank 2 array for mask: got " + mask.rank());
         }
+
+        mask = mask.castTo(dataType);
 
         //Sum pooling: easy. Multiply by mask, then sum as normal
         //Average pooling: as above, but do a broadcast element-wise divi by mask.sum(1)
@@ -65,20 +67,20 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                    negInfMask = Transforms.not(mask).castTo(dataType);
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
+                INDArray withInf = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(toReduce, negInfMask, withInf, 0, 2));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
                 return withInf.max(2);
             case AVG:
             case SUM:
-                INDArray masked = Nd4j.createUninitialized(toReduce.shape());
+                INDArray masked = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked, 0, 2));
                 INDArray summed = masked.sum(2);
                 if (poolingType == PoolingType.SUM) {
@@ -90,7 +92,7 @@ public class MaskedReductionUtil {
                 return summed;
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(toReduce.shape());
+                INDArray masked2 = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, 0, 2));
 
                 INDArray abs = Transforms.abs(masked2, true);
@@ -187,12 +189,14 @@ public class MaskedReductionUtil {
     }
 
 
-    public static INDArray maskedPoolingConvolution(PoolingType poolingType, INDArray toReduce, INDArray mask, int pnorm) {
+    public static INDArray maskedPoolingConvolution(PoolingType poolingType, INDArray toReduce, INDArray mask, int pnorm, DataType dataType) {
         if(mask.rank() != 4){
             //TODO BETTER ERROR MESSAGE EXPLAINING FORMAT
             //TODO ALSO HANDLE LEGACY FORMAT WITH WARNING WHERE POSSIBLE
             throw new IllegalStateException("Expected rank 4 mask array: Got array with shape " + Arrays.toString(mask.shape()));
         }
+
+        mask = mask.castTo(dataType);   //no-op if already correct dtype
 
         // [minibatch, channels, h, w] data with a mask array of shape [minibatch, 1, X, Y]
         // where X=(1 or inH) and Y=(1 or inW)
@@ -214,20 +218,20 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                    negInfMask = Transforms.not(mask).castTo(dataType);
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
+                INDArray withInf = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(toReduce, negInfMask, withInf, dimensions));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
                 return withInf.max(2, 3);
             case AVG:
             case SUM:
-                INDArray masked = Nd4j.createUninitialized(toReduce.shape());
+                INDArray masked = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked, dimensions));
 
                 INDArray summed = masked.sum(2, 3);
@@ -240,7 +244,7 @@ public class MaskedReductionUtil {
 
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(toReduce.shape());
+                INDArray masked2 = Nd4j.createUninitialized(dataType, toReduce.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(toReduce, mask, masked2, dimensions));
 
                 INDArray abs = Transforms.abs(masked2, true);
@@ -255,13 +259,15 @@ public class MaskedReductionUtil {
 
 
     public static INDArray maskedPoolingEpsilonCnn(PoolingType poolingType, INDArray input, INDArray mask,
-                    INDArray epsilon2d, int pnorm) {
+                    INDArray epsilon2d, int pnorm, DataType dataType) {
 
         // [minibatch, channels, h=1, w=X] or [minibatch, channels, h=X, w=1] data
         // with a mask array of shape [minibatch, X]
 
         //If masking along height: broadcast dimensions are [0,2]
         //If masking along width: broadcast dimensions are [0,3]
+
+        mask = mask.castTo(dataType);   //No-op if correct type
 
         //General case: must be equal or 1 on each dimension
         int[] dimensions = new int[4];
@@ -280,13 +286,13 @@ public class MaskedReductionUtil {
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
                 INDArray negInfMask;
                 if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                    negInfMask = Transforms.not(mask).castTo(dataType);
                 } else {
                     negInfMask = mask.rsub(1.0);
                 }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(input.shape());
+                INDArray withInf = Nd4j.createUninitialized(dataType, input.shape());
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, dimensions));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
@@ -299,7 +305,7 @@ public class MaskedReductionUtil {
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 //With masking: N differs for different time series
 
-                INDArray out = Nd4j.createUninitialized(input.shape(), 'f');
+                INDArray out = Nd4j.createUninitialized(dataType, input.shape(), 'f');
 
                 //Broadcast copy op, then divide and mask to 0 as appropriate
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, epsilon2d, out, 0, 1));
@@ -317,7 +323,7 @@ public class MaskedReductionUtil {
 
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(input.shape());
+                INDArray masked2 = Nd4j.createUninitialized(dataType, input.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(input, mask, masked2, dimensions));
 
                 INDArray abs = Transforms.abs(masked2, true);

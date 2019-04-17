@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -45,7 +46,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
         int nIn = 5;
         int layerSize = 6;
         int tsLength = 7;
-        INDArray in = Nd4j.rand(new int[]{m, nIn, tsLength});
+        INDArray in = Nd4j.rand(DataType.FLOAT, new int[]{m, nIn, tsLength});
 //        in.get(all(), all(), interval(1,tsLength)).assign(0);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -108,6 +109,6 @@ public class TestSimpleRnn extends BaseDL4JTest {
         net.init();
 
         INDArray bArr = net.getParam("0_b");
-        assertEquals(Nd4j.valueArrayOf(new long[]{1,layerSize}, 100.0), bArr);
+        assertEquals(Nd4j.valueArrayOf(new long[]{1,layerSize}, 100.0f), bArr);
     }
 }

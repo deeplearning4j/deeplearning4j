@@ -112,7 +112,7 @@ public class LocalResponseTest extends BaseDL4JTest {
                         .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
                         .build();
 
-        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
+        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false, Nd4j.defaultFloatingPointType());
         activationsActual = layer.activate(x, false, LayerWorkspaceMgr.noWorkspaces());
     }
 
@@ -203,7 +203,7 @@ public class LocalResponseTest extends BaseDL4JTest {
         NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
-                                        null, 0, null, false);
+                                        null, 0, null, false, Nd4j.defaultFloatingPointType());
 
         INDArray outAct = layer.activate(in, true, LayerWorkspaceMgr.noWorkspaces());
 

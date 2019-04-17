@@ -82,6 +82,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray scoreArr;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         scoreArr = output.subi(labels);
@@ -126,6 +127,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray outSubLabels = output.sub(labels);
