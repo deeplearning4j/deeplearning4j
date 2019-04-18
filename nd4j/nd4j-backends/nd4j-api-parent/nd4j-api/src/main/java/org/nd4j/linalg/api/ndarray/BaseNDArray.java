@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -6364,6 +6365,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return ret;
 
+    }
+
+    @Override
+    public INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon) {
+        INDArray ret = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), input.dataType()), this.shape(), this.ordering());
+        return Nd4j.getExecutioner().exec(new BarnesHutGains(ret, input, gradx, epsilon));
     }
 
     protected int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer) {
