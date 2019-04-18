@@ -90,10 +90,14 @@ namespace nd4j {
             NDArray* z = nullptr;
 
             if (ctx.isFastPath()) {
-                if (ctx.fastpath_out().size() <= inputId)
-                    throw std::runtime_error("fastpath_out: unresolved output array");
-
-                z = ctx.fastpath_out()[inputId];
+                if (ctx.fastpath_out().size() <= inputId) {
+                    if (ctx.isInplace()) {
+                        z = ctx.fastpath_in()[inputId];
+                    } else
+                        throw std::runtime_error("fastpath_out: unresolved output array");
+                } else {
+                    z = ctx.fastpath_out()[inputId];
+                }
             } else {
                 std::pair<int, int> pair(ctx.nodeId(), inputId);
 
