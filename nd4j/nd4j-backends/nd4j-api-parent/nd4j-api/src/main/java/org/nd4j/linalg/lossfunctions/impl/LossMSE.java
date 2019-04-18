@@ -90,42 +90,4 @@ public class LossMSE extends LossL2 {
             return "LossMSE()";
         return "LossMSE(weights=" + weights + ")";
     }
-
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        return "MeanSquaredError";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "MeanSquaredError";
-    }
 }

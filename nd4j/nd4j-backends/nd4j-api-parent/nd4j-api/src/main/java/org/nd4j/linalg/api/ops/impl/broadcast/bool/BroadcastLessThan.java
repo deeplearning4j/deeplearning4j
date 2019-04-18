@@ -75,7 +75,7 @@ public class BroadcastLessThan extends BaseBroadcastBoolOp {
 
     @Override
     public String onnxName() {
-        return "Less";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

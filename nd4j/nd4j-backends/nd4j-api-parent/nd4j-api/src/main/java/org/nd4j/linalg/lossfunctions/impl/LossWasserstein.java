@@ -50,7 +50,7 @@ import org.tensorflow.framework.NodeDef;
  * @author Ryan Nett
  */
 @EqualsAndHashCode(callSuper = false)
-public class LossWasserstein extends DifferentialFunction implements ILossFunction {
+public class LossWasserstein implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
         if(!labels.equalShapes(preOutput)){
@@ -122,53 +122,5 @@ public class LossWasserstein extends DifferentialFunction implements ILossFuncti
     @Override
     public String toString() {
         return "LossWasserstein()";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 }

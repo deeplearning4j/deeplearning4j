@@ -64,6 +64,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
+        INDArray input = this.input.castTo(dataType);
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
@@ -170,6 +171,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         ConvolutionMode mode = layerConfig.getConvolutionMode();
         boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
+        INDArray input = this.input.castTo(dataType);
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         if (input.rank() != 5) {

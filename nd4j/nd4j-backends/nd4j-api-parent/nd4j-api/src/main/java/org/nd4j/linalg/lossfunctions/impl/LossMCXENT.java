@@ -25,6 +25,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,7 +60,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter @Setter
-public class LossMCXENT extends DifferentialFunction implements ILossFunction {
+public class LossMCXENT implements ILossFunction {
     private static final double DEFAULT_SOFTMAX_CLIPPING_EPSILON = 1e-10;
 
     @JsonSerialize(using = RowVectorSerializer.class)
@@ -225,53 +226,5 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
         if (weights == null)
             return "LossMCXENT()";
         return "LossMCXENT(weights=" + weights + ")";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return "lossmcxent";
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        return "SoftmaxCrossEntropyWithLogits";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "SoftmaxCrossEntropyWithLogits";
     }
 }

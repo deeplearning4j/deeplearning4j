@@ -733,8 +733,6 @@ void NativeOps::execTransformFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformFloat(
             opNum,
@@ -743,8 +741,8 @@ void NativeOps::execTransformFloat(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformSame(
@@ -755,8 +753,6 @@ void NativeOps::execTransformSame(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformSame(
             opNum,
@@ -765,8 +761,8 @@ void NativeOps::execTransformSame(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformBool(
@@ -777,8 +773,6 @@ void NativeOps::execTransformBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformBool(
             opNum,
@@ -787,8 +781,8 @@ void NativeOps::execTransformBool(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformAny(
@@ -819,8 +813,6 @@ void NativeOps::execTransformStrict(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformStrict(
             opNum,
@@ -829,8 +821,8 @@ void NativeOps::execTransformStrict(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
