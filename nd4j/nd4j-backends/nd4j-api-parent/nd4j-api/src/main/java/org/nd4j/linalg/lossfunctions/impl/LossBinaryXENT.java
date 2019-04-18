@@ -63,7 +63,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter @Setter
-public class LossBinaryXENT extends DifferentialFunction implements ILossFunction {
+public class LossBinaryXENT implements ILossFunction {
     public static final double DEFAULT_CLIPPING_EPSILON = 1e-5;
 
     @JsonSerialize(using = RowVectorSerializer.class)
@@ -260,58 +260,10 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
         return toString();
     }
 
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
     @Override
     public String toString() {
         if (weights == null)
             return "LossBinaryXENT()";
         return "LossBinaryXENT(weights=" + weights + ")";
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-
-
-    @Override
-    public String opName() {
-        return "lossbinaryxent";
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public String onnxName() {
-        return "SigmoidCrossEntropy";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "SigmoidCrossEntropy";
     }
 }

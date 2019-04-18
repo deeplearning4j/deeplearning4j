@@ -550,25 +550,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge.class,
             org.nd4j.linalg.api.ops.random.impl.Range.class,
             org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
-            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
-            org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT.class,
-            org.nd4j.linalg.lossfunctions.impl.LossCosineProximity.class,
-            org.nd4j.linalg.lossfunctions.impl.LossFMeasure.class,
-            org.nd4j.linalg.lossfunctions.impl.LossHinge.class,
-            org.nd4j.linalg.lossfunctions.impl.LossKLD.class,
-            org.nd4j.linalg.lossfunctions.impl.LossL1.class,
-            org.nd4j.linalg.lossfunctions.impl.LossL2.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMAE.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMAPE.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMCXENT.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMSE.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMSLE.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMixtureDensity.class,
-            org.nd4j.linalg.lossfunctions.impl.LossMultiLabel.class,
-            org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood.class,
-            org.nd4j.linalg.lossfunctions.impl.LossPoisson.class,
-            org.nd4j.linalg.lossfunctions.impl.LossSquaredHinge.class,
-            org.nd4j.linalg.lossfunctions.impl.LossWasserstein.class
+            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class
     );
 
     static {
