@@ -17,6 +17,29 @@ if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
+# Download and unpack mkl-dnn at configure time
+configure_file(./CMakeLists.txt.in mkldnn-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+if(result)
+    message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+if(result)
+    message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+endif()
+
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
+        ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+        EXCLUDE_FROM_ALL)
+set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
+set(HAVE_MKLDNN 1)
+add_definitions(-DHAVE_MKLDNN=true)
+include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+
 
 # Download and unpack flatbuffers at configure time
 configure_file(../../CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
@@ -191,5 +214,5 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
-target_link_libraries(runtests gtest gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest mkldnn gtest_main ${BLAS_LIBRARIES})
 
