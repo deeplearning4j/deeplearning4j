@@ -1723,6 +1723,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jLong") long getDeviceFreeMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
 
     /**
+     * Returns amount of free memory for current device
+     * @return
+     */
+    public native @Cast("Nd4jLong") long getDeviceFreeMemory();
+
+    /**
      *
      * @param ptrToDeviceId
      * @return
@@ -3826,8 +3832,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         * processes whole set of sub-arrays 
         * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)         
-        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
-        *                 if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *                 if dimsToExclude.size() = array rank it means sub-array is whole array and copy of original_shapeInfo will be returned and one zero offset
         * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
         * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
         * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
@@ -4706,6 +4712,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         public native NDArray pick(@StdVector IntBuffer indices);
         public native NDArray pick(@StdVector int[] indices);
         public native @Cast("bool") boolean isWritten(int index);
+
+        public native @Cast("Nd4jLong*") @StdVector LongPointer shape();
 
         public native NDArray stack();
         public native void unstack(NDArray array, int axis);
@@ -6496,6 +6504,10 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
 
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
+    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
+
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongPointer shape1,int shape2Rank,@Cast("Nd4jLong*") LongPointer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongBuffer shape1,int shape2Rank,@Cast("Nd4jLong*") LongBuffer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") long[] shape1,int shape2Rank,@Cast("Nd4jLong*") long[] shape2);
@@ -7683,7 +7695,7 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
-    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array 
+    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dimensions excluded from outer array 
     // rank is equal to size of shape
     @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer subArrOffsets);
     @Namespace("shape") public static native void calcSubArrOffsets(@Cast("const Nd4jLong") long numOfSubArrs, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
@@ -7711,6 +7723,25 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len/*=-1*/);
     @Namespace("shape") public static native void setOrderAndEws(@Cast("Nd4jLong*") long[] shapeInfo);
+
+    /**
+    * processes whole set of sub-arrays 
+    * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)
+    * arguments: 
+    * wholeShapeInfo - original shapeInfo of whole array
+    * numOfSubArrs - number of sub-arrays, size of subArrOffsets is equal to numOfSubArrs
+    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array and copy of wholeShapeInfo will be returned and one zero offset
+    * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]    
+    * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
+    * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
+    * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+    */ 
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets);
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
 
 
 
@@ -8634,6 +8665,14 @@ public static final int PREALLOC_SIZE = 33554432;
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long len);
+@Namespace("shape") public static native void calcEws(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long len);
+
 
 
 
@@ -20906,6 +20945,132 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /**
+         * This operation performs dot product attention on the given timeseries input with the given queries
+         * out = sum(similarity(k_i, q) * v_i)
+         *
+         * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+         *
+         * Optionally with normalization step:
+         * similarity(k, q) = softmax(k * q / sqrt(size(q))
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+         *
+         * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+         * be 3D but can have queryCount = 1
+         *
+         * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+         * both.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]
+         */
+//         #if NOT_EXCLUDED(OP_dot_product_attention)
+                @Namespace("nd4j::ops") public static class dot_product_attention extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public dot_product_attention(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public dot_product_attention(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public dot_product_attention position(long position) {
+                        return (dot_product_attention)super.position(position);
+                    }
+                
+                                                                                    public dot_product_attention() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class dot_product_attention_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public dot_product_attention_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public dot_product_attention_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public dot_product_attention_bp position(long position) {
+                        return (dot_product_attention_bp)super.position(position);
+                    }
+                
+                                                                                    public dot_product_attention_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+
+        /**
+         * This performs multi-headed dot product attention on the given timeseries input
+         * out = concat(head_1, head_2, ..., head_n) * Wo
+         * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+         *
+         * Optionally with normalization when calculating the attention for each head.
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+         *
+         * This makes use of dot_product_attention OP support for rank 4 inputs.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps]
+         * Wq: input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wk: input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+         * Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, numHeads, timesteps, queryCount]
+         */
+//         #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
+                @Namespace("nd4j::ops") public static class multi_head_dot_product_attention extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public multi_head_dot_product_attention(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public multi_head_dot_product_attention(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public multi_head_dot_product_attention position(long position) {
+                        return (multi_head_dot_product_attention)super.position(position);
+                    }
+                
+                                                                                    public multi_head_dot_product_attention() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("nd4j::ops") public static class multi_head_dot_product_attention_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public multi_head_dot_product_attention_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public multi_head_dot_product_attention_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public multi_head_dot_product_attention_bp position(long position) {
+                        return (multi_head_dot_product_attention_bp)super.position(position);
+                    }
+                
+                                                                                    public multi_head_dot_product_attention_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 
@@ -20966,6 +21131,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public matmul() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class matmul_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public matmul_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public matmul_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public matmul_bp position(long position) {
+                return (matmul_bp)super.position(position);
+            }
+        
+                                                                                    public matmul_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

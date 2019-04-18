@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -77,6 +78,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                 }
 
                                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                        .dataType(DataType.DOUBLE)
                                         .seed(123)
                                         .updater(new NoOp())
                                         .weightInit(new WeightInitDistribution(new UniformDistribution(-6, 6)))

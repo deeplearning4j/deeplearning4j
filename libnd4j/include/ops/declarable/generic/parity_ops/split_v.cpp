@@ -41,7 +41,7 @@ namespace ops {
         if (axis < 0)
             axis += input->rankOf();
 
-        std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
+        std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
         int pos = 0;
         std::vector<Nd4jLong> indices(2 * input->rankOf());

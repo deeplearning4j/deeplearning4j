@@ -167,6 +167,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp())
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -328,6 +329,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp())
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -615,6 +617,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
                     Nd4j.getRandom().setSeed(12345);
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                     .updater(new NoOp())
 //                                    .dist(new UniformDistribution(-3, 3))

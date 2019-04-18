@@ -97,7 +97,7 @@ public class SpatialDropout implements IDropout {
 
         val minibatch = inputActivations.size(0);
         val dim1 = inputActivations.size(1);
-        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, minibatch, dim1).assign(1.0);
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.dataType(), minibatch, dim1).assign(1.0);
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));
 
         Broadcast.mul(inputActivations, mask, output, 0, 1);

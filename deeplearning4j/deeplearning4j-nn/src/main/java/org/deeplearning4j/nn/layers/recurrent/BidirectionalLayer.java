@@ -285,8 +285,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void setParamsViewArray(INDArray params) {
         this.paramsView = params;
         val n = params.length();
-        fwd.setParamsViewArray(params.get(point(0), interval(0, n)));
-        bwd.setParamsViewArray(params.get(point(0), interval(n, 2*n)));
+        fwd.setParamsViewArray(params.get(interval(0, 0, true), interval(0, n)));
+        bwd.setParamsViewArray(params.get(interval(0, 0, true), interval(n, 2*n)));
     }
 
     @Override
@@ -302,8 +302,8 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         this.gradientView = gradients;
         val n = gradients.length() / 2;
-        INDArray g1 = gradients.get(point(0), interval(0,n));
-        INDArray g2 = gradients.get(point(0), interval(n, 2*n));
+        INDArray g1 = gradients.get(interval(0, 0, true), interval(0,n));
+        INDArray g2 = gradients.get(interval(0, 0, true), interval(n, 2*n));
         fwd.setBackpropGradientsViewArray(g1);
         bwd.setBackpropGradientsViewArray(g2);
     }

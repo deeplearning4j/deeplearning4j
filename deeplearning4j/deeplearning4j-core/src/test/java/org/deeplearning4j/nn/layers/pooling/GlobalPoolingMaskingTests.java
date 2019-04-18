@@ -101,7 +101,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                                 NDArrayIndex.interval(0, tsLength));
 
                 INDArray outSubset = net.output(inputSubset);
-                INDArray outputMaskedSubset = outputMasked.getRow(i);
+                INDArray outputMaskedSubset = outputMasked.getRow(i,true);
 
                 assertEquals(outSubset, outputMaskedSubset);
             }
@@ -286,7 +286,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 assertArrayEquals(new long[] {1, depthIn, height, width - i}, subset.shape());
 
                 INDArray outSubset = net.output(subset);
-                INDArray outMaskedSubset = outMasked.getRow(i);
+                INDArray outMaskedSubset = outMasked.getRow(i, true);
 
                 assertEquals("minibatch: " + i, outSubset, outMaskedSubset);
             }
@@ -345,7 +345,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 assertArrayEquals(new long[] {1, depthIn, height - i, width}, subset.shape());
 
                 INDArray outSubset = net.output(subset);
-                INDArray outMaskedSubset = outMasked.getRow(i);
+                INDArray outMaskedSubset = outMasked.getRow(i, true);
 
                 assertEquals("minibatch: " + i, outSubset, outMaskedSubset);
             }
@@ -410,7 +410,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 net.clear();
                 net.clearLayerMaskArrays();
                 INDArray outSubset = net.output(subset);
-                INDArray outMaskedSubset = outMasked.getRow(i);
+                INDArray outMaskedSubset = outMasked.getRow(i,true);
 
                 assertEquals("minibatch: " + i + ", " + pt, outSubset, outMaskedSubset);
             }

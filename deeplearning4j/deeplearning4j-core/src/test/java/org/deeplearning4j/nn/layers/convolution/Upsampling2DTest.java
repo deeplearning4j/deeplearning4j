@@ -110,7 +110,7 @@ public class Upsampling2DTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                         .layer(new Upsampling2D.Builder(size).build()).build();
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, 0, null, true, Nd4j.defaultFloatingPointType());
     }
 
     public INDArray getData() throws Exception {

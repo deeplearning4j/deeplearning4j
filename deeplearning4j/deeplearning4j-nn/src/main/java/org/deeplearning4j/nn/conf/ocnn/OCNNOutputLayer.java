@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -105,11 +106,11 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("OCNNOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

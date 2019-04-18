@@ -369,7 +369,10 @@ public class OpValidation {
         for (int i = 0; i < outShapes.size(); i++) {
             val act = outShapes.get(i);
             val exp = testCase.expShapes().get(i);
-            if (!Objects.equals(exp, act)) {
+            if(!Objects.equals(exp.dataType(), act.dataType())){
+                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
+            }
+            if(!Arrays.equals(act.getShape(), exp.getShape())){
                 return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
         }

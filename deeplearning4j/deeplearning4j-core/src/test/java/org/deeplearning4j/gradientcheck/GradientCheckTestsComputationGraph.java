@@ -71,6 +71,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testBasicIris() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                         .graphBuilder().addInputs("input")
@@ -117,6 +118,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testBasicIrisWithMerging() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                         .graphBuilder().addInputs("input")
@@ -174,6 +176,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             Nd4j.getRandom().setSeed(12345);
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            .dataType(DataType.DOUBLE)
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .dist(new NormalDistribution(0, 1))
                             .updater(new NoOp()).graphBuilder().addInputs("input")
@@ -232,6 +235,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             Nd4j.getRandom().setSeed(12345);
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            .dataType(DataType.DOUBLE)
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .dist(new NormalDistribution(0, 1))
                             .updater(new NoOp()).graphBuilder().addInputs("input")
@@ -287,6 +291,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 0.1))
                         .updater(new NoOp()).graphBuilder().addInputs("input")
@@ -334,6 +339,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345)
+                                        .dataType(DataType.DOUBLE)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .dist(new UniformDistribution(0.2, 0.6))
                                         .updater(new NoOp()).graphBuilder().addInputs("input")
@@ -394,6 +400,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testLSTMWithSubset() {
         Nd4j.getRandom().setSeed(1234);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(1234)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
@@ -436,6 +443,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
@@ -489,6 +497,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345)
+                                        .dataType(DataType.DOUBLE)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .dist(new NormalDistribution(0, 1))
                                         .updater(new NoOp()).graphBuilder()
@@ -543,6 +552,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf =
                 new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder()
@@ -606,6 +616,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
@@ -649,6 +660,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testMultipleOutputsLayer() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0")
@@ -689,6 +701,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testMultipleOutputsMergeVertex() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("i0", "i1", "i2")
@@ -737,6 +750,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("input")
@@ -787,6 +801,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345)
+                                        .dataType(DataType.DOUBLE)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .dist(new NormalDistribution(0, 1))
                                         .updater(new NoOp()).graphBuilder()
@@ -861,6 +876,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             for (double lambda : new double[] {0.0, 0.5, 2.0}) {
 
                 ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                                .dataType(DataType.DOUBLE)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                 .dist(new GaussianDistribution(0, 1))
                                 .updater(new NoOp()).graphBuilder().addInputs("input1")
@@ -926,6 +942,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             for (double lambda : new double[] {0.0, 0.5, 2.0}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
@@ -979,6 +996,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testBasicL2() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1031,6 +1049,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1086,6 +1105,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1146,6 +1166,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1209,6 +1230,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1265,6 +1287,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1312,6 +1335,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         int dIn = 2;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
@@ -1364,6 +1388,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         }
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
+                        .dataType(DataType.DOUBLE)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                         .updater(new NoOp()).graphBuilder().addInputs("in")
                         .addLayer("0", new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)

@@ -136,7 +136,7 @@ public class LossOpValidation extends BaseOpValidation {
                             //NOTE: both we and TF assume the inputs are normalized
                             predictionsArr.diviColumnVector(predictionsArr.norm2(1));
                             labelsArr.diviColumnVector(labelsArr.norm2(1));
-                            expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0);
+                            expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0).reshape(10,1);
                             loss = sd.loss().cosineDistance("loss", labels, predictions, w, reduction, 1);
                             break;
                         case "hinge":
@@ -227,7 +227,7 @@ public class LossOpValidation extends BaseOpValidation {
                             loss = sd.loss().softmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
-                            expOut = Nd4j.create(labelsArr.size(0));
+                            expOut = Nd4j.create(labelsArr.size(0), 1);
                             double n = (double) labelsArr.size(1);
                             for(int example = 0; example < labelsArr.size(0); example++){
                                 for(int i = 0; i < labelsArr.size(1); i++){

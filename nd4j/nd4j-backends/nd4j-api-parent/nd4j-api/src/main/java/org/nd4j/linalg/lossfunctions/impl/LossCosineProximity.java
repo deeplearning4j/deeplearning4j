@@ -55,6 +55,8 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
+
         /*
          mean of -(y.dot(yhat)/||y||*||yhat||)
          */
@@ -105,6 +107,7 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray yhat = activationFn.getActivation(preOutput.dup(), true);
         INDArray yL2norm = labels.norm2(1);
 

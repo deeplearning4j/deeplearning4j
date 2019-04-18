@@ -116,7 +116,7 @@ public class PReLUParamInitializer implements ParamInitializer {
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length));
+        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, length));
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
@@ -128,7 +128,7 @@ public class PReLUParamInitializer implements ParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
         val length = numParams(conf);
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length))
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, length))
                         .reshape('f', weightShape);
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);

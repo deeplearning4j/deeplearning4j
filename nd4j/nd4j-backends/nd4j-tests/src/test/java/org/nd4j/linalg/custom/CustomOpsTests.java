@@ -336,8 +336,8 @@ public class CustomOpsTests {
         int[] dims = new int[]{1};
         int[] indices = new int[]{1, 3};
 
-        val exp0 = Nd4j.create(1, 5).assign(0);
-        val exp1 = Nd4j.create(1, 5).assign(1);
+        val exp0 = Nd4j.create(5).assign(0);
+        val exp1 = Nd4j.create(5).assign(1);
 
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);

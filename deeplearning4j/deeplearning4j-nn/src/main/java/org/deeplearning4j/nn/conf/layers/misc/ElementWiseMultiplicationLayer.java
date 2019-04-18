@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -60,13 +61,13 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         if (this.nIn != this.nOut) {
             throw new IllegalStateException("Element wise layer must have the same input and output size. Got nIn="
                             + nIn + ", nOut=" + nOut);
         }
         org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.elementwise.ElementWiseMultiplicationLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

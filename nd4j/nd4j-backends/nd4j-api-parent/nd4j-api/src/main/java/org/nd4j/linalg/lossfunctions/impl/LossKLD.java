@@ -51,6 +51,7 @@ public class LossKLD extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         // Clip output and labels to be between Nd4j.EPS_THREsHOLD and 1, i.e. a valid non-zero probability
@@ -91,6 +92,7 @@ public class LossKLD extends DifferentialFunction implements ILossFunction {
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray dLda = labels.div(output).negi();

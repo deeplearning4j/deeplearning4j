@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -40,8 +41,8 @@ public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     private int[] padding; // [padLeft1, padRight1, padLeft2, padRight2, padLeft3, padRight3]
 
-    public ZeroPadding3DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public ZeroPadding3DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer) conf.getLayer()).getPadding();
     }
 
@@ -84,7 +85,7 @@ public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         val outW = inShape[4] + padding[4] + padding[5];
         val outShape = new long[] {inShape[0], inShape[1], outD, outH, outW};
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
@@ -97,7 +98,7 @@ public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Layer clone() {
-        return new ZeroPadding3DLayer(conf.clone());
+        return new ZeroPadding3DLayer(conf.clone(), dataType);
     }
 
     @Override

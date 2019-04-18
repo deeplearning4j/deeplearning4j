@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.primitives.Pair;
@@ -47,13 +48,10 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Convolution1DLayer extends ConvolutionLayer {
-    public Convolution1DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Convolution1DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
-    public Convolution1DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {

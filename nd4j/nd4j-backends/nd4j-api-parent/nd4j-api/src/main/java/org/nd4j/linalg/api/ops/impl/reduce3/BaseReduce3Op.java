@@ -97,6 +97,8 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
 
     @Override
     public DataType resultType() {
+        if(x.dataType().isFPType())
+            return x.dataType();
         return Nd4j.defaultFloatingPointType();
     }
 

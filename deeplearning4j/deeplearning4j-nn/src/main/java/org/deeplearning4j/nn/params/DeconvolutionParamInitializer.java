@@ -83,9 +83,9 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         if(layerConf.hasBias()){
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
+            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
             INDArray weightGradientView =
-                    gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, numParams(conf)))
+                    gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
                             .reshape('c', nIn, nOut, kernel[0], kernel[1]);
             out.put(BIAS_KEY, biasGradientView);
             out.put(WEIGHT_KEY, weightGradientView);

@@ -376,7 +376,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
     for (int e = 0; e < z.lengthOf(); e++) {
         ASSERT_TRUE(z.e<double>(e) >= 0);
     }
@@ -392,7 +392,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
  for (int e = 0; e < z.lengthOf(); e++) {
      if (e >= z.lengthOf() / 2)
          ASSERT_TRUE(z.e<bool>(e));
@@ -550,7 +550,7 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
     ASSERT_EQ(e, z);
 }
 
-TEST_F(LegacyOpsTests, Reduce3_4) {
+TEST_F(LegacyOpsTests, Reduce3_5) {
     auto x = NDArrayFactory::create<double>('c', {3, 5}, {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
                                                           -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
                                                           0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247});

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -26,6 +27,7 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -39,6 +41,7 @@ import java.util.*;
 public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     public static final String INPUT_KEY = "input";
+    public static final String MASK_KEY = "mask";
 
     protected SameDiff sameDiff;
     protected SDVariable outputVar;
@@ -51,8 +54,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     protected Map<String,INDArray> gradTable;
 
 
-    public SameDiffLayer(NeuralNetConfiguration conf){
-        super(conf);
+    public SameDiffLayer(NeuralNetConfiguration conf, DataType dataType){
+        super(conf, dataType);
     }
 
 
@@ -80,8 +83,14 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-//            sameDiff.clearExecutionCache();
+            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+            bl.validateInput(input);
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            if(maskArray != null){
+                sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
+            }else{
+                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
+            }
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
@@ -102,7 +111,15 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
 //            sameDiff.clearExecutionCache();
+            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+            bl.validateInput(input);
+
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            if(maskArray != null){
+                sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
+            }else{
+                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
+            }
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
@@ -209,16 +226,18 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
-//        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
                 val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, ps);
+                SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }
-            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params);
+
+            SDVariable mask = sameDiff.constant(MASK_KEY, SameDiffGraphVertex.createMask(dataType, inputShape));
+
+            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 
@@ -233,4 +252,15 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             this.outputKey = outputVar.getVarName();
         }
     }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+
+        this.maskArray = maskArray;
+        this.maskState = currentMaskState;
+
+        return bl.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+    }
+
 }
