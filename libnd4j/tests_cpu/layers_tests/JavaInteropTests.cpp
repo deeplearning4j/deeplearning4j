@@ -1068,9 +1068,6 @@ TEST_F(JavaInteropTests, Test_Fastpath_5) {
     a.linspace(1.0);
     b.linspace(1.0);
 
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
-
     Context ctx(1);
 
     ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
