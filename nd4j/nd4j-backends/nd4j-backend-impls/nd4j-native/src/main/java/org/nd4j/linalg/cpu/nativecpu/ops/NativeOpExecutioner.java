@@ -1601,6 +1601,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val context = buildContext();
 
+        context.markInplace(op.isInplaceCall());
+
         // transferring rng state
         context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
 

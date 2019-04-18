@@ -88,4 +88,9 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
 
         return context;
     }
+
+    @Override
+    public void markInplace(boolean reallyInplace) {
+        context.markInplace(reallyInplace);
+    }
 }

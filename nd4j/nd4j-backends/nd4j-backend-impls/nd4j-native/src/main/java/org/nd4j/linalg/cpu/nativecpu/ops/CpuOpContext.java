@@ -77,10 +77,13 @@ public class CpuOpContext extends BaseOpContext implements OpContext {
         super.setOutputArray(index, array);
     }
 
-
-
     @Override
     public Pointer contextPointer() {
         return context;
+    }
+
+    @Override
+    public void markInplace(boolean reallyInplace) {
+        context.markInplace(reallyInplace);
     }
 }

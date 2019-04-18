@@ -116,4 +116,10 @@ public interface OpContext {
      * @return
      */
     Pointer contextPointer();
+
+    /**
+     * This method allows to set op as inplace
+     * @param reallyInplace
+     */
+    void markInplace(boolean reallyInplace);
 }
