@@ -1061,6 +1061,24 @@ TEST_F(JavaInteropTests, Test_Fastpath_4) {
     ASSERT_EQ(exp, z);
 }
 
+TEST_F(JavaInteropTests, Test_Fastpath_5) {
+    auto a = NDArrayFactory::create<float>('c', {3, 3});
+    auto b = NDArrayFactory::create<float>('c', {3, 3});
+    auto c = NDArrayFactory::create<float>('c', {3, 3});
+
+    Context ctx(1);
+
+    ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
+    ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
+    ctx.setOutputArray(0, c.buffer(), c.shapeInfo(), c.specialBuffer(), c.specialShapeInfo());
+
+    NativeOps nativeOps;
+    nd4j::ops::matmul op;
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+
+    ASSERT_EQ(Status::OK(), status);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;
