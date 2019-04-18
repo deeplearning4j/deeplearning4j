@@ -32,7 +32,7 @@ public class MemoryTracker {
 
             val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr));
 
-            log.info("Free memory on device_{}: {}", i, f);
+            log.debug("Free memory on device_{}: {}", i, f);
             freePerDevice.add(i, f);
         }
     }

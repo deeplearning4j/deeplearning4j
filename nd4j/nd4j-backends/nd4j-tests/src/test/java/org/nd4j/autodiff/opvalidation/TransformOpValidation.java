@@ -1895,4 +1895,25 @@ public class TransformOpValidation extends BaseOpValidation {
             }
         }
     }
+
+    @Test
+    public void testSoftmaxCF(){
+
+        INDArray arrC = Nd4j.rand(DataType.FLOAT, 2, 5);
+        INDArray arrF = arrC.dup('f');
+        INDArray outCC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outCF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+        INDArray outFC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outFF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+
+
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCF).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFF).build());
+
+        assertEquals(outCC, outCF);
+        assertEquals(outCC, outFC);
+        assertEquals(outCC, outFF);
+    }
 }

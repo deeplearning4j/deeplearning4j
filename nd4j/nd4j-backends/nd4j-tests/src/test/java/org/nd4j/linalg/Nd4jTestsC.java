@@ -7382,6 +7382,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testRowsEdgeCaseView(){
+
+        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
+        INDArray view = arr.getColumn(0);
+        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), view);
+        int[] idxs = new int[]{0,2,3,4};
+
+        INDArray out = Nd4j.pullRows(view.reshape(5, 1), 1, idxs);
+        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4, 1);
+
+        assertEquals(exp, out);   //Failing here
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPullRowsFailure() {
+        val idxs = new int[]{0,2,3,4};
+        val out = Nd4j.pullRows(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), 0, idxs);
+    }
+
+    @Test
     public void testRepeatStrided() {
 
         // Create a 2D array (shape 5x5)
@@ -7483,19 +7503,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val column = Nd4j.create(25);
 
         matrix.putColumn(1, column);
-    }
-
-    @Test
-    public void testRowsEdgeCaseView(){
-        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
-        INDArray view = arr.getColumn(0);
-        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0).reshape(5,1), view);
-        int[] idxs = new int[]{0,2,3,4};
-
-        INDArray out = Nd4j.pullRows(view, 1, idxs);
-        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4,1);
-
-        assertEquals(exp, out);   //Failing here
     }
 
     @Test

@@ -41,7 +41,7 @@ import java.util.Map;
  * Created by susaneraly on 9/9/16.
  */
 @EqualsAndHashCode
-public class LossCosineProximity extends DifferentialFunction implements ILossFunction {
+public class LossCosineProximity implements ILossFunction {
 
     /**
      *
@@ -162,52 +162,5 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
     @Override
     public String toString() {
         return "LossCosineProximity()";
-    }
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return "losscosinedistance";
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        return "CosineDistance";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "CosineDistance";
     }
 }

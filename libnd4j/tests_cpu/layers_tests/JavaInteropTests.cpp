@@ -1043,6 +1043,44 @@ TEST_F(JavaInteropTests, Test_Fastpath_3) {
     ASSERT_EQ(exp, z);
 }
 
+TEST_F(JavaInteropTests, Test_Fastpath_4) {
+
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1,1,1,0,0,  1,1,1,1,0,  1,1,1,1,1});
+    auto z = NDArrayFactory::create<double>('c', {3, 5});
+    Nd4jLong iArgs[] = {3, 5, 2};
+
+    Context ctx(1);
+
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+    ctx.setIArguments(iArgs, 3);
+
+    NativeOps nativeOps;
+    nd4j::ops::tri op;
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+
+    ASSERT_EQ(exp, z);
+}
+
+TEST_F(JavaInteropTests, Test_Fastpath_5) {
+    auto a = NDArrayFactory::create<float>('c', {3, 3});
+    auto b = NDArrayFactory::create<float>('c', {3, 3});
+    auto c = NDArrayFactory::create<float>('c', {3, 3});
+    a.linspace(1.0);
+    b.linspace(1.0);
+
+    Context ctx(1);
+
+    ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
+    ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
+    ctx.setOutputArray(0, c.buffer(), c.shapeInfo(), c.specialBuffer(), c.specialShapeInfo());
+
+    NativeOps nativeOps;
+    nd4j::ops::matmul op;
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+
+    ASSERT_EQ(Status::OK(), status);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;

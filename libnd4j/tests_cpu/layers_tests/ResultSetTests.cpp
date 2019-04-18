@@ -14,35 +14,36 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.lossfunctions.impl;
+//
+// Created by raver on 4/18/2019.
+//
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+#include "testlayers.h"
+#include <Graph.h>
+#include <Node.h>
+#include <ops/declarable/CustomOperations.h>
 
-/**
- * Negative log likelihood loss function
- * <p>
- * In practice, this is implemented as an alias for {@link LossMCXENT} due to the mathematical equivalence
- */
-public class LossNegativeLogLikelihood extends LossMCXENT {
+using namespace nd4j;
+using namespace nd4j::graph;
 
-    public LossNegativeLogLikelihood() {}
+class ResultSetTests : public testing::Test {
+public:
 
-    public LossNegativeLogLikelihood(INDArray weights) {
-        super(weights);
-    }
+};
 
-    /**
-     * The opName of this function
-     *
-     * @return
-     */
-    @Override
-    public String name() {
-        return toString();
-    }
+TEST_F(ResultSetTests, basic_test_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 5});
 
-    @Override
-    public String toString() {
-        return "LossNegativeLogLikelihood()";
-    }
+    auto tensors = x.allTensorsAlongDimension({1});
+    ASSERT_EQ(3, tensors->size());
+
+    ResultSet set = *tensors;
+    ASSERT_EQ(3, tensors->size());
+    ASSERT_EQ(3, set.size());
+
+    for (int e = 0; e < set.size(); e++)
+        ASSERT_EQ(5, set.at(e)->lengthOf());
+
+    for (int e = 0; e < tensors->size(); e++)
+        ASSERT_EQ(5, tensors->at(e)->lengthOf());
 }

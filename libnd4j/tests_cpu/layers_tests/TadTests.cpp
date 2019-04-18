@@ -25,6 +25,7 @@
 #include <NDArray.h>
 #include <helpers/TAD.h>
 #include <array>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 
@@ -258,6 +259,20 @@ TEST_F(TadTests, test_tad_order_4) {
 
     shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
     ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+TEST_F(TadTests, test_column_1) {
+    auto x = NDArrayFactory::create<float>('c', {5, 2});
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), 0);
+
+    shape::printShapeInfoLinear("column view", tadPack.primaryShapeInfo());
+    ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
+    ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
+    ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));
+
+    auto scalarViewPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
+
+    ASSERT_TRUE(shape::equalsStrict(tadPack.primaryShapeInfo(), scalarViewPack.primaryShapeInfo()));
 }
 
 

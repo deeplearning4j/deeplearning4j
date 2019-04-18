@@ -459,7 +459,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray tensorAlongDimension(int index, int... dimension) {
+    public INDArray tensorAlongDimension(long index, int... dimension) {
         return null;
     }
 

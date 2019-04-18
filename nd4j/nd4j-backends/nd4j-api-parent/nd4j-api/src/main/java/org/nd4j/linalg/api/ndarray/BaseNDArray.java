@@ -988,7 +988,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray tensorAlongDimension(int index, int... dimension) {
+    public INDArray tensorAlongDimension(long index, int... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
@@ -4934,8 +4934,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isColumnVector() && c == 0)
             return this;
         else if (isColumnVector() && c > 0)
-            throw new IllegalArgumentException("Illegal index for row");
-        return get(NDArrayIndex.all(), NDArrayIndex.point(c));
+            throw new IllegalArgumentException("Illegal index for column");
+
+        return tensorAlongDimension(c, 0);
     }
 
     @Override
@@ -5105,15 +5106,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isRowVector() && r > 0)
             throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
-        INDArray result = get(NDArrayIndex.point(r), NDArrayIndex.all());
 
-        // FIXME: this is bad
-        if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
-            val newShapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType());
-            ((BaseNDArray) result).setShapeInformation(newShapeInfo);
-        }
+        Preconditions.checkArgument(rank() == 2, "getRow() can be called on 2D arrays only");
+        Preconditions.checkArgument(r < rows(), "Row index must be smaller than total number of rows");
 
-        return result;
+        return tensorAlongDimension(r, 1);
     }
 
     @Override

@@ -617,4 +617,21 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         return res;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet NDArrayFactory::createSetOfArrs(const Nd4jLong numOfArrs, const void* buffer,  const Nd4jLong* shapeInfo,  const Nd4jLong* offsets, memory::Workspace* workspace) {
+
+        ResultSet result;
+
+        const auto sizeOfT = DataTypeUtils::sizeOf(shapeInfo);
+
+        for (int idx = 0; idx < numOfArrs; idx++ ) {
+            auto array = new NDArray(reinterpret_cast<int8_t*>(const_cast<void*>(buffer)) + offsets[idx] * sizeOfT, const_cast<Nd4jLong*>(shapeInfo), workspace);
+            result.push_back(array);
+        }        
+
+        return result;
+    }
+
+
+
 }
