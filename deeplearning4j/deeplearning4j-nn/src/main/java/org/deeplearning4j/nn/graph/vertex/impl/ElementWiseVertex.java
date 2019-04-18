@@ -51,13 +51,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
     private Op op;
     private int nInForwardPass;
 
-    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op) {
-        this(graph, name, vertexIndex, null, null, op);
+    public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, Op op, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, op, dataType);
     }
 
     public ElementWiseVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, Op op) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, Op op, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.op = op;
     }
 
@@ -82,29 +82,32 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
         switch (op) {
             case Add:
-                INDArray sum = workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
+                INDArray sum =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
+                sum.assign(inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
-                    sum.addi(inputs[i]);
+                    sum.addi(inputs[i].castTo(dataType));
                 }
                 return sum;
             case Average:
-                INDArray average =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
+                INDArray average =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
+                average.assign(inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
-                    average.addi(inputs[i]);
+                    average.addi(inputs[i].castTo(dataType));
                 }
                 return average.divi(inputs.length);
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return Nd4j.getExecutioner().exec(new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
+                return Nd4j.getExecutioner().exec(new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape())));
             case Product:
-                INDArray product =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
+                INDArray product =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
+                product.assign(inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
-                    product.muli(inputs[i]);
+                    product.muli(inputs[i].castTo(dataType));
                 }
                 return product;
             case Max:
-                INDArray max =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape(), inputs[0].ordering());
+                INDArray max =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape(), inputs[0].ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
                         .addInputs(inputs)
                         .addOutputs(max)

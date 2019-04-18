@@ -67,9 +67,9 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         val bEndOffset = wEndOffset + nOut;
         val cEndOffset = bEndOffset + nIn * nOut;
 
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset));
-        INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset));
-        INDArray centerLossView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset))
+        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, wEndOffset));
+        INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(wEndOffset, bEndOffset));
+        INDArray centerLossView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bEndOffset, cEndOffset))
                         .reshape('c', nOut, nIn);
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
@@ -94,10 +94,10 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         val bEndOffset = wEndOffset + nOut;
         val cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset))
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, wEndOffset))
                         .reshape('f', nIn, nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset)); //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bEndOffset, cEndOffset))
+        INDArray biasView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(wEndOffset, bEndOffset)); //Already a row vector
+        INDArray centerLossView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bEndOffset, cEndOffset))
                         .reshape('c', nOut, nIn);
 
         Map<String, INDArray> out = new LinkedHashMap<>();

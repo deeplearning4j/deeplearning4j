@@ -56,12 +56,12 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        val allocator = AtomicAllocator.getInstance();
 
         //log.info("Allocating {} bytes in {} memory...", bytes, kind);
 
         if (kind == MemoryKind.HOST) {
-            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from HOST memory");
@@ -71,14 +71,14 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
+            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
             //log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
 
             if (initialize) {
-                CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+                val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
                 int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
                 if (i == 0)

@@ -229,10 +229,10 @@ public class BERTGraphTest {
 //        System.out.println(softmax);
 //        System.out.println(Arrays.toString(softmax.data().asFloat()));
 
-        INDArray exp0 = Nd4j.createFromArray(0.99860954f, 0.0013904407f).reshape(1, 2);
-        INDArray exp1 = Nd4j.createFromArray(0.0005442508f, 0.99945575f).reshape(1, 2);
-        INDArray exp2 = Nd4j.createFromArray(0.9987967f, 0.0012033002f).reshape(1, 2);
-        INDArray exp3 = Nd4j.createFromArray(0.97409827f, 0.025901746f).reshape(1, 2);
+        INDArray exp0 = Nd4j.createFromArray(0.99860954f, 0.0013904407f);
+        INDArray exp1 = Nd4j.createFromArray(0.0005442508f, 0.99945575f);
+        INDArray exp2 = Nd4j.createFromArray(0.9987967f, 0.0012033002f);
+        INDArray exp3 = Nd4j.createFromArray(0.97409827f, 0.025901746f);
 
         assertEquals(exp0, softmax.getRow(0));
         assertEquals(exp1, softmax.getRow(1));

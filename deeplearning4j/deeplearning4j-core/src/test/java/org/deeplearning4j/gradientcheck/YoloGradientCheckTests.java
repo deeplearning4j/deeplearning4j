@@ -103,6 +103,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                     INDArray labels = yoloLabels(mb, c, h, w);
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .activation(a)
                             .l1(l1[i]).l2(l2[i])
@@ -209,6 +210,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         iter.setPreProcessor(new ImagePreProcessingScaler());
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new NoOp())
                 .dist(new GaussianDistribution(0,0.1))

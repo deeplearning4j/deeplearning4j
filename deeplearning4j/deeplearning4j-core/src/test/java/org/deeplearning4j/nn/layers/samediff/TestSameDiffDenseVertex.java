@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffDenseVertex;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -61,6 +62,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                 for (Activation a : afns) {
                     log.info("Starting test - " + a + " - minibatch " + minibatch + ", workspaces: " + workspaces);
                     ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .updater(new Sgd(0.0))
@@ -77,6 +79,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     netSD.init();
 
                     ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
 //                            .updater(new Sgd(1.0))

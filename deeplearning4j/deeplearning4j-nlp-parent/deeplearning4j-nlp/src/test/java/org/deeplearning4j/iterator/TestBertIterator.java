@@ -250,7 +250,7 @@ public class TestBertIterator {
         INDArray expF = Nd4j.vstack(expEx0, expEx1, zeros);
         INDArray expM = Nd4j.vstack(expM0, expM1, zeros);
         INDArray expL = Nd4j.createFromArray(new float[][]{{1, 0}, {0, 1}, {0, 0}, {0, 0}});
-        INDArray expLM = Nd4j.create(Nd4j.defaultFloatingPointType(), 4, 1);
+        INDArray expLM = Nd4j.create(DataType.FLOAT, 4, 1);
         expLM.putScalar(0, 0, 1);
         expLM.putScalar(1, 0, 1);
 

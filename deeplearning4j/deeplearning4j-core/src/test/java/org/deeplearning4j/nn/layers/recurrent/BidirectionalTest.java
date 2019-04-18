@@ -46,6 +46,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -398,6 +399,7 @@ public class BidirectionalTest extends BaseDL4JTest {
 
             for (Bidirectional.Mode m : modes) {
                 MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
                         .trainingWorkspaceMode(wsm)
@@ -411,6 +413,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                 net1.init();
 
                 MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Adam())
@@ -521,6 +524,7 @@ public class BidirectionalTest extends BaseDL4JTest {
 
             for (Bidirectional.Mode m : modes) {
                 ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
                         .trainingWorkspaceMode(wsm)
@@ -536,6 +540,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                 net1.init();
 
                 ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Adam())

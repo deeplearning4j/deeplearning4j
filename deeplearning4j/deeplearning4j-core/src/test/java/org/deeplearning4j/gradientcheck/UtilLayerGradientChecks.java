@@ -167,7 +167,7 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .updater(new NoOp())
                             .activation(Activation.TANH)
-
+                            .dataType(DataType.DOUBLE)
                             .dist(new NormalDistribution(0,2))
                             .list()
                             .layer(l1)
@@ -199,6 +199,7 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
         for( int minibatch : new int[]{1,5}) {
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
                     .seed(12345)
                     .updater(Updater.NONE)
                     .list()

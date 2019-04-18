@@ -42,7 +42,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     protected AtomicLong lastGcTime = new AtomicLong(System.currentTimeMillis());
 
-    protected AtomicBoolean periodicEnabled = new AtomicBoolean(true);
+    protected AtomicBoolean periodicEnabled = new AtomicBoolean(false);
 
     protected AtomicInteger averageLoopTime = new AtomicInteger(0);
 

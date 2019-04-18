@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -62,9 +63,9 @@ public class RnnLossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.recurrent.RnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

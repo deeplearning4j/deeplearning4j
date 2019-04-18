@@ -142,7 +142,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetScalar() {
-        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
+        INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0, d.getDouble(0), 1e-1);
@@ -161,10 +161,10 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray x = Nd4j.linspace(0, 10, 11, DataType.DOUBLE).reshape(1, 11).castTo(DataType.DOUBLE);
         int[] index = new int[] {5, 8, 9};
         INDArray columnsTest = x.getColumns(index);
-        assertEquals(Nd4j.create(new double[] {5, 8, 9}), columnsTest);
+        assertEquals(Nd4j.create(new double[] {5, 8, 9}, new int[]{1,3}), columnsTest);
         int[] index2 = new int[] {2, 2, 4}; //retrieve the same columns twice
         INDArray columnsTest2 = x.getColumns(index2);
-        assertEquals(Nd4j.create(new double[] {2, 2, 4}), columnsTest2);
+        assertEquals(Nd4j.create(new double[] {2, 2, 4}, new int[]{1,3}), columnsTest2);
 
     }
 
@@ -214,6 +214,49 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(test, result);
     }
 
+    @Test
+    public void testGetIndicesVectorView() {
+        INDArray matrix = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape('c',5, 5);
+        INDArray column = matrix.getColumn(0).reshape(1,5);
+        INDArray test = Nd4j.create(new double[] {6, 11});
+        INDArray result = null; //column.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 3));
+//        assertEquals(test, result);
+//
+        INDArray column3 = matrix.getColumn(2).reshape(1,5);
+//        INDArray exp = Nd4j.create(new double[] {8, 13});
+//        result = column3.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 3));
+//        assertEquals(exp, result);
+
+        INDArray exp2 = Nd4j.create(new double[] {8, 18});
+        result = column3.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 2, 4));
+        assertEquals(exp2, result);
+    }
+
+    @Test
+    public void test2dGetPoint(){
+        INDArray arr = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
+        for( int i=0; i<3; i++ ){
+            INDArray exp = Nd4j.create(new double[]{i*4+1, i*4+2, i*4+3, i*4+4});
+            INDArray row = arr.getRow(i);
+            INDArray get = arr.get(NDArrayIndex.point(i), NDArrayIndex.all());
+
+            assertEquals(1, row.rank());
+            assertEquals(1, get.rank());
+            assertEquals(exp, row);
+            assertEquals(exp, get);
+        }
+
+        for( int i=0; i<4; i++ ){
+            INDArray exp = Nd4j.create(new double[]{1+i, 5+i, 9+i});
+            INDArray col = arr.getColumn(i);
+            INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(i));
+
+            assertEquals(1, col.rank());
+            assertEquals(1, get.rank());
+            assertEquals(exp, col);
+            assertEquals(exp, get);
+        }
+    }
 
 
     @Override

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -61,15 +62,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
-    public ConvolutionLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public ConvolutionLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         initializeHelper();
         convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
-    }
-
-    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        initializeHelper();
     }
 
     void initializeHelper() {
@@ -77,7 +73,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
-                        .asSubclass(ConvolutionHelper.class).newInstance();
+                        .asSubclass(ConvolutionHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnConvolutionHelper successfully initialized");
                 if (!helper.checkSupported()) {
                     helper = null;
@@ -92,7 +88,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend)){
-            helper = new MKLDNNConvHelper();
+            helper = new MKLDNNConvHelper(dataType);
             log.debug("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported()) {
@@ -111,6 +107,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         assertInputSet(true);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
+
+        INDArray input = this.input.castTo(dataType);       //No op if correct type
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -208,7 +206,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         INDArray im2col2d = p.getSecond(); //Re-use im2col2d array from forward pass if available; recalculate if not
         if (im2col2d == null) {
-            INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
+            INDArray col = Nd4j.createUninitialized(dataType, new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
             Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                             convolutionMode == ConvolutionMode.Same, col2);
@@ -234,7 +232,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
-        INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
+        INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, eps6d.dataType(), new long[] {inDepth, miniBatch, inH, inW}, 'c');
 
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1, 0, 2, 3);
@@ -307,6 +305,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         validateInputRank();
+
+        INDArray input = this.input.castTo(dataType);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -387,7 +387,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
-        INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
+        INDArray col = Nd4j.createUninitialized(weights.dataType(), new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
         INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
         INDArray im2ColIn = input.castTo(col2.dataType());      //No op if already (for example) float
         Convolution.im2col(im2ColIn, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
@@ -402,7 +402,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedW = permutedW.reshape('f', kW * kH * inDepth, outDepth);
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(), new long[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
         im2col2d.mmuli(reshapedW, z);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector

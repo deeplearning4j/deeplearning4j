@@ -135,3 +135,46 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests15, Test_standarize_1) {
+    auto x = NDArrayFactory::create<float>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<float>('c', {5}, {0, 0, 0, 0, 0});
+
+    nd4j::ops::standardize op;
+    auto result = op.execute({&x}, {&x}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
+    auto x = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+    auto eps = NDArrayFactory::create<float>('c', {5}, {0., 0., 0., 0., 0.});
+
+    nd4j::ops::standardize_bp op;
+    auto result = op.execute({&x, &eps}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+
+    nd4j::ops::layer_norm op;
+    auto result = op.execute({&x, &g, &b}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
+
+    nd4j::ops::layer_norm_bp op;
+    auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}

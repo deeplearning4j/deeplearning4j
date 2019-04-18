@@ -192,6 +192,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         if (maskArray != null) {
             //By multiplying by mask, we keep only those 1s that are actually present
+            maskArray = maskArray.castTo(truePositives.dataType());
             truePositives.muli(maskArray);
             trueNegatives.muli(maskArray);
             falsePositives.muli(maskArray);

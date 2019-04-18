@@ -451,11 +451,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         CudaContext context = allocator.getFlowController().prepareAction(ret, toConcat);
 
-        long[] shapeInfoPointers = new long[toConcat.length];
-        long[] dataPointers = new long[toConcat.length];
-        long[] tadPointers = new long[toConcat.length];
-        long[] offsetsPointers = new long[toConcat.length];
-        long[] hostShapeInfoPointers = new long[toConcat.length];
+        val shapeInfoPointers = new long[toConcat.length];
+        val dataPointers = new long[toConcat.length];
+        val tadPointers = new long[toConcat.length];
+        val offsetsPointers = new long[toConcat.length];
+        val hostShapeInfoPointers = new long[toConcat.length];
 
         TADManager tadManager = Nd4j.getExecutioner().getTADManager();
         for (int i = 0; i < toConcat.length; i++) {
@@ -495,20 +495,20 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
 
-        val tempData = new CudaDoubleDataBuffer(toConcat.length);
-        val tempShapes = new CudaDoubleDataBuffer(toConcat.length);
-        val tempTAD = new CudaDoubleDataBuffer(toConcat.length);
-        val tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
+        //val tempData = new CudaDoubleDataBuffer(toConcat.length);
+        //val tempShapes = new CudaDoubleDataBuffer(toConcat.length);
+        //val tempTAD = new CudaDoubleDataBuffer(toConcat.length);
+        //val tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
 
-        AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8,0);
-        AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
-        AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
-        AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
+        //AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8,0);
+        //AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
+        //AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
+        //AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
 
-        val dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context);
-        val shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context);
-        val tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
-        val offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
+        val dataPointer = new PointerPointerWrapper(new LongPointer(dataPointers)); //AtomicAllocator.getInstance().getPointer(tempData, context);
+        val shapesPointer = new PointerPointerWrapper(new LongPointer(shapeInfoPointers));//AtomicAllocator.getInstance().getPointer(tempShapes, context);
+        //val tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
+        //val offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
 
 
         // System.out.println("ShapesPointer after conversion: " + shapesPointer);
@@ -529,14 +529,14 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 toConcat.length,
                 null,
                 hosthost,
-                new PointerPointer(new Pointer[] {dataPointer}),
-                new PointerPointer(new Pointer[] {shapesPointer}),
+                dataPointer,
+                shapesPointer,
                 null,
                 (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                 dZ,
                 (LongPointer) dZShapeInfo,
-                new PointerPointer(new Pointer[] {tadPointer}),
-                new PointerPointer(new Pointer[] {offsetPointer}));
+                 null,
+                null);
 
 
         allocator.registerAction(context, ret, toConcat);

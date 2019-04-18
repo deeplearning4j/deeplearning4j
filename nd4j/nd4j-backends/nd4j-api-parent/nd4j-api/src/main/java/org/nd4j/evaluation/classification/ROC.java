@@ -22,6 +22,7 @@ import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCSerializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -219,14 +220,14 @@ public class ROC extends BaseEvaluation<ROC> {
             INDArray cumSumNeg = isNegative.cumsum(-1);
             val length = sorted.size(0);
 
-            INDArray t = Nd4j.create(new long[]{length + 2, 1});
+            INDArray t = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0));
 
-            INDArray fpr = Nd4j.create(new long[]{length + 2, 1});
+            INDArray fpr = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             fpr.put(new INDArrayIndex[]{interval(1, length + 1), all()},
                     cumSumNeg.div(countActualNegative));
 
-            INDArray tpr = Nd4j.create(new long[]{length + 2, 1});
+            INDArray tpr = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             tpr.put(new INDArrayIndex[]{interval(1, length + 1), all()},
                     cumSumPos.div(countActualPositive));
 
@@ -400,16 +401,16 @@ public class ROC extends BaseEvaluation<ROC> {
             predicted positive at threshold: # values <= threshold, i.e., just i
              */
 
-            INDArray t = Nd4j.create(new long[]{length + 2, 1});
+            INDArray t = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0));
 
-            INDArray linspace = Nd4j.linspace(1, length, length, Nd4j.dataType());
-            INDArray precision = cumSumPos.div(linspace.reshape(cumSumPos.shape()));
-            INDArray prec = Nd4j.create(new long[]{length + 2, 1});
+            INDArray linspace = Nd4j.linspace(1, length, length, DataType.DOUBLE);
+            INDArray precision = cumSumPos.castTo(DataType.DOUBLE).div(linspace.reshape(cumSumPos.shape()));
+            INDArray prec = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             prec.put(new INDArrayIndex[]{interval(1, length + 1), all()}, precision);
 
             //Recall/TPR
-            INDArray rec = Nd4j.create(new long[]{length + 2, 1});
+            INDArray rec = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             rec.put(new INDArrayIndex[]{interval(1, length + 1), all()},
                     cumSumPos.div(countActualPositive));
 
@@ -587,13 +588,13 @@ public class ROC extends BaseEvaluation<ROC> {
             if (probAndLabel == null) {
                 //Do initial allocation
                 val initialSize = Math.max(labels2d.size(0), exactAllocBlockSize);
-                probAndLabel = Nd4j.create(new long[]{initialSize, 2}, 'c'); //First col: probability of class 1. Second col: "is class 1"
+                probAndLabel = Nd4j.create(DataType.DOUBLE, new long[]{initialSize, 2}, 'c'); //First col: probability of class 1. Second col: "is class 1"
             }
 
             //Allocate a larger array if necessary
             if (exampleCount + labels2d.size(0) >= probAndLabel.size(0)) {
                 val newSize = probAndLabel.size(0) + Math.max(exactAllocBlockSize, labels2d.size(0));
-                INDArray newProbAndLabel = Nd4j.create(new long[]{newSize, 2}, 'c');
+                INDArray newProbAndLabel = Nd4j.create(DataType.DOUBLE, new long[]{newSize, 2}, 'c');
                 if (exampleCount > 0) {
                     //If statement to handle edge case: no examples, but we need to re-allocate right away
                     newProbAndLabel.get(interval(0, exampleCount), all()).assign(
@@ -734,7 +735,7 @@ public class ROC extends BaseEvaluation<ROC> {
             if (this.exampleCount + other.exampleCount > this.probAndLabel.size(0)) {
                 //Allocate new array
                 val newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), exactAllocBlockSize);
-                INDArray newProbAndLabel = Nd4j.create(newSize, 2);
+                INDArray newProbAndLabel = Nd4j.create(DataType.DOUBLE, newSize, 2);
                 newProbAndLabel.put(new INDArrayIndex[]{interval(0, exampleCount), all()}, probAndLabel.get(interval(0, exampleCount), all()));
                 probAndLabel = newProbAndLabel;
             }

@@ -210,7 +210,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int linearIndex = 0;
         for (INDArray d : matrices) {
             INDArray vector = d.reshape(d.length());
-            ret.put(new INDArrayIndex[] {NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, vector);
+            ret.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, vector);
             linearIndex += d.length();
         }
 

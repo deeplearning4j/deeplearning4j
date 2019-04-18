@@ -129,6 +129,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
@@ -197,6 +198,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
         if(!labels.equalShapes(preOutput)){
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         if (clipEps > 0.0) {

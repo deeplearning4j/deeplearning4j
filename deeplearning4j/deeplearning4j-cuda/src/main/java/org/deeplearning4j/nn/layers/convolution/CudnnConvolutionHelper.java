@@ -37,6 +37,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -66,6 +67,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  */
 @Slf4j
 public class CudnnConvolutionHelper extends BaseCudnnHelper implements ConvolutionHelper {
+
+    public CudnnConvolutionHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnConvolutionContext extends CudnnContext {
 
@@ -252,7 +257,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             log.trace("CudnnConvolutionHelper backward algorithm selection: mode {}, filter algorithm {}, data algorithm {}", mode, fa, da);
         }
 
-        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
+        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, weights.dataType(), new long[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
         val dstStride = epsNext.stride();
 
@@ -363,7 +368,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {(int) miniBatch, (int) outDepth, outSize[0], outSize[1]});
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(), new long[] {(int) miniBatch, (int) outDepth, outSize[0], outSize[1]});
 
         code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
                 (int)  srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]);
@@ -626,12 +631,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         input.size(3) + (manualPadRight ? 1 : 0)};
                 INDArray newInput;
                 if(poolingType == null || poolingType != PoolingType.MAX){
-                    newInput = Nd4j.create(newShape);
+                    newInput = Nd4j.create(input.dataType(), newShape);
                 } else {
                     //For max pooling, we don't want to include the padding in the maximum values. But, CuDNN doesn't knowm
                     // that these values are padding and hence should be excluded. Instead: We'll use -infinity so that,
                     // if the 'real' (non-padding) values are all < 0, we take the real value, not the padding value
-                    newInput = Nd4j.valueArrayOf(newShape, Double.NEGATIVE_INFINITY);
+                    newInput = Nd4j.valueArrayOf(newShape, Double.NEGATIVE_INFINITY, input.dataType());
                 }
                 newInput.put(new INDArrayIndex[]{all(), all(), interval(0,input.size(2)),
                         interval(0, input.size(3))}, input);

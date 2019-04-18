@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.custom.testclasses;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 
 /**
  *
@@ -26,8 +27,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
  * Created by Alex on 26/08/2016.
  */
 public class CustomLayerImpl extends BaseLayer<CustomLayer> {
-    public CustomLayerImpl(NeuralNetConfiguration conf) {
-        super(conf);
+    public CustomLayerImpl(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
