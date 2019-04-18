@@ -18,7 +18,7 @@ if(result)
 endif()
 
 # OPTIONAL MKL-DNN
-if ("${_MKLDNN}")
+if ("${BUILD_MKLDNN}")
     # Download and unpack mkl-dnn at configure time
     configure_file(./CMakeLists.txt.in mkldnn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
