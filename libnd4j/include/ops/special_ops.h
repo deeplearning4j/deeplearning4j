@@ -1380,6 +1380,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             if (shape::isMatrix(xShapeInfo)) {
 
                 if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+                    if (tadShapeInfo == nullptr) {
+                        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, 1);
+                        tadShapeInfo = tadPack.primaryShapeInfo();
+                        tadOffsets = tadPack.primaryOffsets();
+                    }
                     
                     const uint tadLen    = shape::length(tadShapeInfo);
                     const uint numOfTads = shape::length(xShapeInfo) / tadLen;
