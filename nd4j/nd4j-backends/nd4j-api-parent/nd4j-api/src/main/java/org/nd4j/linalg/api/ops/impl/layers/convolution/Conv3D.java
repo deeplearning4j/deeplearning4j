@@ -240,7 +240,6 @@ public class Conv3D extends DynamicCustomOp {
                 map.put(keys, propertyMapping);
         }
 
-        ret.put(onnxName(), map);
         ret.put(tensorflowName(), map);
         return ret;
     }

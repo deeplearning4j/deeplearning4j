@@ -61,7 +61,6 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
