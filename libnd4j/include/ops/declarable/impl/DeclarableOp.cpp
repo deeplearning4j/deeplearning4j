@@ -465,10 +465,22 @@ namespace nd4j {
 
                 for (int e = 0; e < numOutputs; e++) {
                     // if given output index doesn't exist - we're done
-                    if (!vs->hasVariable(block->nodeId(), e))
-                        break;
 
-                    auto array = vs->getVariable(block->nodeId(), e)->getNDArray();
+                    if (!block->isFastPath()) {
+                        if (!vs->hasVariable(block->nodeId(), e))
+                            break;
+                    } else {
+                        // we have to check either in or out stack, depending on isInplace()
+                        if (block->isInplace()) {
+                            if (block->fastpath_in().size() <= e)
+                                break;
+                        } else {
+                            if (block->fastpath_out().size() <= e)
+                                break;
+                        }
+                    }
+
+                    auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e] : vs->getVariable(block->nodeId(), e)->getNDArray();
 
                     auto shape = ShapeUtils::shapeAsString(array);
                     auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
