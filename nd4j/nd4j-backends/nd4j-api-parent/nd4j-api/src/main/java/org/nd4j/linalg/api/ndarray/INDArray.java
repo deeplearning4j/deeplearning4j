@@ -2739,5 +2739,5 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method returns array with gains for Barnes-Hut-Tsne algorithm
      * @return
      */
-    INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon);
+    //INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon);
 }

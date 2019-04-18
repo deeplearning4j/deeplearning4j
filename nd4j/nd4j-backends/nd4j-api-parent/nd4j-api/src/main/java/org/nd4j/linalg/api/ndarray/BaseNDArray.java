@@ -6367,7 +6367,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    @Override
+    //@Override
     public INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon) {
         INDArray ret = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), input.dataType()), this.shape(), this.ordering());
         return Nd4j.getExecutioner().exec(new BarnesHutGains(ret, input, gradx, epsilon));

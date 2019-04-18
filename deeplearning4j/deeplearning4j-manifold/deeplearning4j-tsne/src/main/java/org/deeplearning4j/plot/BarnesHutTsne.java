@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -581,9 +582,9 @@ public class BarnesHutTsne implements Model {
 
             INDArray yGrads = gradient;
 
-            // TODO: make this single op
-            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));
+            gains = ((BaseNDArray)gains).gains(gains, yGrads, yIncs)[0];
+            /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));*/
 
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
