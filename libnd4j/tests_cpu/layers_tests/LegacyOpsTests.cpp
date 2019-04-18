@@ -575,3 +575,10 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(LegacyOpsTests, Softmax_119) {
+    auto x = NDArrayFactory::create<float>('c', {10, 10});
+    x.linspace(1.0);
+
+    x.applyTransform(transform::StrictOps::SoftMax);
+}
