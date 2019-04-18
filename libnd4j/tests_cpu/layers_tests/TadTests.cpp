@@ -268,12 +268,14 @@ TEST_F(TadTests, test_column_1) {
     shape::printShapeInfoLinear("column view", tadPack.primaryShapeInfo());
     ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
     ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
+    ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));
 
     auto scalarViewPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
 
     shape::printShapeInfoLinear("scalar view", scalarViewPack.primaryShapeInfo());
     ASSERT_EQ(0, shape::rank(scalarViewPack.primaryShapeInfo()));
     ASSERT_EQ(1, shape::length(scalarViewPack.primaryShapeInfo()));
+    ASSERT_TRUE(shape::isScalar(scalarViewPack.primaryShapeInfo()));
 }
 
 
