@@ -57,6 +57,14 @@ namespace nd4j {
         }
     }
 
+    ResultSet::ResultSet(const ResultSet& other) noexcept{
+        for (const auto v:other._content)
+            _content.emplace_back(v);
+
+        _status = other._status;
+        _removable = false;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // move constructor
     ResultSet::ResultSet(ResultSet&& other) noexcept {
@@ -80,6 +88,22 @@ namespace nd4j {
         _status = other._status;
         _removable = other._removable;
         other._removable = false;
+
+        return *this;
+    }
+
+    ResultSet& ResultSet::operator=(const ResultSet& other) noexcept {
+
+        if (this == &other)
+            return *this;
+
+        this->~ResultSet();
+
+        for (const auto v:other._content)
+            _content.emplace_back(v);
+
+        _status = other._status;
+        _removable = false;
 
         return *this;
     }

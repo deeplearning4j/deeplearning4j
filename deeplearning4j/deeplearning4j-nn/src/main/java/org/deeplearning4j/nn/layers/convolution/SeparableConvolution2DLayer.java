@@ -88,6 +88,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray pointWiseWeights =
                 getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true, workspaceMgr);
 
+        INDArray input = this.input.castTo(dataType);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -176,6 +177,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training, workspaceMgr);
         INDArray pointWiseWeights =
                 getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training, workspaceMgr);
+
+        INDArray input = this.input.castTo(dataType);
 
         if (input.rank() != 4) {
             String layerName = conf.getLayer().getLayerName();

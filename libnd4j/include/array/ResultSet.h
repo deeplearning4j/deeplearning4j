@@ -43,7 +43,11 @@ namespace  nd4j {
     public:
         // default constructor
         ResultSet(const nd4j::graph::FlatResult* result = nullptr);
-        
+
+        ResultSet(const ResultSet& other) noexcept;
+
+        ResultSet& operator=(const ResultSet& other) noexcept;
+
         // move constructor
         ResultSet(ResultSet&& other) noexcept;
 
