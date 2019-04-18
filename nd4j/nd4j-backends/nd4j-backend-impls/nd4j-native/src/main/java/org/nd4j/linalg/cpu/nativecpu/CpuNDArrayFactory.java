@@ -697,6 +697,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
             throw new UnsupportedOperationException("2D input is expected");
+
         return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
 
