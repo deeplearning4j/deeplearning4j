@@ -1,3 +1,31 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author yves@iv-devs.com
+//
+// These labels were extracted from WordNet synnets for the ILSVRC2014 challenge. If you use them please cite:
+//
+// ImageNet Large Scale Visual Recognition Challenge
+//
+// Olga Russakovsky*, Jia Deng*, Hao Su, Jonathan Krause, Sanjeev Satheesh, Sean Ma, Zhiheng Huang, Andrej Karpathy, Aditya Khosla,
+// Michael Bernstein, Alexander C. Berg and Li Fei-Fei. (* = equal contribution)
+// ImageNet Large Scale Visual Recognition Challenge. IJCV, 2015.
+// https://arxiv.org/pdf/1409.0575.pdf
+
 #ifndef LABELS_IMAGENET_H
 #define LABELS_IMAGENET_H
 

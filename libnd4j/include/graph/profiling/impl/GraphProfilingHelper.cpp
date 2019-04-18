@@ -23,7 +23,7 @@
 
 namespace nd4j {
     namespace graph {
-        GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations, int warmUpIterations=1000) {
+        GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations, int warmUpIterations) {
 
             // saving original workspace
             auto varSpace = graph->getVariableSpace()->clone();

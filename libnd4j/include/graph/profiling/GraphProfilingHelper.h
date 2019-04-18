@@ -29,7 +29,7 @@ namespace nd4j {
     namespace graph {
         class GraphProfilingHelper {
         public:
-            static GraphProfile* profile(Graph *graph, int iterations,int warmUpIterations);
+            static GraphProfile* profile(Graph *graph, int iterations,int warmUpIterations=1000);
         };
     }
 }
