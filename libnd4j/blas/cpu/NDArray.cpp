@@ -4994,8 +4994,9 @@ template void NDArray::operator/=(const bool scalar);
     }
 
     ////////////////////////////////////////////////////////////////////////
-    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
-        auto result = new ResultSet();
+    ResultSet NDArray::allTensorsAlongDims(const std::vector<int> &dimensions) const {
+        
+        ResultSet result;
 
         if(dimensions.size() == 0)
             return result;
@@ -5008,24 +5009,13 @@ template void NDArray::operator/=(const bool scalar);
 
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-        
-        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 
-        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tadPack.primaryShapeInfo())];
-        std::memcpy(shapeInfo, tadPack.primaryShapeInfo(), shape::shapeInfoByteLength(tadPack.primaryShapeInfo()));
-
-        for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), shapeInfo);
-            result->push_back(array);
+        for (uint idx = 0; idx < tadPack.numberOfTads(); idx++ ) {
+            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), tadPack.primaryShapeInfo(), getWorkspace(), false, false);
+            result.push_back(array);
         }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
 
         return result;
     }
@@ -5033,6 +5023,11 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     ResultSet* NDArray::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
         return allTensorsAlongDimension(std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+        return new ResultSet(std::move(allTensorsAlongDims(dimensions)));
     }
 
     ////////////////////////////////////////////////////////////////////////
