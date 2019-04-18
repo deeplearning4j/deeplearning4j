@@ -3291,18 +3291,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype, Workspace workspace/*=nullptr*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(order, shape, dtype); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, dtype, workspace); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, Workspace workspace/*=nullptr*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
@@ -4019,6 +4019,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
         public native ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+
+        public native @ByVal ResultSet allTensorsAlongDims(@StdVector IntPointer dimensions);
+        public native @ByVal ResultSet allTensorsAlongDims(@StdVector IntBuffer dimensions);
+        public native @ByVal ResultSet allTensorsAlongDims(@StdVector int[] dimensions);
 
         public native ResultSet allExamples();
 
@@ -4784,8 +4788,18 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         public ResultSet() { super((Pointer)null); allocate(); }
         private native void allocate();
 
+        public ResultSet(@Const @ByRef ResultSet other) { super((Pointer)null); allocate(other); }
+        private native @NoException void allocate(@Const @ByRef ResultSet other);
+
+        public native @ByRef @Name("operator =") @NoException ResultSet put(@Const @ByRef ResultSet other);
+
+        // move constructor
+
+        // move assignment operator
+
         public native int size();
-        public native NDArray at(@Cast("unsigned long") long idx);
+        public native NDArray at(@Cast("const unsigned long") long idx);
+        public native @Name("operator []") NDArray get(@Cast("const unsigned long") long idx);
         public native void push_back(NDArray array);
 
         public native @Cast("Nd4jStatus") int status();
