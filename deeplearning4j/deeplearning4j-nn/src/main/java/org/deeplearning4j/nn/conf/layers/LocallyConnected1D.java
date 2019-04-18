@@ -37,10 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SameDiff version of a 1D locally connected layer.
@@ -63,6 +60,7 @@ public class LocallyConnected1D extends SameDiffLayer {
     private int kernel;
     private int stride;
     private int padding;
+    private int paddingR;   //Right/bottom padding
     private ConvolutionMode cm;
     private int dilation;
     private boolean hasBias;
@@ -100,8 +98,8 @@ public class LocallyConnected1D extends SameDiffLayer {
         if (cm == ConvolutionMode.Same) {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, 0, cm,
                             dilation);
-            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride,
-                            dilation);
+            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
+            this.paddingR = Convolution1DUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
                             dilation);
@@ -175,6 +173,16 @@ public class LocallyConnected1D extends SameDiffLayer {
         int outH = outputSize;
         int sH = stride;
         int kH = kernel;
+
+        if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)){
+            //Note: for same mode, bottom/right padding can be 1 more than top/left padding
+            //NCW format.
+            if(cm == ConvolutionMode.Same) {
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, paddingR}}, 0);
+            } else {
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, padding}}, 0);
+            }
+        }
 
         SDVariable[] inputArray = new SDVariable[outH];
         for (int i = 0; i < outH; i++) {
