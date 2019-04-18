@@ -73,6 +73,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         INDArray depthWiseWeights =
                 getParamWithNoise(DepthwiseConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
+        INDArray input = this.input.castTo(dataType);   //No-op if correct type
+
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
         int inH = (int) input.size(2);
@@ -164,6 +166,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                     ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
                     : "") + " " + layerId());
         }
+
+        INDArray input = this.input.castTo(dataType);   //no-op if correct dtype
 
         // FIXME: int cast
         int inDepth = (int) depthWiseWeights.size(2);
