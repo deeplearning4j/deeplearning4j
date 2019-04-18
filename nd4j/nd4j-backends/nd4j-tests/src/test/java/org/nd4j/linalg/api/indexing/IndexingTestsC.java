@@ -16,18 +16,20 @@
 
 package org.nd4j.linalg.api.indexing;
 
+import org.joda.time.Interval;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -336,7 +338,103 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray mul = get.mul(ones);
         INDArray assertion = Nd4j.create(new double[][] {{0.25, 0.5}, {1.25, 1.5}});
         assertEquals(assertion, mul);
+    }
 
+    @Test
+    public void testIndexingThorough(){
+
+
+        long[] fullShape = {3,4,5,6,7};
+
+        for(char order : new char[]{'c', 'f'}){
+            for( int rank=1; rank<5; rank++ ){
+                int[] n = new int[rank];
+                long[] shape = new long[rank];
+                long prod = 1;
+                for( int i=0; i<rank; i++ ) {
+                    n[i] = 6;
+                    shape[i] = fullShape[i];
+                    prod *= fullShape[i];
+                }
+                NdIndexIterator iter = new NdIndexIterator(n);
+                INDArrayIndex[] indexes = new INDArrayIndex[rank];
+                while(iter.hasNext()){
+                    long[] next = iter.next();
+                    for( int i=0; i<next.length; i++ ){
+                        switch (i){
+                            case 0:
+                                indexes[i] = NDArrayIndex.point(0);
+                                break;
+                            case 1:
+                                indexes[i] = NDArrayIndex.point(fullShape[i]-1);
+                                break;
+                            case 2:
+                                indexes[i] = NDArrayIndex.point(fullShape[i]/2);
+                                break;
+                            case 3:
+                                indexes[i] = NDArrayIndex.interval(0, fullShape[i]);
+                                break;
+                            case 4:
+                                indexes[i] = NDArrayIndex.interval(1, fullShape[i]-1);
+                                break;
+                            case 5:
+                                indexes[i] = NDArrayIndex.interval(1, 2, fullShape[i]);
+                                break;
+                            case 6:
+                                indexes[i] = NDArrayIndex.all();
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                    }
+                }
+
+
+                INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', shape).dup(order);
+                INDArray sub = arr.get(indexes);
+
+                long[] expShape = getShape(arr, indexes);
+                assertArrayEquals(expShape, sub.shape());
+
+
+                NdIndexIterator iter = new NdIndexIterator(expShape);
+                while(iter.hasNext()){
+                    long[] n = iter.next();
+                    double act = arr.getDouble(n);
+
+                }
+            }
+        }
+    }
+
+    private static long[] getShape(INDArray in, INDArrayIndex[] idxs){
+        Preconditions.checkState(in.rank() == idxs.length);
+        int countPoint = 0;
+        for(INDArrayIndex i : idxs){
+            if(i instanceof PointIndex)
+                countPoint++;
+        }
+
+        long[] out = new long[in.rank() - countPoint];
+        int j=0;
+        for( int i=0; i<idxs.length; i++ ){
+            if(idxs[i] instanceof PointIndex)
+                continue;
+            if(idxs[i] instanceof NDArrayIndexAll){
+                out[j++] = in.size(i);
+            } else if(idxs[i] instanceof IntervalIndex){
+                IntervalIndex ii = (IntervalIndex)idxs[i];
+                long begin = ii.offset();
+                long end = ii.end();
+                long stride = ii.stride();
+                out[j++] = (end-begin)/stride;
+            }
+        }
+        return out;
+    }
+
+    public static double getDouble(INDArrayIndex[] idxs, INDArray source, long[] pt){
+        
     }
 
 
