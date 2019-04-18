@@ -1065,6 +1065,8 @@ TEST_F(JavaInteropTests, Test_Fastpath_5) {
     auto a = NDArrayFactory::create<float>('c', {3, 3});
     auto b = NDArrayFactory::create<float>('c', {3, 3});
     auto c = NDArrayFactory::create<float>('c', {3, 3});
+    a.linspace(1.0);
+    b.linspace(1.0);
 
     Context ctx(1);
 
