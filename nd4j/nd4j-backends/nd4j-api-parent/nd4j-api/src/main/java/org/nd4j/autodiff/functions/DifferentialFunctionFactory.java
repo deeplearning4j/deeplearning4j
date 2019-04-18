@@ -2151,6 +2151,10 @@ public class DifferentialFunctionFactory {
         return new Slice(sameDiff(), input, begin, size).outputVariable();
     }
 
+    public SDVariable slice(SDVariable input, SDVariable begin, SDVariable size) {
+        return new Slice(sameDiff(), input, begin, size).outputVariable();
+    }
+
     public SDVariable sliceBp(SDVariable input, SDVariable gradient, int[] begin, int[] size) {
         return new SliceBp(sameDiff(), input, gradient, begin, size).outputVariable();
     }

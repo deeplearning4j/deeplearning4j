@@ -55,6 +55,10 @@ public class Slice extends DynamicCustomOp {
         addIArgument(size);
     }
 
+    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable end){
+        super(null, sameDiff, new SDVariable[]{input, begin, end});
+    }
+
 
     @Override
     public String opName() {
