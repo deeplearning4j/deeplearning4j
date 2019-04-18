@@ -158,7 +158,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray tensorAlongDimension(int index, int... dimension);
+    INDArray tensorAlongDimension(long index, int... dimension);
 
     /**
      * Get the vector along a particular dimension

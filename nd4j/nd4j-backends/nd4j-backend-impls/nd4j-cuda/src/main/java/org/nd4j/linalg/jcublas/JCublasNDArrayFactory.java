@@ -644,8 +644,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
 
+
         long[] shape;
-        if (sourceDimension == 1)
+        if (source.rank() == 1) {
+            shape = new long[]{indexes.length};
+        } else if (sourceDimension == 1)
             shape = new long[] {indexes.length, source.shape()[sourceDimension]};
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
@@ -665,7 +668,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         Preconditions.checkArgument(source.dataType() == destination.dataType(), "Source and Destination data types must be the same");
 
         long[] shape = null;
-        if (sourceDimension == 1)
+        if (source.rank() == 1) {
+            shape = new long[]{indexes.length};
+        } else if (sourceDimension == 1)
             shape = new long[] {indexes.length, source.shape()[sourceDimension]};
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};

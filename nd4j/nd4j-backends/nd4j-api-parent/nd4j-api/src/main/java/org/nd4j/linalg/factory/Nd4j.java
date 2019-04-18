@@ -5604,6 +5604,8 @@ public class Nd4j {
             }
         }
 
+        Preconditions.checkArgument(source.rank() > 1, "pullRows() can't operate on 0D/1D arrays");
+
         INDArray ret = INSTANCE.pullRows(source, sourceDimension, indexes, order);
         logCreationIfNecessary(ret);
         return ret;
@@ -5633,6 +5635,8 @@ public class Nd4j {
                         "Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
             }
         }
+
+        Preconditions.checkArgument(source.rank() > 1, "pullRows() can't operate on 0D/1D arrays");
 
         INDArray ret = INSTANCE.pullRows(source, destination, sourceDimension, indexes);
         logCreationIfNecessary(ret);
