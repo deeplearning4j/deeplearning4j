@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
     void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output);
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, int N, NDArray* output);
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray& data, NDArray& buf);
 }
 }
 }

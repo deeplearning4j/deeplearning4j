@@ -27,51 +27,49 @@
 namespace nd4j {
 namespace ops  {
 		
-		CUSTOM_OP_IMPL(barnes_edge_forces, 3, 1, false, 0, 1) {
-		auto rowP  = INPUT_VARIABLE(0);
-        auto colP  = INPUT_VARIABLE(0);
+    CUSTOM_OP_IMPL(barnes_edge_forces, 5, 3, false, 0, 1) {
+        auto rowP  = INPUT_VARIABLE(0);
+        auto colP  = INPUT_VARIABLE(1);
+        auto valP  = INPUT_VARIABLE(2);
+        auto dataP  = INPUT_VARIABLE(3);
+        auto bufP  = INPUT_VARIABLE(4);
         auto N = INT_ARG(0);
 
-    		auto output = OUTPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+        auto outputData = OUTPUT_VARIABLE(1);
+        auto outputBuf = OUTPUT_VARIABLE(2);
 
-    		REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force op: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
+            REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force op: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
             REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force op: col input must be a vector, but its rank is %i instead !", colP->rankOf());
+        outputBuf->assign(bufP);
+        outputData->assign(dataP);
+        helpers::barnes_edge_forces(rowP, colP, valP, N, output, *outputData, *outputBuf);
 
-	 	 	helpers::barnes_edge_forces(rowP, colP, N, output);
+        return Status::OK();
+    }
 
-		    return Status::OK();
-		}
+    DECLARE_TYPES(barnes_edge_forces) {
+        getOpDescriptor()
+        ->setAllowedInputTypes(0, {ALL_INTS})
+        ->setAllowedInputTypes(1, {ALL_INTS})
+        ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedInputTypes(3, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedInputTypes(4, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedOutputTypes(1, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedOutputTypes(2, {ALL_INTS, ALL_FLOATS})
+        ->setSameMode(false);
+    }
 
-		DECLARE_TYPES(barnes_edge_forces) {
-			getOpDescriptor()
-			->setAllowedInputTypes(nd4j::DataType::ANY)
-			->setSameMode(true);
-		}
-
-		DECLARE_SHAPE_FN(barnes_edge_forces) {
-    		auto inputShapeInfo = inputShape->at(0);
-
-    		const int inRank = inputShapeInfo[0];
-
-    		// input validation
-    		REQUIRE_TRUE(inRank == 2 ||  inRank == 4 || inRank == 6, 0, "DIAG_PART op: input array must have rank among following three possible values: 2, 4, 6, but got %i instead !", inRank);
-    		for(int i = 1; i < inRank; ++i)
-    			REQUIRE_TRUE(inputShapeInfo[i] == inputShapeInfo[i+1], 0, "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !", ShapeUtils::shapeAsString(inputShapeInfo).c_str());
-
-    		Nd4jLong* outShapeInfo = nullptr;
-
-			int outRank = inRank/2;
-
-			ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
-	
-			outShapeInfo[0] = outRank;
-			for(int i = 1; i <= outRank; ++i)
-				outShapeInfo[i] = inputShapeInfo[i];
-
-			ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-
-    		return SHAPELIST(outShapeInfo);
-		}
+    DECLARE_SHAPE_FN(barnes_edge_forces) {
+        Nd4jLong* dataShape;
+        Nd4jLong* bufShape;
+        Nd4jLong* outShapeInfo;
+        COPY_SHAPE(inputShape->at(3), dataShape);
+        COPY_SHAPE(inputShape->at(4), bufShape);
+        outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
+        return SHAPELIST(outShapeInfo, dataShape, bufShape);
+    }
 
 
 }
