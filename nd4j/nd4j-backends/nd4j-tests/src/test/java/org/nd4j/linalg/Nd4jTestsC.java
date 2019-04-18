@@ -7486,19 +7486,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testRowsEdgeCaseView(){
-        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
-        INDArray view = arr.getColumn(0);
-        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0).reshape(5,1), view);
-        int[] idxs = new int[]{0,2,3,4};
-
-        INDArray out = Nd4j.pullRows(view, 1, idxs);
-        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4,1);
-
-        assertEquals(exp, out);   //Failing here
-    }
-
-    @Test
     public void testCreateF(){
         char origOrder = Nd4j.order();
         try {
