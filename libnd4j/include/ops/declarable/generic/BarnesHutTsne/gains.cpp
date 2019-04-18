@@ -27,20 +27,37 @@
 namespace nd4j {
 namespace ops  {
 		
-		OP_IMPL(barnes_gains, 3, 1, true) {
-		auto input  = INPUT_VARIABLE(0);
-	    auto gradX = INPUT_VARIABLE(1);
-	    auto epsilon = INPUT_VARIABLE(2);
+    OP_IMPL(barnes_gains, 3, 1, true) {
+        auto input  = INPUT_VARIABLE(0);
+        auto gradX = INPUT_VARIABLE(1);
+        auto epsilon = INPUT_VARIABLE(2);
 
-    	auto output = OUTPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+        //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+        //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+        auto signGradX = *gradX;
+        auto signEpsilon = *epsilon;
+        gradX->applyTransform(transform::Sign, &signGradX, nullptr);
+        epsilon->applyTransform(transform::Sign, &signEpsilon, nullptr);
+        auto leftPart = (*input + 2.) * signGradX;
+        auto leftPartBool = NDArrayFactory::create<bool>(leftPart.ordering(), leftPart.getShapeAsVector());
 
-		}
+        leftPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &leftPartBool, nullptr);
+        auto rightPart = *input * 0.8 * signGradX;
+        auto rightPartBool = NDArrayFactory::create<bool>(rightPart.ordering(), rightPart.getShapeAsVector());
+        rightPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &rightPartBool, nullptr);
+        leftPart.assign(leftPartBool);
+        rightPart.assign(rightPartBool);
+        leftPart.applyPairwiseTransform(pairwise::Add, &rightPart, output, nullptr);
 
-		DECLARE_TYPES(barnes_gains) {
-			getOpDescriptor()
-				->setAllowedInputTypes(nd4j::DataType::ANY)
-				->setSameMode(true);
-		}
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(barnes_gains) {
+        getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setSameMode(true);
+    }
 }
 }
 
