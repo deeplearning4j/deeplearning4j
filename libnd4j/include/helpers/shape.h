@@ -100,6 +100,8 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2);
 
+    ND4J_EXPORT _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2, const Nd4jLong *shapeInfo3);
+
     ND4J_EXPORT _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2);
 
     ND4J_EXPORT _CUDA_HD bool strideEquals(Nd4jLong *shapeInfo1,Nd4jLong *shapeInfo2);
@@ -1068,7 +1070,7 @@ namespace shape {
     // dimsToExclude - should be sorted in increasing order
     ND4J_EXPORT _CUDA_HD int outerArrayOffsets(Nd4jLong* maxOffsets, const Nd4jLong minIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr);
 
-    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dominions excluded from outer array 
+    // calculates offsets for numOfSubArrs sub-arrays, shape in this context means dimensions excluded from outer array 
     // rank is equal to size of shape
     ND4J_EXPORT void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets);
    
@@ -1085,6 +1087,20 @@ namespace shape {
     // if array is common vector then ews = stride of non-unity dimension and order is preserved
     // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is preserved
     ND4J_EXPORT _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len = -1);
+
+    /**
+    * processes whole set of sub-arrays 
+    * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)
+    * arguments: 
+    * wholeShapeInfo - original shapeInfo of whole array
+    * numOfSubArrs - number of sub-arrays, size of subArrOffsets is equal to numOfSubArrs
+    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array and copy of wholeShapeInfo will be returned and one zero offset
+    * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]    
+    * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
+    * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
+    * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+    */ 
+    ND4J_EXPORT _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo, const Nd4jLong numOfSubArrs, const int dimsSize, const int* dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape = false);
 
 
 
@@ -1194,6 +1210,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
     INLINEDEF _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2) {
         return shape::shapeEquals(shape::rank(shapeInfo1), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo1)), shape::rank(shapeInfo2), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo2)));
+    }
+
+    INLINEDEF _CUDA_HD bool shapeEquals(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2, const Nd4jLong *shapeInfo3) {
+
+        return shape::shapeEquals(shapeInfo1, shapeInfo2) && shape::shapeEquals(shapeInfo1, shapeInfo3);
+
     }
 
     INLINEDEF _CUDA_HD bool strideEquals(int shape1Rank,Nd4jLong *shape1,int shape2Rank,Nd4jLong *shape2) {
@@ -2421,8 +2443,10 @@ template <typename T>
     
     INLINEDEF _CUDA_HD bool isCommonVector(const Nd4jLong *shapeInfo, int& posOfNonUnityDim) {
         
-        if(rank(shapeInfo) > 0 && length(shapeInfo) == 1)
+        if(rank(shapeInfo) > 0 && length(shapeInfo) == 1) {
+            posOfNonUnityDim = 0;
             return true;
+        }
 
         int numOfNonUnity = 0;
         for(int i = 1; i <= shapeInfo[0]; ++i) {
@@ -2742,16 +2766,23 @@ template <typename T>
  * Compute the length of the given shape
  */
     INLINEDEF _CUDA_HD Nd4jLong length(const Nd4jLong *shapeInfo) {
-        int rank = shape::rank(shapeInfo);
+
+		const int rank = shape::rank(shapeInfo);
+
         if (rank == 0) {
             if (isEmpty(shapeInfo))
                 return 0L;
-            else
-                return 1L;
+            return 1L;
         }
+
         if (rank == 1)
             return shapeInfo[1];
 
+        // if(shape::elementWiseStride(shapeInfo) == 1) { // contiguous
+        //     if(shape::order(shapeInfo) == 'c')
+        //         return shapeInfo[1] * shapeInfo[rank + 1];      // first dim * first stride   
+        //     return shapeInfo[rank] * shapeInfo[2 * rank];       // last  dim * last  stride
+        // }
 
         return shape::prodLong(shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), rank);
     }
@@ -4646,60 +4677,55 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
 //////////////////////////////////////////////////////////////////////
 INLINEDEF void calcSubArrOffsets(const Nd4jLong numOfSubArrs, const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* subArrOffsets) {
 
-    // set offset for first sub-array, it is equal to zero always        
+    // if(false) {                     // tests showed that this code did calculation notably slower even for big numOfSubArrs
+    //     Nd4jLong indexes[MAX_RANK];
+    //     PRAGMA_OMP_PARALLEL_FOR_ARGS(private(indexes))
+    //     for (Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+    //         shape::ind2subC(rank, shape, i, indexes);
+    //         subArrOffsets[i] = 0;
+    //         for (int j = 0; j < rank; ++j)
+    //             if(shape[j] != 1)
+    //                 subArrOffsets[i] += indexes[j] * strides[j];
+    //     }
+    //     return
+    // }
+
+    // set offset for first sub-array, it is equal to zero always
     subArrOffsets[0] = 0; 
 
-    // choose whether to parallelize or not
-    if(numOfSubArrs > 1024 /*Environment::getInstance()->elementwiseThreshold()*/) {
+    Nd4jLong rankMinusOne = rank - 1, i = 1, j = rankMinusOne, start = 0;
 
-        #pragma omp parallel  // PRAGMA_OMP_PARALLEL_ARGS(private(indexes)) 
-        {
-            Nd4jLong* indexes = new Nd4jLong[rank];
+    Nd4jLong* idx          = new Nd4jLong[rankMinusOne];
+    Nd4jLong* offsetPerDim = new Nd4jLong[rankMinusOne];
+    memset(idx,        0, sizeof(Nd4jLong) * rankMinusOne);
 
-            #pragma omp for simd schedule(guided) // PRAGMA_OMP_PARALLEL_FOR
-            for (Nd4jLong i = 1; i < numOfSubArrs; ++i) {
-                    
-                shape::ind2subC(rank, shape, i, indexes);
-                subArrOffsets[i] = 0;
-                for (int j = 0; j < rank; ++j)
-                    if(shape[j] != 1)                   
-                        subArrOffsets[i] += indexes[j] * strides[j];
-            }                
-            delete []indexes;
-        }            
-    }
-    else {
+    PRAGMA_OMP_SIMD
+    for (int i = 0; i < rankMinusOne; ++i)
+        offsetPerDim[i] = (shape[i] - 1) * strides[i];
 
-        Nd4jLong rankMinusOne = rank - 1;
-        Nd4jLong i = 1, j = rankMinusOne;
-        Nd4jLong* idx        = new Nd4jLong[rank];
-        Nd4jLong* currOffset = new Nd4jLong[rank];
-        memset(idx,        0, sizeof(Nd4jLong) * rank);
-        memset(currOffset, 0, sizeof(Nd4jLong) * rank);
+    // nested loops - calculation of sub-array offsets (subArrOffsets)
+    while(j >= 0) {
 
-        // nested loops - calculation of sub-array offsets (subArrOffsets)
-        while(j >= 0) {
+        if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
 
-            if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
-            
-            if(j == rankMinusOne) {         // last dimension
-                for(idx[j] = 1; idx[j] < shape[j]; ++idx[j]) 
-                subArrOffsets[i++] = subArrOffsets[i-1] + strides[j];
-                --j;
-            }
-            else if(idx[j] < shape[j] - 1) {
-                currOffset[j] += strides[j];
-                subArrOffsets[i++] = j ? currOffset[j] + currOffset[j-1] : currOffset[j];                
-                ++idx[j];
-                j = rankMinusOne;
-            }
-            else
-                currOffset[j--] = idx[j] = 0;
+        if(j == rankMinusOne) {              // last dimension
+            for(int l = 1; l < shape[j]; ++l)
+                subArrOffsets[i++] = subArrOffsets[i - 1] + strides[j];
+            --j;
         }
+        else if(idx[j] < shape[j] - 1) {
+            subArrOffsets[i++] = (start += strides[j]);
+            ++idx[j];
+            j = rankMinusOne;
+        }
+        else {
+            start -= offsetPerDim[j];
+			idx[j--] = 0;
+        }
+	}
 
-        delete []idx;
-        delete []currOffset;
-    }
+    delete []idx;
+    delete []offsetPerDim;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -4721,7 +4747,7 @@ INLINEDEF void _CUDA_HD setEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     }
 
     int nonUnityDim(0);
-    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {        
+    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {
         *ews = strides[nonUnityDim];
         return;
     }
@@ -4827,6 +4853,64 @@ INLINEDEF _CUDA_HD void setOrderAndEws(Nd4jLong* shapeInfo, Nd4jLong len) {
     *ews = 0; 
     // if both cContiguous and fContiguous are false then order is preserved 
 }
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo, const Nd4jLong numOfSubArrs, const int dimsSize, const int* dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape) {
+
+    const int rank = shape::rank(wholeShapeInfo);
+
+    if(dimsSize == rank || dimsSize == 0) {    // means there is one sub-array and it coincides with whole array, return copy of wholeShapeInfo and one zero offset in this case
+        memcpy(subArrShapeInfo, wholeShapeInfo, shape::shapeInfoLength(rank) * sizeof(Nd4jLong));
+        *subArrOffsets = 0;
+        return;
+    }
+
+    Nd4jLong *outShapeInfo = new Nd4jLong[shape::shapeInfoLength(wholeShapeInfo)];
+    memcpy(outShapeInfo, wholeShapeInfo, shape::shapeInfoByteLength(wholeShapeInfo));
+
+    Nd4jLong* shape   = new Nd4jLong[dimsSize]; 
+    Nd4jLong* strides = new Nd4jLong[dimsSize];
+
+    const int subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
+    Nd4jLong* shapeNoUnities = nullptr;
+    if(!keepUnitiesInShape)
+        shapeNoUnities = new Nd4jLong[subArrRank];
+
+    Nd4jLong subArrLen = 1;
+
+    for(int k = subArrRank - 1, j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
+        if(j >= 0 && i == dimsToExclude[j]) {
+            strides[j] = shape::stride(outShapeInfo)[i];
+            shape[j--] = shape::shapeOf(outShapeInfo)[i];
+            shape::shapeOf(outShapeInfo)[i] = 1;
+        }
+        else {
+            subArrLen *= shape::shapeOf(outShapeInfo)[i];
+            if(!keepUnitiesInShape)
+                shapeNoUnities[k--] = shape::shapeOf(outShapeInfo)[i];
+        }
+    }
+
+    // evaluate ews
+    shape::setEws(outShapeInfo, subArrLen);
+
+    // calculation of sub-array offsets (subArrOffsets)
+    calcSubArrOffsets(numOfSubArrs, dimsSize, shape, strides, subArrOffsets);
+
+    // remove unities from outShapeInfo if required
+    if(!keepUnitiesInShape) {
+        shape::reshapeC(rank, outShapeInfo, subArrRank, shapeNoUnities, subArrShapeInfo);
+        delete []shapeNoUnities;
+    }
+    else
+        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(subArrRank) * sizeof(Nd4jLong));
+
+    delete []strides;
+    delete []shape;
+    delete []outShapeInfo;
+}
+
+
 
 }
 

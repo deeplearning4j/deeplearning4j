@@ -16,8 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -48,7 +46,7 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
     @Override
     public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput,
-                    Map<String, SDVariable> paramTable) {
+                                   Map<String, SDVariable> paramTable, Map<String, SDVariable> maskVars) {
         VertexInputs vi = getInputs(sameDiff);
         int i = 0;
         if (vi.map.size() == 0 && layerInput.size() > 0) {

@@ -5,6 +5,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * SameDiff general neural network operations<br>
  * Accessible via {@link SameDiff#math()}<br>
@@ -780,5 +784,142 @@ public class SDNN extends SDOps {
     public SDVariable pad(String outputName, SDVariable input, SDVariable padding, Pad.Mode mode, double constant){
         SDVariable out = f().pad(input, padding, mode, constant);
         return updateVariableNameAndReference(out, outputName);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        return dotProductAttention(null, queries, keys, values, mask, scaled);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        final SDVariable result = f().dotProductAttention(queries, keys, values, mask, scaled);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        return dotProductAttention(null, queries, keys, values, mask, scaled, withWeights);
+    }
+
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * out = sum(similarity(k_i, q) * v_i)
+     *
+     * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+     *
+     * Optionally with normalization step:
+     * similarity(k, q) = softmax(k * q / sqrt(size(q))
+     *
+     * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+     *
+     * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+     * be 3D but can have queryCount = 1
+     *
+     * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+     * both.
+     *
+     * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
+     * output rank will depend on the input rank.
+     *
+     * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     *                or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+     * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     *             or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+     * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     *               or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+     * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+     * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
+     *
+     * Output Arrays:
+     * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
+     *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]]
+     */
+    public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().dotProductAttention(queries, keys, values, mask, scaled, withWeights);
+        if(withWeights){
+            return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
+        }else{
+            return Arrays.asList(
+                    updateVariableNameAndReference(result.get(0), name),
+                    updateVariableNameAndReference(result.get(1), name+":weights")
+            );
+        }
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        final SDVariable result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
+    }
+
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * out = concat(head_1, head_2, ..., head_n) * Wo
+     * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+     *
+     * Optionally with normalization when calculating the attention for each head.
+     *
+     * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+     *
+     * This makes use of dot_product_attention OP support for rank 4 inputs.
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     *
+     * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     * @param Wq input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+     * @param Wk input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+     * @param Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+     * @param Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+     * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+     * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
+     *
+     * Output Arrays:
+     * @return [ Attention result arrays of shape [batchSize, outSize, queryCount]
+     *           (optionally) Attention Weights of shape [batchSize, numHeads, timesteps, queryCount]
+     */
+    public List<SDVariable> multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
+        if(withWeights){
+            return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
+        }else{
+            return Arrays.asList(
+                    updateVariableNameAndReference(result.get(0), name),
+                    updateVariableNameAndReference(result.get(1), name+":weights")
+            );
+        }
     }
 }

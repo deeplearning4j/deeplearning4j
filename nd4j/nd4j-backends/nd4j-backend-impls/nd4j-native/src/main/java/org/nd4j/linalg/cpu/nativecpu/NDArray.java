@@ -80,6 +80,10 @@ public class NDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
+    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
+        super(buffer, shape, stride, offset, ews, ordering);
+    }
+
     public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering, DataType dataType) {
         super(buffer, shape, stride, offset, ordering, dataType);
     }

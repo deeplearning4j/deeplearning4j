@@ -142,12 +142,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
         if (syn0 == null || reset) {
             syn0 = Nd4j.rand(new int[] {vocab.numWords(), vectorLength}, rng).subi(0.5).divi(vectorLength);
-            //            INDArray randUnk = Nd4j.rand(1, vectorLength, rng).subi(0.5).divi(vectorLength);
-            //            putVector(Word2Vec.UNK, randUnk);
         }
+
         if ((syn1 == null || reset) && useHS) {
             log.info("Initializing syn1...");
-            syn1 = Nd4j.create(syn0.shape());
+            syn1 = syn0.like();
         }
 
         initNegative();
