@@ -269,6 +269,10 @@ TEST_F(TadTests, test_column_1) {
     ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
     ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
     ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));
+
+    auto scalarViewPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
+
+    ASSERT_TRUE(shape::equalsStrict(tadPack.primaryShapeInfo(), scalarViewPack.primaryShapeInfo()));
 }
 
 
