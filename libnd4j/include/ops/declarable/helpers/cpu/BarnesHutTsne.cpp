@@ -28,8 +28,25 @@ namespace helpers {
 
     }
 
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, int N, NDArray* output) {
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray& data, NDArray& buf) {
+        // Loop over all edges in the graph
+#pragma omp parallel for
+        for (int n = 0; n < N; n++) {
+            NDArray slice = data(n, {0});
 
+            for (int i = rowP->e<int>(n); i < rowP->e<int>(n + 1); i++) {
+
+                // Compute pairwise distance and Q-value
+                buf.assign(slice);
+                buf -= data(colP->e<int>(i), {0});
+                auto res = buf.applyReduce3(reduce3::Dot, &buf, nullptr);
+                *res += 1.e-12;// + buf * buf; //Nd4j.getBlasWrapper().dot(buf, buf);
+                *res = valP->e<double>(i) / *res;
+
+                // Sum positive force
+                (*output)(n, {0}) += (buf * *res);
+            }
+        }
     }
 }
 }
