@@ -61,6 +61,7 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -363,7 +364,7 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore   //TODO JVM crash
+    @Test @Ignore   //JVM crash - https://github.com/deeplearning4j/deeplearning4j/issues/7574
     public void testDtypesModelVsGlobalDtypeCnn() {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
@@ -488,7 +489,7 @@ public class DTypeTests extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore   //TODO JVM CRASH
+    @Test
     public void testDtypesModelVsGlobalDtypeCnn3d() {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
@@ -498,6 +499,7 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", outputLayer=" + outputLayer;
+                    log.info(msg);
 
                     Layer ol;
                     Layer secondLast;
@@ -589,7 +591,7 @@ public class DTypeTests extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore       //TODO TEMP - crashing
+    @Test @Ignore       //TODO JVM CRASH - https://github.com/deeplearning4j/deeplearning4j/issues/7574
     public void testDtypesModelVsGlobalDtypeCnn1d() {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
 
