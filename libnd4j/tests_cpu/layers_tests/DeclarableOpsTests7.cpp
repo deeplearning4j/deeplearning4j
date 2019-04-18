@@ -3154,9 +3154,6 @@ TEST_F(DeclarableOpsTests7, avgpool2d_bp_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, avgpool2d_bp_test2) {
 
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
-
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
     int oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
