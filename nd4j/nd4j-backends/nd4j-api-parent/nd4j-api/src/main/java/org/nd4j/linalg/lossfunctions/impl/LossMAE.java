@@ -95,42 +95,4 @@ public class LossMAE extends LossL1 {
             return "LossMAE()";
         return "LossMAE(weights=" + weights + ")";
     }
-
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
-    }
 }

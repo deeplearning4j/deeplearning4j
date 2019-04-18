@@ -68,7 +68,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-public class LossMultiLabel extends DifferentialFunction implements ILossFunction {
+public class LossMultiLabel implements ILossFunction {
 
 
     public LossMultiLabel() {
@@ -209,52 +209,5 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
     @Override
     public String toString() {
         return "LossMultiLabel";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 }

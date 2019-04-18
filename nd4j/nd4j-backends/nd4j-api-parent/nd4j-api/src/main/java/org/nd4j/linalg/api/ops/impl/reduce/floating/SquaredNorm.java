@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 
@@ -54,12 +55,12 @@ public class SquaredNorm extends BaseReduceFloatOp {
 
     @Override
     public String onnxName() {
-        return null;
+        throw new NoOpNameFoundException("No Onnx op found for" + getClass().getName());
     }
 
     @Override
     public String tensorflowName() {
-        return null;
+        throw new NoOpNameFoundException("No Tensorflow op found for" + getClass().getName());
     }
 
     @Override
