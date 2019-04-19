@@ -36,6 +36,19 @@ public class NDArrayTextDeSerializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
         JsonNode n = jp.getCodec().readTree(jp);
+
+        //First: check for backward compatilibity (RowVectorSerializer/Deserializer)
+        if(!n.has("dataType")){
+            int size = n.size();
+            double[] d = new double[size];
+            for (int i = 0; i < size; i++) {
+                d[i] = n.get(i).asDouble();
+            }
+
+            return Nd4j.create(d);
+        }
+
+        //Normal deserialize
         String dtype = n.get("dataType").asText();
         DataType dt = DataType.valueOf(dtype);
         ArrayNode shapeNode = (ArrayNode)n.get("shape");
