@@ -4945,7 +4945,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        // we're padding remaining dimensions with all() index
+        // Padding remaining dimensions with all() index if too few indices provided
         if (indexes.length < this.rank()) {
             val newIndexes = new INDArrayIndex[this.rank()];
             for (int e = 0; e < indexes.length; e++)
@@ -4966,10 +4966,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for(INDArrayIndex i : indexes){
             if(i instanceof PointIndex){
                 numPoint++;
-            } else if(i instanceof IntervalIndex){
-                numInterval++;
             } else if(i instanceof NDArrayIndexAll){
                 numAll++;
+            } else if(i instanceof IntervalIndex){
+                numInterval++;
             } else if(i instanceof NewAxis){
                 numNewAxis++;
             } else if(i instanceof SpecifiedIndex){
@@ -4985,12 +4985,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int outRank = rank() + numNewAxis - numPoint;
         Preconditions.checkState(outRank >= 0, "Illegal set of indices for array: %ndShape, %s", this, indexes);
 
+
+        //To work out sub-array, we need to work out 3 things: offset, shape and strides. We calculate all of these
         long[] outShape = new long[outRank];
         long[] outStrides = new long[outRank];
-        long offset = 0;
+        long offset = offset();                     //Start with existing offset if view
 
-        int outIdx = 0;
-        int inIdx = 0;
+        int outIdx = 0;     //Axis number counter for output array
+        int inIdx = 0;      //Axis number counter for input array
         for( int i=0; i<indexes.length; i++ ){
             if(indexes[i] instanceof PointIndex){
                 //Point indexes don't appear in output
@@ -4998,12 +5000,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 offset += pi.offset() * stride(inIdx);
                 inIdx++;
             } else if(indexes[i] instanceof NDArrayIndexAll){
-                //All index: doesn't change offset
+                //All index: doesn't change offset. Axis is in both in and output arrays
                 outShape[outIdx] = size(inIdx);
                 outStrides[outIdx] = stride(inIdx);
                 inIdx++;
                 outIdx++;
             } else if(indexes[i] instanceof IntervalIndex){
+                //Interval index: Axis is in both in and output arrays, but output might be smaller
                 IntervalIndex ii = (IntervalIndex)indexes[i];
                 long start = ii.current();
                 long endInc = ii.end() - (ii.isInclusive() ? 0 : 1);
@@ -5014,9 +5017,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
                 long stride = ii.stride();
                 long length = (endInc - start)/stride + 1;
-                //Account for end beyond specified length - get(interval(1,2,3,true)) on a
-
-
 
                 offset += ii.offset() * stride(inIdx);
                 outShape[outIdx] = length;
@@ -5024,7 +5024,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 inIdx++;
                 outIdx++;
             } else if(indexes[i] instanceof NewAxis) {
-                //New axis: appends a 1 in shape
+                //New axis: appends a 1 in shape. Axis not present in input, but is present in output
                 outShape[outIdx] = 1;
                 if (outIdx > 0) { //Stride doesn't matter for 1 size axis anyway...
                     outStrides[outIdx] = outStrides[outIdx - 1];
@@ -5033,28 +5033,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
                 outIdx++;
             } else if(indexes[i] instanceof SpecifiedIndex){
+                //Specified index: axis present in both input and output
                 SpecifiedIndex si = (SpecifiedIndex)indexes[i];
                 outShape[outIdx++] = si.length();
                 inIdx++;
-                //Don't care about strides for specified index
+                //Don't care about strides for specified index, as result won't be a view
             } else {
-                //Specified can't happen here
-                throw new IllegalStateException("Unknown index: " + i);
+                throw new IllegalStateException("Unknown index type: " + i);    //Should never happen
             }
         }
 
+
+        //Note: If we have specified indices, we can't return a view. Instead, we copy the specified sub-arrays from
+        // the input array to the output array.
+        //How? Create the output array, then do loop over the specified indices only, and copy sub-arrays for all other axes
         if (numSpecified > 0) {
             INDArray out = Nd4j.create(dataType(), outShape);
 
             //Need to copy subsets here
             long[] specifiedSizes = new long[numSpecified];
-            int[] specifiedAxisOut = new int[numSpecified];
             SpecifiedIndex[] si = new SpecifiedIndex[numSpecified];
             int j=0;
             for( int i=0; i<indexes.length; i++ ){
                 if(indexes[i] instanceof SpecifiedIndex){
                     specifiedSizes[j] = indexes[i].length();
-                    specifiedAxisOut[j] = i;
                     si[j] = (SpecifiedIndex)indexes[i];
                     j++;
                 }
@@ -5069,7 +5071,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             //(2) Get from output: requested indices, except for:
             //    i. point indices -> ignore/exclude (don't appear in output)
             //    ii. new axis indices -> replace with point(0)
-            INDArrayIndex[] pointIdxsIn = new INDArrayIndex[indexes.length - numNewAxis];
+
+
+            INDArrayIndex[] pointIdxsIn = new INDArrayIndex[indexes.length - numNewAxis];       //Indices for source (this array)
             int[] specifiedAxisIn = new int[numSpecified];
             int specCount = 0;
             j = 0;
@@ -5081,10 +5085,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 pointIdxsIn[j++] = indexes[i];
             }
 
-            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length-numPoint];
+            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length-numPoint];          //Indices for destination (output array)
             j = 0;
             specCount = 0;
-            specifiedAxisOut = new int[numSpecified];
+            int[] specifiedAxisOut = new int[numSpecified];
             for( int i=0; i<indexes.length; i++ ){
                 if(indexes[i] instanceof NewAxis){
                     pointIdxsOut[j++] = NDArrayIndex.point(0);
@@ -5101,6 +5105,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
 
+            //Iterate over sub-arrays; copy from source to destination
             while( iter.hasNext()){
                 long[] specifiedIdxs = iter.next();
                 for( int i=0; i<specifiedIdxs.length; i++ ){
@@ -5118,8 +5123,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         char order = Shape.getOrder(outShape, outStrides, -1);
-
-
         INDArray out = create(data, outShape, outStrides, offset, order);
         return out;
     }
