@@ -2069,7 +2069,11 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
 
                         sum = -DataTypeUtils::max<T>();
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
-                                                    
+
+                        // we set these to default values
+                        maxKH = hstart;
+                        maxKW = wstart;
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T valIn = pIn[kh + kw];
