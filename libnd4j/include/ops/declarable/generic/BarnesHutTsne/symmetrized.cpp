@@ -26,17 +26,20 @@
 
 namespace nd4j {
 namespace ops  {
-		
+		NDArray* rowCountsPtr = nullptr;
+
 		CUSTOM_OP_IMPL(barnes_symmetrized, 3, 1, false, 0, 0) {
     		auto rowP  = INPUT_VARIABLE(0);
             auto colP  = INPUT_VARIABLE(1);
             auto valP  = INPUT_VARIABLE(2);
 
     		auto output = OUTPUT_VARIABLE(0);
-
-	 	 	helpers::barnes_symmetrize(rowP, colP, valP, output);
-
-		    return Status::OK();
+            if (rowCountsPtr) {
+                helpers::barnes_symmetrize(rowP, colP, valP, output, rowCountsPtr);
+                delete rowCountsPtr;
+                return Status::OK();
+            }
+            return Status::THROW("barnes_symmetrized: Cannot loop due wrong input data.");
 		}
 
 		DECLARE_TYPES(barnes_symmetrized) {
@@ -46,8 +49,15 @@ namespace ops  {
 		}
 
 		DECLARE_SHAPE_FN(barnes_symmetrized) {
-    		auto rowPShapeInfo = inputShape->at(0);
+    		auto valPShapeInfo = inputShape->at(2);
             Nd4jLong* outShapeInfo;
+            auto rowP  = INPUT_VARIABLE(0);
+            auto colP  = INPUT_VARIABLE(1);
+            NDArray* rowCounts = rowP->dup();
+            Nd4jLong len = helpers::barnes_row_count(rowP, colP, *rowCounts);
+            if (len <= 0) throw std::runtime_error("barnes_symmetrized: Cannot allocate shape due non-positive len.");
+            rowCountsPtr = rowCounts;
+            outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
 
     		return SHAPELIST(outShapeInfo);
 		}

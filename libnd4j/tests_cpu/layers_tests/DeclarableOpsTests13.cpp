@@ -262,3 +262,42 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
     }
     delete result;
 }
+
+TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
+//    auto data = NDArrayFactory::create<double>('c', {5,4});
+    auto rows = NDArrayFactory::create<int>('c', {2}, {0, 1});
+    auto cols = NDArrayFactory::create<int>('c', {4}, {0, 1, 1, 0});
+    auto vals = NDArrayFactory::create<double>('c', {4}, {20., 30., 40., 50.});
+    auto exp = NDArrayFactory::create<double>('c', {2}, {0.000000, 0.000000});
+//    data.linspace(1);
+
+//    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
+//    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+//    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+    nd4j::ops::barnes_symmetrized op;
+    auto result = op.execute({&rows, &cols, &vals}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    result->at(0)->printBuffer("Symmetrized1");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
+    auto rows = NDArrayFactory::create<int>('c', {4}, {0, 2, 2, 3});
+    auto cols = NDArrayFactory::create<int>('c', {8}, {0, 1, 2, 0, 0, 1, 2, 2});
+    auto vals = NDArrayFactory::create<double>('c', {8}, {20., 30., 40., 50., 120., 130., 140., 150.});
+    auto exp = NDArrayFactory::create<double>('c', {10}, {15.000000, 0.000000, 15.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+//    data.linspace(1);
+
+//    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
+//    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+//    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+    nd4j::ops::barnes_symmetrized op;
+    auto result = op.execute({&rows, &cols, &vals}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    result->at(0)->printBuffer("Symmetrized2");
+    //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    delete result;
+}
