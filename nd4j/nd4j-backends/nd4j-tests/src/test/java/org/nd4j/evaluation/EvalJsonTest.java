@@ -269,8 +269,8 @@ public class EvalJsonTest extends BaseNd4jTest {
         eFromJson = Evaluation.fromJson(json);
         eFromYaml = Evaluation.fromYaml(yaml);
 
-        assertEquals(costArray, eFromJson.getCostArray());
-        assertEquals(costArray, eFromYaml.getCostArray());
+        assertEquals(e2.getCostArray(), eFromJson.getCostArray());
+        assertEquals(e2.getCostArray(), eFromYaml.getCostArray());
 
 
 
