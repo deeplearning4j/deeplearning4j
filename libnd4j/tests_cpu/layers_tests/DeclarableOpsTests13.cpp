@@ -244,8 +244,8 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
     auto vals = NDArrayFactory::create<double>('c', {5}, {10., 20., 30., 40., 50.});
     auto buf = NDArrayFactory::create<double>('c', {4});
     auto exp1 = NDArrayFactory::create<double>('c', {5,4}, {-1.875000, -1.875000, -1.875000, -1.875000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
-    auto exp3 = NDArrayFactory::create<double>({-4.000000, -4.000000, -4.000000, -4.000000});
-    std::vector<NDArray*> exp({&exp1, &data, &exp3});
+    auto exp2 = NDArrayFactory::create<double>({-4.000000, -4.000000, -4.000000, -4.000000});
+    std::vector<NDArray*> exp({&exp1, &exp2});
     data.linspace(1);
 
 //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
@@ -256,7 +256,9 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
 
 
     ASSERT_EQ(result->status(), Status::OK());
-    for (size_t i = 0; i < result->size(); i++)
+    for (size_t i = 0; i < result->size(); i++) {
+        //result->at(i)->printBuffer("OOO");
         ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
+    }
     delete result;
 }
