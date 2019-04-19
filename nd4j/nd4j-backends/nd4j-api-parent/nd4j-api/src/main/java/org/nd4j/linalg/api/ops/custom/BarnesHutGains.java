@@ -21,6 +21,6 @@ public class BarnesHutGains extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "BarnesHutGains";
+        return "barnes_gains";
     }
 }
