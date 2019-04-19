@@ -85,5 +85,6 @@ public class NDArrayTextSerializer extends JsonSerializer<INDArray> {
                 throw new UnsupportedOperationException("Cannot JSON serialize array with datatype: " + arr.dataType());
         }
         jg.writeEndArray();
+        jg.writeEndObject();
     }
 }
