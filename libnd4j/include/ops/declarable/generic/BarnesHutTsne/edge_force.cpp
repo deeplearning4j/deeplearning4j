@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops  {
 		
-    CUSTOM_OP_IMPL(barnes_edge_forces, 5, 3, false, 0, 1) {
+    CUSTOM_OP_IMPL(barnes_edge_forces, 5, 2, false, 0, 1) {
         auto rowP  = INPUT_VARIABLE(0);
         auto colP  = INPUT_VARIABLE(1);
         auto valP  = INPUT_VARIABLE(2);
@@ -36,14 +36,14 @@ namespace ops  {
         auto N = INT_ARG(0);
 
         auto output = OUTPUT_VARIABLE(0);
-        auto outputData = OUTPUT_VARIABLE(1);
-        auto outputBuf = OUTPUT_VARIABLE(2);
+//        auto outputData = OUTPUT_VARIABLE(1);
+        auto outputBuf = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force op: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
             REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force op: col input must be a vector, but its rank is %i instead !", colP->rankOf());
         outputBuf->assign(bufP);
-        outputData->assign(dataP);
-        helpers::barnes_edge_forces(rowP, colP, valP, N, output, *outputData, *outputBuf);
+//        outputData->assign(dataP);
+        helpers::barnes_edge_forces(rowP, colP, valP, N, output, *dataP, *outputBuf);
 
         return Status::OK();
     }
@@ -57,18 +57,16 @@ namespace ops  {
         ->setAllowedInputTypes(4, {ALL_INTS, ALL_FLOATS})
         ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
         ->setAllowedOutputTypes(1, {ALL_INTS, ALL_FLOATS})
-        ->setAllowedOutputTypes(2, {ALL_INTS, ALL_FLOATS})
         ->setSameMode(false);
     }
 
     DECLARE_SHAPE_FN(barnes_edge_forces) {
-        Nd4jLong* dataShape;
         Nd4jLong* bufShape;
         Nd4jLong* outShapeInfo;
-        COPY_SHAPE(inputShape->at(3), dataShape);
+        //COPY_SHAPE(inputShape->at(3), dataShape);
         COPY_SHAPE(inputShape->at(4), bufShape);
         outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
-        return SHAPELIST(outShapeInfo, dataShape, bufShape);
+        return SHAPELIST(outShapeInfo, bufShape);
     }
 
 

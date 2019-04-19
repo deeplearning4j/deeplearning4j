@@ -24,10 +24,10 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output) {
-        NDArray rowCounts; //() = Nd4j.create(N);
-        int N = rowP->lengthOf() / 2;
-#pragma omp parallel for
+    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, NDArray& rowCounts) {
+        auto N = rowCounts.lengthOf();
+
+        PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             int begin = rowP->e<int>(n);
             int end = rowP->e<int>(n + 1);
@@ -49,19 +49,24 @@ namespace helpers {
             }
         }
 
-
         NDArray* numElementsArr = rowCounts.reduceAlongDimension(reduce::Sum, {});
         if (numElementsArr == nullptr) throw std::runtime_error("helpers::barnes_symmertize: Cannot calculate num of Elements");
         auto numElements = numElementsArr->e<int>(0);
         delete numElementsArr;
-        
-        NDArray offset = NDArrayFactory::create<int>({N});
-        NDArray symRowP = NDArrayFactory::create<int>({N + 1});
-        NDArray symColP = NDArrayFactory::create<int>({numElements});
-        NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
+        return numElements;
+    }
 
-        for (int n = 0; n < N; n++)
-            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n));
+void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts) {
+        auto N = rowP->lengthOf() / 2;
+        auto numElements = output->lengthOf();
+        NDArray offset = NDArrayFactory::create<int>('c', {N});
+        NDArray symRowP = NDArrayFactory::create<int>('c', {N + 1});
+        NDArray symColP = NDArrayFactory::create<int>('c', {numElements});
+        //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
+
+        symRowP(1, {0}) = *rowCounts;
+//        for (int n = 0; n < N; n++)
+//            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n));
 
 
         for (int n = 0; n < N; n++) {
@@ -74,9 +79,9 @@ namespace helpers {
                             // make sure we do not add elements twice
                             symColP.p(symRowP.e<int>(n) + offset.e<int>(n), colP->e<int>(i));
                             symColP.p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i)), n);
-                            symValP.p(symRowP.e<int>(n) + offset.e<int>(n),
+                            output->p(symRowP.e<int>(n) + offset.e<int>(n),
                                               valP->e<double>(i) + valP->e<double>(m));
-                            symValP.p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i)),
+                            output->p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i)),
                                               valP->e<double>(i) + valP->e<double>(m));
                         }
                     }
@@ -86,10 +91,10 @@ namespace helpers {
                 if (!present) {
                     int colPI = colP->e<int>(i);
                     if (n < colPI) {
-                        symColP.p(symRowP.e<int>(n) + offset.e<int>(n), colPI);
-                        symColP.p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colPI), n);
-                        symValP.p(symRowP.e<int>(n) + offset.e<int>(n), valP->e<double>(i));
-                        symValP.p(symRowP.e<int>(colPI) + offset.e<int>(colPI), valP->e<double>(i));
+                        output->p(symRowP.e<int>(n) + offset.e<int>(n), colPI);
+                        output->p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colPI), n);
+                        output->p(symRowP.e<int>(n) + offset.e<int>(n), valP->e<double>(i));
+                        output->p(symRowP.e<int>(colPI) + offset.e<int>(colPI), valP->e<double>(i));
                     }
 
                 }
@@ -105,13 +110,14 @@ namespace helpers {
         }
 
         // Divide the result by two
-        symValP /= 2.0;
-        output->assign(symValP);
+        *output /= 2.0;
+        //output->assign(symValP);
     }
 
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray& data, NDArray& buf) {
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data, NDArray& buf) {
         // Loop over all edges in the graph
-#pragma omp parallel for schedule(guided)
+
+        PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             NDArray slice = data(n, {0});
 
@@ -128,6 +134,39 @@ namespace helpers {
             }
         }
     }
+
+    template <typename T>
+    static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+        //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+        //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+        auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
+            return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
+        };
+
+        input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
+    }
+
+    void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+        //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+        //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+        BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), NUMERIC_TYPES);
+//        auto signGradX = *gradX;
+//        auto signEpsilon = *epsilon;
+//        gradX->applyTransform(transform::Sign, &signGradX, nullptr);
+//        epsilon->applyTransform(transform::Sign, &signEpsilon, nullptr);
+//        auto leftPart = (*input + 2.) * signGradX;
+//        auto leftPartBool = NDArrayFactory::create<bool>(leftPart.ordering(), leftPart.getShapeAsVector());
+//
+//        leftPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &leftPartBool, nullptr);
+//        auto rightPart = *input * 0.8 * signGradX;
+//        auto rightPartBool = NDArrayFactory::create<bool>(rightPart.ordering(), rightPart.getShapeAsVector());
+//        rightPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &rightPartBool, nullptr);
+//        leftPart.assign(leftPartBool);
+//        rightPart.assign(rightPartBool);
+//        leftPart.applyPairwiseTransform(pairwise::Add, &rightPart, output, nullptr);
+
+    }
+    BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
 }
 }
 }

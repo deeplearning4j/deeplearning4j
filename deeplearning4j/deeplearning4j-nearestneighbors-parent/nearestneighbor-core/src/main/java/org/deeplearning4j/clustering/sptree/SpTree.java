@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.slf4j.Logger;
@@ -319,9 +320,11 @@ public class SpTree implements Serializable {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
+        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
+        Nd4j.exec(computeEdgeForces);
 
         // Loop over all edges in the graph
-        double D;
+        /*double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
@@ -336,7 +339,7 @@ public class SpTree implements Serializable {
                 posF.slice(n).addi(buf.muli(D));
 
             }
-        }
+        }*/
     }
 
 

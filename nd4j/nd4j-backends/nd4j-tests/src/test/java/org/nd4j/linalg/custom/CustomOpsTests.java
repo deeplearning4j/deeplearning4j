@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
@@ -526,5 +527,23 @@ public class CustomOpsTests {
         // TODO: Verify values
         INDArray expected = Nd4j.createFromArray(new double[]{1.0, -2.0, 3.0, -4.0, 5.0, -6.0});
         assertEquals(expected, y);
+    }
+
+    @Test
+    public void testBarnesHutEdgeForces() {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        INDArray data = Nd4j.linspace(1,20,20).reshape(5,4);
+        INDArray rows = Nd4j.createFromArray(new int[]{2,3});
+        INDArray cols = Nd4j.createFromArray(new int[]{0, 2, 1, 4, 3});
+        INDArray vals = Nd4j.createFromArray(new double[]{10, 20, 30, 40, 50});
+        INDArray buf = Nd4j.createFromArray(new double[]{1,2,3,4});
+
+        INDArray output = Nd4j.createUninitialized(5,4);
+
+        BarnesEdgeForces op = new BarnesEdgeForces(rows, cols, vals, data,1, output, buf);
+        Nd4j.exec(op);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{-1.8750,   -1.8750,   -1.8750,   -1.8750});
+        assertEquals(expected, output.getRow(0));
     }
 }
