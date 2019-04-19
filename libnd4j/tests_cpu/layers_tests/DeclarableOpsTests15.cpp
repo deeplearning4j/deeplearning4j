@@ -169,6 +169,21 @@ TEST_F(DeclarableOpsTests15, test_matmul_bp_1) {
     ASSERT_EQ(Status::OK(), status);
 }
 
+TEST_F(DeclarableOpsTests15, test_non_decreasing_1) {
+    auto x = NDArrayFactory::create<double>(1.0);
+    auto z = NDArrayFactory::create<bool>(false);
+    auto e = NDArrayFactory::create<bool>(true);
+
+    nd4j::ops::is_non_decreasing op;
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
     auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
