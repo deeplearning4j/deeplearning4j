@@ -739,6 +739,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param indices an ndaray of the indices to get the elements for
      * @return the elements to get the array for
      */
+    @Deprecated
     INDArray get(List<List<Integer>> indices);
 
     /**
@@ -944,22 +945,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the (1-norm) distance.
      */
     double distance1(INDArray other);
-
-
-
-    /**
-     * Put element in to the indices denoted by
-     * the indices ndarray.
-     * This is equivalent to:
-     * a[indices] = element
-     *
-     *  in numpy.
-     *
-     * @param indices the indices to put
-     * @param element the element array to put
-     * @return this array
-     */
-    INDArray put(List<List<Integer>> indices,INDArray element);
 
 
     /**

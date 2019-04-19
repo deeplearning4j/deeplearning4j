@@ -47,22 +47,6 @@ public class NewAxis implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return 0;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return false;
-    }
-
-    @Override
-    public long next() {
-        return 0;
-    }
-
-
-    @Override
     public void reverse() {
 
     }
@@ -70,11 +54,6 @@ public class NewAxis implements INDArrayIndex {
     @Override
     public boolean isInterval() {
         return false;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-
     }
 
     @Override
@@ -94,11 +73,6 @@ public class NewAxis implements INDArrayIndex {
 
     @Override
     public void init(long begin, long end) {
-
-    }
-
-    @Override
-    public void reset() {
 
     }
 

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.indexing;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -100,35 +101,8 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(vals,x);
     }
 
-    @Test
-    public void testPutUnMatchDims() {
-        List<List<Integer>> indices = new ArrayList<>();
-        indices.add(Arrays.asList(0));
-        indices.add(Arrays.asList(0,1));
-        INDArray linspace = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape('c',2,2,2,2);
-        linspace.put(indices,Nd4j.scalar(99));
-        INDArray assertion = Nd4j.valueArrayOf(new long[] {2,2},99.0, DataType.DOUBLE);
-        for(int i = 0; i < 2; i++)
-            assertEquals(assertion,linspace.slice(0).slice(i));
 
-    }
-
-
-    @Test
-    public void testScalarPut() {
-        List<List<Integer>> indices = new ArrayList<>();
-        indices.add(Arrays.asList(0));
-        indices.add(Arrays.asList(1));
-        indices.add(Arrays.asList(0));
-        indices.add(Arrays.asList(0));
-
-        INDArray linspace = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape('c',2,2,2,2);
-        linspace.put(indices,Nd4j.scalar(99.0));
-        assertEquals(99.0,linspace.getDouble(0,1,0,0),1e-1);
-    }
-
-
-    @Test
+    @Test @Ignore
     public void testIndexGetDuplicate() {
         List<List<Integer>> indices = new ArrayList<>();
         indices.add(Arrays.asList(0,0));

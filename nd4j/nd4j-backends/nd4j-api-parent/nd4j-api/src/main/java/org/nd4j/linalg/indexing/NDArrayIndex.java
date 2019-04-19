@@ -38,10 +38,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
-public class NDArrayIndex implements INDArrayIndex {
+public abstract class NDArrayIndex implements INDArrayIndex {
 
     private long[] indices;
-    private boolean isInterval = false;
     private static NewAxis NEW_AXIS = new NewAxis();
 
 
@@ -440,8 +439,8 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     protected static INDArrayIndex validate(long size, INDArrayIndex index) {
-        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current())
-            throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.current()
+        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.offset())
+            throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.offset()
                             + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && index.end() > size)
             throw new IllegalArgumentException("NDArrayIndex is out of range. End index: " + index.end()
@@ -554,48 +553,6 @@ public class NDArrayIndex implements INDArrayIndex {
         for (int i = 0; i < indexes.length; i++)
             indexesRet[i] = NDArrayIndex.interval(0, indexes[i].length());
         return indexesRet;
-    }
-
-
-
-    /**
-     * Create from a matrix. The rows are the indices
-     * The columns are the individual element in each ndarrayindex
-     *
-     * @param index the matrix to getFloat indices from
-     * @return the indices to getFloat
-     */
-    public static INDArrayIndex[] create(INDArray index) {
-
-        if (index.isMatrix()) {
-
-            if (index.rows() > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-
-            NDArrayIndex[] ret = new NDArrayIndex[(int) index.rows()];
-            for (int i = 0; i < index.rows(); i++) {
-                INDArray row = index.getRow(i);
-                val nums = new long[(int) index.getRow(i).columns()];
-                for (int j = 0; j < row.columns(); j++) {
-                    nums[j] = (int) row.getFloat(j);
-                }
-
-                NDArrayIndex idx = new NDArrayIndex(nums);
-                ret[i] = idx;
-
-            }
-
-
-            return ret;
-
-        } else if (index.isVector()) {
-            long[] indices = NDArrayUtil.toLongs(index);
-            return new NDArrayIndex[] {new NDArrayIndex(indices)};
-        }
-
-
-        throw new IllegalArgumentException("Passed in ndarray must be a matrix or a vector");
-
     }
 
     /**
@@ -732,21 +689,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return 0;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return false;
-    }
-
-    @Override
-    public long next() {
-        return 0;
-    }
-
-    @Override
     public void reverse() {
         ArrayUtil.reverse(indices);
     }
@@ -777,16 +719,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public boolean isInterval() {
-        return isInterval;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-        this.isInterval = isInterval;
-    }
-
-    @Override
     public void init(INDArray arr, long begin, int dimension) {
 
     }
@@ -805,11 +737,5 @@ public class NDArrayIndex implements INDArrayIndex {
     public void init(long begin, long end) {
 
     }
-
-    @Override
-    public void reset() {
-
-    }
-
 
 }

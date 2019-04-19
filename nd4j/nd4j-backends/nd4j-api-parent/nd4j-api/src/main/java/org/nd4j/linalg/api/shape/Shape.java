@@ -2418,22 +2418,6 @@ public class Shape {
         }
     }
 
-
-
-    /**
-     * Convert the given int indexes
-     * to nd array indexes
-     * @param indices the indices to convert
-     * @return the converted indexes
-     */
-    public static INDArrayIndex[] toIndexes(int[] indices) {
-        INDArrayIndex[] ret = new INDArrayIndex[indices.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = new NDArrayIndex(indices[i]);
-        return ret;
-    }
-
-
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {
             int[] newStrides = new int[strides.length - 1];

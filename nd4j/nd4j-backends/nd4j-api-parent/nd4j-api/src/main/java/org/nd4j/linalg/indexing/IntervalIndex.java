@@ -67,24 +67,6 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return index;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return index < end();
-    }
-
-    @Override
-    public long next() {
-        long ret = index;
-        index += stride;
-        return ret;
-    }
-
-
-    @Override
     public void reverse() {
         long oldEnd = end;
         long oldBegin = begin;
@@ -95,11 +77,6 @@ public class IntervalIndex implements INDArrayIndex {
     @Override
     public boolean isInterval() {
         return true;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-       //no-op
     }
 
     @Override
@@ -152,11 +129,6 @@ public class IntervalIndex implements INDArrayIndex {
 
         long endInc = end - (inclusive ? 0 : 1);
         this.length = (endInc - begin)/stride + 1;
-    }
-
-    @Override
-    public void reset() {
-
     }
 
     @Override

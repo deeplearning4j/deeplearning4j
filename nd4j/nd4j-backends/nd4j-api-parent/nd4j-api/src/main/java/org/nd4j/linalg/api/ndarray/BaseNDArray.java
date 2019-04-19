@@ -2318,69 +2318,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.concat(0,resultList.toArray(new INDArray[resultList.size()]));
     }
 
-    @Override
-    public INDArray put(List<List<Integer>> indices, INDArray element) {
-        INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
-        for(int i = 0; i < indArrayIndices.length; i++) {
-            indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
-        }
-
-        boolean hasNext = true;
-        Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
-
-        if(indices.size() == rank()) {
-            NdIndexIterator ndIndexIterator = new NdIndexIterator(element.shape());
-
-            while(hasNext) {
-                try {
-                    List<List<Long>> next = iterate.next();
-                    int[][] nextArr = new int[next.size()][];
-                    for(int i = 0; i < next.size(); i++) {
-                        nextArr[i] = Ints.toArray(next.get(i));
-                    }
-
-                    int[] curr = Ints.concat(nextArr);
-                    putScalar(curr,element.getDouble(ndIndexIterator.next()));
-
-                }
-                catch(NoSuchElementException e) {
-                    hasNext = false;
-                }
-            }
-
-        }
-        else {
-            if(indices.size() >= 2) {
-                while(hasNext) {
-                    try {
-                        List<List<Long>> next = iterate.next();
-                        int[][] nextArr = new int[next.size()][];
-                        for(int i = 0; i < next.size(); i++) {
-                            nextArr[i] = Ints.toArray(next.get(i));
-                        }
-
-                        int[] curr = Ints.concat(nextArr);
-                        INDArray currSlice = this;
-                        for(int j = 0; j < curr.length; j++) {
-                            currSlice = currSlice.slice(curr[j]);
-                        }
-
-                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{currSlice,element},new INDArray[]{currSlice}));
-
-                    }
-                    catch(NoSuchElementException e) {
-                        hasNext = false;
-                    }
-                }
-
-
-            }
-
-        }
-
-
-        return this;
-    }
 
     @Override
     public INDArray put(INDArray indices, INDArray element) {
@@ -4833,21 +4770,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray ravel(char ordering) {
         Nd4j.getCompressor().autoDecompress(this);
-
-
-        if (length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-        INDArray ret = create(new int[] {1, (int) length()}, ordering);
-        NDArrayIndex index = new NDArrayIndex(this.shape());
-
-        for (int i = 0; i < length(); i++) {
-            // FIXME: LONG
-            double val = getDouble((int) index.next());
-            ret.putScalar(new int[] {0, i}, val);
+        if(ordering == this.ordering() && Shape.hasDefaultStridesForShape(this)){
+            return reshape(ordering, length());
         }
-
-        return ret;
-
+        return dup(ordering).reshape(ordering, length());
     }
 
     /**
@@ -4945,19 +4871,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        // Padding remaining dimensions with all() index if too few indices provided
-        if (indexes.length < this.rank()) {
-            val newIndexes = new INDArrayIndex[this.rank()];
-            for (int e = 0; e < indexes.length; e++)
-                newIndexes[e] = indexes[e];
-
-            for (int e = indexes.length; e < newIndexes.length; e++)
-                newIndexes[e] = NDArrayIndex.all();
-
-            indexes = newIndexes;
-        }
-
-
         int numPoint = 0;
         int numInterval = 0;
         int numAll = 0;
@@ -4977,6 +4890,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } else {
                 throw new IllegalStateException("Unknown index: " + i);
             }
+        }
+
+        // Padding remaining dimensions with all() index if too few indices provided
+        if (indexes.length - numNewAxis < this.rank()) {
+            val newIndexes = new INDArrayIndex[this.rank() + numNewAxis];
+            for (int e = 0; e < indexes.length; e++)
+                newIndexes[e] = indexes[e];
+
+            for (int e = indexes.length; e < newIndexes.length; e++) {
+                numAll++;
+                newIndexes[e] = NDArrayIndex.all();
+            }
+
+            indexes = newIndexes;
         }
 
         Preconditions.checkState((numPoint + numInterval + numAll + numSpecified) == rank(), "Illegal set of indices for array: need at least" +
@@ -5008,7 +4935,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } else if(indexes[i] instanceof IntervalIndex){
                 //Interval index: Axis is in both in and output arrays, but output might be smaller
                 IntervalIndex ii = (IntervalIndex)indexes[i];
-                long start = ii.current();
+                long start = ii.offset();
                 long endInc = ii.end() - (ii.isInclusive() ? 0 : 1);
                 if (endInc >= size(inIdx)) {
                     throw new IllegalStateException("Indices are out of range: Cannot get interval index " + indexes[i] +

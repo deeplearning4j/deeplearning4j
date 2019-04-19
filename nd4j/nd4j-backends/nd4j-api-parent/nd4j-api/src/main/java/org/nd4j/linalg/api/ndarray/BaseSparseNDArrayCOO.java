@@ -447,18 +447,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-        if (indices[0] instanceof SpecifiedIndex && element.isVector()) {
-            indices[0].reset();
-            int cnt = 0;
-            while (indices[0].hasNext()) {
-                long idx = indices[0].next();
-                putScalar((int) idx, element.getDouble(cnt));
-                cnt++;
-            }
-            return this;
-        } else {
-            return get(indices).assign(element);
-        }
+        get(indices).assign(element);
+        return this;
     }
 
     @Override

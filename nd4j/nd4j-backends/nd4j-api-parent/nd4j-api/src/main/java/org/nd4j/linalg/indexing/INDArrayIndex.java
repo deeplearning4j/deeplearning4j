@@ -50,28 +50,6 @@ public interface INDArrayIndex {
      */
     long stride();
 
-
-    /**
-     * Return the current index
-     * without incrementing the counter
-     * @return
-     */
-    long current();
-
-    /**
-     * Returns true if there is another element
-     * in the index to iterate over
-     * otherwise false
-     * @return
-     */
-    boolean hasNext();
-
-    /**
-     * Returns the next index
-     * @return
-     */
-    long next();
-
     /**
      * Reverse the indexes
      */
@@ -83,12 +61,6 @@ public interface INDArrayIndex {
      * @return
      */
     boolean isInterval();
-
-    /**
-     *
-     * @param isInterval
-     */
-    void setInterval(boolean isInterval);
 
     /**
      * Init the index wrt
@@ -115,6 +87,4 @@ public interface INDArrayIndex {
      * @param end
      */
     void init(long begin, long end);
-
-    void reset();
 }

@@ -66,7 +66,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
-        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), newAxis(), newAxis());
+        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), newAxis(), newAxis(), all());
         long[] shapeAssertion = {3, 2, 1, 1, 2};
         assertArrayEquals(shapeAssertion, get.shape());
     }
@@ -117,7 +117,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 2, 3);
         INDArray assertion2 = Nd4j.create(new double[][] {{7, 8, 9}, {10, 11, 12}}).reshape(1, 2, 3);
 
-        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(), all());
+        INDArray get2 = arr.get(NDArrayIndex.point(1), newAxis(), all(), all());
         assertEquals(assertion2, get2);
     }
 
@@ -380,12 +380,13 @@ public class IndexingTestsC extends BaseNd4jTest {
                     INDArrayIndex[] indexes = new INDArrayIndex[outRank];
                     NdIndexIterator iter = new NdIndexIterator(n);      //This is used as a simple counter
                     while (iter.hasNext()) {
+                        long[] next = iter.next();
+
                         if(r.nextFloat() > fractionRun){
                             //Randomly skip fraction of tests to minimize runtime
                             continue;
                         }
 
-                        long[] next = iter.next();
                         int pos = 0;
 
                         if(newAxisTestCase == 1){
@@ -527,7 +528,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         for( int i=0; i<idxs.length; i++ ){
             if(idxs[i] instanceof PointIndex){
                 PointIndex p = (PointIndex)idxs[i];
-                originalIdxs[origIdxC++] = p.current();
+                originalIdxs[origIdxC++] = p.offset();
                 //View counter not increased: doesn't appear in output
             } else if(idxs[i] instanceof NDArrayIndexAll){
                 originalIdxs[origIdxC++] = viewIdx[viewC++];

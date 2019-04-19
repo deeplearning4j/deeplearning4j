@@ -7554,7 +7554,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray vector = Nd4j.createFromArray(data).reshape(1,2);
         INDArray slice = vector.slice(0);
         System.out.println(slice.shapeInfoToString());
-        assertEquals(vector, slice);
+        assertEquals(vector.reshape(2), slice);
         slice.assign(-1);
         assertEquals(Nd4j.createFromArray(-1.0, -1.0).reshape(1,2), vector);
     }

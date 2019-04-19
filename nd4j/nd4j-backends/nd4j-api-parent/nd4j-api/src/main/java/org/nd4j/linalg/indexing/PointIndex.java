@@ -17,14 +17,15 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Longs;
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public class PointIndex implements INDArrayIndex {
     private long point;
-    private boolean notUsed = true;
 
     /**
      *
@@ -55,24 +56,6 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return point;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return notUsed;
-    }
-
-    @Override
-    public long next() {
-        long ret = point;
-        notUsed = false;
-        return ret;
-    }
-
-
-    @Override
     public void reverse() {
 
     }
@@ -80,11 +63,6 @@ public class PointIndex implements INDArrayIndex {
     @Override
     public boolean isInterval() {
         return false;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-
     }
 
     @Override
@@ -105,33 +83,6 @@ public class PointIndex implements INDArrayIndex {
     @Override
     public void init(long begin, long end) {
 
-    }
-
-    @Override
-    public void reset() {
-        notUsed = false;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof PointIndex))
-            return false;
-
-        PointIndex that = (PointIndex) o;
-
-        if (point != that.point)
-            return false;
-        return notUsed == that.notUsed;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Longs.hashCode(point);
-        result = 31 * result + (notUsed ? 1 : 0);
-        return result;
     }
 
     @Override
