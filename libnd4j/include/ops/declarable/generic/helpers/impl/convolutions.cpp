@@ -2377,6 +2377,10 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wstart *= iStride4;
                             wend   *= iStride4;
 
+                            maxKD = dstart;
+                            maxKH = hstart;
+                            maxKW = wstart;
+
                             sum = -DataTypeUtils::max<T>();
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
                             

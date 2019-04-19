@@ -48,6 +48,11 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
 
     T dt0, dt1;
 
+    int limit = nd4j::math::nd4j_max<int>(xTadLength, blockDim.x);
+
+    if (limit > blockDim.x);
+        limit = limit + (blockDim.x - (xTadLength % blockDim.x));
+
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
         dx = x + tadOffsets[r];
 
@@ -56,7 +61,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
 
         for (int i = 0; i < (xTadLength / 2) + rem; i++) {
             // since we can have TAD larger then blockDim, we'll have this loop here
-            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
+            for (int tid = threadIdx.x; tid < limit; tid += blockDim.x ) {
                 if((!(tid & 1)) && tid < xTadLength - 1) {
                     int t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
                     int t1 = getDevicePosition(tadShapeInfo, tid+1, xTadLength);
@@ -69,10 +74,11 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                         dx[t0] = dt1;
                     }
                 }
-            }
-            __syncthreads();
 
-            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
+                __syncthreads();
+            }
+
+            for (int tid = threadIdx.x; tid < limit; tid += blockDim.x ) {
                 if((tid & 1) && tid < xTadLength - 1) {
                     int t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
                     int t1 = getDevicePosition(tadShapeInfo, tid+1, xTadLength);
@@ -85,8 +91,8 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                         dx[t0] = dt1;
                     }
                 }
+                __syncthreads();
             }
-            __syncthreads();
         }
     }
 }

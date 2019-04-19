@@ -1426,11 +1426,12 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(N > 1)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(N)
     for (int f = 0; f < N; f++) {
         auto hX = reinterpret_cast<T *>(dX[f]);
         //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
+        auto xShapeInfo = hXShapeInfo[f];
         auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
 
@@ -1442,38 +1443,39 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
         auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
+        if (shape::rank(xShapeInfo) == 1) {
+            auto xLength = shape::length(xShapeInfo);
+            auto ews = shape::elementWiseStride(xShapeInfo);
+            for (Nd4jLong r = 0; r < xLength; r++) {
+                auto swapIdx = shuffleMap[r];
+                if (swapIdx < 0)
+                    continue;
 
-        for (Nd4jLong r = 0; r < numTads; r++) {
-            if (shuffleMap[r] < 0)
-                continue;
-
-            auto oldOffset = tadOffset[r];
-            auto newOffset = tadOffset[shuffleMap[r]];
-
-            auto rX = hX + oldOffset;
-            auto rY = hX + newOffset;
-
-            if (tadEWS == 1) {
-
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < tadLength; i++) {
-                    nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
-                }
-
-            } 
-            else {
-
-                PRAGMA_OMP_PARALLEL_FOR_IF(N == 1 && tadLength > 512)
-                for (Nd4jLong i = 0; i < tadLength; i++) {                    
-                    auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
-                    nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
-                }
-
+                nd4j::math::nd4j_swap<T>(hX[r*ews], hX[swapIdx*ews]);
             }
+        } else {
+            for (Nd4jLong r = 0; r < numTads; r++) {
+                if (shuffleMap[r] < 0)
+                    continue;
 
+                auto oldOffset = tadOffset[r];
+                auto newOffset = tadOffset[shuffleMap[r]];
+
+                auto rX = hX + oldOffset;
+                auto rY = hX + newOffset;
+
+                if (tadEWS == 1) {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                    }
+                } else {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                        nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                    }
+                }
+            }
         }
-
     }
 }
 

@@ -5285,8 +5285,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         log.info("Time spent: {} ms", time2 - time1);
 
+        val e = exp1.toDoubleVector();
         for (int r = 0; r < array.rows(); r++) {
-            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+            val d = res.getRow(r).dup();
+
+            assertArrayEquals(e, d.toDoubleVector(), 1e-5);
+            assertEquals("Failed at " + r, exp1, d);
         }
     }
 
