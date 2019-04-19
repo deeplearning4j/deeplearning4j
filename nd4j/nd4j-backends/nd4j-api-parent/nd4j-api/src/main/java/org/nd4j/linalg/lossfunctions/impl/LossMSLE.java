@@ -79,7 +79,7 @@ public class LossMSLE implements ILossFunction {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
                                 + ") does not match output.size(1)=" + output.size(1));
             }
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -121,7 +121,7 @@ public class LossMSLE implements ILossFunction {
         dlda.muli(logRatio);
 
         if (weights != null) {
-            dlda.muliRowVector(weights);
+            dlda.muliRowVector(weights.castTo(dlda.dataType()));
         }
 
         if (mask != null && LossUtil.isPerOutputMasking(dlda, mask)) {

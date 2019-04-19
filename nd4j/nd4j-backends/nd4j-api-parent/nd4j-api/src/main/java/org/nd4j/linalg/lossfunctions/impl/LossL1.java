@@ -82,7 +82,7 @@ public class LossL1 implements ILossFunction {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
                                 + ") does not match output.size(1)=" + output.size(1));
             }
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -122,7 +122,7 @@ public class LossL1 implements ILossFunction {
         INDArray dLda = Nd4j.getExecutioner().exec(new Sign(outSubLabels));
 
         if (weights != null) {
-            dLda.muliRowVector(weights);
+            dLda.muliRowVector(weights.castTo(dLda.dataType()));
         }
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {

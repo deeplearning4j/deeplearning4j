@@ -149,7 +149,7 @@ public class LossBinaryXENT implements ILossFunction {
                                 + ") does not match output.size(1)=" + preOutput.size(1));
             }
 
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -218,7 +218,7 @@ public class LossBinaryXENT implements ILossFunction {
                                 + ") does not match output.size(1)=" + output.size(1));
             }
 
-            grad.muliRowVector(weights);
+            grad.muliRowVector(weights.castTo(grad.dataType()));
         }
 
         if (mask != null) {

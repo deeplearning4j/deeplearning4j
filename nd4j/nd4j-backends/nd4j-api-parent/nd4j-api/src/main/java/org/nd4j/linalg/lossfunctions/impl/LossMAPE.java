@@ -82,7 +82,7 @@ public class LossMAPE implements ILossFunction {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
                                 + ") does not match output.size(1)=" + output.size(1));
             }
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -125,7 +125,7 @@ public class LossMAPE implements ILossFunction {
 
         //Weighted loss function
         if (weights != null) {
-            dLda.muliRowVector(weights);
+            dLda.muliRowVector(weights.castTo(dLda.dataType()));
         }
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
