@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -214,8 +215,8 @@ public class BarnesHutTsne implements Model {
             throw new IllegalStateException("Illegal k value " + k + "greater than " + u);
 
 
-        rows = zeros(1, N + 1);
-        cols = zeros(1, N * k);
+        rows = zeros(DataType.INT, 1, N + 1);
+        cols = zeros(DataType.INT, 1, N * k);
         vals = zeros(1, N * k);
 
         for (int n = 0; n < N; n++)

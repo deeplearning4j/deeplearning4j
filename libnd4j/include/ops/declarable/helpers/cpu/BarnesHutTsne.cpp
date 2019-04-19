@@ -25,9 +25,9 @@ namespace ops {
 namespace helpers {
 
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, NDArray& rowCounts) {
-        auto N = rowCounts.lengthOf();
+        auto N = rowP->lengthOf() / 2;
 
-        PRAGMA_OMP_PARALLEL_FOR
+//        PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             int begin = rowP->e<int>(n);
             int end = rowP->e<int>(n + 1);
@@ -60,11 +60,11 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
         auto N = rowP->lengthOf() / 2;
         auto numElements = output->lengthOf();
         NDArray offset = NDArrayFactory::create<int>('c', {N});
-        NDArray symRowP = NDArrayFactory::create<int>('c', {N + 1});
-        NDArray symColP = NDArrayFactory::create<int>('c', {numElements});
+//        NDArray symRowP = NDArrayFactory::create<int>('c', {N + 1});
+        std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
-
-        symRowP(1, {0}) = *rowCounts;
+        symRowP.insert(symRowP.begin(),0);
+        //symRowP(1, {0}) = *rowCounts;
 //        for (int n = 0; n < N; n++)
 //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n));
 
@@ -77,11 +77,11 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
                         present = true;
                         if (n < colP->e<int>(i)) {
                             // make sure we do not add elements twice
-                            symColP.p(symRowP.e<int>(n) + offset.e<int>(n), colP->e<int>(i));
-                            symColP.p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i)), n);
-                            output->p(symRowP.e<int>(n) + offset.e<int>(n),
+//                            symColP[symRowP.e<int>(n) + offset.e<int>(n)] = colP->e<int>(i);
+//                            symColP[symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i))] = n;
+                            output->p(symRowP[n] + offset.e<int>(n),
                                               valP->e<double>(i) + valP->e<double>(m));
-                            output->p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i)),
+                            output->p(symRowP[colP->e<int>(i)] + offset.e<int>(colP->e<int>(i)),
                                               valP->e<double>(i) + valP->e<double>(m));
                         }
                     }
@@ -91,10 +91,10 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
                 if (!present) {
                     int colPI = colP->e<int>(i);
                     if (n < colPI) {
-                        output->p(symRowP.e<int>(n) + offset.e<int>(n), colPI);
-                        output->p(symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colPI), n);
-                        output->p(symRowP.e<int>(n) + offset.e<int>(n), valP->e<double>(i));
-                        output->p(symRowP.e<int>(colPI) + offset.e<int>(colPI), valP->e<double>(i));
+                        output->p(symRowP[n] + offset.e<int>(n), colPI);
+                        output->p(symRowP[colP->e<int>(i)] + offset.e<int>(colPI), n);
+                        output->p(symRowP[n] + offset.e<int>(n), valP->e<double>(i));
+                        output->p(symRowP[colPI] + offset.e<int>(colPI), valP->e<double>(i));
                     }
 
                 }
