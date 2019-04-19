@@ -464,26 +464,52 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     const Y talpha = static_cast<Y>(alpha);
     const Y coeff  = talpha * tbeta; 
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD
-    for (uint i = 0; i < numOfTads; ++i) {
-        const X* x = inBuff    + inTadOffsets[i];
-              Y* y = gradIBuff + gradITadOffsets[i];        
+    if(inTadEws == 1 && gradITadEws == 1) {
+        
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const X* x = inBuff    + inTadOffsets[i];
+                  Y* y = gradIBuff + gradITadOffsets[i];        
 
-        for (uint j = 0; j < tadLen; ++j) {
-            const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
-            const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
+                const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
 
-            Y sum(0), sqSum(0);            
-            for (uint s = begin; s < end; ++s) { 
-                Y val = x[s * inTadEws]; sum += val; sqSum += val * val; 
+                Y sum(0), sqSum(0);            
+                for (uint s = begin; s < end; ++s) { 
+                    Y val = x[s]; sum += val; sqSum += val * val; 
+                }
+
+                sqSum = tbias + talpha * sqSum;
+                Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
+
+                y[j] = factor * (1.f - 2.f * x[j] * coeff * sum / sqSum);
             }
-
-            sqSum = tbias + talpha * sqSum;
-            Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
-
-            y[j * gradITadEws] = factor * (1.f - 2.f * x[j * inTadEws] * coeff * sum / sqSum);
         }
     }
+    else {
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const X* x = inBuff    + inTadOffsets[i];
+                  Y* y = gradIBuff + gradITadOffsets[i];        
+
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
+                const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
+
+                Y sum(0), sqSum(0);            
+                for (uint s = begin; s < end; ++s) { 
+                    Y val = x[s * inTadEws]; sum += val; sqSum += val * val; 
+                }
+
+                sqSum = tbias + talpha * sqSum;
+                Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
+
+                y[j * gradITadEws] = factor * (1.f - 2.f * x[j * inTadEws] * coeff * sum / sqSum);
+            }
+        }
+    }    
     gradI *= gradO;
 }
 
