@@ -41,6 +41,7 @@ if ("${BUILD_MKLDNN}")
     set(HAVE_MKLDNN 1)
     add_definitions(-DHAVE_MKLDNN=true)
     include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+    set(MKLDNN mkldnn)
 endif()
 
 # Download and unpack flatbuffers at configure time
@@ -216,5 +217,5 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
-target_link_libraries(runtests gtest mkldnn gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
 
