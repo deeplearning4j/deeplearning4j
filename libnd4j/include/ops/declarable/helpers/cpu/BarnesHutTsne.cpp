@@ -128,6 +128,39 @@ namespace helpers {
             }
         }
     }
+
+    template <typename T>
+    static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+        //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+        //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+        auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
+            return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
+        };
+
+        input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
+    }
+
+    void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+        //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+        //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
+        BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), NUMERIC_TYPES);
+//        auto signGradX = *gradX;
+//        auto signEpsilon = *epsilon;
+//        gradX->applyTransform(transform::Sign, &signGradX, nullptr);
+//        epsilon->applyTransform(transform::Sign, &signEpsilon, nullptr);
+//        auto leftPart = (*input + 2.) * signGradX;
+//        auto leftPartBool = NDArrayFactory::create<bool>(leftPart.ordering(), leftPart.getShapeAsVector());
+//
+//        leftPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &leftPartBool, nullptr);
+//        auto rightPart = *input * 0.8 * signGradX;
+//        auto rightPartBool = NDArrayFactory::create<bool>(rightPart.ordering(), rightPart.getShapeAsVector());
+//        rightPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &rightPartBool, nullptr);
+//        leftPart.assign(leftPartBool);
+//        rightPart.assign(rightPartBool);
+//        leftPart.applyPairwiseTransform(pairwise::Add, &rightPart, output, nullptr);
+
+    }
+    BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
 }
 }
 }

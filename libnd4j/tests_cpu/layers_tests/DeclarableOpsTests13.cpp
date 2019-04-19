@@ -232,7 +232,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
     nd4j::ops::barnes_gains op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-//    result->at(0)->printBuffer("Gains out");
+    result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
 }
