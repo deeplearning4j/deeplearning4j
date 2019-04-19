@@ -46,4 +46,6 @@ TEST_F(ResultSetTests, basic_test_1) {
 
     for (int e = 0; e < tensors->size(); e++)
         ASSERT_EQ(5, tensors->at(e)->lengthOf());
+
+    delete tensors;
 }
