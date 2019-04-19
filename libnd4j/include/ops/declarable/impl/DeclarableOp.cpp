@@ -187,6 +187,30 @@ namespace nd4j {
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
                 results = outSha->size();
 
+                // we must "validate" our output shapes
+                for (int e = 0; e < results; e++) {
+                    auto ptr = outSha->at(e);
+
+                    // checking for the same pointer used twice
+                    for (int i = 0; i < results; i++){
+                        if (i == e)
+                            continue;
+
+                        auto com = outSha->at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned same shape instance twice [" + *_descriptor->getOpName() + "]");
+                    }
+
+                    // checking for input pointer returned back
+                    for (int i = 0; i < inSha.size(); i++){
+                        auto com = inSha.at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned input shape instance as output [" + *_descriptor->getOpName() + "]");
+                    }
+                }
+
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
                     shapeEnd = std::chrono::system_clock::now();
