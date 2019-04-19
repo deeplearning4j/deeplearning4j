@@ -29,7 +29,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.Nd4jCpu;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -342,99 +345,195 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testIndexingThorough(){
-
-
         long[] fullShape = {3,4,5,6,7};
 
-        for(char order : new char[]{'c', 'f'}){
-            for( int rank=1; rank<5; rank++ ){
+        long totalTestCaseCount = 0;
+        for( int rank=1; rank<=5; rank++ ){
+            for(char order : new char[]{'c', 'f'}) {
                 int[] n = new int[rank];
-                long[] shape = new long[rank];
+                long[] inShape = new long[rank];
                 long prod = 1;
-                for( int i=0; i<rank; i++ ) {
-                    n[i] = 6;
-                    shape[i] = fullShape[i];
+                for (int i = 0; i < rank; i++) {
+                    n[i] = 8;
+                    inShape[i] = fullShape[i];
                     prod *= fullShape[i];
                 }
-                NdIndexIterator iter = new NdIndexIterator(n);
-                INDArrayIndex[] indexes = new INDArrayIndex[rank];
-                while(iter.hasNext()){
-                    long[] next = iter.next();
-                    for( int i=0; i<next.length; i++ ){
-                        switch (i){
-                            case 0:
-                                indexes[i] = NDArrayIndex.point(0);
-                                break;
-                            case 1:
-                                indexes[i] = NDArrayIndex.point(fullShape[i]-1);
-                                break;
-                            case 2:
-                                indexes[i] = NDArrayIndex.point(fullShape[i]/2);
-                                break;
-                            case 3:
-                                indexes[i] = NDArrayIndex.interval(0, fullShape[i]);
-                                break;
-                            case 4:
-                                indexes[i] = NDArrayIndex.interval(1, fullShape[i]-1);
-                                break;
-                            case 5:
-                                indexes[i] = NDArrayIndex.interval(1, 2, fullShape[i]);
-                                break;
-                            case 6:
-                                indexes[i] = NDArrayIndex.all();
-                                break;
-                            default:
-                                throw new RuntimeException();
-                        }
+
+                for (int newAxisTestCase : new int[]{0, 1, 2, 3}) {    //0 = none, 1=at start, 2=at end, 3=between
+                    int outRank = rank;
+                    switch (newAxisTestCase){
+                        case 1: //At start
+                        case 2: //At end
+                            outRank++;
+                            break;
+                        case 3: //Between
+                            outRank += rank - 1;
+                            break;
                     }
-                }
+
+                    INDArrayIndex[] indexes = new INDArrayIndex[outRank];
+                    NdIndexIterator iter = new NdIndexIterator(n);      //This is used as a simple counter
+                    while (iter.hasNext()) {
+                        long[] next = iter.next();
+                        int pos = 0;
+
+                        if(newAxisTestCase == 1){
+                            indexes[pos++] = NDArrayIndex.newAxis();
+                        }
+
+                        for (int i = 0; i < next.length; i++) {
+                            switch ((int) next[i]) {
+                                case 0:
+                                    indexes[pos++] = NDArrayIndex.point(0);
+                                    break;
+                                case 1:
+                                    indexes[pos++] = NDArrayIndex.point(fullShape[i] - 1);
+                                    break;
+                                case 2:
+                                    indexes[pos++] = NDArrayIndex.point(fullShape[i] / 2);
+                                    break;
+                                case 3:
+                                    indexes[pos++] = NDArrayIndex.interval(0, fullShape[i]);
+                                    break;
+                                case 4:
+                                    indexes[pos++] = NDArrayIndex.interval(0, fullShape[i] - 1, true);
+                                    break;
+                                case 5:
+                                    indexes[pos++] = NDArrayIndex.interval(1, 2, fullShape[i]);
+                                    break;
+                                case 6:
+                                    indexes[pos++] = NDArrayIndex.interval(1, 2, fullShape[i] - 1, true);
+                                    break;
+                                case 7:
+                                    indexes[pos++] = NDArrayIndex.all();
+                                    break;
+                                default:
+                                    throw new RuntimeException();
+                            }
+                            if(newAxisTestCase == 3 && i < next.length - 1){  //Between
+                                indexes[pos++] = NDArrayIndex.newAxis();
+                            }
+                        }
+
+                        if(newAxisTestCase == 2){  //At end
+                            indexes[pos++] = NDArrayIndex.newAxis();
+                        }
+
+                        INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', inShape).dup(order);
+                        INDArray sub = arr.get(indexes);
+
+                        String msg = "Test case: rank = " + rank + ", order = " + order + ", inShape = " + Arrays.toString(inShape) +
+                                ", indexes = " + Arrays.toString(indexes) + ", newAxisTest=" + newAxisTestCase;
+
+                        long[] expShape = getShape(arr, indexes);
+                        long[] subShape = sub.shape();
+                        assertArrayEquals(msg, expShape, subShape);
+
+                        msg = "Test case: rank = " + rank + ", order = " + order + ", inShape = " + Arrays.toString(inShape) +
+                                ", outShape = " + Arrays.toString(expShape) +
+                                ", indexes = " + Arrays.toString(indexes) + ", newAxisTest=" + newAxisTestCase;
+                        System.out.println(msg);
 
 
-                INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', shape).dup(order);
-                INDArray sub = arr.get(indexes);
+                        NdIndexIterator posIter = new NdIndexIterator(expShape);
+                        while (posIter.hasNext()) {
+                            long[] outIdxs = posIter.next();
+                            double act = sub.getDouble(outIdxs);
+                            double exp = getDouble(indexes, arr, outIdxs);
 
-                long[] expShape = getShape(arr, indexes);
-                assertArrayEquals(expShape, sub.shape());
-
-
-                NdIndexIterator iter = new NdIndexIterator(expShape);
-                while(iter.hasNext()){
-                    long[] n = iter.next();
-                    double act = arr.getDouble(n);
-
+                            assertEquals(msg, exp, act, 1e-6);
+                        }
+                        totalTestCaseCount++;
+                    }
                 }
             }
         }
+
+        System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
     }
 
     private static long[] getShape(INDArray in, INDArrayIndex[] idxs){
-        Preconditions.checkState(in.rank() == idxs.length);
         int countPoint = 0;
+        int countNewAxis = 0;
         for(INDArrayIndex i : idxs){
             if(i instanceof PointIndex)
                 countPoint++;
+            if(i instanceof NewAxis)
+                countNewAxis++;
         }
 
-        long[] out = new long[in.rank() - countPoint];
-        int j=0;
+        Preconditions.checkState(in.rank() == idxs.length - countNewAxis);
+
+        long[] out = new long[in.rank() - countPoint + countNewAxis];
+        int outAxisCount = 0;
+        int inAxisCount = 0;
         for( int i=0; i<idxs.length; i++ ){
-            if(idxs[i] instanceof PointIndex)
+            if(idxs[i] instanceof PointIndex) {
+                //Point index doesn't appear in output
+                inAxisCount++;
                 continue;
+            }
             if(idxs[i] instanceof NDArrayIndexAll){
-                out[j++] = in.size(i);
+                out[outAxisCount++] = in.size(inAxisCount++);
             } else if(idxs[i] instanceof IntervalIndex){
                 IntervalIndex ii = (IntervalIndex)idxs[i];
-                long begin = ii.offset();
-                long end = ii.end();
+                long begin = ii.offset();   //Inclusive
+                long end = ii.end();        //Inclusive
+                if(!ii.isInclusive())
+                    end--;
                 long stride = ii.stride();
-                out[j++] = (end-begin)/stride;
+                out[outAxisCount++] = (end-begin)/stride + 1;
+                inAxisCount++;
+            } else if(idxs[i] instanceof NewAxis){
+                //Don't increment inAxisCount as newAxis doesn't correspend to input axis
+                out[outAxisCount++] = 1;
+            } else {
+                throw new RuntimeException();
             }
         }
         return out;
     }
 
-    public static double getDouble(INDArrayIndex[] idxs, INDArray source, long[] pt){
-        
+    public static double getDouble(INDArrayIndex[] idxs, INDArray source, long[] viewIdx){
+        long[] originalIdxs = new long[source.rank()];
+        int origIdxC = 0;
+        int viewC = 0;
+        for( int i=0; i<idxs.length; i++ ){
+            if(idxs[i] instanceof PointIndex){
+                PointIndex p = (PointIndex)idxs[i];
+                originalIdxs[origIdxC++] = p.current();
+                //View counter not increased: doesn't appear in output
+            } else if(idxs[i] instanceof NDArrayIndexAll){
+                originalIdxs[origIdxC++] = viewIdx[viewC++];
+            } else if(idxs[i] instanceof IntervalIndex) {
+                IntervalIndex ii = (IntervalIndex) idxs[i];
+                originalIdxs[origIdxC++] = ii.offset() + viewIdx[viewC++] * ii.stride();
+            } else if(idxs[i] instanceof NewAxis){
+                Preconditions.checkState(viewIdx[viewC++] == 0);
+                continue;   //Skip new axis, size 1 dimension doesn't appear in source
+            } else {
+                throw new RuntimeException();
+            }
+        }
+
+        double d = source.getDouble(originalIdxs);
+        return d;
+    }
+
+    @Test
+    public void debugging(){
+        long[] inShape = {3,4};
+        INDArrayIndex[] indexes = new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(1, 2, 4)};
+
+        long prod = ArrayUtil.prod(inShape);
+        char order = 'c';
+        INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', inShape).dup(order);
+        INDArray sub = arr.get(indexes);
+
+        System.out.println(Arrays.toString(indexes));
+        System.out.println(arr);
+        System.out.println();
+        System.out.println(sub);
     }
 
 

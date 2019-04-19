@@ -4992,81 +4992,173 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             indexes = newIndexes;
         }
 
-        // never going to happen :/
-        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
 
-        if(indexes.length > rank()) {
-            int numNonNewAxis = 0;
-            for(int i = 0; i < indexes.length; i++) {
-                if(!(indexes[i] instanceof NewAxis))
-                    numNonNewAxis++;
+        int numPoint = 0;
+        int numInterval = 0;
+        int numAll = 0;
+        int numNewAxis = 0;
+        int numSpecified = 0;
+        for(INDArrayIndex i : indexes){
+            if(i instanceof PointIndex){
+                numPoint++;
+            } else if(i instanceof IntervalIndex){
+                numInterval++;
+            } else if(i instanceof NDArrayIndexAll){
+                numAll++;
+            } else if(i instanceof NewAxis){
+                numNewAxis++;
+            } else if(i instanceof SpecifiedIndex){
+                numSpecified++;
+            } else {
+                throw new IllegalStateException("Unknown index: " + i);
             }
-
-            if(numNonNewAxis > rank()) {
-                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
-                        rank() + " array with indices " + Arrays.toString(indexes));
-            }
-        } else if(indexes.length < rank()){
-            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
         }
 
+        if (numSpecified > 0) {
+            throw new RuntimeException("Specified index: not yet implemented");
+        }
 
-        //check for row/column vector and point index being 0
-        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
-                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[1] instanceof NDArrayIndexAll
-                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[0] instanceof NDArrayIndexAll)) ||
-                (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
-            return this;
+        Preconditions.checkState((numPoint + numInterval + numAll) == rank(), "Illegal set of indices for array: need at least" +
+                "%s point/interval/all indices for rank %s array (%ndShape), got indices %s", rank(), rank(), this, indexes);
 
-        //1d+all: return this
-        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
-            return this;
+        int outRank = rank() + numNewAxis - numPoint;
+        Preconditions.checkState(outRank >= 0, "Illegal set of indices for array: %ndShape, %s", this, indexes);
 
-        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
-        resolution.exec(indexes);
+        long[] outShape = new long[outRank];
+        long[] outStrides = new long[outRank];
+        long offset = 0;
 
-        if (indexes.length < 1)
-            throw new IllegalStateException("Invalid index found of zero length");
-
-        long[] shape = resolution.getShapes();
-        int numSpecifiedIndex = 0;
-        for (int i = 0; i < indexes.length; i++)
-            if (indexes[i] instanceof SpecifiedIndex)
-                numSpecifiedIndex++;
-
-        if (shape != null && numSpecifiedIndex > 0) {
-            Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
-            int count = 0;
-            while (true) {
-                try {
-                    List<List<Long>> next = gen.next();
-                    List<Long> coordsCombo = new ArrayList<>();
-                    for (int i = 0; i < next.size(); i++) {
-                        if (next.get(i).size() > 1)
-                            throw new IllegalStateException("Illegal entry returned");
-                        coordsCombo.add(next.get(i).get(0));
-                    }
-                    ret.putScalar(count++, getDouble(Ints.toArray(coordsCombo)));
-
-
-                } catch (NoSuchElementException e) {
-                    break;
+        int outIdx = 0;
+        int inIdx = 0;
+        for( int i=0; i<indexes.length; i++ ){
+            if(indexes[i] instanceof PointIndex){
+                //Point indexes don't appear in output
+                PointIndex pi = (PointIndex)indexes[i];
+                offset += pi.offset() * stride(inIdx);
+                inIdx++;
+            } else if(indexes[i] instanceof NDArrayIndexAll){
+                //All index: doesn't change offset
+                outShape[outIdx] = size(inIdx);
+                outStrides[outIdx] = stride(inIdx);
+                inIdx++;
+                outIdx++;
+            } else if(indexes[i] instanceof IntervalIndex){
+                IntervalIndex ii = (IntervalIndex)indexes[i];
+                long start = ii.current();
+                long endInc = ii.end() - (ii.isInclusive() ? 0 : 1);
+                if (endInc >= size(inIdx)) {
+                    throw new IllegalStateException("Indices are out of range: Cannot get interval index " + indexes[i] +
+                            " on array with size(" + inIdx + ")=" + size(inIdx) + ". Array shape: " + Arrays.toString(shape()) +
+                            ", indices: " + Arrays.toString(indexes));
                 }
+                long stride = ii.stride();
+                long length = (endInc - start)/stride + 1;
+                //Account for end beyond specified length - get(interval(1,2,3,true)) on a
 
-                if (count >= ret.length())
-                    break;
+
+
+                offset += ii.offset() * stride(inIdx);
+                outShape[outIdx] = length;
+                outStrides[outIdx] = ii.stride() * stride(inIdx);
+                inIdx++;
+                outIdx++;
+            } else if(indexes[i] instanceof NewAxis){
+                //New axis: appends a 1 in shape
+                outShape[outIdx] = 1;
+                if(outIdx > 0){ //Stride doesn't matter for 1 size axis anyway...
+                    outStrides[outIdx] = outStrides[outIdx-1];
+                } else {
+                    outStrides[outIdx] = 1;
+                }
+                outIdx++;
+            } else {
+                //Specified can't happen here
+                throw new IllegalStateException("Unknown index: " + i);
             }
-
-            return ret;
-
         }
 
-        INDArray ret = subArray(resolution);
-        return ret;
+        char order = Shape.getOrder(outShape, outStrides, -1);
+
+
+        INDArray out = create(data, outShape, outStrides, offset, order);
+        return out;
+
+//
+//        // never going to happen :/
+//        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+//
+//        if(indexes.length > rank()) {
+//            int numNonNewAxis = 0;
+//            for(int i = 0; i < indexes.length; i++) {
+//                if(!(indexes[i] instanceof NewAxis))
+//                    numNonNewAxis++;
+//            }
+//
+//            if(numNonNewAxis > rank()) {
+//                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
+//                        rank() + " array with indices " + Arrays.toString(indexes));
+//            }
+//        } else if(indexes.length < rank()){
+//            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
+//        }
+//
+//
+//        //check for row/column vector and point index being 0
+//        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
+//                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
+//                && indexes[1] instanceof NDArrayIndexAll
+//                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
+//                && indexes[0] instanceof NDArrayIndexAll)) ||
+//                (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
+//            return this;
+//
+//        //1d+all: return this
+//        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
+//            return this;
+//
+//        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
+//        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
+//        resolution.exec(indexes);
+//
+//        if (indexes.length < 1)
+//            throw new IllegalStateException("Invalid index found of zero length");
+//
+//        long[] shape = resolution.getShapes();
+//        int numSpecifiedIndex = 0;
+//        for (int i = 0; i < indexes.length; i++)
+//            if (indexes[i] instanceof SpecifiedIndex)
+//                numSpecifiedIndex++;
+//
+//        if (shape != null && numSpecifiedIndex > 0) {
+//            Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
+//            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
+//            int count = 0;
+//            while (true) {
+//                try {
+//                    List<List<Long>> next = gen.next();
+//                    List<Long> coordsCombo = new ArrayList<>();
+//                    for (int i = 0; i < next.size(); i++) {
+//                        if (next.get(i).size() > 1)
+//                            throw new IllegalStateException("Illegal entry returned");
+//                        coordsCombo.add(next.get(i).get(0));
+//                    }
+//                    ret.putScalar(count++, getDouble(Ints.toArray(coordsCombo)));
+//
+//
+//                } catch (NoSuchElementException e) {
+//                    break;
+//                }
+//
+//                if (count >= ret.length())
+//                    break;
+//            }
+//
+//            return ret;
+//
+//        }
+//
+//        INDArray ret = subArray(resolution);
+//        return ret;
     }
 
 

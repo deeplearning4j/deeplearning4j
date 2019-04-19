@@ -385,6 +385,8 @@ public class ShapeOffsetResolution implements Serializable {
             resolveFixedDimensionsCOO(indexes);
         }
 
+
+        /*
         // Check that given point indexes are not out of bounds
         for (int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
@@ -567,7 +569,7 @@ public class ShapeOffsetResolution implements Serializable {
         /**
          * Need to post process strides and offsets
          * for trailing ones here
-         */
+         *
         //prune off extra zeros for trailing and leading ones
         int trailingZeroRemove = accumOffsets.size() - 1;
         while (accumOffsets.size() > accumShape.size()) {
@@ -607,7 +609,7 @@ public class ShapeOffsetResolution implements Serializable {
         this.offsets = Longs.toArray(accumOffsets);
 
         //compute point offsets differently
-        /**
+        /*
          * We need to prepend the strides for the point indexes
          * such that the point index offsets are counted.
          * Note here that we only use point strides
@@ -621,7 +623,7 @@ public class ShapeOffsetResolution implements Serializable {
          * Another thing of note here is that the strides
          * and offsets should line up such that the point
          * and stride match up.
-         */
+         *
         if (numPointIndexes > 0 && !pointStrides.isEmpty()) {
             //append to the end for tensors
             if (newAxesPrepend >= 1) {
@@ -667,6 +669,7 @@ public class ShapeOffsetResolution implements Serializable {
         else
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides)
                     / Math.max(1, numIntervals);
+         */
     }
 
     public void resolveFixedDimensionsCOO(INDArrayIndex... indexes) {

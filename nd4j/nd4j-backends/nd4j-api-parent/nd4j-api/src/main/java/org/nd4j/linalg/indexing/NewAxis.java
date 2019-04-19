@@ -101,4 +101,9 @@ public class NewAxis implements INDArrayIndex {
     public void reset() {
 
     }
+
+    @Override
+    public String toString(){
+        return "newAxis()";
+    }
 }

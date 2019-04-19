@@ -17,6 +17,8 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Longs;
+import lombok.Getter;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -28,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class IntervalIndex implements INDArrayIndex {
 
     protected long begin, end;
+    @Getter
     protected boolean inclusive;
     protected long stride = 1;
     protected long index = 0;
@@ -41,8 +44,6 @@ public class IntervalIndex implements INDArrayIndex {
     public IntervalIndex(boolean inclusive, long stride) {
         this.inclusive = inclusive;
         this.stride = stride;
-
-        this.length = (int) Math.abs((end - begin)) / stride;
     }
 
     @Override
@@ -110,9 +111,12 @@ public class IntervalIndex implements INDArrayIndex {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
-        for (long i = begin; i < end; i += stride) {
-            length++;
-        }
+
+        //Calculation of length: (endInclusive - begin)/stride + 1
+        long endInc = arr.size(dimension) - (inclusive ? 0 : 1);
+        this.length = (endInc - begin)/stride + 1;
+
+        Preconditions.checkState(endInc < arr.size(dimension), "Invalid interval: %s on array with shape %ndShape", this, arr);
     }
 
     @Override
@@ -132,11 +136,10 @@ public class IntervalIndex implements INDArrayIndex {
         }
         this.begin = begin;
         this.index = begin;
-        this.end = inclusive ? end + 1 : end;
-        for (long i = begin; i < this.end; i += stride) {
-            length++;
-        }
+        this.end = end;
 
+        long endInc = end - (inclusive ? 0 : 1);
+        this.length = (endInc - begin)/stride + 1;
     }
 
     @Override
@@ -145,11 +148,10 @@ public class IntervalIndex implements INDArrayIndex {
             throw new IllegalArgumentException("Please pass in an array for negative indices. Unable to determine size for dimension otherwise");
         this.begin = begin;
         this.index = begin;
-        this.end = inclusive ? end + 1 : end;
-        for (long i = begin; i < this.end; i += stride) {
-            length++;
-        }
+        this.end = end;
 
+        long endInc = end - (inclusive ? 0 : 1);
+        this.length = (endInc - begin)/stride + 1;
     }
 
     @Override
@@ -190,6 +192,6 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public String toString(){
-        return "Interval(b=" + begin + ",e=" + end + ",s=" + stride + ")";
+        return "Interval(b=" + begin + ",e=" + end + ",s=" + stride + (inclusive ? ",inclusive" : "") + ")";
     }
 }

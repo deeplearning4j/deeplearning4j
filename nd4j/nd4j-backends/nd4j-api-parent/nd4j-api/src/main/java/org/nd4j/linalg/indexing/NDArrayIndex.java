@@ -226,7 +226,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * all elements
      */
     public static INDArrayIndex all() {
-        return new NDArrayIndexAll(true);
+        return new NDArrayIndexAll();
     }
 
     /**
@@ -698,7 +698,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param inclusive whether the end should be inclusive or not
      * @return the interval
      */
-    public static INDArrayIndex interval(int begin, int end, boolean inclusive) {
+    public static INDArrayIndex interval(long begin, long end, boolean inclusive) {
         return interval(begin, 1, end, inclusive);
     }
 
