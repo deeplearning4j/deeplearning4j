@@ -1599,6 +1599,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        val name = op.opName();
         val context = buildContext();
 
         context.markInplace(op.isInplaceCall());
@@ -1615,13 +1616,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         context.setIArguments(op.iArgs());
         context.setTArguments(op.tArgs());
 
-        val result = exec(op, context);
-        val states = context.getRngStates();
+        try {
+            val result = exec(op, context);
+            val states = context.getRngStates();
 
-        // pulling states back
-        Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+            // pulling states back
+            Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
 
-        return result;
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Op [" + name + "] execution failed", e);
+        }
 /*
         val name = op.opName().toLowerCase();
         val hash = op.opHash();
