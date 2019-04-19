@@ -354,7 +354,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                 long[] inShape = new long[rank];
                 long prod = 1;
                 for (int i = 0; i < rank; i++) {
-                    n[i] = 8;
+                    n[i] = 10;
                     inShape[i] = fullShape[i];
                     prod *= fullShape[i];
                 }
@@ -407,6 +407,12 @@ public class IndexingTestsC extends BaseNd4jTest {
                                 case 7:
                                     indexes[pos++] = NDArrayIndex.all();
                                     break;
+                                case 8:
+                                    indexes[pos++] = NDArrayIndex.indices(0);
+                                    break;
+                                case 9:
+                                    indexes[pos++] = NDArrayIndex.indices(2,1);
+                                    break;
                                 default:
                                     throw new RuntimeException();
                             }
@@ -432,7 +438,11 @@ public class IndexingTestsC extends BaseNd4jTest {
                         msg = "Test case: rank = " + rank + ", order = " + order + ", inShape = " + Arrays.toString(inShape) +
                                 ", outShape = " + Arrays.toString(expShape) +
                                 ", indexes = " + Arrays.toString(indexes) + ", newAxisTest=" + newAxisTestCase;
-                        System.out.println(msg);
+//                        System.out.println(msg);
+
+//                        System.out.println(arr);
+//                        System.out.println(sub);
+//                        System.out.println();
 
 
                         NdIndexIterator posIter = new NdIndexIterator(expShape);
@@ -484,9 +494,13 @@ public class IndexingTestsC extends BaseNd4jTest {
                 long stride = ii.stride();
                 out[outAxisCount++] = (end-begin)/stride + 1;
                 inAxisCount++;
-            } else if(idxs[i] instanceof NewAxis){
+            } else if(idxs[i] instanceof NewAxis) {
                 //Don't increment inAxisCount as newAxis doesn't correspend to input axis
                 out[outAxisCount++] = 1;
+            } else if(idxs[i] instanceof SpecifiedIndex){
+                SpecifiedIndex si = (SpecifiedIndex)idxs[i];
+                out[outAxisCount++] = si.getIndexes().length;
+                inAxisCount++;
             } else {
                 throw new RuntimeException();
             }
@@ -508,9 +522,13 @@ public class IndexingTestsC extends BaseNd4jTest {
             } else if(idxs[i] instanceof IntervalIndex) {
                 IntervalIndex ii = (IntervalIndex) idxs[i];
                 originalIdxs[origIdxC++] = ii.offset() + viewIdx[viewC++] * ii.stride();
-            } else if(idxs[i] instanceof NewAxis){
+            } else if(idxs[i] instanceof NewAxis) {
                 Preconditions.checkState(viewIdx[viewC++] == 0);
                 continue;   //Skip new axis, size 1 dimension doesn't appear in source
+            } else if(idxs[i] instanceof SpecifiedIndex){
+                SpecifiedIndex si = (SpecifiedIndex)idxs[i];
+                long[] s = si.getIndexes();
+                originalIdxs[origIdxC++] = s[(int)viewIdx[viewC++]];
             } else {
                 throw new RuntimeException();
             }

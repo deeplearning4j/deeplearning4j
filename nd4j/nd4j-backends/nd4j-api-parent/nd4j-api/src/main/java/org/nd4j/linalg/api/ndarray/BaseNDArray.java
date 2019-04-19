@@ -5014,12 +5014,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
-        if (numSpecified > 0) {
-            throw new RuntimeException("Specified index: not yet implemented");
-        }
-
-        Preconditions.checkState((numPoint + numInterval + numAll) == rank(), "Illegal set of indices for array: need at least" +
-                "%s point/interval/all indices for rank %s array (%ndShape), got indices %s", rank(), rank(), this, indexes);
+        Preconditions.checkState((numPoint + numInterval + numAll + numSpecified) == rank(), "Illegal set of indices for array: need at least" +
+                " %s point/interval/all/specified indices for rank %s array (%ndShape), got indices %s", rank(), rank(), this, indexes);
 
         int outRank = rank() + numNewAxis - numPoint;
         Preconditions.checkState(outRank >= 0, "Illegal set of indices for array: %ndShape, %s", this, indexes);
@@ -5062,20 +5058,99 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 outStrides[outIdx] = ii.stride() * stride(inIdx);
                 inIdx++;
                 outIdx++;
-            } else if(indexes[i] instanceof NewAxis){
+            } else if(indexes[i] instanceof NewAxis) {
                 //New axis: appends a 1 in shape
                 outShape[outIdx] = 1;
-                if(outIdx > 0){ //Stride doesn't matter for 1 size axis anyway...
-                    outStrides[outIdx] = outStrides[outIdx-1];
+                if (outIdx > 0) { //Stride doesn't matter for 1 size axis anyway...
+                    outStrides[outIdx] = outStrides[outIdx - 1];
                 } else {
                     outStrides[outIdx] = 1;
                 }
                 outIdx++;
+            } else if(indexes[i] instanceof SpecifiedIndex){
+                SpecifiedIndex si = (SpecifiedIndex)indexes[i];
+                outShape[outIdx++] = si.length();
+                inIdx++;
+                //Don't care about strides for specified index
             } else {
                 //Specified can't happen here
                 throw new IllegalStateException("Unknown index: " + i);
             }
         }
+
+        if (numSpecified > 0) {
+            INDArray out = Nd4j.create(dataType(), outShape);
+
+            //Need to copy subsets here
+            long[] specifiedSizes = new long[numSpecified];
+            int[] specifiedAxisOut = new int[numSpecified];
+            SpecifiedIndex[] si = new SpecifiedIndex[numSpecified];
+            int j=0;
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof SpecifiedIndex){
+                    specifiedSizes[j] = indexes[i].length();
+                    specifiedAxisOut[j] = i;
+                    si[j] = (SpecifiedIndex)indexes[i];
+                    j++;
+                }
+            }
+            NdIndexIterator iter = new NdIndexIterator(specifiedSizes);
+
+            //What we need to do here: Iterate over sub-arrays for both input and output
+            //(1) Get from input: requested indices, except for:
+            //    i. specified indices -> replace with loop + point
+            //    ii. new axis indices -> ignore/exclude (don't appear in input)
+            //    iii. interval indices -> replace with all
+            //(2) Get from output: requested indices, except for:
+            //    i. point indices -> ignore/exclude (don't appear in output)
+            //    ii. new axis indices -> replace with point(0)
+            INDArrayIndex[] pointIdxsIn = new INDArrayIndex[indexes.length - numNewAxis];
+            int[] specifiedAxisIn = new int[numSpecified];
+            int specCount = 0;
+            j = 0;
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof NewAxis)
+                    continue;   //Skip new axis in source dims
+                if(indexes[i] instanceof SpecifiedIndex)
+                    specifiedAxisIn[specCount++] = j;
+                pointIdxsIn[j++] = indexes[i];
+            }
+
+            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length-numPoint];
+            j = 0;
+            specCount = 0;
+            specifiedAxisOut = new int[numSpecified];
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof NewAxis){
+                    pointIdxsOut[j++] = NDArrayIndex.point(0);
+                    continue;
+                } else if(indexes[i] instanceof PointIndex){
+                    continue;
+                } else if(indexes[i] instanceof SpecifiedIndex){
+                    specifiedAxisOut[specCount++] = j;
+                } else if(indexes[i] instanceof IntervalIndex){
+                    pointIdxsOut[j++] = NDArrayIndex.all();
+                    continue;
+                }
+                pointIdxsOut[j++] = indexes[i];
+            }
+
+
+            while( iter.hasNext()){
+                long[] specifiedIdxs = iter.next();
+                for( int i=0; i<specifiedIdxs.length; i++ ){
+                    long sourceIdx = si[i].getIndexes()[(int)specifiedIdxs[i]];
+                    pointIdxsIn[specifiedAxisIn[i]] = NDArrayIndex.point(sourceIdx);
+                    int outI = (int)specifiedIdxs[i];
+                    pointIdxsOut[specifiedAxisOut[i]] = NDArrayIndex.point(outI);
+                }
+
+                out.get(pointIdxsOut).assign(get(pointIdxsIn));
+            }
+
+            return out;
+        }
+
 
         char order = Shape.getOrder(outShape, outStrides, -1);
 
