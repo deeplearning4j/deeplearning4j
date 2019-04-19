@@ -932,12 +932,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (dimensions.size() > 1 && arrays.size() != dimensions.size())
             throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
 
+        val zero = arrays.get(0);
         int tadLength = 1;
-        for (int i = 0; i < dimensions.get(0).length; i++) {
-            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
-        }
+        if (zero.rank() > 1)
+            for (int i = 0; i < dimensions.get(0).length; i++) {
+                tadLength *= zero.shape()[dimensions.get(0)[i]];
+            }
 
-        long numTads = arrays.get(0).rank() == 1 ? arrays.get(0).length() : arrays.get(0).length() / tadLength;
+        long numTads = zero.length() / tadLength;
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
@@ -971,7 +973,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
             val offsets = tadBuffers.getSecond();
 
-            if (offsets.length() != numTads)
+            if (array.rank() != 1 && offsets.length() != numTads)
                 throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
 
             if (offsets == null)
