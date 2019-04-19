@@ -32,7 +32,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.*;
@@ -2392,21 +2391,6 @@ public class Shape {
             return new long[]{index};
         return ind2subC(arr.shape(), index, ArrayUtil.prodLong(arr.shape()));
     }
-
-    /**
-     * Compute the offset for the given array
-     * given the indices
-     * @param arr the array to compute the offset for
-     * @param indexes the indexes along each dimension to create the offset for
-     * @return the offset for the given array and indexes
-     */
-    public static long offsetFor(INDArray arr, int[] indexes) {
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(Shape.toIndexes(indexes));
-        return resolution.getOffset();
-    }
-
-
 
     /**
      * Assert the both shapes are the same length

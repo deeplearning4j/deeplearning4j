@@ -36,7 +36,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
@@ -1310,11 +1309,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public void setOrder(char order) {
 
-    }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-        return null;
     }
 
     @Override

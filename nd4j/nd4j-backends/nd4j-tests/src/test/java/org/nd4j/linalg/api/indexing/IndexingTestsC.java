@@ -33,6 +33,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -347,6 +348,11 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testIndexingThorough(){
         long[] fullShape = {3,4,5,6,7};
 
+        //Note: 888,880 total test cases here - randomly run a fraction of the tests to minimize runtime
+        // whilst still maintaining good coverage
+        Random r = new Random(12345);
+        double fractionRun = 0.2;
+
         long totalTestCaseCount = 0;
         for( int rank=1; rank<=5; rank++ ){
             for(char order : new char[]{'c', 'f'}) {
@@ -374,6 +380,11 @@ public class IndexingTestsC extends BaseNd4jTest {
                     INDArrayIndex[] indexes = new INDArrayIndex[outRank];
                     NdIndexIterator iter = new NdIndexIterator(n);      //This is used as a simple counter
                     while (iter.hasNext()) {
+                        if(r.nextFloat() > fractionRun){
+                            //Randomly skip fraction of tests to minimize runtime
+                            continue;
+                        }
+
                         long[] next = iter.next();
                         int pos = 0;
 
@@ -460,6 +471,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         }
 
         System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
+        assertTrue(totalTestCaseCount > 100000);
     }
 
     private static long[] getShape(INDArray in, INDArrayIndex[] idxs){

@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
@@ -1830,15 +1829,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param order the ordering to set
      */
     void setOrder(char order);
-
-    /**
-     * Sub array based on the
-     * pre calculated shape,strides, offsets
-     * @param resolution the resolution to use
-     * @return the sub array based on the calculations from the resolution
-     */
-    INDArray subArray(ShapeOffsetResolution resolution);
-    //INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis);
 
     /**
      * @param offsets

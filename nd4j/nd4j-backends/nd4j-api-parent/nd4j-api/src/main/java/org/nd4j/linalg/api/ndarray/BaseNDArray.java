@@ -32,7 +32,6 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.*;
-import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -74,7 +73,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
@@ -2550,39 +2548,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public long slices() {
         return size(0);
-    }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-        Nd4j.getCompressor().autoDecompress(this);
-        long[] offsets = resolution.getOffsets();
-        long[] shape = resolution.getShapes();
-        long[] stride = resolution.getStrides();
-
-        //        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-        //            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
-
-        long offset = (offset() + resolution.getOffset());
-
-
-        int n = shape.length;
-
-        if (offsets.length != n)
-            throw new IllegalArgumentException("Invalid offset: number of offsets must be equal to rank " + Arrays.toString(offsets) + ", rank = " + n);
-        if (stride.length != n)
-            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
-
-        if (shape.length == rank() && Shape.contentEquals(shape, shape())) {
-            if (ArrayUtil.isZero(offsets)) {
-                return this;
-            } else {
-                throw new IllegalArgumentException("Invalid subArray offsets");
-            }
-        }
-
-        char newOrder = Shape.getOrder(shape, stride, 1);
-
-        return create(data, Arrays.copyOf(shape, shape.length), stride, offset, newOrder);
     }
 
     @Override
@@ -5157,83 +5122,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray out = create(data, outShape, outStrides, offset, order);
         return out;
-
-//
-//        // never going to happen :/
-//        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
-//
-//        if(indexes.length > rank()) {
-//            int numNonNewAxis = 0;
-//            for(int i = 0; i < indexes.length; i++) {
-//                if(!(indexes[i] instanceof NewAxis))
-//                    numNonNewAxis++;
-//            }
-//
-//            if(numNonNewAxis > rank()) {
-//                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
-//                        rank() + " array with indices " + Arrays.toString(indexes));
-//            }
-//        } else if(indexes.length < rank()){
-//            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
-//        }
-//
-//
-//        //check for row/column vector and point index being 0
-//        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
-//                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
-//                && indexes[1] instanceof NDArrayIndexAll
-//                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-//                && indexes[0] instanceof NDArrayIndexAll)) ||
-//                (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
-//            return this;
-//
-//        //1d+all: return this
-//        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
-//            return this;
-//
-//        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
-//        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
-//        resolution.exec(indexes);
-//
-//        if (indexes.length < 1)
-//            throw new IllegalStateException("Invalid index found of zero length");
-//
-//        long[] shape = resolution.getShapes();
-//        int numSpecifiedIndex = 0;
-//        for (int i = 0; i < indexes.length; i++)
-//            if (indexes[i] instanceof SpecifiedIndex)
-//                numSpecifiedIndex++;
-//
-//        if (shape != null && numSpecifiedIndex > 0) {
-//            Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-//            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
-//            int count = 0;
-//            while (true) {
-//                try {
-//                    List<List<Long>> next = gen.next();
-//                    List<Long> coordsCombo = new ArrayList<>();
-//                    for (int i = 0; i < next.size(); i++) {
-//                        if (next.get(i).size() > 1)
-//                            throw new IllegalStateException("Illegal entry returned");
-//                        coordsCombo.add(next.get(i).get(0));
-//                    }
-//                    ret.putScalar(count++, getDouble(Ints.toArray(coordsCombo)));
-//
-//
-//                } catch (NoSuchElementException e) {
-//                    break;
-//                }
-//
-//                if (count >= ret.length())
-//                    break;
-//            }
-//
-//            return ret;
-//
-//        }
-//
-//        INDArray ret = subArray(resolution);
-//        return ret;
     }
 
 
