@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/lrn.h>
 #include <Status.h>
+#include <ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -133,8 +134,9 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 #endif
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
-        const T tbias = static_cast<T>(bias);
-        const T tbeta = static_cast<T>(beta);
+        const T tbias  = static_cast<T>(bias);
+        const T tbeta  = static_cast<T>(beta);
+        const T talpha = static_cast<T>(beta);
 
         if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
@@ -170,7 +172,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                         quadSum -= prev * prev;
                     }
 
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * quadSum, tbeta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + talpha * quadSum, tbeta);
                     outputBuffer[shift + e] = iX[e] / dividor;
                 }
             }
@@ -190,7 +192,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                         quadSum += val * val;
                     }
 
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + talpha * quadSum, beta);
                     outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), output->lengthOf())] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), input->lengthOf())] / dividor;
 
                 }
@@ -429,6 +431,67 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
         return Status::OK();
     }
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    
+    const int rank = input.rankOf();
+
+    TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
+    TadPack gradITadPack;
+
+    if(shape::haveSameOffsets(input.getShapeInfo(), gradI.getShapeInfo()))
+        gradITadPack = inTadPack;
+    else
+        gradITadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
+
+    const Nd4jLong numOfTads = inTadPack.numberOfTads();
+    const Nd4jLong tadLen    = input.sizeAt(-1); 
+    
+    const Nd4jLong* inTadOffsets    = inTadPack.primaryOffsets();        
+    const Nd4jLong* gradITadOffsets = gradITadPack.primaryOffsets();
+
+    const Nd4jLong inTadEws    = shape::elementWiseStride(inTadPack.primaryShapeInfo());
+    const Nd4jLong gradITadEws = shape::elementWiseStride(gradITadPack.primaryShapeInfo());
+    
+    const X* inBuff    = reinterpret_cast<X*>(input.getBuffer());
+          Y* gradIBuff = reinterpret_cast<Y*>(gradI.getBuffer());    
+
+    const Y tbias  = static_cast<Y>(bias);
+    const Y tbeta  = static_cast<Y>(beta);
+    const Y talpha = static_cast<Y>(alpha);
+    const Y coeff  = talpha * tbeta; 
+
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (uint i = 0; i < numOfTads; ++i) {
+        const X* x = inBuff    + inTadOffsets[i];
+              Y* y = gradIBuff + gradITadOffsets[i];        
+
+        for (uint j = 0; j < tadLen; ++j) {
+            const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
+            const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
+
+            Y sum(0), sqSum(0);            
+            for (uint s = begin; s < end; ++s) { 
+                Y val = x[s * inTadEws]; sum += val; sqSum += val * val; 
+            }
+
+            sqSum = tbias + talpha * sqSum;
+            Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
+
+            y[j * gradITadEws] = factor * (1.f - 2.f * x[j * inTadEws] * coeff * sum / sqSum);
+        }
+    }
+    gradI *= gradO;
+}
+
+BUILD_DOUBLE_TEMPLATE(template void lrnBP_, (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta), LIBND4J_TYPES, FLOAT_TYPES);
+
+void lrnBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES);
+}
 
 }
 }

@@ -32,6 +32,8 @@ namespace helpers {
     int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta);
     int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta);
 
+    void lrnBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta);
+
 }
 }
 }
