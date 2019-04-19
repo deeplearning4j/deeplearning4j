@@ -16,26 +16,14 @@
 
 package org.nd4j.linalg.lossfunctions.impl;
 
-import java.util.List;
-import java.util.Map;
 import lombok.EqualsAndHashCode;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.primitives.Pair;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 /**
  * Wasserstein loss function, which calculates the Wasserstein distance, also known as earthmover's distance.

@@ -18,33 +18,21 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by susaneraly on 8/15/16.
@@ -54,8 +42,8 @@ import java.util.Map;
 @Getter
 public class LossMAPE implements ILossFunction {
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private final INDArray weights;
 
     public LossMAPE() {
@@ -94,7 +82,7 @@ public class LossMAPE implements ILossFunction {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
                                 + ") does not match output.size(1)=" + output.size(1));
             }
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -137,7 +125,7 @@ public class LossMAPE implements ILossFunction {
 
         //Weighted loss function
         if (weights != null) {
-            dLda.muliRowVector(weights);
+            dLda.muliRowVector(weights.castTo(dLda.dataType()));
         }
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {

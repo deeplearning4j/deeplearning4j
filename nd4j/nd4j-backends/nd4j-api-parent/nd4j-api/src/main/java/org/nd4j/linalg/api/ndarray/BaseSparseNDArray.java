@@ -36,7 +36,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
@@ -260,57 +259,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public INDArray get(List<List<Integer>> indices) {
         return null;
-    }
-
-    @Override
-    public INDArray put(List<List<Integer>> indices, INDArray element) {
-        if(indices.size() == rank()) {
-            NdIndexIterator ndIndexIterator = new NdIndexIterator(element.shape());
-            INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
-            for(int i = 0; i < indArrayIndices.length; i++) {
-                indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
-            }
-            boolean hasNext = true;
-            Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
-            while(hasNext) {
-                try {
-                    List<List<Long>> next = iterate.next();
-                    for(int i = 0; i < next.size(); i++) {
-                        int[] curr = Ints.toArray(next.get(i));
-                        putScalar(curr,element.getDouble(ndIndexIterator.next()));
-                    }
-                }
-                catch(NoSuchElementException e) {
-                    hasNext = false;
-                }
-            }
-
-        }
-        else {
-            List<INDArray> arrList = new ArrayList<>();
-
-            if(indices.size() >= 2) {
-                for(int i = 0; i < indices.size(); i++) {
-                    List<Integer> row = indices.get(i);
-                    for(int j = 0; j < row.size(); j++) {
-                        INDArray slice = slice(row.get(j));
-                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
-                        arrList.add(slice(row.get(j)));
-                    }
-
-
-                }
-            }
-            else if(indices.size() == 1) {
-                for(int i = 0; i < indices.size(); i++) {
-                    arrList.add(slice(indices.get(0).get(i)));
-                }
-            }
-
-        }
-
-
-        return this;
     }
 
     @Override
@@ -1310,11 +1258,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public void setOrder(char order) {
 
-    }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-        return null;
     }
 
     @Override

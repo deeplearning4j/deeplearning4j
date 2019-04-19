@@ -33,7 +33,6 @@ import java.util.NoSuchElementException;
 @Data
 public class SpecifiedIndex implements INDArrayIndex {
     private long[] indexes;
-    private int counter = 0;
 
     public SpecifiedIndex(int... indexes) {
         this.indexes = LongUtils.toLongs(indexes);
@@ -64,28 +63,6 @@ public class SpecifiedIndex implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return indexes[counter - 1];
-    }
-
-    @Override
-    public boolean hasNext() {
-        return counter < indexes.length;
-    }
-
-    @Override
-    public long next() {
-        return indexes[counter++];
-    }
-
-    /**
-     * Return the next index with its position in the indexes array
-     * */
-    public long[] nextSparse() {
-        return new long[] {indexes[counter], counter++};
-    }
-
-    @Override
     public void reverse() {
 
     }
@@ -93,11 +70,6 @@ public class SpecifiedIndex implements INDArrayIndex {
     @Override
     public boolean isInterval() {
         return false;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-
     }
 
     @Override
@@ -118,11 +90,6 @@ public class SpecifiedIndex implements INDArrayIndex {
     @Override
     public void init(long begin, long end) {
 
-    }
-
-    @Override
-    public void reset() {
-        counter = 0;
     }
 
 
@@ -172,7 +139,7 @@ public class SpecifiedIndex implements INDArrayIndex {
             for(int i=0; i<indexes.length; i++ ){
                 //Replace point indices with specified indices
                 if(indexes[i] instanceof PointIndex){
-                    indexes[i] = new SpecifiedIndex(indexes[i].current());
+                    indexes[i] = new SpecifiedIndex(indexes[i].offset());
                 }
             }
         }
@@ -227,10 +194,11 @@ public class SpecifiedIndex implements INDArrayIndex {
          */
         @Override
         public List<Long> next() throws NoSuchElementException {
-            if (!SpecifiedIndex.this.hasNext())
-                throw new NoSuchElementException();
-
-            return Longs.asList(SpecifiedIndex.this.next());
+//            if (!SpecifiedIndex.this.hasNext())
+//                throw new NoSuchElementException();
+//
+//            return Longs.asList(SpecifiedIndex.this.next());
+            throw new RuntimeException();
         }
     }
     public class SparseSingleGenerator implements Generator<List<Long>> {
@@ -240,10 +208,11 @@ public class SpecifiedIndex implements INDArrayIndex {
          */
         @Override
         public List<Long> next() throws NoSuchElementException {
-            if (!SpecifiedIndex.this.hasNext())
-                throw new NoSuchElementException();
-            long[] pair = SpecifiedIndex.this.nextSparse();
-            return Arrays.asList(pair[0], pair[1]);
+//            if (!SpecifiedIndex.this.hasNext())
+//                throw new NoSuchElementException();
+//            long[] pair = SpecifiedIndex.this.nextSparse();
+//            return Arrays.asList(pair[0], pair[1]);
+            throw new RuntimeException();
         }
     }
 

@@ -19,38 +19,25 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Binary cross entropy loss function
@@ -66,8 +53,8 @@ import java.util.Map;
 public class LossBinaryXENT implements ILossFunction {
     public static final double DEFAULT_CLIPPING_EPSILON = 1e-5;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private final INDArray weights;
 
     private double clipEps;
@@ -162,7 +149,7 @@ public class LossBinaryXENT implements ILossFunction {
                                 + ") does not match output.size(1)=" + preOutput.size(1));
             }
 
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -231,7 +218,7 @@ public class LossBinaryXENT implements ILossFunction {
                                 + ") does not match output.size(1)=" + output.size(1));
             }
 
-            grad.muliRowVector(weights);
+            grad.muliRowVector(weights.castTo(grad.dataType()));
         }
 
         if (mask != null) {

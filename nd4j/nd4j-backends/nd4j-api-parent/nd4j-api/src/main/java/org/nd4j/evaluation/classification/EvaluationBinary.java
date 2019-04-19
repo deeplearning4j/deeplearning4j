@@ -27,8 +27,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
@@ -72,8 +72,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     private List<String> labels;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray decisionThreshold;
 
     /**

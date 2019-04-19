@@ -24,8 +24,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
@@ -72,35 +72,35 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private boolean initialized;
     private List<String> columnNames;
     private long precision;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumAbsErrorsPerColumn; //abs(predicted-actial)
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray currentMean;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray currentPredictionMean;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumOfProducts;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumSquaredLabels;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumSquaredPredicted;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumLabels;
 
     public RegressionEvaluation() {

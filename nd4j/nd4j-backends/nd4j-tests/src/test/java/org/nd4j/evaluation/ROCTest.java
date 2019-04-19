@@ -829,7 +829,7 @@ public class ROCTest extends BaseNd4jTest {
             ROC r = new ROC(0, removeRedundantPts);
 
             INDArray labels = Nd4j.getExecutioner()
-                            .exec(new BernoulliDistribution(Nd4j.createUninitialized(100, 1), 0.5));
+                            .exec(new BernoulliDistribution(Nd4j.createUninitialized(DataType.DOUBLE,100, 1), 0.5));
             INDArray probs = Nd4j.rand(100, 1);
 
             r.eval(labels, probs);
