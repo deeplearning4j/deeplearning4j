@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -509,5 +510,21 @@ public class CustomOpsTests {
         assertTrue(l.get(0).isEmpty()); //Should be empty array, is rank 0 scalar
 
         Nd4j.exec(op);  //Execution is OK
+    }
+
+    @Test
+    public void testBarnesHutGains() {
+
+        INDArray x = Nd4j.createFromArray(new double[]{1,2,3, 4, 5, 6});
+        INDArray y = Nd4j.createFromArray(new double[]{1,-2,3, -4, 5, -6});
+        INDArray eps = Nd4j.createFromArray(new double[]{-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+        INDArray exp = Nd4j.createFromArray(new double[]{2,2,2,2,2,2});
+
+        BarnesHutGains gainsOp = new BarnesHutGains(x,y, exp, eps);
+        Nd4j.exec(gainsOp);
+
+        // TODO: Verify values
+        INDArray expected = Nd4j.createFromArray(new double[]{1.0, -2.0, 3.0, -4.0, 5.0, -6.0});
+        assertEquals(expected, y);
     }
 }

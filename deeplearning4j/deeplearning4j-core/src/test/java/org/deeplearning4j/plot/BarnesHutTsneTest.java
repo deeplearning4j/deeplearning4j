@@ -110,4 +110,36 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         assertEquals(perplexity, b.getPerplexity(), DELTA);
         assertEquals(minGain, b.minGain, DELTA);
     }
+
+    @Test
+    public void testPerplexity() throws Exception {
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
+                .useAdaGrad(false).build();
+
+        ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
+        File f = resource.getTempFileFromArchive();
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
+                NDArrayIndex.interval(0, 784));
+
+
+
+        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
+        //b.fit(data);
+
+        INDArray perplexityOutput = b.computeGaussianPerplexity(data, 30.0);
+        System.out.println(perplexityOutput);
+    }
+
+    //@Test
+    public void testCorrectness() {
+        //INDArray X = Nd4j.createFromArray(new double[]{0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1}).reshape(6,2);
+        INDArray X = Nd4j.rand(new int[]{4,3});
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
+                .useAdaGrad(false).numDimension(2).build();
+        b.fit(X);
+    }
+
 }
