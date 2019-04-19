@@ -937,20 +937,20 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
         }
 
-        long numTads = arrays.get(0).length() / tadLength;
+        long numTads = arrays.get(0).rank() == 1 ? arrays.get(0).length() : arrays.get(0).length() / tadLength;
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
-        PointerPointer dataPointers = new PointerPointer(arrays.size());
-        PointerPointer shapePointers = new PointerPointer(arrays.size());
-        PointerPointer tadPointers = new PointerPointer(arrays.size());
-        PointerPointer offsetPointers = new PointerPointer(arrays.size());
+        val dataPointers = new PointerPointer(arrays.size());
+        val shapePointers = new PointerPointer(arrays.size());
+        val tadPointers = new PointerPointer(arrays.size());
+        val offsetPointers = new PointerPointer(arrays.size());
 
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+        val dummy = new PointerPointer(new Pointer[] {null});
 
         List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
 
-        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
+        val tadManager = Nd4j.getExecutioner().getTADManager();
 
         val ptrMap = new IntPointer(map);
 
@@ -958,26 +958,24 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         for (int i = 0; i < arrays.size(); i++) {
-            INDArray array = arrays.get(i);
+            val array = arrays.get(i);
 
             Nd4j.getCompressor().autoDecompress(array);
 
+            val dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
-            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
-
-            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+            val tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
             list.add(tadBuffers);
 
-            Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+            val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
-            DataBuffer offsets = tadBuffers.getSecond();
+            val offsets = tadBuffers.getSecond();
 
             if (offsets.length() != numTads)
                 throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
 
             if (offsets == null)
                 throw new ND4JIllegalStateException("Offsets for shuffle can't be null");
-
 
             dataPointers.put(i, array.data().addressPointer());
             shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
