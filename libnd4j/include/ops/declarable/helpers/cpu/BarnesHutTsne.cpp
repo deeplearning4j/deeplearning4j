@@ -114,23 +114,54 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
         //output->assign(symValP);
     }
 
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
-        // Loop over all edges in the graph
+    template <typename T>
+    static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
+        T const* dataP = reinterpret_cast<T const*>(data->getBuffer());
+        T const* vals  = reinterpret_cast<T const*>(valP->getBuffer());
+        T* outputP = reinterpret_cast<T*>(output->buffer());
+        int colCount = data->columns();
+        std::vector<T> slice(colCount);
+        T* currentSlice = &slice[0];
 
-//       PRAGMA_OMP_PARALLEL_FOR
+PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
-            NDArray slice = data(n, {0});
-            for (int i = rowP->e<int>(n); i < rowP->e<int>(n + 1); i++) {
-                // Compute pairwise distance and Q-value
-                slice -= data(colP->e<int>(i), {0});
-                //buf -= ;
-                auto res = slice.reduceAlongDimension(reduce::SquaredNorm, {});
-                // Sum positive force
-                (*output)(n, {0}) += (slice * valP->e(i) / (1.e-12 + *res));
-                delete res;
+            memcpy(currentSlice, dataP + n * colCount, sizeof(T) * colCount);
+                    ;
+            for (int i = rowP->e<int>(n); i < rowP->e<int>(n+1); i++) {
+                T const* thisSlice = dataP + colP->e<int>(i) * colCount;
+PRAGMA_OMP_PARALLEL_FOR
+                for (int k = 0; k < colCount; k++)
+                    currentSlice[k] -= thisSlice[k];
+                double res = 1.e-12;
+#pragma omp parallel for reduction(+:res)
+                for (int k = 0; k < colCount; k++)
+                    res += currentSlice[k] * currentSlice[k];
+
+PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (int k = 0; k < colCount; k++)
+                    outputP[n * colCount + k] += (currentSlice[k] * vals[i] / res);
             }
         }
     }
+
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
+        // Loop over all edges in the graph
+        BUILD_SINGLE_SELECTOR(data.dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), NUMERIC_TYPES);
+//       PRAGMA_OMP_PARALLEL_FOR
+//        for (int n = 0; n < N; n++) {
+//            NDArray slice = data(n, {0});
+//            for (int i = rowP->e<int>(n); i < rowP->e<int>(n + 1); i++) {
+//                // Compute pairwise distance and Q-value
+//                slice -= data(colP->e<int>(i), {0});
+//                //buf -= ;
+//                auto res = slice.reduceAlongDimension(reduce::SquaredNorm, {});
+//                // Sum positive force
+//                (*output)(n, {0}) += (slice * valP->e(i) / (1.e-12 + *res));
+//                delete res;
+//            }
+//        }
+    }
+    BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), NUMERIC_TYPES);
 
     template <typename T>
     static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {

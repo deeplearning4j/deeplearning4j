@@ -266,7 +266,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
     auto cols = NDArrayFactory::create<int>('c', {5}, {1, 2, 0, 4, 3});
     auto vals = NDArrayFactory::create<double>('c', {5}, {10., 20., 30., 40., 50.});
     //auto buf = NDArrayFactory::create<double>('c', {4});
-    auto exp = NDArrayFactory::create<double>('c', {5,4}, {-0.625000, -0.625000, -0.625000, -0.625000, 0.460993, 0.496454, 0.531915, 0.567376, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+    auto exp = NDArrayFactory::create<double>('c', {5,4}, {-0.625000, -0.625000, -0.625000, -0.625000, 1.875000, 1.875000, 1.875000, 1.875000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
     //auto exp2 = NDArrayFactory::create<double>({-4.000000, -4.000000, -4.000000, -4.000000});
     //std::vector<NDArray*> exp({&exp1, &exp2});
     data.linspace(1);
@@ -279,7 +279,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
 
 
     ASSERT_EQ(result->status(), Status::OK());
-//    result->at(0)->printBuffer("Output");
+    result->at(0)->printBuffer("Output");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
 }
