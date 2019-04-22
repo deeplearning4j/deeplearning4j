@@ -35,6 +35,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
+            segmentedOutput->nullify();
             helpers::segmentProdFunctor(input, idxSegments, segmentedOutput);
 
             return Status::OK();
