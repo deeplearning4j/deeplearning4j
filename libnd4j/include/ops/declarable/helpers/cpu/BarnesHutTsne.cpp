@@ -114,23 +114,23 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
         //output->assign(symValP);
     }
 
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data, NDArray& buf) {
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
         // Loop over all edges in the graph
 
         PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             NDArray slice = data(n, {0});
-
+            //NDArray buff(slice);
             for (int i = rowP->e<int>(n); i < rowP->e<int>(n + 1); i++) {
                 // Compute pairwise distance and Q-value
-                buf.assign(slice);
-                buf -= data(colP->e<int>(i), {0});
-                auto res = buf.applyReduce3(reduce3::Dot, &buf, nullptr);
+                slice -= data(colP->e<int>(i), {0});
+                //buf -= ;
+                auto res = slice.applyReduce3(reduce3::Dot, &slice, nullptr);
                 *res += 1.e-12;// + buf * buf; //Nd4j.getBlasWrapper().dot(buf, buf);
                 *res = valP->e<double>(i) / *res;
 
                 // Sum positive force
-                (*output)(n, {0}) += (buf * *res);
+                (*output)(n, {0}) += (slice * *res);
             }
         }
     }

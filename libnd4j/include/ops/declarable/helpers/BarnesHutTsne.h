@@ -29,7 +29,7 @@ namespace helpers {
 
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, NDArray& rowCounts);
     void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts = nullptr);
-    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data, NDArray& buf);
+    void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data);
     void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output);
 
 }
