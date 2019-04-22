@@ -254,6 +254,11 @@ namespace nd4j {
         NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
 
         /**
+         * This method fills this array with zeros
+         */
+        void nullify();
+
+        /**
          * This method returns quantized copy of given array
          *
          * @param array

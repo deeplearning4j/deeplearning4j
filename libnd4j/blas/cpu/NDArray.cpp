@@ -5161,7 +5161,13 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         return new NDArray((*this)(indexes, true));
     }
 
-
+    void NDArray::nullify() {
+        if (this->isView() || this->ews() != 1) {
+            this->assign(0);
+        } else {
+            std::memset(_buffer, 0, this->lengthOf() * this->sizeOfT());
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
