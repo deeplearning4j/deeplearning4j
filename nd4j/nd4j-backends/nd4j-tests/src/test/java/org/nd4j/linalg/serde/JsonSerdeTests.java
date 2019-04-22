@@ -24,42 +24,51 @@ public class JsonSerdeTests {
     @Test
     public void testNDArrayTextSerializer() throws Exception {
 
-        Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4).muli(20).subi(10);
+        for(DataType globalDT : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDT, globalDT);
 
-        ObjectMapper om = new ObjectMapper();
+            Nd4j.getRandom().setSeed(12345);
+            INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4).muli(20).subi(10);
 
-        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT,
-                DataType.BYTE, DataType.UBYTE, DataType.BOOL}){
+            ObjectMapper om = new ObjectMapper();
 
-            INDArray arr = in.castTo(dt);
+            for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT,
+                    DataType.BYTE, DataType.UBYTE, DataType.BOOL}) {
 
-            TestClass tc = new TestClass(arr);
+                INDArray arr = in.castTo(dt);
 
-            String s = om.writeValueAsString(tc);
+                TestClass tc = new TestClass(arr);
+
+                String s = om.writeValueAsString(tc);
 //            System.out.println(dt);
 //            System.out.println(s);
 //            System.out.println("\n\n\n");
 
-            TestClass deserialized = om.readValue(s, TestClass.class);
-            assertEquals(dt.toString(), tc, deserialized);
+                TestClass deserialized = om.readValue(s, TestClass.class);
+                assertEquals(dt.toString(), tc, deserialized);
+            }
         }
     }
 
 
     @Test
     public void testBackwardCompatability() throws Exception {
-        //NDArrayTextDeserializer will be used in ILossFunction instances that used to use RowVectorSerializer - and it needs to support old format
 
-        INDArray arr = Nd4j.create(new double[]{1,2,3,4,5});
-        TestClassRow r = new TestClassRow(arr);
+        for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(dt, dt);
+            //NDArrayTextDeserializer will be used in ILossFunction instances that used to use RowVectorSerializer - and it needs to support old format
 
-        ObjectMapper om = new ObjectMapper();
-        String s = om.writeValueAsString(r);
+            INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+            TestClassRow r = new TestClassRow(arr);
 
-        TestClass tc = om.readValue(s, TestClass.class);
+            ObjectMapper om = new ObjectMapper();
+            String s = om.writeValueAsString(r);
 
-        assertEquals(arr, tc.getArr());
+            TestClass tc = om.readValue(s, TestClass.class);
+
+            assertEquals(arr, tc.getArr());
+
+        }
 
     }
 
