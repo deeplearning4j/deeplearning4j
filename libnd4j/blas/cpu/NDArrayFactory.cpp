@@ -589,13 +589,28 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res.lengthOf(), int8_t);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+        std::vector<Nd4jLong> offsets(string.size() + 1);
+        Nd4jLong dataLength = 0;
+        for (int e = 0; e < string.size(); e++) {
+            offsets[e] = dataLength;
+            dataLength += string[e].length();
+        }
+        offsets[string.size()] = dataLength;
 
-        auto us = reinterpret_cast<utf8string**>(buffer);
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, headerLength + dataLength, int8_t);
+
+        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+        auto data = buffer + headerLength;
         int resLen = res.lengthOf();
-        for (int e = 0; e < resLen; e++)
-            us[e] = new utf8string(string[e]);
+        for (int e = 0; e < resLen; e++) {
+            auto length = offsets[e+1] - offsets[e];
+            auto cdata = data + offsets[e];
+            memcpy(cdata, string[e].c_str(), string[e].length());
+        }
+
 
         res.setBuffer(buffer);
         res.setWorkspace(workspace);
@@ -613,12 +628,28 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         if (res->lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res->lengthOf(), int8_t);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+        std::vector<Nd4jLong> offsets(string.size() + 1);
+        Nd4jLong dataLength = 0;
+        for (int e = 0; e < string.size(); e++) {
+            offsets[e] = dataLength;
+            dataLength += string[e].length();
+        }
+        offsets[string.size()] = dataLength;
 
-        auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res->lengthOf(); e++)
-            us[e] = new utf8string(string[e]);
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, headerLength + dataLength, int8_t);
+
+        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+        auto data = buffer + headerLength;
+        int resLen = res->lengthOf();
+        for (int e = 0; e < resLen; e++) {
+            auto length = offsets[e+1] - offsets[e];
+            auto cdata = data + offsets[e];
+            memcpy(cdata, string[e].c_str(), string[e].length());
+        }
+
 
         res->setBuffer(buffer);
         res->setWorkspace(workspace);

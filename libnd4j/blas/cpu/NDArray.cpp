@@ -4779,16 +4779,7 @@ template void NDArray::operator/=(const bool scalar);
     // default destructor
     NDArray::~NDArray() noexcept {
         if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr) {
-            if (!isS()) {
-                delete[] _buffer;
-            } else {
-                for (int e = 0; e < lengthOf(); e++) {
-                    auto t = reinterpret_cast<utf8string**>(_buffer);
-                    delete t[e];
-                };
-
-                delete[] _buffer;
-            }
+            delete[] _buffer;
         }
 
         if (_isShapeAlloc  && _workspace == nullptr && _shapeInfo != nullptr)
