@@ -6341,6 +6341,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
 
+
             val ub = (Utf8Buffer) buffer;
             // writing length first
             val t = length();
