@@ -24,10 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
-import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
-import org.nd4j.linalg.api.ops.custom.Flatten;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
@@ -545,5 +542,20 @@ public class CustomOpsTests {
 
         INDArray expected = Nd4j.createFromArray(new double[]{-1.8750,   -1.8750,   -1.8750,   -1.8750});
         assertEquals(expected, output.getRow(0));
+    }
+
+    @Test
+    public void testBarnesHutSymmetrize() {
+        INDArray rows = Nd4j.createFromArray(new int[]{0, 1});
+        INDArray cols = Nd4j.createFromArray(new int[]{0, 1, 1, 0});
+        INDArray vals = Nd4j.createFromArray(new double[]{20., 30., 40., 50.});
+
+        INDArray expected = Nd4j.createFromArray(new double[] {0.000000, 0.000000});
+        INDArray result = Nd4j.createUninitialized(2);
+
+        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, result);
+        Nd4j.exec(op);
+
+
     }
 }
