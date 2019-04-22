@@ -75,44 +75,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(local_response_normalization, lrn);
-
-        CUSTOM_OP_IMPL(lrn_old, 1, 3, true, 4, 0) {
-            // LocalResponseNormalization
-            auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
-            auto unitScale = OUTPUT_VARIABLE(1);
-            auto scale = OUTPUT_VARIABLE(2);
-
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input rank of 4 expected, but got %i instead", input->rankOf());
-
-            // FIXME: double
-            double alpha = T_ARG(0);
-            double beta = T_ARG(1);
-            double bias = T_ARG(2);
-            double depth = T_ARG(3);
-
-            return helpers::lrnFunctorEx(block, input, output, unitScale, scale, (int)depth, bias, alpha, beta);
-        }
-        DECLARE_SYN(LRN, lrn_old);
-
-        DECLARE_TYPES(lrn_old) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-        
-        DECLARE_SHAPE_FN(lrn_old) {
-            auto inp = inputShape->at(0);
-
-            auto shapeList = SHAPELIST();
-            for(int e = 0; e < 3; e++) {
-                Nd4jLong *newShape;
-                COPY_SHAPE(inp, newShape);
-                shapeList->push_back(newShape);
-            }
-
-            return shapeList;
-        }
+      
     }
 }
 

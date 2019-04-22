@@ -29,23 +29,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_softmax)
         DECLARE_CONFIGURABLE_OP(softmax, 1, 1, true, 0, 0);
         DECLARE_CONFIGURABLE_OP(softmax_bp, 2, 1, true, 0, 0);
-        #endif
-
-        /**
-         * Local response normalization implementation.
-         * Reference: http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks
-         * Expected arguments:
-         * input: 4D array
-         * 
-         * T args:
-         * 0: alpha
-         * 1: beta
-         * 2: bias
-         * 3: depth
-         */
-        #if NOT_EXCLUDED(OP_lrn_old)
-        DECLARE_CUSTOM_OP(lrn_old, 1, 3, true, 4, 0);
-        #endif
+        #endif       
 
         /**
          * Local response normalization implementation as TF.

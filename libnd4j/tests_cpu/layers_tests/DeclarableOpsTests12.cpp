@@ -1193,25 +1193,174 @@ TEST_F(DeclarableOpsTests12, lrn_bp_5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, lrn_bp_6) {
     
-    NDArray input('c', {2,2,2,5});
-    NDArray gradO('c', {2,2,2,5});
-    NDArray exp('c', {2,2,2,5}, {-7.92166963e-03,  2.70555308e-03,  1.38316564e-02, 2.90623866e-04, -9.24369693e-03, -6.88915374e-03,  2.49967352e-03,  1.14839375e-02,-1.29309949e-04, -7.32574752e-03,
-                                -5.51202707e-03,  1.41162332e-03,  6.09333860e-03,-2.07114615e-04, -9.98564065e-04,-8.64554197e-03, -7.41320476e-03, -9.12833028e-03,1.96700729e-02,  6.56106323e-02,
-                                1.50755674e-01,  8.77811238e-02,  1.05787404e-02,-1.61411129e-02, -1.01883672e-02,3.46536189e-02,  7.13676400e-03, -3.02760154e-02,-1.03724152e-02,  9.41969082e-03,
-                                2.29232647e-02,  1.62792951e-03, -2.67593171e-02,-6.74944185e-03,  1.17630586e-02,1.90843903e-02,  4.51328233e-05, -2.48849224e-02,-5.30662388e-03,  1.22898091e-02});
-    input.linspace(-20, 1);
+    NDArray input('c', {1,1,1,5}, {1, 2., 3, 4, 5});
+    NDArray gradO('c', {1,1,1,5});
+    NDArray exp('c', {1,1,1,5}, {0.06926288,  0.04360996,  0.01795704, -0.00769587, -0.0333488});    
     // gradO.linspace(-1.5, 0.1);    
     gradO = 1;
 
     nd4j::ops::lrn_bp op;
 
-    auto results = op.execute({&input, &gradO}, {1., 2., 0.5}, {2});
+    auto results = op.execute({&input, &gradO}, {1., 2., 0.5}, {10});
     auto gradI = results->at(0);
-
-    for (int i = 0; i < exp.lengthOf(); ++i)        
-        printf("%10.5f  %10.5f\n", exp.e<double>(i), gradI->e<double>(i));
 
     ASSERT_EQ(*gradI, exp);
     
     delete results;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_bp_7) {
+        
+    NDArray input('c', {2,2,2,5});
+    NDArray gradO('c', {2,2,2,5});
+
+    input.linspace(-20, 1);
+    gradO.linspace(-1.5, 0.1);
+
+    const OpArgsHolder argsHolderFF({&input}, {1,2,0.5}, {2});
+    const OpArgsHolder argsHolderBP({&input, &gradO}, {1,2,0.5}, {2});
+
+    nd4j::ops::lrn opFF;
+    nd4j::ops::lrn_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_bp_8) {
+        
+    NDArray input('c', {1,1,1,5}, {1, 2, 3, 4, 5});
+    NDArray gradO('c', {1,1,1,5}, {2, 3, 4, 5, 6});
+
+    const OpArgsHolder argsHolderFF({&input}, {1,2,0.5}, {2});
+    const OpArgsHolder argsHolderBP({&input, &gradO}, {1,2,0.5}, {2});
+
+    nd4j::ops::lrn opFF;
+    nd4j::ops::lrn_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_bp_9) {
+    
+    NDArray input('c', {1,1,1,5}, {1,2,3,4,5});
+    NDArray gradO('c', {1,1,1,5}, {1, 1, 1, 1, 1});    
+    NDArray exp('c', {1,1,1,5}, {0.1084472 ,  0.03816165,  0.00978456, -0.01859251,-0.02511311});    
+     
+    nd4j::ops::lrn_bp op;
+
+    auto results = op.execute({&input, &gradO}, {1., 2., 0.5}, {3});
+    auto gradI = results->at(0);
+
+    // for (int i = 0; i < exp.lengthOf(); ++i)
+    //     printf("%10.5f  %10.5f\n", exp.e<double>(i), gradI->e<double>(i));
+
+    ASSERT_EQ(*gradI, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_bp_10) {
+    
+    NDArray input('c', {1,1,1,1}, {1});
+    NDArray gradO('c', {1,1,1,1}, {1});
+    NDArray exp('c', {1,1,1,1}, {0.19245008});
+        
+    nd4j::ops::lrn_bp op;
+
+    auto results = op.execute({&input, &gradO}, {1., 2., 0.5}, {1});
+    auto gradI = results->at(0);
+
+    ASSERT_EQ(*gradI, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_1) {
+
+    NDArray input('c', {2,2,2,5});
+    NDArray exp('c', {2,2,2,5}, {-0.42923987, -0.3623817 , -0.3152079 , -0.34268343, -0.3836809, -0.43648192, -0.3652726 , -0.31428117, -0.3379276 , -0.3731494 ,
+                                -0.45129365, -0.37083852, -0.3111639 , -0.3260225 , -0.34698898, -0.4975186 , -0.3831305 , -0.2847474 , -0.25607377, -0.18569534,
+                                 0., 0.18569534,  0.25607377,  0.38411066,  0.52075565,0.33633637,  0.32117262,  0.30966178,  0.37259716,  0.45631808,
+                                 0.36986336,  0.33643705,  0.31394684,  0.36608824,  0.43857202, 0.3821113 ,  0.34197718,  0.31508508,  0.36284128,  0.4303756 });
+
+    input.linspace(-20, 1);    
+
+    nd4j::ops::lrn op;
+
+    auto results = op.execute({&input}, {1., 2., 0.5}, {2});
+    auto output = results->at(0);
+
+    ASSERT_EQ(*output, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_2) {
+
+    NDArray input('c', {1,1,1,5}, {1, 2., 3, 4, 5});
+    NDArray exp('c', {1,1,1,5}, {0.09530295, 0.1906059 , 0.28590885, 0.3812118 , 0.47651473});    
+
+    nd4j::ops::lrn op;
+
+    auto results = op.execute({&input}, {0.1, 2., 0.5}, {5});
+    auto output = results->at(0);
+    ASSERT_EQ(*output, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_3) {
+
+    NDArray input('c', {1,1,1,1}, {1.});
+    NDArray exp('c', {1,1,1,1}, {0.69006556});
+
+    nd4j::ops::lrn op;
+
+    auto results = op.execute({&input}, {0.1, 2., 0.5}, {5});
+    auto output = results->at(0);
+    ASSERT_EQ(*output, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_4) {
+
+    NDArray input('c', {1,1,1,1}, {1.});
+    NDArray exp('c', {1,1,1,1}, {0.69006556});
+
+    nd4j::ops::lrn op;
+
+    auto results = op.execute({&input}, {0.1, 2., 0.5}, {0});
+    auto output = results->at(0);
+    ASSERT_EQ(*output, exp);
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, lrn_5) {
+
+    NDArray input('c', {1,1,1,5}, {1, 2., 3, 4, 5});
+    NDArray exp('c', {1,1,1,5}, {0.69006556, 0.70272833, 0.7051508 , 0.7060045 , 0.7064008});
+
+    nd4j::ops::lrn op;
+
+    auto results = op.execute({&input}, {0.1, 2., 0.5}, {0});
+    auto output = results->at(0);
+    ASSERT_EQ(*output, exp);
+    
+    delete results;
+}
+
