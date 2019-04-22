@@ -144,7 +144,7 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
             for (int c = 0; c < chunkCount; c++) {
                 const int shift = c * lastDim;
                 auto iX = inputBuffer + shift;
-                T quadSum = 0.f;
+                T sqSum = 0.f;
 
                 for (int e = 0; e < lastDim; e++) {
                     const int begin = nd4j::math::nd4j_max<int>(0, e - depth);
@@ -152,27 +152,27 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
                     if (begin == 0) {
                         // at the beginning of rolling window we always read everything
-                        quadSum = 0;
+                        sqSum = 0;
                         for (int pos = begin; pos < end; ++pos) {
                             T val = iX[pos];
-                            quadSum += val * val;
+                            sqSum += val * val;
                         }
                    } else if (end == lastDim) {
                         // at the end of the window we do the same
-                        quadSum = 0;
+                        sqSum = 0;
                         for (int pos = begin; pos < end; ++pos) {
                             T val = iX[pos];
-                            quadSum += val * val;
+                            sqSum += val * val;
                         }
                     } else {
                         // at any other window we add last value and subtract previous last value
                         T prev = iX[begin - 1];
                         T val = iX[end];
-                        quadSum += val * val;
-                        quadSum -= prev * prev;
+                        sqSum += val * val;
+                        sqSum -= prev * prev;
                     }
 
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + talpha * quadSum, tbeta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + talpha * sqSum, tbeta);
                     outputBuffer[shift + e] = iX[e] / dividor;
                 }
             }
@@ -183,16 +183,16 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
                     int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                    T quadSum = 0;
+                    T sqSum = 0;
                     int shift = c * lastDim;
 
-                    PRAGMA_OMP_SIMD_SUM(quadSum)
+                    PRAGMA_OMP_SIMD_SUM(sqSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
-                        quadSum += val * val;
+                        sqSum += val * val;
                     }
 
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + talpha * quadSum, beta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + talpha * sqSum, beta);
                     outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), output->lengthOf())] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), input->lengthOf())] / dividor;
 
                 }
@@ -273,15 +273,15 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max<int>(0, e - depth);
                     int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
-                    T quadSum = 0.f;
+                    T sqSum = 0.f;
                     int shift = c * lastDim;
                     auto iX = inputBuffer + shift;
 
                     for (int pos = begin; pos < end; ++pos) {
                         T val = iX[pos]; //listInput->at(c)->t<T>(pos);
-                        quadSum += val * val;
+                        sqSum += val * val;
                     }
-                    T aSum = alpha * quadSum;
+                    T aSum = alpha * sqSum;
                     T tXe = iX[e];
                     //scaleBuffer[shift + e] = (2. * alpha * tbeta) * tXe * tXe / math::nd4j_pow<T,T,T>(tbias + aSum, 1 + beta);
                     T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
@@ -295,17 +295,17 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
                 for (int e = 0; e < lastDim; e++) {
                     int begin = nd4j::math::nd4j_max(0, e - depth);
                     int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                    T quadSum = 0;
+                    T sqSum = 0;
                     int shift = c * lastDim;
 
-                    PRAGMA_OMP_SIMD_SUM(quadSum)
+                    PRAGMA_OMP_SIMD_SUM(sqSum)
                     for (int pos = begin; pos < end; ++pos) {
                         T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
-                        quadSum += val * val;
+                        sqSum += val * val;
                     }
 
                     auto p = shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength);
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
+                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * sqSum, beta);
                     scaleBuffer[shift + e] = one - (alpha * inputBuffer[p] * inputBuffer[p] * 2 * beta) / dividor;
                     outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[p] / dividor;
                 }
@@ -469,22 +469,66 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (uint i = 0; i < numOfTads; ++i) {
             const X* x = inBuff    + inTadOffsets[i];
-                  Y* y = gradIBuff + gradITadOffsets[i];        
+                  Y* y = gradIBuff + gradITadOffsets[i];
 
+            // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
             for (uint j = 0; j < tadLen; ++j) {
-                const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
-                const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
-
-                Y sum(0), sqSum(0);            
-                for (uint s = begin; s < end; ++s) { 
-                    Y val = x[s]; sum += val; sqSum += val * val; 
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {
+                    y[0] = 0;
+                    for (uint s = begin; s < end; ++s)
+                        y[0] = y[0] + x[s] * x[s];
                 }
-
-                sqSum = tbias + talpha * sqSum;
-                Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
-
-                y[j] = factor * (1.f - 2.f * x[j] * coeff * sum / sqSum);
+                else if (begin == 0 && last <= tadLen)
+                    y[j] = y[j - 1] + x[end - 1] * x[end - 1];
+                else if (begin > 0 && last <= tadLen)
+                    y[j] = y[j - 1] + x[end - 1] * x[end - 1] - x[begin - 1] * x[begin - 1];
+                else if (begin > 0 && last > tadLen)
+                    y[j] = y[j - 1] - x[begin - 1] * x[begin - 1];
+                else
+                    y[j] = y[j - 1];                
             }
+
+            Y* factor = new Y[tadLen];
+
+            Y prev = 0;
+            // second loop calculates derivatives using information gained in first loop above
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+
+                Y init = tbias + talpha * y[j];
+
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s) {
+                        factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
+                        prev = prev + x[s] * factor[s];
+                    }
+                    y[0] = prev;
+                }
+                else if(begin == 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                    y[j] = prev + x[end - 1] * factor[end - 1];
+                }
+                else if (begin > 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                    y[j] = prev + x[end - 1] * factor[end - 1] - x[begin - 1] * factor[begin - 1];
+                }
+                else if (begin > 0 && last > tadLen)
+                    y[j] = prev - x[begin - 1] * factor[begin - 1];
+                else 
+                    y[j] = prev;
+                
+                prev = y[j];
+                y[j] = factor[j] * init - 2 * x[j] * talpha * tbeta * prev;                
+            }
+            
+            delete []factor;
         }
     }
     else {
@@ -492,22 +536,66 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (uint i = 0; i < numOfTads; ++i) {
             const X* x = inBuff    + inTadOffsets[i];
-                  Y* y = gradIBuff + gradITadOffsets[i];        
+                  Y* y = gradIBuff + gradITadOffsets[i];
 
+            // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
             for (uint j = 0; j < tadLen; ++j) {
-                const uint begin = nd4j::math::nd4j_max<uint>(0, j - depth);
-                const uint end   = nd4j::math::nd4j_min<uint>(depth + j + 1, tadLen);
-
-                Y sum(0), sqSum(0);            
-                for (uint s = begin; s < end; ++s) { 
-                    Y val = x[s * inTadEws]; sum += val; sqSum += val * val; 
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {
+                    y[0] = 0;
+                    for (uint s = begin; s < end; ++s)
+                        y[0] = y[0] + x[s*inTadEws] * x[s*inTadEws];
                 }
-
-                sqSum = tbias + talpha * sqSum;
-                Y factor = nd4j::math::nd4j_pow<Y, Y, Y>(sqSum, -tbeta);
-
-                y[j * gradITadEws] = factor * (1.f - 2.f * x[j * inTadEws] * coeff * sum / sqSum);
+                else if (begin == 0 && last <= tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws];
+                else if (begin > 0 && last <= tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws] - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else if (begin > 0 && last > tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws];                
             }
+
+            Y* factor = new Y[tadLen];
+
+            Y prev = 0;
+            // second loop calculates derivatives using information gained in first loop above
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+
+                Y init = tbias + talpha * y[j*gradITadEws];
+
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s) {
+                        factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s*gradITadEws], -tbeta - 1);
+                        prev = prev + x[s*inTadEws] * factor[s];
+                    }
+                    y[0] = prev;
+                }
+                else if(begin == 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1)*gradITadEws], -tbeta - 1);
+                    y[j*gradITadEws] = prev + x[(end - 1)*inTadEws] * factor[end - 1];
+                }
+                else if (begin > 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1)*gradITadEws], -tbeta - 1);
+                    y[j*gradITadEws] = prev + x[(end - 1)*inTadEws] * factor[end - 1] - x[(begin - 1)*inTadEws] * factor[begin - 1];
+                }
+                else if (begin > 0 && last > tadLen)
+                    y[j*gradITadEws] = prev - x[(begin - 1)*inTadEws] * factor[begin - 1];
+                else 
+                    y[j*gradITadEws] = prev;
+                
+                prev = y[j*gradITadEws];
+                y[j*gradITadEws] = factor[j] * init - 2 * x[j*inTadEws] * talpha * tbeta * prev;                
+            }
+            
+            delete []factor;
         }
     }    
     gradI *= gradO;
