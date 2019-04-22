@@ -20,6 +20,7 @@
 
 #include <NDArrayFactory.h>
 #include <openmp_pragmas.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
 
@@ -36,11 +37,16 @@ namespace nd4j {
     NDArray NDArrayFactory::string(const std::string &str, nd4j::memory::Workspace* workspace) {
         NDArray res;
 
-        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
+        auto data = buffer + headerLength;
+
+        offsets[0] = 0;
+        offsets[1] = str.length();
+
+        memcpy(data, str.c_str(), str.length());
 
         res.setBuffer(buffer);
         res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
@@ -54,11 +60,16 @@ namespace nd4j {
     NDArray* NDArrayFactory::string_(const std::string &str, nd4j::memory::Workspace* workspace) {
         auto res = new NDArray();
 
-        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
+        auto data = buffer + headerLength;
+
+        offsets[0] = 0;
+        offsets[1] = str.length();
+
+        memcpy(data, str.c_str(), str.length());
 
         res->setBuffer(buffer);
         res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
