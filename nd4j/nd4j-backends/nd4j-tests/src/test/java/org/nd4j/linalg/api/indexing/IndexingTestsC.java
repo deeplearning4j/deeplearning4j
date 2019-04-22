@@ -30,7 +30,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.Arrays;
 import java.util.Random;

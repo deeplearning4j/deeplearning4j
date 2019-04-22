@@ -65,14 +65,14 @@ public class NDArrayTextDeSerializer extends JsonDeserializer<INDArray> {
                 double[] d = new double[dataNode.size()];
                 while(iter.hasNext())
                     d[i++] = iter.next().asDouble();
-                arr = Nd4j.create(d, shape);
+                arr = Nd4j.create(d, shape, 'c');
                 break;
             case FLOAT:
             case HALF:
                 float[] f = new float[dataNode.size()];
                 while(iter.hasNext())
                     f[i++] = iter.next().floatValue();
-                arr = Nd4j.create(f, shape).castTo(dt);
+                arr = Nd4j.create(f, shape, 'c').castTo(dt);
                 break;
             case LONG:
                 long[] l = new long[dataNode.size()];
@@ -99,7 +99,7 @@ public class NDArrayTextDeSerializer extends JsonDeserializer<INDArray> {
                 String[] s = new String[dataNode.size()];
                 while(iter.hasNext())
                     s[i++] = iter.next().asText();
-                arr = Nd4j.create(s);
+                arr = Nd4j.create(s).reshape('c', shape);
                 break;
             case COMPRESSED:
             case UNKNOWN:
