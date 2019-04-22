@@ -41,7 +41,7 @@ namespace nd4j {
          * 0: 1D vector with edge forces for input and values
          */
         #if NOT_EXCLUDED(OP_barnes_edge_forces)
-        DECLARE_CUSTOM_OP(barnes_edge_forces, 5, 2, false, 0, 1);
+        DECLARE_CUSTOM_OP(barnes_edge_forces, 4, 1, false, 0, 1);
         #endif
 
         /**
