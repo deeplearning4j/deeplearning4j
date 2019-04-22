@@ -5162,6 +5162,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     }
 
     void NDArray::nullify() {
+        if (isEmpty() || _buffer == nullptr)
+            return;
+
         if (this->isView() || this->ews() != 1) {
             this->assign(0);
         } else {
