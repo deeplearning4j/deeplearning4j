@@ -618,7 +618,7 @@ namespace nd4j {
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSliceBP: shape calculation failed");
 
 			//Zero output array, so unused elements have 0 gradient
-			output->assign(0.0);
+			output->nullify();
 
             if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
                 output->p(indices[0], *epsNext);
