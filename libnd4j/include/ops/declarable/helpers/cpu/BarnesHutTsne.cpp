@@ -121,23 +121,22 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
         T* outputP = reinterpret_cast<T*>(output->buffer());
         int colCount = data->columns();
 
-PRAGMA_OMP_PARALLEL_FOR_SIMD
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int n = 0; n < N; n++) {
             std::vector<T> slice(colCount);
             T* currentSlice = &slice[0];
-
             memcpy(currentSlice, dataP + n * colCount, sizeof(T) * colCount);
-                    ;
-            for (int i = rowP->e<int>(n); i < rowP->e<int>(n+1); i++) {
+            int start = rowP->e<int>(n);
+            int end = rowP->e<int>(n+1);
+
+            for (int i = start; i < end; i++) {
                 T const* thisSlice = dataP + colP->e<int>(i) * colCount;
-//PRAGMA_OMP_PARALLEL_FOR
                 T res = 1.e-12;
                 for (int k = 0; k < colCount; k++) {
                     currentSlice[k] -= thisSlice[k];
                     res += currentSlice[k] * currentSlice[k];
                 }
 
-//PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (int k = 0; k < colCount; k++)
                     outputP[n * colCount + k] += (currentSlice[k] * vals[i] / res);
             }
