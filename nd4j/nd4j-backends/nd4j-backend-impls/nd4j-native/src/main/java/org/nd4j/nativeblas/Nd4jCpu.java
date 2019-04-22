@@ -3402,6 +3402,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
+         * This method fills this array with zeros
+         */
+        public native void nullify();
+
+        /**
          * This method returns quantized copy of given array
          *
          * @param array
