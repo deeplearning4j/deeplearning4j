@@ -50,7 +50,7 @@ public class BackgroundDaemonStarter {
      */
     public static int startSlave(int parameterLength, String masterUrl, String mediaDriverDirectory) throws Exception {
         return exec(ParameterServerSubscriber.class, mediaDriverDirectory, "-s", "1," + String.valueOf(parameterLength),
-                        "-p", "40126", "-h", "localhost", "-id", "10", "-pm", masterUrl, "-sp", "9500");
+                        "-p", "40126", "-h", "localhost", "-id", "10", "-pm", masterUrl, "-sp", "9500", "--updatesPerEpoch", "1");
     }
 
     /**
@@ -99,7 +99,7 @@ public class BackgroundDaemonStarter {
     public static int startMaster(int parameterLength, String mediaDriverDirectory) throws Exception {
         return exec(ParameterServerSubscriber.class, mediaDriverDirectory, "-m", "true", "-s",
                         "1," + String.valueOf(parameterLength), "-p", "40123", "-h", "localhost", "-id", "11", "-sp",
-                        "9200");
+                        "9200", "--updatesPerEpoch", "1");
     }
 
 

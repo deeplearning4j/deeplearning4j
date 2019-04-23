@@ -155,7 +155,7 @@ public class TensorflowConversion {
             long length = ndArray.length();
             BytePointer[] strings = new BytePointer[(int)length];
             for (int i = 0; i < length; i++) {
-                strings[i] = new BytePointer(ndArray.getStringUnsafe(i));
+                strings[i] = new BytePointer(ndArray.getString(i));
                 size += TF_StringEncodedSize(strings[i].capacity());
             }
             tf_tensor = TF_AllocateTensor(
