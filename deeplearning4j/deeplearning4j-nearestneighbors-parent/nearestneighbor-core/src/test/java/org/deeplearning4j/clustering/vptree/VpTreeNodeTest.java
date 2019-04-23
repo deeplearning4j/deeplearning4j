@@ -102,11 +102,11 @@ public class VpTreeNodeTest {
         for (int targetIndex = 0; targetIndex < m; targetIndex++) {
             // Do an exhaustive search
             TreeSet<Integer> s = new TreeSet<>();
-            INDArray query = arr.getRow(targetIndex);
+            INDArray query = arr.getRow(targetIndex, true);
 
             Counter<Integer> counter = new Counter<>();
             for (int j = 0; j < m; j++) {
-                double d = t.distance(query, (arr.getRow(j)));
+                double d = t.distance(query, (arr.getRow(j, true)));
                 counter.setCount(j, (float) d);
 
             }
@@ -139,7 +139,7 @@ public class VpTreeNodeTest {
 
             // check
             for (int r : resultSet) {
-                INDArray expectedResult = arr.getRow(r);
+                INDArray expectedResult = arr.getRow(r, true);
                 if (!s.contains(r)) {
                     fillSearch = new VPTreeFillSearch(t, k, query);
                     fillSearch.search();
