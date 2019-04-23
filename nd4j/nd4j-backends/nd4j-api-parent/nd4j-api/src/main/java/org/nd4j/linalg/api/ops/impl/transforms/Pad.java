@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -28,6 +29,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +86,17 @@ public class Pad extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        //Pad backprop: it's basically slice op...
+        //Inputs to pad: input array (rank N), and padding array (rank 2, shape [N,2])
+        //Begin values for slice: given by column 0 of padding array; size is given by input array
+
+        SDVariable shape = arg().shape();
+        SDVariable begin = arg(1).get(SDIndex.all(), SDIndex.point(0));
+
+        SDVariable gradAtIn = sameDiff.slice(i_v.get(0), begin, shape);
+        SDVariable zeros = sameDiff.zerosLike(arg(1));
+
+        return Arrays.asList(gradAtIn, zeros);
     }
 
     @Override

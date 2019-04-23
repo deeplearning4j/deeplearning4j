@@ -911,20 +911,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
-        INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
             System.out.println(order);
+
+            INDArray arr1 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape( 2, 3).dup('c');
+            INDArray arr2 = Nd4j.linspace(7, 9, 3, DataType.DOUBLE).reshape(1, 3).dup('c');
+
             Nd4j.factory().setOrder(order);
 
-            INDArray arr1 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape('c', 2, 3);
-            INDArray arr2 = Nd4j.linspace(7, 9, 3, DataType.DOUBLE).reshape('c', 1, 3);
+            log.info("arr1: {}", arr1.data());
+            log.info("arr2: {}", arr2.data());
 
             INDArray merged = Nd4j.vstack(arr1, arr2);
-            System.out.println(merged);
+            System.out.println(merged.data());
             System.out.println(expected);
 
-            assertEquals(expected, merged);
+            assertEquals("Failed for [" + order + "] order", expected, merged);
         }
     }
 
@@ -5281,8 +5285,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         log.info("Time spent: {} ms", time2 - time1);
 
+        val e = exp1.toDoubleVector();
         for (int r = 0; r < array.rows(); r++) {
-            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+            val d = res.getRow(r).dup();
+
+            assertArrayEquals(e, d.toDoubleVector(), 1e-5);
+            assertEquals("Failed at " + r, exp1, d);
         }
     }
 
@@ -7378,6 +7386,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testRowsEdgeCaseView(){
+
+        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
+        INDArray view = arr.getColumn(0);
+        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), view);
+        int[] idxs = new int[]{0,2,3,4};
+
+        INDArray out = Nd4j.pullRows(view.reshape(5, 1), 1, idxs);
+        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4, 1);
+
+        assertEquals(exp, out);   //Failing here
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPullRowsFailure() {
+        val idxs = new int[]{0,2,3,4};
+        val out = Nd4j.pullRows(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), 0, idxs);
+    }
+
+    @Test
     public void testRepeatStrided() {
 
         // Create a 2D array (shape 5x5)
@@ -7530,7 +7558,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray vector = Nd4j.createFromArray(data).reshape(1,2);
         INDArray slice = vector.slice(0);
         System.out.println(slice.shapeInfoToString());
-        assertEquals(vector, slice);
+        assertEquals(vector.reshape(2), slice);
         slice.assign(-1);
         assertEquals(Nd4j.createFromArray(-1.0, -1.0).reshape(1,2), vector);
     }

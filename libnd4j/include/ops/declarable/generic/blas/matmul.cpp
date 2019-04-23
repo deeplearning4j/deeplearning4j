@@ -187,8 +187,11 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 
 
         DECLARE_SHAPE_FN(matmul_bp) {
-            auto xShapeInfo = inputShape->at(0);
-            auto yShapeInfo = inputShape->at(1);
+            Nd4jLong *xShapeInfo;
+            Nd4jLong *yShapeInfo;
+
+            COPY_SHAPE(inputShape->at(0), xShapeInfo);
+            COPY_SHAPE(inputShape->at(1), yShapeInfo);
 
             return SHAPELIST(xShapeInfo, yShapeInfo);
         }

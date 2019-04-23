@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
@@ -158,7 +157,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray tensorAlongDimension(int index, int... dimension);
+    INDArray tensorAlongDimension(long index, int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -740,6 +739,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param indices an ndaray of the indices to get the elements for
      * @return the elements to get the array for
      */
+    @Deprecated
     INDArray get(List<List<Integer>> indices);
 
     /**
@@ -945,22 +945,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the (1-norm) distance.
      */
     double distance1(INDArray other);
-
-
-
-    /**
-     * Put element in to the indices denoted by
-     * the indices ndarray.
-     * This is equivalent to:
-     * a[indices] = element
-     *
-     *  in numpy.
-     *
-     * @param indices the indices to put
-     * @param element the element array to put
-     * @return this array
-     */
-    INDArray put(List<List<Integer>> indices,INDArray element);
 
 
     /**
@@ -1830,15 +1814,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param order the ordering to set
      */
     void setOrder(char order);
-
-    /**
-     * Sub array based on the
-     * pre calculated shape,strides, offsets
-     * @param resolution the resolution to use
-     * @return the sub array based on the calculations from the resolution
-     */
-    INDArray subArray(ShapeOffsetResolution resolution);
-    //INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis);
 
     /**
      * @param offsets

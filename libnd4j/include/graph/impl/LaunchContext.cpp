@@ -19,11 +19,87 @@
 //
 
 #include <graph/LaunchContext.h>
-
+#include <logger.h>
+//#include <exceptions/cuda_exception.h>
+#include <helpers/cublasHelper.h>
+#include <stdexcept>
 namespace nd4j {
-    namespace graph {
-        LaunchContext::LaunchContext() {
+namespace graph {
+
+LaunchContext* LaunchContext::sDefaultContext = nullptr;
+
+#ifdef __CUDABLAS__
+
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
+
+	_cudaStream 	   = cudaStream;
+	_cudaSpecialStream = nullptr;
+	_reductionPointer  = reductionPointer;
+	_scalarPointer     = scalarPointer;
+	_allocationPointer = allocationPointer;
+	_workspace = nullptr;
+}
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
+
+	_cudaStream 	   = cudaStream;
+	_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
+	_reductionPointer  = reductionPointer;
+	_scalarPointer     = scalarPointer;
+	_allocationPointer = allocationPointer;
+	_workspace = nullptr;
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
-        }
+    _workspace = nullptr;
+    _deviceID = 0;
+
+#ifdef __CUDABLAS__
+    _cudaStream  = new cudaStream_t();
+    _cudaSpecialStream = new cudaStream_t();
+    if (nullptr == _cudaStream || nullptr == _cudaSpecialStream)
+        throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+
+    cudaError_t err = cudaStreamCreate(_cudaStream);
+    if (err != 0)
+        throw std::runtime_error("Failed to create default CUDA stream with launch context");//, err);
+
+    err = cudaStreamCreate(_cudaSpecialStream);
+    if (err != 0)
+        throw std::runtime_error("Failed to create special CUDA stream with launch context");//, err);
+
+    _cublasHandle = cublas::handle();
+
+    auto res = cudaStreamSynchronize(*_cudaStream);
+    if (res != 0)
+        throw std::runtime_error("Initial sync failed");//, res);
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
+    if (res != 0)
+        throw std::runtime_error("_reductionPointer allocation failed");
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_scalarPointer), 8);
+    if (res != 0)
+        throw std::runtime_error("_scalarPointer allocation failed");
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
+    if (res != 0)
+        throw std::runtime_error("_allocationPointer allocation failed");
+#else
+    //
+#endif
+}
+
+LaunchContext* LaunchContext::defaultContext() {
+    if (!LaunchContext::sDefaultContext) {
+        LaunchContext::sDefaultContext = new LaunchContext;
     }
+    return LaunchContext::sDefaultContext;
+}
+
+}
 }

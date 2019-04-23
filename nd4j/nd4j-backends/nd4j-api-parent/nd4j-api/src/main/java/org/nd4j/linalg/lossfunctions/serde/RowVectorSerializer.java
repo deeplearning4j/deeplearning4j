@@ -28,7 +28,9 @@ import java.io.IOException;
  * Serializes an INDArray as a double[]
  *
  * @author Alex Black
+ * @deprecated Use {@link org.nd4j.serde.jackson.shaded.NDArrayTextSerializer}
  */
+@Deprecated
 public class RowVectorSerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray array, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)

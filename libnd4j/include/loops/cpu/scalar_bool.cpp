@@ -59,8 +59,9 @@ namespace functions {
 
             nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
 
-            if (kindOfLoop != nd4j::LoopKind::EWS1 || kindOfLoop != nd4j::LoopKind::EWSNONZERO) {
+            if (kindOfLoop != nd4j::LoopKind::EWS1 && kindOfLoop != nd4j::LoopKind::EWSNONZERO) {
                 printf("ScalarBoolTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
+                return;
             }
             
             int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());

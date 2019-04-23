@@ -98,7 +98,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
             assertEquals(dt, net.getFlattenedGradients().dataType());
             assertEquals(dt, net.getUpdater().getStateViewArray().dataType());
 
-            System.out.println(Arrays.toString(net.params().data().asFloat()));
+            //System.out.println(Arrays.toString(net.params().data().asFloat()));
 
             INDArray outAct = net.output(in);
             assertEquals(dt, outAct.dataType());

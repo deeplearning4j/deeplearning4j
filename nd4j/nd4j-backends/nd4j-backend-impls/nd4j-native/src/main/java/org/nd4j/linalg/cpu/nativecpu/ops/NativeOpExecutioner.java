@@ -1599,6 +1599,35 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        val name = op.opName();
+        val context = buildContext();
+
+        context.markInplace(op.isInplaceCall());
+
+        // transferring rng state
+        context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
+
+        //transferring input/output arrays
+        context.setInputArrays(op.inputArguments());
+        context.setOutputArrays(op.outputArguments());
+
+        // transferring static args
+        context.setBArguments(op.bArgs());
+        context.setIArguments(op.iArgs());
+        context.setTArguments(op.tArgs());
+
+        try {
+            val result = exec(op, context);
+            val states = context.getRngStates();
+
+            // pulling states back
+            Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Op [" + name + "] execution failed", e);
+        }
+/*
         val name = op.opName().toLowerCase();
         val hash = op.opHash();
 
@@ -1725,7 +1754,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         profilingConfigurableHookOut(op, st);
+
         return op.outputArguments();
+ */
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {

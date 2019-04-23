@@ -697,6 +697,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
         else
             throw new UnsupportedOperationException("2D input is expected");
+
         return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
 
@@ -931,25 +932,27 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (dimensions.size() > 1 && arrays.size() != dimensions.size())
             throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
 
+        val zero = arrays.get(0);
         int tadLength = 1;
-        for (int i = 0; i < dimensions.get(0).length; i++) {
-            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
-        }
+        if (zero.rank() > 1)
+            for (int i = 0; i < dimensions.get(0).length; i++) {
+                tadLength *= zero.shape()[dimensions.get(0)[i]];
+            }
 
-        long numTads = arrays.get(0).length() / tadLength;
+        long numTads = zero.length() / tadLength;
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
-        PointerPointer dataPointers = new PointerPointer(arrays.size());
-        PointerPointer shapePointers = new PointerPointer(arrays.size());
-        PointerPointer tadPointers = new PointerPointer(arrays.size());
-        PointerPointer offsetPointers = new PointerPointer(arrays.size());
+        val dataPointers = new PointerPointer(arrays.size());
+        val shapePointers = new PointerPointer(arrays.size());
+        val tadPointers = new PointerPointer(arrays.size());
+        val offsetPointers = new PointerPointer(arrays.size());
 
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+        val dummy = new PointerPointer(new Pointer[] {null});
 
         List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
 
-        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
+        val tadManager = Nd4j.getExecutioner().getTADManager();
 
         val ptrMap = new IntPointer(map);
 
@@ -957,26 +960,24 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         for (int i = 0; i < arrays.size(); i++) {
-            INDArray array = arrays.get(i);
+            val array = arrays.get(i);
 
             Nd4j.getCompressor().autoDecompress(array);
 
+            val dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
-            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
-
-            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
+            val tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
             list.add(tadBuffers);
 
-            Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+            val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
-            DataBuffer offsets = tadBuffers.getSecond();
+            val offsets = tadBuffers.getSecond();
 
-            if (offsets.length() != numTads)
+            if (array.rank() != 1 && offsets.length() != numTads)
                 throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
 
             if (offsets == null)
                 throw new ND4JIllegalStateException("Offsets for shuffle can't be null");
-
 
             dataPointers.put(i, array.data().addressPointer());
             shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());

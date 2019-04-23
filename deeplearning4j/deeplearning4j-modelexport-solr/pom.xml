@@ -250,6 +250,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-ltr</artifactId>
             <version>${lucene-solr.version}</version>
             <exclusions>
@@ -268,6 +273,12 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+            <version>${lucene-solr.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

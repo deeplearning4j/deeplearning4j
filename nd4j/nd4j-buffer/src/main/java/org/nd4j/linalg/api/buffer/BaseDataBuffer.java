@@ -1878,11 +1878,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 if (currentType == DataType.LONG)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE && currentType != DataType.INT)
+                else if (currentType == DataType.DOUBLE && currentType != DataType.INT)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.FLOAT || currentType == DataType.INT)
+                else if (currentType == DataType.FLOAT || currentType == DataType.INT)
                     elementSize = 4;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.HALF && currentType != DataType.INT)
+                else if (currentType == DataType.HALF && currentType != DataType.INT)
                     elementSize = 2;
 
                 pointerIndexerByCurrentType(currentType);

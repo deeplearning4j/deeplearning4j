@@ -447,18 +447,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
-        if (indices[0] instanceof SpecifiedIndex && element.isVector()) {
-            indices[0].reset();
-            int cnt = 0;
-            while (indices[0].hasNext()) {
-                long idx = indices[0].next();
-                putScalar((int) idx, element.getDouble(cnt));
-                cnt++;
-            }
-            return this;
-        } else {
-            return get(indices).assign(element);
-        }
+        get(indices).assign(element);
+        return this;
     }
 
     @Override
@@ -597,69 +587,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                                         && indexes[0] instanceof NDArrayIndexAll)))
             return this;
 
-        indexes = NDArrayIndex.resolve(javaShapeInformation, indexes);
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
-        resolution.exec(indexes);
-
-        if (indexes.length < 1)
-            throw new IllegalStateException("Invalid index found of zero length");
-
-        // FIXME: LONG
-        long[] shape = resolution.getShapes();
-        int numSpecifiedIndex = 0;
-
-        for (int i = 0; i < indexes.length; i++)
-            if (indexes[i] instanceof SpecifiedIndex)
-                numSpecifiedIndex++;
-
-        if (shape != null && numSpecifiedIndex > 0) {
-            Generator<List<List<Long>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
-            INDArray ret = Nd4j.createSparseCOO(new double[] {}, new int[][] {}, shape);
-            int count = 0;
-            int maxValue = ArrayUtil.prod(shape());
-            while (count < maxValue) {
-                try {
-                    List<List<Long>> next = gen.next();
-                    List<Integer> coordsCombo = new ArrayList<>();
-                    List<Integer> cooIdx = new ArrayList<>();
-                    for (int i = 0; i < next.size(); i++) {
-                        if (next.get(i).size() != 2)
-                            throw new IllegalStateException("Illegal entry returned");
-                        coordsCombo.add(next.get(i).get(0).intValue());
-                        cooIdx.add(next.get(i).get(1).intValue());
-                    }
-                    count++;
-
-                    /*
-                    * if the coordinates are in the original array
-                    *   -> add it in the new sparse ndarray
-                    * else
-                    *   -> do nothing
-                    * */
-                    int[] idx = Ints.toArray(coordsCombo);
-                    if (!isZero(idx)) {
-                        double val = getDouble(idx);
-                        ret.putScalar(filterOutFixedDimensions(resolution.getFixed(), cooIdx), val);
-                    }
-
-                } catch (NoSuchElementException e) {
-                    break;
-                }
-            }
-
-            return ret;
-        }
-
-        int numNewAxis = 0;
-        for (int i = 0; i < indexes.length; i++)
-            if (indexes[i] instanceof NewAxis)
-                numNewAxis++;
-        if (numNewAxis != 0) {
-
-        }
-
-        INDArray ret = subArray(resolution);
-        return ret;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -991,45 +919,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public DataBuffer shapeInfoDataBuffer() {
         return shapeInformation;
-    }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-        long[] offsets = resolution.getOffsets();
-        long[] shape = resolution.getShapes();
-        int[] stride = LongUtils.toInts(resolution.getStrides());
-        int[] flags = resolution.getFixed();
-        flags = updateFlags(flags, shape);
-        long offset = (int) (offset() + resolution.getOffset());
-        int newRank = shape.length;
-        long[] sparseOffsets = createSparseOffsets(offset);
-        int[] newAxis = createHiddenDimensions(resolution.getPrependAxis());
-
-
-        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
-
-        if (offsets.length != newRank)
-            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
-        if (stride.length != newRank)
-            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
-
-        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
-            if (ArrayUtil.isZero(offsets)) {
-                return this;
-            } else {
-                throw new IllegalArgumentException("Invalid subArray offsets");
-            }
-        }
-        DataBuffer newSparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
-                        newAxis, underlyingRank());
-        return create(values, indices, newSparseInformation, Arrays.copyOf(shape, shape.length));
-
-    }
-
-    //@Override
-    public INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis) {
-        return null;
     }
 
     /**

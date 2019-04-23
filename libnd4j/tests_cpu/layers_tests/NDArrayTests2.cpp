@@ -1299,3 +1299,12 @@ TEST_F(NDArrayTest2, reduce3_1) {
 
     delete z;
 }
+
+TEST_F(NDArrayTest2, all_tads_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 5});
+
+    auto arrays = x.allTensorsAlongDimension({1});
+    ASSERT_EQ(3, arrays->size());
+
+    delete arrays;
+}

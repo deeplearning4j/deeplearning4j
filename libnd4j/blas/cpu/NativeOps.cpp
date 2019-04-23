@@ -733,8 +733,6 @@ void NativeOps::execTransformFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformFloat(
             opNum,
@@ -743,8 +741,8 @@ void NativeOps::execTransformFloat(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformSame(
@@ -755,8 +753,6 @@ void NativeOps::execTransformSame(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformSame(
             opNum,
@@ -765,8 +761,8 @@ void NativeOps::execTransformSame(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformBool(
@@ -777,8 +773,6 @@ void NativeOps::execTransformBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformBool(
             opNum,
@@ -787,8 +781,8 @@ void NativeOps::execTransformBool(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformAny(
@@ -819,8 +813,6 @@ void NativeOps::execTransformStrict(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformStrict(
             opNum,
@@ -829,8 +821,8 @@ void NativeOps::execTransformStrict(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
@@ -1171,6 +1163,10 @@ Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
 
+Nd4jLong NativeOps::getDeviceFreeMemory() {
+    return 0L;
+}
+
 Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
     return 0L;
 }
@@ -1430,11 +1426,12 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(N > 1)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(N)
     for (int f = 0; f < N; f++) {
         auto hX = reinterpret_cast<T *>(dX[f]);
         //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
+        auto xShapeInfo = hXShapeInfo[f];
         auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
 
@@ -1446,38 +1443,39 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
         auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
+        if (shape::rank(xShapeInfo) == 1) {
+            auto xLength = shape::length(xShapeInfo);
+            auto ews = shape::elementWiseStride(xShapeInfo);
+            for (Nd4jLong r = 0; r < xLength; r++) {
+                auto swapIdx = shuffleMap[r];
+                if (swapIdx < 0)
+                    continue;
 
-        for (Nd4jLong r = 0; r < numTads; r++) {
-            if (shuffleMap[r] < 0)
-                continue;
-
-            auto oldOffset = tadOffset[r];
-            auto newOffset = tadOffset[shuffleMap[r]];
-
-            auto rX = hX + oldOffset;
-            auto rY = hX + newOffset;
-
-            if (tadEWS == 1) {
-
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < tadLength; i++) {
-                    nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
-                }
-
-            } 
-            else {
-
-                PRAGMA_OMP_PARALLEL_FOR_IF(N == 1 && tadLength > 512)
-                for (Nd4jLong i = 0; i < tadLength; i++) {                    
-                    auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
-                    nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
-                }
-
+                nd4j::math::nd4j_swap<T>(hX[r*ews], hX[swapIdx*ews]);
             }
+        } else {
+            for (Nd4jLong r = 0; r < numTads; r++) {
+                if (shuffleMap[r] < 0)
+                    continue;
 
+                auto oldOffset = tadOffset[r];
+                auto newOffset = tadOffset[shuffleMap[r]];
+
+                auto rX = hX + oldOffset;
+                auto rY = hX + newOffset;
+
+                if (tadEWS == 1) {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                    }
+                } else {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                        nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                    }
+                }
+            }
         }
-
     }
 }
 

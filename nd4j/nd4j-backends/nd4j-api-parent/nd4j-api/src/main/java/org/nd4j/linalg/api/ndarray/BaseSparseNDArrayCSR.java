@@ -143,30 +143,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
             return this;
 
         indexes = NDArrayIndex.resolve(javaShapeInformation, indexes);
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
-        resolution.exec(indexes);
 
-        if (indexes.length < 1)
-            throw new IllegalStateException("Invalid index found of zero length");
-
-        // FIXME: LONG
-        int[] shape = LongUtils.toInts(resolution.getShapes());
-        int numSpecifiedIndex = 0;
-
-        for (int i = 0; i < indexes.length; i++)
-            if (indexes[i] instanceof SpecifiedIndex)
-                numSpecifiedIndex++;
-
-
-        if (shape != null && numSpecifiedIndex > 0) {
-            // TODO create a new ndarray with the specified indexes
-            return null;
-
-        }
-
-        INDArray ret = subArray(resolution);
-        return ret;
-
+        throw new UnsupportedOperationException("Not implemeted");
     }
 
     /**
@@ -242,82 +220,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
     public DataBuffer shapeInfoDataBuffer() {
         return shapeInformation;
     }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-
-        long[] offsets = resolution.getOffsets();
-        long[] shape = resolution.getShapes();
-
-
-        List<Integer> accuColumns = new ArrayList<>();
-        List<Integer> accuPointerB = new ArrayList<>();
-        List<Integer> accuPointerE = new ArrayList<>();
-
-        if (shape.length == 2) {
-
-            if (resolution.getOffset() != 0) {
-                offsets[0] = (int) resolution.getOffset() / shape()[1];
-                offsets[1] = (int) resolution.getOffset() % shape()[1];
-            }
-            long firstRow = offsets[0];
-            long lastRow = firstRow + shape[0];
-            long firstElement = offsets[1];
-            long lastElement = firstElement + shape[1];
-
-            int count = 0;
-            int i = 0;
-            for (int rowIdx = 0; rowIdx < lastRow; rowIdx++) {
-
-                boolean isFirstInRow = true;
-                for (int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++) {
-
-                    int colIdx = columnsPointers.getInt(count);
-
-                    // add the element in the subarray if it belongs to the view
-                    if (colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow) {
-
-                        // add the new column pointer for this element
-                        accuColumns.add((int) (colIdx - firstElement));
-
-                        if (isFirstInRow) {
-                            // Add the index of the first element of the row in the pointer array
-                            accuPointerB.add(idx);
-                            accuPointerE.add(idx + 1);
-                            isFirstInRow = false;
-                        } else {
-                            // update the last element pointer array
-                            accuPointerE.set((int) (rowIdx - firstRow), idx + 1);
-                        }
-                    }
-                    count++;
-                }
-
-                // If the row doesn't contain any element and is included in the selected rows
-                if (isFirstInRow && rowIdx >= firstRow && rowIdx < lastRow) {
-                    int lastIdx = i == 0 ? 0 : accuPointerE.get(i - 1);
-                    accuPointerB.add(lastIdx);
-                    accuPointerE.add(lastIdx);
-                }
-                if (rowIdx >= firstRow && rowIdx <= lastRow) {
-                    i++;
-                }
-            }
-
-            int[] newColumns = Ints.toArray(accuColumns);
-            int[] newPointerB = Ints.toArray(accuPointerB);
-            int[] newPointerE = Ints.toArray(accuPointerE);
-
-            INDArray subarray = Nd4j.createSparseCSR(values, newColumns, newPointerB, newPointerE, shape);
-
-            return subarray;
-
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-
 
     @Override
     public INDArray subArray(long[] offsets, int[] shape, int[] stride) {

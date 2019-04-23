@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -28,6 +29,8 @@ import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -484,6 +487,24 @@ public class CustomOpsTests {
         val result = Nd4j.exec(new Flatten('c', arrayA, arrayB, arrayC))[0];
 
         assertEquals(exp, result);
+    }
+
+    @Test
+    public void testMatmulBp() {
+        val a = Nd4j.create(DataType.DOUBLE, 1,3);
+        val b = Nd4j.create(DataType.DOUBLE, 1,4);
+        val gI = Nd4j.create(DataType.DOUBLE, 3,4);
+
+        val gA = Nd4j.create(DataType.DOUBLE, 1,3);
+        val gB = Nd4j.create(DataType.DOUBLE, 1,4);
+
+        val mt = MMulTranspose.builder()
+                .transposeA(true)
+                .transposeB(false)
+                .transposeResult(false).build();
+
+        val op = new MmulBp(a, b, gI, gA, gB, mt);
+        Nd4j.exec(op);
     }
 
     @Test
