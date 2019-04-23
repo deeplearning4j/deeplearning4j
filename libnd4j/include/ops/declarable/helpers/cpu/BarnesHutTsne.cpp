@@ -81,15 +81,17 @@ namespace helpers {
         //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
         std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
-//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
+//PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))
         for (int n = 0; n < N; n++) {
             int begin = pRows[n];
             int bound = pRows[n + 1];
-//            PRAGMA_OMP_PARALLEL_FOR_SIMD
+
             for (int i = begin; i < bound; i++) {
                 bool present = false;
                 int start = pRows[pCols[i]];
                 int end = pRows[pCols[i]] + 1;
+
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
                 for (int m = start; m < end; m++) {
                     if (pCols[m] == n) {
                         present = true;
@@ -111,7 +113,6 @@ namespace helpers {
                     }
 
                 }
-
                 // Update offsets
                 if (!present || (present && n < pCols[i])) {
                     ++offset[n];
