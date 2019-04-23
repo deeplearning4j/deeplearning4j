@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,7 +60,7 @@ public class MaskZeroLayerTest {
                 .build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration();
         conf.setLayer(underlying);
-        INDArray params = Nd4j.zeros(new int[]{16});
+        INDArray params = Nd4j.zeros(new int[]{1, 16});
 
         //Set the biases to 1.
         for (int i = 12; i < 16; i++) {
@@ -74,8 +75,8 @@ public class MaskZeroLayerTest {
         INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
         //THEN output should only be incremented for the non-zero timesteps
-        INDArray firstExampleOutput = out.getRow(0);
-        INDArray secondExampleOutput = out.getRow(1);
+        INDArray firstExampleOutput = out.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray secondExampleOutput = out.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all());
 
         assertEquals(firstExampleOutput.getDouble(0), 0.0, 1e-6);
         assertEquals(firstExampleOutput.getDouble(1), 1.0, 1e-6);
