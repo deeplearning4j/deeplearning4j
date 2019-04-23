@@ -68,23 +68,21 @@ namespace nd4j {
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////
-    template <>
-    utf8string NDArray::e(const Nd4jLong i) const {
-        // if (i >= _length)
-        //     throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        if (!isS())
-            throw std::runtime_error("This method is available for String arrays only");
-
-        auto rp = getOffset(i);
-        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
-    }
 
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
-        auto u = e<utf8string>(i);
-        std::string r(u._buffer);
+        if (!isS())
+            throw std::runtime_error("Can't get std::string out of non-string array");
+
+        // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
+        auto offset = getOffset(i);
+        auto offsets = reinterpret_cast<Nd4jLong *>(_buffer);
+        auto offsetsLength = ShapeUtils::stringBufferHeaderRequirements(this->lengthOf());
+        auto start = offsets[offset];
+        auto end = offsets[offset + 1];
+        auto data = _buffer + offsetsLength + start;
+
+        std::string r(reinterpret_cast<const char *>(data), (end - start));
         return r;
     }
 
@@ -829,9 +827,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
             // now rolling through elements, to fill cumulative
             auto dataLength = 0;
             for (Nd4jLong e = 0; e < lengthOf(); e++) {
-                auto s = this->e<utf8string>(e);
+                auto s = this->e<std::string>(e);
                 prefix[e+1] = dataLength;
-                dataLength += s._length;
+                dataLength += s.length();
             }
 
             // final prefix
@@ -841,9 +839,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
             std::vector<int8_t> result((prefixLength * sizeof(Nd4jLong)) + dataLength);
             auto charPtr = result.data() + (prefixLength * sizeof(Nd4jLong));
             for (int e = 0; e < this->lengthOf(); e++) {
-                auto s = this->e<utf8string>(e);
+                auto s = this->e<std::string>(e);
                 auto cPtr = charPtr + prefix[e+1];
-                memcpy(cPtr, s._buffer, s._length);
+                memcpy(cPtr, s.c_str(), s.length());
             }
 
             // copying prefix data to result buffer
@@ -1891,7 +1889,7 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
         }
         else if (this->isS()) {
             for (Nd4jLong e = 0; e < limit; e++) {
-                printf("\"%s\"", this->e<utf8string>(e)._buffer);
+                printf("\"%s\"", this->e<std::string>(e).c_str());
                 if (e < limit - 1)
                     printf(", ");
             }
@@ -4781,16 +4779,7 @@ template void NDArray::operator/=(const bool scalar);
     // default destructor
     NDArray::~NDArray() noexcept {
         if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr) {
-            if (!isS()) {
-                delete[] _buffer;
-            } else {
-                for (int e = 0; e < lengthOf(); e++) {
-                    auto t = reinterpret_cast<utf8string**>(_buffer);
-                    delete t[e];
-                };
-
-                delete[] _buffer;
-            }
+            delete[] _buffer;
         }
 
         if (_isShapeAlloc  && _workspace == nullptr && _shapeInfo != nullptr)
