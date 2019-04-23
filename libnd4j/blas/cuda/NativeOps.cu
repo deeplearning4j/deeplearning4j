@@ -3223,8 +3223,12 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 						Nd4jLong *tadOffsets,
 						bool descending) {
     // to be implemented
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 512, 32768);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+
+    dim3 launchDims(tadPack.numberOfTads(), 512, 32768);
+
 	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, oesTadGeneric, (launchDims, stream, dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);                     
     

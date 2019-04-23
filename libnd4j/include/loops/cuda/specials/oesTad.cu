@@ -48,9 +48,9 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
 
     T dt0, dt1;
 
-    int limit = nd4j::math::nd4j_max<int>(xTadLength, blockDim.x);
+    int limit = nd4j::math::nd4j_max<int>((int) xTadLength, blockDim.x);
 
-    if (limit > blockDim.x);
+    if (limit > blockDim.x)
         limit = limit + (blockDim.x - (xTadLength % blockDim.x));
 
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
