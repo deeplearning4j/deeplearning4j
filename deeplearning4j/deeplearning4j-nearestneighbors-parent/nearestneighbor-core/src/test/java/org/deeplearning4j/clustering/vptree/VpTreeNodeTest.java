@@ -166,11 +166,11 @@ public class VpTreeNodeTest {
         List<Double> distances = new ArrayList<>();
         tree.search(Nd4j.create(new double[] {50, 50}), 1, add, distances);
         DataPoint assertion = add.get(0);
-        assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55})), assertion);
+        assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55}).reshape(1,2)), assertion);
 
         tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
         assertion = add.get(0);
-        assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
+        assertEquals(Nd4j.create(new double[] {60, 60}).reshape(1,2), assertion.getPoint());
     }
 
     @Test(expected = ND4JIllegalStateException.class)
@@ -235,7 +235,7 @@ public class VpTreeNodeTest {
         INDArray dataset = Nd4j.randn(N, dim);
         double[] rawData = dataset.toDoubleVector();
         Arrays.sort(dataset.toDoubleVector());
-        dataset = Nd4j.createFromArray(rawData);
+        dataset = Nd4j.createFromArray(rawData).reshape(1,N);
 
         List<DataPoint> points = new ArrayList<>();
 
