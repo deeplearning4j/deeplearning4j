@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.mixed;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -70,5 +72,23 @@ public class StringArrayTests {
         assertEquals(arrayX, arrayX);
         assertEquals(arrayX, arrayY);
         assertNotEquals(arrayX, arrayZ);
+    }
+
+    @Test
+    public void testBasicStrings_4() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+
+        val fb = new FlatBufferBuilder();
+        val i = arrayX.toFlatArray(fb);
+        fb.finish(i);
+        val db = fb.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(arrayX, restored);
+        assertEquals("alpha", restored.getString(0));
+        assertEquals("beta", restored.getString(1));
+        assertEquals("gamma", restored.getString(2));
     }
 }

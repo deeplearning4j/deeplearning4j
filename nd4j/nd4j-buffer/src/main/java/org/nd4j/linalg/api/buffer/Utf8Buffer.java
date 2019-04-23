@@ -75,8 +75,12 @@ public class Utf8Buffer extends BaseDataBuffer {
         super(buffer, length, offset);
     }
 
-    public Utf8Buffer(byte[] data, int length) {
-        super(data, length);
+    public Utf8Buffer(byte[] data, long numWords) {
+        super(data.length, false);
+
+        val bp = (BytePointer) pointer;
+        bp.put(data);
+        this.numWords = numWords;
     }
 
     public Utf8Buffer(double[] data, boolean copy) {

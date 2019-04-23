@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
@@ -2454,7 +2455,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
-        if(isEmpty())
+        if(isEmpty() || isS())
             return false;
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataType.INT)
@@ -6341,32 +6342,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
 
-
+            val numWords = this.length();
             val ub = (Utf8Buffer) buffer;
             // writing length first
             val t = length();
-            dos.writeLong(t);
+            val ptr = (BytePointer) ub.pointer();
 
-            // FIXME: probably we don't want int limitation here?
-            val list = new ArrayList<String>((int) length());
-
-            // now write all offsets
-            int lastLength = 0;
-            for (int i = 0; i < length(); i++) {
-                val string = Nd4j.getExecutioner().getString(ub, i);
-                list.add(string);
-                dos.writeLong(lastLength);
-                lastLength += string.length();
-            }
-            // writing out last value
-            dos.writeLong(lastLength);
-
-            // now write all strings
-            for (int i = 0; i < list.size(); i++) {
-                dos.writeBytes(list.get(i));
+            // now write all strings as bytes
+            for (int i = 0; i < ub.length(); i++) {
+                dos.writeByte(ptr.get(i));
             }
 
-            return FlatArray.createBufferVector(builder, bos.toByteArray());
+            val bytes = bos.toByteArray();
+            return FlatArray.createBufferVector(builder, bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -35,10 +35,7 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -6707,35 +6704,17 @@ public class Nd4j {
             }
             case UTF8: {
                 try {
-                    val list = new ArrayList<String>(prod);
                     val sb = bb.order(_order);
                     val pos = bb.position();
-                    val arr = new byte[sb.limit()];
+                    val arr = new byte[sb.limit() - sb.position()];
+
                     for (int e = 0; e < arr.length; e++) {
-                        arr[e] = sb.get(e);
+                        arr[e] = sb.get(e + sb.position());
                     }
 
-                    val bytes = Arrays.copyOfRange(arr, pos, arr.length);
-                    val bis = new ByteArrayInputStream(bytes);
-                    val dis = new DataInputStream(bis);
-                    val length = (int) dis.readLong();
-                    val offsets = new long[length+1];
-                    for (int e = 0; e <= length; e++)
-                        offsets[e] = dis.readLong();
-
-                    for (int e = 0; e < length; e++) {
-                        val start = offsets[e];
-                        val end = offsets[e+1];
-                        val len = end - start;
-                        val builder = new StringBuilder();
-                        for (int c = 0; c < len; c++) {
-                            builder.append((char) dis.readByte());
-                        }
-                        list.add(builder.toString());
-                    }
-
-                    return Nd4j.create(list, shapeOf);
-                } catch (IOException e) {
+                    val buffer = new Utf8Buffer(arr, ArrayUtil.prod(shapeOf));
+                    return Nd4j.create(buffer, shapeOf);
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
