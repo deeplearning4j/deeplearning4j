@@ -35,6 +35,8 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -201,22 +203,24 @@ public class TsneTest {
                 log.info("Starting test");
 
                 //STEP 1: Initialization
-                int iterations = 100;
+                int iterations = 30;
                 //create an n-dimensional array of doubles
                 Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words
-                INDArray weights;
+                INDArray weights = Nd4j.read(new FileInputStream(new File("weights.txt")));
+                /*INDArray weights;
                 log.info("Load & Vectorize data....");
                 File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
                 //Get the data of all unique word vectors
                 Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
                 VocabCache cache = vectors.getSecond();
-                weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
+                weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list*/
+                //Nd4j.write(new FileOutputStream(new File("weights.txt")), weights);
 
-                for (int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
-                   cacheList.add(cache.wordAtIndex(i));
+                File wordFile = new ClassPathResource("deeplearning4j-tsne/set.txt").getFile();   //Open the file
+                cacheList = FileUtils.readLines(wordFile, "UTF-8");
 
                 //STEP 3: build a dual-tree tsne to use later
                 log.info("Build model....");
@@ -237,6 +241,7 @@ public class TsneTest {
                 File file1 = new File(outDir, "new.txt");
                 tsne.saveAsFile(cacheList, file1.getAbsolutePath());
                 System.out.println(file1.getAbsolutePath());
+                System.out.println(FileUtils.readFileToString(file1, "UTF-8"));
                 File file2 = new ClassPathResource("deeplearning4j-tsne/sample.txt").getFile();
                 assertEquals(true, FileUtils.contentEquals(file1, file2));
             }
