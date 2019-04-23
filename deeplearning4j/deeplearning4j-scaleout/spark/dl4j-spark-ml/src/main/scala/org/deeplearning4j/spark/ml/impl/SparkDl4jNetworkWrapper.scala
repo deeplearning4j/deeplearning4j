@@ -78,10 +78,14 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
             .map(item => {
                 val features = item.features
                 val label = item.label
+                val f = Nd4j.create(features.toArray)
+                val f2 = f.reshape(1, f.length)
                 if (numLabels > 1) {
-                    new DataSet(Nd4j.create(features.toArray), FeatureUtil.toOutcomeVector(label.toInt, numLabels))
+                    new DataSet(f2, FeatureUtil.toOutcomeVector(label.toInt, numLabels))
                 } else {
-                    new DataSet(Nd4j.create(features.toArray), Nd4j.create(Array(label)))
+                    val l = Nd4j.create(Array(label))
+                    val l2 = l.reshape(1, l.length())
+                    new DataSet(f2, l2)
                 }
             })
     }

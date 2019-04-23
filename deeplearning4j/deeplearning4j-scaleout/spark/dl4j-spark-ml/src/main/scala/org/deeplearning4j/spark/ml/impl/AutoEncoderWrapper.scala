@@ -63,7 +63,8 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
             set(compressedLayer, layerCount / 2)
         }
         val set2 = dataset.select($(inputCol)).rdd.map(mapVectorFunc)
-        val ds = set2.map(v => new DataSet(Nd4j.create(v.toArray), Nd4j.create(v.toArray)))
+
+        val ds = set2.map(v => new DataSet(Nd4j.create(v.toArray).reshape(1, v.size), Nd4j.create(v.toArray).reshape(1, v.size)))
         val fitted = sparkNet.fit(ds)
         fitted
     }
