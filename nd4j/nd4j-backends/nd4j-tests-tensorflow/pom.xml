@@ -104,12 +104,6 @@
                     <artifactId>tensorflow-platform</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                 </dependency>
-                <dependency>
-                    <groupId>org.bytedeco</groupId>
-                    <artifactId>tensorflow</artifactId>
-                    <version>${tensorflow.javacpp.version}</version>
-                    <classifier>linux-x86_64</classifier>
-                </dependency>
             </dependencies>
         </profile>
         <profile>
@@ -120,6 +114,18 @@
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>windows-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>macosx-x86_64-gpu</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -227,6 +233,18 @@
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>windows-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>macosx-x86_64-gpu</classifier>
                 </dependency>
             </dependencies>
         </profile>
