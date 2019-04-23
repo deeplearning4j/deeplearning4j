@@ -55,20 +55,19 @@ namespace helpers {
         delete numElementsArr;
         return numElements;
     }
-    static
-    void printVector(std::vector<int> const& v) {
-        for (auto x: v) {
-            printf("%d ", x);
-        }
-        printf("\n");
-        fflush(stdout);
-    }
+//    static
+//    void printVector(std::vector<int> const& v) {
+//        for (auto x: v) {
+//            printf("%d ", x);
+//        }
+//        printf("\n");
+//        fflush(stdout);
+//    }
 
     template <typename T>
     static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts) {
         auto N = rowP->lengthOf() / 2 + rowP->lengthOf() % 2;
         //auto numElements = output->lengthOf();
-        std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
         std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
         symRowP.insert(symRowP.begin(),0);
@@ -80,11 +79,13 @@ namespace helpers {
         T const* pVals = reinterpret_cast<T const*>(valP->getBuffer());
         T* pOutput = reinterpret_cast<T*>(output->buffer());
         //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
+        std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
-//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
+//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
         for (int n = 0; n < N; n++) {
             int begin = pRows[n];
             int bound = pRows[n + 1];
+//            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int i = begin; i < bound; i++) {
                 bool present = false;
                 int start = pRows[pCols[i]];
@@ -113,12 +114,12 @@ namespace helpers {
 
                 // Update offsets
                 if (!present || (present && n < pCols[i])) {
-                    offset[n] += 1;
+                    ++offset[n];
                     int colPI = pCols[i];
                     if (colPI != n)
-                        offset[colPI] += 1;
+                        ++offset[colPI];
                 }
-                printVector(offset);
+//                printVector(offset);
             }
         }
     }
