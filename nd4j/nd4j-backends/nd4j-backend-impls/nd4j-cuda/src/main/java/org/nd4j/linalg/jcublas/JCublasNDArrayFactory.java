@@ -206,13 +206,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new Utf8Buffer(strings);
         val list = new ArrayList<String>(strings);
-
-        for (int e = 0; e < list.size(); e++) {
-            val cstr = list.get(e);
-            val str = new Nd4jCuda.utf8string(cstr, cstr.length());
-            buffer.put(e, str);
-        }
-
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 
