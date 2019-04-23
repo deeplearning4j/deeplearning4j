@@ -5152,8 +5152,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // meh
         if (this.dataType() == DataType.UTF8 && n.dataType() == DataType.UTF8) {
             for (long e = 0; e < this.length(); e++) {
-                val str1 = this.getStringUnsafe(e);
-                val str2 = n.getStringUnsafe(e);
+                val str1 = this.getString(e);
+                val str2 = n.getString(e);
 
                 if (!str1.equals(str2))
                     return false;
@@ -6535,11 +6535,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public String getStringUnsafe(long index) {
+    public String getString(long index) {
         if (!isS())
             throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
 
-        return Nd4j.getExecutioner().getString(((Utf8Buffer) this.data()), index);
+        return ((Utf8Buffer) data).getString(index);
     }
 
     /**

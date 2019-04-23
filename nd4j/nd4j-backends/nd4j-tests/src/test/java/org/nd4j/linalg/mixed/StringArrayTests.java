@@ -36,7 +36,7 @@ public class StringArrayTests {
         assertEquals(0, array.rank());
         assertEquals(DataType.UTF8, array.dataType());
 
-        assertEquals("alpha", array.getStringUnsafe(0));
+        assertEquals("alpha", array.getString(0));
         String s = array.toString();
         assertTrue(s, s.contains("alpha"));
         System.out.println(s);
@@ -51,9 +51,9 @@ public class StringArrayTests {
         assertEquals(1, array.rank());
         assertEquals(DataType.UTF8, array.dataType());
 
-        assertEquals("alpha", array.getStringUnsafe(0));
-        assertEquals("beta", array.getStringUnsafe(1));
-        assertEquals("gamma", array.getStringUnsafe(2));
+        assertEquals("alpha", array.getString(0));
+        assertEquals("beta", array.getString(1));
+        assertEquals("gamma", array.getString(2));
         String s = array.toString();
         assertTrue(s, s.contains("alpha"));
         assertTrue(s, s.contains("beta"));

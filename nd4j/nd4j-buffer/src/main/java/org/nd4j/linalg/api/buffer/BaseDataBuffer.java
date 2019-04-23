@@ -700,8 +700,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UTF8) {
-            pointer = new LongPointer(length());
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            pointer = new BytePointer(length());
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();

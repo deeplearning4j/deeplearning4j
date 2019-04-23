@@ -78,7 +78,7 @@ public class NDArrayTextSerializer extends JsonSerializer<INDArray> {
             case UTF8:
                 String[] str = new String[(int)arr.length()];
                 for( int j=0; j<str.length; j++ )
-                    jg.writeString(arr.getStringUnsafe(j));
+                    jg.writeString(arr.getString(j));
                 break;
             case COMPRESSED:
             case UNKNOWN:

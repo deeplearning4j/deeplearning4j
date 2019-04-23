@@ -6780,7 +6780,7 @@ public class Nd4j {
     }
 
     public static INDArray create(@NonNull String... strings) {
-        return create(Arrays.asList(strings), new long[]{strings.length});
+        return create(Arrays.asList(strings), new long[]{strings.length}, Nd4j.order());
     }
 
     public static INDArray create(@NonNull Collection<String> strings, long... shape) {
