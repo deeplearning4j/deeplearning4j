@@ -61,6 +61,7 @@ namespace nd4j {
                     if (swapIndex >= 0) {
                         uint idx = r * tadEWS;
                         uint swap = swapIndex * tadEWS;
+                        //printf("TID: [%i]; Swapping [%i] with [%i];\n", (int) tid, (int) idx, (int) swap);
                         T oldX = x[idx];
                         z[idx] = x[swap];
                         z[swap] = oldX;

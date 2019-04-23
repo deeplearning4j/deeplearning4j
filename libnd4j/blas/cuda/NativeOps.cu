@@ -2361,7 +2361,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
     dim3 launchDims(256, 512, 8192);
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, dxShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 
-	DEBUG_KERNEL(stream, 0);
+    nd4j::DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
 }
 
 /*

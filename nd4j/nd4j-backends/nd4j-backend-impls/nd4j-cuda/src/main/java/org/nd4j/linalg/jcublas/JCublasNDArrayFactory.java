@@ -1040,9 +1040,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         val shuffle = new CudaIntDataBuffer(map);
 
-        Pointer shuffleMap = allocator.getPointer(shuffle, context);
+        val shuffleMap = allocator.getPointer(shuffle, context);
 
-        PointerPointer extras = new PointerPointer(null, // not used
+        val extras = new PointerPointer(null, // not used
                         context.getOldStream(), allocator.getDeviceIdPointer());
 
 
@@ -1534,16 +1534,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         Nd4j.getExecutioner().push();
 
-        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
+        val tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(x);
+        val context = AtomicAllocator.getInstance().getFlowController().prepareAction(x);
 
-        PointerPointer extraz = new PointerPointer(AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // not used
+        val extraz = new PointerPointer(AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // not used
                 context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
 
 
-        Pointer dimensionPointer = AtomicAllocator.getInstance()
-                .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
+        val dimensionPointer = AtomicAllocator.getInstance()
+                .getHostPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension));
 
 
         nativeOps.sortTad(extraz,
