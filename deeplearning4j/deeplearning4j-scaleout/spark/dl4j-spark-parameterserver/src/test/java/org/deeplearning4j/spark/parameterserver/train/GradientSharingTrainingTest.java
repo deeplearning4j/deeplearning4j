@@ -265,7 +265,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
             SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, net, tm);
 
-            System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+            //System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
 
             String fitPath = "file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/");
             INDArray paramsBefore = net.params().dup();
