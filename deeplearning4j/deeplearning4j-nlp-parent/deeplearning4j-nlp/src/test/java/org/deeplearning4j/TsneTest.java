@@ -55,7 +55,7 @@ public class TsneTest {
                 log.info("Starting test: WSM={}, syntheticData={}", wsm, syntheticData);
 
                 //STEP 1: Initialization
-                int iterations = 30;
+                int iterations = 300;
                 //create an n-dimensional array of doubles
                 Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
@@ -63,7 +63,7 @@ public class TsneTest {
                 //STEP 2: Turn text input into a list of words
                 INDArray weights;
                 if(syntheticData){
-                    weights = Nd4j.rand(500, 20);
+                    weights = Nd4j.rand(5000, 200);
                 } else {
                     log.info("Load & Vectorize data....");
                     File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
@@ -201,22 +201,22 @@ public class TsneTest {
                 log.info("Starting test");
 
                 //STEP 1: Initialization
-                int iterations = 30;
+                int iterations = 100;
                 //create an n-dimensional array of doubles
                 Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words
                 INDArray weights;
-                    log.info("Load & Vectorize data....");
-                    File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
-                    //Get the data of all unique word vectors
-                    Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
-                    VocabCache cache = vectors.getSecond();
-                    weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
+                log.info("Load & Vectorize data....");
+                File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
+                //Get the data of all unique word vectors
+                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
+                VocabCache cache = vectors.getSecond();
+                weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
 
-                    for (int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
-                        cacheList.add(cache.wordAtIndex(i));
+                for (int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
+                   cacheList.add(cache.wordAtIndex(i));
 
                 //STEP 3: build a dual-tree tsne to use later
                 log.info("Build model....");
@@ -234,9 +234,10 @@ public class TsneTest {
                 log.info("Store TSNE Coordinates for Plotting....");
                 File outDir = testDir.newFolder();
                 tsne.fit(weights);
-                tsne.saveAsFile(cacheList, new File(outDir, "out.txt").getAbsolutePath());
-                File file1 = new File("out.txt");
-                File file2 = new File("sample.txt");
+                File file1 = new File(outDir, "new.txt");
+                tsne.saveAsFile(cacheList, file1.getAbsolutePath());
+                System.out.println(file1.getAbsolutePath());
+                File file2 = new ClassPathResource("deeplearning4j-tsne/sample.txt").getFile();
                 assertEquals(true, FileUtils.contentEquals(file1, file2));
             }
     }
