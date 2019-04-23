@@ -1364,3 +1364,21 @@ TEST_F(DeclarableOpsTests12, lrn_5) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, inTopK_1) {
+    
+    NDArray x('c', {4, 5}, {11.0, 14.0, 6.0, 9.0, 3.5, 7.0, 21.0, 3.0,  15.0, 6.0, 9.0, 3.5, 7.0, 11.0, 13.0, 5.0, 16.0, 9.0, 13.5, 7.0});
+    NDArray y('c', {4}, {0, 0, 0, 0}, nd4j::DataType::INT64);
+    NDArray z('c', {4}, {1, 1, 1, 1}, nd4j::DataType::BOOL);
+
+    NDArray expV('c', {4}, {1, 0, 0, 0}, nd4j::DataType::BOOL);
+
+    nd4j::ops::in_top_k op;
+    Nd4jStatus status = op.execute({&x, &y, }, {&z}, {}, {2}, {});
+
+    // z.printIndexedBuffer();
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(expV.isSameShape(z));
+    ASSERT_TRUE(expV.equalsTo(z));    
+}
