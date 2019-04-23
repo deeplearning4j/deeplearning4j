@@ -95,8 +95,8 @@ public abstract class BaseSparkTest implements Serializable {
     protected JavaRDD<DataSet> getBasicSparkDataSet(int nRows, INDArray input, INDArray labels) {
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < nRows; i++) {
-            INDArray inRow = input.getRow(i).dup();
-            INDArray outRow = labels.getRow(i).dup();
+            INDArray inRow = input.getRow(i, true).dup();
+            INDArray outRow = labels.getRow(i, true).dup();
 
             DataSet ds = new DataSet(inRow, outRow);
             list.add(ds);
