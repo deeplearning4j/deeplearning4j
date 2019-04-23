@@ -139,11 +139,8 @@ namespace nd4j {
 
                     Nd4jLong sub[MAX_RANK];
 
-                    if (shape::order(zTadShape) == 'f') {
-                        shape::ind2sub(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
-                    } else {
-                        shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
-                    }
+                    shape::index2coords(shape::rank(zTadShape),shape::shapeOf(zTadShape), arrOffset, sub, shape::order(zTadShape));
+                    
                     Nd4jLong baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
                     resultTAD += baseOffset;
@@ -151,7 +148,7 @@ namespace nd4j {
                     auto yRank = shape::rank(currentTad);
                     auto tadRank = shape::rank(zTadShape);
 
-                    shape::ind2subC(yRank, shape::shapeOf(currentTad), 0,sub);
+                    shape::index2coords(yRank, shape::shapeOf(currentTad), 0, sub);
 
                     auto yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), sub, yRank);
                     resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), sub, tadRank);
@@ -171,7 +168,7 @@ namespace nd4j {
 
                     Nd4jLong sub[MAX_RANK];
 
-                    shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+                    shape::index2coords(shape::rank(zTadShape),shape::shapeOf(zTadShape), arrOffset, sub);
                     Nd4jLong baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
                     resultTAD += baseOffset;
@@ -206,7 +203,7 @@ namespace nd4j {
                                 auto yRank = shape::rank(currentTad);
 
                                 for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-                                    shape::ind2subC(yRank, shape::shapeOf(currentTad), i, yIdx);
+                                    shape::index2coords(yRank, shape::shapeOf(currentTad), i, yIdx);
                                     auto yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
 
                                     resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
@@ -223,8 +220,8 @@ namespace nd4j {
                             auto tadRank = shape::rank(zTadShape);
 
                             for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-                                shape::ind2subC(yRank, shape::shapeOf(currentTad), i,yIdx);
-                                shape::ind2subC(tadRank, shape::shapeOf(zTadShape), i,zIdx);
+                                shape::index2coords(yRank, shape::shapeOf(currentTad), i, yIdx);
+                                shape::index2coords(tadRank, shape::shapeOf(zTadShape), i, zIdx);
 
                                 auto yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
                                 auto resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), zIdx, tadRank);
