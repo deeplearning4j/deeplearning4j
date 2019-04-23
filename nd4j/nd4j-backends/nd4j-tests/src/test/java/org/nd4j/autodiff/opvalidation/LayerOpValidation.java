@@ -281,8 +281,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testLrn2d() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
@@ -309,7 +307,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
             INDArray inArr = Nd4j.rand(inSize).muli(10);
             in.setArray(inArr);
-            SDVariable loss = sd.standardDeviation("loss", out, true);
+            SDVariable loss = sd.mean("loss", out);
 
             log.info("Starting test: " + msg);
             TestCase tc = new TestCase(sd);
