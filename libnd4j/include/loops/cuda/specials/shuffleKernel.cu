@@ -53,6 +53,9 @@ namespace nd4j {
                 xRank = shape::rank(xShapeInfo);
                 xLength = shape::length(xShapeInfo);
                 numTads = xLength / tadLength;
+
+                if (blockIdx.x == 0)
+                    printf("new kernel launched\n");
             }
             __syncthreads();
 
