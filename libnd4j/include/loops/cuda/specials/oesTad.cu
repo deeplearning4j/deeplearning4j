@@ -53,7 +53,7 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
         auto dx = x + tadOffsets[r];
 
         // this is general loop, we go uncached
-        int iterations = xTadLength - 1;
+        int iterations = xTadLength;
         if (cached) {
             for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                 auto t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
