@@ -52,6 +52,25 @@ LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCuda
 }
 #endif
 
+LaunchContext::~LaunchContext() {
+#ifdef __CUDABLAS__
+    if (_isAllocated) {
+        cudaStreamSynchronize(*_cudaStream);
+        cudaStreamSynchronize(*_cudaSpecialStream);
+
+        cudaStreamDestroy(*_cudaStream);
+        cudaStreamDestroy(*_cudaSpecialStream);
+
+        delete _cudaStream;
+        delete _cudaSpecialStream;
+
+        cudaFree(_reductionPointer);
+        cudaFree(_allocationPointer);
+        cudaFree(_scalarPointer);
+    }
+#endif
+}
+
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
@@ -59,6 +78,7 @@ LaunchContext::LaunchContext() {
     _deviceID = 0;
 
 #ifdef __CUDABLAS__
+    _isAllocated = true;
     _cudaStream  = new cudaStream_t();
     _cudaSpecialStream = new cudaStream_t();
     if (nullptr == _cudaStream || nullptr == _cudaSpecialStream)
@@ -93,6 +113,8 @@ LaunchContext::LaunchContext() {
     //
 #endif
 }
+
+
 
 LaunchContext* LaunchContext::defaultContext() {
     if (!LaunchContext::sDefaultContext) {

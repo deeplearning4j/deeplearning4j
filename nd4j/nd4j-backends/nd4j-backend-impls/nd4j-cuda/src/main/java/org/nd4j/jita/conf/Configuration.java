@@ -241,6 +241,15 @@ public class Configuration implements Serializable {
             }
         }
 
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS) != null) {
+            try {
+                int var = Integer.parseInt(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS));
+                setPoolSize(var);
+            } catch (Exception e) {
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS));
+            }
+        }
+
         if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU) != null) {
             try {
                 boolean var = Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_FORCE_SINGLE_GPU));

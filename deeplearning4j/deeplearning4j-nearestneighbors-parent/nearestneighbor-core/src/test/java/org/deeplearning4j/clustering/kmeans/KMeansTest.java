@@ -96,6 +96,7 @@ public class KMeansTest {
     }
 
     @Test
+    @Ignore
     public void testPerformanceWithConvergence() {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);

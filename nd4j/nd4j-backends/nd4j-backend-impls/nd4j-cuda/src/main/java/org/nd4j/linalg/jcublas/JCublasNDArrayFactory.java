@@ -1549,7 +1549,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         nativeOps.sortTad(extraz,
                     null,
                     (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    (DoublePointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    AtomicAllocator.getInstance().getPointer(x, context),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
                     (IntPointer) dimensionPointer,
                     dimension.length,
