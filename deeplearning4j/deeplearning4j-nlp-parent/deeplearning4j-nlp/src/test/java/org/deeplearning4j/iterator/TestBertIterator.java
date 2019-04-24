@@ -44,7 +44,7 @@ public class TestBertIterator {
 
     public TestBertIterator() throws IOException{ }
 
-    @Test
+    @Test(timeout = 20000L)
     public void testBertSequenceClassification() throws Exception {
 
         String toTokenize1 = "I saw a girl with a telescope.";
@@ -118,7 +118,7 @@ public class TestBertIterator {
         assertEquals(segmentId, mds.getFeatures(1));
     }
 
-    @Test
+    @Test(timeout = 20000L)
     public void testBertUnsupervised() throws Exception {
         //Task 1: Unsupervised
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
@@ -148,7 +148,7 @@ public class TestBertIterator {
         mds = b.next();
     }
 
-    @Test
+    @Test(timeout = 20000L)
     public void testLengthHandling() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
@@ -217,7 +217,7 @@ public class TestBertIterator {
         assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
     }
 
-    @Test
+    @Test(timeout = 20000L)
     public void testMinibatchPadding() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
