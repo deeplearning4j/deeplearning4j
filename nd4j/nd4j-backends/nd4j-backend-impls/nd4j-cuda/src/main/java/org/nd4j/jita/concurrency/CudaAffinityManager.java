@@ -259,6 +259,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (array == null)
             return null;
 
+        // string arrays are stored in host memory only atm
+        if (array.isS())
+            return array.dup(array.ordering());
+
         if (array.isView())
             throw new UnsupportedOperationException("It's impossible to replicate View");
 
@@ -270,8 +274,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         val dtype = array.dataType();
 
         // we use this call to get device memory updated
-        AtomicAllocator.getInstance().getPointer(array,
-                        (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
 
         int currentDeviceId = getDeviceForCurrentThread();
 

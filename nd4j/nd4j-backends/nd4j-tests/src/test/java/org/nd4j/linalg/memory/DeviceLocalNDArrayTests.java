@@ -33,7 +33,7 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
         val dl = new DeviceLocalNDArray(arr);
 
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
-            val arr2 = dl.get();
+            val arr2 = dl.get(e);
             assertEquals(arr, arr2);
         }
     }

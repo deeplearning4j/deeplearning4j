@@ -91,4 +91,14 @@ public class StringArrayTests {
         assertEquals("beta", restored.getString(1));
         assertEquals("gamma", restored.getString(2));
     }
+
+    @Test
+    public void testBasicStrings_5() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        val arrayZ0 = arrayX.dup();
+        val arrayZ1 = arrayX.dup(arrayX.ordering());
+
+        assertEquals(arrayX, arrayZ0);
+        assertEquals(arrayX, arrayZ1);
+    }
 }
