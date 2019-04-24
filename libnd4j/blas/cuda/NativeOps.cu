@@ -3227,7 +3227,7 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-    dim3 launchDims(tadPack.numberOfTads(), 512, 32768);
+    dim3 launchDims(tadPack.numberOfTads(), 1024, 33768);
 
 	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, oesTadGeneric, (launchDims, stream, dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);                     

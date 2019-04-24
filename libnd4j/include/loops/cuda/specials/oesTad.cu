@@ -30,11 +30,13 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                 bool descending) {
 
     auto x = static_cast<T*>(vx);
-    
+    const int sharedSize = 32768;
+
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
     __shared__ T *shmem;
+    __shared__ bool cached;
     if (threadIdx.x == 0) {
         xLength = shape::length(xShapeInfo);
         xTadLength = shape::length(tadShapeInfo);
@@ -42,35 +44,34 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
 
         extern __shared__ unsigned char shrd[];
         shmem = (T *) shrd;
+
+        cached = xTadLength <= (sharedSize / sizeof(T));
     }
     __syncthreads();
-
-    int limit = nd4j::math::nd4j_max<int>((int) xTadLength, blockDim.x);
-
-    if (limit > blockDim.x)
-        limit = limit + (blockDim.x - (xTadLength % blockDim.x));
-
-    //if (threadIdx.x == 0 && blockIdx.x == 0)
-    //    printf("Tad length: %i; blockDim.x: %i; limit: %i;\n", (int) xTadLength, blockDim.x, limit);
 
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
         auto dx = x + tadOffsets[r];
 
         // this is general loop, we go uncached
-        int iterations = xTadLength - 2;
+        int iterations = xTadLength - 1;
+        if (cached) {
+            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                auto t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
+                shmem[tid] = dx[t0];
+            }
 
-        int rem = xTadLength % 2;
+            __syncthreads();
+            dx = shmem;
+        }
 
         for (int i = 0; i < iterations; i++) {
+
             if (i % 2 == 0) {
-                for (int tid = threadIdx.x; tid < limit; tid += blockDim.x) {
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 1;
                     if (top < xTadLength) {
-                        auto t0 = getDevicePosition(tadShapeInfo, top - 1, xTadLength);
-                        auto t1 = getDevicePosition(tadShapeInfo, top, xTadLength);
-
-                        //if (r == 0 && i == 0 && tid > 375)
-                        //    printf("LTID: [%i]; t0: [%i]; t1: [%i];\n", tid, (int) t0, (int) t1);
+                        auto t0 = cached ? top - 1 : getDevicePosition(tadShapeInfo, top - 1, xTadLength);
+                        auto t1 = cached ? top : getDevicePosition(tadShapeInfo, top, xTadLength);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             T dt0 = dx[t0];
@@ -80,14 +81,11 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                     }
                 }
             } else {
-                for (int tid = threadIdx.x; tid < limit; tid += blockDim.x) {
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 2;
                     if (top < xTadLength) {
-                        auto t0 = getDevicePosition(tadShapeInfo, top - 1, xTadLength);
-                        auto t1 = getDevicePosition(tadShapeInfo, top, xTadLength);
-
-                        //if (r == 0 && i == 1 && tid > 375)
-                        //    printf("RTID: [%i]; t0: [%i]; t1: [%i];\n", tid, (int) t0, (int) t1);
+                        auto t0 = cached ? top - 1 : getDevicePosition(tadShapeInfo, top - 1, xTadLength);
+                        auto t1 = cached ? top : getDevicePosition(tadShapeInfo, top, xTadLength);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             T dt0 = dx[t0];
@@ -98,6 +96,15 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                 }
             }
             __syncthreads();
+        }
+
+
+        if (cached) {
+            dx = x + tadOffsets[r];
+            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                auto t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
+                dx[t0] = shmem[tid];
+            }
         }
     }
 }

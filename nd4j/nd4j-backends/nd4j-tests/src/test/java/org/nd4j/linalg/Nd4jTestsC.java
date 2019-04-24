@@ -5295,13 +5295,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    protected boolean checkIfUnique(INDArray array) {
+    protected boolean checkIfUnique(INDArray array, int iteration) {
         var jarray = array.data().asInt();
         var set = new HashSet<Integer>();
 
         for (val v : jarray) {
             if (set.contains(Integer.valueOf(v)))
-                throw new IllegalStateException("Duplicate value found: [" + v + "]");
+                throw new IllegalStateException("Duplicate value found: [" + v + "] on iteration " + iteration);
 
             set.add(Integer.valueOf(v));
         }
@@ -5311,24 +5311,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void shuffleTest() {
-        for (int e = 0; e < 100; e++) {
-            log.info("---------------------");
-            val array = Nd4j.linspace(1, 767, 767, DataType.INT);
+        for (int e = 0; e < 5; e++) {
+            //log.info("---------------------");
+            val array = Nd4j.linspace(1, 1011, 1011, DataType.INT);
 
-            checkIfUnique(array);
+            checkIfUnique(array, e);
             Nd4j.getExecutioner().commit();
 
             Nd4j.shuffle(array, 0);
             Nd4j.getExecutioner().commit();
 
-            checkIfUnique(array);
+            checkIfUnique(array, e);
         }
     }
 
     @Test
     public void testNativeSortAlongDimension3() {
-        INDArray array = Nd4j.create(2000,  767);
-        INDArray exp1 = Nd4j.linspace(1, 767, 767, DataType.DOUBLE);
+        INDArray array = Nd4j.create(2000,  2000);
+        INDArray exp1 = Nd4j.linspace(1, 2000, 2000, DataType.DOUBLE);
         INDArray dps = exp1.dup();
 
         Nd4j.getExecutioner().commit();
@@ -5349,7 +5349,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         log.info("Time spent: {} ms", time2 - time1);
 
-        log.info("arow: {}", arow);
         val jexp = exp1.toFloatVector();
         for (int r = 0; r < array.rows(); r++) {
             val jrow = res.getRow(r).toFloatVector();
