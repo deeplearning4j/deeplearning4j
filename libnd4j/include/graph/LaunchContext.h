@@ -49,6 +49,8 @@ class ND4J_EXPORT LaunchContext {
 		cudaStream_t *_cudaStream = nullptr;
 		cudaStream_t *_cudaSpecialStream = nullptr;
 		void *_cublasHandle = nullptr;
+
+		bool _isAllocated = false;
 #endif		
 	nd4j::memory::Workspace* _workspace = nullptr;
     int _deviceID = 0;
