@@ -80,7 +80,7 @@ class ND4J_EXPORT LaunchContext {
 #endif
 
     	LaunchContext();
-    	~LaunchContext() = default;
+    	~LaunchContext();
     	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }
     	void setWorkspace(nd4j::memory::Workspace* theWorkspace) {
     	    _workspace = theWorkspace;
