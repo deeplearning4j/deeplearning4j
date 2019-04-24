@@ -306,10 +306,13 @@ public class ConcatTestsC extends BaseNd4jTest {
     public void testLargeConcat() {
         val list = new ArrayList<INDArray>();
 
-        for (int e = 0; e < 100000; e++)
-            list.add(Nd4j.create(1, 300));
+        for (int e = 0; e < 20000; e++)
+            list.add(Nd4j.create(DataType.INT, 1, 300).assign(e));
 
         val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+
+        for (int e = 0; e < 20000; e++)
+            assertEquals((float) e, result.getRow(e).meanNumber().floatValue(), 1e-5f);
     }
 
 
