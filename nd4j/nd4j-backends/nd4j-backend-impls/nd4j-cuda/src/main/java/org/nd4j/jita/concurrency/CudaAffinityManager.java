@@ -153,9 +153,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
-        val t = org.apache.commons.lang3.ThreadUtils.findThreadById(threadId);
+        val t = Thread.currentThread();
         String name = "N/A";
-        if (t != null)
+        if (t.getId() == threadId)
             name = t.getName();
 
         List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
@@ -181,11 +181,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
                 if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
                     devPtr.set(0);
 
-                val t = org.apache.commons.lang3.ThreadUtils.findThreadById(threadId);
-                val n = t != null ? t.getName() : "N/A";
+                val t = Thread.currentThread();
+                val n = t.getId() == threadId ? t.getName() : "N/A";
 
-                logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId,
-                        n, device, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
+                logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId, n, device, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
             }
         } else {
             device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
