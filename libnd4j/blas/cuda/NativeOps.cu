@@ -2011,11 +2011,11 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
 }
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    int blocks = numOfArrs * 16; // >> 1 << 2);
+    //int blocks = numOfArrs * 16; // >> 1 << 2);
     //nd4j_printf("gridDim.x is %i\n", blocks);
-    if (blocks > 8192)
-        blocks = 8192; // restrict grid dims to 8K max
-    concatCuda<T><<<blocks, 128, 256, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    //if (blocks > 8192)
+    //    blocks = 8192; // restrict grid dims to 8K max
+    concatCuda<T><<<numOfArrs, 128, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
