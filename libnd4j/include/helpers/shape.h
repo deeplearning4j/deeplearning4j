@@ -113,8 +113,10 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
     ND4J_EXPORT _CUDA_HD bool equalsStrict(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
-    ND4J_EXPORT _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
-
+    
+    // returns true if ranks, shapes and strides are the same
+    ND4J_EXPORT _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2);
+    ND4J_EXPORT _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2, const Nd4jLong *shapeInfo3);
 
     ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim);
 
@@ -987,6 +989,7 @@ namespace shape {
     // calculates offsets for entities (elements or sub-arrays), shape in context of sub-array means dimensions excluded from outer array 
     // rank is equal to size of shape
     ND4J_EXPORT void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* offsets, const char order = 'c');
+    ND4J_EXPORT void calcOffsets(const Nd4jLong* shapeInfo, Nd4jLong* offsets, const char order = 'c');
    
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
@@ -2858,26 +2861,29 @@ template <typename T>
         return true;
     }
 
-    INLINEDEF _CUDA_HD bool haveSameOffsets(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
-        if (shapeA[0] != shapeB[0])
-            return false;
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2) {
+        
+    if (shapeInfo1[0] != shapeInfo2[0])
+        return false;
 
-        if (shapeA[0] == 0)
-            return true;
-
-        // we do full comparison here
-        int length = shape::shapeInfoLength(shapeA[0]);
-
-        for (int e = 1; e < length; e++) {
-            if(e == (length - 3)) continue;       // type position, neglect it 
-            if (shapeA[e] != shapeB[e])
-                return false;
-        }
-
+    if (shapeInfo1[0] == 0)
         return true;
-    }
+        
+    int range = 2 * shapeInfo1[0];
 
+    for (int e = 1; e <= range; e++)
+        if (shapeInfo1[e] != shapeInfo2[e])
+            return false;        
 
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2, const Nd4jLong *shapeInfo3) {
+
+    return shape::haveSameShapeAndStrides(shapeInfo1, shapeInfo2) && shape::haveSameShapeAndStrides(shapeInfo1, shapeInfo3);
+}
     INLINEDEF _CUDA_HD int sizeAt(const Nd4jLong *shape, const int dim) {
         if (0 == rank(shape))
             return 1;
@@ -4411,6 +4417,35 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
     };
 
 //////////////////////////////////////////////////////////////////////
+INLINEDEF void calcOffsets(const Nd4jLong* shapeInfo, Nd4jLong* offsets, const char order) {
+
+    // firstly consider simple case when ews > 0 
+    const Nd4jLong ews = shape::elementWiseStride(shapeInfo);
+    
+    if(ews > 0) {
+
+        // set offset for first sub-array, it is equal to zero always
+        offsets[0] = 0;
+        
+        Nd4jLong e = 0;
+        if(order != shape::order(shapeInfo))
+            for(int i = 1; i <= shape::rank(shapeInfo); ++i) 
+                if(shapeInfo[i] != 1) 
+                    ++e;         //check whether input is CommonVector        
+        
+        if(order == shape::order(shapeInfo) || e == 1) {    // e==1 means common vector
+            e = 1;
+            Nd4jLong len = shape::length(shapeInfo);
+            while(e < len) 
+                offsets[e++] = offsets[e - 1] + ews;
+            return;
+        }
+    }
+
+    shape::calcOffsets(shape::rank(shapeInfo), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), shape::stride(const_cast<Nd4jLong*>(shapeInfo)), offsets, order);
+}
+
+//////////////////////////////////////////////////////////////////////
 INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* offsets, const char order) {
 
     // if(false) {                     // tests showed that this code did calculation notably slower even for big N
@@ -4427,22 +4462,21 @@ INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong
     // }
 
     // set offset for first sub-array, it is equal to zero always
-    offsets[0] = 0; 
+    offsets[0] = 0;     
     
-    Nd4jLong init = 0, i = 1, rankMinusOne = rank - 1; 
-    
-    Nd4jLong* idx          = new Nd4jLong[rankMinusOne];
-    Nd4jLong* offsetPerDim = new Nd4jLong[rankMinusOne];
-    memset(idx, 0, sizeof(Nd4jLong) * rankMinusOne);
+    Nd4jLong* idx          = new Nd4jLong[rank];
+    Nd4jLong* offsetPerDim = new Nd4jLong[rank];
+    memset(idx, 0, sizeof(Nd4jLong) * rank);
 
     PRAGMA_OMP_SIMD
-    for (int k = 0; k < rankMinusOne; ++k)
+    for (int k = 0; k < rank; ++k)
         offsetPerDim[k] = (shape[k] - 1) * strides[k];
-    
+
+    Nd4jLong init = 0, i = 1;
     // nested loops - calculation of sub-array offsets
     if(order == 'c') {
         
-        Nd4jLong j = rankMinusOne;
+        Nd4jLong rankMinusOne = rank - 1, j = rankMinusOne;
 
         while(j >= 0) {
 

@@ -1771,33 +1771,87 @@ TEST_F(PlaygroundTests, newTads_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-static void calcOffsets(const Nd4jLong *xShapeInfo, const Nd4jLong& *xOffsets, const Nd4jLong *yShapeInfo = nullptr, const Nd4jLong& *yOffsets = nullptr, const Nd4jLong *zShapeInfo = nullptr, const Nd4jLong& *zOffsets = nullptr ) {
-
-    int numOfArrs;
-    if(!yShapeInfo && !zShapeInfo)
-        numOfArrs = 1;
-    else if(yShapeInfo && !zShapeInfo)
-        numOfArrs = 2;
-    else
-        numOfArrs = 3;
+static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char* order) {
 
     // we assume all array have same length
     const Nd4jLong len = shape::length(xShapeInfo);
-
-    // allocate memory for offsets of x array, since it is always present
-
-    xOffsets = new Nd4jLong[len];
+    
     const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
-    const char xOrder   = shape::order(xShapeInfo);
+    const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
+    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
+    
+    const char xOrder = shape::order(xShapeInfo);
+    const char yOrder = shape::order(yShapeInfo);
+    const char zOrder = shape::order(zShapeInfo);
 
-    switch(numOfArrs) {
+    const bool shapesSame = shape::shapeEquals(xShapeInfo, yShapeInfo, zShapeInfo);
 
-        case 1: {
-            
-        }
-        break;
+    if (xEws == 1 && yEws == 1 && zEws == 1 && xOrder == yOrder && xOrder == zOrder && (xOrder == 'c' || shapesSame)) {
+        xOffsets = yOffsets = zOffsets = nullptr;
     }
-
-    Nd4jLong arrLen = shape::prodLong(shape, rank);
-    shape::index2coords(rank, shape, index, arrLen, coords, order);
+    else if(xEws == 1 && yEws == 1 && xOrder == yOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, yShapeInfo))) {
+        xOffsets = yOffsets = nullptr;
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
+    }
+    else if(xEws == 1 && zEws == 1 && xOrder == zOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, zShapeInfo))) {
+        xOffsets = zOffsets = nullptr;
+        yOffsets = new Nd4jLong[len];
+        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
+    }
+    else if(yEws == 1 && zEws == 1 && yOrder == zOrder && (yOrder == 'c' || shape::shapeEquals(yShapeInfo, zShapeInfo))) {
+        yOffsets = zOffsets = nullptr;
+        xOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
+    }
+    else if(xEws == 1) {
+        xOffsets = nullptr;
+        yOffsets = new Nd4jLong[len];
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
+        shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
+    }
+    else if(yEws == 1) {
+        yOffsets = nullptr;
+        xOffsets = new Nd4jLong[len];
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
+        shape::calcOffsets(zShapeInfo, zOffsets, yOrder);
+    }
+    else if(zEws == 1) {
+        zOffsets = nullptr;
+        xOffsets = new Nd4jLong[len];
+        yOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets, zOrder);
+        shape::calcOffsets(yShapeInfo, yOffsets, zOrder);
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo, zShapeInfo)) {        
+        xOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        yOffsets = zOffsets = xOffsets;
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+        xOffsets = new Nd4jLong[len];
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        shape::calcOffsets(zShapeInfo, zOffsets);
+        yOffsets = xOffsets;
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+        xOffsets = new Nd4jLong[len];
+        yOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        shape::calcOffsets(yShapeInfo, yOffsets);
+        zOffsets = xOffsets;
+    }
+    else {
+        xOffsets = new Nd4jLong[len];
+        yOffsets = new Nd4jLong[len];
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        shape::calcOffsets(yShapeInfo, yOffsets);
+        shape::calcOffsets(zShapeInfo, zOffsets);
+    }    
 }
+
+

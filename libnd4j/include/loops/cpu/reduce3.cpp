@@ -70,7 +70,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         for(unsigned int i = 0; i < length; i++)
             intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[i], y[i], extraParamsVals), extraParamsVals);
 
-    } else if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
+    } else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {            

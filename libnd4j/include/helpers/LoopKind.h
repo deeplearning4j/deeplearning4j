@@ -88,7 +88,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const N
     const int xRank = shape::rank(xShapeInfo);
     const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
     const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
-    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);    
+    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
 
     const char xOrder = shape::order(xShapeInfo);
     const char yOrder = shape::order(yShapeInfo);

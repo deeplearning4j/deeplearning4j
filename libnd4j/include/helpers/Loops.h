@@ -964,7 +964,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 uint castXTadShapeInfo[MAX_RANK];                
                 const bool canCastXTad = nd4j::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);                
 
-                if(shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo)) {
+                if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
                     PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
                     for (uint i = 0; i < zLen; ++i) {
@@ -1264,7 +1264,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 uint castXTadShapeInfo[MAX_RANK];                
                 const bool canCastXTad = nd4j::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);                
 
-                if(shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo)) {
+                if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
                     PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
                     for (uint ix = 0; ix < numXTads; ++ix) {
