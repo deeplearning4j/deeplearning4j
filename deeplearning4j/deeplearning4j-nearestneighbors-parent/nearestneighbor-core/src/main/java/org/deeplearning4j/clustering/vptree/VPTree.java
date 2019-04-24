@@ -520,18 +520,15 @@ public class VPTree implements Serializable {
         double tau = cTau;
 
         INDArray get = node.getPoint(); //items.getRow(node.getIndex());
-        double distance = 0;
-        if (!get.equals(target)) {
-            distance(get, target);
-            if (distance < tau) {
-                if (pq.size() == k)
-                    pq.poll();
+        double distance = distance(get, target);
+        if (distance < tau) {
+           if (pq.size() == k)
+              pq.poll();
 
-                pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance));
-                if (pq.size() == k)
-                    tau = pq.peek().getDistance();
-            }
-        }
+            pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance));
+            if (pq.size() == k)
+               tau = pq.peek().getDistance();
+         }
 
         Node left = node.getLeft();
         Node right = node.getRight();
