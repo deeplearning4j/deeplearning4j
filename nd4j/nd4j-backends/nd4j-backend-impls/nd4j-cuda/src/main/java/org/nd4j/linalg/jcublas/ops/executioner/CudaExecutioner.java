@@ -473,7 +473,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val maxShape = Shape.getMaxShape(op.x(),op.y());
 
         val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
-        long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
+        val retShape = Shape.reductionShape(op.y() == null ? op.x() : op.x().length() > op.y().length() ? op.x() : op.y(), dimension, true, op.isKeepDims());
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -517,6 +517,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
+
             if (op.z().length() != (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape)))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
         }

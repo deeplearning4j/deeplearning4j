@@ -281,7 +281,7 @@ public class VpTreeNodeTest {
     @Test
     public void performanceTest() {
         final int dim = 300;
-        final int rows = 200000;
+        final int rows = 8000;
         final int k = 5;
 
         INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, rows * dim).reshape(rows, dim);

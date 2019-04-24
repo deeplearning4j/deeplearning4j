@@ -181,7 +181,7 @@ public class LimitedContextPool extends BasicContextPool {
                     } else {
                         val currentPoolSize = devicePoolSizes.get(deviceId);
                         synchronized (currentPoolSize) {
-                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize()) {
+                            if (currentPoolSize.get() < CudaEnvironment.getInstance().getConfiguration().getPoolSize() * 3) {
                                 addResourcesToPool(16);
 
                                 // there's possible race condition, but we don't really care
