@@ -483,9 +483,6 @@ public class VPTree implements Serializable {
         PriorityQueue<HeapObject> pq = new PriorityQueue<>(items.rows(), new HeapObjectComparator());
         search(root, target, k + 1, pq, Double.MAX_VALUE);
 
-        if (pq.size() > k)
-            pq.poll();
-
         while (!pq.isEmpty()) {
             HeapObject ho = pq.peek();
             results.add(new DataPoint(ho.getIndex(), ho.getPoint()));
@@ -495,6 +492,17 @@ public class VPTree implements Serializable {
 
         Collections.reverse(results);
         Collections.reverse(distances);
+
+        if (results.size() > k) {
+            if (distances.get(0) == 0.0) {
+                results.remove(0);
+                distances.remove(0);
+            }
+            else {
+                results.remove(results.size() - 1);
+                distances.remove(distances.size() - 1);
+            }
+        }
     }
 
     /**
