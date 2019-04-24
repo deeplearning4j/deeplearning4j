@@ -4827,7 +4827,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
-
+        Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
         return tensorAlongDimension(c, 0);
     }
 
