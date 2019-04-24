@@ -201,7 +201,7 @@ public class TestDeepWalk {
         }
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 180000L)
     public void testDeepWalk13Vertices() throws IOException {
 
         int nVertices = 13;
@@ -214,7 +214,7 @@ public class TestDeepWalk {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int nEpochs = 200;
+        int nEpochs = 50;
 
         //Set up network
         DeepWalk<String, String> deepWalk =
