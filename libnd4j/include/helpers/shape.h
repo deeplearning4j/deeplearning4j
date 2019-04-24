@@ -220,7 +220,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool strideDescendingCAscendingF(const Nd4jLong *shapeBuffer);
 
-    ND4J_EXPORT _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo);
+    ND4J_EXPORT _CUDA_HD bool isContiguous(const Nd4jLong* shapeInfo);
 
 
 /**
@@ -3707,7 +3707,7 @@ template <typename T>
         }
     }
 
-    INLINEDEF _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo) {
+    INLINEDEF _CUDA_HD bool isContiguous(const Nd4jLong* shapeInfo) {
 
         return (order(shapeInfo) == 'c') && (elementWiseStride(shapeInfo) > 0);
     }

@@ -376,11 +376,6 @@ namespace nd4j {
         void streamline(char order = 'a');
 
         /**
-        *  check whether array is contiguous in memory
-        */ 
-        bool isContiguous();
-
-        /**
         *  prints information about array shape
         *  msg - message to print out 
         */ 

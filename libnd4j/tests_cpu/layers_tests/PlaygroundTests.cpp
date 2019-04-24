@@ -1770,3 +1770,34 @@ TEST_F(PlaygroundTests, newTads_1) {
     delete []oPtr;
 }
 
+//////////////////////////////////////////////////////////////////////
+static void calcOffsets(const Nd4jLong *xShapeInfo, const Nd4jLong& *xOffsets, const Nd4jLong *yShapeInfo = nullptr, const Nd4jLong& *yOffsets = nullptr, const Nd4jLong *zShapeInfo = nullptr, const Nd4jLong& *zOffsets = nullptr ) {
+
+    int numOfArrs;
+    if(!yShapeInfo && !zShapeInfo)
+        numOfArrs = 1;
+    else if(yShapeInfo && !zShapeInfo)
+        numOfArrs = 2;
+    else
+        numOfArrs = 3;
+
+    // we assume all array have same length
+    const Nd4jLong len = shape::length(xShapeInfo);
+
+    // allocate memory for offsets of x array, since it is always present
+
+    xOffsets = new Nd4jLong[len];
+    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
+    const char xOrder   = shape::order(xShapeInfo);
+
+    switch(numOfArrs) {
+
+        case 1: {
+            
+        }
+        break;
+    }
+
+    Nd4jLong arrLen = shape::prodLong(shape, rank);
+    shape::index2coords(rank, shape, index, arrLen, coords, order);
+}
