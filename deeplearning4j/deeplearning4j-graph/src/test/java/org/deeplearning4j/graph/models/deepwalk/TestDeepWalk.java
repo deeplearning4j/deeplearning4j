@@ -65,7 +65,7 @@ public class TestDeepWalk {
 
         for (int i = 0; i < 7; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
-            assertArrayEquals(new long[] {1, vectorSize}, vector.shape());
+            assertArrayEquals(new long[] {vectorSize}, vector.shape());
             System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
@@ -79,7 +79,7 @@ public class TestDeepWalk {
             System.out.println("--------------------");
             for (int i = 0; i < 7; i++) {
                 INDArray vector = deepWalk.getVertexVector(i);
-                assertArrayEquals(new long[] {1, vectorSize}, vector.shape());
+                assertArrayEquals(new long[] {vectorSize}, vector.shape());
                 System.out.println(Arrays.toString(vector.dup().data().asFloat()));
             }
         }
