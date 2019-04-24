@@ -170,7 +170,7 @@ public class VpTreeNodeTest {
 
         tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
         assertion = add.get(0);
-        assertEquals(Nd4j.create(new double[] {60, 60}).reshape(1,2), assertion.getPoint());
+        assertEquals(Nd4j.create(new double[] {55, 55}).reshape(1,2), assertion.getPoint());
     }
 
     @Test(expected = ND4JIllegalStateException.class)
