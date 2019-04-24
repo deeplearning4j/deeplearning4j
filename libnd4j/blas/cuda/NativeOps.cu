@@ -1434,44 +1434,39 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 template<typename T>
 __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
-    __shared__ int arrIdx, blocksPerArr;
-    __shared__ T *x, *z;
-    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenZ, arrLenPerBlock, start, end;
+    __shared__ int firstIdx, blocksPerArr;
 
     if (threadIdx.x == 0) {
 
-        blocksPerArr = (gridDim.x - gridDim.x % numOfArrs) / numOfArrs;     // floor
-        arrIdx = blockIdx.x / blocksPerArr;
-        if (arrIdx >= numOfArrs)
-            arrIdx = numOfArrs - 1;
-        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
-        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
-        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
-        zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
-
-        arrLen = shape::length(xShapeInfo);
-        arrLenZ = shape::length(zShapeInfo);
-        arrLenPerBlock = (arrLen + blocksPerArr - arrLen % blocksPerArr) / blocksPerArr;  // ceil
-
-        start = arrLenPerBlock * (blockIdx.x % blocksPerArr);
-        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
+        firstIdx = blockIdx.x / blocksPerArr;        
     }
 
     __syncthreads();
-    for (Nd4jLong i = threadIdx.x + start; i < end; i += blockDim.x) {
-        auto zOffset = shape::getIndexOffset(i, zShapeInfo, arrLenZ);
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLen);
-        //printf("z[%i][%lld] = x[%i][%lld]\n", arrIdx, zOffset, arrIdx, xOffset);
-        z[zOffset] = x[xOffset];
+
+    for (Nd4jLong arrIdx = firstIdx; arrIdx < numOfArrs; arrIdx += gridDim.x) {
+
+    	T* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
+        T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
+        Nd4jLong* xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
+        Nd4jLong* zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
+
+        Nd4jLong arrLen = shape::length(xShapeInfo);
+        Nd4jLong arrLenZ = shape::length(zShapeInfo);
+        Nd4jLong arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
+
+        Nd4jLong start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
+        Nd4jLong end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+
+        for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x) 
+        	z[shape::getIndexOffset(i, zShapeInfo, arrLenZ)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];    
     }
 }
+
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    int blocks = numOfArrs * 16;// >> 1 << 2);
-    //nd4j_printf("gridDim.x is %i\n", blocks);
-    //if (blocks > 8192)
-    //    blocks = 8192; // restrict grid dims to 8K max
-    concatCuda<T><<<512, 512, 256, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+
+    concatCuda<T><<<512, 256, 128, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
@@ -1493,9 +1488,9 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     for (int d = rank - 1; d >= 0; --d) {
 
         if (idx[n * d] != idx[n * d + 1]) {
-            auto axeDim = shape::sizeAt(hZShapeInfo, d);
-            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + axeDim + 1;
-            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + axeDim + 1;
+
+            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + shape::sizeAt(hZShapeInfo, d) + 1;
+            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + shape::sizeAt(hZShapeInfo, d) + 1;
             stride = 1;
 
             shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
@@ -1516,7 +1511,7 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     cudaError_t err = cudaMalloc(&outShape, shapeSize);
     if (err != 0) {
         printf("Cannot allocate memory with error %d\n", err);
-        throw std::runtime_error("NativeOps: specialBufferAdnShapeWithOffset: Cannot allocate memory for shape");
+        throw std::runtime_error("Cannot allocate memory for shape");
     }
     cudaMemcpy(outShape, newShape, shapeSize, cudaMemcpyHostToDevice);
     delete [] newShape;
@@ -1543,15 +1538,15 @@ void NativeOps::concat(
     // numArrays will be used as number of TADs, so each block process 1 input
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto axis = dimension;
-    LaunchContext context(stream);
-    const int rank  = shape::rank(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
+
+    const int rank  = shape::rank(hZShapeInfo); //reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
     const int rank2 = 2 * rank;
-    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2 == 0?2:rank2,0));
+    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2,0));
 
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
     indices[0][2 * axis + 1] = axisSize;
-//    nd4j_printf("\n\n\tElement 0 at %i was set\n", 2 * axis + 1);
+    printf("The axe size is %lld\n", axisSize);
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
         indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
@@ -1576,18 +1571,19 @@ void NativeOps::concat(
     }
 
     // allocate and copy all buffers and shapes arrays to global memory
-    PointersManager manager(&context, "NativeOps::concat");
+    PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
     void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
     void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
     void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
-    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
     manager.synchronize();
 
-//    cudaError_t res = cudaStreamSynchronize(*stream);
-//    checkCudaErrors(res);
-//    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
+    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
+
+    cudaError_t res = cudaStreamSynchronize(*stream);
+    checkCudaErrors(res);
+    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 
     cudaError_t err;
     for(int i = 0; i < numArrays; ++i) {
