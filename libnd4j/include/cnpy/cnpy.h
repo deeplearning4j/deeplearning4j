@@ -91,6 +91,9 @@ namespace cnpy {
      */
     char mapType(const std::type_info &t);
 
+    template <typename T>
+    char mapType();
+
     /**
      *
      * @param T the type of the ndarray
@@ -100,7 +103,7 @@ namespace cnpy {
      * @return
      */
     template<typename T>
-    std::vector<char> createNpyHeader(const T *data,
+    std::vector<char> createNpyHeader(const void *data,
                                       const unsigned int *shape,
                                       const unsigned int ndims,
                                       unsigned int wordSize = 4);
