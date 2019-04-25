@@ -77,6 +77,13 @@ public:
 
     /**
      *
+     * @param p
+     * @param len
+     */
+    void tryPointer(Nd4jPointer* extra, void* p, size_t len);
+
+    /**
+     *
      * @param num
      */
     void setElementThreshold(int num);
