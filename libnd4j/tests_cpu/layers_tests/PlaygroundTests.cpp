@@ -1117,7 +1117,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
 }
 
 
-void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+static void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -1139,7 +1139,7 @@ void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, fl
     }
 }
 
-void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+static void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -1209,7 +1209,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     ASSERT_TRUE(1);        
 }
 
-void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+static void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -1231,7 +1231,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
     }
 }
 
-void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
+static void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float* z, Nd4jLong* zShapeInfo) {
 
     auto len = shape::length(xShapeInfo);
     int xEws = shape::elementWiseStride(xShapeInfo);
@@ -1855,3 +1855,103 @@ static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const N
 }
 
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loops_2) {
+    
+    const uint N = 5;
+    const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
+
+    const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,102};
+    const Nd4jLong len = shape::length(shapeInfo);
+    float* buff = new float[len];
+    
+    const Nd4jLong* shape   = shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo));
+    const Nd4jLong* strides = shape::stride(const_cast<Nd4jLong*>(shapeInfo));
+
+    // OmpLaunchHelper threadsInfo(len);
+
+    Nd4jLong *xOffsets, *yOffsets, *zOffsets;
+    xOffsets = new Nd4jLong[len];
+    yOffsets = new Nd4jLong[len];
+    zOffsets = new Nd4jLong[len];
+    
+
+    // warm up
+    for (int i = 0; i < 1000; ++i) 32*512;
+
+
+    //***********************************
+    //***********************************  
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N; ++i)
+    {
+            
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+    
+                shape::calcOffsets(3, shape, strides, xOffsets);            
+            } 
+            #pragma omp section
+            {
+                
+                shape::calcOffsets(3, shape, strides, yOffsets);
+            } 
+            #pragma omp section
+            {
+                
+                shape::calcOffsets(3, shape, strides, zOffsets);
+            }    
+        }
+     
+    
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < len; i++) 
+            buff[zOffsets[i]] = buff[xOffsets[i]] * buff[yOffsets[i]];
+    } 
+    auto timeEnd = std::chrono::system_clock::now();
+    auto myTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N) .count();
+    
+    //***********************************
+    //***********************************
+    
+    timeStart = std::chrono::system_clock::now();    
+
+    uint xShapeInfoCast[MAX_RANK];
+    uint yShapeInfoCast[MAX_RANK];
+    uint zShapeInfoCast[MAX_RANK];
+
+    bool canCastX = DataTypeUtils::castShapeInfo(shapeInfo, xShapeInfoCast);
+    bool canCastY = DataTypeUtils::castShapeInfo(shapeInfo, yShapeInfoCast);
+    bool canCastZ = DataTypeUtils::castShapeInfo(shapeInfo, zShapeInfoCast);
+
+    for (int i = 0; i < N; ++i)
+    {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < len; i++) {
+            
+            auto xOffset = shape::indexOffset(i, shapeInfo, xShapeInfoCast, len, canCastX);
+            auto yOffset = shape::indexOffset(i, shapeInfo, yShapeInfoCast, len, canCastY);
+            auto zOffset = shape::indexOffset(i, shapeInfo, zShapeInfoCast, len, canCastZ);
+            buff[zOffset] = buff[xOffset] * buff[yOffset];
+        }
+                 
+    // PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(1)
+    // for (uint i0 = 0; i0 < shape[0]; ++i0)
+    //     for (uint i1 = 0; i1 < shape[1]; ++i1)
+    //         for (uint i2 = 0; i2 < shape[2]; ++i2)
+    //             buff[i0*strides[0]+i1*strides[1]+i2*strides[2]] = buff[i0*strides[0]+i1*strides[1]+i2*strides[2]] * buff[i0*strides[0]+i1*strides[1]+i2*strides[2]];
+    }
+    timeEnd = std::chrono::system_clock::now();
+    auto oldTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+   
+    nd4j_printf("My  time: %lld us;\n", myTime);
+    nd4j_printf("Old time: %lld us;\n", oldTime);
+
+    delete []xOffsets;
+    delete []yOffsets;
+    delete []zOffsets;
+    delete []buff;
+}

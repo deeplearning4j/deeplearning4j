@@ -4458,7 +4458,7 @@ INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong
     //             if(shape[j] != 1)
     //                 subArrOffsets[i] += indexes[j] * strides[j];
     //     }
-    //     return
+    //     return;
     // }
 
     // set offset for first sub-array, it is equal to zero always
