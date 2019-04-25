@@ -45,10 +45,12 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -431,7 +433,7 @@ public class ParallelInferenceTest {
         }
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 120000L)
     public void testParallelInferenceVariableLengthTS2() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -657,7 +659,7 @@ public class ParallelInferenceTest {
         }
     }
 
-    @Test(timeout = 60000)
+    @Test(timeout = 120000)
     public void testInputMasking() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -796,7 +798,7 @@ public class ParallelInferenceTest {
         inf.shutdown();
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 120000L)
     public void testMultiOutputNet() throws Exception {
 
         int nIn = 5;
@@ -851,20 +853,33 @@ public class ParallelInferenceTest {
         final AtomicInteger counter = new AtomicInteger(0);
         final AtomicInteger failedCount = new AtomicInteger(0);
 
-        val threads = new ArrayList<Thread>();
-
+        Queue<Triple<INDArray,INDArray,Integer>> q = new ConcurrentLinkedQueue<>();
         for( int i=0; i<in.size(); i++ ){
-            final int j=i;
+            INDArray f = in.get(i);
+            INDArray m = (inMasks == null ? null : inMasks.get(i));
+//            INDArray e = exp.get(i);
+            q.add(new Triple<>(f,m,i));
+        }
+
+        int nThreads = 8;
+        val threads = new ArrayList<Thread>(nThreads);
+
+        for( int i=0; i<nThreads; i++ ){
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try{
-                        INDArray inMask = (inMasks == null ? null : inMasks.get(j));
-                        act[j] = inf.output(in.get(j), inMask);
-                        counter.incrementAndGet();
-                    } catch (Exception e){
-                        e.printStackTrace();
-                        failedCount.incrementAndGet();
+                    while(!q.isEmpty()) {
+                        try {
+                            Triple<INDArray,INDArray,Integer> t = q.poll();
+                            if(t == null)   //May be null if other thread gets last element between isEmpty and poll calls
+                                continue;
+                            counter.incrementAndGet();
+                            int idx = t.getRight();
+                            act[idx] = inf.output(t.getFirst(), t.getSecond());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            failedCount.incrementAndGet();
+                        }
                     }
                 }
             });

@@ -38,6 +38,19 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testDtypes(){
+        for(DataType globalDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
+            Nd4j.setDefaultDataTypes(globalDType, globalDType);
+            for(DataType arrayDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
+                INDArray arr = Nd4j.linspace(arrayDtype, 1, 10, 1);
+                DeviceLocalNDArray dl = new DeviceLocalNDArray(arr);
+                INDArray get = dl.get();
+                assertEquals(arr, get);
+            }
+        }
+    }
+
 
     @Override
     public char ordering() {

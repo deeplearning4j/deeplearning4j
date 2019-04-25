@@ -318,7 +318,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
             Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
         }
 
-        DataBuffer dstBuffer = Nd4j.createBuffer(buffer.length(), false);
+        DataBuffer dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
         AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
 
         if (currentDeviceId != deviceId) {
