@@ -2558,9 +2558,11 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 
-void NativeOps::tryPointer(Nd4jPointer *extra, void *p, size_t len) {
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
     auto buf = reinterpret_cast<int8_t*>(p);
-    *buf == buf[len - 1];
+    int cnt = 0;
+    for (int i = 0; i < len; i++)
+        cnt += buf[cnt];
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);

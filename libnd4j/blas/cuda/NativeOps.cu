@@ -3968,16 +3968,18 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 
-void __global__ tryPointerKernel(void* p, size_t len) {
-    __shared__ int8_t* buf;
-    if (threadIdx.x == 0) {
-        buf = reinterpret_cast<int8_t*>(p);
-    }
-    *buf == buf[len - 1];
+void __global__ tryPointerKernel(void* p, int len) {
+    auto buf = reinterpret_cast<int8_t*>(p);
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+    __shared_ int b;
+    if (tid < len)
+        atomicAdd(&b, buf[tid]);
+
+    __syncthreads();
 }
 
-void NativeOps::tryPointer(Nd4jPointer* extra, void *p, size_t len) {
-    auto stream = reinterpret_cast<cudaStream_t *>(&extra[1]);
-    tryPointerKernel<<<256, 512, 128, *stream>>>(p, len);
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+    auto stream = reinterpret_cast<cudaStream_t *>(extra);
+    tryPointerKernel<<<256, 512, n+64, *stream>>>(p, len);
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }

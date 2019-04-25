@@ -57,6 +57,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -813,8 +814,12 @@ public class CudaZeroHandler implements MemoryHandler {
         dstPoint.tickDeviceRead();
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes
-        CudaPointer p = new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),
+        val p = new CudaPointer(dstPoint.getPointers().getDevicePointer(), buffer.length(),
                         (buffer.offset() * buffer.getElementSize()));
+
+        if (OpProfiler.getInstance().getConfig().isCheckLocality())
+             NativeOpsHolder.getInstance().getDeviceNativeOps().tryArray(context.getOldStream(), p, 1);
+
         switch (buffer.dataType()) {
             case DOUBLE:
                 return p.asDoublePointer();

@@ -80,7 +80,7 @@ public:
      * @param p
      * @param len
      */
-    void tryPointer(Nd4jPointer* extra, void* p, size_t len);
+    void tryPointer(Nd4jPointer extra, Nd4jPointer p, int len);
 
     /**
      *

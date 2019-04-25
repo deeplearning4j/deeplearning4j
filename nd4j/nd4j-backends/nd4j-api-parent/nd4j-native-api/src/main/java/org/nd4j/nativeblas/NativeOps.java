@@ -1143,4 +1143,9 @@ public abstract class NativeOps extends Pointer {
 
 
     public abstract void inspectArray(PointerPointer extraPointers, Pointer buffer, @Cast("Nd4jLong *") LongPointer shapeInfo, Pointer specialBuffer, @Cast("Nd4jLong *") LongPointer specialShapeInfo, @Cast("nd4j::DebugInfo *") Pointer debugInfo);
+
+    /**
+     * this method tries to read numBytes bytes from buffer to provoke crash in certain scenarios
+     */
+    public abstract void tryArray(Pointer extras, Pointer buffer, int numBytesToRead);
 }
