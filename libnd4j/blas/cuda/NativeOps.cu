@@ -3982,10 +3982,15 @@ void __global__ tryPointerKernel(void* p, int len) {
 }
 
 void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
-    auto stream = reinterpret_cast<cudaStream_t *>(extra);
-    tryPointerKernel<<<256, 512, len+64, *stream>>>(p, len);
-    auto e = cudaStreamSynchronize(*stream);
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
+    tryPointerKernel<<<256, 512, len+64, stream>>>(p, len);
+    auto e = cudaStreamSynchronize(stream);
 
     if (e != 0)
         throw std::runtime_error("tryPointer failed");
+
+    cudaStreamDestroy(&stream);
 }
