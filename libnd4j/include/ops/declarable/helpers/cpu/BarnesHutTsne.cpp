@@ -24,9 +24,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, NDArray& rowCounts) {
-        auto N = rowP->lengthOf() / 2;
-
+    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 //        PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             int begin = rowP->e<int>(n);
@@ -65,8 +63,8 @@ namespace helpers {
 //    }
 
     template <typename T>
-    static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts) {
-        auto N = rowP->lengthOf() / 2 + rowP->lengthOf() % 2;
+    static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
+        //auto N = rowP->lengthOf() - 1; /// 2 + rowP->lengthOf() % 2;
         //auto numElements = output->lengthOf();
         std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
@@ -124,15 +122,15 @@ namespace helpers {
             }
         }
     }
-    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts) {
+    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
 
         // Divide the result by two
-        BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, output, rowCounts), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, output, rowCounts), NUMERIC_TYPES);
 
         *output /= 2.0;
         //output->assign(symValP);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts), NUMERIC_TYPES);
 
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
