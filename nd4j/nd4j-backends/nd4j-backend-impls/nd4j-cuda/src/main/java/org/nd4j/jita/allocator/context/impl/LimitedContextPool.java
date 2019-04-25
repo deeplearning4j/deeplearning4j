@@ -224,9 +224,10 @@ public class LimitedContextPool extends BasicContextPool {
         val threadIdx = context.getThreadId();
         val deviceId = context.getDeviceId();
 
+        context.setThreadId(-1);
+
         acquired.remove(threadIdx);
         pool.get(deviceId).add(context);
-        context.setThreadId(-1);
     }
 
     /*
