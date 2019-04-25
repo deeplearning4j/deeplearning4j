@@ -3,6 +3,7 @@ package org.nd4j.linalg.serde;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -21,6 +22,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testToNpyFormat() throws Exception {
 
         File dir = new File("C:\\develop\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays");
