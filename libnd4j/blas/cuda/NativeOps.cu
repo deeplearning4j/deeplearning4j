@@ -3976,10 +3976,16 @@ void __global__ tryPointerKernel(void* p, int len) {
         atomicAdd(&b, buf[tid]);
 
     __syncthreads();
+
+    if (threadIdx.x ==0 && blockIdx.x == 0)
+        printf("Pointer check complete: %i\n", b);
 }
 
 void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
     auto stream = reinterpret_cast<cudaStream_t *>(extra);
     tryPointerKernel<<<256, 512, len+64, *stream>>>(p, len);
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+    auto e = cudaStreamSynchronize(*stream);
+
+    if (e != 0)
+        throw std::runtime_error("tryPointer failed");
 }
