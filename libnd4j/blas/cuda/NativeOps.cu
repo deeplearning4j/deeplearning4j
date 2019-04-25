@@ -3971,7 +3971,7 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
 void __global__ tryPointerKernel(void* p, int len) {
     auto buf = reinterpret_cast<int8_t*>(p);
     auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-    __shared_ int b;
+    __shared__ int b;
     if (tid < len)
         atomicAdd(&b, buf[tid]);
 
