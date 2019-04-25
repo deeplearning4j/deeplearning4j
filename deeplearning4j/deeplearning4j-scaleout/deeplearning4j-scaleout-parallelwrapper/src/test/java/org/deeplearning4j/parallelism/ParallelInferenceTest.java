@@ -798,7 +798,7 @@ public class ParallelInferenceTest {
         inf.shutdown();
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 120000L)
     public void testMultiOutputNet() throws Exception {
 
         int nIn = 5;
