@@ -149,7 +149,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 //Mask array: shape [minibatch, tsLength]
                 //If mask array is present (for example, with bidirectional RNN) -> need to zero out these errors to
                 // avoid using errors from a masked time step to calculate the parameter gradients
-                maskCol = maskArray.getColumn(i, true);
+                maskCol = maskArray.getColumn(i, true).castTo(dataType);
                 dldzCurrent.muliColumnVector(maskCol);
             }
 
