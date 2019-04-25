@@ -3286,7 +3286,7 @@ void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jLong* ptrMap, Nd4jLon
 
 
 nd4j::graph::ResultWrapper* NativeOps::executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-	return nullptr;
+    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
 }
 
 
