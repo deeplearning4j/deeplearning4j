@@ -1776,7 +1776,7 @@ TEST_F(PlaygroundTests, loops_2) {
     const uint N = 5;
     const Nd4jLong dim0(10), dim1(10), dim2(10);
 
-    const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,102};
+    const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  1,dim0,dim0*dim1,  8192,1,102};
     const Nd4jLong len = shape::length(shapeInfo);
     float* buff = new float[len];
     
@@ -1868,5 +1868,152 @@ TEST_F(PlaygroundTests, loops_2) {
     delete []xOffsets;
     delete []yOffsets;
     delete []zOffsets;
+    delete []buff;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loops_3) {
+    
+    const uint N = 5;
+    const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
+    // const Nd4jLong dim0(10), dim1(10), dim2(10);
+
+    const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,99};
+    const Nd4jLong len = shape::length(shapeInfo);
+    float* buff = new float[len];
+    
+    const Nd4jLong* shape   = shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo));
+    const Nd4jLong* strides = shape::stride(const_cast<Nd4jLong*>(shapeInfo));    
+
+    // warm up
+    for (int i = 0; i < 1000; ++i) 32*512;
+
+
+    //***********************************
+    //***********************************  
+    auto timeStart = std::chrono::system_clock::now();    
+
+
+    for (int i = 0; i < N; ++i)
+    {
+        Nd4jLong* idxX          = new Nd4jLong[3];
+        Nd4jLong* idxY          = new Nd4jLong[3];
+        Nd4jLong* idxZ          = new Nd4jLong[3];
+        Nd4jLong* offsetPerDimX = new Nd4jLong[3];
+        Nd4jLong* offsetPerDimY = new Nd4jLong[3];
+        Nd4jLong* offsetPerDimZ = new Nd4jLong[3];
+        memset(idxX, 0, sizeof(Nd4jLong) * 3);
+        memset(idxY, 0, sizeof(Nd4jLong) * 3);
+        memset(idxZ, 0, sizeof(Nd4jLong) * 3);
+
+        PRAGMA_OMP_SIMD
+        for (int k = 0; k < 3; ++k) {
+            offsetPerDimX[k] = (shape[k] - 1) * strides[k];
+            offsetPerDimY[k] = (shape[k] - 1) * strides[k];
+            offsetPerDimZ[k] = (shape[k] - 1) * strides[k];
+        }
+
+        Nd4jLong initX(0), initY(0), initZ(0), offsetsX(0), offsetsY(0), offsetsZ(0);
+        Nd4jLong rankMinusOne(3 - 1), jX(rankMinusOne), jY(rankMinusOne), jZ(rankMinusOne);
+
+        // we do first iteration separately 
+        buff[offsetsZ] = buff[offsetsX] * buff[offsetsY];
+        uint e = 1;
+        
+        while (e < len) {
+
+            // printf("%lld,  %lld,  %lld\n", jX, jY, jZ);
+            if(shape[jX] == 1) { --jX; --jY; --jZ; continue; } 
+
+            if(jX == rankMinusOne) { for(int l = 1; l < shape[jX]; ++l) {offsetsX += strides[jX]; ++e;} --jX; }            
+            else if(idxX[jX] < shape[jX] - 1) {initX += strides[jX]; offsetsX = initX; ++idxX[jX]; jX = rankMinusOne; ++e;}
+            else {initX -= offsetPerDimX[jX]; idxX[jX--] = 0;}
+
+            if(jY == rankMinusOne) { for(int l = 1; l < shape[jY]; ++l) {offsetsY += strides[jY];} --jY; }            
+            else if(idxY[jY] < shape[jY] - 1) {initY += strides[jY]; offsetsY = initY; ++idxY[jY]; jY = rankMinusOne; }
+            else {initY -= offsetPerDimY[jY]; idxY[jY--] = 0;}
+
+            if(jZ == rankMinusOne) { for(int l = 1; l < shape[jZ]; ++l) {offsetsZ += strides[jZ];} --jZ; }            
+            else if(idxZ[jZ] < shape[jZ] - 1) {initZ += strides[jZ]; offsetsZ = initZ; ++idxZ[jZ]; jZ = rankMinusOne; }
+            else {initZ -= offsetPerDimZ[jZ]; idxZ[jZ--] = 0;}
+
+            buff[offsetsZ] = buff[offsetsX] * buff[offsetsY];
+        }
+
+        delete []idxX;            
+        delete []idxY;            
+        delete []idxZ;
+        delete []offsetPerDimX;
+        delete []offsetPerDimY;
+        delete []offsetPerDimZ;            
+
+    }
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto myTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N) .count();
+    
+    //***********************************
+    //***********************************
+    
+    timeStart = std::chrono::system_clock::now();    
+
+    // uint xShapeInfoCast[MAX_RANK];
+    // uint yShapeInfoCast[MAX_RANK];
+    // uint zShapeInfoCast[MAX_RANK];
+
+    // bool canCastX = DataTypeUtils::castShapeInfo(shapeInfo, xShapeInfoCast);
+    // bool canCastY = DataTypeUtils::castShapeInfo(shapeInfo, yShapeInfoCast);
+    // bool canCastZ = DataTypeUtils::castShapeInfo(shapeInfo, zShapeInfoCast);
+
+    // for (int i = 0; i < N; ++i)
+    // {                 
+    //     PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(1)
+    //     for (uint i0 = 0; i0 < shape[0]; ++i0)
+    //         for (uint i1 = 0; i1 < shape[1]; ++i1)
+    //             for (uint i2 = 0; i2 < shape[2]; ++i2)
+    //                 buff[i0*strides[0]+i1*strides[1]+i2*strides[2]] = buff[i0*strides[0]+i1*strides[1]+i2*strides[2]] * buff[i0*strides[0]+i1*strides[1]+i2*strides[2]];
+    // }
+     Nd4jLong *xOffsets, *yOffsets, *zOffsets;
+    xOffsets = new Nd4jLong[len];
+    yOffsets = new Nd4jLong[len];
+    zOffsets = new Nd4jLong[len];
+    
+    for (int i = 0; i < N; ++i)
+    {
+            
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+    
+                shape::calcOffsets(3, shape, strides, xOffsets);            
+            } 
+            #pragma omp section
+            {
+                
+                shape::calcOffsets(3, shape, strides, yOffsets);
+            } 
+            #pragma omp section
+            {
+                
+                shape::calcOffsets(3, shape, strides, zOffsets);
+            }    
+        }
+     
+    
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < len; i++) 
+            buff[zOffsets[i]] = buff[xOffsets[i]] * buff[yOffsets[i]];
+    } 
+    timeEnd = std::chrono::system_clock::now();
+    auto oldTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+
+        delete []xOffsets;
+    delete []yOffsets;
+    delete []zOffsets;
+   
+    nd4j_printf("My  time: %lld us;\n", myTime);
+    nd4j_printf("Old time: %lld us;\n", oldTime);
+
     delete []buff;
 }
