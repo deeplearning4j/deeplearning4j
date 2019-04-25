@@ -586,16 +586,16 @@ public class VPTree implements Serializable {
         public void fetchFutures() {
             try {
                 if (futureLeft != null) {
-                    while (!futureLeft.isDone())
-                        Thread.sleep(100);
+                    /*while (!futureLeft.isDone())
+                        Thread.sleep(100);*/
 
 
                     left = futureLeft.get();
                 }
 
                 if (futureRight != null) {
-                    while (!futureRight.isDone())
-                        Thread.sleep(100);
+                    /*while (!futureRight.isDone())
+                        Thread.sleep(100);*/
 
                     right = futureRight.get();
                 }
