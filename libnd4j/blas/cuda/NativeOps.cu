@@ -1433,40 +1433,70 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-
-    __shared__ int firstIdx, blocksPerArr;
+    __shared__ int arrIdx, blocksPerArr;
+    __shared__ T *x, *z;
+    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenZ, arrLenPerBlock, start, end;
 
     if (threadIdx.x == 0) {
 
-        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
-        firstIdx = blockIdx.x / blocksPerArr;        
+        blocksPerArr = (gridDim.x - gridDim.x % numOfArrs) / numOfArrs;     // floor
+        arrIdx = blockIdx.x / blocksPerArr;
+        if (arrIdx >= numOfArrs)
+            arrIdx = numOfArrs - 1;
+        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
+        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
+        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
+        zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
+
+        arrLen = shape::length(xShapeInfo);
+        arrLenZ = shape::length(zShapeInfo);
+        arrLenPerBlock = (arrLen + blocksPerArr - arrLen % blocksPerArr) / blocksPerArr;  // ceil
+
+        start = arrLenPerBlock * (blockIdx.x % blocksPerArr);
+        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
     }
 
     __syncthreads();
-
-    for (Nd4jLong arrIdx = firstIdx; arrIdx < numOfArrs; arrIdx += gridDim.x) {
-
-    	T* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
-        T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
-        Nd4jLong* xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
-        Nd4jLong* zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
-
-        Nd4jLong arrLen = shape::length(xShapeInfo);
-        Nd4jLong arrLenZ = shape::length(zShapeInfo);
-        Nd4jLong arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
-
-        Nd4jLong start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
-        Nd4jLong end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
-
-        for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x) 
-        	z[shape::getIndexOffset(i, zShapeInfo, arrLenZ)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];    
+    for (Nd4jLong i = threadIdx.x + start; i < end; i += blockDim.x) {
+        auto zOffset = shape::getIndexOffset(i, zShapeInfo, arrLenZ);
+        auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLen);
+        //printf("z[%i][%lld] = x[%i][%lld]\n", arrIdx, zOffset, arrIdx, xOffset);
+        z[zOffset] = x[xOffset];
     }
+
+//    __shared__ int firstIdx, blocksPerArr;
+//
+//    if (threadIdx.x == 0) {
+//
+//        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
+//        firstIdx = blockIdx.x / blocksPerArr;
+//    }
+//
+//    __syncthreads();
+//
+//    for (Nd4jLong arrIdx = firstIdx; arrIdx < numOfArrs; arrIdx += gridDim.x) {
+//
+//    	T* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
+//        T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
+//        Nd4jLong* xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
+//        Nd4jLong* zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
+//
+//        Nd4jLong arrLen = shape::length(xShapeInfo);
+//        Nd4jLong arrLenZ = shape::length(zShapeInfo);
+//        Nd4jLong arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
+//
+//        Nd4jLong start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
+//        Nd4jLong end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+//
+//        for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
+//        	z[shape::getIndexOffset(i, zShapeInfo, arrLenZ)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+//    }
 }
 
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
-    concatCuda<T><<<512, 256, 128, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    concatCuda<T><<<numOfArrs, 256, 8192, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 

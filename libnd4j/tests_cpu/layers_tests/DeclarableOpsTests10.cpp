@@ -202,10 +202,10 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_2) {
 
     nd4j::ops::pad op;
 
-    auto res = op.execute({&in, &pad}, {10.0}, {1});
+    auto res = op.execute({&in, &pad}, {10.0}, {2});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
- //   res->at(0)->printIndexedBuffer("PAD_SGO");
- //   exp.printIndexedBuffer("PAD_EXP");
+    res->at(0)->printIndexedBuffer("PAD_SGO");
+    exp.printIndexedBuffer("PAD_EXP");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
@@ -222,7 +222,7 @@ TEST_F(DeclarableOpsTests10, Pad_SGO_Test_3) {
 
     nd4j::ops::pad op;
 
-    auto res = op.execute({&in, &pad}, {10.0}, {2});
+    auto res = op.execute({&in, &pad}, {10.0}, {1});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
  //   res->at(0)->printIndexedBuffer("PAD_SGO");
  //   exp.printIndexedBuffer("PAD_EXP");

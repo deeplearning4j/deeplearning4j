@@ -93,7 +93,15 @@ LaunchContext::LaunchContext() {
     //
 #endif
 }
+LaunchContext::~LaunchContext(){
+#ifdef __CUDABLAS__
+    cudaStreamDestroy(*_cudaStream);
+    delete _cudaStream;
+    cudaStreamDestroy(*_cudaSpecialStream);
+    delete _cudaSpecialStream;
 
+#endif
+}
 LaunchContext* LaunchContext::defaultContext() {
     if (!LaunchContext::sDefaultContext) {
         LaunchContext::sDefaultContext = new LaunchContext;
