@@ -470,6 +470,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     /**
      *
+     * @param p
+     * @param len
+     */
+    public native void tryPointer(@Cast("Nd4jPointer") Pointer extra, @Cast("Nd4jPointer") Pointer p, int len);
+
+    /**
+     *
      * @param num
      */
     public native void setElementThreshold(int num);
