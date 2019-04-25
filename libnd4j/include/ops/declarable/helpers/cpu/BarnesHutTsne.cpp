@@ -25,30 +25,28 @@ namespace ops {
 namespace helpers {
 
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
-//        PRAGMA_OMP_PARALLEL_FOR
+
+        Nd4jLong* pRowCounts = reinterpret_cast<Nd4jLong*>(rowCounts.buffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
         for (int n = 0; n < N; n++) {
-            int begin = rowP->e<int>(n);
-            int end = rowP->e<int>(n + 1);
+            int begin = pRows[n];//->e<int>(n);
+            int end = pRows[n + 1];//rowP->e<int>(n + 1);
             for (int i = begin; i < end; i++) {
                 bool present = false;
-                for (int m = rowP->e<int>(colP->e<int>(i)); m < rowP->e<int>(colP->e<int>(i) + 1); m++)
+                for (int m = pRows[pCols[i]]; m < pRows[pCols[i] + 1]; m++)
                     if (colP->e<int>(m) == n) {
                         present = true;
                     }
 
+                ++pRowCounts[n];
 
-                if (present)
-                    rowCounts.p(n, rowCounts.e(n) + 1);
-
-                else {
-                    rowCounts.p(n, rowCounts.e(n) + 1);
-                    rowCounts.p(colP->e<int>(i), rowCounts.e(colP->e<int>(i)) + 1);
-                }
+                if (!present)
+                    ++pRowCounts[pCols[i]];
             }
         }
-
         NDArray numElementsArr = rowCounts.sumNumber(); //reduceAlongDimension(reduce::Sum, {});
-
+        //rowCounts.printBuffer("Row counts");
         auto numElements = numElementsArr.e<Nd4jLong>(0);
         return numElements;
     }
