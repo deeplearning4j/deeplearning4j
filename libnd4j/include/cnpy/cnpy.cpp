@@ -392,7 +392,8 @@ cnpy::npz_t cnpy::npzLoad(FILE* fp){
             throw std::runtime_error("npz_load: failed fread");
 
         //erase the lagging .npy
-        varname.erase(varname.end() - 4,varname.end());
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
@@ -436,7 +437,8 @@ cnpy::npz_t cnpy::npzLoad(std::string fname) {
             throw std::runtime_error("npz_load: failed fread");
 
         //erase the lagging .npy
-        varname.erase(varname.end() - 4,varname.end());
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
@@ -482,7 +484,10 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
         size_t vname_res = fread(&vname[0],sizeof(char),name_len,fp);
         if(vname_res != name_len)
             throw std::runtime_error("npz_load: failed fread");
-        vname.erase(vname.end()-4,vname.end()); //erase the lagging .npy
+
+        //erase the lagging .npy
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
