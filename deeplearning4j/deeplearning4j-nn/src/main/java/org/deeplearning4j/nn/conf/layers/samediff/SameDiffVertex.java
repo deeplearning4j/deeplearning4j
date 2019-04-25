@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,9 +29,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -65,10 +68,11 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
      * @param sameDiff   SameDiff instance
      * @param layerInput Input to the layer - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
      * @param paramTable Parameter table - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
+     * @param maskVars  Masks of input, if available - keys as defined by {@link #defineParametersAndInputs(SDVertexParams)}
      * @return The final layer variable corresponding to the activations/output from the forward pass
      */
     public abstract SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput,
-                    Map<String, SDVariable> paramTable);
+                                            Map<String, SDVariable> paramTable, Map<String, SDVariable> maskVars);
 
     /**
      * Define the parameters - and inputs - for the network.
@@ -121,15 +125,25 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+                                                                      INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
         this.name = name;
-        return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams);
+        return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams, networkDatatype);
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        throw new UnsupportedOperationException("Not yet supported");
+    }
+
+    /**
+     * Validate input arrays to confirm that they fulfill the assumptions of the layer. If they don't, throw an exception.
+     * @param input inputs to the layer
+     */
+    public void validateInput(INDArray[] input){/* no-op */}
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {

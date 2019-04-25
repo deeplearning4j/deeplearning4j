@@ -493,11 +493,16 @@ namespace nd4j {
             // FIXME: remove this, once we bring in 1D NDArrays 
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-            if (shape.size() && inputLen > 1) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
-                //if (input_shape[0] == 0)
-                //    ArrayOptions::setPropertyBit(newShape, nd4j::ArrayType::EMPTY);
+            bool nonEmpty = shape.size() > 0;
+            if (nonEmpty)
+            for (auto x: shape) {
+                if (x == 0) {
+                    nonEmpty = false;
+                    break;
+                }
+            }
+            if (nonEmpty && inputLen > 1) {
+                newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
             }
             else {
                 newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
@@ -611,6 +616,9 @@ namespace nd4j {
             // FIXME: remove this method once we get 1D vectors supported
             vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSliceBP: shape calculation failed");
+
+			//Zero output array, so unused elements have 0 gradient
+			output->nullify();
 
             if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
                 output->p(indices[0], *epsNext);

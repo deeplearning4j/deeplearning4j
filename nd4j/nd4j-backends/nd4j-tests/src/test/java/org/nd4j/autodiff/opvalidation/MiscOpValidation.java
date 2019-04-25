@@ -818,7 +818,7 @@ public class MiscOpValidation extends BaseOpValidation {
         norm2_1 = arr.norm2(1);
         assertEquals(Nd4j.ones(3), norm2_1);
 
-        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3});
         arr.muliColumnVector(scale);
         norm2_1 = arr.norm2(1);
 
@@ -832,7 +832,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 .build());
 
         INDArray norm2_1b = out.norm2(1);
-        INDArray exp = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+        INDArray exp = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3});
 
         assertEquals(exp, norm2_1b);
     }
@@ -930,7 +930,7 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray norm2_0 = arr.norm2(0);
         arr.diviRowVector(norm2_0);
 
-        INDArray initNorm2 = Nd4j.create(new double[]{2.2, 2.1, 2.0, 1.9}, new int[]{1,4});     //Initial norm2s along dimension 0
+        INDArray initNorm2 = Nd4j.create(new double[]{2.2, 2.1, 2.0, 1.9}, new int[]{4});     //Initial norm2s along dimension 0
         arr.muliRowVector(initNorm2);
         norm2_0 = arr.norm2(0);
 
@@ -983,8 +983,6 @@ public class MiscOpValidation extends BaseOpValidation {
                     {54, 42, 29, 15, 0}
             });
 
-            INDArray axisArg = Nd4j.scalar(1);  //Along dim 1
-
             for (boolean exclusive : new boolean[]{false, true}) {
                 for (boolean reverse : new boolean[]{false, true}) {
 
@@ -1006,7 +1004,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     String err = OpValidation.validate(op);
                     if(err != null){
 //                        System.out.println(err);
-                        failing.add(msg);
+                        failing.add(msg + " (" + err + ")");
                     }
                 }
             }
@@ -1090,11 +1088,11 @@ public class MiscOpValidation extends BaseOpValidation {
 
         //Because it's on the diagonal, should be the same for all axis args...
         for( int i=-1; i<=0; i++ ) {
-            INDArray indicesArr = Nd4j.create(new double[]{0, 1, 2});
+            INDArray indicesArr = Nd4j.createFromArray(0, 1, 2);
             int depth = 3;
 
             SameDiff sd = SameDiff.create();
-            SDVariable indices = sd.var(indicesArr);
+            SDVariable indices = sd.constant(indicesArr);
             SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0, DataType.DOUBLE);
 
             INDArray exp = Nd4j.eye(3).castTo(DataType.DOUBLE);
@@ -1131,10 +1129,10 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testOneHot2() {
 
-        INDArray indicesArr = Nd4j.create(new double[]{0, 2, -1, 1});
+        INDArray indicesArr = Nd4j.createFromArray(0, 2, -1, 1);
 
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", indicesArr);
+        SDVariable indices = sd.constant("indices", indicesArr);
         int depth = 3;
         int axis = -1;
         SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0, DataType.DOUBLE);
@@ -1347,8 +1345,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable labels = sd.var("labels", Nd4j.create(new double[]{1, 2, 4}).castTo(dt));
-            SDVariable predictions = sd.var("predictions", Nd4j.create(new double[]{2, 2, 4}).castTo(dt));
+            SDVariable labels = sd.constant("labels", Nd4j.createFromArray(1, 2, 4));
+            SDVariable predictions = sd.constant("predictions", Nd4j.createFromArray(2, 2, 4));
 
             INDArray exp = Nd4j.create(new double[][]{
                     {0, 0, 0, 0, 0},

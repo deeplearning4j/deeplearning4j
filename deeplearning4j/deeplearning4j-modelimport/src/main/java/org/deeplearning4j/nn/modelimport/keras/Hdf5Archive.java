@@ -360,10 +360,10 @@ public class Hdf5Archive implements Closeable {
                     mapper.readTree(s);
                     break;
                 } catch (IOException e) {
-                    log.info(e.getMessage());
+                    //OK - we don't know how long the buffer needs to be, so we'll try again with larger buffer
                 }
-                bufferSizeMult++;
-                if (bufferSizeMult > 1000) {
+                bufferSizeMult *= 2;
+                if (bufferSizeMult > 1024) {
                     throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
                 }
             }

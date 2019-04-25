@@ -69,7 +69,7 @@ public class BroadcastEqualTo extends BaseBroadcastBoolOp {
 
     @Override
     public String onnxName() {
-        return "Equal";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

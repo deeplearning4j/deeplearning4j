@@ -29,11 +29,40 @@
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <cuda.version>10.1</cuda.version>
         <cudnn.version>7.5</cudnn.version>
-        <javacpp-presets.cuda.version>1.5-SNAPSHOT</javacpp-presets.cuda.version>
+        <javacpp-presets.cuda.version>1.5</javacpp-presets.cuda.version>
     </properties>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>2.19.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <environmentVariables>
+                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
+                    </environmentVariables>
+                    <testSourceDirectory>src/test/java</testSourceDirectory>
+                    <includes>
+                        <include>*.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                    </systemPropertyVariables>
+                    <!--
+                        Maximum heap size was set to 6g, as a minimum required value for tests run.
+                        Depending on a build machine, default value is not always enough.
+                    -->
+                    <argLine>-Ddtype=float -Xmx8g</argLine>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -51,6 +80,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+	        <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.bytedeco</groupId>
@@ -127,6 +160,10 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+	    <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -91,39 +91,60 @@ public class EvalTest extends BaseNd4jTest {
     @Test
     public void testEval2() {
 
-        //Confusion matrix:
-        //actual 0      20      3
-        //actual 1      10      5
+        DataType dtypeBefore = Nd4j.defaultFloatingPointType();
+        Evaluation first = null;
+        String sFirst = null;
+        try {
+            for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
+                for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
 
-        Evaluation  evaluation = new Evaluation(Arrays.asList("class0", "class1"));
-        INDArray predicted0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
-        INDArray predicted1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
-        INDArray actual0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
-        INDArray actual1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
-        for (int i = 0; i < 20; i++) {
-            evaluation.eval(actual0, predicted0);
+                    //Confusion matrix:
+                    //actual 0      20      3
+                    //actual 1      10      5
+
+                    Evaluation evaluation = new Evaluation(Arrays.asList("class0", "class1"));
+                    INDArray predicted0 = Nd4j.create(new double[]{1, 0}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray predicted1 = Nd4j.create(new double[]{0, 1}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray actual0 = Nd4j.create(new double[]{1, 0}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray actual1 = Nd4j.create(new double[]{0, 1}, new long[]{1, 2}).castTo(lpDtype);
+                    for (int i = 0; i < 20; i++) {
+                        evaluation.eval(actual0, predicted0);
+                    }
+
+                    for (int i = 0; i < 3; i++) {
+                        evaluation.eval(actual0, predicted1);
+                    }
+
+                    for (int i = 0; i < 10; i++) {
+                        evaluation.eval(actual1, predicted0);
+                    }
+
+                    for (int i = 0; i < 5; i++) {
+                        evaluation.eval(actual1, predicted1);
+                    }
+
+                    assertEquals(20, evaluation.truePositives().get(0), 0);
+                    assertEquals(3, evaluation.falseNegatives().get(0), 0);
+                    assertEquals(10, evaluation.falsePositives().get(0), 0);
+                    assertEquals(5, evaluation.trueNegatives().get(0), 0);
+
+                    assertEquals((20.0 + 5) / (20 + 3 + 10 + 5), evaluation.accuracy(), 1e-6);
+
+                    String s = evaluation.stats();
+
+                    if(first == null) {
+                        first = evaluation;
+                        sFirst = s;
+                    } else {
+                        assertEquals(first, evaluation);
+                        assertEquals(sFirst, s);
+                    }
+                }
+            }
+        } finally {
+            Nd4j.setDefaultDataTypes(dtypeBefore, dtypeBefore);
         }
-
-        for (int i = 0; i < 3; i++) {
-            evaluation.eval(actual0, predicted1);
-        }
-
-        for (int i = 0; i < 10; i++) {
-            evaluation.eval(actual1, predicted0);
-        }
-
-        for (int i = 0; i < 5; i++) {
-            evaluation.eval(actual1, predicted1);
-        }
-
-        assertEquals(20, evaluation.truePositives().get(0), 0);
-        assertEquals(3, evaluation.falseNegatives().get(0), 0);
-        assertEquals(10, evaluation.falsePositives().get(0), 0);
-        assertEquals(5, evaluation.trueNegatives().get(0), 0);
-
-        assertEquals((20.0 + 5) / (20 + 3 + 10 + 5), evaluation.accuracy(), 1e-6);
-
-        System.out.println(evaluation.confusionToString());
     }
 
     @Test

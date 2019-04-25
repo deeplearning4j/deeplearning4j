@@ -110,14 +110,14 @@ public class DefaultParamInitializer implements ParamInitializer {
         val nOut = layerConf.getNOut();
 
         val nWeightParams = nIn * nOut;
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
+        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nWeightParams));
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
 
         long offset = nWeightParams;
         if(hasBias(layerConf)){
-            INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
@@ -125,7 +125,7 @@ public class DefaultParamInitializer implements ParamInitializer {
         }
 
         if(hasLayerNorm(layerConf)){
-            INDArray gainView = paramsView.get(NDArrayIndex.point(0),
+            INDArray gainView = paramsView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut));
             params.put(GAIN_KEY, createGain(conf, gainView, initializeParams));
             conf.addVariable(GAIN_KEY);
@@ -142,7 +142,7 @@ public class DefaultParamInitializer implements ParamInitializer {
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams))
+        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nWeightParams))
                         .reshape('f', nIn, nOut);
 
         Map<String, INDArray> out = new LinkedHashMap<>();
@@ -150,14 +150,14 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         long offset = nWeightParams;
         if(hasBias(layerConf)){
-            INDArray biasView = gradientView.get(NDArrayIndex.point(0),
+            INDArray biasView = gradientView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
             out.put(BIAS_KEY, biasView);
             offset += nOut;
         }
 
         if(hasLayerNorm(layerConf)){
-            INDArray gainView = gradientView.get(NDArrayIndex.point(0),
+            INDArray gainView = gradientView.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
             out.put(GAIN_KEY, gainView);
         }

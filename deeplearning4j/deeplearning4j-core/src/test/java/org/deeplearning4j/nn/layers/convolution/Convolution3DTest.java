@@ -22,15 +22,12 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -94,7 +91,7 @@ public class Convolution3DTest {
                 .build();
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.ones(1, numParams);
-        return conf.getLayer().instantiate(conf, null, 0, params, true);
+        return conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
     }
 
     public INDArray getData() throws Exception {

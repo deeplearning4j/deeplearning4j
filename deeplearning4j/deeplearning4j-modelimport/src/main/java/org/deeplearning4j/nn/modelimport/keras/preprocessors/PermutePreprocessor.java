@@ -44,7 +44,7 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
     private int[] permutationIndices;
     private boolean hasLeadingDimension = false;
 
-    public PermutePreprocessor(@JsonProperty("permutationIndices") int[] permutationIndices) {
+    public PermutePreprocessor(@JsonProperty("permutationIndices") int... permutationIndices) {
         this.permutationIndices = permutationIndices;
     }
 
@@ -91,7 +91,7 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
         } else if (inputType instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
             return InputType.recurrent(it.getTimeSeriesLength(), it.getSize());
-        } else if (inputType instanceof InputType.InputTypeFeedForward) {
+        } else if (inputType instanceof InputType.InputTypeFeedForward || inputType instanceof InputType.InputTypeConvolutional3D) {
             return inputType;
         } else {
             throw new InvalidInputTypeException("Unsupported Input type " + inputType);

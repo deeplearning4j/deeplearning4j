@@ -30,11 +30,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -109,11 +109,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected List<String> labelsList = new ArrayList<>();
 
     protected Double binaryDecisionThreshold;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     protected INDArray costArray;
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
+
+    /**
+     * For stats(): When classes are excluded from precision/recall, what is the maximum number we should print?
+     * If this is set to a high value, the output (potentially thousands of classes) can become unreadable.
+     */
+    @Getter @Setter
+    protected int maxWarningClassesToPrint = 16;
 
     // Empty constructor
     public Evaluation() {
@@ -247,7 +254,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
         }
         this.labelsList = labels;
-        this.costArray = costArray;
+        this.costArray = costArray == null ? null : costArray.castTo(DataType.FLOAT);
         this.topN = 1;
     }
 
@@ -453,7 +460,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 guessIndex = pClass1.gt(binaryDecisionThreshold);
             } else if (costArray != null) {
                 //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
-                guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray), 1);
+                guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray.castTo(predictions2d.dataType())), 1);
             } else {
                 //Standard case: argmax
                 guessIndex = Nd4j.argMax(predictions2d, 1);
@@ -788,8 +795,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         warnings.append(" ").append(wasWere);
         warnings.append(" never predicted by the model and ").append(wasWere).append(" excluded from average ")
-                        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
-                        .append(list).append("\n");
+                        .append(metric);
+        if(list.size() <= maxWarningClassesToPrint) {
+            warnings.append("\nClasses excluded from average ").append(metric).append(": ")
+                    .append(list).append("\n");
+        }
     }
 
     /**

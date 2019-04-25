@@ -93,19 +93,7 @@
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
 
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.1</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-        -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -192,6 +180,7 @@
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
                                 <include>*.java</include>
+                                <include>**/*.java</include>
                                 <include>**/Test*.java</include>
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
@@ -243,7 +232,12 @@
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
                                 <include>*.java</include>
+                                <include>**/*.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
                             </includes>
+                            <junitArtifactName>junit:junit</junitArtifactName>
                             <systemPropertyVariables>
                                 <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
                                 <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>

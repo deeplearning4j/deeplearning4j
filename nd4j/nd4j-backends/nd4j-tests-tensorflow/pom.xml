@@ -59,10 +59,6 @@
                                     <profiles>nd4j-tf-cpu,nd4j-tf-gpu</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
-                                <requireActiveProfile>
-                                    <profiles>tf-cpu,tf-gpu</profiles>
-                                    <all>false</all>
-                                </requireActiveProfile>
                             </rules>
                             <fail>true</fail>
                         </configuration>
@@ -84,6 +80,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -101,12 +104,6 @@
                     <artifactId>tensorflow-platform</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                 </dependency>
-                <dependency>
-                    <groupId>org.bytedeco</groupId>
-                    <artifactId>tensorflow</artifactId>
-                    <version>${tensorflow.javacpp.version}</version>
-                    <classifier>linux-x86_64</classifier>
-                </dependency>
             </dependencies>
         </profile>
         <profile>
@@ -117,6 +114,18 @@
                     <artifactId>tensorflow</artifactId>
                     <version>${tensorflow.javacpp.version}</version>
                     <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>windows-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>macosx-x86_64-gpu</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -219,6 +228,24 @@
                     <artifactId>nd4j-cuda-10.1</artifactId>
                     <version>${project.version}</version>
                 </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>windows-x86_64-gpu</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>macosx-x86_64-gpu</classifier>
+                </dependency>
             </dependencies>
         </profile>
         <profile>
@@ -274,6 +301,11 @@
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-native</artifactId>
                     <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tensorflow-platform</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
                 </dependency>
             </dependencies>
         </profile>

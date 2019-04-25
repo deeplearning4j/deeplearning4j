@@ -322,6 +322,8 @@ public interface Random extends AutoCloseable {
     long rootState();
 
     long nodeState();
+
+    void setStates(long rootState, long nodeState);
 }
 
 

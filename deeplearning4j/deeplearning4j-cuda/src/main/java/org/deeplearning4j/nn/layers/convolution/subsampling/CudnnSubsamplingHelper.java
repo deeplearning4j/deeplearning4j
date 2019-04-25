@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -55,6 +56,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  */
 @Slf4j
 public class CudnnSubsamplingHelper extends BaseCudnnHelper implements SubsamplingHelper {
+
+    public CudnnSubsamplingHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnSubsamplingContext extends CudnnContext {
 
@@ -167,7 +172,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
 
         val dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
@@ -243,7 +248,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
                 (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
 
-        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {(int) miniBatch, (int) inDepth, outH, outW}, 'c');
+        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[] {(int) miniBatch, (int) inDepth, outH, outW}, 'c');
 
         val dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) outH, (int) outW,

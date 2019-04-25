@@ -133,9 +133,9 @@ namespace ops {
 		
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		if(INPUT_VARIABLE(inputVar)->isEmpty()){
-			Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
-			ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
 			for (int e = 0; e < num_splits; e++) {
+                auto empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
+                ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
 				shapes->push_back(empty);
 			}
 			return shapes;
@@ -154,17 +154,9 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e) / num_splits;
             else 
                 shape[e] = shape::sizeAt(input, e);
-
         
-
         for (int e = 0; e < num_splits; e++) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
-
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), dataType, shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), dataType, shape.data(), newShape);
+            auto newShape = ShapeBuilders::createShapeInfo(dataType, shape::order(input), shape, block.getWorkspace());
             shapes->push_back(newShape);
         }
 

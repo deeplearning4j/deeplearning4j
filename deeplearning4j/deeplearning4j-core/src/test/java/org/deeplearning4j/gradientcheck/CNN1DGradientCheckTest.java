@@ -81,6 +81,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                             .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
@@ -159,6 +160,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
@@ -239,6 +241,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
@@ -317,6 +320,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
@@ -379,6 +383,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                     Nd4j.getRandom().setSeed(12345);
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .activation(Activation.TANH)
                             .dist(new NormalDistribution(0, 1)).convolutionMode(cm)

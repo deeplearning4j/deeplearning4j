@@ -238,7 +238,7 @@ public class Conv1D extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        return "Conv";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

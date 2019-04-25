@@ -713,6 +713,8 @@ public abstract class NativeOps extends Pointer {
 
     public abstract long getDeviceFreeMemory(Pointer ptrToDeviceId);
 
+    public abstract long getDeviceFreeMemory();
+
     public abstract long getDeviceTotalMemory(Pointer ptrToDeviceId);
 
     public abstract int getDeviceMajor(Pointer ptrToDeviceId);

@@ -70,6 +70,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
             for (PoolingType pt : poolingTypes) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -133,6 +134,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
             for (PoolingType pt : poolingTypes) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                                 .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
@@ -188,6 +190,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -273,6 +276,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1.0)).convolutionMode(ConvolutionMode.Same)
                                     .seed(12345L).list()

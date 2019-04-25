@@ -473,7 +473,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val maxShape = Shape.getMaxShape(op.x(),op.y());
 
         val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
-        long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
+        val retShape = Shape.reductionShape(op.y() == null ? op.x() : op.x().length() > op.y().length() ? op.x() : op.y(), dimension, true, op.isKeepDims());
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -517,6 +517,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
+
             if (op.z().length() != (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape)))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
         }
@@ -2380,6 +2381,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Nd4j.getExecutioner().commit();
 
+        val context = buildContext();
+
+        context.markInplace(op.isInplaceCall());
+
+        // transferring rng state
+        context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
+
+        //transferring input/output arrays
+        context.setInputArrays(op.inputArguments());
+        context.setOutputArrays(op.outputArguments());
+
+        // transferring static args
+        context.setBArguments(op.bArgs());
+        context.setIArguments(op.iArgs());
+        context.setTArguments(op.tArgs());
+
+        val result = exec(op, context);
+        val states = context.getRngStates();
+
+        // pulling states back
+        Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+
+        return result;
+
+        /*
         long st = profilingConfigurableHookIn(op);
 
         CudaContext context =(CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
@@ -2480,6 +2506,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         profilingConfigurableHookOut(op, st);
         return op.outputArguments();
+         */
     }
 
     @Override

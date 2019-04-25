@@ -30,16 +30,14 @@ import org.deeplearning4j.util.Convolution1DUtils;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SameDiff version of a 1D locally connected layer.
@@ -62,6 +60,7 @@ public class LocallyConnected1D extends SameDiffLayer {
     private int kernel;
     private int stride;
     private int padding;
+    private int paddingR;   //Right/bottom padding
     private ConvolutionMode cm;
     private int dilation;
     private boolean hasBias;
@@ -99,8 +98,8 @@ public class LocallyConnected1D extends SameDiffLayer {
         if (cm == ConvolutionMode.Same) {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, 0, cm,
                             dilation);
-            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride,
-                            dilation);
+            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
+            this.paddingR = Convolution1DUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
             this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
                             dilation);
@@ -128,6 +127,10 @@ public class LocallyConnected1D extends SameDiffLayer {
             InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
             this.nIn = c.getSize();
         }
+        if(featureDim <= 0 || override){
+            InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
+            this.featureDim = kernel * (int) c.getSize();
+        }
     }
 
     @Override
@@ -137,6 +140,7 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     @Override
     public void defineParameters(SDLayerParams params) {
+        Preconditions.checkState(featureDim > 0, "Cannot initialize layer: Feature dimension is set to %s", featureDim);
         params.clear();
         val weightsShape = new long[] {outputSize, featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
@@ -163,16 +167,22 @@ public class LocallyConnected1D extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
-
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY); // (outH, featureDim, nOut)
-        // System.out.println(Arrays.toString(w.getShape()));
 
-        long[] inputShape = layerInput.getShape();
-        long miniBatch = inputShape[0];
         int outH = outputSize;
         int sH = stride;
         int kH = kernel;
+
+        if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)){
+            //Note: for same mode, bottom/right padding can be 1 more than top/left padding
+            //NCW format.
+            if(cm == ConvolutionMode.Same) {
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, paddingR}}, 0);
+            } else {
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, padding}}, 0);
+            }
+        }
 
         SDVariable[] inputArray = new SDVariable[outH];
         for (int i = 0; i < outH; i++) {
@@ -180,14 +190,11 @@ public class LocallyConnected1D extends SameDiffLayer {
                             SDIndex.all(), // nIn
                             SDIndex.interval(i * sH, i * sH + kH) // kernel
             );
-            inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+            inputArray[i] = sameDiff.reshape(slice, 1, -1, featureDim);
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
-//        sameDiff.exec(Collections.<String, INDArray>emptyMap(), "out");
-//        System.out.println(Arrays.toString(concatOutput.getShape()));
 
         SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
-//        System.out.println(Arrays.toString(mmulResult.getShape()));
 
         SDVariable result = sameDiff.permute(mmulResult, 1, 2, 0); // (miniBatch, nOut, outH)
 

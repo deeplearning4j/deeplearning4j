@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -72,6 +73,7 @@ public class Dropout implements IDropout {
     private ISchedule pSchedule;
     private transient INDArray mask;
     private transient DropoutHelper helper;
+    private boolean initializedHelper = false;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc
@@ -97,18 +99,17 @@ public class Dropout implements IDropout {
     protected Dropout(@JsonProperty("p") double activationRetainProbability, @JsonProperty("pSchedule") ISchedule activationRetainProbabilitySchedule) {
         this.p = activationRetainProbability;
         this.pSchedule = activationRetainProbabilitySchedule;
-        initializeHelper();
     }
 
     /**
      * Initialize the CuDNN dropout helper, if possible
      */
-    protected void initializeHelper(){
+    protected void initializeHelper(DataType dataType){
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
                 helper = Class.forName("org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper")
-                        .asSubclass(DropoutHelper.class).newInstance();
+                        .asSubclass(DropoutHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnDropoutHelper successfully initialized");
                 if (!helper.checkSupported()) {
                     helper = null;
@@ -121,6 +122,7 @@ public class Dropout implements IDropout {
                 // benefit from them cudnn, they will get a warning from those
             }
         }
+        initializedHelper = true;
     }
 
 
@@ -133,6 +135,10 @@ public class Dropout implements IDropout {
             currP = pSchedule.valueAt(iteration, epoch);
         } else {
             currP = p;
+        }
+
+        if(!initializedHelper){
+            initializeHelper(output.dataType());
         }
 
         if(helper != null){

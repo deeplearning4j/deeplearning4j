@@ -119,7 +119,7 @@ public class BatchedInferenceObservableTest {
         for (int i = 0; i < 32; i++) {
             INDArray t0 = output0.tensorAlongDimension(i, 1).assign(i);
             INDArray t1 = output1.tensorAlongDimension(i, 1).assign(i);
-            observable.addInput(new INDArray[]{t0, t1}, null);
+            observable.addInput(new INDArray[]{t0.reshape(1, t0.length()), t1.reshape(1, t1.length())}, null);
         }
 
         Field f = BatchedInferenceObservable.class.getDeclaredField("outputBatchInputArrays");

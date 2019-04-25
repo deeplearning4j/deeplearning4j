@@ -509,23 +509,6 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     return newShapeInfo;
 }
 
-//////////////////////////////////////////////////////////////////////////
-    std::vector<int> ShapeUtils::convertAxisToTadTarget(int rank, std::initializer_list<int> axis) {
-        std::vector<int> newAxis(axis);
-        return convertAxisToTadTarget(rank, newAxis);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    std::vector<int> ShapeUtils::convertAxisToTadTarget(int rank, std::vector<int>& axis) {
-        std::vector<int> newAxis;
-        for (int e = 0; e < rank; e++) {
-            if (std::find(axis.begin(), axis.end(), e) == axis.end())
-                newAxis.emplace_back(e);
-        }
-
-        return newAxis;
-    }
-
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(Nd4jLong *shapeInfo) {
         std::vector<Nd4jLong> shape(shape::rank(shapeInfo));
         int shapeSize = shape.size();
@@ -676,12 +659,10 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
 
 
     if (shape::rank(tmpA) == 1 && shape::isMatrix(tmpB)) {
-        // special case here
-        Nd4jLong *newShape;
+        // special case here        
         shape[0] = 1;
         shape[1] = tmpB[2];
-        ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-        shape::shapeBufferFortran(2, dtype, shape, newShape);
+        Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dtype, 'f', 2, shape, workspace);        
 
         RELEASE(shape, workspace);
         RELEASE(tmpA, workspace);
@@ -728,9 +709,7 @@ Nd4jLong* ShapeUtils::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theS
         shape[1] = 1;
     }
 
-    Nd4jLong *newShape;
-    ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), Nd4jLong);
-    shape::shapeBufferFortran(2, dtype, shape, newShape);
+    Nd4jLong *newShape = ShapeBuilders::createShapeInfo(dtype, 'f', 2, shape, workspace);
 
     RELEASE(shape, workspace);
 
@@ -861,6 +840,9 @@ Nd4jLong ShapeUtils::getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vecto
 
     Nd4jLong numOfSubArrs = 1;
 
+    if(dimsToExclude.size() == shape::rank(shapeInfo) || dimsToExclude.size() == 0)     // means there is only one sub-array and it coincides with whole array
+        return numOfSubArrs;
+
     for(const auto& dim : dimsToExclude)
         numOfSubArrs *= shapeInfo[dim + 1];
 
@@ -949,6 +931,15 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
  
     return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
+
+
+    Nd4jLong ShapeUtils::stringBufferHeaderRequirements(Nd4jLong numStrings) {
+        // we store +1 offset
+        auto base = numStrings + 1;
+
+        // since we return number of bytes...
+        return base * sizeof(Nd4jLong);
+    }
 
 }
 

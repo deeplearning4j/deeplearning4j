@@ -158,11 +158,7 @@ namespace nd4j {
                 return shapeList;
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            if (order == 'c')
-                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(in), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(in), shape.data(), newShape);
+            newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), order, shape, block.getWorkspace());
 
             shapeList->push_back(newShape);
 

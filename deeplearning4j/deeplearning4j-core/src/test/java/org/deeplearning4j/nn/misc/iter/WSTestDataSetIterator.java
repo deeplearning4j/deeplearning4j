@@ -50,7 +50,7 @@ public class WSTestDataSetIterator implements DataSetIterator {
 
         return new DataSet(
                 features,
-                vectors.getRow(7),
+                vectors.getRow(7, true),
                 Nd4j.ones(1, 10),
                 null
         );

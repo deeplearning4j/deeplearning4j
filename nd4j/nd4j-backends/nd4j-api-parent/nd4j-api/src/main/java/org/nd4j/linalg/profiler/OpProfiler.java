@@ -115,6 +115,9 @@ public class OpProfiler {
     private String prevOpMatchingInverted = "";
     private long lastZ = 0;
 
+    @Setter
+    private ProfilerConfig config = ProfilerConfig.builder().build();
+
 
     /**
      * Clear the listener from the profiler
@@ -707,7 +710,4 @@ public class OpProfiler {
     public void processMemoryAccess() {
 
     }
-
-    @Setter
-    private ProfilerConfig config;
 }

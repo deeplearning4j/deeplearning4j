@@ -28,7 +28,7 @@ namespace nd4j {
     __device__ void convertHalfs(half *dx, Nd4jLong n, void *dz) {
 
         auto z = reinterpret_cast<T *>(dz);
-        int tid = threadIdx.x + blockIdx.x * gridDim.x;
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
         for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x)
             z[i] = static_cast<T>(__half2float(dx[i]));

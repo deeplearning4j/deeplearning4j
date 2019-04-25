@@ -184,7 +184,7 @@ namespace nd4j {
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype = DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
@@ -199,7 +199,7 @@ namespace nd4j {
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
+        explicit NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
@@ -252,6 +252,11 @@ namespace nd4j {
         *  repeats - number of repetitions
         */        
         NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
+
+        /**
+         * This method fills this array with zeros
+         */
+        void nullify();
 
         /**
          * This method returns quantized copy of given array
@@ -673,8 +678,10 @@ namespace nd4j {
         *  dimensions - vector of dimensions to calculate variance along
         */
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
-
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
         void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 
@@ -888,8 +895,8 @@ namespace nd4j {
         /**
         * processes whole set of sub-arrays 
         * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)         
-        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
-        *                 if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
+        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *                 if dimsToExclude.size() = array rank it means sub-array is whole array and copy of original_shapeInfo will be returned and one zero offset
         * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
         * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
         * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
@@ -1085,9 +1092,11 @@ namespace nd4j {
 
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 
+        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+
         ResultSet* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
 
-        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+        ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
 
         ResultSet* allExamples()const ;
 
@@ -1903,8 +1912,8 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
-    if (this->dataType() != other.dataType())
-            return false;
+    // if (this->dataType() != other.dataType())    // this comparison is already present in equalsTo
+    //         return false;
 
     if (!this->isSameShape(&other))
         return false;

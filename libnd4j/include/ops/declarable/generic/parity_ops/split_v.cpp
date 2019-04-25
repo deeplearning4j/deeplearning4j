@@ -41,7 +41,7 @@ namespace ops {
         if (axis < 0)
             axis += input->rankOf();
 
-        std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
+        std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
         int pos = 0;
         std::vector<Nd4jLong> indices(2 * input->rankOf());
@@ -105,8 +105,7 @@ namespace ops {
         int pos = 0;
         for (int e = 0; e < length; e++) {
             int c_size = sizes->e<int>(e);
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
+            
 
             std::vector<Nd4jLong> shape(rank);
 
@@ -117,11 +116,7 @@ namespace ops {
                     shape[d] = c_size;
             }
 
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
-
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(input), shape::order(input), shape, block.getWorkspace());
             shapeList->push_back(newShape);
         }
 

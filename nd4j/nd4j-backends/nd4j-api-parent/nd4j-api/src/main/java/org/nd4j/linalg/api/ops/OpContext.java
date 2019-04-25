@@ -18,7 +18,9 @@ package org.nd4j.linalg.api.ops;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -50,13 +52,13 @@ public interface OpContext {
      * This method sets root-level seed for rng
      * @param seed
      */
-    void setRootSeed(long seed);
+    void setRngStates(long rootState, long nodeState);
 
     /**
-     * This method sets node-level seed for rng
-     * @param seed
+     * This method returns RNG states, root first node second
+     * @return
      */
-    void setNodeSeed(long seed);
+    Pair<Long, Long> getRngStates();
 
     /**
      * This method adds INDArray as input argument for future op call
@@ -65,6 +67,18 @@ public interface OpContext {
      * @param array
      */
     void setInputArray(int index, INDArray array);
+
+    /**
+     * This method sets provided arrays as input arrays
+     * @param arrays
+     */
+    void setInputArrays(List<INDArray> arrays);
+
+    /**
+     * This method sets provided arrays as input arrays
+     * @param arrays
+     */
+    void setInputArrays(INDArray... arrays);
 
     /**
      * This method returns List of input arrays defined within this context
@@ -80,6 +94,18 @@ public interface OpContext {
     void setOutputArray(int index, INDArray array);
 
     /**
+     * This method sets provided arrays as output arrays
+     * @param arrays
+     */
+    void setOutputArrays(List<INDArray> arrays);
+
+    /**
+     * This method sets provided arrays as output arrays
+     * @param arrays
+     */
+    void setOutputArrays(INDArray... arrays);
+
+    /**
      * This method returns List of output arrays defined within this context
      * @return
      */
@@ -90,4 +116,10 @@ public interface OpContext {
      * @return
      */
     Pointer contextPointer();
+
+    /**
+     * This method allows to set op as inplace
+     * @param reallyInplace
+     */
+    void markInplace(boolean reallyInplace);
 }

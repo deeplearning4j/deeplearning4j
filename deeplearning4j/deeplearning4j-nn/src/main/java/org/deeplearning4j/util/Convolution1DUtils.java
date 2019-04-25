@@ -208,6 +208,17 @@ public class Convolution1DUtils {
         return outPad;
     }
 
+    public static int getSameModeBottomRightPadding(int outSize, int inSize, int kernel, int strides, int dilation) {
+        int eKernel = effectiveKernelSize(kernel, dilation);
+        int totalPad = ((outSize - 1) * strides + eKernel - inSize);
+        int tlPad = totalPad / 2;
+        int brPad = totalPad - tlPad;
+        Preconditions.checkState(brPad >= 0, "Invalid padding values (right) calculated: %s - " +
+                "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
+                "strides %s, dilation %s", brPad, inSize, outSize, kernel, strides, dilation);
+        return brPad;
+    }
+
     /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect int, with values > 0 for kernel size and
      * stride, and values >= 0 for padding.

@@ -762,7 +762,7 @@ public class KerasModelEndToEndTest {
     }
 
     private static void compareINDArrays(String label, INDArray a, INDArray b, double eps) {
-        INDArray diff = a.sub(b);
+        INDArray diff = a.sub(b.castTo(a.dataType()));
         double min = diff.minNumber().doubleValue();
         double max = diff.maxNumber().doubleValue();
         log.info(label + ": " + a.equalsWithEps(b, eps) + ", " + min + ", " + max);
@@ -772,7 +772,7 @@ public class KerasModelEndToEndTest {
 
         // skip too small absolute inputs
         if (Math.abs(aAbsMax) > threshold && Math.abs(bAbsMax) > threshold) {
-            assertTrue(a.equalsWithEps(b, eps));
+            assertTrue(a.equalsWithEps(b.castTo(a.dataType()), eps));
         }
 
     }

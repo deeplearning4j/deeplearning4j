@@ -75,6 +75,22 @@ TEST_F(OneOffTests, test_assert_scalar_float32_1) {
     delete graph;
 }
 
+TEST_F(OneOffTests, test_assert_scalar_float32_2) {
+    nd4j::ops::Assert op;
+    nd4j::ops::identity op1;
+    nd4j::ops::noop op2;
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assertsomething.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    delete graph;
+}
+
+
 TEST_F(OneOffTests, test_pad_1D_1) {
     auto e = NDArrayFactory::create<float>('c', {7}, {10.f,0.778786f, 0.801198f, 0.724375f, 0.230894f, 0.727141f,10.f});
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/pad_1D.fb");

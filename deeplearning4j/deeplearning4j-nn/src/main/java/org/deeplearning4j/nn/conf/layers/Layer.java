@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,6 +31,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelper;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -149,8 +149,8 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     }
 
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams);
+                                                                Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                                boolean initializeParams, DataType networkDataType);
 
     /**
      * @return The parameter initializer for this model
