@@ -23,7 +23,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
     @Test
     public void testToNpyFormat() throws Exception {
 
-        File dir = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays");
+        File dir = new File("C:\\develop\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays");
         File[] files = dir.listFiles();
 
         for(File f : files){
@@ -45,20 +45,24 @@ public class NumpyFormatTests extends BaseNd4jTest {
             byte[] bytes = Nd4j.toNpyByteArray(arr);
             byte[] expected = FileUtils.readFileToByteArray(f);
 
-            System.out.println(Arrays.toString(expected));
-            System.out.println(Arrays.toString(bytes));
+            log.info("E: {}", Arrays.toString(expected));
+            for( int i=0; i<expected.length; i++ ){
+//                System.out.printf("%c ", expected[i]);
+                System.out.print((char)expected[i]);
+            }
+            System.out.println();System.out.println();
+            log.info("A: {}", Arrays.toString(bytes));
             for( int i=0; i<bytes.length; i++ ){
 //                System.out.printf("%c ", bytes[i]);
                 System.out.print((char)bytes[i]);
             }
             System.out.println();
-            for( int i=0; i<expected.length; i++ ){
-//                System.out.printf("%c ", expected[i]);
-                System.out.print((char)expected[i]);
-            }
+
+
 //            System.out.println();
 //            System.out.println(Hex.encodeHex(bytes));
 //            System.out.println(Hex.encodeHex(expected));
+            assertArrayEquals("Failed with file [" + f.getName() + "]", expected, bytes);
             System.out.println("\n---------");
         }
 

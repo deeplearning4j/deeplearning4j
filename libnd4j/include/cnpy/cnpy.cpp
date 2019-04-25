@@ -21,6 +21,7 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include"cnpy.h"
+#include <types/types.h>
 
 
 
@@ -61,6 +62,36 @@ char cnpy::mapType(const std::type_info &t) {
     if(t == typeid(std::complex<float>) ) return 'c';
     if(t == typeid(std::complex<double>) ) return 'c';
     if(t == typeid(std::complex<long double>) ) return 'c';
+
+    else return '?';
+}
+
+template <typename T>
+char cnpy::mapType() {
+    if(std::is_same<float16, T>::value) return 'f';
+    if(std::is_same<float, T>::value) return 'f';
+    if(std::is_same<double, T>::value) return 'f';
+    if(std::is_same<long double, T>::value) return 'f';
+
+    if(std::is_same<int, T>::value) return 'i';
+    if(std::is_same<int8_t, T>::value) return 'i';
+    if(std::is_same<signed char, T>::value) return 'i';
+    if(std::is_same<char, T>::value) return 'i';
+    if(std::is_same<short, T>::value) return 'i';
+    if(std::is_same<long, T>::value) return 'i';
+    if(std::is_same<long long, T>::value) return 'i';
+
+    if(std::is_same<unsigned char, T>::value) return 'u';
+    if(std::is_same<unsigned short, T>::value) return 'u';
+    if(std::is_same<unsigned long, T>::value) return 'u';
+    if(std::is_same<unsigned long long, T>::value) return 'u';
+    if(std::is_same<unsigned int, T>::value) return 'u';
+
+    if(std::is_same<bool, T>::value) return 'b';
+
+    if(std::is_same<std::complex<float>, T>::value) return 'c';
+    if(std::is_same<std::complex<double>, T>::value) return 'c';
+    if(std::is_same<std::complex<long double>, T>::value) return 'c';
 
     else return '?';
 }
@@ -551,7 +582,7 @@ void cnpy::npy_save(std::string fname,
         tmp_shape[0] += shape[0];
 
         fseek(fp,0,SEEK_SET);
-        std::vector<char> header = createNpyHeader(data,tmp_shape,ndims);
+        std::vector<char> header = createNpyHeader<T>(data,tmp_shape,ndims);
         fwrite(&header[0],sizeof(char),header.size(),fp);
         fseek(fp,0,SEEK_END);
 
@@ -559,7 +590,7 @@ void cnpy::npy_save(std::string fname,
     }
     else {
         fp = fopen(fname.c_str(),"wb");
-        std::vector<char> header = createNpyHeader(data,shape,ndims);
+        std::vector<char> header = createNpyHeader<T>(data,shape,ndims);
         fwrite(&header[0],sizeof(char),header.size(),fp);
     }
 
@@ -580,15 +611,17 @@ void cnpy::npy_save(std::string fname,
  * @return
  */
 template<typename T>
-std::vector<char> cnpy::createNpyHeader(const T *data,
+std::vector<char> cnpy::createNpyHeader(const void *vdata,
                                               const unsigned int *shape,
                                               const unsigned int ndims,
                                               unsigned int wordSize) {
 
+    auto data = reinterpret_cast<const T*>(vdata);
+
     std::vector<char> dict;
     dict += "{'descr': '";
-    dict += BigEndianTest();
-    dict += mapType(typeid(T));
+    dict += sizeof(T) > 1 ? BigEndianTest() : '|';
+    dict += mapType<T>();
     dict += tostring(wordSize);
     dict += "', 'fortran_order': False, 'shape': (";
     dict += tostring(shape[0]);
@@ -601,7 +634,7 @@ std::vector<char> cnpy::createNpyHeader(const T *data,
         dict += ",";
     dict += "), }";
     //pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10 bytes. dict needs to end with \n
-    int remainder = 16 - (10 + dict.size()) % 16;
+    int remainder = 64 - (10 + dict.size()) % 64;
     dict.insert(dict.end(),remainder,' ');
     dict.back() = '\n';
 
@@ -612,20 +645,10 @@ std::vector<char> cnpy::createNpyHeader(const T *data,
     header += (char) 0x00; //minor version of numpy format
     header += (unsigned short) dict.size();
     header.insert(header.end(),dict.begin(),dict.end());
-    std::vector<int> remove;
-    for(int i = 0; i < header.size(); i++) {
-        if(header[i] == '\0') {
-            remove.push_back(i);
-        }
-    }
-
-    for(int i = 0; i < remove.size(); i++) {
-        header.erase(header.begin() + remove[i]);
-    }
 
     return header;
 }
 
-template ND4J_EXPORT std::vector<char> cnpy::createNpyHeader<void>(const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize);
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector<char> cnpy::createNpyHeader, (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize), LIBND4J_TYPES);
 
 template ND4J_EXPORT void cnpy::npy_save<float>(std::string fname, const float* data, const unsigned int* shape, const unsigned int ndims, std::string mode);

@@ -1223,7 +1223,9 @@ public:
  * @param headerSize
  * @return
  */
-    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
+
+    template <typename T>
+    static Nd4jPointer _numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
         Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
         int  rank = shape::rank(shapeBufferCast);
         Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
@@ -1233,24 +1235,25 @@ public:
         }
 
         Nd4jLong length = shape::prodLong(shape,rank);
-        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        auto npHeader = cnpy::createNpyHeader<T>(data,npShape,rank,wordSize);
         char *ret = new char[npHeader.size() + 1];
         int count = 0;
         for(int i = 0; i < npHeader.size(); i++) {
-            if (npHeader[i] != '\0') {
                 ret[count] = npHeader[i];
                 count++;
-            }
-            else {
-                nd4j_debug("Found null terminated at %d. Skipping\n",i);
-            }
         }
 
         ret[count] = '\0';
         count++;
+
         *headerSize = count;
         return reinterpret_cast<Nd4jPointer>(ret);
+    }
 
+    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
+        auto shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        auto type = nd4j::ArrayOptions::dataType(shapeBufferCast);
+        BUILD_SINGLE_SELECTOR(type, return _numpyHeaderForNd4j, (data, shapeBuffer, wordSize, headerSize), LIBND4J_TYPES);
     }
 
 /**
@@ -1284,7 +1287,9 @@ public:
    * @param wordSize  the word size (4 for float, 8 for doubles)
    * @return a pointer to a numpy array
    */
-    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+
+    template <typename T>
+    static Nd4jPointer _numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
         Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
         int  rank = shape::rank(shapeBufferCast);
         Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
@@ -1294,7 +1299,7 @@ public:
         }
 
         Nd4jLong length = shape::prodLong(shape,rank);
-        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        auto npHeader = cnpy::createNpyHeader<T>(data,npShape,rank,wordSize);
         char *dataChar = reinterpret_cast<char *>(data);
         char *npHeaderData = npHeader.data();
         char *ret = new char[(wordSize * length) +  npHeader.size()];
@@ -1305,6 +1310,13 @@ public:
         std::memcpy(reinterpret_cast<void *>(ret), reinterpret_cast<void *>(dataChar), length * wordSize * sizeof(Nd4jLong));
         Nd4jPointer  rettPointer = reinterpret_cast<Nd4jPointer>(ret);
         return rettPointer;
+    }
+
+
+    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+        auto shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        auto type = nd4j::ArrayOptions::dataType(shapeBufferCast);
+        BUILD_SINGLE_SELECTOR(type, return _numpyFromNd4j, (data, shapeBuffer, wordSize), LIBND4J_TYPES);
     }
 
 
