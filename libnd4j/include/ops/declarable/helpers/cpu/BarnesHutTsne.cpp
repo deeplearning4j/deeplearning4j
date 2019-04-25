@@ -47,10 +47,9 @@ namespace helpers {
             }
         }
 
-        NDArray* numElementsArr = rowCounts.reduceAlongDimension(reduce::Sum, {});
-        if (numElementsArr == nullptr) throw std::runtime_error("helpers::barnes_symmertize: Cannot calculate num of Elements");
-        auto numElements = numElementsArr->e<int>(0);
-        delete numElementsArr;
+        NDArray numElementsArr = rowCounts.sumNumber(); //reduceAlongDimension(reduce::Sum, {});
+
+        auto numElements = numElementsArr.e<Nd4jLong>(0);
         return numElements;
     }
 //    static
