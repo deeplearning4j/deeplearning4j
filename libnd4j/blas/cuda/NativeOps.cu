@@ -3971,7 +3971,7 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
 void __global__ tryPointerKernel(void* p, size_t len) {
     __shared__ int8_t* buf;
     __shared__ int tid;
-    __shared__ int start, finish;
+    __shared__ int start, finish, step;
     if (threadIdx.x == 0) {
         buf = reinterpret_cast<int8_t*>(p);
         start = blockIdx.x * blockDim.x;
