@@ -87,6 +87,19 @@ public class EvaluationRunner {
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
         Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
 
+        synchronized (EvaluationRunner.class) {
+            System.out.println("Thread: " + Thread.currentThread().getId());
+            INDArray temp = Nd4j.createFromArray(new float[]{1, 2, 3});
+            System.out.println("Thread: " + Thread.currentThread().getId() + temp);
+            temp.addi(1.0);
+            System.out.println("Thread: " + Thread.currentThread().getId() + temp);
+            Nd4j.getExecutioner().commit();
+            System.out.println("Thread: " + Thread.currentThread().getId() + " sleeping...");
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e){ }
+        }
+
         //For multi-GPU we'll use a round robbin approach for worker thread/GPU affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if(numDevices <= 0)
@@ -100,6 +113,7 @@ public class EvaluationRunner {
                 //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
                 // all threads, which is both safe and uses the least amount of memory
                 //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
+//                Nd4j.getMemoryManager().releaseCurrentContext();
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
                 byte[] pBytes = params.getValue();
                 INDArray p;
@@ -111,6 +125,13 @@ public class EvaluationRunner {
                 DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);
                 paramsMap.put(params.getValue(), dlp);
                 log.info("paramsMap: size {}", paramsMap.size());
+
+                System.out.println("POST DeviceLocalNDArray - Thread: " + Thread.currentThread().getId() + " about to commit");
+                Nd4j.getExecutioner().commit();
+                System.out.println("POST DeviceLocalNDArray - Thread: " + Thread.currentThread().getId() + " sleeping...");
+                try {
+                    Thread.sleep(2000);
+                } catch (Exception e){ }
             }
             deviceLocalParams = paramsMap.get(params.getValue());
         }
@@ -121,53 +142,64 @@ public class EvaluationRunner {
             // the first time they touch an INDArray. If we assume this method is called by new threads,
             // then the first N workers will be distributed evenly across available devices.
 
-            if(workerCount.compareAndSet(currentWorkerCount, currentWorkerCount+1)){
-                log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
-                //This thread is now a worker
-                EvaluationFuture f = new EvaluationFuture();
-                f.setResult(evals);
-                try{
-                    Model m;
-                    if(isCG){
-                        ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(json.getValue());
-                        ComputationGraph cg = new ComputationGraph(conf);
-                        cg.init(deviceLocalParams.get(), false);
-                        m = cg;
-                    } else {
-                        MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(json.getValue());
-                        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                        net.init(deviceLocalParams.get(), false);
-                        m = net;
-                    }
+            synchronized (EvaluationRunner.class) { //TEMPORARY SYNC FOR DEBUGGING
+                System.out.println("Starting evaluation - Thread: " + Thread.currentThread().getId() + " about to commit");
 
-                    //Perform eval on this thread's data
+                if (workerCount.compareAndSet(currentWorkerCount, currentWorkerCount + 1)) {
+                    log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
+                    //This thread is now a worker
+                    EvaluationFuture f = new EvaluationFuture();
+                    f.setResult(evals);
                     try {
-                        doEval(m, evals, ds, mds, evalBatchSize);
-                    } catch (Throwable t){
-                        f.setException(t);
-                    } finally {
-                        f.getSemaphore().release(1);
-                    }
-
-                    //Perform eval on other thread's data
-                    while(!queue.isEmpty()){
-                        Eval e = queue.poll();  //Use poll not remove to avoid race condition on last element
-                        if(e == null)
-                            continue;
-                        try {
-                            doEval(m, evals, e.getDs(), e.getMds(), evalBatchSize);
-                        } catch (Throwable t){
-                            e.getFuture().setException(t);
-                        } finally {
-                            e.getFuture().getSemaphore().release(1);
+                        Model m;
+                        if (isCG) {
+                            ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(json.getValue());
+                            ComputationGraph cg = new ComputationGraph(conf);
+                            cg.init(deviceLocalParams.get(), false);
+                            m = cg;
+                        } else {
+                            MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(json.getValue());
+                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                            net.init(deviceLocalParams.get(), false);
+                            m = net;
                         }
-                    }
-                } finally {
-                    workerCount.decrementAndGet();
-                    log.debug("Finished evaluation in thread {}", Thread.currentThread().getId());
-                }
 
-                return f;
+                        //Perform eval on this thread's data
+                        try {
+                            doEval(m, evals, ds, mds, evalBatchSize);
+                        } catch (Throwable t) {
+                            f.setException(t);
+                        } finally {
+                            f.getSemaphore().release(1);
+                        }
+
+                        //Perform eval on other thread's data
+                        while (!queue.isEmpty()) {
+                            Eval e = queue.poll();  //Use poll not remove to avoid race condition on last element
+                            if (e == null)
+                                continue;
+                            try {
+                                doEval(m, evals, e.getDs(), e.getMds(), evalBatchSize);
+                            } catch (Throwable t) {
+                                e.getFuture().setException(t);
+                            } finally {
+                                e.getFuture().getSemaphore().release(1);
+                            }
+                        }
+                    } finally {
+                        workerCount.decrementAndGet();
+                        log.debug("Finished evaluation in thread {}", Thread.currentThread().getId());
+                    }
+
+                    System.out.println("Finished evaluation - Thread: " + Thread.currentThread().getId() + " about to commit");
+                    Nd4j.getExecutioner().commit();
+                    System.out.println("Finished evaluation - Thread: " + Thread.currentThread().getId() + " about to sleep...");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e){ }
+
+                    return f;
+                }
             }
         }
 
