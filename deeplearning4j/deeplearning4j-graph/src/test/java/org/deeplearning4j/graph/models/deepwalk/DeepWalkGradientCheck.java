@@ -63,7 +63,7 @@ public class DeepWalkGradientCheck {
 
         for (int i = 0; i < 7; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
-            assertArrayEquals(new long[] {1, vectorSize}, vector.shape());
+            assertArrayEquals(new long[] {vectorSize}, vector.shape());
             System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
@@ -188,8 +188,10 @@ public class DeepWalkGradientCheck {
 
 
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void checkGradients2() throws IOException {
+
+        double minAbsError = 1e-5;
 
         ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/graph13.txt");
 
@@ -207,7 +209,7 @@ public class DeepWalkGradientCheck {
 
         for (int i = 0; i < nVertices; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
-            assertArrayEquals(new long[] {1, vectorSize}, vector.shape());
+            assertArrayEquals(new long[] {vectorSize}, vector.shape());
             System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
@@ -279,12 +281,13 @@ public class DeepWalkGradientCheck {
                             relError = Math.abs(backpropGradient - numericalGradient)
                                             / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
                         }
+                        double absErr = Math.abs(backpropGradient - numericalGradient);
 
                         String msg = "innerNode grad: i=" + i + ", j=" + j + ", p=" + p + ", v=" + v + " - relError: "
                                         + relError + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus
                                         + ", numGrad=" + numericalGradient + ", backpropGrad = " + backpropGradient;
 
-                        if (relError > MAX_REL_ERROR)
+                        if (relError > MAX_REL_ERROR && absErr > minAbsError)
                             fail(msg);
                         else
                             System.out.println(msg);

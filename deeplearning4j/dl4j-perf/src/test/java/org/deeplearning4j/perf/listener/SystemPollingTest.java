@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ public class SystemPollingTest {
 
     @Test
     public void testPolling() throws Exception {
+        Nd4j.create(1);
         File tmpDir = tempDir.newFolder();
 
         SystemPolling systemPolling = new SystemPolling.Builder()
@@ -47,6 +49,7 @@ public class SystemPollingTest {
 
         File[] files = tmpDir.listFiles();
         assertTrue(files != null && files.length > 0);
+        //System.out.println(Arrays.toString(files));
 
         String yaml = FileUtils.readFileToString(files[0]);
         HardwareMetric fromYaml = HardwareMetric.fromYaml(yaml);

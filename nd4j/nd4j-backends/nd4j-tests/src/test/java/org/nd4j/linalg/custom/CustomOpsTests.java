@@ -531,4 +531,29 @@ public class CustomOpsTests {
 
         Nd4j.exec(op);  //Execution is OK
     }
+
+    @Test
+    public void testDepthwise(){
+        INDArray input = Nd4j.create(DataType.DOUBLE, 1,3,8,8);
+        INDArray depthwiseWeight = Nd4j.create(DataType.DOUBLE, 1,1,3,2);
+        INDArray bias = Nd4j.create(DataType.DOUBLE, 1, 6);
+
+        INDArray[] inputs = new INDArray[]{input, depthwiseWeight, bias};
+
+        int[] args = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+
+        INDArray output = Nd4j.create(DataType.DOUBLE, 1, 6, 8, 8);
+
+        CustomOp op = DynamicCustomOp.builder("depthwise_conv2d")
+                .addInputs(inputs)
+                .addIntegerArguments(args)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
+
+        for( int i=0; i<1000; i++ ) {
+            System.out.println(i);
+            Nd4j.getExecutioner().exec(op);
+        }
+    }
 }

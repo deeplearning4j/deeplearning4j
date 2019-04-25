@@ -1813,17 +1813,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
-        WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
-        if (this.isCompressed() && this.ordering() == Nd4j.order()) {
-            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
-            ret.markAsCompressed(true);
-            return ret;
-        }
-        if(isEmpty())
-            return this;
-        Nd4j.getCompressor().autoDecompress(this);
-        INDArray ret = Shape.toOffsetZeroCopy(this);
-        return ret;
+        return dup(Nd4j.order());
     }
 
     @Override
@@ -1836,6 +1826,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         if(isEmpty())
             return this;
+
+        // fixme: eventually it would be nice to have this in native code
+        if (isS()) {
+            val list = new ArrayList<String>();
+            for (int e = 0; e < this.length(); e++)
+                list.add(this.getString(e));
+
+            return Nd4j.create(list, this.shape(), this.ordering());
+        }
+
         Nd4j.getCompressor().autoDecompress(this);
         return Shape.toOffsetZeroCopy(this, order);
     }
@@ -4827,7 +4827,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
-
+        Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
         return tensorAlongDimension(c, 0);
     }
 

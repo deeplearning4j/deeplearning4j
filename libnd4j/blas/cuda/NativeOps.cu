@@ -2011,11 +2011,11 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
 }
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    int blocks = numOfArrs * 16; // >> 1 << 2);
+    //int blocks = numOfArrs * 16; // >> 1 << 2);
     //nd4j_printf("gridDim.x is %i\n", blocks);
-    if (blocks > 8192)
-        blocks = 8192; // restrict grid dims to 8K max
-    concatCuda<T><<<blocks, 128, 256, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    //if (blocks > 8192)
+    //    blocks = 8192; // restrict grid dims to 8K max
+    concatCuda<T><<<numOfArrs, 128, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
@@ -2361,7 +2361,7 @@ void NativeOps::shuffle(Nd4jPointer *extras,
     dim3 launchDims(256, 512, 8192);
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, dxShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
 
-	DEBUG_KERNEL(stream, 0);
+    nd4j::DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
 }
 
 /*
@@ -3223,8 +3223,12 @@ void NativeOps::sortTad(Nd4jPointer *extraPointers,
 						Nd4jLong *tadOffsets,
 						bool descending) {
     // to be implemented
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 512, 32768);
+    auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+
+    dim3 launchDims(tadPack.numberOfTads(), 1024, 33768);
+
 	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, oesTadGeneric, (launchDims, stream, dX, dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);                     
     
@@ -3282,7 +3286,7 @@ void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jLong* ptrMap, Nd4jLon
 
 
 nd4j::graph::ResultWrapper* NativeOps::executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-	return nullptr;
+    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
 }
 
 

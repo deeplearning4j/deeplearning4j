@@ -102,6 +102,14 @@ public abstract class BaseNd4jTest {
         org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
     }
 
+    public static void assertArrayEquals(String string, byte[] shapeA, byte[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(byte[] shapeA, byte[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB);
+    }
+
     public static void assertArrayEquals(long[] shapeA, long[] shapeB) {
         org.junit.Assert.assertArrayEquals(shapeA, shapeB);
     }

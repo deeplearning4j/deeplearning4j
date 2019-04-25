@@ -102,11 +102,11 @@ public class VpTreeNodeTest {
         for (int targetIndex = 0; targetIndex < m; targetIndex++) {
             // Do an exhaustive search
             TreeSet<Integer> s = new TreeSet<>();
-            INDArray query = arr.getRow(targetIndex);
+            INDArray query = arr.getRow(targetIndex, true);
 
             Counter<Integer> counter = new Counter<>();
             for (int j = 0; j < m; j++) {
-                double d = t.distance(query, (arr.getRow(j)));
+                double d = t.distance(query, (arr.getRow(j, true)));
                 counter.setCount(j, (float) d);
 
             }
@@ -139,7 +139,7 @@ public class VpTreeNodeTest {
 
             // check
             for (int r : resultSet) {
-                INDArray expectedResult = arr.getRow(r);
+                INDArray expectedResult = arr.getRow(r, true);
                 if (!s.contains(r)) {
                     fillSearch = new VPTreeFillSearch(t, k, query);
                     fillSearch.search();
@@ -166,11 +166,11 @@ public class VpTreeNodeTest {
         List<Double> distances = new ArrayList<>();
         tree.search(Nd4j.create(new double[] {50, 50}), 1, add, distances);
         DataPoint assertion = add.get(0);
-        assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55})), assertion);
+        assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55}).reshape(1,2)), assertion);
 
         tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
         assertion = add.get(0);
-        assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
+        assertEquals(Nd4j.create(new double[] {60, 60}).reshape(1,2), assertion.getPoint());
     }
 
     @Test(expected = ND4JIllegalStateException.class)
@@ -235,7 +235,7 @@ public class VpTreeNodeTest {
         INDArray dataset = Nd4j.randn(N, dim);
         double[] rawData = dataset.toDoubleVector();
         Arrays.sort(dataset.toDoubleVector());
-        dataset = Nd4j.createFromArray(rawData);
+        dataset = Nd4j.createFromArray(rawData).reshape(1,N);
 
         List<DataPoint> points = new ArrayList<>();
 
@@ -281,7 +281,7 @@ public class VpTreeNodeTest {
     @Test
     public void performanceTest() {
         final int dim = 300;
-        final int rows = 200000;
+        final int rows = 8000;
         final int k = 5;
 
         INDArray inputArrray = Nd4j.linspace(DataType.DOUBLE, 0.0, 1.0, rows * dim).reshape(rows, dim);

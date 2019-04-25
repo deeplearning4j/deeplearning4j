@@ -352,11 +352,10 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void synchronizeHostData(INDArray array) {
-        if (array.isEmpty())
+        if (array.isEmpty() || array.isS())
             return;
 
-        DataBuffer buffer =
-                        array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        val buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         synchronizeHostData(buffer);
     }
 
@@ -371,13 +370,13 @@ public class AtomicAllocator implements Allocator {
         //Nd4j.getExecutioner().push();
 
         // we don't synchronize constant buffers, since we assume they are always valid on host side
-        if (buffer.isConstant()) {
+        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8) {
             return;
         }
 
         // we actually need synchronization only in device-dependant environment. no-op otherwise
         if (memoryHandler.isDeviceDependant()) {
-            AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
+            val point = getAllocationPoint(buffer.getTrackingPoint());
             if (point == null)
                 throw new RuntimeException("AllocationPoint is NULL");
             memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId(), point);

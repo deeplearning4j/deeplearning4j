@@ -38,6 +38,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.schedule.ScheduleType;
@@ -120,7 +121,7 @@ public class OCNNOutputLayerTest {
         MultiLayerNetwork network = getSingleLayer();
         DataSet next = dataSetIterator.next();
         DataSet filtered = next.filterBy(new int[]{0, 1});
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 10; i++) {
             network.setEpochCount(i);
             network.getLayerWiseConfigurations().setEpochCount(i);
             network.fit(filtered);
@@ -129,11 +130,12 @@ public class OCNNOutputLayerTest {
         DataSet anomalies = next.filterBy(new int[] {2});
         INDArray output = network.output(anomalies.getFeatures());
         INDArray normalOutput = network.output(anomalies.getFeatures(),false);
-        assertEquals(output.lt(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(), normalOutput.eq(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(),1e-1);
+        assertEquals(output.lt(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(),
+                normalOutput.eq(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(),1e-1);
 
-        System.out.println("Labels " + anomalies.getLabels());
-        System.out.println("Anomaly output " + normalOutput);
-        System.out.println(output);
+//        System.out.println("Labels " + anomalies.getLabels());
+//        System.out.println("Anomaly output " + normalOutput);
+//        System.out.println(output);
 
         INDArray normalProbs = network.output(filtered.getFeatures());
         INDArray outputForNormalSamples = network.output(filtered.getFeatures(),false);
@@ -164,15 +166,17 @@ public class OCNNOutputLayerTest {
         int numHidden = 2;
 
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
+                .seed(12345)
                 .weightInit(WeightInit.XAVIER)
                 .miniBatch(true)
-                .updater(Nesterovs.builder()
-                        .momentum(0.1)
-                        .learningRateSchedule(new StepSchedule(
-                                ScheduleType.EPOCH,
-                                1e-2,
-                                0.1,
-                                20)).build())
+                .updater(new Adam(0.1))
+//                .updater(Nesterovs.builder()
+//                        .momentum(0.1)
+//                        .learningRateSchedule(new StepSchedule(
+//                                ScheduleType.EPOCH,
+//                                1e-2,
+//                                0.1,
+//                                20)).build())
                 .list(new DenseLayer.Builder().activation(new ActivationReLU())
                                 .nIn(4).nOut(2).build(),
                         new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder()

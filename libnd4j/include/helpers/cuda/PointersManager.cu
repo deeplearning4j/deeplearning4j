@@ -20,6 +20,7 @@
 //
 
 #include <PointersManager.h>
+#include <StringUtils.h>
 //#include <graph/exceptions/cuda_exception.h>
 #include <stdexcept>
 #include <logger.h>
@@ -60,9 +61,11 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
 void PointersManager::synchronize() const {
     if (_context != nullptr) {
         cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0)
+        if (cudaResult != 0) {
             //throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);
-            throw std::runtime_error(_funcName + ": cuda stream synchronization failed !");
+            auto cd = nd4j::StringUtils::valueToString<int>((int) cudaResult);
+            throw std::runtime_error(_funcName + ": cuda stream synchronization failed! Error code: " + cd);
+        }
     } else {
         nd4j_printf("<%s> syncStream isn't possible: no stream set!", _funcName.c_str());
     }

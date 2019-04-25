@@ -1148,6 +1148,16 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mobilenet_v2.fb"));
     }
 
+    @Test
+    @Ignore
+    public void testRandomGraph3() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/assert_equal/3,4_3,4_float32/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        log.info("{}", tg.asFlatPrint());
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/assertsomething.fb"));
+    }
+
 
     @Test
     public void testControlDependencies1() throws Exception {
