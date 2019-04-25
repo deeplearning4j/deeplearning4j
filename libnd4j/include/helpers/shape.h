@@ -990,6 +990,8 @@ namespace shape {
     // rank is equal to size of shape
     ND4J_EXPORT void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong* strides, Nd4jLong* offsets, const char order = 'c');
     ND4J_EXPORT void calcOffsets(const Nd4jLong* shapeInfo, Nd4jLong* offsets, const char order = 'c');
+    ND4J_EXPORT void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const char order = 'c');
+    ND4J_EXPORT void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char order = 'c');
    
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
@@ -4800,6 +4802,198 @@ INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4j
                 coords[i] = 0;   
         }
     }
+}
+
+
+//////////////////////////////////////////////////////////////////////
+static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char* order) {
+
+    // we assume all array have same length
+    const Nd4jLong len = shape::length(xShapeInfo);
+    
+    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
+    const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
+    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
+    
+    const char xOrder = shape::order(xShapeInfo);
+    const char yOrder = shape::order(yShapeInfo);
+    const char zOrder = shape::order(zShapeInfo);
+
+    const bool shapesSame = shape::shapeEquals(xShapeInfo, yShapeInfo, zShapeInfo);
+
+    if (xEws == 1 && yEws == 1 && zEws == 1 && xOrder == yOrder && xOrder == zOrder && (xOrder == 'c' || shapesSame)) {
+        xOffsets = yOffsets = zOffsets = nullptr;
+    }
+    else if(xEws == 1 && yEws == 1 && xOrder == yOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, yShapeInfo))) {
+        xOffsets = yOffsets = nullptr;
+        zOffsets = new Nd4jLong[len];
+        shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
+    }
+    else if(xEws == 1 && zEws == 1 && xOrder == zOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, zShapeInfo))) {
+        xOffsets = zOffsets = nullptr;
+        yOffsets = new Nd4jLong[len];
+        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
+    }
+    else if(yEws == 1 && zEws == 1 && yOrder == zOrder && (yOrder == 'c' || shape::shapeEquals(yShapeInfo, zShapeInfo))) {
+        yOffsets = zOffsets = nullptr;
+        xOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
+    }
+    else if(xEws == 1) {
+        xOffsets = nullptr;
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                yOffsets = new Nd4jLong[len];
+                shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
+            }
+            #pragma omp section
+            {
+                zOffsets = new Nd4jLong[len];
+                shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
+            }
+        }
+    }
+    else if(yEws == 1) {
+        yOffsets = nullptr;
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
+            }
+            #pragma omp section
+            {
+                zOffsets = new Nd4jLong[len];
+                shape::calcOffsets(zShapeInfo, zOffsets, yOrder);
+            }
+        }        
+    }
+    else if(zEws == 1) {
+        zOffsets = nullptr;
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets, zOrder);
+            }
+            #pragma omp section
+            {
+                yOffsets = new Nd4jLong[len];
+                shape::calcOffsets(yShapeInfo, yOffsets, zOrder);
+            }
+        }
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo, zShapeInfo)) {        
+        xOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        yOffsets = zOffsets = xOffsets;
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets);
+            }
+            #pragma omp section
+            {
+                zOffsets = new Nd4jLong[len];
+                shape::calcOffsets(zShapeInfo, zOffsets);
+            }
+        }
+        yOffsets = xOffsets;
+    }
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets);
+            }
+            #pragma omp section
+            {
+                yOffsets = new Nd4jLong[len];
+                shape::calcOffsets(yShapeInfo, yOffsets);
+            }
+        }
+        zOffsets = xOffsets;
+    }
+    else {
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets);
+            }
+            #pragma omp section
+            {
+                yOffsets = new Nd4jLong[len];
+                shape::calcOffsets(yShapeInfo, yOffsets);
+            }
+            #pragma omp section
+            {
+                zOffsets = new Nd4jLong[len];
+                shape::calcOffsets(zShapeInfo, zOffsets);
+            }
+        }        
+    }    
+}
+
+
+//////////////////////////////////////////////////////////////////////
+static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const char* order) {
+
+    // we assume all array have same length
+    const Nd4jLong len = shape::length(xShapeInfo);
+    
+    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
+    const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
+    
+    const char xOrder = shape::order(xShapeInfo);
+    const char yOrder = shape::order(yShapeInfo);
+
+    const bool shapesSame = shape::shapeEquals(xShapeInfo, yShapeInfo);
+
+    if (xEws == 1 && yEws == 1 && xOrder == yOrder && (xOrder == 'c' || shapesSame)) {
+        xOffsets = yOffsets = nullptr;
+    }    
+    else if(xEws == 1) {
+        xOffsets = nullptr;
+        yOffsets = new Nd4jLong[len];     
+        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);        
+    }
+    else if(yEws == 1) {
+        yOffsets = nullptr;
+        xOffsets = new Nd4jLong[len];        
+        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);        
+    }    
+    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+        xOffsets = new Nd4jLong[len];
+        shape::calcOffsets(xShapeInfo, xOffsets);
+        yOffsets = xOffsets;
+    }    
+    else {
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                xOffsets = new Nd4jLong[len];
+                shape::calcOffsets(xShapeInfo, xOffsets);
+            }
+            #pragma omp section
+            {
+                yOffsets = new Nd4jLong[len];
+                shape::calcOffsets(yShapeInfo, yOffsets);
+            }            
+        }  
+    }    
 }
 
 

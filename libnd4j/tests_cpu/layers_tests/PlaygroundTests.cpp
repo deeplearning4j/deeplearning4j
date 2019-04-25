@@ -1771,95 +1771,10 @@ TEST_F(PlaygroundTests, newTads_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char* order) {
-
-    // we assume all array have same length
-    const Nd4jLong len = shape::length(xShapeInfo);
-    
-    const Nd4jLong xEws = shape::elementWiseStride(xShapeInfo);
-    const Nd4jLong yEws = shape::elementWiseStride(yShapeInfo);
-    const Nd4jLong zEws = shape::elementWiseStride(zShapeInfo);
-    
-    const char xOrder = shape::order(xShapeInfo);
-    const char yOrder = shape::order(yShapeInfo);
-    const char zOrder = shape::order(zShapeInfo);
-
-    const bool shapesSame = shape::shapeEquals(xShapeInfo, yShapeInfo, zShapeInfo);
-
-    if (xEws == 1 && yEws == 1 && zEws == 1 && xOrder == yOrder && xOrder == zOrder && (xOrder == 'c' || shapesSame)) {
-        xOffsets = yOffsets = zOffsets = nullptr;
-    }
-    else if(xEws == 1 && yEws == 1 && xOrder == yOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, yShapeInfo))) {
-        xOffsets = yOffsets = nullptr;
-        zOffsets = new Nd4jLong[len];
-        shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
-    }
-    else if(xEws == 1 && zEws == 1 && xOrder == zOrder && (xOrder == 'c' || shape::shapeEquals(xShapeInfo, zShapeInfo))) {
-        xOffsets = zOffsets = nullptr;
-        yOffsets = new Nd4jLong[len];
-        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
-    }
-    else if(yEws == 1 && zEws == 1 && yOrder == zOrder && (yOrder == 'c' || shape::shapeEquals(yShapeInfo, zShapeInfo))) {
-        yOffsets = zOffsets = nullptr;
-        xOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
-    }
-    else if(xEws == 1) {
-        xOffsets = nullptr;
-        yOffsets = new Nd4jLong[len];
-        zOffsets = new Nd4jLong[len];
-        shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
-        shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
-    }
-    else if(yEws == 1) {
-        yOffsets = nullptr;
-        xOffsets = new Nd4jLong[len];
-        zOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
-        shape::calcOffsets(zShapeInfo, zOffsets, yOrder);
-    }
-    else if(zEws == 1) {
-        zOffsets = nullptr;
-        xOffsets = new Nd4jLong[len];
-        yOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets, zOrder);
-        shape::calcOffsets(yShapeInfo, yOffsets, zOrder);
-    }
-    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo, zShapeInfo)) {        
-        xOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets);
-        yOffsets = zOffsets = xOffsets;
-    }
-    else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-        xOffsets = new Nd4jLong[len];
-        zOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets);
-        shape::calcOffsets(zShapeInfo, zOffsets);
-        yOffsets = xOffsets;
-    }
-    else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-        xOffsets = new Nd4jLong[len];
-        yOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets);
-        shape::calcOffsets(yShapeInfo, yOffsets);
-        zOffsets = xOffsets;
-    }
-    else {
-        xOffsets = new Nd4jLong[len];
-        yOffsets = new Nd4jLong[len];
-        zOffsets = new Nd4jLong[len];
-        shape::calcOffsets(xShapeInfo, xOffsets);
-        shape::calcOffsets(yShapeInfo, yOffsets);
-        shape::calcOffsets(zShapeInfo, zOffsets);
-    }    
-}
-
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_2) {
     
     const uint N = 5;
-    const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
+    const Nd4jLong dim0(10), dim1(10), dim2(10);
 
     const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,102};
     const Nd4jLong len = shape::length(shapeInfo);
