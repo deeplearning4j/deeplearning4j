@@ -2560,7 +2560,8 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
 
 void NativeOps::tryPointer(Nd4jPointer *extra, void *p, size_t len) {
     auto buf = reinterpret_cast<int8_t*>(p);
-    *buf == buf[len - 1];
+    for (size_t i = 0; i < len; i++)
+        buf[i] == buf[len - 1];
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
