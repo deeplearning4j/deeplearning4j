@@ -818,7 +818,7 @@ public class CudaZeroHandler implements MemoryHandler {
                         (buffer.offset() * buffer.getElementSize()));
 
         if (OpProfiler.getInstance().getConfig().isCheckLocality())
-             NativeOpsHolder.getInstance().getDeviceNativeOps().tryArray(context.getOldStream(), p, 1);
+             NativeOpsHolder.getInstance().getDeviceNativeOps().tryPointer(context.getOldStream(), p, 1);
 
         switch (buffer.dataType()) {
             case DOUBLE:
