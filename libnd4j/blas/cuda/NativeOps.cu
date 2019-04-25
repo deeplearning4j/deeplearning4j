@@ -3992,5 +3992,5 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
     if (e != 0)
         throw std::runtime_error("tryPointer failed");
 
-    cudaStreamDestroy(&stream);
+    cudaStreamDestroy(stream);
 }
