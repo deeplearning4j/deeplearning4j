@@ -44,8 +44,11 @@ namespace ops  {
 
 		DECLARE_TYPES(barnes_symmetrized) {
 			getOpDescriptor()
-				->setAllowedInputTypes(nd4j::DataType::ANY)
-				->setSameMode(true);
+				->setAllowedInputTypes(0, {ALL_INTS})
+                ->setAllowedInputTypes(1, {ALL_INTS})
+                ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
+				->setSameMode(false);
 		}
 
 		DECLARE_SHAPE_FN(barnes_symmetrized) {
