@@ -26,11 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class NDArrayIndexAll extends IntervalIndex {
 
-    /**
-     * @param inclusive whether to include the last number
-     */
-    public NDArrayIndexAll(boolean inclusive) {
-        super(inclusive, 1);
+    public NDArrayIndexAll() {
+        super(true, 1);
     }
 
 
@@ -38,9 +35,12 @@ public class NDArrayIndexAll extends IntervalIndex {
     public void init(INDArray arr, long begin, int dimension) {
         this.begin = 0;
         this.end = arr.size(dimension);
-        this.length = (Math.abs(end - begin));
+        this.length = (end - begin)/stride + 1;
     }
 
-
+    @Override
+    public String toString(){
+        return "all()";
+    }
 
 }

@@ -363,7 +363,7 @@ public class DTypeTests extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore   //TODO JVM crash
+    @Test @Ignore   //JVM crash - https://github.com/deeplearning4j/deeplearning4j/issues/7574
     public void testDtypesModelVsGlobalDtypeCnn() {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
@@ -488,7 +488,7 @@ public class DTypeTests extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore   //TODO JVM CRASH
+    @Test
     public void testDtypesModelVsGlobalDtypeCnn3d() {
         for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
@@ -498,6 +498,7 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", outputLayer=" + outputLayer;
+                    log.info(msg);
 
                     Layer ol;
                     Layer secondLast;
@@ -589,7 +590,7 @@ public class DTypeTests extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore       //TODO TEMP - crashing
+    @Test @Ignore       //TODO JVM CRASH - https://github.com/deeplearning4j/deeplearning4j/issues/7574
     public void testDtypesModelVsGlobalDtypeCnn1d() {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
 
@@ -1194,6 +1195,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .convolutionMode(ConvolutionMode.Same)
                             .graphBuilder();
 
+                    INDArray label;
                     switch (test){
                         case 0:
                             b.addInputs("in")
@@ -1203,6 +1205,7 @@ public class DTypeTests extends BaseDL4JTest {
                                     .setOutputs("out")
                                     .setInputTypes(InputType.recurrent(5, 4));
                             in = new INDArray[]{Nd4j.rand(networkDtype, 2, 5, 4)};
+                            label = TestUtils.randomOneHotTimeSeries(2, 10, 4);
                             break;
                         case 1:
                             b.addInputs("in")
@@ -1212,13 +1215,14 @@ public class DTypeTests extends BaseDL4JTest {
                                     .setOutputs("out")
                                     .setInputTypes(InputType.convolutional(28, 28, 1));
                             in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+                            label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;
+                        default:
+                            throw new RuntimeException();
                     }
 
                     ComputationGraph net = new ComputationGraph(b.build());
                     net.init();
-
-                    INDArray label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
 
                     INDArray out = net.outputSingle(in);
                     assertEquals(msg, networkDtype, out.dataType());

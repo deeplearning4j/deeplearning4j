@@ -32,7 +32,6 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.*;
-import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -75,7 +74,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
@@ -989,7 +987,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray tensorAlongDimension(int index, int... dimension) {
+    public INDArray tensorAlongDimension(long index, int... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
@@ -2321,69 +2319,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.concat(0,resultList.toArray(new INDArray[resultList.size()]));
     }
 
-    @Override
-    public INDArray put(List<List<Integer>> indices, INDArray element) {
-        INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
-        for(int i = 0; i < indArrayIndices.length; i++) {
-            indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
-        }
-
-        boolean hasNext = true;
-        Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
-
-        if(indices.size() == rank()) {
-            NdIndexIterator ndIndexIterator = new NdIndexIterator(element.shape());
-
-            while(hasNext) {
-                try {
-                    List<List<Long>> next = iterate.next();
-                    int[][] nextArr = new int[next.size()][];
-                    for(int i = 0; i < next.size(); i++) {
-                        nextArr[i] = Ints.toArray(next.get(i));
-                    }
-
-                    int[] curr = Ints.concat(nextArr);
-                    putScalar(curr,element.getDouble(ndIndexIterator.next()));
-
-                }
-                catch(NoSuchElementException e) {
-                    hasNext = false;
-                }
-            }
-
-        }
-        else {
-            if(indices.size() >= 2) {
-                while(hasNext) {
-                    try {
-                        List<List<Long>> next = iterate.next();
-                        int[][] nextArr = new int[next.size()][];
-                        for(int i = 0; i < next.size(); i++) {
-                            nextArr[i] = Ints.toArray(next.get(i));
-                        }
-
-                        int[] curr = Ints.concat(nextArr);
-                        INDArray currSlice = this;
-                        for(int j = 0; j < curr.length; j++) {
-                            currSlice = currSlice.slice(curr[j]);
-                        }
-
-                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{currSlice,element},new INDArray[]{currSlice}));
-
-                    }
-                    catch(NoSuchElementException e) {
-                        hasNext = false;
-                    }
-                }
-
-
-            }
-
-        }
-
-
-        return this;
-    }
 
     @Override
     public INDArray put(INDArray indices, INDArray element) {
@@ -2551,39 +2486,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public long slices() {
         return size(0);
-    }
-
-    @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
-        Nd4j.getCompressor().autoDecompress(this);
-        long[] offsets = resolution.getOffsets();
-        long[] shape = resolution.getShapes();
-        long[] stride = resolution.getStrides();
-
-        //        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-        //            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
-
-        long offset = (offset() + resolution.getOffset());
-
-
-        int n = shape.length;
-
-        if (offsets.length != n)
-            throw new IllegalArgumentException("Invalid offset: number of offsets must be equal to rank " + Arrays.toString(offsets) + ", rank = " + n);
-        if (stride.length != n)
-            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
-
-        if (shape.length == rank() && Shape.contentEquals(shape, shape())) {
-            if (ArrayUtil.isZero(offsets)) {
-                return this;
-            } else {
-                throw new IllegalArgumentException("Invalid subArray offsets");
-            }
-        }
-
-        char newOrder = Shape.getOrder(shape, stride, 1);
-
-        return create(data, Arrays.copyOf(shape, shape.length), stride, offset, newOrder);
     }
 
     @Override
@@ -4869,21 +4771,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray ravel(char ordering) {
         Nd4j.getCompressor().autoDecompress(this);
-
-
-        if (length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-        INDArray ret = create(new int[] {1, (int) length()}, ordering);
-        NDArrayIndex index = new NDArrayIndex(this.shape());
-
-        for (int i = 0; i < length(); i++) {
-            // FIXME: LONG
-            double val = getDouble((int) index.next());
-            ret.putScalar(new int[] {0, i}, val);
+        if(ordering == this.ordering() && Shape.hasDefaultStridesForShape(this)){
+            return reshape(ordering, length());
         }
-
-        return ret;
-
+        return dup(ordering).reshape(ordering, length());
     }
 
     /**
@@ -4935,8 +4826,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isColumnVector() && c == 0)
             return this;
         else if (isColumnVector() && c > 0)
-            throw new IllegalArgumentException("Illegal index for row");
-        return get(NDArrayIndex.all(), NDArrayIndex.point(c));
+            throw new IllegalArgumentException("Illegal index for column");
+
+        return tensorAlongDimension(c, 0);
     }
 
     @Override
@@ -4980,93 +4872,187 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        // we're padding remaining dimensions with all() index
-        if (indexes.length < this.rank()) {
-            val newIndexes = new INDArrayIndex[this.rank()];
+        int numPoint = 0;
+        int numInterval = 0;
+        int numAll = 0;
+        int numNewAxis = 0;
+        int numSpecified = 0;
+        for(INDArrayIndex i : indexes){
+            if(i instanceof PointIndex){
+                numPoint++;
+            } else if(i instanceof NDArrayIndexAll){
+                numAll++;
+            } else if(i instanceof IntervalIndex){
+                numInterval++;
+            } else if(i instanceof NewAxis){
+                numNewAxis++;
+            } else if(i instanceof SpecifiedIndex){
+                numSpecified++;
+            } else {
+                throw new IllegalStateException("Unknown index: " + i);
+            }
+        }
+
+        // Padding remaining dimensions with all() index if too few indices provided
+        if (indexes.length - numNewAxis < this.rank()) {
+            val newIndexes = new INDArrayIndex[this.rank() + numNewAxis];
             for (int e = 0; e < indexes.length; e++)
                 newIndexes[e] = indexes[e];
 
-            for (int e = indexes.length; e < newIndexes.length; e++)
+            for (int e = indexes.length; e < newIndexes.length; e++) {
+                numAll++;
                 newIndexes[e] = NDArrayIndex.all();
+            }
 
             indexes = newIndexes;
         }
 
-        // never going to happen :/
-        Preconditions.checkArgument(indexes != null && indexes.length >= this.rank(), "Number of indices should be greater or equal to rank of the INDArray");
+        Preconditions.checkState((numPoint + numInterval + numAll + numSpecified) == rank(), "Illegal set of indices for array: need at least" +
+                " %s point/interval/all/specified indices for rank %s array (%ndShape), got indices %s", rank(), rank(), this, indexes);
 
-        if(indexes.length > rank()) {
-            int numNonNewAxis = 0;
-            for(int i = 0; i < indexes.length; i++) {
-                if(!(indexes[i] instanceof NewAxis))
-                    numNonNewAxis++;
-            }
+        int outRank = rank() + numNewAxis - numPoint;
+        Preconditions.checkState(outRank >= 0, "Illegal set of indices for array: %ndShape, %s", this, indexes);
 
-            if(numNonNewAxis > rank()) {
-                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
-                        rank() + " array with indices " + Arrays.toString(indexes));
+
+        //To work out sub-array, we need to work out 3 things: offset, shape and strides. We calculate all of these
+        long[] outShape = new long[outRank];
+        long[] outStrides = new long[outRank];
+        long offset = offset();                     //Start with existing offset if view
+
+        int outIdx = 0;     //Axis number counter for output array
+        int inIdx = 0;      //Axis number counter for input array
+        for( int i=0; i<indexes.length; i++ ){
+            if(indexes[i] instanceof PointIndex){
+                //Point indexes don't appear in output
+                PointIndex pi = (PointIndex)indexes[i];
+                offset += pi.offset() * stride(inIdx);
+                inIdx++;
+            } else if(indexes[i] instanceof NDArrayIndexAll){
+                //All index: doesn't change offset. Axis is in both in and output arrays
+                outShape[outIdx] = size(inIdx);
+                outStrides[outIdx] = stride(inIdx);
+                inIdx++;
+                outIdx++;
+            } else if(indexes[i] instanceof IntervalIndex){
+                //Interval index: Axis is in both in and output arrays, but output might be smaller
+                IntervalIndex ii = (IntervalIndex)indexes[i];
+                long start = ii.offset();
+                long endInc = ii.end() - (ii.isInclusive() ? 0 : 1);
+                if (endInc >= size(inIdx)) {
+                    throw new IllegalStateException("Indices are out of range: Cannot get interval index " + indexes[i] +
+                            " on array with size(" + inIdx + ")=" + size(inIdx) + ". Array shape: " + Arrays.toString(shape()) +
+                            ", indices: " + Arrays.toString(indexes));
+                }
+                long stride = ii.stride();
+                long length = (endInc - start)/stride + 1;
+
+                offset += ii.offset() * stride(inIdx);
+                outShape[outIdx] = length;
+                outStrides[outIdx] = ii.stride() * stride(inIdx);
+                inIdx++;
+                outIdx++;
+            } else if(indexes[i] instanceof NewAxis) {
+                //New axis: appends a 1 in shape. Axis not present in input, but is present in output
+                outShape[outIdx] = 1;
+                if (outIdx > 0) { //Stride doesn't matter for 1 size axis anyway...
+                    outStrides[outIdx] = outStrides[outIdx - 1];
+                } else {
+                    outStrides[outIdx] = 1;
+                }
+                outIdx++;
+            } else if(indexes[i] instanceof SpecifiedIndex){
+                //Specified index: axis present in both input and output
+                SpecifiedIndex si = (SpecifiedIndex)indexes[i];
+                outShape[outIdx++] = si.length();
+                inIdx++;
+                //Don't care about strides for specified index, as result won't be a view
+            } else {
+                throw new IllegalStateException("Unknown index type: " + i);    //Should never happen
             }
-        } else if(indexes.length < rank()){
-            throw new IllegalStateException("Expected " + rank() + " indices for array of rank " + rank() + ", got " + indexes.length + " indices");
         }
 
 
-        //check for row/column vector and point index being 0
-        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
-                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[1] instanceof NDArrayIndexAll
-                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[0] instanceof NDArrayIndexAll)) ||
-                (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
-            return this;
+        //Note: If we have specified indices, we can't return a view. Instead, we copy the specified sub-arrays from
+        // the input array to the output array.
+        //How? Create the output array, then do loop over the specified indices only, and copy sub-arrays for all other axes
+        if (numSpecified > 0) {
+            INDArray out = Nd4j.create(dataType(), outShape);
 
-        //1d+all: return this
-        if(indexes.length == 1 && rank() == 1 && indexes[0] instanceof NDArrayIndexAll)
-            return this;
+            //Need to copy subsets here
+            long[] specifiedSizes = new long[numSpecified];
+            SpecifiedIndex[] si = new SpecifiedIndex[numSpecified];
+            int j=0;
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof SpecifiedIndex){
+                    specifiedSizes[j] = indexes[i].length();
+                    si[j] = (SpecifiedIndex)indexes[i];
+                    j++;
+                }
+            }
+            NdIndexIterator iter = new NdIndexIterator(specifiedSizes);
 
-        indexes = NDArrayIndex.resolveLong(jvmShapeInfo.javaShapeInformation, indexes);
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
-        resolution.exec(indexes);
-
-        if (indexes.length < 1)
-            throw new IllegalStateException("Invalid index found of zero length");
-
-        long[] shape = resolution.getShapes();
-        int numSpecifiedIndex = 0;
-        for (int i = 0; i < indexes.length; i++)
-            if (indexes[i] instanceof SpecifiedIndex)
-                numSpecifiedIndex++;
-
-        if (shape != null && numSpecifiedIndex > 0) {
-            Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
-            INDArray ret = Nd4j.create(this.dataType(), shape, 'c');
-            int count = 0;
-            while (true) {
-                try {
-                    List<List<Long>> next = gen.next();
-                    List<Long> coordsCombo = new ArrayList<>();
-                    for (int i = 0; i < next.size(); i++) {
-                        if (next.get(i).size() > 1)
-                            throw new IllegalStateException("Illegal entry returned");
-                        coordsCombo.add(next.get(i).get(0));
-                    }
-                    ret.putScalar(count++, getDouble(Ints.toArray(coordsCombo)));
+            //What we need to do here: Iterate over sub-arrays for both input and output
+            //(1) Get from input: requested indices, except for:
+            //    i. specified indices -> replace with loop + point
+            //    ii. new axis indices -> ignore/exclude (don't appear in input)
+            //    iii. interval indices -> replace with all
+            //(2) Get from output: requested indices, except for:
+            //    i. point indices -> ignore/exclude (don't appear in output)
+            //    ii. new axis indices -> replace with point(0)
 
 
-                } catch (NoSuchElementException e) {
-                    break;
+            INDArrayIndex[] pointIdxsIn = new INDArrayIndex[indexes.length - numNewAxis];       //Indices for source (this array)
+            int[] specifiedAxisIn = new int[numSpecified];
+            int specCount = 0;
+            j = 0;
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof NewAxis)
+                    continue;   //Skip new axis in source dims
+                if(indexes[i] instanceof SpecifiedIndex)
+                    specifiedAxisIn[specCount++] = j;
+                pointIdxsIn[j++] = indexes[i];
+            }
+
+            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length-numPoint];          //Indices for destination (output array)
+            j = 0;
+            specCount = 0;
+            int[] specifiedAxisOut = new int[numSpecified];
+            for( int i=0; i<indexes.length; i++ ){
+                if(indexes[i] instanceof NewAxis){
+                    pointIdxsOut[j++] = NDArrayIndex.point(0);
+                    continue;
+                } else if(indexes[i] instanceof PointIndex){
+                    continue;
+                } else if(indexes[i] instanceof SpecifiedIndex){
+                    specifiedAxisOut[specCount++] = j;
+                } else if(indexes[i] instanceof IntervalIndex){
+                    pointIdxsOut[j++] = NDArrayIndex.all();
+                    continue;
+                }
+                pointIdxsOut[j++] = indexes[i];
+            }
+
+
+            //Iterate over sub-arrays; copy from source to destination
+            while( iter.hasNext()){
+                long[] specifiedIdxs = iter.next();
+                for( int i=0; i<specifiedIdxs.length; i++ ){
+                    long sourceIdx = si[i].getIndexes()[(int)specifiedIdxs[i]];
+                    pointIdxsIn[specifiedAxisIn[i]] = NDArrayIndex.point(sourceIdx);
+                    int outI = (int)specifiedIdxs[i];
+                    pointIdxsOut[specifiedAxisOut[i]] = NDArrayIndex.point(outI);
                 }
 
-                if (count >= ret.length())
-                    break;
+                out.get(pointIdxsOut).assign(get(pointIdxsIn));
             }
 
-            return ret;
-
+            return out;
         }
 
-        INDArray ret = subArray(resolution);
-        return ret;
+
+        char order = Shape.getOrder(outShape, outStrides, -1);
+        INDArray out = create(data, outShape, outStrides, offset, order);
+        return out;
     }
 
 
@@ -5106,15 +5092,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isRowVector() && r > 0)
             throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
-        INDArray result = get(NDArrayIndex.point(r), NDArrayIndex.all());
 
-        // FIXME: this is bad
-        if (!this.isView() && this.ordering() == 'c' && result.elementWiseStride() == 1 && result.ordering() != 'c') {
-            val newShapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(result.shape(), result.stride(), 1, 'c', this.dataType());
-            ((BaseNDArray) result).setShapeInformation(newShapeInfo);
-        }
+        Preconditions.checkArgument(rank() == 2, "getRow() can be called on 2D arrays only");
+        Preconditions.checkArgument(r < rows(), "Row index must be smaller than total number of rows");
 
-        return result;
+        return tensorAlongDimension(r, 1);
     }
 
     @Override

@@ -18,26 +18,14 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Multi-Label-Loss Function, maybe more commonly known as BPMLL
@@ -68,7 +56,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-public class LossMultiLabel extends DifferentialFunction implements ILossFunction {
+public class LossMultiLabel implements ILossFunction {
 
 
     public LossMultiLabel() {
@@ -209,52 +197,5 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
     @Override
     public String toString() {
         return "LossMultiLabel";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 }

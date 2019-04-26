@@ -25,7 +25,7 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    __device__ void shuffleKernel(void **vdX, Nd4jLong **xShapeInfo,
+    __device__ void shuffleKernel(void **vdX, Nd4jLong **dxShapeInfo,
                                   void **vdZ,
                                   int N,
                                   int *shuffleMap,
@@ -38,6 +38,8 @@ namespace nd4j {
         __shared__ int tadLength;
         __shared__ int tadEWS;
         __shared__ int numTads;
+        __shared__ Nd4jLong* xShapeInfo;
+        __shared__ Nd4jLong xLength;
 
         for (int f = 0; f < N; f++) {
             auto x = reinterpret_cast<T *>(dX[f]);
@@ -46,40 +48,56 @@ namespace nd4j {
             if (threadIdx.x == 0) {
                 tadLength = shape::length(tadOnlyShapeInfo[f]);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-                numTads = shape::length(xShapeInfo[f]) / tadLength;
+                xShapeInfo = dxShapeInfo[f];
+                xLength = shape::length(xShapeInfo);
+                numTads = xLength / tadLength;
             }
             __syncthreads();
 
-            // we roll over the pairs of TADs, thus limit is numTads / 2
-            for (uint r = blockIdx.x; r < numTads; r += gridDim.x) {
-                if (shuffleMap[r] >= 0) {
-                    auto oldOffset = tadOffsets[f][r];
-                    auto newOffset = tadOffsets[f][shuffleMap[r]];
+            if (shape::rank(xShapeInfo) == 1) {
+                uint tid = threadIdx.x + blockIdx.x * gridDim.x;
+                for (uint r = tid; r < xLength; r += gridDim.x * blockDim.x) {
+                    auto swapIndex = shuffleMap[r];
+                    if (swapIndex >= 0) {
+                        uint idx = r * tadEWS;
+                        uint swap = swapIndex * tadEWS;
+                        T oldX = x[idx];
+                        z[idx] = x[swap];
+                        z[swap] = oldX;
+                    }
+                }
+            } else {
+                // we roll over the pairs of TADs, thus limit is numTads / 2
+                for (uint r = blockIdx.x; r < numTads; r += gridDim.x) {
+                    if (shuffleMap[r] >= 0) {
+                        auto oldOffset = tadOffsets[f][r];
+                        auto newOffset = tadOffsets[f][shuffleMap[r]];
 
-                    auto rX = x + oldOffset;
-                    auto rY = x + newOffset;
+                        auto rX = x + oldOffset;
+                        auto rY = x + newOffset;
 
-                    auto zX = z + oldOffset;
-                    auto zY = z + newOffset;
+                        auto zX = z + oldOffset;
+                        auto zY = z + newOffset;
 
-                    // so we're going to change TAD[oldOffset] with TAD[newOffset]
-                    if (tadEWS == 1) {
-                        for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                            T oldX = rX[i];
-                            rX[i] = rY[i];
-                            zY[i] = oldX;
-                        }
+                        // so we're going to change TAD[oldOffset] with TAD[newOffset]
+                        if (tadEWS == 1) {
+                            for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                                T oldX = rX[i];
+                                rX[i] = rY[i];
+                                zY[i] = oldX;
+                            }
 
-                    } else {
-                        for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                        } else {
+                            for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
 
-                            auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
-                            auto yOffset = newOffset + xOffset;
-                            xOffset += oldOffset;
+                                auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                                auto yOffset = newOffset + xOffset;
+                                xOffset += oldOffset;
 
-                            T oldX = x[xOffset];
-                            z[xOffset] = x[yOffset];
-                            z[yOffset] = oldX;
+                                T oldX = x[xOffset];
+                                z[xOffset] = x[yOffset];
+                                z[yOffset] = oldX;
+                            }
                         }
                     }
                 }

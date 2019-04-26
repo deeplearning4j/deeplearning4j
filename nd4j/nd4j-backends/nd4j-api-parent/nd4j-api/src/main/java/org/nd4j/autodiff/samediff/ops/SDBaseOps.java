@@ -2451,6 +2451,10 @@ public abstract class SDBaseOps {
         return slice(null, input, begin, size);
     }
 
+    public SDVariable slice(SDVariable input, SDVariable begin, SDVariable size) {
+        return slice(null, input, begin, size);
+    }
+
     /**
      * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
      * For example, if input is:<br>
@@ -2472,6 +2476,13 @@ public abstract class SDBaseOps {
         SDVariable ret = f().slice(input, begin, size);
         return updateVariableNameAndReference(ret, name);
     }
+
+    public SDVariable slice(String name, SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable size) {
+        SDVariable ret = f().slice(input, begin, size);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
 
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, int...)}

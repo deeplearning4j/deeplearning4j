@@ -32,7 +32,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.*;
@@ -2394,21 +2393,6 @@ public class Shape {
     }
 
     /**
-     * Compute the offset for the given array
-     * given the indices
-     * @param arr the array to compute the offset for
-     * @param indexes the indexes along each dimension to create the offset for
-     * @return the offset for the given array and indexes
-     */
-    public static long offsetFor(INDArray arr, int[] indexes) {
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(Shape.toIndexes(indexes));
-        return resolution.getOffset();
-    }
-
-
-
-    /**
      * Assert the both shapes are the same length
      * and shape[i] < lessThan[i]
      * @param shape the shape to check
@@ -2433,22 +2417,6 @@ public class Shape {
                 throw new IllegalStateException("Shape[" + i + "] should be less than lessThan[" + i + "]");
         }
     }
-
-
-
-    /**
-     * Convert the given int indexes
-     * to nd array indexes
-     * @param indices the indices to convert
-     * @return the converted indexes
-     */
-    public static INDArrayIndex[] toIndexes(int[] indices) {
-        INDArrayIndex[] ret = new INDArrayIndex[indices.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = new NDArrayIndex(indices[i]);
-        return ret;
-    }
-
 
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {

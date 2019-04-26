@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 /**
  * @author Adam Gibson
@@ -183,7 +184,7 @@ public class ShapeTests extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray tensor = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 7}, {4, 10}}).reshape(1, 2, 2);
-        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), NDArrayIndex.all());
+        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), all(), all());
         assertEquals(assertion, tensorGet);
 
     }

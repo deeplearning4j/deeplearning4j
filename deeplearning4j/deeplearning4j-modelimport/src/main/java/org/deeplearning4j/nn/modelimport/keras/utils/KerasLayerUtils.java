@@ -191,7 +191,7 @@ public class KerasLayerUtils {
             layerClassName = getClassNameFromConfig(layerConfig, conf);
         }
 
-        KerasLayer layer;
+        KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LEAKY_RELU())) {
@@ -304,16 +304,17 @@ public class KerasLayerUtils {
             layer = new KerasCropping1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LAMBDA())) {
             String lambdaLayerName = KerasLayerUtils.getLayerNameFromConfig(layerConfig, conf);
-            SameDiffLambdaLayer lambdaLayer;
-            if (lambdaLayers.containsKey(lambdaLayerName)) {
-                lambdaLayer = lambdaLayers.get(lambdaLayerName);
-            } else {
-                throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda" +
+            if (!lambdaLayers.containsKey(lambdaLayerName) && !customLayers.containsKey(layerClassName)){
+                throw new UnsupportedKerasConfigurationException("No SameDiff Lambda layer found for Lambda " +
                         "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
                         "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
-            layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
-        } else {
+            SameDiffLambdaLayer lambdaLayer = lambdaLayers.get(lambdaLayerName);
+            if (lambdaLayer != null){
+                layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
+            }
+        }
+        if (layer == null){
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);

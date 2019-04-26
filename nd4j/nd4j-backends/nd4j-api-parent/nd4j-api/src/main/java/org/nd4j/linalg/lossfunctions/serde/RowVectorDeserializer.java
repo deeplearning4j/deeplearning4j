@@ -30,7 +30,9 @@ import java.io.IOException;
  * Used in conjunction with {@link RowVectorSerializer}
  *
  * @author Alex Black
+ * @deprecated Use {@link org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer}
  */
+@Deprecated
 public class RowVectorDeserializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)

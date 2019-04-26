@@ -644,8 +644,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
 
+
         long[] shape;
-        if (sourceDimension == 1)
+        if (source.rank() == 1) {
+            shape = new long[]{indexes.length};
+        } else if (sourceDimension == 1)
             shape = new long[] {indexes.length, source.shape()[sourceDimension]};
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
@@ -665,7 +668,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         Preconditions.checkArgument(source.dataType() == destination.dataType(), "Source and Destination data types must be the same");
 
         long[] shape = null;
-        if (sourceDimension == 1)
+        if (source.rank() == 1) {
+            shape = new long[]{indexes.length};
+        } else if (sourceDimension == 1)
             shape = new long[] {indexes.length, source.shape()[sourceDimension]};
         else if (sourceDimension == 0)
             shape = new long[] {source.shape()[sourceDimension], indexes.length};
@@ -1029,12 +1034,14 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             context = allocator.getFlowController().prepareAction(arrays.get(x));
         }
 
+        val zero = arrays.get(0);
         int tadLength = 1;
-        for (int i = 0; i < dimensions.get(0).length; i++) {
-            tadLength *= arrays.get(0).shape()[dimensions.get(0)[i]];
-        }
+        if (zero.rank() > 1)
+            for (int i = 0; i < dimensions.get(0).length; i++) {
+                tadLength *= zero.shape()[dimensions.get(0)[i]];
+            }
 
-        val numTads = arrays.get(0).length() / tadLength;
+        val numTads = zero.length() / tadLength;
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
@@ -1071,7 +1078,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             val offsets = tadBuffers.getSecond();
 
-            if (offsets.length() != numTads)
+            if (zero.rank() != 1 && offsets.length() != numTads)
                 throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
 
             val tadOffset = AtomicAllocator.getInstance().getPointer(offsets, context);

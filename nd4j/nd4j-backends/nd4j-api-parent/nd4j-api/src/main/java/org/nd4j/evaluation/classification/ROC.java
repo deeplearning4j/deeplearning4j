@@ -213,15 +213,15 @@ public class ROC extends BaseEvaluation<ROC> {
             //So, as we iterate from i=0..length, first 0 to i (inclusive) are predicted class 1, all others are predicted class 0
             INDArray pl = getProbAndLabelUsed();
             INDArray sorted = Nd4j.sortRows(pl, 0, false);
-            INDArray isPositive = sorted.getColumn(1);
-            INDArray isNegative = sorted.getColumn(1).rsub(1.0);
+            INDArray isPositive = sorted.getColumn(1,true);
+            INDArray isNegative = sorted.getColumn(1,true).rsub(1.0);
 
             INDArray cumSumPos = isPositive.cumsum(-1);
             INDArray cumSumNeg = isNegative.cumsum(-1);
             val length = sorted.size(0);
 
             INDArray t = Nd4j.create(DataType.DOUBLE, length + 2, 1);
-            t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0));
+            t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0,true));
 
             INDArray fpr = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             fpr.put(new INDArrayIndex[]{interval(1, length + 1), all()},
@@ -386,7 +386,7 @@ public class ROC extends BaseEvaluation<ROC> {
         if (isExact) {
             INDArray pl = getProbAndLabelUsed();
             INDArray sorted = Nd4j.sortRows(pl, 0, false);
-            INDArray isPositive = sorted.getColumn(1);
+            INDArray isPositive = sorted.getColumn(1,true);
 
             INDArray cumSumPos = isPositive.cumsum(-1);
             val length = sorted.size(0);
@@ -402,7 +402,7 @@ public class ROC extends BaseEvaluation<ROC> {
              */
 
             INDArray t = Nd4j.create(DataType.DOUBLE, length + 2, 1);
-            t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0));
+            t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0,true));
 
             INDArray linspace = Nd4j.linspace(1, length, length, DataType.DOUBLE);
             INDArray precision = cumSumPos.castTo(DataType.DOUBLE).div(linspace.reshape(cumSumPos.shape()));
@@ -610,8 +610,8 @@ public class ROC extends BaseEvaluation<ROC> {
                 probClass1 = predictions2d;
                 labelClass1 = labels2d;
             } else {
-                probClass1 = predictions2d.getColumn(1);
-                labelClass1 = labels2d.getColumn(1);
+                probClass1 = predictions2d.getColumn(1,true);
+                labelClass1 = labels2d.getColumn(1,true);
             }
             val currMinibatchSize = labels2d.size(0);
             probAndLabel.get(interval(exampleCount, exampleCount + currMinibatchSize),
@@ -636,9 +636,9 @@ public class ROC extends BaseEvaluation<ROC> {
                 positivePredictedClassColumn = predictions2d;
             } else {
                 //Standard case - 2 output variables (probability distribution)
-                positiveActualClassColumn = labels2d.getColumn(1);
-                negativeActualClassColumn = labels2d.getColumn(0);
-                positivePredictedClassColumn = predictions2d.getColumn(1);
+                positiveActualClassColumn = labels2d.getColumn(1,true);
+                negativeActualClassColumn = labels2d.getColumn(0,true);
+                positivePredictedClassColumn = predictions2d.getColumn(1,true);
             }
 
             //Increment global counts - actual positive/negative observed

@@ -65,9 +65,9 @@ public class NDArrayIndexResolveTests extends BaseNd4jTest {
         else {
             assertEquals(2, resolved.length);
             assertTrue(resolved[0] instanceof PointIndex);
-            assertEquals(0, resolved[0].current());
+            assertEquals(0, resolved[0].offset());
             assertTrue(resolved[1] instanceof PointIndex);
-            assertEquals(1, resolved[1].current());
+            assertEquals(1, resolved[1].offset());
         }
 
     }

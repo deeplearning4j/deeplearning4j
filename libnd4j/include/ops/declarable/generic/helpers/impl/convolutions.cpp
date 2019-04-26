@@ -2054,13 +2054,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -2069,7 +2069,11 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
 
                         sum = -DataTypeUtils::max<T>();
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
-                                                    
+
+                        // we set these to default values
+                        maxKH = hstart;
+                        maxKW = wstart;
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T valIn = pIn[kh + kw];
@@ -2101,13 +2105,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -2146,13 +2150,14 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -2353,17 +2358,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;
@@ -2371,6 +2376,10 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             hend   *= iStride3;
                             wstart *= iStride4;
                             wend   *= iStride4;
+
+                            maxKD = dstart;
+                            maxKH = hstart;
+                            maxKW = wstart;
 
                             sum = -DataTypeUtils::max<T>();
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
@@ -2412,17 +2421,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;
@@ -2468,17 +2477,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;

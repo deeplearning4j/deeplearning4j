@@ -5285,8 +5285,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         log.info("Time spent: {} ms", time2 - time1);
 
+        val e = exp1.toDoubleVector();
         for (int r = 0; r < array.rows(); r++) {
-            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+            val d = res.getRow(r).dup();
+
+            assertArrayEquals(e, d.toDoubleVector(), 1e-5);
+            assertEquals("Failed at " + r, exp1, d);
         }
     }
 
@@ -7382,6 +7386,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testRowsEdgeCaseView(){
+
+        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
+        INDArray view = arr.getColumn(0);
+        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), view);
+        int[] idxs = new int[]{0,2,3,4};
+
+        INDArray out = Nd4j.pullRows(view.reshape(5, 1), 1, idxs);
+        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4, 1);
+
+        assertEquals(exp, out);   //Failing here
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testPullRowsFailure() {
+        val idxs = new int[]{0,2,3,4};
+        val out = Nd4j.pullRows(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0), 0, idxs);
+    }
+
+    @Test
     public void testRepeatStrided() {
 
         // Create a 2D array (shape 5x5)
@@ -7486,19 +7510,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testRowsEdgeCaseView(){
-        INDArray arr = Nd4j.linspace(0, 9, 10, DataType.DOUBLE).reshape('f', 5, 2).dup('c');    //0,1,2... along columns
-        INDArray view = arr.getColumn(0);
-        assertEquals(Nd4j.createFromArray(0.0, 1.0, 2.0, 3.0, 4.0).reshape(5,1), view);
-        int[] idxs = new int[]{0,2,3,4};
-
-        INDArray out = Nd4j.pullRows(view, 1, idxs);
-        INDArray exp = Nd4j.createFromArray(new double[]{0,2,3,4}).reshape(4,1);
-
-        assertEquals(exp, out);   //Failing here
-    }
-
-    @Test
     public void testCreateF(){
         char origOrder = Nd4j.order();
         try {
@@ -7547,7 +7558,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray vector = Nd4j.createFromArray(data).reshape(1,2);
         INDArray slice = vector.slice(0);
         System.out.println(slice.shapeInfoToString());
-        assertEquals(vector, slice);
+        assertEquals(vector.reshape(2), slice);
         slice.assign(-1);
         assertEquals(Nd4j.createFromArray(-1.0, -1.0).reshape(1,2), vector);
     }

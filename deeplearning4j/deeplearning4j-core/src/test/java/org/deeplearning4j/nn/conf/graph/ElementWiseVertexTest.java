@@ -100,7 +100,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         INDArray target = input1.dup().addi(input2).addi(input3);
 
         INDArray output = cg.output(input1, input2, input3)[0];
-        INDArray squared = output.sub(target);
+        INDArray squared = output.sub(target.castTo(output.dataType()));
         double rms = squared.mul(squared).sumNumber().doubleValue();
         Assert.assertEquals(0.0, rms, this.epsilon);
     }
@@ -141,7 +141,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         INDArray target = input1.dup().muli(input2).muli(input3);
 
         INDArray output = cg.output(input1, input2, input3)[0];
-        INDArray squared = output.sub(target);
+        INDArray squared = output.sub(target.castTo(output.dataType()));
         double rms = squared.mul(squared).sumNumber().doubleValue();
         Assert.assertEquals(0.0, rms, this.epsilon);
     }

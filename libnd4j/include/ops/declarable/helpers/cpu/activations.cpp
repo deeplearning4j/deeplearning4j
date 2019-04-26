@@ -22,6 +22,7 @@
 #include <ops/declarable/helpers/activations.h>
 #include <ShapeUtils.h>
 #include <numeric>
+#include <ConstantTadHelper.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -159,80 +160,82 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         else
             output = 1.;
     }
-    else {
+    else if(input.isSameShapeStrict(&output)) {
+
+        TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
+        Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
+        Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
+        const uint numOfSubArrs = tadPack.numberOfTads();
+        const uint tadLen       = shape::length(tadShapeInfo);
         
-        const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {dimension});
-        const uint numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-        const auto subArr = input(0, dimsToExclude);
-        std::vector<Nd4jLong> idxRanges(2 * input.rankOf());
+        if(shape::elementWiseStride(tadShapeInfo) == 1){
 
-        if(subArr.ews() == 1 && subArr.ordering() == 'c') {
-
-            PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(idxRanges))
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i = 0; i < numOfSubArrs; ++i) {
-            
-                ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-                const auto inSubArr  = input(idxRanges);                
-                const uint len       = inSubArr.lengthOf();
 
-                T* inBuff  = inSubArr.bufferAsT<T>();
-                T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0;
                         
-                for(uint j = 0; j < len; ++j)
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
+                for(uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);            
             
-            
-                for (uint j = 0; j < len; ++j) {
+                for (uint j = 0; j < tadLen; ++j) {
                     T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
                     outBuff[j] = temp;
                     sum += temp;
                 }
             
-                for (uint j = 0; j < len; ++j)
+                for (uint j = 0; j < tadLen; ++j)
                     outBuff[j] /= sum;            
             }
-            return;
         }
+        else {
+
+            uint inShapeInfoCast[MAX_RANK];
+            bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
+
+            auto offsets = new Nd4jLong[tadLen];
+            shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint i = 0; i < numOfSubArrs; ++i) {                        
+
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
+
+                T max = -DataTypeUtils::max<T>();
+                T sum = 0.f;
+            
                 
-        uint inShapeInfoCast[MAX_RANK];
-        bool canCast = nd4j::DataTypeUtils::castShapeInfo(subArr.getShapeInfo(), inShapeInfoCast);
-
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(idxRanges))
-        for (uint i = 0; i < numOfSubArrs; ++i) {
+ 
+                for(uint j = 0; j < tadLen; ++j)                    
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);                
             
-            ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-            const auto inSubArr  = input(idxRanges);            
-            const uint len       = inSubArr.lengthOf();
+                for (uint j = 0; j < tadLen; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
+                    outBuff[offsets[j]] = temp;
+                    sum += temp;
+                }
 
-            T* inBuff  = inSubArr.bufferAsT<T>();
-            T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
-
-            T max = -DataTypeUtils::max<T>();
-            T sum = 0.f;
-            
-            auto offsets = new Nd4jLong[len];
-
-            for(uint j = 0; j < len; ++j) {
-                offsets[j] = shape::indexOffset(j, inSubArr.getShapeInfo(), inShapeInfoCast, len, canCast);
-                max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[offsets[j]] /= sum;                    
             }
-            
-            for (uint j = 0; j < len; ++j) {
-                T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
-                outBuff[offsets[j]] = temp;
-                sum += temp;
-            }
-
-            for (uint j = 0; j < len; ++j)
-                outBuff[offsets[j]] /= sum;                
-            
             delete []offsets;
         }
     }
+    else {
+        NDArray max = input.reduceAlongDims(nd4j::reduce::Max, {dimension}, true);
+        input.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &max, &output, false);
+        output.applyTransform(nd4j::transform::Exp);
+        NDArray sum = output.reduceAlongDims(nd4j::reduce::Sum, {dimension}, true);
+        output /= sum;
+    }
 }
+
+
 ///////////////////////////////////////////////////////////////////
 void softmax(const NDArray& input, NDArray& output, const int dimension) {
     

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -59,7 +60,7 @@ public class RationalTanh extends BaseTransformStrictOp {
 
     @Override
     public String onnxName() {
-        return "Tanh";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

@@ -184,7 +184,7 @@ namespace nd4j {
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype = DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
@@ -252,6 +252,11 @@ namespace nd4j {
         *  repeats - number of repetitions
         */        
         NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
+
+        /**
+         * This method fills this array with zeros
+         */
+        void nullify();
 
         /**
          * This method returns quantized copy of given array
@@ -1087,9 +1092,11 @@ namespace nd4j {
 
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 
+        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+
         ResultSet* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
 
-        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+        ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
 
         ResultSet* allExamples()const ;
 

@@ -18,32 +18,20 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * L1 loss function: i.e., sum of absolute errors, L = sum_i abs(predicted_i - actual_i)
@@ -54,10 +42,10 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-public class LossL1 extends DifferentialFunction implements ILossFunction {
+public class LossL1 implements ILossFunction {
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     protected final INDArray weights;
 
     public LossL1() {
@@ -94,7 +82,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
                 throw new IllegalStateException("Weights vector (length " + weights.length()
                                 + ") does not match output.size(1)=" + output.size(1));
             }
-            scoreArr.muliRowVector(weights);
+            scoreArr.muliRowVector(weights.castTo(scoreArr.dataType()));
         }
 
         if (mask != null) {
@@ -134,7 +122,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
         INDArray dLda = Nd4j.getExecutioner().exec(new Sign(outSubLabels));
 
         if (weights != null) {
-            dLda.muliRowVector(weights);
+            dLda.muliRowVector(weights.castTo(dLda.dataType()));
         }
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
@@ -180,53 +168,5 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
         if (weights == null)
             return "LossL1()";
         return "LossL1(weights=" + weights + ")";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 }
