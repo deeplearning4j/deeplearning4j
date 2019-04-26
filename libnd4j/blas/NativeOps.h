@@ -623,7 +623,7 @@ public:
      * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
      * @param flags optional parameter
      */
-    Nd4jPointer mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags);
+    Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags);
 
     /**
      * This method releases previously allocated host memory space
@@ -638,7 +638,7 @@ public:
      * @param pointer pointer that'll be freed
      * @param ptrToDeviceId pointer to deviceId.
      */
-    int freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
+    int freeDevice(Nd4jPointer pointer, int deviceId);
 
     /**
      *
@@ -705,7 +705,7 @@ public:
      * @param ptrToDeviceId
      * @return
      */
-    int setDevice(Nd4jPointer ptrToDeviceId);
+    int setDevice(int deviceId);
 
     /**
      *
@@ -732,7 +732,7 @@ public:
      * @param ptrToDeviceId
      * @return
      */
-    Nd4jLong getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jLong getDeviceFreeMemory(int deviceId);
 
     /**
      * Returns amount of free memory for current device
@@ -745,28 +745,28 @@ public:
      * @param ptrToDeviceId
      * @return
      */
-    Nd4jLong getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jLong getDeviceTotalMemory(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    int getDeviceMajor(Nd4jPointer ptrToDeviceId);
+    int getDeviceMajor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    int getDeviceMinor(Nd4jPointer ptrToDeviceId);
+    int getDeviceMinor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    const char * getDeviceName(Nd4jPointer ptrToDeviceId);
+    const char * getDeviceName(int deviceId);
 
     /**
      *

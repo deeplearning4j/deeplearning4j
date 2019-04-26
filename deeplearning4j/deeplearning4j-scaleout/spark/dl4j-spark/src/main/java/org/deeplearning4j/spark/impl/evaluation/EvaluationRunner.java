@@ -34,6 +34,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocal;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -87,19 +88,6 @@ public class EvaluationRunner {
         Preconditions.checkArgument(evalWorkers > 0, "Invalid number of evaluation workers: must be > 0. Got: %s", evalWorkers);
         Preconditions.checkState(ds != null || mds != null, "No data provided - both DataSet and MultiDataSet iterators were null");
 
-        synchronized (EvaluationRunner.class) {
-            System.out.println("Thread: " + Thread.currentThread().getId());
-            INDArray temp = Nd4j.createFromArray(new float[]{1, 2, 3});
-            System.out.println("Thread: " + Thread.currentThread().getId() + temp);
-            temp.addi(1.0);
-            System.out.println("Thread: " + Thread.currentThread().getId() + temp);
-            Nd4j.getExecutioner().commit();
-            System.out.println("Thread: " + Thread.currentThread().getId() + " sleeping...");
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e){ }
-        }
-
         //For multi-GPU we'll use a round robbin approach for worker thread/GPU affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if(numDevices <= 0)
@@ -113,7 +101,8 @@ public class EvaluationRunner {
                 //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
                 // all threads, which is both safe and uses the least amount of memory
                 //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
-//                Nd4j.getMemoryManager().releaseCurrentContext();
+                Nd4j.getMemoryManager().releaseCurrentContext();
+                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(0);
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
                 byte[] pBytes = params.getValue();
                 INDArray p;
@@ -125,13 +114,6 @@ public class EvaluationRunner {
                 DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);
                 paramsMap.put(params.getValue(), dlp);
                 log.info("paramsMap: size {}", paramsMap.size());
-
-                System.out.println("POST DeviceLocalNDArray - Thread: " + Thread.currentThread().getId() + " about to commit");
-                Nd4j.getExecutioner().commit();
-                System.out.println("POST DeviceLocalNDArray - Thread: " + Thread.currentThread().getId() + " sleeping...");
-                try {
-                    Thread.sleep(2000);
-                } catch (Exception e){ }
             }
             deviceLocalParams = paramsMap.get(params.getValue());
         }
@@ -141,9 +123,6 @@ public class EvaluationRunner {
             //For load balancing: we're relying on the fact that threads are mapped to devices in a round-robbin approach
             // the first time they touch an INDArray. If we assume this method is called by new threads,
             // then the first N workers will be distributed evenly across available devices.
-
-            synchronized (EvaluationRunner.class) { //TEMPORARY SYNC FOR DEBUGGING
-                System.out.println("Starting evaluation - Thread: " + Thread.currentThread().getId() + " about to commit");
 
                 if (workerCount.compareAndSet(currentWorkerCount, currentWorkerCount + 1)) {
                     log.debug("Starting evaluation in thread {}", Thread.currentThread().getId());
@@ -191,16 +170,9 @@ public class EvaluationRunner {
                         log.debug("Finished evaluation in thread {}", Thread.currentThread().getId());
                     }
 
-                    System.out.println("Finished evaluation - Thread: " + Thread.currentThread().getId() + " about to commit");
                     Nd4j.getExecutioner().commit();
-                    System.out.println("Finished evaluation - Thread: " + Thread.currentThread().getId() + " about to sleep...");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Exception e){ }
-
                     return f;
                 }
-            }
         }
 
         //At this point: not a worker thread (otherwise, would have returned already)

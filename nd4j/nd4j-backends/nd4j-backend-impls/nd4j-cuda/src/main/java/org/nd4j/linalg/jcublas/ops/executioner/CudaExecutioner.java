@@ -1801,13 +1801,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> deviceProps = new HashMap<>();
 
-                CudaPointer devPtr = new CudaPointer(i);
-
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(i));
 
                 devicesList.add(i, deviceProps);
             }
@@ -1830,10 +1828,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             // just update information that might change over time
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> dev = devicesList.get(i);
-                CudaPointer devPtr = new CudaPointer(i);
 
-                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
-                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
+                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
+                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
             }
 
             properties.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);

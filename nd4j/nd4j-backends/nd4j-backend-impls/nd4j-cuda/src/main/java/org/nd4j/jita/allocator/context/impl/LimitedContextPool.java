@@ -107,7 +107,7 @@ public class LimitedContextPool extends BasicContextPool {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
         for (Integer device : devices) {
-            nativeOps.setDevice(new CudaPointer(device));
+            nativeOps.setDevice(device);
             pool.put(device, new LinkedBlockingQueue<CudaContext>());
             devicePoolSizes.add(new AtomicInteger(numResources));
 
@@ -129,7 +129,7 @@ public class LimitedContextPool extends BasicContextPool {
         }
 
         if (restoreDevice) {
-            nativeOps.setDevice(new CudaPointer(cDevice));
+            nativeOps.setDevice(cDevice);
         }
     }
 
@@ -147,7 +147,7 @@ public class LimitedContextPool extends BasicContextPool {
         }
 
         //log.info("Setting device to {}", deviceId);
-        nativeOps.setDevice(new CudaPointer(deviceId));
+        nativeOps.setDevice(deviceId);
         context = pool.get(deviceId).poll();
         if (context != null) {
             //val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());

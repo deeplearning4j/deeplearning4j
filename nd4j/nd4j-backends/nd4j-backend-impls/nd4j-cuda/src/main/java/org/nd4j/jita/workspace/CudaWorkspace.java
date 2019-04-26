@@ -119,7 +119,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 
         if (workspace.getDevicePointer() != null) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), 0);
             AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
 
             MemoryTracker.getInstance().decrementWorkspaceAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
@@ -311,7 +311,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 pinnedAllocations.remove();
 
                 if (pair.getDevicePointer() != null) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), 0);
                     MemoryTracker.getInstance().decrementWorkspaceAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), pair.getRequiredMemory());
                     pinnedCount.decrementAndGet();
 
@@ -351,7 +351,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
 
                 if (pair.getDevicePointer() != null) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), 0);
 
                     if (isDebug.get())
                         log.info("deleting external device allocation... ");

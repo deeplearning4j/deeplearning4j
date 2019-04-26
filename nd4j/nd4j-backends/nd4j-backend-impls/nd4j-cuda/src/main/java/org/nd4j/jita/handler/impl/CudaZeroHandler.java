@@ -168,7 +168,7 @@ public class CudaZeroHandler implements MemoryHandler {
             deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
         }
 
-        if (NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceMajor(new CudaPointer(0)) < 3) {
+        if (NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceMajor(0) < 3) {
             throw new ND4JIllegalStateException("CUDA backend requires compute capatibility of 3.0 and above to run.");
         }
     }
@@ -1257,7 +1257,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // we set device to be used prior to stream creation
 
-        nativeOps.setDevice(getDeviceIdPointer());
+        nativeOps.setDevice(getDeviceId());
 
         CudaContext context = new CudaContext();
         context.initHandle();

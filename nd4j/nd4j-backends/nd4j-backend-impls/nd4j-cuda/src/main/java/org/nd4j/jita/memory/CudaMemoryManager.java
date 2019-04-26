@@ -71,7 +71,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
+            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
             //log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             if (ptr == null)
@@ -212,7 +212,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
     @Override
     public void release(Pointer pointer, MemoryKind kind) {
         if (kind == MemoryKind.DEVICE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, null);
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, 0);
             pointer.setNull();
         } else if (kind == MemoryKind.HOST) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
