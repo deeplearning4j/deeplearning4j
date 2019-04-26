@@ -65,7 +65,7 @@ public class DeallocatorService {
             Nd4j.getAffinityManager().attachThreadToDevice(deallocatorThreads[e], deviceId);
             deviceMap.get(deviceId).add(queues[e]);
             
-            deallocatorThreads[e].start();
+            //deallocatorThreads[e].start();
         }
     }
 
