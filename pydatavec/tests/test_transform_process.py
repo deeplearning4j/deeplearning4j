@@ -23,7 +23,7 @@ def test_remove():
     tp = TransformProcess(schema)
     tp.remove_column('str1')
 
-    assert tp.final_schema.columns.keys() == ['str2']
+    assert list(tp.final_schema.columns.keys()) == ['str2']
 
     tp.to_java()
 
@@ -37,7 +37,7 @@ def test_remove_except():
     tp = TransformProcess(schema)
     tp.remove_columns_except('str2')
 
-    assert tp.final_schema.columns.keys() == ['str2']
+    assert (tp.final_schema.columns.keys()) == ['str2']
 
     tp.to_java()
 
@@ -147,4 +147,4 @@ def test_replace_empty():
 
 
 if __name__ == '__main__':
-    pytest.main(__file__)
+    pytest.main([__file__])

@@ -236,6 +236,8 @@ def docker_run():
     source = os.path.join(base_target_dir, jar_name)
     target = os.path.join(context_dir, jar_name)
     _write_config(os.path.join(context_dir, 'config.json'))
+    if os.path.isfile(target):
+        os.remove(target)
     os.rename(source, target)
 
 
@@ -261,6 +263,8 @@ def _maven_build(use_docker):
         jar_name = "pydl4j-{}-bin.jar".format(version)
         source = os.path.join(_MY_DIR, 'target', jar_name)
         target = os.path.join(get_dir(), jar_name)
+        if os.path.isfile(target):
+            os.remove(target)
         os.rename(source, target)
 
 
