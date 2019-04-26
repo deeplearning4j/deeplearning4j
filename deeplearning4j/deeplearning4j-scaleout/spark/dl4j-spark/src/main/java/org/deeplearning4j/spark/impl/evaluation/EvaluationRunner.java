@@ -101,9 +101,9 @@ public class EvaluationRunner {
                 //Initially put on device 0. For CPU, this means we only have a single copy of the params INDArray shared by
                 // all threads, which is both safe and uses the least amount of memory
                 //For CUDA, we can't share threads otherwise arrays will be continually relocated, causing a crash
-                Nd4j.getMemoryManager().releaseCurrentContext();
-                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(0);
-                Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
+                //Nd4j.getMemoryManager().releaseCurrentContext();
+                //NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(0);
+                //Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
                 byte[] pBytes = params.getValue();
                 INDArray p;
                 try{
