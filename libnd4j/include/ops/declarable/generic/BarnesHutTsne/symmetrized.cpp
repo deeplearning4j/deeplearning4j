@@ -67,8 +67,12 @@ namespace ops  {
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
             if (len <= 0) throw std::runtime_error("barnes_symmetrized: Cannot allocate shape due non-positive len.");
             rowCountsPtr = rowCounts;
-            outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
-
+            ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
+            outShapeInfo[1] = 1;
+            outShapeInfo[2] = len;
+           // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
+            //outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
+            outShapeInfo = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
     		return SHAPELIST(outShapeInfo);
 		}
 

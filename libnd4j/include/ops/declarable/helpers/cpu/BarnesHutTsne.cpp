@@ -35,7 +35,7 @@ namespace helpers {
             for (int i = begin; i < end; i++) {
                 bool present = false;
                 for (int m = pRows[pCols[i]]; m < pRows[pCols[i] + 1]; m++)
-                    if (colP->e<int>(m) == n) {
+                    if (pCols[m] == n) {
                         present = true;
                     }
 
