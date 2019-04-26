@@ -152,14 +152,14 @@ public class LimitedContextPool extends BasicContextPool {
         if (context != null) {
             //val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
             //context.attachReference(reference);
+            context.setDeviceId(deviceId);
+            context.setThreadId(threadIdx);
             val hook = new DeallocatableThread(Thread.currentThread(), context);
             threadHooks.set(hook);
             Nd4j.getDeallocatorService().pickObject(hook);
 
 
             acquired.put(threadIdx, context);
-            context.setDeviceId(deviceId);
-            context.setThreadId(threadIdx);
             return context;
         } else {
 
@@ -171,13 +171,13 @@ public class LimitedContextPool extends BasicContextPool {
                     if (context != null) {
                         //val reference = new GarbageResourceReference(Thread.currentThread(), queueMap.get(col), context, deviceId.intValue());
                         //context.attachReference(reference);
+                        context.setDeviceId(deviceId);
+                        context.setThreadId(threadIdx);
                         val hook = new DeallocatableThread(Thread.currentThread(), context);
                         threadHooks.set(hook);
                         Nd4j.getDeallocatorService().pickObject(hook);
 
                         acquired.put(threadIdx, context);
-                        context.setDeviceId(deviceId);
-                        context.setThreadId(threadIdx);
                     } else {
                         val currentPoolSize = devicePoolSizes.get(deviceId);
                         synchronized (currentPoolSize) {
