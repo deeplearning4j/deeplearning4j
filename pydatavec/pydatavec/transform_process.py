@@ -143,7 +143,7 @@ class TransformProcess(object):
         self.final_schema.columns = new_d
         self.add_step("renameColumn", column, new_name)
 
-    def string_to_time(self, column, format="YYY-MM-DD, HH:mm:ss.SSS", time_zone="UTC"):
+    def string_to_time(self, column, format="YYY-MM-DD HH:mm:ss.SSS", time_zone="UTC"):
         self.final_schema.columns[column][0] = "DateTime"
         self.add_step("exec", "stringToTimeTransform({}, {}, {})".format(
             _dq(column), _dq(format), "DateTimeZone." + time_zone))
