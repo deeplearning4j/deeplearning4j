@@ -96,8 +96,8 @@ namespace nd4j {
     averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n, Nd4jLong length,
                            bool propagate) {
 
-        execAveragingKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
-                                                                              (vdx, vdz, n, length, propagate);
+        execAveragingKernel<T><<< launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, vdz, n, length, propagate);
+        nd4j::DebugHelper::checkErrorCode(stream, "averaging(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT averagingKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdx, void * vdz, int n, Nd4jLong length, bool propagate), LIBND4J_TYPES);

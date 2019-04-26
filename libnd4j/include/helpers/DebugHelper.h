@@ -65,7 +65,7 @@ namespace nd4j {
             if (res != 0) {
                 if (failMessage == nullptr) {
                     std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
-
+                    throw std::runtime_error(op);
                 } else {
                     std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) + std::string("]");
                     throw std::runtime_error(op);

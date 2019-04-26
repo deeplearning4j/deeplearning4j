@@ -594,6 +594,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
         
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -611,6 +612,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									 Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
 		execAllGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+        nd4j::DebugHelper::checkErrorCode(stream, "execAllGeneric(...) failed");
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -626,6 +628,7 @@ __host__ void Reduce3<X,Z>::execScalar(dim3 launchDims, cudaStream_t *stream,
 										Nd4jLong *tadOnlyShapeInfo) {
         
     execScalarGeneric<X,Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "execScalarGeneric(...) failed");
 }
 
 
