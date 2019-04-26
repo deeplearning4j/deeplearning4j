@@ -37,6 +37,7 @@ namespace helpers {
                 for (int m = pRows[pCols[i]]; m < pRows[pCols[i] + 1]; m++)
                     if (pCols[m] == n) {
                         present = true;
+                        break;
                     }
 
                 ++pRowCounts[n];
