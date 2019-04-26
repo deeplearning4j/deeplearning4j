@@ -416,4 +416,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
     public String getUniqueId() {
         return "Workspace_" + getId();
     }
+
+    @Override
+    public int targetDevice() {
+        return deviceId;
+    }
 }
