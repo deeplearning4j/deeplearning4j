@@ -159,6 +159,7 @@ int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jLong)ptrToDeviceId;
 }
 
+
 template <typename T>
 dim3 getOptimalDimensions(Nd4jLong n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
 
@@ -1681,7 +1682,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
 	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
@@ -1707,7 +1708,7 @@ int NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, int deviceId) {
 	cudaError_t res = cudaFree(reinterpret_cast<void *>(pointer));
 	if (res != 0)
 		pointer = 0L;
@@ -1758,9 +1759,8 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	return 1;
 }
 
-int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
-	int deviceId = getDeviceId(ptrToDeviceId);
-	cudaError_t dZ = cudaSetDevice(deviceId);
+int NativeOps::setDevice(int deviceId) {
+	auto dZ = cudaSetDevice(deviceId);
 	checkCudaErrors(dZ);
 	if (dZ != 0)
 		throw std::runtime_error("cudaSetDevice(...) failed");
@@ -1777,8 +1777,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory() {
     return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceFreeMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1799,8 +1798,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
 	return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceTotalMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1958,20 +1956,16 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	nd4j::Environment::getInstance()->setVerbose(reallyEnable);
 }
 
-int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMajor(int device) {
 	return deviceProperties[device].major;
 }
 
-int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMinor(int device) {
 	return deviceProperties[device].minor;
 }
 
 
-const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
-    int device = getDeviceId(ptrToDeviceId);
-
+const char * NativeOps::getDeviceName(int device) {
     return deviceProperties[device].name;
 }
 
