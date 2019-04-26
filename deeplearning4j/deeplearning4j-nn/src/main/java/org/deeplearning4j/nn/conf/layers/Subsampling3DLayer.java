@@ -25,12 +25,12 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
@@ -113,10 +113,10 @@ public class Subsampling3DLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -440,6 +440,11 @@ public class Subsampling3DLayer extends NoParamLayer {
 
         public T poolingType(PoolingType poolingType) {
             this.setPoolingType(poolingType.toPoolingType());
+            return (T) this;
+        }
+
+        public T poolingType(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
+            this.setPoolingType(poolingType);
             return (T) this;
         }
 

@@ -16,12 +16,9 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleBufferIndexer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -31,26 +28,22 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cudnn.*;
-import static org.bytedeco.cuda.global.cudart.*;
+
 import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
@@ -60,6 +53,10 @@ import static org.bytedeco.cuda.global.cudnn.*;
  */
 @Slf4j
 public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements BatchNormalizationHelper {
+
+    public CudnnBatchNormalizationHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnBatchNormalizationContext extends CudnnContext {
 
@@ -134,7 +131,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         val inH = (int) input.size(2);
         val inW = (int) input.size(3);
 
-        final boolean isHalf = (Nd4j.dataType() == DataType.HALF);
+        final boolean isHalf = (input.dataType() == DataType.HALF);
         INDArray gammaOrig = null;
         INDArray dGammaViewOrig = null;
         INDArray dBetaViewOrig = null;
@@ -171,7 +168,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
                 (int) deltaStride[0], (int) deltaStride[1], (int) deltaStride[2], (int) deltaStride[3]));
 
-        INDArray nextEpsilon = layerWorkspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
+        INDArray nextEpsilon = layerWorkspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[] {miniBatch, depth, inH, inW}, 'c');
         val dstStride = ArrayUtil.toInts(nextEpsilon.stride());
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
@@ -220,7 +217,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
         this.eps = eps;
-        final boolean isHalf = (Nd4j.dataType() == DataType.HALF);
+        final boolean isHalf = (x.dataType() == DataType.HALF);
         INDArray origGamma = gamma;
         INDArray origBeta = beta;
         INDArray origMean = mean;
@@ -249,7 +246,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        INDArray activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        INDArray activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.dataType(), new long[] {miniBatch, inDepth, inH, inW}, 'c');
 
         val dstStride = ArrayUtil.toInts(activations.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
@@ -274,16 +271,20 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         if (training) {
             if(meanCache == null || meanCache.length() < mean.length()){
-                meanCache = Nd4j.createUninitializedDetached((int)mean.length());
-                if(Nd4j.dataType() == DataType.HALF){
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    meanCache = Nd4j.createUninitialized(x.dataType(), mean.length());
+                }
+                if(x.dataType() == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         meanCache = meanCache.castTo(DataType.FLOAT);
                     }
                 }
             }
             if(varCache == null || varCache.length() < mean.length()){
-                varCache = Nd4j.createUninitializedDetached((int)mean.length());
-                if(Nd4j.dataType() == DataType.HALF){
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    varCache = Nd4j.createUninitialized(x.dataType(), mean.length());
+                }
+                if(nd4jDataType == DataType.HALF){
                     try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         varCache = varCache.castTo(DataType.FLOAT);
                     }
@@ -325,8 +326,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     }
 
     @Override
-    public INDArray getMeanCache() {
-        if(Nd4j.dataType() == DataType.HALF){
+    public INDArray getMeanCache(DataType dataType) {
+        if(dataType == DataType.HALF){
             //Buffer is FP32
             return meanCache.castTo(DataType.HALF);
         }
@@ -334,15 +335,15 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     }
 
     @Override
-    public INDArray getVarCache() {
+    public INDArray getVarCache(DataType dataType) {
         INDArray ret;
-        if(Nd4j.dataType() == DataType.HALF){
+        if(dataType == DataType.HALF){
             INDArray vc = varCache.castTo(DataType.HALF);
             ret = vc.mul(vc).rdivi(1.0).subi(eps);
         } else {
             ret = varCache.mul(varCache).rdivi(1.0).subi(eps);
         }
-        if(Nd4j.dataType() == DataType.HALF){
+        if(dataType == DataType.HALF){
             //Buffer is FP32
             return ret.castTo(DataType.HALF);
         }

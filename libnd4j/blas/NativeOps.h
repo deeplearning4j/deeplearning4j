@@ -728,6 +728,12 @@ public:
     Nd4jLong getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
 
     /**
+     * Returns amount of free memory for current device
+     * @return
+     */
+    Nd4jLong getDeviceFreeMemory();
+
+    /**
      *
      * @param ptrToDeviceId
      * @return

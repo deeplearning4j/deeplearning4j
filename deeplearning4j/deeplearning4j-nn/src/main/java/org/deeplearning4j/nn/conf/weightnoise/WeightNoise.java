@@ -82,8 +82,8 @@ public class WeightNoise implements IWeightNoise {
                 (applyToBias && init.isBiasParam(layer.conf().getLayer(), paramKey))) {
 
             org.nd4j.linalg.api.rng.distribution.Distribution dist = Distributions.createDistribution(distribution);
-            INDArray noise = dist.sample(param.shape());
-            INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.shape(), param.ordering());
+            INDArray noise = dist.sample(param.ulike());
+            INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.dataType(), param.shape(), param.ordering());
 
             if (additive) {
                 Nd4j.getExecutioner().exec(new OldAddOp(param, noise,out));

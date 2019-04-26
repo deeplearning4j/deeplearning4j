@@ -66,6 +66,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                 for (boolean outHasBias : new boolean[]{true, false}) {
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .seed(12345L)
                             .list()
@@ -136,6 +137,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
             for (boolean rnnOutHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .updater(new NoOp())
                         .seed(12345L)
                         .list()
@@ -196,6 +198,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
             for (boolean embeddingHasBias : new boolean[]{true, false}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .updater(new NoOp())
                         .seed(12345L)
                         .list()
@@ -262,7 +265,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().updater(new NoOp())
-
+                                .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
                                 .layer(new ConvolutionLayer.Builder(kernel,

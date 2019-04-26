@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -105,6 +106,7 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         val nIn = ocnnOutputLayer.getNIn();
         int hiddenLayer = ocnnOutputLayer.getHiddenSize();
+        Preconditions.checkState(hiddenLayer > 0, "OCNNOutputLayer hidden layer state: must be non-zero.");
 
         val firstLayerWeightLength =  hiddenLayer;
         val secondLayerLength = nIn * hiddenLayer;

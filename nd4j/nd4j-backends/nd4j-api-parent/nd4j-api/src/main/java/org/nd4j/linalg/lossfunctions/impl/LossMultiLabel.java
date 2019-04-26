@@ -18,26 +18,14 @@ package org.nd4j.linalg.lossfunctions.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Multi-Label-Loss Function, maybe more commonly known as BPMLL
@@ -68,7 +56,7 @@ import java.util.Map;
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
-public class LossMultiLabel extends DifferentialFunction implements ILossFunction {
+public class LossMultiLabel implements ILossFunction {
 
 
     public LossMultiLabel() {
@@ -84,6 +72,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                             + " number of outputs (nOut = " + preOutput.size(1) + ") ");
 
         }
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         final INDArray postOutput = activationFn.getActivation(preOutput.dup(), true);
 
         final INDArray positive = labels;
@@ -93,21 +82,21 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
         long examples = positive.size(0);
         for (int i = 0; i < examples; i++) {
-            final INDArray locCfn = postOutput.getRow(i);
+            final INDArray locCfn = postOutput.getRow(i, true);
             final long[] shape = locCfn.shape();
 
-            final INDArray locPositive = positive.getRow(i);
-            final INDArray locNegative = negative.getRow(i);
+            final INDArray locPositive = positive.getRow(i, true);
+            final INDArray locNegative = negative.getRow(i, true);
             final Double locNormFactor = normFactor.getDouble(i);
 
             final int outSetSize = locNegative.sumNumber().intValue();
             if(outSetSize == 0 || outSetSize == locNegative.columns()){
                 if (scoreOutput != null) {
-                    scoreOutput.getRow(i).assign(0);
+                    scoreOutput.getRow(i, true).assign(0);
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(0);
+                    gradientOutput.getRow(i, true).assign(0);
                 }
             }else {
                 final INDArray operandA = Nd4j.ones(shape[1], shape[0]).mmul(locCfn);
@@ -122,15 +111,15 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                 if (scoreOutput != null) {
                     if (mask != null) {
                         final INDArray perLabel = classificationDifferences.sum(0);
-                        LossUtil.applyMask(perLabel, mask.getRow(i));
-                        perLabel.sum(scoreOutput.getRow(i), 0);
+                        LossUtil.applyMask(perLabel, mask.getRow(i, true));
+                        perLabel.sum(scoreOutput.getRow(i, true), 0);
                     } else {
-                        classificationDifferences.sum(scoreOutput.getRow(i), 0, 1);
+                        classificationDifferences.sum(scoreOutput.getRow(i, true), 0, 1);
                     }
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
+                    gradientOutput.getRow(i, true).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
                 }
             }
         }
@@ -171,6 +160,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
         if (labels.size(1) != preOutput.size(1)) {
             throw new IllegalArgumentException(
                     "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
@@ -207,52 +197,5 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
     @Override
     public String toString() {
         return "LossMultiLabel";
-    }
-
-
-    @Override
-    public SDVariable[] outputVariables() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public String opName() {
-        return name();
-    }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for " + opName());
     }
 }

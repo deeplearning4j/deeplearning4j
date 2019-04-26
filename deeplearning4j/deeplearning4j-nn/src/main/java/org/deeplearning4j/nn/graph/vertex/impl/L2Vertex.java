@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -43,13 +44,13 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 public class L2Vertex extends BaseGraphVertex {
     private double eps;
 
-    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps) {
-        this(graph, name, vertexIndex, null, null, eps);
+    public L2Vertex(ComputationGraph graph, String name, int vertexIndex, double eps, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, eps, dataType);
     }
 
     public L2Vertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, double eps) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, double eps, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.eps = eps;
     }
 

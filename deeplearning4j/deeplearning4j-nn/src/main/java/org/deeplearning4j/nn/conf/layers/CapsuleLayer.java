@@ -16,12 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import java.util.Map;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeRecurrent;
 import org.deeplearning4j.nn.conf.inputs.InputType.Type;
@@ -36,6 +31,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Map;
 
 /**
  * An implementation of the DigiCaps layer from Dynamic Routing Between Capsules
@@ -102,7 +99,7 @@ public class CapsuleLayer extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable, SDVariable mask) {
 
         // input: [mb, inputCapsules, inputCapsuleDimensions]
 

@@ -4,6 +4,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 
+import static org.nd4j.autodiff.samediff.ops.SDValidation.validateFloatingPoint;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.validateNumerical;
+
 /**
  * SameDiff Convolutional Neural Network operations - CNN1d, 2d and 3d ops - as well as related functions.<br>
  * Accessible via {@link SameDiff#cnn()}<br>
@@ -40,6 +43,7 @@ public class SDCNN extends SDOps {
      * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
+        validateFloatingPoint("avgPooling2d", input);
         SDVariable ret = f().avgPooling2d(input, pooling2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -68,6 +72,7 @@ public class SDCNN extends SDOps {
      * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        validateFloatingPoint("avgPooling3d", input);
         SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -91,6 +96,7 @@ public class SDCNN extends SDOps {
      * @see #spaceToBatch(String, SDVariable, int[], int[][])
      */
     public SDVariable batchToSpace(String name, SDVariable x, int[] blocks, int[][] crops) {
+        validateNumerical("batchToSpace", x);
         SDVariable ret = f().batchToSpace(x, blocks, crops);
         return updateVariableNameAndReference(ret, name);
     }
@@ -144,6 +150,8 @@ public class SDCNN extends SDOps {
      * @return
      */
     public SDVariable conv1d(String name, SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
+        validateFloatingPoint("conv1d", input);
+        validateFloatingPoint("conv1d", weights);
         SDVariable ret = f().conv1d(input, weights, conv1DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -172,6 +180,9 @@ public class SDCNN extends SDOps {
      * @return result of conv2d op
      */
     public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, Conv2DConfig config) {
+        validateFloatingPoint("conv2d", "input", layerInput);
+        validateFloatingPoint("conv2d", "weights", weights);
+        validateFloatingPoint("conv2d", "bias", bias);
         SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
         arr[0] = layerInput;
         arr[1] = weights;
@@ -202,6 +213,8 @@ public class SDCNN extends SDOps {
      * @return result of convolution 2d operation
      */
     public SDVariable conv2d(String name, SDVariable[] inputs, Conv2DConfig config) {
+        for(SDVariable v : inputs)
+            validateNumerical("conv2d", v);
         SDVariable ret = f().conv2d(inputs, config);
         return updateVariableNameAndReference(ret, name);
     }
@@ -233,6 +246,9 @@ public class SDCNN extends SDOps {
      * @return Conv3d output variable
      */
     public SDVariable conv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
+        validateFloatingPoint("conv3d", "input", input);
+        validateFloatingPoint("conv3d", "weights", weights);
+        validateFloatingPoint("conv3d", "bias", bias);
         SDVariable[] args;
         if (bias == null) {
             args = new SDVariable[]{input, weights};
@@ -297,6 +313,9 @@ public class SDCNN extends SDOps {
      * @return result of deconv2d op
      */
     public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, DeConv2DConfig deconv2DConfig) {
+        validateFloatingPoint("deconv2d", "input", layerInput);
+        validateFloatingPoint("deconv2d", "weights", weights);
+        validateFloatingPoint("deconv2d", "bias", bias);
         SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
         arr[0] = layerInput;
         arr[1] = weights;
@@ -327,6 +346,8 @@ public class SDCNN extends SDOps {
      * @return result of deconv2d op
      */
     public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
+        for(SDVariable v : inputs)
+            validateNumerical("deconv2d", v);
         SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -341,6 +362,9 @@ public class SDCNN extends SDOps {
      * @param config  Configuration
      */
     public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config) {
+        validateFloatingPoint("conv3d", input);
+        validateFloatingPoint("conv3d", weights);
+        validateFloatingPoint("conv3d", bias);
         SDVariable ret = f().deconv3d(input, weights, bias, config);
         return updateVariableNameAndReference(ret, name);
     }
@@ -404,6 +428,9 @@ public class SDCNN extends SDOps {
      * @return result of depthwise conv2d op
      */
     public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable bias, Conv2DConfig config) {
+        validateFloatingPoint("depthwiseConv2d", "input", layerInput);
+        validateFloatingPoint("depthwiseConv2d", "depth weights", depthWeights);
+        validateFloatingPoint("depthwiseConv2d", "bias", bias);
         SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
         arr[0] = layerInput;
         arr[1] = depthWeights;
@@ -436,6 +463,8 @@ public class SDCNN extends SDOps {
      * @return result of depthwise conv2d op
      */
     public SDVariable depthWiseConv2d(String name, SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
+        for(SDVariable v : inputs)
+            validateFloatingPoint("depthWiseConv2d", v);
         SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -541,6 +570,7 @@ public class SDCNN extends SDOps {
      */
     public SDVariable localResponseNormalization(String name, SDVariable input,
                                                  LocalResponseNormalizationConfig lrnConfig) {
+        validateFloatingPoint("local response normalization", input);
         SDVariable ret = f().localResponseNormalization(input, lrnConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -568,6 +598,7 @@ public class SDCNN extends SDOps {
      * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
+        validateNumerical("maxPooling2d", input);
         SDVariable ret = f().maxPooling2d(input, pooling2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -596,6 +627,7 @@ public class SDCNN extends SDOps {
      * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        validateNumerical("maxPooling3d", input);
         SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
@@ -631,6 +663,10 @@ public class SDCNN extends SDOps {
      */
     public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
                                       SDVariable bias, Conv2DConfig config) {
+        validateFloatingPoint("separableConv2d", "input", layerInput);
+        validateFloatingPoint("separableConv2d", "depthWeights", depthWeights);
+        validateFloatingPoint("separableConv2d", "pointWeights", pointWeights);
+        validateFloatingPoint("separableConv2d", "bias", bias);
         SDVariable[] arr = new SDVariable[bias == null ? 3 : 4];
         arr[0] = layerInput;
         arr[1] = depthWeights;
@@ -662,6 +698,8 @@ public class SDCNN extends SDOps {
      * @return result of separable convolution 2d operation
      */
     public SDVariable sconv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        for(SDVariable v : inputs)
+            validateFloatingPoint("sconv2d", v);
         SDVariable ret = f().sconv2d(inputs, conv2DConfig);
         return updateVariableNameAndReference(ret, name);
     }

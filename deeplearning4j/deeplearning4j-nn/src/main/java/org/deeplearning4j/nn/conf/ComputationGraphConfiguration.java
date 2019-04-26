@@ -37,6 +37,7 @@ import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -81,7 +82,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected CacheMode cacheMode;
 
-    protected boolean validateOutputLayerConfig = true;     //Default for 10.0.-beta3 and earlier nets
+    @Getter
+    @Setter
+    protected DataType dataType = DataType.FLOAT;   //Default to float for 1.0.0-beta3 and earlier nets
+
+    protected boolean validateOutputLayerConfig = true;     //Default for 1.0.0-beta3 and earlier nets
 
     /**
      * List of inputs to the network, by name
@@ -315,6 +320,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
         conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
+        conf.dataType = this.dataType;
 
         return conf;
     }
@@ -1120,6 +1126,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
             conf.cacheMode = globalConfiguration.cacheMode;
             conf.validateOutputLayerConfig = validateOutputConfig;
+            conf.dataType = globalConfiguration.dataType;
 
             conf.defaultConfiguration = globalConfiguration.build();
 

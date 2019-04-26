@@ -33,7 +33,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,6 +62,7 @@ public class LocallyConnected2D extends SameDiffLayer {
     private int[] kernel;
     private int[] stride;
     private int[] padding;
+    private int[] paddingBr;
     private ConvolutionMode cm;
     private int[] dilation;
     private boolean hasBias;
@@ -103,6 +103,7 @@ public class LocallyConnected2D extends SameDiffLayer {
             this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, null, cm,
                             dilation);
             this.padding = ConvolutionUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
+            this.paddingBr = ConvolutionUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
             this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
                             dilation);
@@ -129,6 +130,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         if (nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
+            this.featureDim = kernel[0] * kernel[1] * (int) nIn;
         }
     }
 
@@ -165,7 +167,7 @@ public class LocallyConnected2D extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
@@ -177,6 +179,16 @@ public class LocallyConnected2D extends SameDiffLayer {
         int sW = stride[1];
         int kH = kernel[0];
         int kW = kernel[1];
+
+        if(padding[0] > 0 || padding[1] > 0 || (cm == ConvolutionMode.Same && (paddingBr[0] > 0 || paddingBr[1] > 0))){
+            //Note: for same mode, bottom/right padding can be 1 more than top/left padding
+            //NCHW format
+            if(cm == ConvolutionMode.Same){
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0,0},{0,0},{padding[0], paddingBr[0]}, {padding[1], paddingBr[1]}}, 0);
+            } else {
+                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0,0},{0,0},{padding[0], padding[0]}, {padding[1], padding[1]}}, 0);
+            }
+        }
 
         SDVariable[] inputArray = new SDVariable[outH * outW];
         for (int i = 0; i < outH; i++) {

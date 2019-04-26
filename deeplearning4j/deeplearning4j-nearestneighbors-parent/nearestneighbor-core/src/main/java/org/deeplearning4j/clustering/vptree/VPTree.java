@@ -407,7 +407,7 @@ public class VPTree implements Serializable {
                 Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
 
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
-        INDArray basePoint = items.getRow(randomPoint);
+        INDArray basePoint = items.getRow(randomPoint, true);
         INDArray distancesArr = Nd4j.create(items.rows(), 1);
         ret.point = basePoint;
         ret.index = randomPoint;
@@ -428,10 +428,10 @@ public class VPTree implements Serializable {
                 continue;
 
             if (distancesArr.getDouble(i) < medianDistance) {
-                leftPoints.add(items.getRow(i));
+                leftPoints.add(items.getRow(i, true));
                 leftIndices.add(i);
             } else {
-                rightPoints.add(items.getRow(i));
+                rightPoints.add(items.getRow(i, true));
                 rightIndices.add(i);
             }
         }

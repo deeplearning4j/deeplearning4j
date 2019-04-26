@@ -48,6 +48,10 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
     protected OpContext context;
     protected OpContext contextBwd;
 
+    public MKLDNNConvHelper(DataType dataType){
+
+    }
+
     @Override
     public boolean checkSupported() {
         return BaseMKLDNNHelper.mklDnnEnabled();

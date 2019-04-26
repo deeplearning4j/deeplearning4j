@@ -1878,19 +1878,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 if (currentType == DataType.LONG)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE && currentType != DataType.INT)
+                else if (currentType == DataType.DOUBLE && currentType != DataType.INT)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.FLOAT || currentType == DataType.INT)
+                else if (currentType == DataType.FLOAT || currentType == DataType.INT)
                     elementSize = 4;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.HALF && currentType != DataType.INT)
+                else if (currentType == DataType.HALF && currentType != DataType.INT)
                     elementSize = 2;
 
-                if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != DataType.HALF && currentType != DataType.INT
-                        && currentType != DataType.LONG && !(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)) {
-                    log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
-                    if (DataTypeUtil.getDtypeFromContext() == DataType.INT)
-                        log.warn("Int to float/double widening UNSUPPORTED!!!");
-                }
                 pointerIndexerByCurrentType(currentType);
 
                 if (currentType != DataType.COMPRESSED)

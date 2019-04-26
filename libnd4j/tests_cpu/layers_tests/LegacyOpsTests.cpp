@@ -376,7 +376,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
     for (int e = 0; e < z.lengthOf(); e++) {
         ASSERT_TRUE(z.e<double>(e) >= 0);
     }
@@ -392,7 +392,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
 
     NativeOpExcutioner::execTransformAny(transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
-    z.printIndexedBuffer("z");
+    // z.printIndexedBuffer("z");
  for (int e = 0; e < z.lengthOf(); e++) {
      if (e >= z.lengthOf() / 2)
          ASSERT_TRUE(z.e<bool>(e));
@@ -574,4 +574,19 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
     z.printIndexedBuffer("z");
 
     ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, Softmax_119_1) {
+    auto x = NDArrayFactory::create<float>('c', {10, 10});
+    x.linspace(1.0);
+
+    x.applyTransform(transform::StrictOps::SoftMax);
+}
+
+TEST_F(LegacyOpsTests, Softmax_119_2) {
+    auto x = NDArrayFactory::create<float>('f', {10, 5});
+    auto z = NDArrayFactory::create<float>('f', {10, 5});
+    x.linspace(1.0);
+
+    x.applyTransform(transform::StrictOps::SoftMax, &z);
 }

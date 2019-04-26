@@ -73,7 +73,7 @@ public class EvalJsonTest extends BaseDL4JTest {
             evalLabel.putScalar(i, i % 3, 1.0);
         }
         INDArray evalProb = Nd4j.rand(10, 3);
-        evalProb.diviColumnVector(evalProb.sum(1));
+        evalProb.diviColumnVector(evalProb.sum(true,1));
         evaluation.eval(evalLabel, evalProb);
         roc3.eval(evalLabel, evalProb);
         ec.eval(evalLabel, evalProb);
@@ -257,8 +257,8 @@ public class EvalJsonTest extends BaseDL4JTest {
         eFromJson = Evaluation.fromJson(json);
         eFromYaml = Evaluation.fromYaml(yaml);
 
-        assertEquals(costArray, eFromJson.getCostArray());
-        assertEquals(costArray, eFromYaml.getCostArray());
+        assertEquals(e2.getCostArray(), eFromJson.getCostArray());
+        assertEquals(e2.getCostArray(), eFromYaml.getCostArray());
 
 
 

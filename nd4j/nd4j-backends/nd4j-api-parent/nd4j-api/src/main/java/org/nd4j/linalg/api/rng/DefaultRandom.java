@@ -298,4 +298,9 @@ public class DefaultRandom implements Random, RandomGenerator {
     public long nodeState() {
         return 0L;
     }
+
+    @Override
+    public void setStates(long rootState, long nodeState) {
+        //no-op
+    }
 }

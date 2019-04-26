@@ -163,7 +163,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
         List<Tuple2<String, DataSet>> dataWithKeys = new ArrayList<>();
         for (int i = 0; i < nRows; i++) {
-            DataSet ds = new DataSet(features.getRow(i).dup(), labels.getRow(i).dup());
+            DataSet ds = new DataSet(features.getRow(i,true).dup(), labels.getRow(i,true).dup());
             dataWithKeys.add(new Tuple2<>(String.valueOf(i), ds));
         }
         JavaPairRDD<String, DataSet> dataWithKeysRdd = sc.parallelizePairs(dataWithKeys);
@@ -188,7 +188,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
         List<DataSet> dataNoKeys = new ArrayList<>();
         for (int i = 0; i < nRows; i++) {
-            dataNoKeys.add(new DataSet(features.getRow(i).dup(), labels.getRow(i).dup()));
+            dataNoKeys.add(new DataSet(features.getRow(i,true).dup(), labels.getRow(i,true).dup()));
         }
         JavaRDD<DataSet> dataNoKeysRdd = sc.parallelize(dataNoKeys);
 

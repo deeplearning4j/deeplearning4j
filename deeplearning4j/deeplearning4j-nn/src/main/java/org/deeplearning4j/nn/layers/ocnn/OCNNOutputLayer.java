@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
@@ -63,19 +64,12 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     private INDArray window;
 
-    public OCNNOutputLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public OCNNOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.lossFunction = new OCNNLossFunction();
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
-
-    public OCNNOutputLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
-        ocnnOutputLayer.setLossFn(this.lossFunction);
-    }
-
 
     @Override
     public void setLabels(INDArray labels) {
@@ -120,7 +114,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         long inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{inputShape, delta.length()}, 'f');
         epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
@@ -183,7 +177,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         //dG -> sigmoid derivative
 
         INDArray firstVertDerivV =  layerConf().getActivationFn()
-                .backprop(xTimesV.dup(),Nd4j.ones(xTimesV.shape()))
+                .backprop(xTimesV.dup(),Nd4j.ones(input.dataType(), xTimesV.shape()))
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
         firstVertDerivV = firstVertDerivV.muliColumnVector(delta)
                         .reshape('f',input.size(0),1,layerConf().getHiddenSize());
@@ -195,7 +189,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
 
-        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
+        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(input.dataType(), shape);
 
         INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
         int[] bcDims = {0,1};
@@ -257,10 +251,10 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray v = getParamWithNoise(V_KEY,training,workspaceMgr);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray first = Nd4j.createUninitialized(input.size(0), v.size(1));
+        INDArray first = Nd4j.createUninitialized(input.dataType(), input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,input.size(0));
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.size(0));
         act2d.mmuli(w.reshape(w.length()), output);
         this.labels = output;
         return output;
@@ -320,7 +314,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         @Override
         public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
             INDArray preAct = preOutput.rsub(getParam(R_KEY).getDouble(0));
-            INDArray target =   relu.backprop(preAct,Nd4j.ones(preAct.shape())).getFirst();
+            INDArray target =   relu.backprop(preAct,Nd4j.ones(preOutput.dataType(), preAct.shape())).getFirst();
             return target;
         }
 

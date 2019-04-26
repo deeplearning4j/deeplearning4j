@@ -88,7 +88,9 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             }
 
             MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().seed(12345L).list()
+                            new NeuralNetConfiguration.Builder().seed(12345L)
+                                            .dataType(DataType.DOUBLE)
+                                            .list()
                                             .layer(0, l0).layer(1,
                                                             l1)
                                             .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
@@ -178,6 +180,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
                 NeuralNetConfiguration.Builder conf =
                         new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .seed(12345L)
                                 .dist(new NormalDistribution(0, 1)).updater(new NoOp());
 
@@ -266,6 +269,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
+                                .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 1))
                                 .updater(new NoOp()).list().layer(0, layer)
                                 .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
@@ -343,6 +347,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                         conf.l1Bias(biasL1[k]);
 
                     MultiLayerConfiguration mlc = conf.seed(12345L)
+                                    .dataType(DataType.DOUBLE)
                                     .list().layer(0,
                                                     new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
 
@@ -411,6 +416,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             }
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
+                            .dataType(DataType.DOUBLE)
                             .list()
                             .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
 
@@ -459,6 +465,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).seed(12345)
+                        .dataType(DataType.DOUBLE)
                         .dist(new UniformDistribution(-2, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
                                         .activation(Activation.TANH).build()) //Out: (10-5)/1+1 = 6 -> 6x6x5

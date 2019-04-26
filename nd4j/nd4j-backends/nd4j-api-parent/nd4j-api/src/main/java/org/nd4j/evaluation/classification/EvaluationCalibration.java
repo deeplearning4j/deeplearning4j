@@ -30,12 +30,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossUtil;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.serde.jackson.shaded.NDArrayDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArraySerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -84,22 +84,22 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinSumPredictions;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray labelCountsEachClass;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray predictionCountsEachClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray residualPlotOverall;
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray residualPlotByLabelClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray probHistogramOverall; //Simple histogram over all probabilities
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
@@ -180,7 +180,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         val nClasses = labels2d.size(1);
 
         if (rDiagBinPosCount == null) {
-            DataType dt = predictions.dataType();
+            DataType dt = DataType.DOUBLE;
             //Initialize
             rDiagBinPosCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
             rDiagBinTotalCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
@@ -239,7 +239,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
             INDArray numPredictionsCurrBin = currBinBitMask.sum(0);
 
-            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0));
+            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0).castTo(rDiagBinSumPredictions.dataType()));
             rDiagBinPosCount.getRow(j).addi(isPosLabelForBin.sum(0).castTo(rDiagBinPosCount.dataType()));
             rDiagBinTotalCount.getRow(j).addi(numPredictionsCurrBin.castTo(rDiagBinTotalCount.dataType()));
         }
@@ -299,14 +299,14 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
 
-            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0));
+            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0).castTo(residualPlotByLabelClass.dataType()));
 
             int probNewTotalCount = probHistogramOverall.getInt(0, j) + currBinBitMaskProbs.sumNumber().intValue();
             probHistogramOverall.putScalar(0, j, probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
             INDArray temp = isPosLabelForBinProbs.sum(0);
-            probHistogramByLabelClass.getRow(j).addi(temp);
+            probHistogramByLabelClass.getRow(j).addi(temp.castTo(probHistogramByLabelClass.dataType()));
         }
     }
 

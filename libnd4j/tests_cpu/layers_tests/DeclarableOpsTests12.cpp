@@ -976,3 +976,64 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
  
     ASSERT_TRUE(z.equalsTo(exp));    
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pullRows_2) {
+    
+    NDArray arr('f', {5, 2}, {0,1,2,3,4,5,6,7,8,9});
+    NDArray* y = arr.dup('c');
+    NDArray x = (*y)({0,0, 0,1}, true);     // view, points on first column of y, shape is {5,1}
+   
+    NDArray z('c', {4, 1}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {4, 1}, {0,2,3,4});
+
+    Nd4jLong indexes[] = {0,2,3,4};
+
+    std::vector<int> dims = {1};
+
+    auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
+    auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+  
+    NativeOps op;
+    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
+                         z.buffer(), z.getShapeInfo(), nullptr, nullptr,
+                         4, indexes,
+                         xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
+                         zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
+
+    ASSERT_TRUE(z.equalsTo(exp));    
+
+    delete y;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, softmax_9) {
+    NDArray  arrC('c', {5,2}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 0.8, -0.9, 1}, nd4j::DataType::FLOAT32);
+    NDArray* arrF = arrC.dup('f');
+
+    NDArray  outCC('c', {5,2}, nd4j::DataType::FLOAT32);
+    NDArray  outCF('f', {5,2}, nd4j::DataType::FLOAT32);
+    NDArray  outFC('c', {5,2}, nd4j::DataType::FLOAT32);
+    NDArray  outFF('c', {5,2}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::softmax op;
+    auto status1 = op.execute({&arrC}, {&outCC}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status1);
+    auto status2 = op.execute({&arrC}, {&outCF}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status2);
+    auto status3 = op.execute({arrF}, {&outFC}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status3);
+    auto status4 = op.execute({arrF}, {&outFF}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status4);
+
+    // outCC.printIndexedBuffer("\n");
+    // outCF.printIndexedBuffer("\n");
+    // outFC.printIndexedBuffer("\n");
+    // outFF.printIndexedBuffer("\n");
+
+    ASSERT_EQ(outCC, outCF);
+    ASSERT_EQ(outCC, outFC);
+    ASSERT_EQ(outCC, outFF);
+
+    delete arrF;
+}

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -56,7 +57,7 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setInputArray(int index, INDArray array) {
+    public void setInputArray(int index, @NonNull INDArray array) {
         fastpath_in.put(index, array);
     }
 
@@ -89,9 +90,32 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setOutputArray(int index, INDArray array) {
+    public void setOutputArray(int index, @NonNull INDArray array) {
         fastpath_out.put(index, array);
     }
 
 
+    @Override
+    public void setInputArrays(@NonNull List<INDArray> arrays) {
+        for (int e = 0; e < arrays.size(); e++)
+            setInputArray(e, arrays.get(e));
+    }
+
+    @Override
+    public void setOutputArrays(@NonNull List<INDArray> arrays) {
+        for (int e = 0; e < arrays.size(); e++)
+            setOutputArray(e, arrays.get(e));
+    }
+
+    @Override
+    public void setInputArrays(INDArray... arrays) {
+        for (int e = 0; e < arrays.length; e++)
+            setInputArray(e, arrays[e]);
+    }
+
+    @Override
+    public void setOutputArrays(INDArray... arrays) {
+        for (int e = 0; e < arrays.length; e++)
+            setOutputArray(e, arrays[e]);
+    }
 }

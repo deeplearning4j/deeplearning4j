@@ -520,7 +520,6 @@ public class SparseNDArrayCOOTest {
         INDArray v = arr.get(new SpecifiedIndex(0), NDArrayIndex.newAxis());
         System.out.println(v.shapeInfoDataBuffer());
         System.out.println(v.toString());
-        // null pointer exception in shapeoffsetresolution.exec
     }
 
     @Test
@@ -529,7 +528,6 @@ public class SparseNDArrayCOOTest {
         INDArray v = arr.get(NDArrayIndex.newAxis(), new SpecifiedIndex(0, 1), NDArrayIndex.all());
         System.out.println(v.shapeInfoDataBuffer());
         System.out.println(v.toString());
-        // null pointer exception in shapeoffsetresolution.exec
     }
 
     @Test
@@ -538,8 +536,6 @@ public class SparseNDArrayCOOTest {
         INDArray v = arr.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.newAxis());
         System.out.println(v.shapeInfoDataBuffer());
         System.out.println(v.toString());
-        // IndexOutOfBoundsException: Index: 2, Size: 1
-        // in shapeoffsetresolution.exec
     }
 
     @Test

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -117,10 +118,10 @@ public class SubsamplingLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -339,7 +340,8 @@ public class SubsamplingLayer extends NoParamLayer {
             this.padding = ValidationUtils.validate2NonNegative(padding,false, "padding");
         }
 
-        public void setDilation(int... dilation) {
+
+        public void setDilation(int[] dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
     }
@@ -451,6 +453,11 @@ public class SubsamplingLayer extends NoParamLayer {
 
         public T poolingType(PoolingType poolingType) {
             this.setPoolingType(poolingType.toPoolingType());
+            return (T) this;
+        }
+
+        public T poolingType(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
+            this.setPoolingType(poolingType);
             return (T) this;
         }
 

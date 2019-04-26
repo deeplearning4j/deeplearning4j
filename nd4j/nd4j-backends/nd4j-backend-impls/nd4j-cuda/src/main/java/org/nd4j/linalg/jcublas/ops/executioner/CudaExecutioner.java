@@ -2380,6 +2380,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Nd4j.getExecutioner().commit();
 
+        val context = buildContext();
+
+        context.markInplace(op.isInplaceCall());
+
+        // transferring rng state
+        context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
+
+        //transferring input/output arrays
+        context.setInputArrays(op.inputArguments());
+        context.setOutputArrays(op.outputArguments());
+
+        // transferring static args
+        context.setBArguments(op.bArgs());
+        context.setIArguments(op.iArgs());
+        context.setTArguments(op.tArgs());
+
+        val result = exec(op, context);
+        val states = context.getRngStates();
+
+        // pulling states back
+        Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+
+        return result;
+
+        /*
         long st = profilingConfigurableHookIn(op);
 
         CudaContext context =(CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
@@ -2480,6 +2505,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         profilingConfigurableHookOut(op, st);
         return op.outputArguments();
+         */
     }
 
     @Override

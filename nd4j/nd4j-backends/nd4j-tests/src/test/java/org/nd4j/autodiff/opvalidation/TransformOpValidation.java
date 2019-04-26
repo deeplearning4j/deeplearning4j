@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -935,7 +936,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 69:
                     t = sd.rank(in).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()})).gradientCheck(false);
+                    tc.expectedOutput(t.getVarName(), Nd4j.scalar((double)ia.rank())).gradientCheck(false);
                     break;
                 case 70:
                     t = sd.onesLike(in);
@@ -1203,7 +1204,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String msg = "test: " + i + " - " + name;
             log.info("***** Starting test: {} *****", msg);
 
-            SDVariable loss = sd.mean("loss", t);
+            SDVariable loss = sd.mean("loss", t.castTo(DataType.DOUBLE));
 
             sd.associateArrayWithVariable(ia, in1);
             sd.associateArrayWithVariable(ib, in2);
@@ -1836,5 +1837,83 @@ public class TransformOpValidation extends BaseOpValidation {
                 .expectedOutput("out", expOut)
                 .gradientCheck(true));
         assertNull(err, err);
+    }
+
+    @Test
+    public void testMatMulTensor(){
+        final INDArray a = Nd4j.rand(new int[]{1, 2, 3, 4, 5});
+        final INDArray b = Nd4j.rand(new int[]{1, 2, 3, 5, 6});
+
+        final INDArray z = Nd4j.matmul(a, b);
+
+        assertArrayEquals(z.shape(), new long[]{1, 2, 3, 4, 6});
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", a);
+        SDVariable sdB = sd.var("b", b);
+        SDVariable t = sd.mmul(sdA, sdB);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testMatMulTensorTranspose(){
+        for(boolean transposeA: new boolean[]{false, true}) {
+            for (boolean transposeB : new boolean[]{false, true}) {
+                for (boolean transposeResult : new boolean[]{false, true}) {
+                    log.info("Testing with transposeA={}; transposeB={}; transposeResult={};", transposeA, transposeB, transposeResult);
+                    int m = 0, n = 0, k = 0, l = 0, i = 0, j = 0;
+                    if(!transposeA && !transposeB && !transposeResult){ m = 4; n = 5; k = 5;  l = 6; i = 4; j = 6;}
+                    if(!transposeA &&  transposeB && !transposeResult){ m = 4; n = 5; k = 6;  l = 5; i = 4; j = 6;}
+                    if(!transposeA && !transposeB &&  transposeResult){ m = 4; n = 5; k = 5;  l = 6; i = 6; j = 4;}
+                    if(!transposeA &&  transposeB &&  transposeResult){ m = 4; n = 5; k = 6;  l = 5; i = 6; j = 4;}
+                    if( transposeA && !transposeB && !transposeResult){ m = 5; n = 4; k = 5;  l = 6; i = 4; j = 6;}
+                    if( transposeA &&  transposeB && !transposeResult){ m = 5; n = 4; k = 6;  l = 5; i = 4; j = 6;}
+                    if( transposeA && !transposeB &&  transposeResult){ m = 5; n = 4; k = 5;  l = 6; i = 6; j = 4;}
+                    if( transposeA &&  transposeB &&  transposeResult){ m = 5; n = 4; k = 6;  l = 5; i = 6; j = 4;}
+
+                    final INDArray a = Nd4j.rand(new int[]{1, 2, 3, m, n});
+                    final INDArray b = Nd4j.rand(new int[]{1, 2, 3, k, l});
+
+                    final INDArray z = Nd4j.matmul(a, b, transposeA, transposeB, transposeResult);
+
+                    assertArrayEquals(z.shape(), new long[]{1, 2, 3, i, j});
+
+                    SameDiff sd = SameDiff.create();
+                    SDVariable sdA = sd.var("a", a);
+                    SDVariable sdB = sd.var("b", b);
+                    SDVariable t = sd.mmul(sdA, sdB, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).transposeResult(transposeResult).build());
+                    t.norm1("out");
+
+                    String err = OpValidation.validate(new TestCase(sd)
+                            .gradientCheck(true));
+                    assertNull(err, err);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSoftmaxCF(){
+
+        INDArray arrC = Nd4j.rand(DataType.FLOAT, 2, 5);
+        INDArray arrF = arrC.dup('f');
+        INDArray outCC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outCF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+        INDArray outFC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outFF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+
+
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCF).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFF).build());
+
+        assertEquals(outCC, outCF);
+        assertEquals(outCC, outFC);
+        assertEquals(outCC, outFF);
     }
 }

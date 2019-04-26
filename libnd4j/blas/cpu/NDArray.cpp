@@ -3156,6 +3156,11 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
+        if (!Environment::getInstance()->isExperimentalBuild()) {
+            if (!(this->dataType() == other->dataType() && other->dataType() == target->dataType()))
+                throw datatype_exception::build("NDArray::applyTrueBroadcast all ", target->dataType(), this->dataType(), other->dataType());
+        }
+
         if(isEmpty() || other->isEmpty()) {
             if(!target->isEmpty())
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: when some of input arrays (or both) is empty target array must be empty as well !");
@@ -3880,6 +3885,32 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     ////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
             return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDims: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        NDArray result(newShape, true, _workspace, true);
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExcutioner::execSummaryStatsScalar(op, _buffer, _shapeInfo, nullptr, result.buffer(), result.shapeInfo(), biasCorrected);
+        else
+            NativeOpExcutioner::execSummaryStats(op, _buffer, _shapeInfo, nullptr, result._buffer, result._shapeInfo, copy.data(), copy.size(), biasCorrected);
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+        return varianceAlongDims(op, biasCorrected, std::vector<int>(dimensions));
     }
 
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
@@ -4963,8 +4994,9 @@ template void NDArray::operator/=(const bool scalar);
     }
 
     ////////////////////////////////////////////////////////////////////////
-    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
-        auto result = new ResultSet();
+    ResultSet NDArray::allTensorsAlongDims(const std::vector<int> &dimensions) const {
+        
+        ResultSet result;
 
         if(dimensions.size() == 0)
             return result;
@@ -4978,24 +5010,12 @@ template void NDArray::operator/=(const bool scalar);
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
 
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
-
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, copy);
 
-        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tadPack.primaryShapeInfo())];
-        std::memcpy(shapeInfo, tadPack.primaryShapeInfo(), shape::shapeInfoByteLength(tadPack.primaryShapeInfo()));
-
-        for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), shapeInfo);
-            result->push_back(array);
+        for (uint idx = 0; idx < tadPack.numberOfTads(); idx++ ) {
+            auto array = new NDArray(bufferWithOffset(tadPack.primaryOffsets()[idx]), tadPack.primaryShapeInfo(), getWorkspace(), false, false);
+            result.push_back(array);
         }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
 
         return result;
     }
@@ -5003,6 +5023,11 @@ template void NDArray::operator/=(const bool scalar);
     ////////////////////////////////////////////////////////////////////////
     ResultSet* NDArray::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
         return allTensorsAlongDimension(std::vector<int>(dimensions));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+        return new ResultSet(std::move(allTensorsAlongDims(dimensions)));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -5136,49 +5161,29 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         return new NDArray((*this)(indexes, true));
     }
 
+    void NDArray::nullify() {
+        if (isEmpty() || _buffer == nullptr)
+            return;
 
+        if (this->isView() || this->ews() != 1) {
+            this->assign(0);
+        } else {
+            std::memset(_buffer, 0, this->lengthOf() * this->sizeOfT());
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
 
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
     const int rank = rankOf();
-    const int dimsSize = dimsToExclude.size();
+    const int subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
 
     // allocate memory
-    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(rank - dimsSize), Nd4jLong);
+    ALLOCATE(subArrShapeInfo, _workspace, shape::shapeInfoLength(subArrRank), Nd4jLong);
     ALLOCATE(subArrOffsets,   _workspace, numOfSubArrs, Nd4jLong);
 
-    Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _workspace);
-    std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
-    
-    Nd4jLong subArrLen = 1;
-
-    for(int j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
-        if(j >= 0 && i == dimsToExclude[j]) {
-            strides[j] = shape::stride(outShapeInfo)[i];
-            shape[j--] = shape::shapeOf(outShapeInfo)[i];
-            shape::shapeOf(outShapeInfo)[i] = 1;
-        }
-        else
-            subArrLen *= shape::shapeOf(outShapeInfo)[i];
-    }
-
-    // evaluate ews
-    shape::setEws(outShapeInfo, subArrLen);
-
-    // calculation of sub-array offsets (subArrOffsets)
-    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
-
-    // remove unities from outShapeInfo if required
-    if(!keepUnitiesInShape) {
-        std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
-        shape::reshapeC(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), subArrShapeInfo);
-    }
-    else
-        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
-
-    RELEASE(outShapeInfo, _workspace);
+    shape::calcSubArrShapeAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), subArrShapeInfo, subArrOffsets, keepUnitiesInShape);
 }
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);

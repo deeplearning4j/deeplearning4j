@@ -39,11 +39,12 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd
 __device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index, Nd4jLong length) {
     
     int xEWS = shape::elementWiseStride(xShapeInfo);
+    char order = shape::order(xShapeInfo);
 
-    if (xEWS == 1) {
+    if (xEWS == 1 && order == 'c') {
         return index;
     }
-    else if (xEWS > 1) {
+    else if (xEWS > 1 && order == 'c') {
         return index * xEWS;
     } 
     else {                
