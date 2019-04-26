@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
+import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -509,6 +510,33 @@ public class BarnesHutTsne implements Model {
 
     }
 
+    private int calculateOutputLength() {
+        int ret = 0;
+
+        INDArray rowCounts = Nd4j.create(N);
+        for (int n = 0; n < N; n++) {
+            int begin = rows.getInt(n);
+            int end = rows.getInt(n + 1);
+            for (int i = begin; i < end; i++) {
+                boolean present = false;
+                for (int m = rows.getInt(cols.getInt(i)); m < rows.getInt(cols.getInt(i) + 1); m++) {
+                    if (cols.getInt(m) == n) {
+                        present = true;
+                    }
+                }
+                if (present)
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+
+                else {
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                    rowCounts.putScalar(cols.getInt(i), rowCounts.getDouble(cols.getInt(i)) + 1);
+                }
+            }
+        }
+        ret = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+        return ret;
+    }
+
     @Override
     public void fit() {
         if (theta == 0.0) {
@@ -533,7 +561,13 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
-                vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                int numElements = calculateOutputLength();
+                INDArray output = Nd4j.createUninitialized(1,numElements);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, output);
+                Nd4j.getExecutioner().exec(op);
+
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));
+                //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
 
@@ -581,11 +615,9 @@ public class BarnesHutTsne implements Model {
 
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-
-
+            
             INDArray yGrads = gradient;
             Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
-            //System.out.println("Gains: " + gains);
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
                     .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));*/
 
