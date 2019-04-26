@@ -336,11 +336,7 @@ public class VpTreeNodeTest {
         }
 
         sortedResults = Nd4j.sort(sortedResults, dimensionToSort, true);
-        //assertTrue(trueResults.equalsWithEps(sortedResults, 1e-12));
-        sortedResults.getRow(1).eq(10.0);
-        sortedResults.getRow(2).eq(11.0);
-        sortedResults.getRow(3).eq(13.0);
-        sortedResults.getRow(4).eq(14.0);
+        assertTrue(trueResults.equalsWithEps(sortedResults, 1e-12));
 
         VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
         fillSearch.search();

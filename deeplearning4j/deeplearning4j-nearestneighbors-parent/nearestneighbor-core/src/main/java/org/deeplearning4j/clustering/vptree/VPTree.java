@@ -250,7 +250,7 @@ public class VPTree implements Serializable {
         if (scalars == null)
             scalars = new ThreadLocal<>();
 
-        if (scalars.get() == null)
+        if (Nd4j.scalar(0.0f).equals(scalars.get()))
             scalars.set(Nd4j.scalar(0.0));
 
         switch (similarityFunction) {
