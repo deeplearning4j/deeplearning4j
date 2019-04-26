@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 12.12.2017
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 26.04.2019
 //
 
 #include<ops/declarable/helpers/polyGamma.h>
@@ -26,56 +26,69 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void polyGammaCuda(const void *vn, const Nd4jLong *nShapeInfo,
+                                	 const void *vx, const Nd4jLong *xShapeInfo,
+                                     	   void *vz, const Nd4jLong *zShapeInfo) {
 
-	//////////////////////////////////////////////////////////////////////////
-	// calculate factorial
-	template <typename T>
-	static FORCEINLINE T getFactorial(const int n) {
-		if (n < 0)
-			throw std::runtime_error("factorial is not defined for negative number !");
+    const auto n = reinterpret_cast<const T*>(vn);
+    const auto x = reinterpret_cast<const T*>(vx);
+          auto z = reinterpret_cast<T*>(vz);    
 
-		if(n==0 || n==1)
-			return (T)1.f;
+    __shared__ Nd4jLong len;
+    
+    if (threadIdx.x == 0)         
+        len = shape::length(nShapeInfo);    
 
-		T result = (T)1.f;
+    __syncthreads();    
 
-		return result;
-	}
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto totalThreads = gridDim.x * blockDim.x;
 
-	//////////////////////////////////////////////////////////////////////////
-	// implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
-	template <typename T>
-	static FORCEINLINE T polyGamma(const int n, const T x) {
-	
-		// if (n < 0)
-		// 	throw("polyGamma function: n must be >= 0 !");
+    for (int i = tid; i < len; i += totalThreads) {
+        
+        const auto nOffset = shape::getIndexOffset(i, nShapeInfo, len);    
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);        
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
 
-		// if (x <= (T)0.)
-		// 	throw("polyGamma function: x must be > 0 !");
-	
-		// TODO case for n = 0 (digamma)
+        const T nVal = n[nOffset]; 
+        
+        int sign = (static_cast<int>(nVal) + 1) % 2  ?  -1 : 1;
 
-		int sign = (n + 1) % 2  ?  -1 : 1;
-		// T factorial = (T)std::tgamma(n + 1);
+        T factorial = 1;
+        if(nVal != 0 && nVal != 1)
+        	for(int i = 2; i <= nVal; ++i)
+				factorial *= i;	
 
-		return sign * getFactorial<T>(n) * zeta<T>((T)(n + 1), x);
-	}
+        z[zOffset] = sign * factorial * zetaScalar<T>(nVal + 1, x[xOffset]);
+    }
+}
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn, const Nd4jLong *nShapeInfo, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
-//////////////////////////////////////////////////////////////////////////
-	// calculate polygamma function for arrays
-	template <typename T>
-	static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
+    polyGammaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vn, nShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
+}
 
-	}
+///////////////////////////////////////////////////////////////////
+void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z) {
 
-	void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x, output), FLOAT_TYPES);
-	}
+    if(!n.isActualOnDeviceSide()) n.syncToDevice();
+    if(!x.isActualOnDeviceSide()) x.syncToDevice();    
+        
+    int threadsPerBlock = MAX_NUM_THREADS;
+    int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    
+    BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.getSpecialBuffer(), n.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
 
-BUILD_SINGLE_TEMPLATE(template void _polyGamma, (const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+    n.tickReadHost();
+    x.tickReadHost();
+    z.tickWriteDevice();
+}
 
-
+BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn, const Nd4jLong *nShapeInfo, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
 
 }
 }

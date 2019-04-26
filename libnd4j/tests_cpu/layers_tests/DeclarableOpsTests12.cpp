@@ -777,3 +777,47 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
     std::vector<NDArray*> arrayList({&input1, &input2, &input3, &input4, &input5});
     ASSERT_TRUE(nd4j::ops::helpers::multiUnique(arrayList));
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, cube_1) {
+    
+    NDArray x('c', {2, 3}, {1., 2., 3., 4., 5, 6});
+    NDArray exp('c', {2, 3}, {1., 8., 27., 64., 125, 216});    
+
+    nd4j::ops::cube op;
+
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, cube_bp_1) {
+    
+    NDArray x('c', {2, 3}, {1., 2., 3., 4., 5, 6});
+    NDArray gradO('c', {2, 3}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2, 3}, {1.5, 6., 13.5, 24., 37.5, 54});   
+
+    gradO = 0.5;
+
+    nd4j::ops::cube_bp op;
+
+    auto result = op.execute({&x, &gradO}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    // z->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

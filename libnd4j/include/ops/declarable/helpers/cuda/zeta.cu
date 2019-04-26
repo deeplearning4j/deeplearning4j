@@ -15,52 +15,71 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 12.12.2017
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 26.04.2019
 //
 
 #include<ops/declarable/helpers/zeta.h>
-#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    const int maxIter = 1000000;							// max number of loop iterations
-    const double machep =  1.11022302462515654042e-16;
 
-    // expansion coefficients for Euler-Maclaurin summation formula (2k)! / B2k, where B2k are Bernoulli numbers
-    const double coeff[] = { 12.0,-720.0,30240.0,-1209600.0,47900160.0,-1.8924375803183791606e9,7.47242496e10,-2.950130727918164224e12, 1.1646782814350067249e14, -4.5979787224074726105e15, 1.8152105401943546773e17, -7.1661652561756670113e18};
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                const void *vq, const Nd4jLong *qShapeInfo,
+                                      void *vz, const Nd4jLong *zShapeInfo) {
 
+    const auto x = reinterpret_cast<const T*>(vx);
+    const auto q = reinterpret_cast<const T*>(vq);
+          auto z = reinterpret_cast<T*>(vz);    
 
-    //////////////////////////////////////////////////////////////////////////
-    // fast implementation, it is based on Euler-Maclaurin summation formula
-    template <typename T>
-    T zeta(graph::LaunchContext* context, const T x, const T q) {
-        return (T) 0;
+    __shared__ Nd4jLong len;
+    
+    if (threadIdx.x == 0)         
+        len = shape::length(xShapeInfo);    
+
+    __syncthreads();    
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto totalThreads = gridDim.x * blockDim.x;
+
+    for (int i = tid; i < len; i += totalThreads) {
+            
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+        const auto qOffset = shape::getIndexOffset(i, qShapeInfo, len);
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+
+        z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
     }
+}
 
-    //////////////////////////////////////////////////////////////////////////
-    // calculate the Hurwitz zeta function for arrays
-    template <typename T>
-    static NDArray zeta_(const NDArray& x, const NDArray& q) {
-	    auto result = NDArray(&x, false, x.getContext());
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void zetaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vq, const Nd4jLong *qShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
-	    return result;
-    }
+    zetaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vq, qShapeInfo, vz, zShapeInfo);
+}
 
-	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (x, q), FLOAT_TYPES);
+void zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z) {
 
-        return *output;
-	}
+    if(!x.isActualOnDeviceSide()) x.syncToDevice();
+    if(!q.isActualOnDeviceSide()) q.syncToDevice();
+        
+    int threadsPerBlock = MAX_NUM_THREADS;
+    int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    
+    BUILD_SINGLE_SELECTOR(x.dataType(), zetaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), q.getSpecialBuffer(), q.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
 
-	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q), FLOAT_TYPES);
+    x.tickReadHost();
+    q.tickReadHost();
+    z.tickWriteDevice();
+}
+
+BUILD_SINGLE_TEMPLATE(template void zetaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vq, const Nd4jLong *qShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);
 
 
-    template bfloat16 zeta(graph::LaunchContext* context, bfloat16, bfloat16);
-    template float16 zeta(graph::LaunchContext* context, float16, float16);
-    template float zeta(graph::LaunchContext* context, float, float);
-    template double zeta(graph::LaunchContext* context, double, double);
 }
 }
 }
