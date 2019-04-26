@@ -59,41 +59,55 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
     nd4j::OmpLaunchHelper t(length, maxThreads);
     Z intermediate[256];
+    Z extraParamsLocal[3 * 256];
 
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < maxThreads; e++)
         intermediate[e] = startingVal;
+    
+    memset(extraParamsLocal, 0, 3 * 256 * sizeof(Z));
+    if (extraParams != nullptr)
+        PRAGMA_OMP_SIMD
+        for (int e = 0; e < maxThreads; e++)
+            extraParamsLocal[3 * e + 2] = extraParams[0];
 
     nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
 
     if (kindOfLoop == nd4j::LoopKind::EWS1) {
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
-        for(unsigned int i = 0; i < length; i++)
-            intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[i], y[i], extraParamsVals), extraParamsVals);
+        for(unsigned int i = 0; i < length; i++) {
+            const auto threadNum = omp_get_thread_num();
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[i], y[i], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
+        }
 
     } else if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
-        for(unsigned int i = 0; i < length; i++) {            
+        for(unsigned int i = 0; i < length; i++) {
+            const auto threadNum = omp_get_thread_num();
             auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
-            intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
     } else {
         uint yShapeInfoCast[MAX_RANK];
         const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
-        for(unsigned int i = 0; i < length; i++) {            
+        for(unsigned int i = 0; i < length; i++) {
+            const auto threadNum = omp_get_thread_num();      
             auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
             auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
-            intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
     }
 
     // merge step
     for (int e = 0; e < maxThreads; e++)
-        startingVal = OpType::update(startingVal, intermediate[e], extraParams);
+        OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);        
+    for (int e = 0; e < maxThreads; e++)
+        startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
 
-    z[0] = OpType::postProcess(startingVal, length, extraParamsVals);;
+    z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
 }
 
 //////////////////////////////////////////////////////////////////////////
