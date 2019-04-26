@@ -561,10 +561,9 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
-                int numElements = calculateOutputLength();
-                INDArray output = Nd4j.createUninitialized(1,numElements);
-                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, output);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
                 Nd4j.getExecutioner().exec(op);
+                INDArray output = op.getResult();
 
                 vals = output.divi(vals.sum(Integer.MAX_VALUE));
                 //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
@@ -615,7 +614,7 @@ public class BarnesHutTsne implements Model {
 
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            
+
             INDArray yGrads = gradient;
             Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())

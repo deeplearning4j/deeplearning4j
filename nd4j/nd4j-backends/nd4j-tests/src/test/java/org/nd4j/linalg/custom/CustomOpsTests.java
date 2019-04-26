@@ -567,16 +567,17 @@ public class CustomOpsTests {
 
     @Test
     public void testBarnesHutSymmetrize() {
-        INDArray rows = Nd4j.createFromArray(new int[]{0, 1});
-        INDArray cols = Nd4j.createFromArray(new int[]{0, 1, 1, 0});
-        INDArray vals = Nd4j.createFromArray(new double[]{20., 30., 40., 50.});
+        INDArray rows = Nd4j.createFromArray(new int[]{0, 2, 3, 5, 7, 8, 9, 11, 12, 14, 18, 21});
+        INDArray cols = Nd4j.createFromArray(new int[]{0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0, 1, 0, 2, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5});
+        INDArray vals = Nd4j.createFromArray(new double[]{20., 30., 40., 50., 120., 130., 140., 150.,220., 230., 240., 250., 2120., 2130., 2140., 2150., 320., 330., 340., 350., 3120., 3130., 3140., 3150.});
 
-        INDArray expected = Nd4j.createFromArray(new double[] {0.000000, 0.000000});
-        INDArray result = Nd4j.createUninitialized(2);
+        INDArray expected = Nd4j.createFromArray(new double[] {15.000000, 0.000000, 0.000000, 65.000000, 60.000000, 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+        long N = 11;
 
-        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, result);
+        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
         Nd4j.exec(op);
 
-
+        INDArray result = op.getResult();
+        //assertEquals(expected, result);
     }
 }
