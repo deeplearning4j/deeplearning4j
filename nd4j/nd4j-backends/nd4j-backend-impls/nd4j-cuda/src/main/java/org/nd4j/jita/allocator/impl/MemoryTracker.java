@@ -27,10 +27,9 @@ public class MemoryTracker {
             cachedPerDevice.add(i, new AtomicLong(0));
 	        workspacesPerDevice.add(i, new AtomicLong(0));
 
-	        val ptr = new CudaPointer(i);
-            totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(ptr)));
+            totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(i)));
 
-            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr));
+            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(i));
 
             log.debug("Free memory on device_{}: {}", i, f);
             freePerDevice.add(i, f);
@@ -120,7 +119,7 @@ public class MemoryTracker {
      */
     public long getPreciseFreeMemory(int deviceId) {
         // we refresh free memory on device
-        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(new CudaPointer(deviceId));
+        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
         //freePerDevice.get(deviceId).set(extFree);
 
         return extFree;

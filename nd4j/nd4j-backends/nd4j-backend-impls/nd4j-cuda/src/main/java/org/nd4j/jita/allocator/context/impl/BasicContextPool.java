@@ -165,7 +165,7 @@ public class BasicContextPool implements ContextPool {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
                     log.debug("Reusing context: " + rand);
 
-                    nativeOps.setDevice(new CudaPointer(deviceId));
+                    nativeOps.setDevice(deviceId);
 
                     CudaContext context = contextsForDevices.get(deviceId).get(rand);
 
@@ -190,15 +190,10 @@ public class BasicContextPool implements ContextPool {
 
     protected CudaContext createNewStream(Integer deviceId) {
         log.trace("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
-        //JCuda.cudaSetDevice(deviceId);
-        nativeOps.setDevice(new CudaPointer(deviceId));
+        nativeOps.setDevice(deviceId);
 
         CudaContext context = new CudaContext();
         context.initOldStream();
-
-        //context.initHandle();
-        //context.associateHandle();
-        //context.initStream();
 
         return context;
     }
@@ -299,7 +294,7 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        val reductionPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
+        val reductionPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
@@ -307,7 +302,7 @@ public class BasicContextPool implements ContextPool {
 
         context.syncOldStream();
 
-        val allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
+        val allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
@@ -319,7 +314,7 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        val specialPointer = nativeOps.mallocDevice(16384 * sizeOf, new CudaPointer(deviceId), 0);
+        val specialPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 

@@ -128,5 +128,6 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream,
                                 bool descending) {
 
     execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    nd4j::DebugHelper::checkErrorCode(stream, "oesTad(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT oesTadGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending), LIBND4J_TYPES);

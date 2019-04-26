@@ -68,6 +68,7 @@
 #include <ShapeList.h>
 #include <Context.h>
 #include <ops/specials_cuda.h>
+#include <helpers/DebugHelper.h>
 
 #include <graph/exceptions/datatype_exception.h>
 
@@ -157,6 +158,7 @@ void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data)
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jLong)ptrToDeviceId;
 }
+
 
 template <typename T>
 dim3 getOptimalDimensions(Nd4jLong n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
@@ -1680,7 +1682,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
 	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
@@ -1706,7 +1708,7 @@ int NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, int deviceId) {
 	cudaError_t res = cudaFree(reinterpret_cast<void *>(pointer));
 	if (res != 0)
 		pointer = 0L;
@@ -1757,9 +1759,8 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	return 1;
 }
 
-int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
-	int deviceId = getDeviceId(ptrToDeviceId);
-	cudaError_t dZ = cudaSetDevice(deviceId);
+int NativeOps::setDevice(int deviceId) {
+	auto dZ = cudaSetDevice(deviceId);
 	checkCudaErrors(dZ);
 	if (dZ != 0)
 		throw std::runtime_error("cudaSetDevice(...) failed");
@@ -1776,8 +1777,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory() {
     return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceFreeMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1798,8 +1798,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
 	return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceTotalMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1957,20 +1956,16 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	nd4j::Environment::getInstance()->setVerbose(reallyEnable);
 }
 
-int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMajor(int device) {
 	return deviceProperties[device].major;
 }
 
-int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMinor(int device) {
 	return deviceProperties[device].minor;
 }
 
 
-const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
-    int device = getDeviceId(ptrToDeviceId);
-
+const char * NativeOps::getDeviceName(int device) {
     return deviceProperties[device].name;
 }
 
@@ -2010,14 +2005,15 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
     }
 }
 template<typename T>
-__host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
+__host__ static void concatCudaLauncher(const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
     //int blocks = numOfArrs * 16; // >> 1 << 2);
     //nd4j_printf("gridDim.x is %i\n", blocks);
     //if (blocks > 8192)
     //    blocks = 8192; // restrict grid dims to 8K max
     concatCuda<T><<<numOfArrs, 128, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "concat(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
 static void
 specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void*& outBuffer, Nd4jLong*& outShape) {
@@ -2300,7 +2296,6 @@ void NativeOps::average(Nd4jPointer *extras,
 	// launching on gpu
 	if (mode == 0) {
 		dim3 launchDims(256, 256, 4096);
-		// averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dz, n, length, propagate);		
     	BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate), LIBND4J_TYPES);		    	
         nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
 	} else {
@@ -3053,6 +3048,8 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *dZ, int *dX, int numElement
     } else {
         nd4j::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numElements, 0, 0);
     }
+
+    nd4j::DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
 }
 
 
@@ -3960,6 +3957,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
 
     BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
+    nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
 }
 
 void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
@@ -3968,3 +3966,29 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 
+void __global__ tryPointerKernel(void* p, int len) {
+    auto buf = reinterpret_cast<int8_t*>(p);
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+    __shared__ int b;
+    if (tid < len)
+        atomicAdd(&b, buf[tid]);
+
+    __syncthreads();
+
+    if (threadIdx.x ==0 && blockIdx.x == 0)
+        printf("Pointer check complete: %i\n", b);
+}
+
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
+    tryPointerKernel<<<256, 512, len+64, stream>>>(p, len);
+    auto e = cudaStreamSynchronize(stream);
+
+    if (e != 0)
+        throw std::runtime_error("tryPointer failed");
+
+    cudaStreamDestroy(stream);
+}

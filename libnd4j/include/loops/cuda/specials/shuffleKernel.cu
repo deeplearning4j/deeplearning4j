@@ -118,6 +118,7 @@ namespace nd4j {
                                        Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
         execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+        nd4j::DebugHelper::checkErrorCode(stream, "shuffleGeneric(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT shuffleKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdX, Nd4jLong * *xShapeInfo, void **vdZ, int N, int * shuffleMap, Nd4jLong * *tadOnlyShapeInfo, Nd4jLong * *tadOffsets), LIBND4J_TYPES);

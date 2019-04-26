@@ -470,6 +470,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     /**
      *
+     * @param p
+     * @param len
+     */
+    public native void tryPointer(@Cast("Nd4jPointer") Pointer extra, @Cast("Nd4jPointer") Pointer p, int len);
+
+    /**
+     *
      * @param num
      */
     public native void setElementThreshold(int num);
@@ -1611,7 +1618,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
      * @param flags optional parameter
      */
-    public native @Cast("Nd4jPointer") Pointer mallocDevice(@Cast("Nd4jLong") long memorySize, @Cast("Nd4jPointer") Pointer ptrToDeviceId, int flags);
+    public native @Cast("Nd4jPointer") Pointer mallocDevice(@Cast("Nd4jLong") long memorySize, int deviceId, int flags);
 
     /**
      * This method releases previously allocated host memory space
@@ -1626,7 +1633,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param pointer pointer that'll be freed
      * @param ptrToDeviceId pointer to deviceId.
      */
-    public native int freeDevice(@Cast("Nd4jPointer") Pointer pointer, @Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int freeDevice(@Cast("Nd4jPointer") Pointer pointer, int deviceId);
 
     /**
      *
@@ -1693,7 +1700,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native int setDevice(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int setDevice(int deviceId);
 
     /**
      *
@@ -1720,7 +1727,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("Nd4jLong") long getDeviceFreeMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("Nd4jLong") long getDeviceFreeMemory(int deviceId);
 
     /**
      * Returns amount of free memory for current device
@@ -1733,28 +1740,28 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("Nd4jLong") long getDeviceTotalMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("Nd4jLong") long getDeviceTotalMemory(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native int getDeviceMajor(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int getDeviceMajor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native int getDeviceMinor(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int getDeviceMinor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("char*") String getDeviceName(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("char*") String getDeviceName(int deviceId);
 
     /**
      *
