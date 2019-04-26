@@ -204,6 +204,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
 
     if(!isNCHW) {
+        delete input;
         delete gradI;
         delete gradO;
     }
