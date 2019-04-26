@@ -57,7 +57,7 @@ namespace nd4j {
          * 0: symmetric 2D matrix with given values on given places
          */
         #if NOT_EXCLUDED(OP_barnes_symmetrized)
-        DECLARE_CUSTOM_OP(barnes_symmetrized, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(barnes_symmetrized, 3, 1, false, 0, -1);
         #endif
 
         /**

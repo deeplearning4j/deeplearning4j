@@ -24,95 +24,111 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, NDArray& rowCounts) {
-        auto N = rowP->lengthOf() / 2;
+    Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
-//        PRAGMA_OMP_PARALLEL_FOR
+        Nd4jLong* pRowCounts = reinterpret_cast<Nd4jLong*>(rowCounts.buffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
         for (int n = 0; n < N; n++) {
-            int begin = rowP->e<int>(n);
-            int end = rowP->e<int>(n + 1);
+            int begin = pRows[n];//->e<int>(n);
+            int end = pRows[n + 1];//rowP->e<int>(n + 1);
             for (int i = begin; i < end; i++) {
                 bool present = false;
-                for (int m = rowP->e<int>(colP->e<int>(i)); m < rowP->e<int>(colP->e<int>(i) + 1); m++)
-                    if (colP->e<int>(m) == n) {
+                for (int m = pRows[pCols[i]]; m < pRows[pCols[i] + 1]; m++)
+                    if (pCols[m] == n) {
                         present = true;
+                        break;
                     }
 
+                ++pRowCounts[n];
 
-                if (present)
-                    rowCounts.p(n, rowCounts.e(n) + 1);
-
-                else {
-                    rowCounts.p(n, rowCounts.e(n) + 1);
-                    rowCounts.p(colP->e<int>(i), rowCounts.e(colP->e<int>(i)) + 1);
-                }
+                if (!present)
+                    ++pRowCounts[pCols[i]];
             }
         }
-
-        NDArray* numElementsArr = rowCounts.reduceAlongDimension(reduce::Sum, {});
-        if (numElementsArr == nullptr) throw std::runtime_error("helpers::barnes_symmertize: Cannot calculate num of Elements");
-        auto numElements = numElementsArr->e<int>(0);
-        delete numElementsArr;
+        NDArray numElementsArr = rowCounts.sumNumber(); //reduceAlongDimension(reduce::Sum, {});
+        //rowCounts.printBuffer("Row counts");
+        auto numElements = numElementsArr.e<Nd4jLong>(0);
         return numElements;
     }
+//    static
+//    void printVector(std::vector<int> const& v) {
+//        for (auto x: v) {
+//            printf("%d ", x);
+//        }
+//        printf("\n");
+//        fflush(stdout);
+//    }
 
-void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, NDArray* output, NDArray* rowCounts) {
-        auto N = rowP->lengthOf() / 2;
-        auto numElements = output->lengthOf();
-        NDArray offset = NDArrayFactory::create<int>('c', {N});
-//        NDArray symRowP = NDArrayFactory::create<int>('c', {N + 1});
+    template <typename T>
+    static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
+        //auto N = rowP->lengthOf() - 1; /// 2 + rowP->lengthOf() % 2;
+        //auto numElements = output->lengthOf();
         std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
         symRowP.insert(symRowP.begin(),0);
         //symRowP(1, {0}) = *rowCounts;
 //        for (int n = 0; n < N; n++)
-//            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n));
+//            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
+        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
+        T const* pVals = reinterpret_cast<T const*>(valP->getBuffer());
+        T* pOutput = reinterpret_cast<T*>(output->buffer());
+        //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
+        std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
-
+//PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))
         for (int n = 0; n < N; n++) {
-            for (int i = rowP->e<int>(n); i < rowP->e<int>(n + 1); i++) {
+            int begin = pRows[n];
+            int bound = pRows[n + 1];
+
+            for (int i = begin; i < bound; i++) {
                 bool present = false;
-                for (int m = rowP->e<int>(colP->e<int>(i)); m < rowP->e<int>(colP->e<int>(i)) + 1; m++) {
-                    if (colP->e<int>(m) == n) {
+                int start = pRows[pCols[i]];
+                int end = pRows[pCols[i]] + 1;
+
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
+                for (int m = start; m < end; m++) {
+                    if (pCols[m] == n) {
                         present = true;
-                        if (n < colP->e<int>(i)) {
-                            // make sure we do not add elements twice
-//                            symColP[symRowP.e<int>(n) + offset.e<int>(n)] = colP->e<int>(i);
-//                            symColP[symRowP.e<int>(colP->e<int>(i)) + offset.e<int>(colP->e<int>(i))] = n;
-                            output->p(symRowP[n] + offset.e<int>(n),
-                                              valP->e<double>(i) + valP->e<double>(m));
-                            output->p(symRowP[colP->e<int>(i)] + offset.e<int>(colP->e<int>(i)),
-                                              valP->e<double>(i) + valP->e<double>(m));
+                        if (n < pCols[i]) {
+                            pOutput[symRowP[n] + offset[n]] = pVals[i] + pVals[m];
+                            pOutput[symRowP[pCols[i]] + offset[pCols[i]]] = pVals[i] + pVals[m];
                         }
                     }
                 }
 
                 // If (colP[i], n) is not present, there is no addition involved
                 if (!present) {
-                    int colPI = colP->e<int>(i);
+                    int colPI = pCols[i];
                     if (n < colPI) {
-                        output->p(symRowP[n] + offset.e<int>(n), colPI);
-                        output->p(symRowP[colP->e<int>(i)] + offset.e<int>(colPI), n);
-                        output->p(symRowP[n] + offset.e<int>(n), valP->e<double>(i));
-                        output->p(symRowP[colPI] + offset.e<int>(colPI), valP->e<double>(i));
+                        pOutput[symRowP[n] + offset[n]] = T(colPI);
+                        pOutput[symRowP[pCols[i]] + offset[colPI]] = T(n);
+                        pOutput[symRowP[n] + offset[n]] = pVals[i];
+                        pOutput[symRowP[colPI] + offset[colPI]] = pVals[i];
                     }
 
                 }
-
                 // Update offsets
-                if (!present || (present && n < colP->e<int>(i))) {
-                    offset.p(n, offset.e<int>(n) + 1);
-                    int colPI = colP->e<int>(i);
+                if (!present || (present && n < pCols[i])) {
+                    ++offset[n];
+                    int colPI = pCols[i];
                     if (colPI != n)
-                        offset.p(colPI, offset.e<int>(colPI) + 1);
+                        ++offset[colPI];
                 }
+//                printVector(offset);
             }
         }
+    }
+    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
 
         // Divide the result by two
+        BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, output, rowCounts), NUMERIC_TYPES);
+
         *output /= 2.0;
         //output->assign(symValP);
     }
+    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts), NUMERIC_TYPES);
 
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {

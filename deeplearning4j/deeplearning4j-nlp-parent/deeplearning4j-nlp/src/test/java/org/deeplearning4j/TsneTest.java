@@ -35,6 +35,8 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +57,7 @@ public class TsneTest {
                 log.info("Starting test: WSM={}, syntheticData={}", wsm, syntheticData);
 
                 //STEP 1: Initialization
-                int iterations = 30;
+                int iterations = 300;
                 //create an n-dimensional array of doubles
                 Nd4j.setDataType(DataType.DOUBLE);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
@@ -63,7 +65,7 @@ public class TsneTest {
                 //STEP 2: Turn text input into a list of words
                 INDArray weights;
                 if(syntheticData){
-                    weights = Nd4j.rand(500, 20);
+                    weights = Nd4j.rand(5000, 200);
                 } else {
                     log.info("Load & Vectorize data....");
                     File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
@@ -207,16 +209,18 @@ public class TsneTest {
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words
-                INDArray weights;
-                    log.info("Load & Vectorize data....");
-                    File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
-                    //Get the data of all unique word vectors
-                    Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
-                    VocabCache cache = vectors.getSecond();
-                    weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
+                INDArray weights = Nd4j.read(new FileInputStream(new File("weights.txt")));
+                /*INDArray weights;
+                log.info("Load & Vectorize data....");
+                File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
+                //Get the data of all unique word vectors
+                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
+                VocabCache cache = vectors.getSecond();
+                weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list*/
+                //Nd4j.write(new FileOutputStream(new File("weights.txt")), weights);
 
-                    for (int i = 0; i < cache.numWords(); i++)   //seperate strings of words into their own list
-                        cacheList.add(cache.wordAtIndex(i));
+                File wordFile = new ClassPathResource("deeplearning4j-tsne/set.txt").getFile();   //Open the file
+                cacheList = FileUtils.readLines(wordFile, "UTF-8");
 
                 //STEP 3: build a dual-tree tsne to use later
                 log.info("Build model....");
@@ -234,9 +238,11 @@ public class TsneTest {
                 log.info("Store TSNE Coordinates for Plotting....");
                 File outDir = testDir.newFolder();
                 tsne.fit(weights);
-                tsne.saveAsFile(cacheList, new File(outDir, "out.txt").getAbsolutePath());
-                File file1 = new File("out.txt");
-                File file2 = new File("sample.txt");
+                File file1 = new File(outDir, "new.txt");
+                tsne.saveAsFile(cacheList, file1.getAbsolutePath());
+                System.out.println(file1.getAbsolutePath());
+                System.out.println(FileUtils.readFileToString(file1, "UTF-8"));
+                File file2 = new ClassPathResource("deeplearning4j-tsne/sample.txt").getFile();
                 assertEquals(true, FileUtils.contentEquals(file1, file2));
             }
     }
