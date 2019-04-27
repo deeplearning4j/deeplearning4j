@@ -529,7 +529,7 @@ public class SharedTrainingWrapper {
                             .build();
 
             // releasing Context here
-            Nd4j.getMemoryManager().releaseCurrentContext();
+//            Nd4j.getMemoryManager().releaseCurrentContext();
 
             return result;
         } else {

@@ -88,7 +88,7 @@ public class TestDeepWalk {
     @Test(timeout = 180000L)
     public void testParallel() {
 
-        IGraph<String, String> graph = generateRandomGraph(1000, 10);
+        IGraph<String, String> graph = generateRandomGraph(100, 4);
 
         int vectorSize = 20;
         int windowSize = 2;
@@ -99,7 +99,7 @@ public class TestDeepWalk {
 
 
 
-        deepWalk.fit(graph, 8);
+        deepWalk.fit(graph, 6);
     }
 
 

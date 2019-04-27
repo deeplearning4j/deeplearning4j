@@ -88,6 +88,7 @@ void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cuda
 														int *allocPointer){
 
 	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
+	nd4j::DebugHelper::checkErrorCode(stream, "PWT (...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

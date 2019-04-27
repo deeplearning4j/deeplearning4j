@@ -79,6 +79,11 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
     }
 
     @Override
+    public int targetDevice() {
+        return 0;
+    }
+
+    @Override
     protected void init() {
         super.init();
 
