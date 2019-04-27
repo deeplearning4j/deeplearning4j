@@ -23,13 +23,16 @@ import org.datavec.api.transform.metadata.NDArrayMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -47,6 +50,7 @@ import java.util.Set;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties({"gazeteer"})
 public class GazeteerTransform extends BaseColumnTransform implements BagofWordsTransform {
 
     private String newColumnName;
@@ -56,12 +60,11 @@ public class GazeteerTransform extends BaseColumnTransform implements BagofWords
     @JsonCreator
     public GazeteerTransform(@JsonProperty("columnName") String columnName,
                              @JsonProperty("newColumnName")String newColumnName,
-                             @JsonProperty("wordList") List<String> wordList,
-                             @JsonProperty("gazeteer") Set<String> gazeteer) {
+                             @JsonProperty("wordList") List<String> wordList) {
         super(columnName);
         this.newColumnName = newColumnName;
         this.wordList = wordList;
-        this.gazeteer = gazeteer;
+        this.gazeteer = new HashSet<>(wordList);
     }
 
     @Override
@@ -77,12 +80,13 @@ public class GazeteerTransform extends BaseColumnTransform implements BagofWords
     @Override
     public Object mapSequence(Object sequence) {
         List<List<Object>> sequenceInput = (List<List<Object>>) sequence;
-        INDArray ret = Nd4j.create(wordList.size());
+        INDArray ret = Nd4j.create(DataType.FLOAT, 1, wordList.size());
 
         for(List<Object> list : sequenceInput) {
             for(Object token : list) {
-                if(gazeteer.contains(token)) {
-                    ret.putScalar(wordList.indexOf(token),1);
+                String s = token.toString();
+                if(gazeteer.contains(s)) {
+                    ret.putScalar(wordList.indexOf(s),1);
                 }
             }
         }

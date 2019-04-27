@@ -25,7 +25,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.datavec.nlp.metadata.VocabCache;
-import org.datavec.nlp.tokenization.tokenizer.DefaultTokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
@@ -35,9 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
-import static org.datavec.nlp.vectorizer.TextVectorizer.MIN_WORD_FREQUENCY;
-import static org.datavec.nlp.vectorizer.TextVectorizer.STOP_WORDS;
-import static org.datavec.nlp.vectorizer.TextVectorizer.TOKENIZER;
+import static org.datavec.nlp.vectorizer.TextVectorizer.*;
 import static org.junit.Assert.assertEquals;
 
 public class TokenizerBagOfWordsTermSequenceIndexTransformTest {
@@ -201,7 +198,7 @@ public class TokenizerBagOfWordsTermSequenceIndexTransformTest {
 
 
 
-        System.out.println(execute);
+        //System.out.println(execute);
         INDArray arr0 = ((NDArrayWritable)execute.get(0).get(0).get(0)).get();
         INDArray arr1 = ((NDArrayWritable)execute.get(0).get(1).get(0)).get();
 
@@ -233,6 +230,21 @@ public class TokenizerBagOfWordsTermSequenceIndexTransformTest {
 
         assertEquals(expSmooth.getRow(0, true), arr0);
         assertEquals(expSmooth.getRow(1, true), arr1);
+
+
+
+        //Test JSON serialization:
+
+        String json = transformProcess.toJson();
+        TransformProcess fromJson = TransformProcess.fromJson(json);
+        assertEquals(transformProcess, fromJson);
+        List<List<List<Writable>>> execute2 = LocalTransformExecutor.executeSequenceToSequence(input, fromJson);
+
+        INDArray arr0a = ((NDArrayWritable)execute.get(0).get(0).get(0)).get();
+        INDArray arr1a = ((NDArrayWritable)execute.get(0).get(1).get(0)).get();
+
+        assertEquals(expSmooth.getRow(0, true), arr0a);
+        assertEquals(expSmooth.getRow(1, true), arr1a);
     }
 
 }
