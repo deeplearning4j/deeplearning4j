@@ -184,6 +184,7 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
+
 #ifdef INLINE_LOOPS
     nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams);
 #else
