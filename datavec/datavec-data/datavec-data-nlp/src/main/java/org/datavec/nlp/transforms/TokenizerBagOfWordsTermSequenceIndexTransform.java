@@ -25,6 +25,7 @@ import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.datavec.nlp.tokenization.tokenizer.TokenPreProcess;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
@@ -73,28 +74,40 @@ public class TokenizerBagOfWordsTermSequenceIndexTransform extends BaseColumnTra
     private Map<String,Double> weightMap;
     private boolean exceptionOnUnknown;
     private String tokenizerFactoryClass;
+    private String preprocessorClass;
     private TokenizerFactory tokenizerFactory;
+
     @JsonCreator
     public TokenizerBagOfWordsTermSequenceIndexTransform(@JsonProperty("columnName") String columnName,
                                                          @JsonProperty("newColumnName") String newColumnName,
                                                          @JsonProperty("wordIndexMap") Map<String,Integer> wordIndexMap,
                                                          @JsonProperty("idfMap") Map<String,Double> idfMap,
                                                          @JsonProperty("exceptionOnUnknown") boolean exceptionOnUnknown,
-                                                         @JsonProperty("tokenizerFactoryClass") String tokenizerFactoryClass) {
+                                                         @JsonProperty("tokenizerFactoryClass") String tokenizerFactoryClass,
+                                                         @JsonProperty("preprocessorClass") String preprocessorClass) {
         super(columnName);
         this.newColumName = newColumnName;
         this.wordIndexMap = wordIndexMap;
         this.exceptionOnUnknown = exceptionOnUnknown;
         this.weightMap = idfMap;
         this.tokenizerFactoryClass = tokenizerFactoryClass;
+        this.preprocessorClass = preprocessorClass;
         if(this.tokenizerFactoryClass == null) {
             this.tokenizerFactoryClass = DefaultTokenizerFactory.class.getName();
         }
         try {
             tokenizerFactory = (TokenizerFactory) Class.forName(this.tokenizerFactoryClass).newInstance();
-
         } catch (Exception e) {
             throw new IllegalStateException("Unable to instantiate tokenizer factory with empty constructor. Does the tokenizer factory class contain a default empty constructor?");
+        }
+
+        if(preprocessorClass != null){
+            try {
+                TokenPreProcess tpp = (TokenPreProcess) Class.forName(this.preprocessorClass).newInstance();
+                tokenizerFactory.setTokenPreProcessor(tpp);
+            } catch (Exception e){
+                throw new IllegalStateException("Unable to instantiate preprocessor factory with empty constructor. Does the tokenizer factory class contain a default empty constructor?");
+            }
         }
 
     }
