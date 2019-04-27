@@ -361,17 +361,25 @@ public class VPTree implements Serializable {
         workspace.notifyScopeLeft();
         //log.info("Thread: {}; Workspace size: {} MB; ConstantCache: {}; ShapeCache: {}; TADCache: {}", Thread.currentThread().getId(), (int) (workspace.getCurrentSize() / 1024 / 1024 ), Nd4j.getConstantHandler().getCachedBytes(), Nd4j.getShapeInfoProvider().getCachedBytes(), Nd4j.getExecutioner().getTADManager().getCachedBytes());
 
-        if (!leftPoints.isEmpty())
-            ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
+        if (workers > 1) {
+            if (!leftPoints.isEmpty())
+                ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
 
-        if (!rightPoints.isEmpty())
-            ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
+            if (!rightPoints.isEmpty())
+                ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
+        } else {
+            if (!leftPoints.isEmpty())
+                ret.left = buildFromPoints(leftPoints, leftIndices);
+
+            if (!rightPoints.isEmpty())
+                ret.right = buildFromPoints(rightPoints, rightIndices);
+        }
 
         return ret;
     }
 
     private Node buildFromPoints(INDArray items) {
-        if (executorService == null && items == this.items) {
+        if (executorService == null && items == this.items && workers > 1) {
 
             executorService = Executors.newFixedThreadPool(workers, new ThreadFactory() {
                 @Override
@@ -388,9 +396,6 @@ public class VPTree implements Serializable {
                     return t;
                 }
             });
-
-
-            //executorService = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(32));
         }
 
 

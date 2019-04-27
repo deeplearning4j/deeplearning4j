@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Anatoly Borisov
  */
+@Slf4j
 public class VpTreeNodeTest {
 
 
@@ -90,15 +92,15 @@ public class VpTreeNodeTest {
         val results = new ArrayList<DataPoint>();
         val distances = new ArrayList<Double>();
         Nd4j.getRandom().setSeed(7);
-        val randn = Nd4j.rand(100, 100);
+        val randn = Nd4j.rand(1000, 100);
 
-        for (int e = 0; e < 100; e++) {
+        for (int e = 0; e < 10; e++) {
             Nd4j.getRandom().setSeed(7);
             val vpTree = new VPTree(randn, false, 1);
 
             val cresults = new ArrayList<DataPoint>();
             val cdistances = new ArrayList<Double>();
-            vpTree.search(randn.getRow(0), 10, cresults, cdistances);
+            vpTree.search(randn.getRow(0), 5, cresults, cdistances);
 
             if (e == 0) {
                 results.addAll(cresults);
