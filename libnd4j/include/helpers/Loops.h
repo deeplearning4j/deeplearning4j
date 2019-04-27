@@ -1043,7 +1043,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         const auto tadShape    = shape::shapeOf(xTadShapeInfo);        
         const auto xTadStride  = shape::stride(xTadShapeInfo);
-        const auto yTadStride  = shape::stride(xTadShapeInfo);
+        const auto yTadStride  = shape::stride(yTadShapeInfo);
 
         const auto startVal = OpType::startingValue(x);
 
@@ -1065,7 +1065,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad  = x + xTadOffsets[ix];
                         const auto yTad  = y + yTadOffsets[iy];
                         const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                        auto start = startVal;
                 
                         for (uint j = 0; j < tadLen; ++j)
                             start = OpType::update(start, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
@@ -1092,8 +1092,6 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto zInd  = ix * numYTads + iy;
                               auto start = startVal;
 
-                        Z extraParams[3] = {param0, param1, param2};
-                                        
                         for (uint j = 0; j < tadLen; ++j)
                             start = OpType::update(start, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
 
