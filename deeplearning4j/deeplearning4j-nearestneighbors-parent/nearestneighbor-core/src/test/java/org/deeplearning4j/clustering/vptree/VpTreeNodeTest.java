@@ -22,6 +22,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.joda.time.Duration;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,8 +34,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Anatoly Borisov
@@ -69,22 +69,53 @@ public class VpTreeNodeTest {
 
 
     @Test
-    public void testParallel() {
-        Nd4j.getRandom().setSeed(7);
-        INDArray randn = Nd4j.rand(100, 100);
-        VPTree vpTree = new VPTree(randn, false, 1);
-        Nd4j.getRandom().setSeed(7);
-        VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
-        List<DataPoint> results = new ArrayList<>();
-        List<Double> distances = new ArrayList<>();
-        List<DataPoint> noParallelResults = new ArrayList<>();
-        List<Double> noDistances = new ArrayList<>();
-        vpTree.search(randn.getRow(0), 10, results, distances);
-        vpTreeNoParallel.search(randn.getRow(0), 10, noParallelResults, noDistances);
-        assertEquals(noParallelResults.size(), results.size());
-        assertEquals(noParallelResults, results);
-        assertEquals(noDistances, distances);
+    public void testParallel_1() {
+        int k = 5;
 
+        for (int e = 0; e < 5; e++) {
+            Nd4j.getRandom().setSeed(7);
+            INDArray randn = Nd4j.rand(100, 3);
+            VPTree vpTree = new VPTree(randn, false, 4);
+            Nd4j.getRandom().setSeed(7);
+            VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
+            List<DataPoint> results = new ArrayList<>();
+            List<Double> distances = new ArrayList<>();
+            List<DataPoint> noParallelResults = new ArrayList<>();
+            List<Double> noDistances = new ArrayList<>();
+            vpTree.search(randn.getRow(0), k, results, distances, true);
+            vpTreeNoParallel.search(randn.getRow(0), k, noParallelResults, noDistances, true);
+
+            assertEquals("Failed at iteration " + e, k, results.size());
+            assertEquals("Failed at iteration " + e, noParallelResults.size(), results.size());
+            assertNotEquals(randn.getRow(0, true), results.get(0).getPoint());
+            assertEquals("Failed at iteration " + e, noParallelResults, results);
+            assertEquals("Failed at iteration " + e, noDistances, distances);
+        }
+    }
+
+    @Test
+    public void testParallel_2() {
+        int k = 5;
+
+        for (int e = 0; e < 5; e++) {
+            Nd4j.getRandom().setSeed(7);
+            INDArray randn = Nd4j.rand(100, 3);
+            VPTree vpTree = new VPTree(randn, false, 4);
+            Nd4j.getRandom().setSeed(7);
+            VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
+            List<DataPoint> results = new ArrayList<>();
+            List<Double> distances = new ArrayList<>();
+            List<DataPoint> noParallelResults = new ArrayList<>();
+            List<Double> noDistances = new ArrayList<>();
+            vpTree.search(randn.getRow(0), k, results, distances, false);
+            vpTreeNoParallel.search(randn.getRow(0), k, noParallelResults, noDistances, false);
+
+            assertEquals("Failed at iteration " + e, k, results.size());
+            assertEquals("Failed at iteration " + e, noParallelResults.size(), results.size());
+            assertEquals(randn.getRow(0, true), results.get(0).getPoint());
+            assertEquals("Failed at iteration " + e, noParallelResults, results);
+            assertEquals("Failed at iteration " + e, noDistances, distances);
+        }
     }
 
     @Test
@@ -196,9 +227,9 @@ public class VpTreeNodeTest {
         DataPoint assertion = add.get(0);
         assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55}).reshape(1,2)), assertion);
 
-        tree.search(Nd4j.create(new double[] {60, 60}), 1, add, distances);
+        tree.search(Nd4j.create(new double[] {61, 61}), 2, add, distances, false);
         assertion = add.get(0);
-        assertEquals(Nd4j.create(new double[] {55, 55}).reshape(1,2), assertion.getPoint());
+        assertEquals(Nd4j.create(new double[] {60, 60}).reshape(1,2), assertion.getPoint());
     }
 
     @Test(expected = ND4JIllegalStateException.class)
@@ -354,10 +385,10 @@ public class VpTreeNodeTest {
 
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
-        tree.search(query, K, results, distances);
+        tree.search(query, K, results, distances, false);
         int dimensionToSort = 0;
 
-        INDArray sortedResults = Nd4j.zeros(DataType.FLOAT, K, ncols);
+        INDArray sortedResults = Nd4j.zeros(DataType.DOUBLE, K, ncols);
         int i = 0;
         for (DataPoint p : results) {
             sortedResults.putRow(i++, p.getPoint());
