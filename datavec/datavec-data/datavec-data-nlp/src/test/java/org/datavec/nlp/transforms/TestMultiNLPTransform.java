@@ -10,34 +10,26 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestGazeteerTransform {
+public class TestMultiNLPTransform {
 
     @Test
-    public void testGazeteerTransform(){
+    public void test(){
+
+        List<String> words = Arrays.asList("apple", "banana", "cherry", "date", "eggplant");
+        GazeteerTransform t1 = new GazeteerTransform("words", "out", words);
+        GazeteerTransform t2 = new GazeteerTransform("out", "out", words);
+
+
+        MultiNlpTransform multi = new MultiNlpTransform("text", new BagOfWordsTransform[]{t1, t2}, "out");
 
         String[] corpus = {
                 "hello I like apple".toLowerCase(),
-                "cherry date eggplant potato".toLowerCase()
+                "date eggplant potato".toLowerCase()
         };
-
-        //Gazeteer transform: basically 0/1 if word is present. Assumes already tokenized input
-        List<String> words = Arrays.asList("apple", "banana", "cherry", "date", "eggplant");
-
-        GazeteerTransform t = new GazeteerTransform("words", "out", words);
-
-        SequenceSchema schema = (SequenceSchema) new SequenceSchema.Builder()
-                .addColumnString("words").build();
-
-        TransformProcess tp = new TransformProcess.Builder(schema)
-                .transform(t)
-                .build();
 
         List<List<List<Writable>>> input = new ArrayList<>();
         for(String s : corpus){
@@ -49,13 +41,20 @@ public class TestGazeteerTransform {
             input.add(seq);
         }
 
+        SequenceSchema schema = (SequenceSchema) new SequenceSchema.Builder()
+                .addColumnString("text").build();
+
+        TransformProcess tp = new TransformProcess.Builder(schema)
+                .transform(multi)
+                .build();
+
         List<List<List<Writable>>> execute = LocalTransformExecutor.executeSequenceToSequence(input, tp);
 
         INDArray arr0 = ((NDArrayWritable)execute.get(0).get(0).get(0)).get();
         INDArray arr1 = ((NDArrayWritable)execute.get(0).get(1).get(0)).get();
 
-        INDArray exp0 = Nd4j.create(new float[]{1, 0, 0, 0, 0});
-        INDArray exp1 = Nd4j.create(new float[]{0, 0, 1, 1, 1});
+        INDArray exp0 = Nd4j.create(new float[]{1, 0, 0, 0, 0, 1, 0, 0, 0, 0});
+        INDArray exp1 = Nd4j.create(new float[]{0, 0, 0, 1, 1, 0, 0, 0, 1, 1});
 
         assertEquals(exp0, arr0);
         assertEquals(exp1, arr1);
@@ -71,6 +70,7 @@ public class TestGazeteerTransform {
 
         assertEquals(exp0, arr0a);
         assertEquals(exp1, arr1a);
+
     }
 
 }

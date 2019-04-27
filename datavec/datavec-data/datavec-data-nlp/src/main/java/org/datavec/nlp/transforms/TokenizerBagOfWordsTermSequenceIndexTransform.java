@@ -25,7 +25,6 @@ import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
@@ -46,7 +45,7 @@ import java.util.Map;
  * and outputs a single vector where that vector is of size
  * number of words in the vocab.
  *
- * For more information on vocab, see {@link BagofWordsTransform}
+ * For more information on vocab, see {@link BagOfWordsTransform}
  *
  * For definition of a vocab, it is generated using a {@link TokenizerFactory}
  * This transform will use {@link DefaultTokenizerFactory}

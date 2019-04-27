@@ -42,7 +42,7 @@ import java.util.Set;
  * A 0 or 1 is returned if the word is in the list.
  * A word list is also needed to represent the vocab words
  * that go along side the vector creation.
- * For more on this process, please see the {@link BagofWordsTransform}
+ * For more on this process, please see the {@link BagOfWordsTransform}
  * interface docs.
  *
  * @author Adam Gibson
@@ -51,7 +51,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"gazeteer"})
-public class GazeteerTransform extends BaseColumnTransform implements BagofWordsTransform {
+public class GazeteerTransform extends BaseColumnTransform implements BagOfWordsTransform {
 
     private String newColumnName;
     private List<String> wordList;
@@ -80,7 +80,7 @@ public class GazeteerTransform extends BaseColumnTransform implements BagofWords
     @Override
     public Object mapSequence(Object sequence) {
         List<List<Object>> sequenceInput = (List<List<Object>>) sequence;
-        INDArray ret = Nd4j.create(DataType.FLOAT, 1, wordList.size());
+        INDArray ret = Nd4j.create(DataType.FLOAT, wordList.size());
 
         for(List<Object> list : sequenceInput) {
             for(Object token : list) {

@@ -38,9 +38,9 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class MultiNlpTransform extends BaseColumnTransform implements BagofWordsTransform {
+public class MultiNlpTransform extends BaseColumnTransform implements BagOfWordsTransform {
 
-    private BagofWordsTransform[] transforms;
+    private BagOfWordsTransform[] transforms;
     private String newColumnName;
     private List<String> vocabWords;
 
@@ -52,7 +52,7 @@ public class MultiNlpTransform extends BaseColumnTransform implements BagofWords
      */
     @JsonCreator
     public MultiNlpTransform(@JsonProperty("columnName") String columnName,
-                             @JsonProperty("transforms") BagofWordsTransform[] transforms,
+                             @JsonProperty("transforms") BagOfWordsTransform[] transforms,
                              @JsonProperty("newColumnName") String newColumnName) {
         super(columnName);
         this.transforms = transforms;
@@ -71,7 +71,7 @@ public class MultiNlpTransform extends BaseColumnTransform implements BagofWords
     @Override
     public Object mapSequence(Object sequence) {
         NDArrayList ndArrayList = new NDArrayList();
-        for(BagofWordsTransform bagofWordsTransform : transforms) {
+        for(BagOfWordsTransform bagofWordsTransform : transforms) {
             ndArrayList.addAll(new NDArrayList(bagofWordsTransform.transformFromObject((List<List<Object>>) sequence)));
         }
 
@@ -128,7 +128,7 @@ public class MultiNlpTransform extends BaseColumnTransform implements BagofWords
     @Override
     public INDArray transformFromObject(List<List<Object>> tokens) {
         NDArrayList ndArrayList = new NDArrayList();
-        for(BagofWordsTransform bagofWordsTransform : transforms) {
+        for(BagOfWordsTransform bagofWordsTransform : transforms) {
             INDArray arr2 = bagofWordsTransform.transformFromObject(tokens);
             arr2 = arr2.reshape(arr2.length());
             NDArrayList newList = new NDArrayList(arr2,(int) arr2.length());
@@ -140,7 +140,7 @@ public class MultiNlpTransform extends BaseColumnTransform implements BagofWords
     @Override
     public INDArray transformFrom(List<List<Writable>> tokens) {
         NDArrayList ndArrayList = new NDArrayList();
-        for(BagofWordsTransform bagofWordsTransform : transforms) {
+        for(BagOfWordsTransform bagofWordsTransform : transforms) {
             INDArray arr2 = bagofWordsTransform.transformFrom(tokens);
             arr2 = arr2.reshape(arr2.length());
             NDArrayList newList = new NDArrayList(arr2,(int) arr2.length());
