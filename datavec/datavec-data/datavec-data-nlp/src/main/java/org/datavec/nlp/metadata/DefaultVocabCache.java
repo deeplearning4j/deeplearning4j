@@ -47,7 +47,8 @@ public class DefaultVocabCache implements VocabCache {
     /*
      * Constructor for use with initialize()
      */
-    public DefaultVocabCache() {}
+    public DefaultVocabCache() {
+    }
 
     @Override
     public void incrementNumDocs(double by) {
@@ -62,6 +63,11 @@ public class DefaultVocabCache implements VocabCache {
     @Override
     public String wordAt(int i) {
         return vocabWords.get(i).toString();
+    }
+
+    @Override
+    public int wordIndex(String word) {
+        return vocabWords.indexOf(word);
     }
 
     @Override
@@ -113,8 +119,25 @@ public class DefaultVocabCache implements VocabCache {
     }
 
     @Override
-    public double tfidf(String word, double frequency) {
-        return MathUtils.tfidf(MathUtils.tf((int) frequency), MathUtils.idf(numDocs, idf(word)));
+    public double tfidf(String word, double frequency, boolean smoothIdf) {
+        double tf = tf((int) frequency);
+        double docFreq = docFrequencies.getCount(word);
+
+        double idf = idf(numDocs, docFreq, smoothIdf);
+        double tfidf = MathUtils.tfidf(tf, idf);
+        return tfidf;
+    }
+
+    public double idf(double totalDocs, double numTimesWordAppearedInADocument, boolean smooth) {
+        if(smooth){
+            return Math.log((1 + totalDocs) / (1 + numTimesWordAppearedInADocument)) + 1.0;
+        } else {
+            return Math.log(totalDocs / numTimesWordAppearedInADocument) + 1.0;
+        }
+    }
+
+    public static double tf(int count) {
+        return count;
     }
 
     public int getMinWordFrequency() {

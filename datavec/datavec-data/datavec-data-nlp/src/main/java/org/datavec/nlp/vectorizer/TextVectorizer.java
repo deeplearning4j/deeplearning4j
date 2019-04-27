@@ -16,6 +16,7 @@
 
 package org.datavec.nlp.vectorizer;
 
+import lombok.Getter;
 import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -49,6 +50,7 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     public final static String TOKENIZER = "org.datavec.nlp.tokenizerfactory";
     public final static String VOCAB_CACHE = "org.datavec.nlp.vocabcache";
     protected Collection<String> stopWords;
+    @Getter
     protected VocabCache cache;
 
     @Override
@@ -81,12 +83,10 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
             Record record = reader.nextRecord();
             String s = toString(record.getRecord());
             Tokenizer tokenizer = tokenizerFactory.create(s);
-            cache.incrementNumDocs(1);
             doWithTokens(tokenizer);
             if (callBack != null)
                 callBack.onRecord(record);
-
-
+            cache.incrementNumDocs(1);
         }
     }
 

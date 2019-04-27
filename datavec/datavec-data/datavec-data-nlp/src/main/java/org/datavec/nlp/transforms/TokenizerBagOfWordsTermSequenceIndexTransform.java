@@ -166,8 +166,6 @@ public class TokenizerBagOfWordsTermSequenceIndexTransform extends BaseColumnTra
         }
 
         return create;
-
-
     }
 
 
@@ -180,7 +178,9 @@ public class TokenizerBagOfWordsTermSequenceIndexTransform extends BaseColumnTra
      * @return the tfidf weight for a given word
      */
     public double tfidfWord(String word, long wordCount, long documentLength) {
-        return MathUtils.tfidf(tfForWord(wordCount, documentLength), idfForWord(word));
+        double tf = tfForWord(wordCount, documentLength);
+        double idf = idfForWord(word);
+        return MathUtils.tfidf(tf, idf);
     }
 
     /**
@@ -191,7 +191,7 @@ public class TokenizerBagOfWordsTermSequenceIndexTransform extends BaseColumnTra
      * @return
      */
     private double tfForWord(long wordCount, long documentLength) {
-        return (double) wordCount / (double) documentLength;
+        return wordCount;
     }
 
     private double idfForWord(String word) {
