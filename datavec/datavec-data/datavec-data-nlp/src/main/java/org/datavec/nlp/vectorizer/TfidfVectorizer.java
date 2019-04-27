@@ -17,6 +17,7 @@
 package org.datavec.nlp.vectorizer;
 
 
+import org.datavec.api.conf.Configuration;
 import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
@@ -36,13 +37,23 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
+    /**
+     * Default: True.<br>
+     * If true: use idf(d, t) = log [ (1 + n) / (1 + df(d, t)) ] + 1<br>
+     * If false: use idf(t) = log [ n / df(t) ] + 1<br>
+     */
+    public static final String SMOOTH_IDF = "org.datavec.nlp.TfidfVectorizer.smooth_idf";
+
+    protected boolean smooth_idf;
+
     @Override
     public INDArray createVector(Object[] args) {
         Counter<String> docFrequencies = (Counter<String>) args[0];
         double[] vector = new double[cache.vocabWords().size()];
         for (int i = 0; i < cache.vocabWords().size(); i++) {
-            double freq = docFrequencies.getCount(cache.wordAt(i));
-            vector[i] = cache.tfidf(cache.wordAt(i), freq);
+            String word = cache.wordAt(i);
+            double freq = docFrequencies.getCount(word);
+            vector[i] = cache.tfidf(word, freq, smooth_idf);
         }
         return Nd4j.create(vector);
     }
@@ -85,5 +96,12 @@ public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     public INDArray transform(Record record) {
         Counter<String> wordFrequencies = wordFrequenciesForRecord(record.getRecord());
         return createVector(new Object[] {wordFrequencies});
+    }
+
+
+    @Override
+    public void initialize(Configuration conf){
+        super.initialize(conf);
+        this.smooth_idf = conf.getBoolean(SMOOTH_IDF, true);
     }
 }
