@@ -103,19 +103,11 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
 
 
     protected String toString(Collection<Writable> record) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        for (Writable w : record) {
-            if (w instanceof Text) {
-                try {
-                    w.write(dos);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        StringBuilder sb = new StringBuilder();
+        for(Writable w : record){
+            sb.append(w.toString());
         }
-
-        return new String(bos.toByteArray());
+        return sb.toString();
     }
 
 
