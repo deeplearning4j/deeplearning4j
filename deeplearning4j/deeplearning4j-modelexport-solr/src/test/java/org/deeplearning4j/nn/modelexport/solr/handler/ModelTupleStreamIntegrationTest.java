@@ -18,6 +18,9 @@ package org.deeplearning4j.nn.modelexport.solr.handler;
 
 import java.io.File;
 import java.nio.file.Path;
+
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -38,8 +41,37 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.rng.deallocator.NativeRandomDeallocator;
 
+@ThreadLeakFilters(defaultFilters = true, filters = {
+        ModelTupleStreamIntegrationTest.PrivateDeallocatorThreadsFilter.class
+})
 public class ModelTupleStreamIntegrationTest extends SolrCloudTestCase {
+
+  public static class PrivateDeallocatorThreadsFilter implements ThreadFilter {
+    /**
+     * Reject deallocator threads over whose cleanup this test has no control.
+     */
+    @Override
+    public boolean reject(Thread thread) {
+      final ThreadGroup threadGroup = thread.getThreadGroup();
+      final String threadGroupName = (threadGroup == null ? null : threadGroup.getName());
+
+      if (threadGroupName != null &&
+              threadGroupName.endsWith(ModelTupleStreamIntegrationTest.class.getSimpleName())) {
+
+        final String threadName = thread.getName();
+        if (threadName.startsWith(NativeRandomDeallocator.DeallocatorThreadNamePrefix) ||
+                threadName.toLowerCase().contains("deallocator") ||
+                threadName.equals(BasicWorkspaceManager.WorkspaceDeallocatorThreadName)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
 
   final private static String MY_COLLECTION_NAME = "mySolrCollection";
   final private static String MY_SERIALIZED_MODEL_FILENAME = "mySerializedModel";

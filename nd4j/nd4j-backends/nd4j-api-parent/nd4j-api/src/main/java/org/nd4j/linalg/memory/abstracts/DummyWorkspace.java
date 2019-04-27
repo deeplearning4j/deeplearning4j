@@ -276,4 +276,9 @@ public class DummyWorkspace implements MemoryWorkspace {
             }
         };
     }
+
+    @Override
+    public int targetDevice() {
+        return 0;
+    }
 }

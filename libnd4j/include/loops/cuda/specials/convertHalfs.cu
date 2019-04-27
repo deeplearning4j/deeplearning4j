@@ -25,20 +25,12 @@ namespace nd4j {
 
 ///////////////////////////////////////////////////////////////////////
     template<typename T>
-    __device__ void convertHalfs(half *dx, Nd4jLong n, void *dz) {
-
+    __global__ void execConvertHalfs(half *dx, Nd4jLong n, void *dz) {
         auto z = reinterpret_cast<T *>(dz);
-        int tid = threadIdx.x + blockIdx.x * gridDim.x;
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
         for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x)
             z[i] = static_cast<T>(__half2float(dx[i]));
-    }
-
-///////////////////////////////////////////////////////////////////////
-    template<typename T>
-    __global__ void execConvertHalfs(half *dx, Nd4jLong n, void *dz) {
-
-        convertHalfs<T>(dx, n, dz);
     }
 
 
@@ -46,7 +38,8 @@ namespace nd4j {
     template<typename T>
     __host__ void convertHalfsToGeneric(dim3 &launchDims, cudaStream_t *stream, half *dx, Nd4jLong n, void *dz) {
 
-        execConvertHalfs<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (dx, n, dz);
+        execConvertHalfs<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, n, dz);
+        nd4j::DebugHelper::checkErrorCode(stream, "convertHalfsToGeneric(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT convertHalfsToGeneric, (dim3 & launchDims, cudaStream_t * stream, half * dx, Nd4jLong n, void * dz), LIBND4J_TYPES);

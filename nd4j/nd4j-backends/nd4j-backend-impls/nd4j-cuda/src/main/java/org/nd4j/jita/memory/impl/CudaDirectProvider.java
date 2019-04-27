@@ -105,7 +105,7 @@ public class CudaDirectProvider implements MemoryProvider {
                     reqMem = 1;
 
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, deviceId, reqMem);
-                var pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                var pointer = nativeOps.mallocDevice(reqMem, deviceId, 0);
                 if (pointer == null) {
                     // try to purge stuff if we're low on memory
                     purgeCache(deviceId);
@@ -113,7 +113,7 @@ public class CudaDirectProvider implements MemoryProvider {
                     // call for gc
                     Nd4j.getMemoryManager().invokeGc();
 
-                    pointer = nativeOps.mallocDevice(reqMem, null, 0);
+                    pointer = nativeOps.mallocDevice(reqMem, deviceId, 0);
                     if (pointer == null)
                         return null;
                 }
@@ -167,7 +167,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
                 val pointers = point.getPointers();
 
-                long result = nativeOps.freeDevice(pointers.getDevicePointer(), null);
+                long result = nativeOps.freeDevice(pointers.getDevicePointer(), 0);
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
 
@@ -208,7 +208,7 @@ public class CudaDirectProvider implements MemoryProvider {
             return true;
         else return false;
         */
-        long freeMem = nativeOps.getDeviceFreeMemory(new CudaPointer(-1));
+        long freeMem = nativeOps.getDeviceFreeMemory(-1);
         if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
             return false;
         else
@@ -222,7 +222,7 @@ public class CudaDirectProvider implements MemoryProvider {
 
     protected void freeDevice(Pointer pointer, int deviceId) {
         val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        nativeOps.freeDevice(pointer, new CudaPointer(0));
+        nativeOps.freeDevice(pointer, 0);
     }
 
     protected void purgeCache(int deviceId) {

@@ -23,6 +23,10 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
+import org.deeplearning4j.spark.models.sequencevectors.export.SparkModelExporter;
+import org.deeplearning4j.spark.models.word2vec.SparkWord2VecTest;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,6 +80,15 @@ public class SparkSequenceVectorsTest {
         JavaRDD<Sequence<VocabWord>> sequences = sc.parallelize(sequencesCyclic);
 
         SparkSequenceVectors<VocabWord> seqVec = new SparkSequenceVectors<>();
+
+        seqVec.getConfiguration().setTokenizerFactory(DefaultTokenizerFactory.class.getCanonicalName());
+        seqVec.getConfiguration().setElementsLearningAlgorithm("org.deeplearning4j.spark.models.sequencevectors.learning.elements.SparkSkipGram");
+        seqVec.setExporter(new SparkModelExporter<VocabWord>() {
+            @Override
+            public void export(JavaRDD<ExportContainer<VocabWord>> rdd) {
+                rdd.foreach(new SparkWord2VecTest.TestFn());
+            }
+        });
 
         seqVec.fitSequences(sequences);
 

@@ -25,17 +25,18 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    __device__ void shuffleKernel(void **vdX, Nd4jLong **dxShapeInfo,
-                                  void **vdZ,
-                                  int N,
-                                  int *shuffleMap,
-                                  Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
+    __global__ void execShuffleKernel(void **vdX, Nd4jLong **dxShapeInfo,
+                                      void **vdZ,
+                                      int N,
+                                      int *shuffleMap,
+                                      Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
         // we assume that shuffle map for each X contains pair TAD Y
         auto dX = reinterpret_cast<T **>(vdX);
         auto dZ = reinterpret_cast<T **>(vdZ);
 
         __shared__ int tadLength;
+        __shared__ int xRank;
         __shared__ int tadEWS;
         __shared__ int numTads;
         __shared__ Nd4jLong* xShapeInfo;
@@ -49,21 +50,22 @@ namespace nd4j {
                 tadLength = shape::length(tadOnlyShapeInfo[f]);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
                 xShapeInfo = dxShapeInfo[f];
+                xRank = shape::rank(xShapeInfo);
                 xLength = shape::length(xShapeInfo);
                 numTads = xLength / tadLength;
             }
             __syncthreads();
 
-            if (shape::rank(xShapeInfo) == 1) {
-                uint tid = threadIdx.x + blockIdx.x * gridDim.x;
-                for (uint r = tid; r < xLength; r += gridDim.x * blockDim.x) {
+            if (xRank == 1) {
+                int tid = threadIdx.x + blockIdx.x * blockDim.x;
+                for (int r = tid; r < xLength; r += gridDim.x * blockDim.x) {
                     auto swapIndex = shuffleMap[r];
-                    if (swapIndex >= 0) {
-                        uint idx = r * tadEWS;
-                        uint swap = swapIndex * tadEWS;
+                    if (swapIndex >= 0 && swapIndex < xLength) {
+                        int idx = r * tadEWS;
+                        int swap = swapIndex * tadEWS;
                         T oldX = x[idx];
-                        z[idx] = x[swap];
-                        z[swap] = oldX;
+                        x[idx] = x[swap];
+                        x[swap] = oldX;
                     }
                 }
             } else {
@@ -108,17 +110,6 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    __global__ void execShuffleKernel(void **vdX, Nd4jLong **xShapeInfo,
-                                      void **vdZ,
-                                      int N,
-                                      int *shuffleMap,
-                                      Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
-
-        shuffleKernel<T>(vdX, xShapeInfo, vdZ, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    template<typename T>
     __host__ void shuffleKernelGeneric(dim3 &launchDims, cudaStream_t *stream,
                                        void **vdX, Nd4jLong **xShapeInfo,
                                        void **vdZ,
@@ -127,6 +118,7 @@ namespace nd4j {
                                        Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
 
         execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
+        nd4j::DebugHelper::checkErrorCode(stream, "shuffleGeneric(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT shuffleKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdX, Nd4jLong * *xShapeInfo, void **vdZ, int N, int * shuffleMap, Nd4jLong * *tadOnlyShapeInfo, Nd4jLong * *tadOffsets), LIBND4J_TYPES);

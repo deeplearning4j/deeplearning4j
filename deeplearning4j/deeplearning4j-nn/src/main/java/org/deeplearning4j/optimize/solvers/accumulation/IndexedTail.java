@@ -112,7 +112,7 @@ public class IndexedTail {
 
                 val delta = lastUpdateIndex - maxIdx;
                 if (delta >= collapseThreshold) {
-                    log.info("Max delta to collapse: {}; Range: <{}...{}>", delta, maxIdx, lastUpdateIndex);
+                    log.trace("Max delta to collapse: {}; Range: <{}...{}>", delta, maxIdx, lastUpdateIndex);
                     for (long e = maxIdx; e < lastUpdateIndex; e++) {
                         val u = updates.get(e);
                         if (u == null)
@@ -185,7 +185,7 @@ public class IndexedTail {
         var threadPosition = getLocalPosition(threadId);
 
         val r = threadPosition < updatesCounter.get();
-        log.info("hasAnything({}): {}; position: {}; updates: {}", threadId, r, threadPosition, updatesCounter.get());
+        log.trace("hasAnything({}): {}; position: {}; updates: {}", threadId, r, threadPosition, updatesCounter.get());
 
         return r;
     }
@@ -263,7 +263,7 @@ public class IndexedTail {
 
                 // FIXME: just continue here, probably it just means that collapser was working in this position
                 if (update == null) {
-                    log.info("Global: [{}]; Local: [{}]", globalPos, localPos);
+                    log.trace("Global: [{}]; Local: [{}]", globalPos, localPos);
                     throw new RuntimeException("Element [" + e + "] is absent");
                 }
 
@@ -296,7 +296,7 @@ public class IndexedTail {
     protected synchronized void maintenance() {
         // first of all we're checking, if all consumers were already registered. if not - just no-op.
         if (positions.size() < expectedConsumers) {
-            log.info("Skipping maintanance due to not all expected consumers shown up: [{}] vs [{}]", positions.size(), expectedConsumers);
+            log.trace("Skipping maintanance due to not all expected consumers shown up: [{}] vs [{}]", positions.size(), expectedConsumers);
             return;
         }
 
@@ -307,7 +307,7 @@ public class IndexedTail {
         for (val p:positions.values())
             allPositions[cnt++] = p.get();
 
-        log.info("Min idx: {}; last deleted index: {}; stored updates: {}; positions: {}", minIdx, lastDeletedIndex.get(), updates.size(), allPositions);
+        log.trace("Min idx: {}; last deleted index: {}; stored updates: {}; positions: {}", minIdx, lastDeletedIndex.get(), updates.size(), allPositions);
 
         // now we're checking, if there are undeleted updates between
         if (minIdx > lastDeletedIndex.get()) {

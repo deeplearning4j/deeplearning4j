@@ -38,6 +38,7 @@ namespace nd4j {
             REQUIRE_TRUE(target->rankOf() == 1, 0, "in_top_k: The target should be a vector");
 
             int k = INT_ARG(0);
+            result->nullify();
             return helpers::inTopKFunctor(predictions, target, result, k);
         }
 

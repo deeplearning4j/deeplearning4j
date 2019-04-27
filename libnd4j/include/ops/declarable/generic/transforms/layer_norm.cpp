@@ -93,9 +93,11 @@ namespace ops  {
         nd4j::ops::standardize_bp standardizeBp;
         eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
 
-        std::vector<NDArray *> standardizeBpArgs = {input, dLdx};
+        auto dLdx_tmp = dLdx->dup();
+        std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
         std::vector<NDArray *> standardizeBpOut = {dLdx};
         standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
+        delete dLdx_tmp;
 
         return Status::OK();
     }

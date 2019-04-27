@@ -166,7 +166,7 @@ namespace simdOps {
             }
             __syncthreads();
 
-			int tid = blockIdx.x * gridDim.x + threadIdx.x;
+			int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 				const int pw = index % outW;

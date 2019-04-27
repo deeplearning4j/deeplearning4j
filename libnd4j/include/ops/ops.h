@@ -4135,7 +4135,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 			X length = params[1];
-            X tid = gridDim.x * blockDim.x + threadIdx.x;
+            X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -4157,7 +4157,7 @@ namespace simdOps {
 			Y prob = d2;
 #ifdef __CUDACC__
 			X length = params[1];
-			X tid = gridDim.x * blockDim.x + threadIdx.x;
+			X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
