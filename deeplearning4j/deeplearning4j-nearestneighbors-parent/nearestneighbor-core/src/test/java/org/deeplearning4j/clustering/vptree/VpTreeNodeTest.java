@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.joda.time.Duration;
@@ -68,8 +69,8 @@ public class VpTreeNodeTest {
     @Test
     public void testParallel() {
         Nd4j.getRandom().setSeed(7);
-        INDArray randn = Nd4j.rand(1000, 100);
-        VPTree vpTree = new VPTree(randn, false, 2);
+        INDArray randn = Nd4j.rand(100, 100);
+        VPTree vpTree = new VPTree(randn, false, 1);
         Nd4j.getRandom().setSeed(7);
         VPTree vpTreeNoParallel = new VPTree(randn, false, 1);
         List<DataPoint> results = new ArrayList<>();
@@ -82,6 +83,31 @@ public class VpTreeNodeTest {
         assertEquals(noParallelResults, results);
         assertEquals(noDistances, distances);
 
+    }
+
+    @Test
+    public void testReproducibility() {
+        val results = new ArrayList<DataPoint>();
+        val distances = new ArrayList<Double>();
+        Nd4j.getRandom().setSeed(7);
+        val randn = Nd4j.rand(100, 100);
+
+        for (int e = 0; e < 100; e++) {
+            Nd4j.getRandom().setSeed(7);
+            val vpTree = new VPTree(randn, false, 1);
+
+            val cresults = new ArrayList<DataPoint>();
+            val cdistances = new ArrayList<Double>();
+            vpTree.search(randn.getRow(0), 10, cresults, cdistances);
+
+            if (e == 0) {
+                results.addAll(cresults);
+                distances.addAll(cdistances);
+            } else {
+                assertEquals("Failed at iteration " + e, results, cresults);
+                assertEquals("Failed at iteration " + e, distances, cdistances);
+            }
+        }
     }
 
     @Test
@@ -207,8 +233,8 @@ public class VpTreeNodeTest {
     }
 
     public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
-        INDArray col = Nd4j.arange(0, nrows).reshape(nrows, 1).castTo(DataType.FLOAT);
-        INDArray points = Nd4j.zeros(nrows, ncols);
+        INDArray col = Nd4j.arange(0, nrows).reshape(nrows, 1).castTo(DataType.DOUBLE);
+        INDArray points = Nd4j.create(DataType.DOUBLE, nrows, ncols);
         if (points.isColumnVectorOrScalar())
             points = col.dup();
         else {
@@ -311,11 +337,11 @@ public class VpTreeNodeTest {
         final int queryPoint = 12;
 
         INDArray points = generateNaturalsMatrix(nrows, ncols);
-        INDArray query = Nd4j.zeros(DataType.FLOAT, 1, ncols);
+        INDArray query = Nd4j.zeros(DataType.DOUBLE, 1, ncols);
         for (int i = 0; i < ncols; i++)
             query.putScalar(0, i, queryPoint);
 
-        INDArray trueResults = Nd4j.zeros(DataType.FLOAT, K, ncols);
+        INDArray trueResults = Nd4j.zeros(DataType.DOUBLE, K, ncols);
         for (int j = 0; j < K; j++) {
             int pt = queryPoint - K / 2 + j;
             for (int i = 0; i < ncols; i++)
@@ -336,7 +362,7 @@ public class VpTreeNodeTest {
         }
 
         sortedResults = Nd4j.sort(sortedResults, dimensionToSort, true);
-        assertTrue(trueResults.equalsWithEps(sortedResults, 1e-12));
+        assertTrue(trueResults.equalsWithEps(sortedResults, 1e-5));
 
         VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
         fillSearch.search();
@@ -347,7 +373,7 @@ public class VpTreeNodeTest {
             sortedResults.putRow(i++, p.getPoint());
         INDArray[] sortedWithIndices = Nd4j.sortWithIndices(sortedResults, dimensionToSort, true);;
         sortedResults = sortedWithIndices[1];
-        assertEquals(trueResults.sumNumber().doubleValue(), sortedResults.sumNumber().doubleValue(), 1e-12);
+        assertEquals(trueResults.sumNumber().doubleValue(), sortedResults.sumNumber().doubleValue(), 1e-5);
     }
 
 }
