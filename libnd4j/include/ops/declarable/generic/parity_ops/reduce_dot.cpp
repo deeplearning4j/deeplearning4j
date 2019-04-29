@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
 
         if (block.width() > 3) {
             auto axesVector = INPUT_VARIABLE(3);
-            helpers::adjustAxis(x, axesVector, dimensions);
+            helpers::adjustAxis(x->rankOf(), axesVector, dimensions);
         }
 
         if (block.getBArguments()->size())
@@ -90,7 +90,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
 
         if (block.width() > 3) {
             auto axesVector = INPUT_VARIABLE(3);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+            helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
         }
 
         if (block.getBArguments()->size())

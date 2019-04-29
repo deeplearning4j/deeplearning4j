@@ -75,11 +75,6 @@ TEST_F(ConvolutionTests2, im2col_1) {
     delete results;
 }
 
-
-#endif //LIBND4J_CONVOLUTIONTESTS_H
-
-
-
 template <typename T>
 class TypedConvolutionTests2 : public testing::Test {
 public:

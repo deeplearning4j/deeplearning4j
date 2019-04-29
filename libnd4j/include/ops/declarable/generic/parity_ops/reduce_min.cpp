@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(reduce_min, 1, 1, false, 0, 0) {
 
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(reduce_min) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
 
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -138,7 +138,7 @@ DECLARE_SHAPE_FN(reduce_min_bp) {
 
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());

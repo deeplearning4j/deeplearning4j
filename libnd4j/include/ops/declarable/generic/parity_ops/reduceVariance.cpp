@@ -66,7 +66,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(rank, axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     if (block.getBArguments()->size()) {
@@ -76,7 +76,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
         keepDims = (bool)T_ARG(0);
     }
 
-    REQUIRE_TRUE(dimensions.size() <= rank, 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    REQUIRE_TRUE(dimensions.size() <= INPUT_VARIABLE(0)->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);

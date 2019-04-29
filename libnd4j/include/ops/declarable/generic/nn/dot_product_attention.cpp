@@ -41,7 +41,7 @@ namespace ops  {
             weights = OUTPUT_VARIABLE(1);
         }else{
             auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
-            weights = new NDArray('c', weightShape, values->dataType(), block.workspace());
+            weights = new NDArray('c', weightShape, values->dataType(), block.launchContext());
         }
 
         int normalization = INT_ARG(0);
@@ -170,7 +170,7 @@ namespace ops  {
         auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
 
         nd4j::ops::matmul mmul;
-        NDArray preSoftmax('c', weightShape, values->dataType(), block.workspace());
+        NDArray preSoftmax('c', weightShape, values->dataType(), block.launchContext());
         mmul.execute({keys, queries}, {&preSoftmax},{}, {1}, {});
         
         if(normalization)
@@ -187,7 +187,7 @@ namespace ops  {
             delete reshapedMask;
         }
 
-        NDArray weights('c', weightShape, values->dataType(), block.workspace());
+        NDArray weights('c', weightShape, values->dataType(), block.launchContext());
         nd4j::ops::softmax softmax;
         softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 

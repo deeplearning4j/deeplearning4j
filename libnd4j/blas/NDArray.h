@@ -961,17 +961,6 @@ namespace nd4j {
         void getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape = false) const;
 
         /**
-        * processes whole set of sub-arrays
-        * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)
-        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5], and subArrIdx must be in range [0,7]
-        *                 if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
-        * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
-        * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
-        * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
-        */
-        void getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape = false) const;
-
-        /**
         *  addition operator: array + other
         *  other - input array to add
         */
@@ -1533,9 +1522,6 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-        if(_isShapeAlloc && _workspace == nullptr)
-            delete []_shapeInfo;
-
         _shapeInfo = shapeInfo;
 
         if (shapeInfo != nullptr) {
@@ -1553,9 +1539,6 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
-        if(_isShapeAlloc && _workspace == nullptr)
-            delete []_shapeInfo;
-
         _shapeInfo = shapeInfo;
 
         if (shapeInfo != nullptr) {

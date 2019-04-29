@@ -67,7 +67,7 @@ namespace nd4j {
                 axis = output->rankOf() + axis;
 
             std::vector<int> vec({axis});
-            helpers::onehot(output, input, vec, on, off);
+            helpers::onehot(block.launchContext(), output, input, vec, on, off);
 
             return Status::OK();
         }

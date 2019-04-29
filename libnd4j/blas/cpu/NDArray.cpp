@@ -149,16 +149,16 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
 
     ALLOCATE(_buffer, _context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
 
-    if (copyStrides)
-        _workspace = workspace;
-    setShapeInfo(ShapeDescriptor(other->_shapeInfo));
-    else
+    if (copyStrides) {
+        _context = context;
+        setShapeInfo(ShapeDescriptor(other->_shapeInfo));
+    } else
         setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->getShapeAsVector()));
 
     triggerAllocationFlag(true);
 
     // memcpy is handled within execTransformAny
-    NativeOpExcutioner::execTransformAny(transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(_context, transform::AnyOps::Assign, other->_buffer, other->_shapeInfo, other->getSpecialBuffer(), other->getSpecialShapeInfo(), _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -690,6 +690,9 @@ NDArray& NDArray::operator=(const NDArray& other) {
         ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
         // we can do this only if there was no permute applied, or there are no weird strides
+
+        throw std::runtime_error("FIXME");
+        /*
         if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {
             setShapeInfo(shapeInfoNew);
         }
@@ -703,6 +706,21 @@ NDArray& NDArray::operator=(const NDArray& other) {
         RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
+         */
+    }
+
+    void NDArray::nullify() {
+        if (isEmpty())
+            return;
+
+        if (isS())
+            throw std::runtime_error("Can't nullify string array");
+
+        if (isView()) {
+            this->assign(0);
+        } else {
+            memset(_buffer, 0, this->lengthOf() * this->sizeOfT());
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -871,6 +889,28 @@ NDArray& NDArray::operator=(const NDArray& other) {
             NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
         else {
             NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, biasCorrected);
+        }
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        NDArray result(newShape, true, _context);
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), biasCorrected);
+        else {
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, biasCorrected);
         }
 
         return result;
@@ -1575,7 +1615,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
 //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, &other, true, newShapeInfo, _context->getWorkspace()))          // the rank of new array = max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, _context->getWorkspace()))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         NDArray result(newShapeInfo, true, this->_context);
 

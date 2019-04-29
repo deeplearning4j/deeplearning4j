@@ -140,17 +140,13 @@ namespace nd4j {
 
                     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
-                    auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
-                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
-
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(),
                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                                                         extras.argumentsAsT(x->dataType()),
                                                         reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(),
                                                         z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                                                        pDims, (int) dims.size(),
-                                                        pTadShape, pTadOffsets);
+                                                        nullptr, (int) dims.size(),
+                                                        Environment::getInstance()->isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(), Environment::getInstance()->isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
                 }
             } else {
                 // TF mode
@@ -180,17 +176,14 @@ namespace nd4j {
 
                     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
-                    auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
-                    auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
-
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum,
                             x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
                             reinterpret_cast<Nd4jLong *>(z->getBuffer()),
                             z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
-                            pDims, (int) axis.size(), pTadShape, pTadOffsets);
+                            nullptr, (int) axis.size(),
+                            Environment::getInstance()->isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(),
+                            Environment::getInstance()->isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
                 }
             }
 

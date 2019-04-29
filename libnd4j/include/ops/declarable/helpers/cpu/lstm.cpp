@@ -217,7 +217,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     nd4j::ops::concat concat;
     Context cContext(119);
-    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getWorkspace());
+    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getContext());
     cContext.setInputArray(0, const_cast<NDArray*>(xt), false);
     cContext.setInputArray(1, const_cast<NDArray*>(yLast), false);
     cContext.setOutputArray(0, &concatOut, false);

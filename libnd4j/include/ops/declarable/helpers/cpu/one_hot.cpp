@@ -85,7 +85,7 @@ namespace nd4j {
                 }
             }
 
-            void onehot(NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off) {
+            void onehot(graph::LaunchContext* context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off) {
                 auto zType = output->dataType();
                 auto iType = indices->dataType();
 

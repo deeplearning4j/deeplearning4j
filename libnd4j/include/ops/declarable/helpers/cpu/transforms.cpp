@@ -367,13 +367,13 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
     shape::TAD tadOut(output.getShapeInfo(), dimensions.data(), dimensions.size());
     tadOut.createTadOnlyShapeInfo();
     tadOut.createOffsets();
-    auto subArrOut = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
-    auto subArr = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getWorkspace());
+    auto subArrOut = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getContext());
+    auto subArr = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getContext());
     // build tad basing on input array, also create auxiliary array pointing on required input array range
     shape::TAD tadIn(input.getShapeInfo(), dimensions.data(), dimensions.size());
     tadIn.createTadOnlyShapeInfo();
     tadIn.createOffsets();
-    auto subArrIn = NDArray(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getWorkspace());
+    auto subArrIn = NDArray(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getContext());
     // these indices take into account recursion and always point to actual tads numbers
     if (input.rankOf() > 1 && output.rankOf() > 1) {// only for non-vector cases
         outIdx = outIdx * output.sizeAt(dim + 1);
@@ -615,7 +615,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
                 auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
 
-                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getWorkspace());
+                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getContext());
                 output->assign(&tadArr);
 			}
         }

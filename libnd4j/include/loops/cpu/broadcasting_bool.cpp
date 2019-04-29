@@ -120,7 +120,7 @@ namespace functions {
                 }
 
                 //int *resultStride = shape::stride(xTadShapeShapeInfo);
-                unsigned int tadLength = shape::length(tadShapeInfo);//shape::length(xTadShapeShapeInfo);
+                unsigned int tadLength = shape::length(xTadShapeShapeInfo);//shape::length(xTadShapeShapeInfo);
                 unsigned int tads = shape::length(xShapeInfo) / tadLength;
 
                 if (zTadShapeInfo == nullptr) {

@@ -78,7 +78,7 @@ namespace ops  {
         if(bias != nullptr)
             eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
 
-        NDArray standardized(input->shapeInfo(), false, block.workspace());
+        NDArray standardized(input->shapeInfo(), false, block.launchContext());
 
         nd4j::ops::standardize standardizeOp;
         std::vector<NDArray *> inputs = {input};

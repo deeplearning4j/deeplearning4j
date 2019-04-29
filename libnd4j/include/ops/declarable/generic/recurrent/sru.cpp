@@ -226,7 +226,7 @@ DECLARE_SHAPE_FN(sru_old) {
     int time    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong *newShapeInfo1 = nullptr, *newShapeInfo2 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
 
     newShapeInfo1[0] = rank;
@@ -336,7 +336,7 @@ DECLARE_SHAPE_FN(sru) {
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
 
     newShapeInfo1[0] = rank;
@@ -820,7 +820,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     char order = shape::order(xShapeInfo);
 
-    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     newShapeInfo1[0] = rank;

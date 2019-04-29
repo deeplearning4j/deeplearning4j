@@ -41,7 +41,7 @@ namespace nd4j {
 
         int8_t *buffer = nullptr;
         auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
-        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        ALLOCATE(buffer, context->getWorkspace(), headerLength + str.length(), int8_t);
         auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
         auto data = buffer + headerLength;
 
@@ -64,7 +64,7 @@ namespace nd4j {
 
         int8_t *buffer = nullptr;
         auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
-        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        ALLOCATE(buffer, context->getWorkspace(), headerLength + str.length(), int8_t);
         auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
         auto data = buffer + headerLength;
 
@@ -730,14 +730,14 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     }
 
     ////////////////////////////////////////////////////////////////////////
-    ResultSet NDArrayFactory::createSetOfArrs(const Nd4jLong numOfArrs, const void* buffer,  const Nd4jLong* shapeInfo,  const Nd4jLong* offsets, memory::Workspace* workspace) {
+    ResultSet NDArrayFactory::createSetOfArrs(const Nd4jLong numOfArrs, const void* buffer,  const Nd4jLong* shapeInfo,  const Nd4jLong* offsets, nd4j::graph::LaunchContext* launchContext) {
 
         ResultSet result;
 
         const auto sizeOfT = DataTypeUtils::sizeOf(shapeInfo);
 
         for (int idx = 0; idx < numOfArrs; idx++ ) {
-            auto array = new NDArray(reinterpret_cast<int8_t*>(const_cast<void*>(buffer)) + offsets[idx] * sizeOfT, const_cast<Nd4jLong*>(shapeInfo), workspace);
+            auto array = new NDArray(reinterpret_cast<int8_t*>(const_cast<void*>(buffer)) + offsets[idx] * sizeOfT, const_cast<Nd4jLong*>(shapeInfo), launchContext);
             result.push_back(array);
         }
 

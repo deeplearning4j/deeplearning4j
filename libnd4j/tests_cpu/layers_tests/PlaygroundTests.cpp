@@ -183,7 +183,7 @@ TEST_F(PlaygroundTests, test_small_reductions) {
 
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execReduceFloat(reduce::Mean, x.buffer(), x.shapeInfo(), nullptr, z.buffer(), z.shapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+        NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext::defaultContext(), reduce::Mean, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -222,7 +222,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
     for (int e = 0; e < iterations; e++) {
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+        NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, nullptr);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -267,7 +267,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Tanh, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+        NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), transform::StrictOps::Tanh, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, nullptr);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -1499,13 +1499,13 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_1) {
 
     // warm up
     for (int e = 0; e < 5; e++) {
-        NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
     int iterations = 10;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1521,13 +1521,13 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
 
      // warm up
      for (int e = 0; e < 100; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
      }
 
      int iterations = 100;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1543,13 +1543,13 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
 
     // warm up
     for (int e = 0; e < 100; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
     int iterations = 100;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1568,13 +1568,13 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
      // warm up
      for (int e = 0; e < 5; e++) {
-         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+         NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
      }
 
      int iterations = 10;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+         NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1645,12 +1645,12 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
 
     nd4j_printf("Starting legacy run...\n","");
-    std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
+    ExtraArguments arguments({2., 2., 0., 0., 112., 112., 1., 1.});
 
     auto legacyStart = std::chrono::system_clock::now();
-    for (int e = 0; e < iterations; e++) {
-        x.applyTransform(transform::Col2Im, &z1, extra.data());
-    }
+    for (int e = 0; e < iterations; e++)
+        x.applyTransform(transform::Col2Im, &z1, &arguments);
+
     auto legacyEnd = std::chrono::system_clock::now();
     auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
     auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();

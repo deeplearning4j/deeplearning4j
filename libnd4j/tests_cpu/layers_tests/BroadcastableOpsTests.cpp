@@ -569,9 +569,9 @@ TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
 TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
 
     NDArray y('c', {3,4}, {0,0,0,0,  1,2,3,4,  1,2,3,4});
-    NDArray x(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
-    NDArray z(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
-    NDArray zExp(nd4j::DataType::DOUBLE, y.getWorkspace(), false);
+    NDArray x(nd4j::DataType::DOUBLE, y.getContext());
+    NDArray z(nd4j::DataType::DOUBLE, y.getContext());
+    NDArray zExp(nd4j::DataType::DOUBLE, y.getContext());
 
     nd4j::ops::multiply op;
     auto status = op.execute({&x, &y}, {&z}, {}, {}, {});

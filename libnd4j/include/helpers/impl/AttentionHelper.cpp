@@ -29,7 +29,7 @@
 namespace nd4j {
 
     nd4j::NDArray *
-    AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::memory::Workspace* workspace) {
+    AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::graph::LaunchContext* context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
@@ -39,7 +39,7 @@ namespace nd4j {
         auto inputPrep = inputPerm->reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
-        NDArray* projected = new NDArray('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), workspace);
+        NDArray* projected = new NDArray('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);
         nd4j::ops::matmul mmul;
         mmul.execute({projectionPrep, inputPrep}, {projected},  {}, {}, {});
 
@@ -56,7 +56,7 @@ namespace nd4j {
     void
     AttentionHelper::multiHeadProjectBp(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix,
                                         const nd4j::NDArray *eps, nd4j::NDArray *dLdInput,
-                                        nd4j::NDArray *dLdProjectionMatrix, nd4j::memory::Workspace* workspace) {
+                                        nd4j::NDArray *dLdProjectionMatrix, nd4j::graph::LaunchContext* context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
@@ -70,8 +70,8 @@ namespace nd4j {
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
         nd4j::ops::matmul_bp mmulBp;
-        NDArray dLdProjectionPrep(projectionPrep->shapeInfo(), false, workspace);
-        NDArray dLdInputPrep(inputPrep->shapeInfo(), false, workspace);
+        NDArray dLdProjectionPrep(projectionPrep->shapeInfo(), false, context);
+        NDArray dLdInputPrep(inputPrep->shapeInfo(), false, context);
         mmulBp.execute({projectionPrep, inputPrep, epsReshaped}, {&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});
 
         dLdProjectionPrep.reshapei({numHeads, projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
