@@ -37,6 +37,7 @@
 #include <array/ExtraArguments.h>
 #include <Status.h>
 #include <ShapeDescriptor.h>
+#include <helpers/ConstantShapeHelper.h>
 
 
 namespace nd4j {
@@ -1526,7 +1527,9 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-        _shapeInfo = shapeInfo;
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+        _shapeInfo = buffer.primaryAsT<Nd4jLong>();
+        _shapeInfoD = buffer.specialAsT<Nd4jLong>();
 
         if (shapeInfo != nullptr) {
             _dataType = ArrayOptions::dataType(_shapeInfo);
@@ -1543,7 +1546,9 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
-        _shapeInfo = shapeInfo;
+        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
+        _shapeInfo = buffer.primaryAsT<Nd4jLong>();
+        _shapeInfoD = buffer.specialAsT<Nd4jLong>();
 
         if (shapeInfo != nullptr) {
             _dataType = dtype;

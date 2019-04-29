@@ -1395,7 +1395,9 @@ NDArray NDArray::transp() const {
 
     //////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::permute(const std::vector<int>& dimensions) const {
-        return permute(dimensions.data(), dimensions.size());
+        auto data = dimensions.data();
+        auto size = dimensions.size();
+        return permute(data, size);
     }
 
     NDArray* NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
