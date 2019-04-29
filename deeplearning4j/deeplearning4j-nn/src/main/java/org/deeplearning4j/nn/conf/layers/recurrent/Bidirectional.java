@@ -18,7 +18,6 @@ package org.deeplearning4j.nn.conf.layers.recurrent;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,6 +30,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -126,19 +126,19 @@ public class Bidirectional extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
         c1.setLayer(fwd);
         c2.setLayer(bwd);
 
         long n = layerParamsView.length() / 2;
-        INDArray fp = layerParamsView.get(point(0), interval(0, n));
-        INDArray bp = layerParamsView.get(point(0), interval(n, 2 * n));
-        org.deeplearning4j.nn.api.Layer f = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
+        INDArray fp = layerParamsView.get(interval(0,0,true), interval(0, n));
+        INDArray bp = layerParamsView.get(interval(0,0,true), interval(n, 2 * n));
+        org.deeplearning4j.nn.api.Layer f = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams, networkDataType);
 
-        org.deeplearning4j.nn.api.Layer b = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
+        org.deeplearning4j.nn.api.Layer b = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams, networkDataType);
 
         BidirectionalLayer ret = new BidirectionalLayer(conf, f, b, layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -248,7 +248,7 @@ public class Bidirectional extends Layer {
         }
 
         public Builder mode(Mode mode) {
-            this.mode = mode;
+            this.setMode(mode);
             return this;
         }
 
@@ -259,7 +259,7 @@ public class Bidirectional extends Layer {
                                 + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
                                 + layer.getClass());
             }
-            this.layer = layer;
+            this.setLayer(layer);
             return this;
         }
 

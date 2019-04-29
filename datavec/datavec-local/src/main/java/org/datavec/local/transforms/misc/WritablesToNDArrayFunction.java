@@ -53,13 +53,13 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
             }
         }
 
-        INDArray arr = Nd4j.zeros(length);
+        INDArray arr = Nd4j.zeros(1, length);
         int idx = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {
                 INDArray subArr = ((NDArrayWritable) w).get();
                 int subLength = subArr.columns();
-                arr.get(NDArrayIndex.interval(idx, idx + subLength)).assign(subArr);
+                arr.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + subLength)).assign(subArr);
                 idx += subLength;
             } else {
                 arr.putScalar(idx++, w.toDouble());

@@ -22,6 +22,7 @@
 #define PROJECT_SPECIALS_CUDA_H
 
 #include <helpers/shape.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 
@@ -62,7 +63,7 @@ __host__ void printCudaHost(void* pointer, const int len, cudaStream_t& stream) 
 
     void* ptr = malloc(sizeof(T)*len);
 
-    cudaMemcpyAsync(ptr, pointer, sizeof(T)*len, cudaMemcpyDeviceToHost, stream);    
+    cudaMemcpyAsync(ptr, pointer, sizeof(T)*len, cudaMemcpyDeviceToHost, stream);
     cudaError_t cudaResult = cudaStreamSynchronize(stream);
     if(cudaResult != 0)
         throw std::runtime_error("printCudaHost:: cudaStreamSynchronize failed!");
@@ -76,18 +77,19 @@ __host__ void printCudaHost(void* pointer, const int len, cudaStream_t& stream) 
 
 
 ////////////////////////////////////////////////////////////////////////
-__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
+__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index, Nd4jLong length) {
     
     int xEWS = shape::elementWiseStride(xShapeInfo);
+    char order = shape::order(xShapeInfo);
 
-    if (xEWS == 1) {
+    if (xEWS == 1 && order == 'c') {
         return index;
     }
-    else if (xEWS > 1) {
+    else if (xEWS > 1 && order == 'c') {
         return index * xEWS;
     } 
     else {                
-        return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
+        return shape::getIndexOffset(index, xShapeInfo, length);
     }
 }
 

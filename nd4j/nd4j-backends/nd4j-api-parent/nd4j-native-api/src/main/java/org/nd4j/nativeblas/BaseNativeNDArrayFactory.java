@@ -16,14 +16,17 @@
 
 package org.nd4j.nativeblas;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.ByteIndexer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
@@ -46,6 +49,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -64,7 +68,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public Pointer convertToNumpy(INDArray array) {
-        LongPointer size = new LongPointer(1);
+        val size = new LongPointer(1);
         Pointer header = NativeOpsHolder
                 .getInstance().getDeviceNativeOps()
                 .numpyHeaderForNd4j(
@@ -72,21 +76,25 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                         array.shapeInfoDataBuffer().pointer(),
                         array.data().getElementSize()
                         ,size);
-        header.capacity(size.get());
+
+        val headerSize = size.get() - 1;
+        header.capacity(headerSize);
         header.position(0);
 
-        char[] magic = {'\\','x','9','3','N','U','M','P','Y','1','0'};
 
-        BytePointer magicPointer = new BytePointer(new String(magic).getBytes());
-        BytePointer bytePointer = new BytePointer(magicPointer.capacity() + (int) (size.get() + (array.data().getElementSize() * array.data().length())));
+
+        BytePointer bytePointer = new BytePointer((int) (headerSize + (array.data().getElementSize() * array.data().length())));
         BytePointer headerCast = new BytePointer(header);
+        val indexer = ByteIndexer.create(headerCast);
         int pos = 0;
-        Pointer.memcpy(bytePointer,magicPointer,magicPointer.capacity());
-        pos += (magicPointer.capacity() - 1);
         bytePointer.position(pos);
-        Pointer.memcpy(bytePointer,headerCast,headerCast.capacity());
-        pos += (headerCast.capacity() - 1);
+        Pointer.memcpy(bytePointer, headerCast,headerCast.capacity());
+        pos += (headerCast.capacity());
         bytePointer.position(pos);
+
+        // make sure data is copied to the host memory
+        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+
         Pointer.memcpy(bytePointer,array.data().pointer(),(array.data().getElementSize() * array.data().length()));
         bytePointer.position(0);
         return bytePointer;
@@ -168,6 +176,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 Shape.strideArr(shapeBuffer),
                 0,
                 Shape.order(shapeBuffer));
+
+        Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.DEVICE);
 
         return ret;
     }

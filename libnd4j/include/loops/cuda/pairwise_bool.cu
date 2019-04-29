@@ -28,11 +28,11 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo, 
-											void *vy, Nd4jLong *yShapeInfo, 
-											void *vz, Nd4jLong *zShapeInfo, 
+__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
+											void *vy, Nd4jLong *yShapeInfo,
+											void *vz, Nd4jLong *zShapeInfo,
 											void *vextraParams) {
-	
+
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
@@ -57,7 +57,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 		yOrder = shape::order(yShapeInfo);
 		zOrder = shape::order(zShapeInfo);
 		len = shape::length(xShapeInfo);
-	}	
+	}
 	__syncthreads();
 
 
@@ -65,7 +65,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
 		}
-	} 
+	}
 	else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
@@ -73,7 +73,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 				
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
-	} 
+	}
 	else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
@@ -92,10 +92,10 @@ namespace pairwise_transforms {
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
 template<typename OpType>
-void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
-														void *vx, Nd4jLong *xShapeInfo, 
-														void *vy, Nd4jLong *yShapeInfo, 
-														void *vz, Nd4jLong *zShapeInfo, 
+void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream,
+														void *vx, Nd4jLong *xShapeInfo,
+														void *vy, Nd4jLong *yShapeInfo,
+														void *vz, Nd4jLong *zShapeInfo,
 														void *vextraParams){
 
 	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);

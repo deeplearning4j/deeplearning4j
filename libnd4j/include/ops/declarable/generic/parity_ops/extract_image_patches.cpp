@@ -39,6 +39,7 @@ namespace nd4j {
             if (output->isSameShape(input))
                 output->assign(input);
             else {
+                output->nullify();
                 helpers::extractPatches(block.launchContext(), input, output, ksizeRows, ksizeCols, kstrideRows, kstrideCols, krateRows, krateCols, isSame);
             }
             return Status::OK();

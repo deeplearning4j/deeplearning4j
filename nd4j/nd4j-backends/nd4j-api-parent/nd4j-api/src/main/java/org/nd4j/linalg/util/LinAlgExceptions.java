@@ -52,6 +52,15 @@ public class LinAlgExceptions {
                     "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(y.shape()) + ", array 3 shape: " + Arrays.toString(z.shape()));
     }
 
+    public static void assertSameShape(INDArray x, INDArray y, INDArray z) {
+        //if (!Shape.isVector(x.shape()) && ! Shape.isVector(y.shape()) && !Shape.isVector(z.shape())) {
+            if (!Shape.shapeEquals(x.shape(), y.shape()))
+                throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(x.shape()) + ", " + Arrays.toString(y.shape()));
+            if (!Shape.shapeEquals(x.shape(), z.shape()))
+                throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(x.shape()) + ", " + Arrays.toString(z.shape()));
+        //}
+    }
+
     public static void assertSameShape(INDArray n, INDArray n2) {
         if (!Shape.isVector(n.shape()) && ! Shape.isVector(n2.shape()))
             if (!Shape.shapeEquals(n.shape(), n2.shape()))

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -57,11 +58,11 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -110,7 +111,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
         public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
@@ -119,16 +120,16 @@ public class RnnOutputLayer extends BaseOutputLayer {
         public Builder(LossFunction lossFunction) {
             lossFunction(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         /**
          * @param lossFunction Loss function for the output layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             //Set default activation function to softmax (for consistent behaviour with no-arg constructor)
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         @Override

@@ -28,7 +28,7 @@ namespace helpers {
 
     Nd4jStatus bdsFunctor(graph::LaunchContext* context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
         int e = 0, x = 0, y = 0;
-//#pragma omp parallel for
+
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
             auto lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
             auto greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);

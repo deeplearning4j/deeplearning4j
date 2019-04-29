@@ -101,6 +101,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
                 Thread.currentThread().interrupt();
             }
             nextElement = terminator;
+            buffer.clear();
         }
     }
 

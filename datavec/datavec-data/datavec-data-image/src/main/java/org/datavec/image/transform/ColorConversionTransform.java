@@ -23,14 +23,14 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * Color conversion transform using CVT (cvtcolor):
- * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor">CVT Color</a>.
- * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-">More CVT Color</a>.
+ * <a href="https://docs.opencv.org/4.0.1/de/d25/imgproc_color_conversions.html">CVT Color</a>.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
@@ -38,7 +38,7 @@ public class ColorConversionTransform extends BaseImageTransform {
 
     /**
      * Color Conversion code
-     * {@link org.bytedeco.javacpp.opencv_imgproc}
+     * {@link org.bytedeco.opencv.global.opencv_imgproc}
      */
     private int conversionCode;
 

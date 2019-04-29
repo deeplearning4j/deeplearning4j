@@ -50,6 +50,8 @@ namespace nd4j {
         return true;
     }
 
+
+
     nd4j::NDIndexInterval::NDIndexInterval(Nd4jLong start, Nd4jLong end, Nd4jLong stride) : nd4j::NDIndex() {
         this->_stride = stride;
         for (int e = start; e < end; e+= stride)

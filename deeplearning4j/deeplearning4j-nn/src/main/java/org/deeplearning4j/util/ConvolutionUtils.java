@@ -491,7 +491,7 @@ public class ConvolutionUtils {
             int channelIdx = format == Convolution3D.DataFormat.NCDHW ? 1 : 4;
             lShape[channelIdx] = mask.size(channelIdx);     //Keep existing channel size
 
-            INDArray bMask = workspaceMgr.createUninitialized(type, lShape, 'c');
+            INDArray bMask = workspaceMgr.createUninitialized(type, mask.dataType(), lShape, 'c');
             int[] bcDims = broadcastDims.toIntArray();
             Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, bcDims));
             return reshape5dTo2d(format, bMask, workspaceMgr, type);
@@ -548,7 +548,7 @@ public class ConvolutionUtils {
         //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
 
         val s = output.shape();
-        INDArray bMask = workspaceMgr.create(type, new long[]{s[0], 1, s[2], s[3]}, 'c');
+        INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], 1, s[2], s[3]}, 'c');
         Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
 
         INDArray bMaskPermute = bMask.permute(0, 2, 3, 1).dup('c');  //Not sure if dup is strictly necessary...

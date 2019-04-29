@@ -47,6 +47,8 @@ public interface VocabCache {
      */
     String wordAt(int i);
 
+    int wordIndex(String word);
+
     /**
      * Configuration for initializing
      * @param conf the configuration to initialize with
@@ -115,6 +117,6 @@ public interface VocabCache {
      * @param frequency the frequency
      * @return the tfidf for a word
      */
-    double tfidf(String word, double frequency);
+    double tfidf(String word, double frequency, boolean smoothIdf);
 
 }

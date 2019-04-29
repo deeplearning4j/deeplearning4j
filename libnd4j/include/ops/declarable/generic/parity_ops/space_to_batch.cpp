@@ -286,13 +286,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
-
         // we always give out C order here
-        shape::shapeBuffer((int) external_output_shape.size(), ArrayOptions::dataType(in), external_output_shape.data(), newShape);
-        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in)); // as in TF
-
+        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());
         return SHAPELIST(newShape);
     }
 }

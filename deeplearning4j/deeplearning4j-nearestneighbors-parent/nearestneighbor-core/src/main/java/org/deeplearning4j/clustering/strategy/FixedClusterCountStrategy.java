@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.strategy;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 
 /**
@@ -27,7 +28,7 @@ import org.deeplearning4j.clustering.iteration.IterationHistory;
 public class FixedClusterCountStrategy extends BaseClusteringStrategy {
 
 
-    protected FixedClusterCountStrategy(Integer initialClusterCount, String distanceFunction,
+    protected FixedClusterCountStrategy(Integer initialClusterCount, Distance distanceFunction,
                     boolean allowEmptyClusters, boolean inverse) {
         super(ClusteringStrategyType.FIXED_CLUSTER_COUNT, initialClusterCount, distanceFunction, allowEmptyClusters,
                         inverse);
@@ -40,7 +41,7 @@ public class FixedClusterCountStrategy extends BaseClusteringStrategy {
      * @param inverse
      * @return
      */
-    public static FixedClusterCountStrategy setup(int clusterCount, String distanceFunction, boolean inverse) {
+    public static FixedClusterCountStrategy setup(int clusterCount, Distance distanceFunction, boolean inverse) {
         return new FixedClusterCountStrategy(clusterCount, distanceFunction, false, inverse);
     }
 

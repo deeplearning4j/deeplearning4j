@@ -22,6 +22,7 @@
 #include <PointersManager.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <Status.h>
 
 
 namespace nd4j {

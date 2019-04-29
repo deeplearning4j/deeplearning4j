@@ -17,6 +17,7 @@
 package org.nd4j.jita.allocator.context.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.context.ContextPack;
@@ -35,10 +36,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-import static org.bytedeco.javacpp.cublas.cublasContext;
-import static org.bytedeco.javacpp.cublas.cublasCreate_v2;
-import static org.bytedeco.javacpp.cusolver.cusolverDnContext;
-import static org.bytedeco.javacpp.cusolver.cusolverDnCreate;
+import org.bytedeco.cuda.cublas.*;
+import org.bytedeco.cuda.cusolver.*;
+import static org.bytedeco.cuda.global.cublas.*;
+import static org.bytedeco.cuda.global.cusolver.*;
 
 /**
  * This is context pool implementation, addressing shared cublas allocations together with shared stream pools
@@ -164,7 +165,7 @@ public class BasicContextPool implements ContextPool {
                     Integer rand = RandomUtils.nextInt(0, MAX_STREAMS_PER_DEVICE);
                     log.debug("Reusing context: " + rand);
 
-                    nativeOps.setDevice(new CudaPointer(deviceId));
+                    nativeOps.setDevice(deviceId);
 
                     CudaContext context = contextsForDevices.get(deviceId).get(rand);
 
@@ -182,17 +183,17 @@ public class BasicContextPool implements ContextPool {
         return contextsPool.get(threadId);
     }
 
+    @Override
+    public void releaseContext(CudaContext context) {
+        // no-op
+    }
+
     protected CudaContext createNewStream(Integer deviceId) {
         log.trace("Creating new stream for thread: [{}], device: [{}]...", Thread.currentThread().getId(), deviceId);
-        //JCuda.cudaSetDevice(deviceId);
-        nativeOps.setDevice(new CudaPointer(deviceId));
+        nativeOps.setDevice(deviceId);
 
         CudaContext context = new CudaContext();
         context.initOldStream();
-
-        //context.initHandle();
-        //context.associateHandle();
-        //context.initStream();
 
         return context;
     }
@@ -293,19 +294,19 @@ public class BasicContextPool implements ContextPool {
         // we hardcode sizeOf to sizeOf(double)
         int sizeOf = 8;
 
-        Pointer reductionPointer = nativeOps.mallocDevice(16385 * sizeOf * 2, new CudaPointer(deviceId), 0);
+        val reductionPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (reductionPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] reduction buffer memory!");
 
-        nativeOps.memsetAsync(reductionPointer, 0, 16385 * sizeOf * 2, 0, context.getOldStream());
+        nativeOps.memsetAsync(reductionPointer, 0, 16384 * sizeOf, 0, context.getOldStream());
 
         context.syncOldStream();
 
-        Pointer allocationPointer = nativeOps.mallocDevice(1024 * 1024, new CudaPointer(deviceId), 0);
+        val allocationPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (allocationPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] allocation buffer memory!");
 
-        Pointer scalarPointer = nativeOps.mallocHost(1 * sizeOf, 0);
+        val scalarPointer = nativeOps.mallocHost(sizeOf, 0);
         if (scalarPointer == null)
             throw new IllegalStateException("Can't allocate [HOST] scalar buffer memory!");
 
@@ -313,11 +314,11 @@ public class BasicContextPool implements ContextPool {
         context.setBufferAllocation(allocationPointer);
         context.setBufferReduction(reductionPointer);
 
-        Pointer specialPointer = nativeOps.mallocDevice(1024 * 1024 * sizeOf, new CudaPointer(deviceId), 0);
+        val specialPointer = nativeOps.mallocDevice(16384 * sizeOf, deviceId, 0);
         if (specialPointer == null)
             throw new IllegalStateException("Can't allocate [DEVICE] special buffer memory!");
 
-        nativeOps.memsetAsync(specialPointer, 0, 65536 * sizeOf, 0, context.getOldStream());
+        nativeOps.memsetAsync(specialPointer, 0, 16384 * sizeOf, 0, context.getOldStream());
 
         context.setBufferSpecial(specialPointer);
     }

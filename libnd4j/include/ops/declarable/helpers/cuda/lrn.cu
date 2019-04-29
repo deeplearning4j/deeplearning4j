@@ -39,6 +39,9 @@ namespace helpers {
         return Status::OK();
     }
 
+    void lrnBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+        //
+    }
 }
 }
 }

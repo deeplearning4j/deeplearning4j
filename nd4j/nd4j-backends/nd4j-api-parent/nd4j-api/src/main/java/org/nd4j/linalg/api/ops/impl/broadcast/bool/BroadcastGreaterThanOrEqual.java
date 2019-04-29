@@ -80,7 +80,7 @@ public class BroadcastGreaterThanOrEqual extends BaseBroadcastBoolOp {
 
     @Override
     public String onnxName() {
-        return "GreaterEqual";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

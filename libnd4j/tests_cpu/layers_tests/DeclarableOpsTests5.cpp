@@ -1334,31 +1334,13 @@ TEST_F(DeclarableOpsTests5, Test_Moments_3) {
 }
 
 TEST_F(DeclarableOpsTests5, Test_Moments_4) {
-//    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {11.0,  3.0,  14.0, 5.0,
-//                                       6.0,  9.0,   3.5, 7.0,
-//                                     21.0, 3.0, 14.0, 15.0,
-//                                      6.0, 9.0,  3.5,  7.0,
-//                                      11.0, 13.0, 14.0, 5.0,
-//                                      16.0,  9.0, 13.5, 7.0}
-//    );
-//   the fortran ordered matrix the same as C-ordered above
-//
-    auto x = NDArrayFactory::create<double>('f', {2, 3, 4}, {11.0f,  6.0f,  6.0f, 11.0f,
-                                      21.0f, 16.0f,  3.0f,  9.0f,
-                                       9.0f, 13.0f,  3.0f,  9.0f,
-                                      14.0f,  3.5f,  3.5f, 14.0f,
-                                      14.0f,  13.5f,  5.0f,  7.0f,
-                                       7.0f,  5.0f, 15.0f,  7.0f
-                                     }
-    );
+
+    auto x = NDArrayFactory::create<double>('f', {2, 3, 4}, {11.0f,  6.0f,  6.0f, 11.0f, 21.0f, 16.0f,  3.0f,  9.0f, 9.0f, 13.0f,  3.0f,  9.0f,
+                                      14.0f,  3.5f,  3.5f, 14.0f, 14.0f,  13.5f,  5.0f,  7.0f, 7.0f,  5.0f, 15.0f,  7.0f});
 
 
-    auto expV = NDArrayFactory::create<double>('c', {3, 4}, { 8.5f, 6.f , 8.75f,  6.f,
-                                       8.5f, 11.f, 8.75f, 6.f, 
-                                      18.5f, 6.f, 13.75f, 11.f});
-    auto expD = NDArrayFactory::create<double>('c', {3, 4}, { 6.25f, 9.f, 27.5625f,  1.f,
-                                       6.25f, 4.f, 27.5625f,  1.f,
-                                       6.25f, 9.f, 0.0625f,  16.f});
+    auto expV = NDArrayFactory::create<double>('c', {3, 4}, { 8.5f, 6.f , 8.75f,  6.f, 8.5f, 11.f, 8.75f, 6.f, 18.5f, 6.f, 13.75f, 11.f});
+    auto expD = NDArrayFactory::create<double>('c', {3, 4}, { 6.25f, 9.f, 27.5625f,  1.f, 6.25f, 4.f, 27.5625f,  1.f, 6.25f, 9.f, 0.0625f,  16.f});
 
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {}, {0});

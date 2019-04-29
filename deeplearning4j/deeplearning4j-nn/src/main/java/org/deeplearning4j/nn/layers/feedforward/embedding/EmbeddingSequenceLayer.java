@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.factory.Broadcast;
@@ -51,8 +52,8 @@ import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer> {
     private static final int[] WEIGHT_DIM = new int[]{1};
 
-    public EmbeddingSequenceLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public EmbeddingSequenceLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     private int[] indexes;
@@ -149,7 +150,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         val nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
-                ArrayType.ACTIVATIONS, new long[]{minibatch * inputLength, nOut}, 'c');
+                ArrayType.ACTIVATIONS, weights.dataType(), new long[]{minibatch * inputLength, nOut}, 'c');
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
         if (hasBias()) {

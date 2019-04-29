@@ -52,7 +52,7 @@ public class CloseableTests extends BaseNd4jTest {
 
     @Test
     public void testCyclicRelease_1() {
-        for (int e = 0; e < 1000; e++) {
+        for (int e = 0; e < 100; e++) {
             try (val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5})) {
                 array.addi(1.0f);
             }
@@ -79,6 +79,23 @@ public class CloseableTests extends BaseNd4jTest {
             val array = Nd4j.create(5, 5);
             assertFalse(array.closeable());
         }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testAccessException_1() {
+        val array = Nd4j.create(5, 5);
+        array.close();
+
+        array.data().pointer();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testAccessException_2() {
+        val array = Nd4j.create(5, 5);
+        val view = array.getRow(0);
+        array.close();
+
+        view.data().pointer();
     }
 
     @Override

@@ -28,6 +28,7 @@
 #include <graph/LaunchContext.h>
 #include <specials_cuda.h>
 #include <TAD.h>
+#include <ops/declarable/CustomOperations.h>
 
 #include <cuda.h>
 #include <cuda_launch_config.h>
@@ -2286,5 +2287,303 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
     native.concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
     z.syncToHost();
     z.printIndexedBuffer("Concat result");
+    z.printBuffer("C Concat result linear");
+
 }
 
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_2) {
+    auto x = NDArrayFactory::create<float>('c', {5,2}, {0,1,2,3,4,5,6,7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('f', {5, 8});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(4);
+    std::vector<Nd4jLong*> shapes(4);
+    std::vector<Nd4jLong*> hostShapes(4);
+
+    for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[i] = x.specialBuffer();
+        shapes[i] = x.specialShapeInfo();
+        hostShapes[i] = x.shapeInfo();
+    }
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("F Concat result linear");
+
+}
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_3) {
+    auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
+    auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('f', {3, 3});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(2);
+    std::vector<Nd4jLong*> shapes(2);
+    std::vector<Nd4jLong*> hostShapes(2);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[0] = x.specialBuffer();
+        shapes[0] = x.specialShapeInfo();
+        hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer();
+    shapes[1] = y.specialShapeInfo();
+    hostShapes[1] = y.shapeInfo();
+    //}
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("F Concat result linear");
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_4) {
+    auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
+    auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {3, 3});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(2);
+    std::vector<Nd4jLong*> shapes(2);
+    std::vector<Nd4jLong*> hostShapes(2);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+    buffers[0] = x.specialBuffer();
+    shapes[0] = x.specialShapeInfo();
+    hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer();
+    shapes[1] = y.specialShapeInfo();
+    hostShapes[1] = y.shapeInfo();
+    //}
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("C Concat result linear");
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_5) {
+    auto x = NDArrayFactory::create<float>('c', {1,2,3}, {1,2,3,4,5,6});
+    auto y = NDArrayFactory::create<float>('c', {1,2,3}, {7,8,9,10,11, 12});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {2, 2, 3});
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(2);
+    std::vector<Nd4jLong*> shapes(2);
+    std::vector<Nd4jLong*> hostShapes(2);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+    buffers[0] = x.specialBuffer();
+    shapes[0] = x.specialShapeInfo();
+    hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer();
+    shapes[1] = y.specialShapeInfo();
+    hostShapes[1] = y.shapeInfo();
+    //}
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("C Concat result linear");
+
+}
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_6) {
+    auto x1 = NDArrayFactory::create<float>('c', {2,2,3}, {1,2,3,4,5,6,7,8, 9, 10,11,12});
+    auto x2 = NDArrayFactory::create<float>('c', {1,2,3}, {13,14,15,16,17, 18});
+    auto x3 = NDArrayFactory::create<float>('c', {1,2,3}, {19,20,21,22,23, 24});
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {4, 2, 3});
+    auto stream = x1.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(3);
+    std::vector<Nd4jLong*> shapes(3);
+    std::vector<Nd4jLong*> hostShapes(3);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+    buffers[0] = x1.specialBuffer();
+    shapes[0] = x1.specialShapeInfo();
+    hostShapes[0] = x1.shapeInfo();
+    buffers[1] = x2.specialBuffer();
+    shapes[1] = x2.specialShapeInfo();
+    hostShapes[1] = x2.shapeInfo();
+    buffers[2] = x3.specialBuffer();
+    shapes[2] = x3.specialShapeInfo();
+    hostShapes[2] = x3.shapeInfo();
+    //}
+    printf("The third array is %p\n", buffers[2]);
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("C Concat3D result linear");
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_7) {
+    auto x1 = NDArrayFactory::create<float>(1);
+    auto x2 = NDArrayFactory::create<float>(2);
+    auto x3 = NDArrayFactory::create<float>(3);
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {3}, {1,2,3});
+    auto stream = x1.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(3);
+    std::vector<Nd4jLong*> shapes(3);
+    std::vector<Nd4jLong*> hostShapes(3);
+
+    //for (size_t i = 0; i < buffers.size(); i++) {
+    buffers[0] = x1.specialBuffer();
+    shapes[0] = x1.specialShapeInfo();
+    hostShapes[0] = x1.shapeInfo();
+    buffers[1] = x2.specialBuffer();
+    shapes[1] = x2.specialShapeInfo();
+    hostShapes[1] = x2.shapeInfo();
+    buffers[2] = x3.specialBuffer();
+    shapes[2] = x3.specialShapeInfo();
+    hostShapes[2] = x3.shapeInfo();
+    //}
+    printf("The third array is %p\n", buffers[2]);
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printIndexedBuffer("Concat result");
+    z.printBuffer("C Concat scalar result linear");
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_8) {
+//    public void testLargeConcat() {
+//        val list = new ArrayList<INDArray>();
+//
+//        for (int e = 0; e < 100000; e++)
+//            list.add(Nd4j.create(1, 300));
+//
+//        val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+//    }
+    auto totalCount = 1000;
+    auto width = 300;
+    std::vector<NDArray> lx;//(totalCount);
+    for (int i = 0; i < totalCount; i++) {
+        lx.emplace_back(NDArrayFactory::create<float>('c', {1, width}));
+        lx[i].assign(i);
+    }
+
+    NativeOps native;
+    auto z = NDArrayFactory::create<float>('c', {totalCount, width});
+    auto stream = graph::LaunchContext::defaultContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    std::vector<void*> buffers(totalCount);
+    std::vector<Nd4jLong*> shapes(totalCount);
+    std::vector<Nd4jLong*> hostShapes(totalCount);
+
+    for (size_t i = 0; i < lx.size(); i++) {
+        buffers[i] = lx[i].specialBuffer();
+        shapes[i] = lx[i].specialShapeInfo();
+        hostShapes[i] = lx[i].shapeInfo();
+    }
+
+    printf("The third array is %p\n", buffers[2]);
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+    native.concat(extra, 0, totalCount, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    nd4j_printf("%f %f %f\n", z.e<float>(0), z.e<float>(width * totalCount / 2), z.e<float>(width * (totalCount - 1)));
+    //z.printIndexedBuffer("Concat result");
+    //z.printBuffer("C Concat scalar result linear");
+
+
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestTear_1) {
+    auto input = NDArrayFactory::create<float>('c', {1, 10, 10});
+    std::vector<NDArray> arrays; // = {NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10})};
+    int total = 151;
+    for (int e = 0; e < total; e++) {
+        input.assign(e);
+        arrays.emplace_back(input);
+    }
+    auto z = NDArrayFactory::create<float>('c', {total, 10, 10});
+    NativeOps native;
+
+    auto stream = input.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+
+    std::vector<void*> buffers(total);
+    std::vector<Nd4jLong*> shapes(total);
+    std::vector<Nd4jLong*> hostShapes(total);
+
+    for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[i] = arrays[i].specialBuffer();
+        shapes[i] = arrays[i].specialShapeInfo();
+        hostShapes[i] = arrays[i].shapeInfo();
+    }
+
+    native.concat(extra, 0, total, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    nd4j::ops::tear op;
+
+    auto result = op.execute({&z}, {}, {1, 2});
+    //ASSERT_EQ(10, result->size());
+    auto e = result->size() - 1;
+    //for (size_t e = 0; e < result->size(); e++) {
+        arrays[e].printIndexedBuffer("Input list at 40");
+        result->at(e)->printIndexedBuffer("OUtput TEAR at 40");
+    //}
+//        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+
+    delete result;
+//    delete tads;
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
+    auto input = NDArrayFactory::create<float>('c', {1, 10, 10});
+    std::vector<NDArray> arrays; // = {NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10})};
+    for (int e = 0; e < 10; e++) {
+        input.assign(e);
+        arrays.emplace_back(input);
+    }
+    auto z = NDArrayFactory::create<float>('c', {10, 10, 10});
+    NativeOps native;
+
+    auto stream = input.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    Nd4jPointer extra[2];
+    extra[1] = *stream;
+
+    std::vector<void*> buffers(10);
+    std::vector<Nd4jLong*> shapes(10);
+    std::vector<Nd4jLong*> hostShapes(10);
+
+    for (size_t i = 0; i < buffers.size(); i++) {
+        buffers[i] = arrays[i].specialBuffer();
+        shapes[i] = arrays[i].specialShapeInfo();
+        hostShapes[i] = arrays[i].shapeInfo();
+    }
+    std::vector<int> dimsToExclude({1,2});
+    native.concat(extra, 0, 10, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    z.syncToHost();
+    z.printBuffer("Pile OK");
+    z.printIndexedBuffer("Pile 10x10");
+    z.printIndexedBuffer("Pile 10x10");
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
+    std::vector<void*> arraysData(arrays.size());
+    for (size_t i = 0; i < arrays.size(); i++)
+        arraysData[i] = arrays[i].specialBuffer();
+    native.tear(extra, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), (Nd4jPointer*)(arraysData.data()), input.specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets());
+//    auto result = op.execute({&z}, {}, {1, 2});
+//    nd4j_printf("Result count is %lu\n", result->size());
+    //ASSERT_EQ(10, result->size());
+
+    for (size_t e = 0; e < arrays.size(); e++) {
+        arrays[e].printBuffer("Output list at");
+        //result->at(e)->printBuffer("OUtput TEAR at");
+    }
+//        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+
+//    delete result;
+//    delete tads;
+}

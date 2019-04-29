@@ -36,19 +36,13 @@ import java.util.List;
 public class GELU extends BaseTransformStrictOp {
     public GELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);
-        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELU() {
     }
 
     public GELU(INDArray x, INDArray z) {
-        this(x, z, false);
-    }
-
-    public GELU(INDArray x, INDArray z, boolean precise) {
         super(x, z);
-        this.extraArgs = new Object[]{precise ? 1.0 : 0.0};
     }
 
     public GELU(INDArray ndArray) {
@@ -78,8 +72,7 @@ public class GELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        boolean precise = this.extraArgs != null && this.extraArgs.length == 1 && ((Double)this.extraArgs[0]) > 0.0;
-        SDVariable ret = f().geluDerivative(arg(), precise).mul(i_v.get(0));
+        SDVariable ret = f().geluDerivative(arg(), false).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

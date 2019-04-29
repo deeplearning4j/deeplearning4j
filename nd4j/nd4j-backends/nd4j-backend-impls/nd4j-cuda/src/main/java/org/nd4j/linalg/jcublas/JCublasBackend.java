@@ -17,8 +17,6 @@
 package org.nd4j.linalg.jcublas;
 
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.cublas;
-import org.bytedeco.javacpp.cuda;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.io.Resource;
@@ -49,11 +47,11 @@ public class JCublasBackend extends Nd4jBackend {
     @Override
     public boolean canRun() {
         int[] count = { 0 };
-        cuda.cudaGetDeviceCount(count);
+        org.bytedeco.cuda.global.cudart.cudaGetDeviceCount(count);
         if (count[0] <= 0) {
             throw new RuntimeException("No CUDA devices were found in system");
         }
-        Loader.load(cublas.class);
+        Loader.load(org.bytedeco.cuda.global.cublas.class);
         return true;
     }
 

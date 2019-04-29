@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -26,14 +24,13 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
 import org.deeplearning4j.nn.layers.convolution.Cropping3DLayer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -87,9 +84,9 @@ public class Cropping3D extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
-        Cropping3DLayer ret = new Cropping3DLayer(conf);
+                                                       Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
+        Cropping3DLayer ret = new Cropping3DLayer(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -131,24 +128,15 @@ public class Cropping3D extends NoParamLayer {
         /**
          * Cropping amount, a length 6 array, i.e. crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
+        @Setter(AccessLevel.NONE)
         private int[] cropping = new int[] {0, 0, 0, 0, 0, 0};
 
         /**
          * @param cropping Cropping amount, must be length 1, 3, or 6 array, i.e. either all values, crop depth, crop height, crop width
          * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
-        public void setCropping(int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 3 || cropping.length == 6,
-                            "Must have 1, 3, or 6 cropping values - got %s", cropping);
-            if (cropping.length == 1) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0], cropping[0],
-                                cropping[0]};
-            } else if (cropping.length == 3) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1], cropping[2],
-                                cropping[2]};
-            } else {
-                this.cropping = cropping;
-            }
+        public void setCropping(int... cropping) {
+            this.cropping = ValidationUtils.validate6NonNegative(cropping, "cropping");
         }
 
         public Builder() {
@@ -160,15 +148,7 @@ public class Cropping3D extends NoParamLayer {
          * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 6 || cropping.length == 3,
-                            "Either 3 or 6 cropping values, got " + cropping.length + " values: "
-                                            + Arrays.toString(cropping));
-            if (cropping.length == 3) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1], cropping[2],
-                                cropping[2]};
-            } else {
-                this.cropping = cropping;
-            }
+            this.setCropping(cropping);
         }
 
         /**
@@ -189,11 +169,7 @@ public class Cropping3D extends NoParamLayer {
          * @param cropRightW Amount of cropping to apply to the right of the width dimension
          */
         public Builder(int cropLeftD, int cropRightD, int cropLeftH, int cropRightH, int cropLeftW, int cropRightW) {
-            this.cropping = new int[] {cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW};
-            Preconditions.checkArgument(
-                            cropLeftD >= 0 && cropLeftH >= 0 && cropLeftW >= 0 && cropRightD >= 0 && cropRightH >= 0
-                                            && cropRightW >= 0,
-                            "Invalid arguments: crop dimensions must be > 0. Got " + Arrays.toString(this.cropping));
+            this.setCropping(new int[] {cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW});
         }
 
         public Cropping3D build() {

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -142,6 +143,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                        .dataType(DataType.DOUBLE)
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
@@ -201,7 +203,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
             mln1.computeGradientAndScore();
             mln2.computeGradientAndScore();
 
-            assertEquals(mln1.score(), mln2.score(), 1e-8);
+            assertEquals(mln1.score(), mln2.score(), 1e-5);
 
             assertEquals(mln1.getFlattenedGradients(), mln2.getFlattenedGradients());
 

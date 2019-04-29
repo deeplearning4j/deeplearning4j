@@ -17,6 +17,9 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,6 +29,7 @@ import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -44,8 +48,11 @@ import java.util.Map;
 @Data
 public class SimpleRnn extends BaseRecurrentLayer {
 
+    private boolean hasLayerNorm = false;
+
     protected SimpleRnn(Builder builder) {
         super(builder);
+        this.hasLayerNorm = builder.hasLayerNorm;
     }
 
     private SimpleRnn() {
@@ -54,11 +61,11 @@ public class SimpleRnn extends BaseRecurrentLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("SimpleRnn", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.SimpleRnn ret =
-                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.SimpleRnn(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -78,12 +85,29 @@ public class SimpleRnn extends BaseRecurrentLayer {
         return null;
     }
 
+    public boolean hasLayerNorm(){
+        return hasLayerNorm;
+    }
+
+    @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
 
         @Override
         public SimpleRnn build() {
             return new SimpleRnn(this);
+        }
+
+        /**
+         * If true (default = false): enable layer normalization on this layer
+         *
+         */
+        private boolean hasLayerNorm = false;
+        public SimpleRnn.Builder hasLayerNorm(boolean hasLayerNorm){
+            this.hasLayerNorm = hasLayerNorm;
+            return this;
         }
     }
 }

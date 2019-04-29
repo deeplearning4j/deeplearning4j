@@ -25,6 +25,9 @@ import org.deeplearning4j.nn.layers.convolution.DepthwiseConvolution2DLayer;
 import org.deeplearning4j.nn.params.DepthwiseConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -48,6 +51,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     protected DepthwiseConvolution2D(Builder builder) {
         super(builder);
+        Preconditions.checkState(builder.depthMultiplier > 0, "Depth multiplier must be > 0,  got %s", builder.depthMultiplier);
         this.depthMultiplier = builder.depthMultiplier;
         this.nOut = this.nIn * this.depthMultiplier;
 
@@ -64,10 +68,10 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("DepthwiseConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        DepthwiseConvolution2DLayer ret = new DepthwiseConvolution2DLayer(conf);
+        DepthwiseConvolution2DLayer ret = new DepthwiseConvolution2DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -94,6 +98,14 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
                         nOut, layerIndex, getLayerName(), DepthwiseConvolution2DLayer.class);
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        super.setNIn(inputType, override);
+
+        if(nOut == 0 || override){
+            nOut = this.nIn * this.depthMultiplier;
+        }
+    }
 
     @Getter
     @Setter
@@ -129,7 +141,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
          * @return Builder
          */
         public Builder depthMultiplier(int depthMultiplier) {
-            this.depthMultiplier = depthMultiplier;
+            this.setDepthMultiplier(depthMultiplier);
             return this;
         }
 
@@ -139,7 +151,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
          * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -149,7 +161,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
          * @param stride Stride of the layer
          */
         public Builder stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -159,8 +171,28 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
          * @param padding Padding of the layer
          */
         public Builder padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
+        }
+
+        @Override
+        public void setKernelSize(int... kernelSize) {
+            this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int... stride) {
+            this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
+        }
+
+        @Override
+        public void setPadding(int... padding) {
+            this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
+        }
+
+        @Override
+        public void setDilation(int... dilation) {
+            this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
         @Override

@@ -123,7 +123,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
-
         val shape = hasMiniBatchDimension ? targetShape : prependMiniBatchSize(targetShape, 0);
         switch (shape.length) {
             case 2:
@@ -131,10 +130,11 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             case 3:
                 return InputType.recurrent(shape[2], shape[1]);
             case 4:
-                if (inputShape.length == 1)
+                if (inputShape.length == 1 || inputType.getType() == InputType.Type.RNN){
                     return InputType.convolutional(shape[1], shape[2], shape[3]);
-                else
+                }else {
                     return InputType.convolutional(shape[2], shape[3], shape[1]);
+                }
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));

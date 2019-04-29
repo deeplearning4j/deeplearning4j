@@ -78,7 +78,7 @@ public class OldSoftMax extends BaseTransformStrictOp {
 
     @Override
     public String onnxName() {
-        return "Softmax";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

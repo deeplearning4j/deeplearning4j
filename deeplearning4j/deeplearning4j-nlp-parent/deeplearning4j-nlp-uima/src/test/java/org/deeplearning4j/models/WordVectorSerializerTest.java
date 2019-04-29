@@ -21,12 +21,12 @@ import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -488,12 +488,12 @@ public class WordVectorSerializerTest {
             VocabWord word = new VocabWord((float) i, "word_" + i);
             List<Integer> points = new ArrayList<>();
             List<Byte> codes = new ArrayList<>();
-            int num = org.apache.commons.lang3.RandomUtils.nextInt(1, 20);
+            int num = RandomUtils.nextInt(1, 20);
             for (int x = 0; x < num; x++) {
-                points.add(org.apache.commons.lang3.RandomUtils.nextInt(1, 100000));
-                codes.add(org.apache.commons.lang3.RandomUtils.nextBytes(10)[0]);
+                points.add(RandomUtils.nextInt(1, 100000));
+                codes.add(RandomUtils.nextBytes(10)[0]);
             }
-            if (RandomUtils.nextInt(10) < 3) {
+            if (RandomUtils.nextInt(0, 10) < 3) {
                 word.markAsLabel(true);
             }
             word.setIndex(i);

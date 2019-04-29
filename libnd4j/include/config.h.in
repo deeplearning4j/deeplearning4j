@@ -9,4 +9,8 @@
 
 #cmakedefine OPENBLAS_PATH "@OPENBLAS_PATH@"
 
+#cmakedefine HAVE_FLATBUFFERS
+
+#cmakedefine FLATBUFFERS_PATH "@FLATBUFFERS_PATH@"
+
 #endif

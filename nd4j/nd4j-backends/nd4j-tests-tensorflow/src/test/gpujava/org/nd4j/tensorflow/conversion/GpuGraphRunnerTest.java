@@ -26,7 +26,10 @@ import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.tensorflow.framework.ConfigProto;
 import org.tensorflow.framework.GPUOptions;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +39,8 @@ public class GpuGraphRunnerTest {
 
     @Test
     public void testGraphRunner() throws Exception {
-        byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
+        File f = new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getFile();
+        List<String> inputNames = Arrays.asList("input_0","input_1");
 
         ConfigProto configProto = ConfigProto.newBuilder()
                 .setGpuOptions(GPUOptions.newBuilder()
@@ -45,21 +49,21 @@ public class GpuGraphRunnerTest {
                         .build())
                 .build();
 
-        try(GraphRunner graphRunner = new GraphRunner(content,configProto)) {
+        try(GraphRunner graphRunner = new GraphRunner(f.getAbsolutePath(), inputNames, configProto)) {
             org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
             String json = graphRunner.sessionOptionsToJson();
             JsonFormat.parser().merge(json,builder);
             org.tensorflow.framework.ConfigProto build = builder.build();
             assertEquals(build,graphRunner.getProtoBufConfigProto());
-            assertNotNull(graphRunner.getInputsForGraph());
-            assertNotNull(graphRunner.getOutputsForGraph());
+            assertNotNull(graphRunner.getInputOrder());
+            assertNotNull(graphRunner.getOutputOrder());
 
 
             org.tensorflow.framework.ConfigProto configProto1 = GraphRunner.fromJson(json);
 
             assertEquals(graphRunner.getProtoBufConfigProto(),configProto1);
-            assertEquals(2,graphRunner.getInputsForGraph().size());
-            assertEquals(1,graphRunner.getOutputsForGraph().size());
+            assertEquals(2,graphRunner.getInputOrder().size());
+            assertEquals(1,graphRunner.getOutputOrder().size());
 
             INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
             INDArray input2 = Nd4j.linspace(1,4,4).reshape(4);

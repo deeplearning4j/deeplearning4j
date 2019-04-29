@@ -39,8 +39,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-#pragma omp declare reduction (dot : double,float,float16,bfloat16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
-#pragma omp parallel for reduction(dot : result) schedule(static)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(prodT : result)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	
@@ -63,18 +62,19 @@ static FORCEINLINE T polyGammaScalar(graph::LaunchContext* context, const int n,
 	int sign = (n + 1) % 2  ?  -1 : 1;
 	// T factorial = (T)std::tgamma(n + 1);		
 
-	return sign * getFactorial<T>(n) * zeta<T>(context, (T)(n + 1), x);
+	return sign * getFactorial<T>(n) * zetaScalar<T>((T)(n + 1), x);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
+static void polyGamma_(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray& result = output; //NDArray(&x, false, x.getWorkspace());
+	NDArray& result = output;
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
+	int xLen = x.lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
 	for(int i = 0; i < x.lengthOf(); ++i)
 		result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
 
@@ -82,10 +82,10 @@ static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const ND
 }
 
 	void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (context, n, x, output), FLOAT_TYPES);
+		BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template void _polyGamma, (graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void polyGamma_, (graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 

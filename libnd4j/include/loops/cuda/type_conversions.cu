@@ -20,6 +20,7 @@
 
 #include <loops/type_conversions.h>
 #include <types/types.h>
+#include <helpers/DebugHelper.h>
 
 namespace nd4j {
     template<typename S, typename T>
@@ -27,6 +28,7 @@ namespace nd4j {
         auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
         nd4j::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
+        nd4j::DebugHelper::checkErrorCode(stream, "convertGeneric(...) failed");
     };
 
 
@@ -226,6 +228,7 @@ template<typename T>
 __host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold) {
 
     execEncoderKernelP1<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz, threshold);
+        nd4j::DebugHelper::checkErrorCode(stream, "encoderP1(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold), LIBND4J_TYPES);
 
@@ -240,6 +243,7 @@ __global__ static void execEncoderKernelP3(void *dx, int *offsets, Nd4jLong N, v
 template<typename T>
 __host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz) {
     execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
+        nd4j::DebugHelper::checkErrorCode(stream, "encoderP3(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP3Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz), LIBND4J_TYPES);
 
@@ -255,6 +259,7 @@ template<typename T>
 __host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz) {
 
     execDecoderKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
+    nd4j::DebugHelper::checkErrorCode(stream, "execDecoder(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES);
 
@@ -271,6 +276,7 @@ template<typename T>
 __host__ void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
 
     execCudaEncodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, N, dz, scalar, reductionBuffer, threshold);
+    nd4j::DebugHelper::checkErrorCode(stream, "encodeBitmap(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaEncodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold), LIBND4J_TYPES);
 
@@ -287,6 +293,7 @@ template<typename T>
 __host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz) {
 
     execCudaDecodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, vdz);
+    nd4j::DebugHelper::checkErrorCode(stream, "cudeDecodeBitmap(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz), LIBND4J_TYPES);
 
@@ -294,6 +301,7 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &
     template <bool storeSum, bool isNP2>
     __host__ void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
         prescan<storeSum, isNP2><<<blocks, threads, shmem, *stream>>>(g_odata, g_idata, g_blockSums, n, blockIndex, baseIndex);
+        nd4j::DebugHelper::checkErrorCode(stream, "prescan(...) failed");
     };
 
     template <typename S, typename T>

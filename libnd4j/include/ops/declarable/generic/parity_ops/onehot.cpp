@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/one_hot.h>
 
 namespace nd4j {
     namespace ops {
@@ -65,20 +66,8 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
-            auto vec = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
-            auto tads = output->allTensorsAlongDimension({axis});
-            for (int e = 0; e < tads->size(); e++) {
-                auto tad = tads->at(e);
-                tad->assign(off);
-
-                int idx = input->e<int>(e);
-                if (idx < 0 || idx >= tad->lengthOf())
-                    continue;
-
-                tad->p(idx, on);
-            }
-
-            delete tads;
+            std::vector<int> vec({axis});
+            helpers::onehot(block.launchContext(), output, input, vec, on, off);
 
             return Status::OK();
         }
@@ -103,19 +92,19 @@ namespace nd4j {
             Nd4jLong *newShape;
             int rank = shape::rank(inShape);
 
-            if (inShape[0] == 2 && inShape[1] == 1) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+            if (inShape[0] == 2 && inShape[1] == 1) {                
 
                 Nd4jLong* shape;
                 ALLOCATE(shape, block.getWorkspace(), rank, Nd4jLong);
                 memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
                 ShapeUtils::insertDimension(rank, shape, axis, depth);
-                shape::shapeBuffer(rank, block.dataType(), shape, newShape);
+
+                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank, shape, block.getWorkspace());
 
                 RELEASE(shape, block.getWorkspace());
-            } else {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank+1), Nd4jLong);
+            } 
+            else {                
 
                 if (axis < 0)
                     axis = rank + 1 + axis;
@@ -125,7 +114,7 @@ namespace nd4j {
                     shape.push_back(shape::shapeOf(inShape)[e]);
 
                 shape.insert(shape.begin() + axis, depth);
-                shape::shapeBuffer(rank+1, block.dataType(),  shape.data(), newShape);
+                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank + 1, shape.data(), block.getWorkspace());                
             }
 
             return SHAPELIST(newShape);

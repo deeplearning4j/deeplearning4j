@@ -70,6 +70,8 @@ namespace nd4j {
         bool BooleanOp::prepareOutputs(Context& ctx) {
 
             auto variableSpace = ctx.getVariableSpace();
+            if (ctx.isFastPath())
+                return true;
 
             for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
                 std::pair<int, int> pair(ctx.nodeId(), e);
@@ -80,7 +82,7 @@ namespace nd4j {
                 auto var = ctx.variable(pair);
 
                 if (!var->hasNDArray()) {
-                    var->setNDArray(NDArrayFactory::create_('c', {1, 1}, BOOL, ctx.launchContext()));
+                    var->setNDArray(NDArrayFactory::create_<bool>(false, ctx.launchContext()));
                     var->markRemovable(true);
                 }
             }
@@ -109,8 +111,8 @@ namespace nd4j {
 
             // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE
             std::pair<int,int> p(block->nodeId(), 0);
-            auto var = block->variable(p);
-            var->getNDArray()->p(Nd4jLong(0), status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
+            auto var = block->isFastPath() ? block->fastpath_out()[0] : block->variable(p)->getNDArray();
+            var->p(Nd4jLong(0), status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
 
             if (status == ND4J_STATUS_FALSE || status == ND4J_STATUS_TRUE)
                 return ND4J_STATUS_OK;

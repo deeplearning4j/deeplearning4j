@@ -180,9 +180,9 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testScalarMaxOp() {
         INDArray scalarMax = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).negi();
-        INDArray postMax = Nd4j.ones(DataType.DOUBLE, 1, 6);
+        INDArray postMax = Nd4j.ones(DataType.DOUBLE, 6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax, 1));
-        assertEquals(getFailureMessage(), scalarMax, postMax);
+        assertEquals(getFailureMessage(), postMax, scalarMax);
     }
 
     @Test
@@ -400,7 +400,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         Log exp = new Log(slice);
         opExecutioner.exec(exp);
-        INDArray assertion = Nd4j.create(Nd4j.createBuffer(new double[] {0.0, 0.6931471824645996, 1.0986123085021973})).reshape(1, -1);
+        INDArray assertion = Nd4j.create(new double[] {0.0, 0.6931471824645996, 1.0986123085021973});
         assertEquals(getFailureMessage(), assertion, slice);
     }
 
@@ -415,7 +415,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals(getFailureMessage(), Nd4j.create(Nd4j.createBuffer(expected)).reshape(1, -1), slice);
+        assertEquals(getFailureMessage(), Nd4j.create(expected), slice);
     }
 
     @Test
@@ -954,23 +954,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
 
             INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second, 1, 2, 3));
-            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
-                val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
-                val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
-
-                log.info("J: {}", j);
-                log.info("T: {}\n\n", t);
-                assertArrayEquals(j, t);
-            }
             Pair<DataBuffer, DataBuffer> firstTadInfo =
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(first, 1, 2, 3);
             Pair<DataBuffer, DataBuffer> secondTadInfo =
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(second, 1, 2, 3);
-            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
-                assertEquals(first.javaTensorAlongDimension(i, 1, 2, 3).offset(), firstTadInfo.getSecond().getLong(i));
-                assertEquals(second.javaTensorAlongDimension(i, 1, 2, 3).offset(),
-                                secondTadInfo.getSecond().getLong(i));
-            }
+
 
             INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second, 1, 2, 3));
 
@@ -1084,15 +1072,16 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testTear1() {
         List<INDArray> arrays = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(10, 10).assign(i));
+        val num = 10;
+        for (int i = 0; i < num; i++) {
+            arrays.add(Nd4j.create(20, 20).assign(i));
         }
 
         INDArray pile = Nd4j.pile(arrays);
 
         INDArray[] tears = Nd4j.tear(pile, 1, 2);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < num; i++) {
             assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
         }
     }

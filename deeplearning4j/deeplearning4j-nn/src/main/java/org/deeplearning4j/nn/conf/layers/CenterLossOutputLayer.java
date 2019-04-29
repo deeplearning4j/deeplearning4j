@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -66,10 +67,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("CenterLossOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Layer ret = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
+        Layer ret = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -155,7 +156,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         protected boolean gradientCheck = false;
 
         public Builder(){
-            this.activationFn = new ActivationSoftmax();
+            this.setActivationFn(new ActivationSoftmax());
         }
 
         public Builder(LossFunction lossFunction) {
@@ -163,21 +164,21 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         }
 
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
         }
 
         public Builder alpha(double alpha) {
-            this.alpha = alpha;
+            this.setAlpha(alpha);
             return this;
         }
 
         public Builder lambda(double lambda) {
-            this.lambda = lambda;
+            this.setLambda(lambda);
             return this;
         }
 
         public Builder gradientCheck(boolean isGradientCheck) {
-            this.gradientCheck = isGradientCheck;
+            this.setGradientCheck(isGradientCheck);
             return this;
         }
 

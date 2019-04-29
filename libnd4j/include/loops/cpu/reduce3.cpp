@@ -23,6 +23,7 @@
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <helpers/ConstantTadHelper.h>
+#include <Loops.h>
 
 using namespace simdOps;
 
@@ -42,38 +43,71 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    auto startingVal = OpType::startingValue(x);
     auto length = shape::length(xShapeInfo);
     auto xEws = shape::elementWiseStride(xShapeInfo);
     auto yEws = shape::elementWiseStride(yShapeInfo);
 
-    Z extraParamsVals[3] = {(X) 0.0f, (X) 0.0f, (X) 0.0f};
+    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
     // it's possible case for EqualsWithEps op
     if (extraParams != nullptr) 
         extraParamsVals[2] = extraParams[0];
-
+    
     uint xShapeInfoCast[MAX_RANK];
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
+    Z startingVal = OpType::startingValue(x);
+    const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+    nd4j::OmpLaunchHelper t(length, maxThreads);
+    Z intermediate[256];
+    Z extraParamsLocal[3 * 256];
 
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < maxThreads; e++)
+        intermediate[e] = startingVal;
+
+    memset(extraParamsLocal, 0, 3 * 256 * sizeof(Z));
+    if (extraParams != nullptr)
+        PRAGMA_OMP_SIMD
+        for (int e = 0; e < maxThreads; e++)
+            extraParamsLocal[3 * e + 2] = extraParams[0];
+
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
+
+    if (kindOfLoop == nd4j::LoopKind::EWS1) {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {
-            auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
-            startingVal = OpType::update(startingVal, OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
+            const auto threadNum = omp_get_thread_num();
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[i], y[i], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
-    }
-    else {
+
+    } else if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
+        for(unsigned int i = 0; i < length; i++) {
+            const auto threadNum = omp_get_thread_num();
+            auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
+        }
+    } else {
         uint yShapeInfoCast[MAX_RANK];
         const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {
+            const auto threadNum = omp_get_thread_num();
             auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
             auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
-            startingVal = OpType::update(startingVal, OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
+            intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
     }
 
-    z[0] = OpType::postProcess(startingVal, length, extraParamsVals);;
+    // merge step
+    for (int e = 0; e < maxThreads; e++)
+        OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
+    for (int e = 0; e < maxThreads; e++)
+        startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
+
+    z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,304 +131,20 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                     void *vz, Nd4jLong *zShapeInfo,
                     int *dimension, int dimensionLength) {
 
-    auto x = reinterpret_cast<X *>(vx);
-    auto y = reinterpret_cast<X *>(vy);
-    auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<Z *>(vextraParams);
-    
-    Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
+    auto x = reinterpret_cast<X*>(vx);
+    auto y = reinterpret_cast<X*>(vy);
+    auto z = reinterpret_cast<Z*>(vz);
+    auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
     if(shape::isScalar(zShapeInfo)) {
-        execScalar<OpType>(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo);
+        execScalar<OpType>(vx, xShapeInfo, vextraParams, vy, yShapeInfo, vz, zShapeInfo);
         return;
     }
-    
-    char xOrder = shape::order(xShapeInfo);
-    char yOrder = shape::order(yShapeInfo);
-    auto zLen = shape::length(zShapeInfo);
-    auto tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
-
-    nd4j::OmpLaunchHelper info(zLen);
-
-    if(xOrder != yOrder) {
-
-         if(shape::haveSameOffsets(xShapeInfo, yShapeInfo) && shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-
-            uint xShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                    auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
-                    z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
-                }
-            }
-        }
-        else if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
-
-            uint xShapeInfoCast[MAX_RANK];
-            uint zShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-            const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                    auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
-                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, zLen, canCastZ);
-                    z[zOffset] = OpType::update(z[zOffset], OpType::op(x[offset], y[offset], extraParamsVals), extraParamsVals);
-                }
-            }
-        }
-        else if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-
-            uint xShapeInfoCast[MAX_RANK];
-            uint yShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-            const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                    auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
-                    auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
-                    z[offset] = OpType::update(z[offset], OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
-                }
-            }
-        }
-        else if(shape::haveSameOffsets(yShapeInfo, zShapeInfo)) {
-
-            uint xShapeInfoCast[MAX_RANK];
-            uint yShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-            const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
-                    auto offset  = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
-                    z[offset] = OpType::update(z[offset], OpType::op(x[xOffset], y[offset], extraParamsVals), extraParamsVals);
-                }
-            }
-        }
-        else {
-
-            uint xShapeInfoCast[MAX_RANK];
-            uint yShapeInfoCast[MAX_RANK];
-            uint zShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-            const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-            const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, zLen, canCastX);
-                    auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, zLen, canCastY);
-                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, zLen, canCastZ);
-                    z[zOffset] = OpType::update(z[zOffset], OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
-                }
-            }
-        }
-
-        auto zEws = shape::elementWiseStride(zShapeInfo);
-        #pragma omp parallel for proc_bind(AFFINITY) default(shared)
-        for(Nd4jLong i = 0; i < zLen; i+=zEws)
-            z[i] = OpType::postProcess(z[i], tadLength, extraParamsVals);
-    }
-    else {
-
-        auto startingVal = OpType::startingValue(x);
-
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
-        /**
-        * The element wise stride belong longs to a reduction index.
-        * When used out of order, we can get rid of the data
-        * dependencies and rely on using the max dimension
-        * specified for stride instead.
-        * Say we take the sum(0,1) along long arr
-        * we can use arr.stride(1) as a representation
-        * along long which to iterate.
-        */
-        int largerElementWiseStride;
-        int smallerElementWiseStride;
-        auto xEws = shape::elementWiseStride(packX.primaryShapeInfo());
-        auto yEws = shape::elementWiseStride(packY.primaryShapeInfo());
-        int tadLength;
-        Nd4jLong xModLength;
-        Nd4jLong yModLength;
-        Nd4jLong *iterationTadInfo;
-        bool xTadBigger;
-        
-        if(shape::length(xShapeInfo) > shape::length(yShapeInfo)) {
-            tadLength = shape::length(packX.primaryShapeInfo());
-            iterationTadInfo = packX.primaryShapeInfo();
-            largerElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            smallerElementWiseStride = shape::elementWiseStride(yShapeInfo);
-            xModLength = 1;
-            yModLength = tadLength;
-            xTadBigger = true;
-        }
-        else {
-            tadLength = shape::length(packY.primaryShapeInfo());
-            iterationTadInfo = packY.primaryShapeInfo();
-            largerElementWiseStride = shape::elementWiseStride(yShapeInfo);
-            smallerElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            xModLength = tadLength;
-            yModLength = 1;
-            xTadBigger = false;
-        }
-        
-        if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xEws >= 1 && yEws >= 1) {
-
-            if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
-                
-#pragma omp parallel for proc_bind(AFFINITY) default(shared)
-                for (Nd4jLong i = 0; i < zLen; i++) {
-
-                    Z *localExtraParams = nullptr;
-
-                    if (OpType::extraParamsLen > 0)
-                        localExtraParams = new Z[OpType::extraParamsLen];
-
-                    for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++)
-                        localExtraParams[extraParamsIdx] = startingVal;
-
-                    auto offset = packX.primaryOffsets()[i];
-                    auto yOffset = packY.primaryOffsets()[i];
-                    auto sv = OpType::op(x[offset], y[yOffset], localExtraParams);
-
-                    for (int j = 1; j < tadLength; j++) {
-                        auto xIdx = (offset + xEws * j);
-                        auto yIdx = (yOffset + yEws * j);
-                        sv = OpType::update(sv, OpType::op(x[xIdx],y[yIdx],localExtraParams), localExtraParams);
-                    }
-
-                    z[i] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-                    if (localExtraParams != nullptr)
-                        delete[] localExtraParams;
-                }
-            }
-            else {
-
-                int tadsPerThread = zLen / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY)
-                for (int i = 0; i < zLen; i++) {
-
-                    Nd4jLong xOffset = xTadBigger ? packX.primaryOffsets()[i] : 0;
-                    Nd4jLong yOffset = !xTadBigger ? packY.primaryOffsets()[i] : 0;
-                    auto xShapeInf = xTadBigger ? packX.primaryShapeInfo() : xShapeInfo;
-                    auto yShapeInf = !xTadBigger ? packY.primaryShapeInfo() : yShapeInfo;
-                    auto start = OpType::startingValue(x);
-
-                    uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInf, xShapeInfoCast);
-
-                    auto tX = x + xOffset;
-                    auto tY = y + yOffset;
-
-                    if(shape::haveSameOffsets(xShapeInf, yShapeInf)) {
-
-                        for (unsigned int j = 0; j < tadLength; j++) {
-                            auto offset = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
-                            start = OpType::update(start, OpType::op(tX[offset], tY[offset],extraParams), extraParamsVals);
-                        }
-                    }
-                    else {
-                        uint yShapeInfoCast[MAX_RANK];
-                        bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInf, yShapeInfoCast);
-
-                        for (unsigned int j = 0; j < tadLength; j++) {
-                            auto xOffset2 = shape::indexOffset(j, xShapeInf, xShapeInfoCast, tadLength, canCastX);
-                            auto yOffset2 = shape::indexOffset(j, yShapeInf, yShapeInfoCast, tadLength, canCastY);
-                            start = OpType::update(start, OpType::op(tX[xOffset2], tY[yOffset2],extraParams), extraParamsVals);
-                        }
-                    }
-
-                    z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
-                }   
-            }
-        } 
-        else {
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-
-            int tadsPerThread = zLen / TAD_THRESHOLD;
-            int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-            uint xShapeInfoCast[MAX_RANK];
-            bool canCastX = nd4j::DataTypeUtils::castShapeInfo(packX.primaryShapeInfo(), xShapeInfoCast);
-
-            if(shape::haveSameOffsets(xShapeInfo, yShapeInfo)) {
-
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                for (unsigned int i = 0; i < zLen; i++) {
-
-                    auto offset = packX.primaryOffsets()[i];
-                    auto start = OpType::startingValue(x + offset);
-
-                    auto tX = x + offset;
-                    auto tY = y + offset;
-
-                    for (unsigned int j = 0; j < tadLength; j++) {
-                        auto coffset = shape::indexOffset(j, packX.primaryShapeInfo(), xShapeInfoCast, tadLength, canCastX);
-                        start = OpType::update(start, OpType::op(tX[coffset], tY[coffset], extraParamsVals), extraParamsVals);
-                    }
-
-                    z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
-                }
-            }
-            else {
-
-                auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
-                uint yShapeInfoCast[MAX_RANK];
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(packY.primaryShapeInfo(), yShapeInfoCast);
-
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                for (unsigned int i = 0; i < zLen; i++) {
-
-                    auto xOffset = packX.primaryOffsets()[i];
-                    auto yOffset = packY.primaryOffsets()[i];
-                    auto start = OpType::startingValue(x + xOffset);
-
-                    auto tX = x + xOffset;
-                    auto tY = y + yOffset;
-
-                    for (unsigned int j = 0; j < tadLength; j++) {
-                        auto xOffset2 = shape::indexOffset(j, packX.primaryShapeInfo(), xShapeInfoCast, tadLength, canCastX);
-                        auto yOffset2 = shape::indexOffset(j, packY.primaryShapeInfo(), yShapeInfoCast, tadLength, canCastY);
-                        start = OpType::update(start, OpType::op(tX[xOffset2], tY[yOffset2], extraParamsVals), extraParamsVals);
-                    }
-
-                    z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
-                }
-            }
-        }
-    }
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#else
+    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -411,72 +161,11 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
-    
-    auto startingVal = OpType::startingValue(x);
-
-    auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    auto tads = shape::length(xShapeInfo) / tadLength;
-
-    uint tadShapeInfoCast[MAX_RANK];
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, tadShapeInfoCast);
-
-    if(shape::haveSameOffsets(tadShapeInfo, yShapeInfo)) {
-
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-        for (Nd4jLong r = 0; r < tads; r++) {
-
-            Nd4jLong offset = tadOffsets[r];
-            Z *localExtraParams = nullptr;
-            auto sv = OpType::startingValue(x);
-
-            if (OpType::extraParamsLen > 0)
-                localExtraParams = new Z[OpType::extraParamsLen];
-
-            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++)
-                localExtraParams[extraParamsIdx] = startingVal;
-
-            for (Nd4jLong f = 0; f < tadLength; f++) {
-                auto yOffset = shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
-                auto xOffset = offset + yOffset;
-                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
-            }
-
-            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-            if (localExtraParams != nullptr)
-                delete[] localExtraParams;
-        }
-    }
-    else {
-
-        uint yShapeInfoCast[MAX_RANK];
-        bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-
-#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-        for (Nd4jLong r = 0; r < tads; r++) {
-
-            Nd4jLong offset = tadOffsets[r];
-            Z *localExtraParams = nullptr;
-            auto sv = OpType::startingValue(x);
-
-            if (OpType::extraParamsLen > 0)
-                localExtraParams = new Z[OpType::extraParamsLen];
-
-            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++)
-                localExtraParams[extraParamsIdx] = startingVal;
-
-            for (Nd4jLong f = 0; f < tadLength; f++) {
-                auto xOffset = offset + shape::indexOffset(f, tadShapeInfo, tadShapeInfoCast, tadLength, canCastX);
-                auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, tadLength, canCastY);
-                sv = OpType::update(sv, OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
-            }
-
-            z[r] = OpType::postProcess(sv, tadLength, localExtraParams);
-
-            if (localExtraParams != nullptr)
-                delete[] localExtraParams;
-        }
-    }
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#else
+    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams);
+#endif
 }
 
 
@@ -494,90 +183,13 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
-    auto extraParams = reinterpret_cast<X *>(vextraParams);
+    auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
-    auto xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    auto yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
-
-    auto xTads = shape::length(xShapeInfo) / xTadLength;
-    auto yTads = shape::length(yShapeInfo) / yTadLength;
-    auto startingVal = OpType::startingValue(x);
-
-    uint xTadShapeInfoCast[MAX_RANK];
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeInfo, xTadShapeInfoCast);
-
-    if (shape::haveSameOffsets(xTadShapeInfo, yTadShapeInfo) ) {
-
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-        for (Nd4jLong r = 0; r < xTads; r++) {
-
-            Nd4jLong xOffset = xOffsets[r];
-            auto lX = x + xOffset;
-
-            for (Nd4jLong g = 0; g < yTads; g++) {
-
-                auto yOffset = yOffsets[g];
-                auto lY = y + yOffset;
-                auto ri = (r * yTads) + g;
-                auto sv = OpType::startingValue(x);
-
-                Z *localExtraParams = nullptr;
-                if (OpType::extraParamsLen > 0)
-                    localExtraParams = new Z[OpType::extraParamsLen];
-
-                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++)
-                    localExtraParams[extraParamsIdx] = startingVal;
-
-                for (int f = 0; f < xTadLength; f++) {
-                    auto offset = shape::indexOffset(f, xTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);
-                    sv = OpType::update(sv, OpType::op(lX[offset], lY[offset], localExtraParams), localExtraParams);
-                }
-
-                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
-
-                if (localExtraParams != nullptr)
-                    delete[] localExtraParams;
-            }
-        }
-    }
-    else {
-
-        uint yTadShapeInfoCast[MAX_RANK];
-        bool canCastY = canCastX ? nd4j::DataTypeUtils::castShapeInfo(yTadShapeInfo, yTadShapeInfoCast) : false;
-
-        #pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-        for (Nd4jLong r = 0; r < xTads; r++) {
-
-            Nd4jLong xOffset = xOffsets[r];
-            auto lX = x + xOffset;
-
-            for (Nd4jLong g = 0; g < yTads; g++) {
-
-                auto yOffset = yOffsets[g];
-                auto lY = y + yOffset;
-                auto ri = (r * yTads) + g;
-                auto sv = OpType::startingValue(x);
-
-                Z *localExtraParams = nullptr;
-                if (OpType::extraParamsLen > 0)
-                    localExtraParams = new Z[OpType::extraParamsLen];
-
-                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++)
-                    localExtraParams[extraParamsIdx] = startingVal;
-
-                for (int f = 0; f < xTadLength; f++) {
-                    auto xO = shape::indexOffset(f, yTadShapeInfo, xTadShapeInfoCast, xTadLength, canCastX);
-                    auto yO = shape::indexOffset(f, yTadShapeInfo, yTadShapeInfoCast, xTadLength, canCastY);
-                    sv = OpType::update(sv, OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
-                }
-
-                z[ri] = OpType::postProcess(sv, xTadLength, localExtraParams);
-
-                if (localExtraParams != nullptr)
-                    delete[] localExtraParams;
-            }
-        }
-    }
+#ifdef INLINE_LOOPS
+    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams);
+#else
+    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

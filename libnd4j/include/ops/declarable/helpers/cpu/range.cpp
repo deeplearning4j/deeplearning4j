@@ -37,7 +37,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     auto s = start.e<T>(0);
     auto d = delta.e<T>(0);
 
-#pragma omp parallel for simd schedule(guided)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
     for(Nd4jLong i = 0; i < len; ++i)
     	buff[i] = s + i * d;
         

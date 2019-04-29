@@ -19,12 +19,16 @@ package org.nd4j.linalg.api.buffer;
 
 import lombok.NonNull;
 import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.ByteIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,6 +41,8 @@ import java.util.Collection;
 public class Utf8Buffer extends BaseDataBuffer {
 
     protected Collection<Pointer> references = new ArrayList<>();
+
+    protected long numWords = 0;
 
     /**
      * Meant for creating another view of a buffer
@@ -69,8 +75,12 @@ public class Utf8Buffer extends BaseDataBuffer {
         super(buffer, length, offset);
     }
 
-    public Utf8Buffer(byte[] data, int length) {
-        super(data, length);
+    public Utf8Buffer(byte[] data, long numWords) {
+        super(data.length, false);
+
+        val bp = (BytePointer) pointer;
+        bp.put(data);
+        this.numWords = numWords;
     }
 
     public Utf8Buffer(double[] data, boolean copy) {
@@ -114,11 +124,66 @@ public class Utf8Buffer extends BaseDataBuffer {
     }
 
     public Utf8Buffer(@NonNull Collection<String> strings) {
-        super(strings.size(), false);
+        super(Utf8Buffer.stringBufferRequiredLength(strings), false);
+
+        // at this point we should have fully allocated buffer, time to fill length
+        val headerLength = (strings.size() + 1) * 8;
+        val headerPointer = new LongPointer(this.pointer);
+        val dataPointer = new BytePointer(this.pointer);
+
+        numWords = strings.size();
+
+        long cnt = 0;
+        long currentLength = 0;
+        for (val s: strings) {
+            headerPointer.put(cnt++, currentLength);
+            val length = s.length();
+            val chars = s.toCharArray();
+
+            // putting down chars
+            for (int e = 0; e < length; e++) {
+                val b = (byte) chars[e];
+                val idx = headerLength + currentLength + e;
+                dataPointer.put(idx, b);
+            }
+
+            currentLength += length;
+        }
+        headerPointer.put(cnt, currentLength);
     }
 
     public Utf8Buffer(ByteBuffer buffer, int length) {
         super(buffer, length);
+    }
+
+    public String getString(long index) {
+        if (index > numWords)
+            throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");
+
+        val headerPointer = new LongPointer(this.pointer);
+        val dataPointer = (BytePointer) (this.pointer);
+
+        val start = headerPointer.get(index);
+        val end = headerPointer.get(index+1);
+
+        if (end - start > Integer.MAX_VALUE)
+            throw new IllegalStateException("Array is too long for Java");
+
+        val dataLength = (int) (end - start);
+        val bytes = new byte[dataLength];
+
+        val headerLength = (numWords + 1) * 8;
+
+        for (int e = 0; e < dataLength; e++) {
+            val idx = headerLength + start + e;
+            bytes[e] = dataPointer.get(idx);
+        }
+
+        try {
+            return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -141,10 +206,20 @@ public class Utf8Buffer extends BaseDataBuffer {
         throw new UnsupportedOperationException();
     }
 
+    private static long stringBufferRequiredLength(@NonNull Collection<String> strings) {
+        // header size first
+        long size = (strings.size() + 1) * 8;
+
+        for (val s:strings)
+            size += s.length();
+
+        return size;
+    }
 
     public void put(long index, Pointer pointer) {
-        references.add(pointer);
-        ((LongIndexer) indexer).put(index, pointer.address());
+        throw new UnsupportedOperationException();
+        //references.add(pointer);
+        //((LongIndexer) indexer).put(index, pointer.address());
     }
 
     /**
@@ -152,7 +227,7 @@ public class Utf8Buffer extends BaseDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        elementSize = 8;
+        elementSize = 1;
         type = DataType.UTF8;
     }
 

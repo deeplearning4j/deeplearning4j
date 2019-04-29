@@ -81,21 +81,13 @@ DECLARE_SHAPE_FN(tile) {
     }
     else {
         REQUIRE_TRUE(false, 0, "TILE op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
-    }
-
-    Nd4jLong* newShape;
-    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+    }    
     
     std::vector<Nd4jLong> shape(inRank);
     for (int e = 0; e < shape::rank(inShape); e++)
         shape[e] = shape::sizeAt(inShape, e) * reps[e];
 
-    if (shape::order(inShape) == 'c')
-        shape::shapeBuffer(shape.size(), block.dataType(), shape.data(), newShape);
-    else
-        shape::shapeBufferFortran(shape.size(), block.dataType(), shape.data(), newShape);
-
-    ArrayOptions::copyDataType(newShape, inShape);
+    Nd4jLong* newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());    
 
     return SHAPELIST(newShape);
 }

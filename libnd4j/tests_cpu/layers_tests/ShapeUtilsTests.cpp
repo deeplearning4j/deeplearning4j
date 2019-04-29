@@ -50,8 +50,8 @@ TEST_F(ShapeUtilsTests, BasicInject2) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, AxisConversionTest_1) {
-    std::vector<int> res = ShapeUtils::convertAxisToTadTarget(3, {0});
+TEST_F(ShapeUtilsTests, evalDimsToExclude_1) {
+    std::vector<int> res = ShapeUtils::evalDimsToExclude(3, {0});
 
     ASSERT_EQ(2, res.size());
     ASSERT_EQ(1, res.at(0));
@@ -59,8 +59,8 @@ TEST_F(ShapeUtilsTests, AxisConversionTest_1) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, AxisConversionTest_2) {
-    std::vector<int> res = ShapeUtils::convertAxisToTadTarget(4, {2, 3});
+TEST_F(ShapeUtilsTests, evalDimsToExclude_2) {
+    std::vector<int> res = ShapeUtils::evalDimsToExclude(4, {2, 3});
 
     ASSERT_EQ(2, res.size());
     ASSERT_EQ(0, res.at(0));

@@ -71,19 +71,48 @@ namespace nd4j {
         // we store reference shape on first write
         if (_chunks.empty()) {
             _dtype = array->dataType();
-            for (int e = 0; e < array->rankOf(); e++)
-                _shape.emplace_back(array->sizeAt(e));
+
+            if (_shape.empty()) {
+                //adding leading 1 to shape
+                _shape.emplace_back(1);
+                for (int e = 0; e < array->rankOf(); e++)
+                    _shape.emplace_back(array->sizeAt(e));
+            } else {
+                // if shape is inferred (say, from split_list)
+                if (array->rankOf() == _shape.size()) {
+                    // skipping first dim
+                    for (int e = 1; e < _shape.size(); e++) {
+                        if (_shape[e] != array->sizeAt(e))
+                            return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                    }
+                } else if (array->rankOf() == _shape.size() - 1) {
+                    // case like 2d _shape, and 1D rows
+                    for (int e = 1; e < _shape.size(); e++)
+                        if (_shape[e] != array->sizeAt(e - 1))
+                            return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                } else
+                    return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+
+            }
         } else {
             if (array->dataType() != _dtype)
                 return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same data type");
 
-            if (array->rankOf() != _shape.size())
-                return ND4J_STATUS_BAD_DIMENSIONS;
 
-            // we should validate shape before adding new array to chunks
-            for (int e = 1; e < array->rankOf(); e++)
-                if (_shape[e] != array->sizeAt(e))
-                    return ND4J_STATUS_BAD_DIMENSIONS;
+            // if shape is inferred (say, from split_list)
+            if (array->rankOf() == _shape.size()) {
+                // skipping first dim
+                for (int e = 1; e < _shape.size(); e++) {
+                    if (_shape[e] != array->sizeAt(e))
+                        return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+                }
+            } else if (array->rankOf() == _shape.size() - 1) {
+                // case like 2d _shape, and 1D rows
+                for (int e = 1; e < _shape.size(); e++)
+                    if (_shape[e] != array->sizeAt(e - 1))
+                        return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
+            } else
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
         }
         
         //_elements++;
@@ -94,6 +123,10 @@ namespace nd4j {
         return ND4J_STATUS_OK;
     }
 
+    std::vector<Nd4jLong>& NDArrayList::shape() {
+        return _shape;
+    }
+
     int NDArrayList::counter() {
         return _counter++;
     }
@@ -101,7 +134,7 @@ namespace nd4j {
     void NDArrayList::unstack(NDArray* array, int axis) {
         _axis = axis;
         std::vector<int> args({axis});
-        auto newAxis = ShapeUtils::convertAxisToTadTarget(array->rankOf(), args);
+        auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
         auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
             auto chunk = result->at(e)->dup(array->ordering());
@@ -112,17 +145,19 @@ namespace nd4j {
 
     NDArray* NDArrayList::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        nd4j::ops::concat op;
+        nd4j::ops::stack op;
         std::vector<NDArray*> inputs;
         std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
         std::vector<bool> bargs;
-        for (int e = 0; e < _elements.load(); e++)
+        int numElements = _elements.load();
+
+        for (int e = 0; e < numElements; e++)
             inputs.emplace_back(_chunks[e]);
 
         iargs.push_back(_axis);
 
-        auto result = op.execute(inputs, targs, iargs, bargs);
+        auto result = op.execute(inputs, {}, {}, {});
 
         auto array = result->at(0)->dup();
 
@@ -173,12 +208,14 @@ namespace nd4j {
         shape[_axis] = indices.size();
         // do we have to enforce C order here?
         auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
-        std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
+        std::vector<int> axis = ShapeUtils::evalDimsToExclude(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
+        int indicesSize = indices.size();
 
-        // just for lulz
-#pragma omp parallel for
-        for (int e = 0; e < indices.size(); e++)
+        if (tads->size() != indicesSize)
+            throw std::runtime_error("Number of TADs should match number of indices");
+
+        for (int e = 0; e < indicesSize; e++)
             tads->at(e)->assign(_chunks[indices[e]]);
 
         delete tads;

@@ -2346,11 +2346,13 @@ template void NDArray::operator/=(const bool scalar);
     }
 
     ////////////////////////////////////////////////////////////////////////
+    /*
     void NDArray::assign(const NDArray& other, const Intervals& idx) {
         auto subarr = this->subarray(idx);
         subarr->assign(&other);
         delete subarr;
     }
+     */
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target) {
@@ -2709,7 +2711,8 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     // remove unities from outShapeInfo if required 
     if(!keepUnitiesInShape) {
         std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
-        shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);            
+        //shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
+        throw std::runtime_error("FIXME");
     }
     else
         memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));

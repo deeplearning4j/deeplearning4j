@@ -31,10 +31,9 @@ namespace nd4j {
 namespace ops  {
 
 // return 2d array evaluated though last dimension interval t1-t2
-static NDArray* timestep(const NDArray* const arr, const int t1, const int t2) {
+static NDArray* timestep(const NDArray* arr, const int t1, const int t2) {
 
-        IndicesList list({ NDIndex::all(), NDIndex::all(), NDIndex::interval(t1,t2)});
-        NDArray* result = arr->subarray(list);
+        NDArray* result = new NDArray((*arr)({0,0, 0,0, t1,t2}, true));
         result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );
 
         return result;
@@ -101,8 +100,8 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
         ht = rt * (gct - xt) + xt;
 
         // save results
-        output->assign(ht, {{}, {}, {t,t+1}} );
-        state->assign (ct, {{}, {}, {t,t+1}} );
+        (*output)({0,0, 0,0, t,t+1}, true).assign(ht);
+        (*state)({0,0, 0,0, t,t+1}, true).assign(ct);
     }    
     
     return Status::OK();
@@ -123,7 +122,7 @@ DECLARE_SHAPE_FN(sru_logic) {
     int N    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong* newShapeInfo1 = nullptr;    
+    Nd4jLong* newShapeInfo1 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
     
     newShapeInfo1[0] = rank;        
@@ -161,7 +160,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     const int time      = x->shapeOf()[2];                     // time - number of time steps
 
       // multiplication matrix = matmul(w,x)
-    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);            // U [bS x 3K x time]    
+    auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);            // U [bS x 3K x time]
     auto wiZ = (*wi)({0,0,  0,inSize,          0,0}, true);       // [bS x inSize x time]
     auto wiF = (*wi)({0,0,  inSize,2*inSize,   0,0}, true);       // forget gate [bS x inSize x time]
     auto wiR = (*wi)({0,0,  2*inSize,3*inSize, 0,0}, true);       // reset gate [bS x inSize x time]
@@ -227,8 +226,8 @@ DECLARE_SHAPE_FN(sru_old) {
     int time    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong* newShapeInfo1 = nullptr;    
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);    
+    Nd4jLong *newShapeInfo1 = nullptr, *newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
@@ -237,7 +236,7 @@ DECLARE_SHAPE_FN(sru_old) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 
-    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());    
+    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -337,7 +336,7 @@ DECLARE_SHAPE_FN(sru) {
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
 
     newShapeInfo1[0] = rank;
@@ -347,7 +346,7 @@ DECLARE_SHAPE_FN(sru) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
     
-    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
+    COPY_SHAPE(newShapeInfo1,newShapeInfo2);
 
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
@@ -423,7 +422,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gradHXt  = timestep(gradHX,  t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         gradUZt  = timestep(&gradUZ, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         gradUFt  = timestep(&gradUF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        gradURt  = timestep(&gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]                        
+        gradURt  = timestep(&gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
 
         if(t != 0)
             ct_1  = timestep(c, t-1, t);        // previous c_{t-1}
@@ -661,14 +660,14 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
         *inGradCt = (gradCt + *inGradCt) * ft;
-        
+
         // save results        
-        gradBias.assign(gradBFt, {{}, {0,     inSize}, {t,t+1}} );
-        gradBias.assign(gradBRt, {{}, {inSize,   2*inSize}, {t,t+1}} );
-        gradU.assign(gradUZt,    {{}, {0,     inSize}, {t,t+1}} );
-        gradU.assign(gradBFt,    {{}, {inSize,   2*inSize}, {t,t+1}} );
-        gradU.assign(gradBRt,    {{}, {2*inSize, 3*inSize}, {t,t+1}} );
-        gradHX.assign(gradHXt,   {{}, {        }, {t,t+1}} );              
+        gradBias({0,0, 0,inSize, t,t+1}, true).assign(gradBFt);
+        gradBias({0,0, inSize,2*inSize, t,t+1}, true).assign(gradBRt);
+        gradU({0,0, 0,inSize, t,t+1}, true).assign(gradUZt);
+        gradU({0,0, inSize,2*inSize, t,t+1}, true).assign(gradBFt);
+        gradU({0,0, 2*inSize, 3*inSize, t,t+1}, true).assign(gradBRt);
+        gradHX({0,0, 0,0, t,t+1}, true).assign(gradHXt);
     }
 
     // gradInit
@@ -821,7 +820,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     char order = shape::order(xShapeInfo);
 
-    Nd4jLong* newShapeInfo1 = nullptr;    
+    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     newShapeInfo1[0] = rank;
@@ -831,8 +830,8 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, order);
     
-    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
-    
+    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
+
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }
 

@@ -28,7 +28,7 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.bytedeco.javacpp.avutil.AV_SAMPLE_FMT_FLT;
+import static org.bytedeco.ffmpeg.global.avutil.AV_SAMPLE_FMT_FLT;
 
 /**
  * Native audio file loader using FFmpeg.

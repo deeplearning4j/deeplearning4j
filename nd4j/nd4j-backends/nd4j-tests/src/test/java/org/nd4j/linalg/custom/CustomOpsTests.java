@@ -20,17 +20,25 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -331,8 +339,8 @@ public class CustomOpsTests {
         int[] dims = new int[]{1};
         int[] indices = new int[]{1, 3};
 
-        val exp0 = Nd4j.create(1, 5).assign(0);
-        val exp1 = Nd4j.create(1, 5).assign(1);
+        val exp0 = Nd4j.create(5).assign(0);
+        val exp1 = Nd4j.create(5).assign(1);
 
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
@@ -466,5 +474,86 @@ public class CustomOpsTests {
 
         assertEquals(exp, arrayZ);
         assertTrue(arrayZ == output[0]);
+    }
+
+    @Test
+    public void testFlatten_1() {
+        val arrayA = Nd4j.createFromArray(1.f, 2.f, 3.f);
+        val arrayB = Nd4j.createFromArray(4.f, 5.f, 6.f);
+        val arrayC = Nd4j.createFromArray(7.f, 8.f, 9.f);
+
+        val exp = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f);
+
+        val result = Nd4j.exec(new Flatten('c', arrayA, arrayB, arrayC))[0];
+
+        assertEquals(exp, result);
+    }
+
+    @Test
+    public void testMatmulBp() {
+        val a = Nd4j.create(DataType.DOUBLE, 1,3);
+        val b = Nd4j.create(DataType.DOUBLE, 1,4);
+        val gI = Nd4j.create(DataType.DOUBLE, 3,4);
+
+        val gA = Nd4j.create(DataType.DOUBLE, 1,3);
+        val gB = Nd4j.create(DataType.DOUBLE, 1,4);
+
+        val mt = MMulTranspose.builder()
+                .transposeA(true)
+                .transposeB(false)
+                .transposeResult(false).build();
+
+        val op = new MmulBp(a, b, gI, gA, gB, mt);
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testStridedSliceEdgeCase(){
+        INDArray in = Nd4j.scalar(10.0).reshape(1);   //Int [1]
+        INDArray begin = Nd4j.ones(DataType.INT, 1);
+        INDArray end = Nd4j.zeros(DataType.INT, 1);
+        INDArray stride = Nd4j.ones(DataType.INT, 1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(0, //Begin mask
+                        0,  //Ellipsis mask
+                        1,  //End mask
+                        0,  //New axis mask
+                        0)  //Shrink axis mask
+                //.addOutputs(Nd4j.empty(DataType.INT))
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertEquals(DataType.DOUBLE, l.get(0).dataType());
+        assertTrue(l.get(0).isEmpty()); //Should be empty array, is rank 0 scalar
+
+        Nd4j.exec(op);  //Execution is OK
+    }
+
+    @Test
+    public void testDepthwise(){
+        INDArray input = Nd4j.create(DataType.DOUBLE, 1,3,8,8);
+        INDArray depthwiseWeight = Nd4j.create(DataType.DOUBLE, 1,1,3,2);
+        INDArray bias = Nd4j.create(DataType.DOUBLE, 1, 6);
+
+        INDArray[] inputs = new INDArray[]{input, depthwiseWeight, bias};
+
+        int[] args = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+
+        INDArray output = Nd4j.create(DataType.DOUBLE, 1, 6, 8, 8);
+
+        CustomOp op = DynamicCustomOp.builder("depthwise_conv2d")
+                .addInputs(inputs)
+                .addIntegerArguments(args)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
+
+        for( int i=0; i<1000; i++ ) {
+            System.out.println(i);
+            Nd4j.getExecutioner().exec(op);
+        }
     }
 }

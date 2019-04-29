@@ -48,6 +48,8 @@ public interface IEvaluation<T extends IEvaluation> extends Serializable {
      */
     void eval(INDArray labels, INDArray networkPredictions, List<? extends Serializable> recordMetaData);
 
+    void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData);
+
     /**
      *
      * @param labels
@@ -58,18 +60,15 @@ public interface IEvaluation<T extends IEvaluation> extends Serializable {
 
 
     /**
-     *
-     * @param labels
-     * @param predicted
+     * @deprecated Use {@link #eval(INDArray, INDArray)}
      */
+    @Deprecated
     void evalTimeSeries(INDArray labels, INDArray predicted);
 
     /**
-     *
-     * @param labels
-     * @param predicted
-     * @param labelsMaskArray
+     * @deprecated Use {@link #eval(INDArray, INDArray, INDArray)}
      */
+    @Deprecated
     void evalTimeSeries(INDArray labels, INDArray predicted, INDArray labelsMaskArray);
 
     /**

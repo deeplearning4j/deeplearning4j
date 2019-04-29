@@ -22,6 +22,8 @@ import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELU;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -46,14 +48,22 @@ public class ActivationGELU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new GELU(in, in, precise));
+        if (precise)
+            Nd4j.getExecutioner().execAndReturn(new PreciseGELU(in, in));
+        else
+            Nd4j.getExecutioner().execAndReturn(new GELU(in, in));
         return in;
     }
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().exec(new GELUDerivative(in, in, precise));
+        INDArray dLdz = null;
+        if (precise)
+            dLdz = Nd4j.getExecutioner().exec(new PreciseGELUDerivative(in, in));
+        else
+            dLdz = Nd4j.getExecutioner().exec(new GELUDerivative(in, in));
+
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);
     }

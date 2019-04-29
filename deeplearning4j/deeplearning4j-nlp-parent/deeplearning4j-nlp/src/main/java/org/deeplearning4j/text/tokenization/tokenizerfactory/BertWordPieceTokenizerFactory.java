@@ -23,6 +23,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 import java.io.*;
 import java.util.Collections;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -86,6 +87,10 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
         this.lowerCaseOnly = lowerCaseOnly;
     }
 
+    public Map<String,Integer> getVocab(){
+        return Collections.unmodifiableMap(vocab);
+    }
+
     /**
      * The expected format is a \n seperated list of tokens for examples
      *
@@ -117,4 +122,5 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
     public static NavigableMap<String, Integer> loadVocab(File vocabFile) throws IOException {
         return loadVocab(new FileInputStream(vocabFile));
     }
+
 }

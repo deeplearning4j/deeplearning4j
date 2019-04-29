@@ -573,6 +573,14 @@ TEST_F(DeclarableOpsTests2, TestTensorDot8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, TestTensorDot9) {
+
+    // NDArray z('f',{2,2,3}, nd4j::DataType::DOUBLE);
+    // z.linspace(1);
+    // z.printShapeInfo();
+    // z.printIndexedBuffer();
+    // z.reshapei('c', {4,3});
+    // z.printShapeInfo();
+    // z.printIndexedBuffer();
     
     auto x = NDArrayFactory::create<float>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
     auto y = NDArrayFactory::create<float>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
@@ -589,7 +597,6 @@ TEST_F(DeclarableOpsTests2, TestTensorDot9) {
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
-
 }
 
 
@@ -767,8 +774,8 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);    
-    result->printIndexedBuffer("ADL test2");
-    expected.printIndexedBuffer("ADL expec");
+    // result->printIndexedBuffer("ADL test2");
+    // expected.printIndexedBuffer("ADL expec");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 

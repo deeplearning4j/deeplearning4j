@@ -40,7 +40,6 @@ namespace nd4j {
                 T f(0.0f);
 
                 // dot
-#pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1[e];
                 }
@@ -59,14 +58,13 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-#pragma omp simd
+
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -83,7 +81,6 @@ namespace nd4j {
                 T dot = (T) 0.0f;
                 T g = (T) 0.0f;
 
-                #pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1Neg[e];
                 }
@@ -104,15 +101,12 @@ namespace nd4j {
                 }
 
                 // axpy1
-                #pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1Neg[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-
-                    #pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1Neg[e] = g * syn0[e] + syn1Neg[e];
                     }
@@ -135,9 +129,11 @@ namespace nd4j {
 
                 // building neu1 for current window
                 for (int c = 0; c < contextWidth; c++) {
+                    if (context[c] >= vocabSize)
+                        throw std::runtime_error("Bad context 4");
+
                     T *syn0word = syn0 + (context[c] * vectorLength);
 
-                    #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] += syn0word[i];
                     }
@@ -146,7 +142,6 @@ namespace nd4j {
                 // for inference we add additional inference vector
                 if (infVector != nullptr) {
 
-                    #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] += infVector[i];
                     }
@@ -155,8 +150,6 @@ namespace nd4j {
 
                 // average neu1
                 if (contextWidth > 0) {
-
-                    #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] /= contextWidth + (infVector != nullptr ? 1 : 0);
                     }
@@ -165,6 +158,9 @@ namespace nd4j {
                 // softmax round
                 if (hsRounds > 0) {
                     for (int i = 0; i < hsRounds; i++) {
+                        if (indices[i] < 0 || indices[i] >= vocabSize)
+                            throw std::runtime_error("Bad context 5");
+
                         hSoftmax_<T>(neu1, syn1 + (indices[i] * vectorLength), expTable, neu1e, alpha, vectorLength, codes[i], expLength, infVector != nullptr);
                     }
                 }
@@ -200,14 +196,12 @@ namespace nd4j {
 
                         T *syn0word = syn0 + (context[c] * vectorLength);
 
-                        #pragma omp simd
                         for (int i = 0; i < vectorLength; i++) {
                             syn0word[i] += neu1e[i];
                         }
                     }
                 } else {
 
-                    #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
                         infVector[i] += neu1e[i];
                     }
@@ -267,12 +261,10 @@ namespace nd4j {
                 }
 
                 if (infVector == nullptr) {
-#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn0row[e] += neu1e[e];
                     }
                 } else {
-#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         infVector[e] += neu1e[e];
                     }
@@ -372,7 +364,7 @@ namespace nd4j {
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int8_t>();
 
-#pragma omp parallel for num_threads(numThreads) private(sneu1e) default(shared) schedule(static)
+                    PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1e))
                     for (int t = 0; t < numTargets; t++) {
                         T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
                         memset(neu1e, 0, vectorLength * sizeof(T));
@@ -423,10 +415,8 @@ namespace nd4j {
                             }
                         }
 
-                        #pragma omp simd
                         for (int e = 0; e < vectorLength; e++)
                             syn0row[e] += neu1e[e];
-
 
                         // optionally release temp arrays
                         if (vectorLength > 600)
@@ -446,7 +436,6 @@ namespace nd4j {
                 const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
-
                 T sneu1[600];
                 T sneu1e[600];
 
@@ -455,22 +444,18 @@ namespace nd4j {
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
                 const int contextWidth = context.sizeAt(1);
+
                 const auto bContext = context.bufferAsT<int>();
                 const auto bLocker = lockedWords.bufferAsT<int>();
-
                 const auto bIndices = indices.bufferAsT<int>();
                 const auto bCodes = codes.bufferAsT<int8_t>();
                 const auto bStarters = negStarters.bufferAsT<int>();
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
-//
-#pragma omp parallel for num_threads(numThreads) private(sneu1, sneu1e) default(shared) schedule(static)
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1, sneu1e))
                 for (int e = 0; e < numTargets; e++){
                     T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                     T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-
-
-                    // every threads rolls over own targets
 
                     // optionally we nullify temp arrays after successful (and on first) cycle
                     memset(neu1, 0, sizeof(T) * vectorLength);
@@ -490,9 +475,11 @@ namespace nd4j {
                         if (cContext < 0)
                             continue;
 
+                        if (cContext >= vocabSize)
+                            throw std::runtime_error("ContextID can't be >= vocab size");
+
                         T *syn0word = syn0 + (cContext * vectorLength);
 
-                        #pragma omp simd
                         for (int i = 0; i < vectorLength; i++)
                             neu1[i] += syn0word[i];
 
@@ -503,7 +490,6 @@ namespace nd4j {
                         actualContext++;
 
                     if (actualContext > 1) {
-                        #pragma omp simd
                         for (int i = 0; i < vectorLength; i++)
                             neu1[i] /= actualContext;
                     }
@@ -517,6 +503,9 @@ namespace nd4j {
                             // we're skipping padded values
                             if (cIndex < 0)
                                 continue;
+
+                            if (cIndex >= vocabSize)
+                                throw std::runtime_error("Index can't be > vocab size");
 
                             hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
                         }
@@ -548,6 +537,7 @@ namespace nd4j {
                         }
                     }
 
+
                     // if we're skipping labels
                     int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
 
@@ -561,15 +551,16 @@ namespace nd4j {
                         if (cContext < 0 || cLock == 1)
                             continue;
 
+                        if (cContext >= vocabSize)
+                            throw std::runtime_error("ContextID can't be > vocab size");
+
                         // one word from context
                         T *syn0word = syn0 + (cContext * vectorLength);
 
-
-                        #pragma omp simd
                         for (int i = 0; i < vectorLength; i++)
                             syn0word[i] += neu1e[i];
-                    }
 
+                    }
 
                     // optionally release temp arrays
                     if (vectorLength > 600) {
@@ -599,13 +590,20 @@ namespace nd4j {
             void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &numLabels, NDArray &inferenceVector, const bool trainWords, int numWorkers) {
                 auto xType = syn0.dataType();
 
-                if (context.isVector() || context.isScalar()) {
+                if ((context.rankOf() == 0 || context.rankOf() == 1) && (indices.rankOf() == 1 || indices.rankOf() == 0)) {
                     // single round case
-                    //nd4j_printf("Row exec\n","");
+                    /*nd4j_printf("Row exec; ContextWidth: %i; LockedWords: %i; numLabels: %i; Train words: %i\n", (int) context.lengthOf(), (int) lockedWords.lengthOf(), numLabels.isEmpty() ? 0 : numLabels.e<int>(0), (int) trainWords);
+                    if (context.lengthOf() == 2) {
+                        context.printBuffer("context");
+                        lockedWords.printBuffer("locked");
+                        codes.printBuffer("codes");
+                        indices.printBuffer("indices");
+                    }*/
+
                     auto hsRounds = codes.lengthOf();
 
                     BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>( 0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords), FLOAT_TYPES);
-                } else if (context.isMatrix()) {
+                } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
                     // batch mode
                     //nd4j_printf("Batch exec\n","");
 

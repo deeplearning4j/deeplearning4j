@@ -44,17 +44,9 @@ class NDArrayIndexingTest extends FlatSpec {
     val indices = ndArray.getINDArrayIndexfrom(0 -> 2, 0 -> 3 by 2)
     val rowI = indices(0)
     assert(rowI.isInstanceOf[IntervalIndex])
-    assert(rowI.hasNext)
-    assert(rowI.next() == 0)
-    assert(rowI.next() == 1)
-    assert(!rowI.hasNext)
 
     val columnI = indices(1)
     assert(columnI.isInstanceOf[IntervalIndex])
-    assert(columnI.hasNext)
-    assert(columnI.next() == 0)
-    assert(columnI.next() == 2)
-    assert(!columnI.hasNext)
   }
   it should "convert -> DSL to NDArrayIndex point,all" in {
     val ndArray =
@@ -67,16 +59,8 @@ class NDArrayIndexingTest extends FlatSpec {
     val indices = ndArray.getINDArrayIndexfrom(0, ->)
     val rowI = indices(0)
     assert(rowI.isInstanceOf[PointIndex])
-    assert(rowI.hasNext)
-    assert(rowI.next() == 0)
-    assert(!rowI.hasNext)
 
     val columnI = indices(1)
     assert(columnI.isInstanceOf[NDArrayIndexAll])
-    assert(columnI.hasNext)
-    assert(columnI.next() == 0)
-    assert(columnI.next() == 1)
-    assert(columnI.next() == 2)
-    assert(!columnI.hasNext)
   }
 }

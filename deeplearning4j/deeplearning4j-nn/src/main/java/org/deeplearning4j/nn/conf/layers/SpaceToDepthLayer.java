@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -65,8 +66,8 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     protected SpaceToDepthLayer(Builder builder) {
         super(builder);
-        this.blockSize = builder.blockSize;
-        this.dataFormat = builder.dataFormat;
+        this.setBlockSize(builder.blockSize);
+        this.setDataFormat(builder.dataFormat);
     }
 
     @Override
@@ -76,10 +77,10 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.SpaceToDepth ret =
-                        new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -153,7 +154,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param blockSize Block size
          */
         public Builder(int blockSize) {
-            this.blockSize = blockSize;
+            this.setBlockSize(blockSize);
         }
 
         /**
@@ -161,15 +162,15 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
         public Builder(int blockSize, DataFormat dataFormat) {
-            this.blockSize = blockSize;
-            this.dataFormat = dataFormat;
+            this.setBlockSize(blockSize);
+            this.setDataFormat(dataFormat);
         }
 
         /**
          * @param blockSize Block size
          */
         public T blocks(int blockSize) {
-            this.blockSize = blockSize;
+            this.setBlockSize(blockSize);
             return (T) this;
         }
 
@@ -177,13 +178,13 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
         public T dataFormat(DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return (T) this;
         }
 
         @Override
         public T name(String layerName) {
-            this.layerName = layerName;
+            this.setLayerName(layerName);
             return (T) this;
         }
 

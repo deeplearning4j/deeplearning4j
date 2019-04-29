@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import com.jakewharton.byteunits.BinaryByteUnit;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
@@ -36,6 +37,7 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -46,14 +48,15 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
-import org.nd4j.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cudnn.*;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -64,6 +67,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  */
 @Slf4j
 public class CudnnConvolutionHelper extends BaseCudnnHelper implements ConvolutionHelper {
+
+    public CudnnConvolutionHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnConvolutionContext extends CudnnContext {
 
@@ -128,10 +135,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
-                    int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray bias, INDArray delta, int[] kernel,
+                                                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
+                                                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                                                     ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         int code;
 
         val miniBatch = input.size(0);
@@ -250,7 +257,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             log.trace("CudnnConvolutionHelper backward algorithm selection: mode {}, filter algorithm {}, data algorithm {}", mode, fa, da);
         }
 
-        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
+        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, weights.dataType(), new long[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
         val dstStride = epsNext.stride();
 
@@ -289,11 +296,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             if(log.isTraceEnabled()){
                 if(workSpace == null){
                     log.trace("CudnnConvolutionHelper backpropGradient: Allocating initial workspace of size {} ({})", newSize,
-                            StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                            BinaryByteUnit.format(newSize, "#.00"));
                 } else {
                     log.trace("CudnnConvolutionHelper backpropGradient: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
-                            newSize, StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                            workSpace.capacity(), BinaryByteUnit.format(workSpace.capacity(), "#.00"),
+                            newSize, BinaryByteUnit.format(newSize, "#.00"));
                 }
             }
             if(workSpace != null)
@@ -361,7 +368,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {(int) miniBatch, (int) outDepth, outSize[0], outSize[1]});
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(), new long[] {(int) miniBatch, (int) outDepth, outSize[0], outSize[1]});
 
         code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
                 (int)  srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]);
@@ -462,11 +469,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             if(log.isTraceEnabled()){
                 if(workSpace == null){
                     log.trace("CudnnConvolutionHelper preOutput: allocating initial workspace of size {} ({})",
-                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                            sizeInBytes.get(), BinaryByteUnit.format(sizeInBytes.get(), "#.00"));
                 } else {
                     log.trace("CudnnConvolutionHelper preOutput: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
-                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                            workSpace.capacity(), BinaryByteUnit.format(workSpace.capacity(), "#.00"),
+                            sizeInBytes.get(), BinaryByteUnit.format(sizeInBytes.get(), "#.00"));
                 }
             }
             if(workSpace != null)
@@ -529,7 +536,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     }
 
     @Override
-    public INDArray activate(INDArray z, IActivation afn) {
+    public INDArray activate(INDArray z, IActivation afn, boolean training) {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
@@ -624,12 +631,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         input.size(3) + (manualPadRight ? 1 : 0)};
                 INDArray newInput;
                 if(poolingType == null || poolingType != PoolingType.MAX){
-                    newInput = Nd4j.create(newShape);
+                    newInput = Nd4j.create(input.dataType(), newShape);
                 } else {
                     //For max pooling, we don't want to include the padding in the maximum values. But, CuDNN doesn't knowm
                     // that these values are padding and hence should be excluded. Instead: We'll use -infinity so that,
                     // if the 'real' (non-padding) values are all < 0, we take the real value, not the padding value
-                    newInput = Nd4j.valueArrayOf(newShape, Double.NEGATIVE_INFINITY);
+                    newInput = Nd4j.valueArrayOf(newShape, Double.NEGATIVE_INFINITY, input.dataType());
                 }
                 newInput.put(new INDArrayIndex[]{all(), all(), interval(0,input.size(2)),
                         interval(0, input.size(3))}, input);

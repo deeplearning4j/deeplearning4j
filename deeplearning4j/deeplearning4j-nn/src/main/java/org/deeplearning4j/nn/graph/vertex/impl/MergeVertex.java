@@ -49,13 +49,13 @@ public class MergeVertex extends BaseGraphVertex {
     private long[][] forwardPassShapes;
     private int fwdPassRank;
 
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex) {
-        this(graph, name, vertexIndex, null, null);
+    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, dataType);
     }
 
     public MergeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
     }
 
     @Override
@@ -85,12 +85,17 @@ public class MergeVertex extends BaseGraphVertex {
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, inputs[0]);
         }
 
-        forwardPassShapes = new long[inputs.length][0];
-        val nExamples = inputs[0].size(0);
+        INDArray[] in = new INDArray[inputs.length];
+        for( int i=0; i<in.length; i++ ){
+            in[i] = inputs[i].castTo(dataType); //No-op if correct type
+        }
+
+        forwardPassShapes = new long[in.length][0];
+        val nExamples = in[0].size(0);
         int nOut = 0;
-        fwdPassRank = inputs[0].rank();
-        for (int i = 0; i < inputs.length; i++) {
-            val currShape = inputs[i].shape();
+        fwdPassRank = in[0].rank();
+        for (int i = 0; i < in.length; i++) {
+            val currShape = in[i].shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different ranks: first activations have rank "
@@ -101,15 +106,15 @@ public class MergeVertex extends BaseGraphVertex {
             if (currShape[0] != nExamples) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different number of examples (activations[0] shape: "
-                                                + Arrays.toString(inputs[0].shape()) + ", activations[" + i
-                                                + "] shape: " + Arrays.toString(inputs[i].shape()));
+                                                + Arrays.toString(in[0].shape()) + ", activations[" + i
+                                                + "] shape: " + Arrays.toString(in[i].shape()));
             }
 
             nOut += currShape[1]; //Same dimension for all of CNNs, FF, RNNs
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
-            return Nd4j.hstack(inputs);
+            return Nd4j.hstack(in);
         }
     }
 
@@ -126,7 +131,7 @@ public class MergeVertex extends BaseGraphVertex {
         //Split the epsilons in the opposite way that the activations were merged
         INDArray[] out = new INDArray[forwardPassShapes.length];
         for (int i = 0; i < out.length; i++)
-            out[i] = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, forwardPassShapes[i]);
+            out[i] = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), forwardPassShapes[i]);
 
         int cumulative = 0;
         switch (fwdPassRank) {

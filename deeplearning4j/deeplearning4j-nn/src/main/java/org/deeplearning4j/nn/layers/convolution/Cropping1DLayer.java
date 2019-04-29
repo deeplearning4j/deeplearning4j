@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -42,8 +44,8 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     private int[] cropping; //[padTop, padBottom]
 
-    public Cropping1DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Cropping1DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D) conf.getLayer()).getCropping();
     }
 
@@ -65,8 +67,8 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         val inShape = input.shape();
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inShape, 'c');
-        INDArray epsNextSubset = inputSubset(epsNext, ArrayType.ACTIVATION_GRAD, workspaceMgr);
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, dataType, inShape, 'c');
+        INDArray epsNextSubset = epsNext.get(all(), all(), interval(cropping[0], epsNext.size(2)-cropping[1]));
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
@@ -80,7 +82,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     @Override
     public Layer clone() {
-        return new Cropping2DLayer(conf.clone());
+        return new Cropping2DLayer(conf.clone(), dataType);
     }
 
     @Override
@@ -89,6 +91,12 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     }
 
     private INDArray inputSubset(INDArray from, ArrayType arrayType, LayerWorkspaceMgr workspaceMgr){
-        return workspaceMgr.leverageTo(arrayType, from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])));
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(arrayType)){
+            if(from.dataType() == dataType){
+                return from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])).dup(from.ordering());
+            } else {
+                return from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])).castTo(dataType);
+            }
+        }
     }
 }

@@ -70,7 +70,7 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-            //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
+            //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
             auto scalarShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace());
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
             ArrayOptions::setDataType(sumShape, ArrayOptions::dataType(inputShape->at(0)));

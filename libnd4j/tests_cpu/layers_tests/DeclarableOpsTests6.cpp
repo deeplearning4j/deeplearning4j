@@ -125,6 +125,120 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_4) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
+    auto matrix = NDArrayFactory::create<double>('c', {1}, {10});
+    auto b = NDArrayFactory::create_<int>('c', {1}, {1});
+    auto e = NDArrayFactory::create_<int>('c', {1}, {(int)0});
+    auto s = NDArrayFactory::create_<int>('c', {1}, {1});
+    nd4j::ops::ones_as opOnes;
+    //auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
+    auto onesRes = opOnes.execute({&matrix}, {}, {});
+    //matrix.linspace(1);
+    ASSERT_EQ(onesRes->status(), Status::OK());
+
+    auto ones = onesRes->at(0);
+    ones->printShapeInfo("Shape ones");
+    *ones *= 10;
+    auto onesD = ones->dup();
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, onesD);
+    variableSpace->putVariable(-2, b);
+    variableSpace->putVariable(-3, e);
+    variableSpace->putVariable(-4, s);
+    auto block = new Context(1, variableSpace, false);  // not-in-place
+    block->fillInputs({-1});
+    block->fillInputs({-2});
+    block->fillInputs({-3});
+    block->fillInputs({-4});
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(1);
+    block->getIArguments()->push_back(0);
+    block->getIArguments()->push_back(0);
+    auto inputShapes = new ShapeList({ones->getShapeInfo(), b->getShapeInfo(), e->getShapeInfo(), s->getShapeInfo()});
+    nd4j::ops::strided_slice op;
+    auto result = op.calculateOutputShape(inputShapes, *block); //execute({ones, &b, &e, &s}, {}, {0, 1, 0, 0, 0});
+    ASSERT_EQ(result->size(), 1);
+    shape::printShapeInfoLinear(result->at(0));
+    //auto z = result->at(0);
+//    z->printShapeInfo("SS OS shape");
+    ASSERT_TRUE(shape::isEmpty(result->at(0)));
+    //ASSERT_EQ(exp, *z);
+    delete block;
+
+    delete onesRes;
+    delete result;
+    delete variableSpace;
+    delete inputShapes;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_5) {
+    auto matrix = NDArrayFactory::create<double>('c', {3, 2, 2});
+    auto b = NDArrayFactory::create<int>(2);
+    auto e = NDArrayFactory::create<int>(3);
+    auto s = NDArrayFactory::create<int>(1);
+
+    auto exp = NDArrayFactory::create<double>('c', {2,2}, {0.0f, 0.0f, 0., 0.});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_6) {
+    auto matrix = NDArrayFactory::create<double>('c', {3, 2, 2});
+    auto b = NDArrayFactory::create<int>(2);
+    auto e = NDArrayFactory::create<int>(3);
+    auto s = NDArrayFactory::create<int>(1);
+
+    auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 2});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_7) {
+    int zero = 0;
+    auto matrix = NDArrayFactory::create<double>('c', {5, 4});
+    auto b = NDArrayFactory::create<int>('c', {1}, {zero});
+    auto e = NDArrayFactory::create<int>('c', {1}, {zero});
+    auto s = NDArrayFactory::create<int>('c', {1}, {1});
+
+    //auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});
+
+    //matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {1, 0, 0, 0, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output");
+    //ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     auto x = NDArrayFactory::create<double>('c', {1, 1}, {2.0f});
@@ -690,7 +804,49 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_5) {
 
     delete res;
 }
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_6) {
 
+    auto x = NDArrayFactory::create<Nd4jLong>({2, 1, 4});
+
+    auto y = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
+
+// ------------------------------------
+
+    auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
+
+    nd4j::ops::broadcast_dynamic_shape op;
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    res->at(0)->printIndexedBuffer("Output SGO 6");
+//    exp.printIndexedBuffer("Expect");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_7) {
+
+    auto x = NDArrayFactory::create<Nd4jLong>({1, 1, 3});
+
+    auto y = NDArrayFactory::create<Nd4jLong>({2, 4, 1});
+
+// ------------------------------------
+
+    auto exp = NDArrayFactory::create<Nd4jLong>({2, 4, 3});
+
+    nd4j::ops::broadcast_dynamic_shape op;
+    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    res->at(0)->printIndexedBuffer("Output SGO 7");
+//    exp.printIndexedBuffer("Expect");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
 
@@ -2110,5 +2266,33 @@ TEST_F(DeclarableOpsTests6, maxPool2D_float_test1) {
     ASSERT_EQ(Status::OK(), results->status());
 
     delete results;
+}
+
+TEST_F(DeclarableOpsTests6, concat_test14) {
+    
+    NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+
+    x0 = 1.;
+    x1 = 2.;
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+    
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(2 == numOfTads);
+    
+    for (int e = 0; e < numOfTads; ++e) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((e+1)*1., mean, 1e-5);
+    }
+    
+    delete result;
 }
 

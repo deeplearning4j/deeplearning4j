@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg;
 
+import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -24,10 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
@@ -301,6 +300,35 @@ public class ShufflesTests extends BaseNd4jTest {
                 assertNotEquals("Failed on element [" + i + "]", -1, array1[i]);
                 assertNotEquals("Failed on element [" + i + "]", -1, array2[i]);
             }
+        }
+    }
+
+    @Test
+    public void testInterleavedVector3() {
+        for (int e = 0; e < 1000; e++) {
+            int length = e + 256; //RandomUtils.nextInt(121, 2073);
+            int[] array1 = ArrayUtil.buildInterleavedVector(new Random(System.currentTimeMillis()), length);
+            val set = new HashSet<Integer>();
+
+            for (int i = 0; i < length; i++) {
+                val v = array1[i];
+
+                // skipping passive swap step
+                if (v < 0)
+                    continue;
+
+                // checking that each swap pair is unique
+                if (set.contains(Integer.valueOf(v)))
+                    throw new IllegalStateException("Duplicate found");
+
+                set.add(Integer.valueOf(v));
+
+                // checking that each swap pair is unidirectional
+                assertEquals(-1, array1[v]);
+            }
+
+            // set should have half of length defined
+            assertTrue(set.size() >= length / 2 - 1);
         }
     }
 

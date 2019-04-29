@@ -76,7 +76,7 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, c
 
         if(j+1 > block.sizeAt(0))
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
-        
+
         auto pTemp = block({i,j+1,j-i,  0,0,0}, true, true);
         auto temp = pTemp;
         pTemp.assign(mmul(rotation, temp));
@@ -107,7 +107,7 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, 
 
         if(j+1 > block.sizeAt(1))
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
-        
+
         auto pTemp = block({0,0,0,  i,j+1,j-i}, true, true);
         auto temp = pTemp;
         pTemp.assign(mmul(temp, rotation));
@@ -401,7 +401,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
                 auto temp2 = _u({0,0, i,i+1}, true);
                 auto  temp3 = temp1;
                 temp1.assign(temp2);
-                temp2.assign(temp3);      
+                temp2.assign(temp3);
             }
             
             if(_calcV) { 
@@ -409,7 +409,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
                 auto temp2 = _v({0,0, i, i+1}, true);
                 auto temp3 = temp1;
                 temp1.assign(temp2);
-                temp2.assign(temp3);                      
+                temp2.assign(temp3);
             }
         }
     }  

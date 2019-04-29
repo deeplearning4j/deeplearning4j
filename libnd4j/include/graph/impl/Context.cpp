@@ -137,7 +137,7 @@ namespace nd4j {
         }
 
         bool Context::isFastPath() {
-            return !_fastpath_in.empty();
+            return !(_fastpath_in.empty() && _fastpath_out.empty());
         }
 
         VariableSpace *Context::getVariableSpace() {
@@ -276,23 +276,25 @@ namespace nd4j {
         }
 
         void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *array, bool removable) {
-            if (!_variableSpace->hasVariable(pair)) {
-                auto var = new Variable(array, nullptr, pair.first, pair.second);
-                _variableSpace->putVariable(pair, var);
-                var->markRemovable(removable);
-            } else {
-                auto var = _variableSpace->getVariable(pair);
-                if (var->hasNDArray()) {
-                    if (var->getNDArray() != array) {
-                        if (var->isRemovable() && var->hasNDArray())
-                            delete var->getNDArray();
+            if (_variableSpace != nullptr) {
+                if (!_variableSpace->hasVariable(pair)) {
+                    auto var = new Variable(array, nullptr, pair.first, pair.second);
+                    _variableSpace->putVariable(pair, var);
+                    var->markRemovable(removable);
+                } else {
+                    auto var = _variableSpace->getVariable(pair);
+                    if (var->hasNDArray()) {
+                        if (var->getNDArray() != array) {
+                            if (var->isRemovable() && var->hasNDArray())
+                                delete var->getNDArray();
 
+                            var->setNDArray(array);
+                            var->markRemovable(removable);
+                        }
+                    } else {
                         var->setNDArray(array);
                         var->markRemovable(removable);
                     }
-                } else {
-                    var->setNDArray(array);
-                    var->markRemovable(removable);
                 }
             }
         }
@@ -318,6 +320,10 @@ namespace nd4j {
 
         Variable* Context::ensureVariable(int idx) {
             std::pair<int, int> pair(this->nodeId(), idx);
+
+            if (_variableSpace == nullptr)
+                throw std::runtime_error("Context::ensureVariable VariableSpace is NULL!");
+
             if (!_variableSpace->hasVariable(pair)) {
                 auto var = new Variable(nullptr, nullptr, this->nodeId(), idx);
                 _variableSpace->putVariable(pair, var);

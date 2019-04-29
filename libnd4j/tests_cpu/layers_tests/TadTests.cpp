@@ -25,6 +25,7 @@
 #include <NDArray.h>
 #include <helpers/TAD.h>
 #include <array>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 
@@ -213,6 +214,71 @@ TEST_F(TadTests, test_TAD_empty_dims_1) {
     nd4j_printf("numTads: %i\n", (int) xTad.numTads);
     shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
 }
+
+TEST_F(TadTests, test_tad_order_1) {
+    Nd4jLong xShape[8] = {2, 150, 10, 10, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 10, 1, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim = 1;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+TEST_F(TadTests, test_tad_order_2) {
+    Nd4jLong xShape[8] = {2, 150, 10, 10, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 150, 1, 10, 8192, 10, 99};
+    shape::TAD xTad;
+    int dim = 0;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+
+TEST_F(TadTests, test_tad_order_3) {
+    Nd4jLong xShape[10] = {3, 10, 20, 30, 600 ,30, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 1, 30, 1, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim = 2;
+    xTad.init(xShape, &dim, 1);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+
+TEST_F(TadTests, test_tad_order_4) {
+    Nd4jLong xShape[10] = {3, 10, 20, 30, 600 ,30, 1, 8192, 1, 99};
+    Nd4jLong tShape[8] = {2, 20, 30, 30, 1, 8192, 1, 99};
+    shape::TAD xTad;
+    int dim[2] = {1, 2};
+    xTad.init(xShape, dim, 2);
+    xTad.createTadOnlyShapeInfo();
+
+    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
+    ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
+}
+
+TEST_F(TadTests, test_column_1) {
+    auto x = NDArrayFactory::create<float>('c', {5, 2});
+    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), 0);
+
+    shape::printShapeInfoLinear("column view", tadPack.primaryShapeInfo());
+    ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
+    ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
+    ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));
+
+    auto scalarViewPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
+
+    ASSERT_TRUE(shape::equalsStrict(tadPack.primaryShapeInfo(), scalarViewPack.primaryShapeInfo()));
+}
+
 
 /////////////////////////////////////////////////////////////////
 TEST_F(TadTests, outerArrayIndexes_1) {

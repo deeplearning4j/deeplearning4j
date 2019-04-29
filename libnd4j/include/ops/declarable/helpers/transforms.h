@@ -52,6 +52,8 @@ namespace helpers {
 
 	void scatterUpdate(graph::LaunchContext* context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
 
+	void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
+
 	void mergeMaxIndex(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 
 	void mergeMax(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);

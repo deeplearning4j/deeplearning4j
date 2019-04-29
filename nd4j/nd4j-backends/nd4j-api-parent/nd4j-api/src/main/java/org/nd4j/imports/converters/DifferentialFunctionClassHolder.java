@@ -16,13 +16,10 @@
 
 package org.nd4j.imports.converters;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
@@ -40,9 +37,9 @@ import java.util.*;
 
 @Slf4j
 public class DifferentialFunctionClassHolder {
-    private Map<String, DifferentialFunction> nodeConverters = new HashMap<>();
-    private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
-    private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
+    private Map<String, DifferentialFunction> nodeConverters = ImportClassMapping.getOpNameMapping();
+    private Map<String, DifferentialFunction> tensorFlowNames = ImportClassMapping.getTFOpMappingFunctions();
+    private Map<String, DifferentialFunction> onnxNames = ImportClassMapping.getOnnxOpMappingFunctions();
     private Map<Long,Class<?>> customOpHashToClass = new HashMap<>();
     private Map<Long,Map<String,Class<?>>> customOpHashToClasses = new HashMap<>(); //Only contains ops with 1 hash to multiple classes
     private List<String> missingOps = new ArrayList<>();
@@ -154,135 +151,67 @@ public class DifferentialFunctionClassHolder {
     }
 
     private DifferentialFunctionClassHolder() {
-
-
-
-        //Scan classpath to find all DifferentialFunction instances, so tensorflow/onnx mappings can be made
-        //We're assuming here that all instances with such mappings are defined in ND4J
-        //As of 04/2018 all DifferentialFunction classes are defined in org.nd4j.linalg.api.ops - with the exception
-        // of ILossFunction instances, which don't have TF/Onnx import working anyway
-        ImmutableSet<ClassPath.ClassInfo> info;
-        try {
-            //Dependency note: this ClassPath class was added in Guava 14
-            info = com.google.common.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
-                    .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
-        } catch (IOException e){
-            //Should never happen
-            throw new RuntimeException(e);
-        }
-
         fieldsForFunction = new LinkedHashMap<>();
 
-        int count = 0;
-        for(ClassPath.ClassInfo c : info){
-            //Load method: Loads (but doesn't link or initialize) the class.
-            Class<?> clazz;
-            try{
-                clazz = Class.forName(c.getName());
-            } catch (ClassNotFoundException e){
-                //Should never happen as  this was found on the classpath
-                throw new RuntimeException(e);
-            }
-
-
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
-                continue;
+        for(DifferentialFunction df : ImportClassMapping.getOpNameMapping().values()){
 
             try {
-                DifferentialFunction node = (DifferentialFunction)clazz.newInstance();
-                val name = node.opName();
-                if(name == null)
-                    continue;
+                //accumulate the field names for a given function
+                //this is mainly used in import
+                Map<String, Field> fieldNames = new LinkedHashMap<>();
+                Class<? extends DifferentialFunction> current = df.getClass();
+                val fields = new ArrayList<Field>();
+                while (current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
+                    if (classesWithConfig.contains(current.getName())) {
 
-                if(name.endsWith("_bp")) {
-                    //log.warn("Skipping derivative " + name);
-                }
-                if (nodeConverters.containsKey(name)) {
-                    throw new ND4JIllegalStateException("OpName duplicate found: " + name);
-                } else {
-                    //log.info("Adding converter for [" + name + "]");
-                    nodeConverters.put(name, node);
-                    try {
-                        for(String s : node.tensorflowNames()) {
-                            if(tensorFlowNames.containsKey(s)){
-                                throw new IllegalStateException("Duplicate TensorFlow op mapping found: TensorFlow name \"" + s
-                                        + "\" is mapped to ops " + node.getClass().getName() + " and " + tensorFlowNames.get(s).getClass().getName());
-                            }
-                            tensorFlowNames.put(s, node);
+                        val fieldName = "config";
+
+                        val configField = current.getDeclaredField(fieldName);
+                        if (configField == null) {
+                            continue;
                         }
-                    }catch (NoOpNameFoundException e) {
-                        log.trace("Skipping op " + name + " for tensorflow.");
-                    }
 
-                    try {
-                        onnxNames.put(node.onnxName(),node);
-                    }catch (NoOpNameFoundException e) {
-                        log.trace("Skipping op " + name + " for onnx.");
-                    }
+                        val configFieldClass = configField.getType();
 
-                    //accumulate the field names for a given function
-                    //this is mainly used in import
-                    Map<String,Field> fieldNames = new LinkedHashMap<>();
-                    Class<? extends DifferentialFunction> current = node.getClass();
-                    val fields = new ArrayList<Field>();
-                    while(current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
-                        if(classesWithConfig.contains(current.getName())) {
-
-                            val fieldName = "config";
-
-                            val configField = current.getDeclaredField(fieldName);
-                            if(configField ==  null) {
-                                continue;
-                            }
-
-                            val configFieldClass = configField.getType();
-
-                            for(val field : configFieldClass.getDeclaredFields()) {
-                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
-                                        (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
-                                    fields.add(field);
-                                    field.setAccessible(true);
-                                    if(fieldNames.containsKey(field.getName())){
-                                        throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
-                                                + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
-                                    }
-                                    fieldNames.put(field.getName(),field);
+                        for (val field : configFieldClass.getDeclaredFields()) {
+                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                                    (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
+                                fields.add(field);
+                                field.setAccessible(true);
+                                if (fieldNames.containsKey(field.getName())) {
+                                    throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
+                                            + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
                                 }
+                                fieldNames.put(field.getName(), field);
                             }
                         }
-                        else {
-                            for(Field field : current.getDeclaredFields()) {
-                                if(!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
-                                        (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
-                                    fields.add(field);
-                                    field.setAccessible(true);
-                                    if(fieldNames.containsKey(field.getName())){
-                                        throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
-                                                + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
-                                    }
-                                    fieldNames.put(field.getName(),field);
+                    } else {
+                        for (Field field : current.getDeclaredFields()) {
+                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                                    (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
+                                fields.add(field);
+                                field.setAccessible(true);
+                                if (fieldNames.containsKey(field.getName())) {
+                                    throw new IllegalStateException("Field with name " + field.getName() + " exists for multiple classes: "
+                                            + fieldNames.get(field.getName()).getDeclaringClass().getName() + " and " + field.getDeclaringClass().getName());
                                 }
+                                fieldNames.put(field.getName(), field);
                             }
                         }
-
-                        // do something with current's fields
-                        current = (Class<? extends DifferentialFunction>) current.getSuperclass();
-
                     }
 
-                    fieldsForFunction.put(node.opName(),fieldNames);
+                    // do something with current's fields
+                    current = (Class<? extends DifferentialFunction>) current.getSuperclass();
 
                 }
+
+                fieldsForFunction.put(df.opName(), fieldNames);
             } catch (NoOpNameFoundException e) {
-                log.trace("Skipping function  " + clazz);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+                log.trace("Skipping function  " + df.getClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-
-
 
         //get the op descriptors for onnx and tensorflow
         //this is used when validating operations

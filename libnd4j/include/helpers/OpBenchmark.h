@@ -42,6 +42,7 @@ namespace nd4j {
         std::string testName();
         std::vector<int> getAxis();
 
+        virtual std::string extra();
         virtual std::string dataType();
         virtual std::string axis() = 0;
         virtual std::string orders() = 0;

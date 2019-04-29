@@ -57,21 +57,21 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
     }
 
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z) {
-        this(x, y, z, false, null);
+        this(x, y, z, false, false, (int[])null);
     }
 
-    public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
-        this(x, y, z, true, false, dimensions);
+    public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions){
+        this(x,y,z,keepDims, false);
+    }
+
+    public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+        super(x, y, z, keepDims, dimensions);
         this.isComplex = allDistances;
-    }
-
-    public BaseReduce3Op(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public BaseReduce3Op(INDArray x, INDArray y, INDArray z, int... dimensions) {
-        super(x, y, z, true, false, dimensions);
+        super(x, y, z, false, dimensions);
     }
 
     @Override
@@ -97,6 +97,8 @@ public abstract class BaseReduce3Op extends BaseReduceFloatOp {
 
     @Override
     public DataType resultType() {
+        if(x.dataType().isFPType())
+            return x.dataType();
         return Nd4j.defaultFloatingPointType();
     }
 

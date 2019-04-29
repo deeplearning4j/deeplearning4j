@@ -16,8 +16,9 @@
 
 //
 // Created by george@skymind.io on 6/1/2018.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#include <ops/declarable/helpers/reduce_dot.h>
+
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
@@ -25,53 +26,97 @@ namespace nd4j {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_dot_bp)
 
-    DECLARE_SHAPE_FN(reduce_dot_bp) {    
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        Nd4jLong* outShapeInfo1;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-        Nd4jLong* outShapeInfo2;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-        COPY_SHAPE(inputShape->at(0), outShapeInfo1);
-        COPY_SHAPE(inputShape->at(1), outShapeInfo2);
+////////////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
 
-        return SHAPELIST(outShapeInfo1, outShapeInfo2);
+    auto x     = INPUT_VARIABLE(0);
+    auto y     = INPUT_VARIABLE(1);
+    auto gradO = INPUT_VARIABLE(2);
+
+    auto gradX = OUTPUT_VARIABLE(0);
+    auto gradY = OUTPUT_VARIABLE(1);
+
+    // L(x,y) = SUM(x_i * y_i)
+    // dL/dx_i = y_i
+
+    REQUIRE_TRUE(x->isSameShape(y), 0, "REDUCE_DOT_BP OP: both input arrays x and y should have same shapes, but got %s and %s correspondingly", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+
+    if (gradO->lengthOf() == 1) { // scalar of reduced to scalar with keep dimensions
+        gradX->assign((*y) * (*gradO));
+        gradY->assign((*x) * (*gradO));
     }
+    else {
 
-    CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
-            auto inputX = INPUT_VARIABLE(0);
-            auto inputY = INPUT_VARIABLE(1);
-            auto epsilon = INPUT_VARIABLE(2);
-            auto output1 = OUTPUT_VARIABLE(0);
-            auto output2 = OUTPUT_VARIABLE(1);
-            //
-            // L(x,y) = SUM(x_i * y_i)
-            // dL/dx_i = y_i
-            //    
-            //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
-            if (epsilon->lengthOf() == 1) { // scalar of reduced to scalar with keep dimensions
-                output1->assign(epsilon);
-                output1->applyPairwiseTransform(pairwise::Multiply, inputY, output1, nullptr);
-                output2->assign(epsilon);
-                output2->applyPairwiseTransform(pairwise::Multiply, inputX, output2, nullptr);
-            }
-            else {
-                std::vector<int> axes; // = *block.getIArguments();
-                if (block.width() > 3) { // axes as last array
-                    auto axesArr = INPUT_VARIABLE(3);
-                    helpers::adjustAxis(inputX->rankOf(), axesArr, axes);
-                } else
-                    axes = *block.getIArguments();
+        bool keepDims = false;
+        auto dimensions = *block.getIArguments();
 
-                helpers::reduceDotBP(block.launchContext(), inputX, inputY, epsilon, output1, output2, axes);
-            }
-
-            return Status::OK();
-    }
-
-        DECLARE_TYPES(reduce_dot_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+        if (block.width() > 3) {
+            auto axesVector = INPUT_VARIABLE(3);
+            helpers::adjustAxis(x->rankOf(), axesVector, dimensions);
         }
+
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
+        REQUIRE_TRUE(dimensions.size() <= x->rankOf(), 0, "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+        for(const auto& item : dimensions)
+            REQUIRE_TRUE(item >= -x->rankOf() && item < x->rankOf(), 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , x->rankOf(), x->rankOf(), item);
+
+        if(!keepDims) {
+            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *x, true, false, block.getWorkspace());
+            gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            RELEASE(gradOShapeKeepDims, block.getWorkspace());
+        }
+
+        gradX->assign((*y) * (*gradO));
+        gradY->assign((*x) * (*gradO));
+
+        if(!keepDims)
+            delete gradO;
+    }
+    return Status::OK();
+}
+
+
+DECLARE_SHAPE_FN(reduce_dot_bp) {
+
+    if(shape::length(inputShape->at(2)) > 1) {
+
+        bool keepDims = false;
+        auto dimensions = *block.getIArguments();
+
+        if (block.width() > 3) {
+            auto axesVector = INPUT_VARIABLE(3);
+            helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+        }
+
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
+        REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+        for(const auto& item : dimensions)
+            REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_DOT_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+    }
+
+    Nd4jLong *outShapeInfo1, *outShapeInfo2;
+    COPY_SHAPE(inputShape->at(0), outShapeInfo1);
+    COPY_SHAPE(inputShape->at(1), outShapeInfo2);
+
+    return SHAPELIST(outShapeInfo1, outShapeInfo2);
+}
+
+DECLARE_TYPES(reduce_dot_bp) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
 #endif
 
 }

@@ -75,7 +75,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int size) {
-            this.size = new int[] {size};
+            this.setSize(new int[] {size});
         }
 
         /**
@@ -85,7 +85,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int[] size) {
-            this.size = size;
+            this.setSize(size);
         }
     }
 

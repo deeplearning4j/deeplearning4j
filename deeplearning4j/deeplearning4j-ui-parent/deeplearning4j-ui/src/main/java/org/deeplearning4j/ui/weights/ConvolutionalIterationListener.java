@@ -43,10 +43,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 /**
  * @author raver119@gmail.com
@@ -124,6 +122,74 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
      */
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
+
+    }
+
+    @Override
+    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+
+        int iteration = (model instanceof MultiLayerNetwork ? ((MultiLayerNetwork)model).getIterationCount() : ((ComputationGraph)model).getIterationCount());
+        if (iteration % freq == 0) {
+
+            List<INDArray> tensors = new ArrayList<>();
+            int cnt = 0;
+            Random rnd = new Random();
+            BufferedImage sourceImage = null;
+            int sampleIdx = -1; //output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
+            if (model instanceof ComputationGraph) {
+                ComputationGraph l = (ComputationGraph) model;
+                Layer[] layers = l.getLayers();
+                if(layers.length != activations.size())
+                    throw new RuntimeException();
+                for( int i=0; i<layers.length; i++ ){
+                    if(layers[i].type() == Layer.Type.CONVOLUTIONAL){
+                        String layerName = layers[i].conf().getLayer().getLayerName();
+                        INDArray output = activations.get(layerName); //Offset by 1 - activations list includes input
+
+                        if(sampleIdx < 0){
+                            sampleIdx = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
+                        }
+
+                        INDArray tad = output.tensorAlongDimension(sampleIdx, 3, 2, 1);
+                        tensors.add(tad);
+                        cnt++;
+                    }
+                }
+            } else {
+                //MultiLayerNetwork: no op (other forward pass method should be called instead)
+                return;
+            }
+
+            //Try to work out source image:
+            ComputationGraph cg = (ComputationGraph)model;
+            INDArray[] arr = cg.getInputs();
+            if(arr.length > 1){
+                throw new IllegalStateException("ConvolutionIterationListener does not support ComputationGraph models with more than 1 input; model has " +
+                        arr.length + " inputs");
+            }
+
+            if(arr[0].rank() == 4){
+                sourceImage = null;
+                if (cnt == 0) {
+                    try {
+                        sourceImage = restoreRGBImage(arr[0].tensorAlongDimension(sampleIdx, 3, 2, 1));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+            BufferedImage render = rasterizeConvoLayers(tensors, sourceImage);
+            Persistable p = new ConvolutionListenerPersistable(sessionID, workerID, System.currentTimeMillis(), render);
+            ssr.putStaticInfo(p);
+
+            minibatchNum++;
+        }
+    }
+
+    @Override
+    public void onForwardPass(Model model, List<INDArray> activations) {
+        int iteration = (model instanceof MultiLayerNetwork ? ((MultiLayerNetwork)model).getIterationCount() : ((ComputationGraph)model).getIterationCount());
         if (iteration % freq == 0) {
 
             List<INDArray> tensors = new ArrayList<>();
@@ -132,17 +198,21 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
             BufferedImage sourceImage = null;
             if (model instanceof MultiLayerNetwork) {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
-                for (Layer layer : l.getLayers()) {
-                    if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
+                Layer[] layers = l.getLayers();
+                if(layers.length != activations.size())
+                    throw new RuntimeException();
+                for( int i=0; i<layers.length; i++ ){
+                    if(layers[i].type() == Layer.Type.CONVOLUTIONAL){
+                        INDArray output = activations.get(i+1); //Offset by 1 - activations list includes input
+
                         // FIXME: int cast
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = layer.input();
+                            INDArray inputs = layers[i].input();
 
                             try {
                                 sourceImage = restoreRGBImage(
-                                                inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
+                                        inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -155,40 +225,15 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                         cnt++;
                     }
                 }
-
-            } else if (model instanceof ComputationGraph) {
-                ComputationGraph l = (ComputationGraph) model;
-                for (Layer layer : l.getLayers()) {
-                    if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
-
-                        // FIXME: int cast
-                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
-                        if (cnt == 0) {
-                            INDArray inputs = layer.input();
-
-                            try {
-                                sourceImage = restoreRGBImage(
-                                                inputs.tensorAlongDimension(sampleDim, new int[] {3, 2, 1}));
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-
-                        INDArray tad = output.tensorAlongDimension(sampleDim, 3, 2, 1);
-
-                        tensors.add(tad);
-
-                        cnt++;
-                    }
-                }
+            } else {
+                //Compgraph: no op (other forward pass method should be called instead)
+                return;
             }
             BufferedImage render = rasterizeConvoLayers(tensors, sourceImage);
             Persistable p = new ConvolutionListenerPersistable(sessionID, workerID, System.currentTimeMillis(), render);
             ssr.putStaticInfo(p);
 
             minibatchNum++;
-
         }
     }
 

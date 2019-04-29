@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -54,12 +55,8 @@ import java.util.Arrays;
 @Slf4j
 public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer> {
 
-    public SpaceToDepth(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public SpaceToDepth(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public SpaceToDepth(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     private int getBlockSize() {
@@ -84,7 +81,9 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
 
-        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{1, miniBatch * inDepth * inH * inW}, 'c');
+        INDArray input = this.input.castTo(dataType);    //No-op if already correct type
+
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{1, miniBatch * inDepth * inH * inW}, 'c');
         INDArray reshapedEpsilon;
 
         if (isNHWC() == 1) {
@@ -135,7 +134,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = inW / blockSize;
         int outDepth = depth * blockSize * blockSize;
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{1, miniBatch * outDepth * outH * outW}, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{1, miniBatch * outDepth * outH * outW}, 'c');
         INDArray reshapedOut;
         if (isNHWC() == 1) {
             reshapedOut = out.reshape('c', miniBatch, outH, outW,  outDepth);

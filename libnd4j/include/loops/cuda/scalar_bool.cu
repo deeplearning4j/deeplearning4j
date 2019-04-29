@@ -136,7 +136,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
                                                         void *vscalars, 
                                                         int *dimension, int dimensionLength, 
                                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
-                                                        Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {    
+                                                        Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     auto x = reinterpret_cast<X*>(vx);
     auto scalars = reinterpret_cast<X*>(vscalars);
     auto z = reinterpret_cast<Z*>(vz);
@@ -148,24 +148,34 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
     }
 
     // tad preparation
-    auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
+    auto tadEws = shape::elementWiseStride(tadShapeInfo);
+    auto zEws = shape::elementWiseStride(tadShapeInfoZ);
     auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
-     if(tadEWS < 1 || zEWS < 1) {
-        printf("ScalarBoolTransform<X,Y,Z>::transformCuda: super-bad loop visited. Shouldn't ever happen\n");
-        return;
-    }
+    if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {
 
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        
-        Z *oZ = z + tadOffsetsZ[r];
-        X *oX = x + tadOffsets[r];
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
 
-        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)            
-            oZ[f * zEWS] = OpType::op(oX[f * tadEWS], scalars[r], extraParams);
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
+        }
+    } else {
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
+
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+        }
     }
 }
 
@@ -183,6 +193,7 @@ _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchD
                                                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarAlongDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -194,7 +205,8 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
                                                             void* vscalar, 
                                                             void *vextraParams, int *allocPointer){
     
-    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);    
+    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShaped(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

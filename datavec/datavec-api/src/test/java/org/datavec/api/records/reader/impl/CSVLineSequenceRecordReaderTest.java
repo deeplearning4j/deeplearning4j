@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +45,7 @@ public class CSVLineSequenceRecordReaderTest {
         File f = testDir.newFolder();
         File source = new File(f, "temp.csv");
         String str = "a,b,c\n1,2,3,4";
-        FileUtils.writeStringToFile(source, str);
+        FileUtils.writeStringToFile(source, str, StandardCharsets.UTF_8);
 
         SequenceRecordReader rr = new CSVLineSequenceRecordReader();
         rr.initialize(new FileSplit(source));

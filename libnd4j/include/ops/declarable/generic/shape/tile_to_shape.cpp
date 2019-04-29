@@ -44,16 +44,11 @@ namespace ops {
     DECLARE_SHAPE_FN(tile_to_shape) {
         auto in = inputShape->at(0);
 
-        // output shape always equals to arguments
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(block.numI()), Nd4jLong);
+        // output shape always equals to arguments        
 
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
-        if (shape::order(in) == 'c')
-            shape::shapeBuffer(block.numI(), block.dataType(), conv.data(), newShape);
-        else
-            shape::shapeBufferFortran(block.numI(),block.dataType(),  conv.data(), newShape);
+        Nd4jLong* newShape = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(in), conv, block.getWorkspace());        
 
         return SHAPELIST(newShape);
     }

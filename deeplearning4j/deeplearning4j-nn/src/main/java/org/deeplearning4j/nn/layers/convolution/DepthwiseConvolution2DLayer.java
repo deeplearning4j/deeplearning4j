@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -48,12 +49,8 @@ import java.util.Arrays;
  */
 public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
-    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 
@@ -75,6 +72,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         INDArray bias;
         INDArray depthWiseWeights =
                 getParamWithNoise(DepthwiseConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+
+        INDArray input = this.input.castTo(dataType);   //No-op if correct type
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -102,7 +101,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         INDArray weightGradView = gradientViews.get(DepthwiseConvolutionParamInitializer.WEIGHT_KEY);
 
         INDArray outEpsilon = workspaceMgr.create(
-                ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+                ArrayType.ACTIVATION_GRAD, depthWiseWeights.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -168,6 +167,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                     : "") + " " + layerId());
         }
 
+        INDArray input = this.input.castTo(dataType);   //no-op if correct dtype
+
         // FIXME: int cast
         int inDepth = (int) depthWiseWeights.size(2);
         int depthMultiplier = (int) depthWiseWeights.size(3);
@@ -209,7 +210,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         val miniBatch = input.size(0);
         INDArray output = workspaceMgr.create(
-                ArrayType.ACTIVATIONS, new long[]{miniBatch, outDepth, outH, outW}, 'c');
+                ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), new long[]{miniBatch, outDepth, outH, outW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

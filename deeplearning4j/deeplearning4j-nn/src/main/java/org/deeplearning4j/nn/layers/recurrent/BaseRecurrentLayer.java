@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
@@ -40,12 +41,8 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
      */
     protected Map<String, INDArray> tBpttStateMap = new ConcurrentHashMap<>();
 
-    public BaseRecurrentLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public BaseRecurrentLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public BaseRecurrentLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     /**

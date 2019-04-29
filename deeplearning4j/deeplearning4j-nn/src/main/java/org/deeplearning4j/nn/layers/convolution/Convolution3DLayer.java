@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -42,12 +43,8 @@ import java.util.Arrays;
  */
 public class Convolution3DLayer extends ConvolutionLayer {
 
-    public Convolution3DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public Convolution3DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Convolution3DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 
@@ -67,6 +64,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
+        INDArray input = this.input.castTo(dataType);
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
@@ -98,7 +96,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, weights.dataType(),
                 miniBatch * outEpsChannels * inD * inH * inW);
         if (isNCDHW)
             outEpsilon = outEpsilon.reshape('c', miniBatch, outEpsChannels, inD, inH, inW);
@@ -173,6 +171,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         ConvolutionMode mode = layerConfig.getConvolutionMode();
         boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
+        INDArray input = this.input.castTo(dataType);
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         if (input.rank() != 5) {
@@ -242,8 +241,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                miniBatch*outWeightChannels*outD*outH*outW);
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(),miniBatch*outWeightChannels*outD*outH*outW);
         if (isNCDHW)
             output = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
         else

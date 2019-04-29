@@ -93,19 +93,29 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
     auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
-    if(tadEws < 1 || zEws < 1) {
-        printf("ScalarTransform<X,Y,Z>::transformCuda: super-bad loop visited. Shouldn't ever happen\n");
-        return;
-    }
+    if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {
 
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        
-        Z *oZ = z + tadOffsetsZ[r];
-        X *oX = x + tadOffsets[r];
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
 
-        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)            
-            oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
+        }
+    } else {
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
+
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+        }
     }
 }
 
@@ -127,6 +137,7 @@ void _CUDA_H ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaSt
     auto length = shape::length(hxShapeInfo);
 
     scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShapedA(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -134,6 +145,7 @@ template<typename X, typename Y, typename Z>
 template<typename OpType>
 void _CUDA_H ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarAlongDimA(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

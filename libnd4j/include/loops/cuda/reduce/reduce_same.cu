@@ -110,14 +110,25 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
 
     //shared memory space for storing intermediate results
     __shared__ X* sPartials;
-    __shared__ int tadLength;    
-    __shared__ int numTads;        
+
+    //  __shared__ shape::TAD *tad;
+    __shared__ int tadLength;
+    __shared__ int tadRank;
+    __shared__ int numTads;
+    __shared__ Nd4jLong *tadShape;
+    __shared__ Nd4jLong *tadStride;
+    __shared__ bool isPlainOutput;
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<X*>(shmem);
-        tadLength = shape::length(tadOnlyShapeInfo); //tadLength(xShapeInfo, dimension, dimensionLength);
-        numTads = shape::length(xShapeInfo) / tadLength;        
+        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        tadRank = shape::rank(tadOnlyShapeInfo);
+        numTads = shape::length(xShapeInfo) / tadLength;
+        tadShape = shape::shapeOf(tadOnlyShapeInfo);
+        tadStride = shape::stride(tadOnlyShapeInfo);
+
+        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
     }
     __syncthreads();
     
@@ -125,21 +136,21 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
         
         Nd4jLong tadOffsetForBlock = tadOffsets[r];
         sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
-        
-        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+
+          for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            
             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
-        }
-    
-        __syncthreads();
+          }
+          __syncthreads();
 
-        // aggregate. do NOT reduce for elements > tadLength
-        aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+          // aggregate. do NOT reduce for elements > tadLength
+          aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
-        __syncthreads();
+          __syncthreads();
 
-        if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+          if (threadIdx.x == 0)
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 
@@ -166,7 +177,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
     auto z = reinterpret_cast<X*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<X*>(vreductionBuffer);
-        
+
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results

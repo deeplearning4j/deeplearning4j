@@ -3,11 +3,14 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.indexing.conditions.Condition;
+
+import static org.nd4j.autodiff.samediff.ops.SDValidation.*;
 
 /**
  * Core op creator methods available via SameDiff class directly
@@ -43,6 +46,8 @@ public abstract class SDBaseOps {
 
     protected abstract SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName);
 
+    protected abstract SameDiff sd();
+
     /**
      * Argmax array reduction operation, optionally along specified dimensions.<br>
      * Output values are the index of the maximum value of each slice along the specified dimension
@@ -74,6 +79,7 @@ public abstract class SDBaseOps {
      * of rank (input rank) if keepdims = true
      */
     public SDVariable argmax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        validateNumerical("argmax", in);
         SDVariable ret = f().argmax(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -140,6 +146,7 @@ public abstract class SDBaseOps {
      * of rank (input rank) if keepdims = true
      */
     public SDVariable argmin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        validateNumerical("argmin", in);
         SDVariable ret = f().argmin(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -239,6 +246,8 @@ public abstract class SDBaseOps {
      */
     public SDVariable[] batchMmul(String[] names, SDVariable[] matricesA, SDVariable[] matricesB,
                                   boolean transposeA, boolean transposeB) {
+        validateSameType("batchMmul", true, matricesA);
+        validateSameType("batchMmul", true, matricesB);
         SDVariable[] result = f().batchMmul(matricesA, matricesB, transposeA, transposeB);
         return updateVariableNamesAndReferences(result, names);
     }
@@ -287,6 +296,7 @@ public abstract class SDBaseOps {
      * @see #stack(String, int, SDVariable...)
      */
     public SDVariable concat(String name, int dimension, SDVariable... inputs) {
+        validateSameType("concat", false, inputs);
         SDVariable result = f().concat(dimension, inputs);
         return updateVariableNameAndReference(result, name);
     }
@@ -314,6 +324,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable cumprod(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        validateNumerical("cumprod", in);
         SDVariable ret = f().cumprod(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
@@ -341,6 +352,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable cumsum(String name, SDVariable in, boolean exclusive, boolean reverse, int... axis) {
+        validateNumerical("cumsum", in);
         SDVariable ret = f().cumsum(in, exclusive, reverse, axis);
         return updateVariableNameAndReference(ret, name);
     }
@@ -367,6 +379,7 @@ public abstract class SDBaseOps {
      * @return
      */
     public SDVariable dot(String name, SDVariable x, SDVariable y, int... dimensions) {
+        SDValidation.validateNumerical("dot", x, y);
         SDVariable ret = f().dot(x, y, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -619,6 +632,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gt(String name, SDVariable x, double y) {
+        validateNumerical("greater than (gt)", x);
         SDVariable result = f().gt(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -649,6 +663,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gt(String name, SDVariable x, SDVariable y) {
+        SDValidation.validateNumerical("greater than (gt)", x, y);
         SDVariable result = f().gt(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -677,6 +692,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gte(String name, SDVariable x, double y) {
+        validateNumerical("greater than or equal (gte)", x);
         SDVariable result = f().gte(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -707,6 +723,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable gte(String name, SDVariable x, SDVariable y) {
+        validateNumerical("greater than or equal (gte)", x, y);
         SDVariable result = f().gte(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -755,6 +772,7 @@ public abstract class SDBaseOps {
      * @return 1D inverted permutation
      */
     public SDVariable invertPermutation(String name, SDVariable input) {
+        validateInteger("invert permutation", input);
         SDVariable ret = f().invertPermutation(input, false);
         return updateVariableNameAndReference(ret, name);
     }
@@ -790,8 +808,24 @@ public abstract class SDBaseOps {
      * @param number Number of values to generate
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(double start, double stop, long number) {
-        return linspace(null, start, stop, number);
+    public SDVariable linspace(DataType dataType, double start, double stop, long number) {
+        return linspace(dataType, start, stop, number);
+    }
+
+    /**
+     * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+     * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     *
+     * @param name     Name of the new variable
+     * @param dataType Data type of the output array
+     * @param start    Start value
+     * @param stop     Stop value
+     * @param number   Number of values to generate
+     * @return SDVariable with linearly spaced elements
+     */
+    public SDVariable linspace(String name, DataType dataType, double start, double stop, long number) {
+        SDVariable ret = f().linspace(sd().constant(start), sd().constant(stop), sd().constant(number), dataType);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -799,16 +833,12 @@ public abstract class SDBaseOps {
      * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
      *
      * @param name   Name of the new variable
-     * @param start  Start value
-     * @param stop   Stop value
-     * @param number Number of values to generate
+     * @param from   Start value
+     * @param to     Stop value
+     * @param length Number of values to generate
+     * @param dt     Data type of the output array
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(String name, double start, double stop, long number) {
-        SDVariable ret = f().linspace(start, stop, number);
-        return updateVariableNameAndReference(ret, name);
-    }
-
     public SDVariable linspace(String name, SDVariable from, SDVariable to, SDVariable length, DataType dt) {
         SDVariable ret = f().linspace(from, to, length, dt);
         return updateVariableNameAndReference(ret, name);
@@ -838,6 +868,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lt(String name, SDVariable x, double y) {
+        validateNumerical("less than (lt)", x);
         SDVariable result = f().lt(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -868,6 +899,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lt(String name, SDVariable x, SDVariable y) {
+        validateNumerical("less than (lt)", x, y);
         SDVariable result = f().lt(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -896,6 +928,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lte(String name, SDVariable x, double y) {
+        validateNumerical("less than or equal (lte)", x);
         SDVariable result = f().lte(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -926,6 +959,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable lte(String name, SDVariable x, SDVariable y) {
+        validateNumerical("less than or equal (lte)", x, y);
         SDVariable result = f().lte(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -1036,6 +1070,7 @@ public abstract class SDBaseOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable max(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("max reduction", x);
         SDVariable result = f().max(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1062,6 +1097,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable max(String name, SDVariable first, SDVariable second) {
+        validateNumerical("pairwise maxiumum (max)", first, second);
         SDVariable result = f().max(first, second);
         return updateVariableNameAndReference(result, name);
     }
@@ -1104,6 +1140,7 @@ public abstract class SDBaseOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable mean(String name, SDVariable x, boolean keepDims, int... dimension) {
+        validateNumerical("mean reduction", x);
         SDVariable result = f().mean(x, keepDims, dimension);
         return updateVariableNameAndReference(result, name);
     }
@@ -1158,6 +1195,7 @@ public abstract class SDBaseOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable min(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("min reduction", x);
         SDVariable result = f().min(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
@@ -1185,6 +1223,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable min(String name, SDVariable first, SDVariable second) {
+        validateNumerical("mean (pairwise)", first, second);
         SDVariable result = f().min(first, second);
         return updateVariableNameAndReference(result, name);
     }
@@ -1214,6 +1253,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable mmul(String name, SDVariable x, SDVariable y, MMulTranspose transpose) {
+        validateNumerical("matrix multiplication (mmul)", x, y);
         SDVariable result = f().mmul(x, y, transpose);
         return updateVariableNameAndReference(result, name);
     }
@@ -1265,6 +1305,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable neq(String name, SDVariable x, double y) {
+        validateNumerical("not equals (neq)", x);
         SDVariable result = f().neq(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -1295,6 +1336,7 @@ public abstract class SDBaseOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable neq(String name, SDVariable x, SDVariable y) {
+        validateNumerical("not equals (neq)", x, y);
         SDVariable result = f().neq(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -1329,6 +1371,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable norm1(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("norm1 reduction", x);
         SDVariable result = f().norm1(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1363,6 +1406,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable norm2(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("norm2 reduction", x);
         SDVariable result = f().norm2(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1398,6 +1442,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable normmax(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("norm max reduction", x);
         SDVariable result = f().normmax(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1427,6 +1472,7 @@ public abstract class SDBaseOps {
      * As per {@link #oneHot(String, SDVariable, int, int, double, double)} but allows configuring the output datatype
      */
     public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {
+        validateInteger("oneHot", "indices", indices);
         SDVariable ret = f().onehot(indices, depth, axis, on, off, dataType);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1502,6 +1548,7 @@ public abstract class SDBaseOps {
      * @see #stack(String, int, SDVariable...)
      */
     public SDVariable parallel_stack(String name, SDVariable[] values) {
+        validateSameType("parallel_stack", false, values);
         SDVariable ret = f().parallel_stack(values);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1569,6 +1616,7 @@ public abstract class SDBaseOps {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable prod(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("product reduction (prod)", x);
         SDVariable result = f().prod(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1787,6 +1835,7 @@ public abstract class SDBaseOps {
      * @see #reshape(SDVariable, int[])
      */
     public SDVariable reshape(String name, SDVariable x, SDVariable shape) {
+        validateInteger("reshape", "shape", shape);
         SDVariable result = f().reshape(x, shape);
         return updateVariableNameAndReference(result, name);
     }
@@ -1879,6 +1928,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable scalarFloorMod(String name, SDVariable in, Number value) {
+        validateNumerical("floorMod", in);
         SDVariable ret = f().scalarFloorMod(in, value);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1903,6 +1953,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable scalarMax(String name, SDVariable in, Number value) {
+        validateNumerical("max", in);
         SDVariable ret = f().scalarMax(in, value);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1927,6 +1978,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable scalarMin(String name, SDVariable in, Number value) {
+        validateNumerical("min", in);
         SDVariable ret = f().scalarMin(in, value);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1976,6 +2028,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterAdd(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterAdd", "indices", indices);
         SDVariable ret = f().scatterAdd(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2001,6 +2054,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterDiv(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterDiv", "indices", indices);
         SDVariable ret = f().scatterDiv(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2026,6 +2080,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterMax(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterMax", "indices", indices);
         SDVariable ret = f().scatterMax(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2051,6 +2106,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterMin(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterMin", "indices", indices);
         SDVariable ret = f().scatterMin(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2076,6 +2132,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterMul(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterMul", "indices", indices);
         SDVariable ret = f().scatterMul(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2101,6 +2158,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterSub(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterSub", "indices", indices);
         SDVariable ret = f().scatterSub(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2127,6 +2185,7 @@ public abstract class SDBaseOps {
      * @return The updated variable
      */
     public SDVariable scatterUpdate(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        validateInteger("scatterUpdate", "indices", indices);
         SDVariable ret = f().scatterUpdate(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2153,6 +2212,8 @@ public abstract class SDBaseOps {
      * @return Segment max output
      */
     public SDVariable segmentMax(String name, SDVariable data, SDVariable segmentIds) {
+        validateNumerical("segmentMax", "data", data);
+        validateInteger("segmentMax", "segmentIds", segmentIds);
         SDVariable ret = f().segmentMax(data, segmentIds);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2178,6 +2239,8 @@ public abstract class SDBaseOps {
      * @return Segment mean output
      */
     public SDVariable segmentMean(String name, SDVariable data, SDVariable segmentIds) {
+        validateNumerical("segmentMean", "data", data);
+        validateInteger("segmentMean", "segmentIds", segmentIds);
         SDVariable ret = f().segmentMean(data, segmentIds);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2203,6 +2266,8 @@ public abstract class SDBaseOps {
      * @return Segment min output
      */
     public SDVariable segmentMin(String name, SDVariable data, SDVariable segmentIds) {
+        validateNumerical("segmentMin", "data", data);
+        validateInteger("segmentMin", "segmentIds", segmentIds);
         SDVariable ret = f().segmentMin(data, segmentIds);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2228,6 +2293,8 @@ public abstract class SDBaseOps {
      * @return Segment product output
      */
     public SDVariable segmentProd(String name, SDVariable data, SDVariable segmentIds) {
+        validateNumerical("segmentProd", "data", data);
+        validateInteger("segmentProd", "segmentIds", segmentIds);
         SDVariable ret = f().segmentProd(data, segmentIds);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2253,6 +2320,8 @@ public abstract class SDBaseOps {
      * @return Segment sum output
      */
     public SDVariable segmentSum(String name, SDVariable data, SDVariable segmentIds) {
+        validateNumerical("segmentSum", "data", data);
+        validateInteger("segmentSum", "segmentIds", segmentIds);
         SDVariable ret = f().segmentSum(data, segmentIds);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2268,6 +2337,7 @@ public abstract class SDBaseOps {
      * @see #sequenceMask(String, SDVariable, SDVariable, DataType)
      */
     public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen, DataType dataType) {
+        validateInteger("sequenceMask", "lengths", lengths);
         SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2304,6 +2374,7 @@ public abstract class SDBaseOps {
      * @return Output variable
      */
     public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen, DataType dataType) {
+        validateInteger("sequenceMask", "lengths", lengths);
         SDVariable ret = f().sequenceMask(lengths, maxLen, dataType);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2380,6 +2451,10 @@ public abstract class SDBaseOps {
         return slice(null, input, begin, size);
     }
 
+    public SDVariable slice(SDVariable input, SDVariable begin, SDVariable size) {
+        return slice(null, input, begin, size);
+    }
+
     /**
      * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
      * For example, if input is:<br>
@@ -2402,6 +2477,13 @@ public abstract class SDBaseOps {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable slice(String name, SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable size) {
+        SDVariable ret = f().slice(input, begin, size);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+
     /**
      * Squared L2 norm: see {@link #norm2(String, SDVariable, int...)}
      */
@@ -2413,6 +2495,7 @@ public abstract class SDBaseOps {
      * Squared L2 norm: see {@link #norm2(String, SDVariable, boolean, int...)}
      */
     public SDVariable squaredNorm(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("squaredNorm", x);
         SDVariable result = f().squaredNorm(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2474,6 +2557,7 @@ public abstract class SDBaseOps {
      * @see #unstack(String[], SDVariable, int, int)
      */
     public SDVariable stack(String name, int axis, SDVariable... values) {
+        validateSameType("stack", false, values);
         SDVariable ret = f().stack(values, axis);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2514,6 +2598,7 @@ public abstract class SDBaseOps {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable standardDeviation(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        validateNumerical("standard deviation", x);
         SDVariable result = f().std(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2657,6 +2742,7 @@ public abstract class SDBaseOps {
      * of rank (input rank) if keepdims = true
      */
     public SDVariable sum(String name, SDVariable x, boolean keepDims, int... dimensions) {
+        validateNumerical("sum reduction", x);
         SDVariable result = f().sum(x, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2690,14 +2776,15 @@ public abstract class SDBaseOps {
                                  SDVariable x,
                                  SDVariable y,
                                  int[][] dimensions) {
+        validateNumerical("tensorMmul", x, y);
         SDVariable result = f().tensorMmul(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @see #tile(String, SDVariable, int[])
+     * @see #tile(String, SDVariable, int...)
      */
-    public SDVariable tile(SDVariable x, int[] repeat) {
+    public SDVariable tile(SDVariable x, int... repeat) {
         return tile(null, x, repeat);
     }
 
@@ -2719,7 +2806,7 @@ public abstract class SDBaseOps {
      * @param repeat Number of times to repeat in each axis. Must have length equal to the rank of the input array
      * @return Output variable
      */
-    public SDVariable tile(String name, SDVariable x, int[] repeat) {
+    public SDVariable tile(String name, SDVariable x, int... repeat) {
         SDVariable result = f().tile(x, repeat);
         return updateVariableNameAndReference(result, name);
     }
@@ -2767,6 +2854,8 @@ public abstract class SDBaseOps {
      * @return Unsorted segment max output
      */
     public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+        validateNumerical("unsortedSegmentMax", "data", data);
+        validateInteger("unsortedSegmentMax", "segmentIds", segmentIds);
         SDVariable ret = f().unsortedSegmentMax(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2792,6 +2881,8 @@ public abstract class SDBaseOps {
      * @return Unsorted segment mean output
      */
     public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+        validateNumerical("unsortedSegmentMean", "data", data);
+        validateInteger("unsortedSegmentMean", "segmentIds", segmentIds);
         SDVariable ret = f().unsortedSegmentMean(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2817,6 +2908,8 @@ public abstract class SDBaseOps {
      * @return Unsorted segment min output
      */
     public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+        validateNumerical("unsortedSegmentMin", "data", data);
+        validateInteger("unsortedSegmentMin", "segmentIds", segmentIds);
         SDVariable ret = f().unsortedSegmentMin(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2841,6 +2934,8 @@ public abstract class SDBaseOps {
      * @return Unsorted segment product output
      */
     public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+        validateNumerical("unsortedSegmentProd", "data", data);
+        validateInteger("unsortedSegmentProd", "segmentIds", segmentIds);
         SDVariable ret = f().unsortedSegmentProd(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2871,7 +2966,7 @@ public abstract class SDBaseOps {
     /**
      * See {@link #unsortedSegmentSum(String, SDVariable, SDVariable, int)}
      */
-    public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(@NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
         return unsortedSegmentSum(null, data, segmentIds, numSegments);
     }
 
@@ -2888,7 +2983,9 @@ public abstract class SDBaseOps {
      * @param numSegments Number of segments
      * @return Unsorted segment sum output
      */
-    public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds, int numSegments) {
+    public SDVariable unsortedSegmentSum(String name, @NonNull SDVariable data, @NonNull SDVariable segmentIds, int numSegments) {
+        validateNumerical("unsortedSegmentSum", "data", data);
+        validateInteger("unsortedSegmentSum", "segmentIds", segmentIds);
         SDVariable ret = f().unsortedSegmentSum(data, segmentIds, numSegments);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2903,7 +3000,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis) {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2911,7 +3008,7 @@ public abstract class SDBaseOps {
     /**
      * @see #unstack(String[], SDVariable, int, int)
      */
-    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(@NonNull SDVariable value, int axis, int num) {
         return unstack(null, value, axis, num);
     }
 
@@ -2929,7 +3026,7 @@ public abstract class SDBaseOps {
      * @return Output variables
      * @see #stack(String, int, SDVariable...)
      */
-    public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
+    public SDVariable[] unstack(String[] names, @NonNull SDVariable value, int axis, int num) {
         SDVariable[] ret = f().unstack(value, axis, num);
         return updateVariableNamesAndReferences(ret, names);
     }
@@ -2937,7 +3034,7 @@ public abstract class SDBaseOps {
     /**
      * @see #variance(String, SDVariable, boolean, int...)
      */
-    public SDVariable variance(SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(@NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(null, x, biasCorrected, dimensions);
     }
 
@@ -2950,7 +3047,7 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, int... dimensions) {
         return variance(name, x, biasCorrected, false, dimensions);
     }
 
@@ -2970,7 +3067,8 @@ public abstract class SDBaseOps {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable variance(String name, SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public SDVariable variance(String name, @NonNull SDVariable x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        validateNumerical("variance", x);
         SDVariable result = f().variance(x, biasCorrected, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2982,7 +3080,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(SDVariable input) {
+    public SDVariable zerosLike(@NonNull SDVariable input) {
         return zerosLike(null, input);
     }
 
@@ -2994,7 +3092,7 @@ public abstract class SDBaseOps {
      * @param input Input SDVariable
      * @return A new SDVariable with the same (dynamic) shape as the input
      */
-    public SDVariable zerosLike(String name, SDVariable input) {
+    public SDVariable zerosLike(String name, @NonNull SDVariable input) {
         SDVariable ret = f().zerosLike(name, input);
         return updateVariableNameAndReference(ret, name);
     }

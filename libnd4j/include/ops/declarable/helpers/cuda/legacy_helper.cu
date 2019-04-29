@@ -117,7 +117,7 @@ namespace helpers {
         auto functor = LAMBDA_TT(x, y){
             return y * (3 * x * x);
         };
-
+        
         input->applyPairwiseLambda<T>(epsilon, functor, output);
     }
 

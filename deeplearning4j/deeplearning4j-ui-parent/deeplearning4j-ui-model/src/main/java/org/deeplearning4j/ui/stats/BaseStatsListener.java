@@ -383,14 +383,8 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 gpuMaxBytes = new long[nDevices];
                 for (int i = 0; i < nDevices; i++) {
                     try {
-                        Pointer p = getDevicePointer(i);
-                        if (p == null) {
-                            gpuMaxBytes[i] = 0;
-                            gpuCurrentBytes[i] = 0;
-                        } else {
-                            gpuMaxBytes[i] = nativeOps.getDeviceTotalMemory(p);
-                            gpuCurrentBytes[i] = gpuMaxBytes[i] - nativeOps.getDeviceFreeMemory(p);
-                        }
+                        gpuMaxBytes[i] = nativeOps.getDeviceTotalMemory(0);
+                        gpuCurrentBytes[i] = gpuMaxBytes[i] - nativeOps.getDeviceFreeMemory(0);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -637,16 +631,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                 deviceDescription = new String[nDevices];
                 for (int i = 0; i < nDevices; i++) {
                     try {
-                        Pointer p = getDevicePointer(i);
-                        if (p == null) {
-                            deviceTotalMem[i] = 0;
-                            deviceDescription[i] = "Device(" + i + ")";
-                        } else {
-                            deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(p);
-                            deviceDescription[i] = nativeOps.getDeviceName(p);
-                            if (nDevices > 1) {
-                                deviceDescription[i] = deviceDescription[i] + " (" + i + ")";
-                            }
+                        deviceTotalMem[i] = nativeOps.getDeviceTotalMemory(i);
+                        deviceDescription[i] = nativeOps.getDeviceName(i);
+                        if (nDevices > 1) {
+                            deviceDescription[i] = deviceDescription[i] + " (" + i + ")";
                         }
                     } catch (Exception e) {
                         log.debug("Error getting device info", e);

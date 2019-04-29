@@ -43,10 +43,22 @@ namespace  nd4j {
     public:
         // default constructor
         ResultSet(const nd4j::graph::FlatResult* result = nullptr);
+
+        ResultSet(const ResultSet& other) noexcept;
+
+        ResultSet& operator=(const ResultSet& other) noexcept;
+
+        // move constructor
+        ResultSet(ResultSet&& other) noexcept;
+
+        // move assignment operator
+        ResultSet& operator=(ResultSet&& other) noexcept;
+        
         ~ResultSet();
 
         int size();
-        nd4j::NDArray* at(unsigned long idx);
+        nd4j::NDArray* at(const unsigned long idx) const;
+        nd4j::NDArray* operator[](const unsigned long idx) const;
         void push_back(nd4j::NDArray* array);
 
         Nd4jStatus status();

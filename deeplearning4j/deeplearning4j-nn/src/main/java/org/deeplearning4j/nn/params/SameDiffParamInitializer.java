@@ -132,7 +132,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
                         + " of type " + clazz.getSimpleName() + ": parameter length (" + length
                         + ") must be > 0 - parameter array shape: " + Arrays.toString(sh));
             }
-            INDArray sub = view.get(point(0), interval(soFar, soFar + length));
+            INDArray sub = view.get(interval(0,0,true), interval(soFar, soFar + length));
 
             if(!Arrays.equals(sub.shape(), sh)){
                 char order = (sdl != null ? sdl.paramReshapeOrder(s) : sdv.paramReshapeOrder(s));

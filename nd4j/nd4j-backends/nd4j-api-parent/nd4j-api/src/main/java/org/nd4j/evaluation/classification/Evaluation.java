@@ -30,10 +30,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -89,6 +90,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     protected static final int CONFUSION_PRINT_MAX_CLASSES = 20;
 
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
     protected Integer binaryPositiveClass = 1;  //Used *only* for binary classification; default value here to 1 for legacy JSON loading
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -106,11 +109,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected List<String> labelsList = new ArrayList<>();
 
     protected Double binaryDecisionThreshold;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     protected INDArray costArray;
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
+
+    /**
+     * For stats(): When classes are excluded from precision/recall, what is the maximum number we should print?
+     * If this is set to a high value, the output (potentially thousands of classes) can become unreadable.
+     */
+    @Getter @Setter
+    protected int maxWarningClassesToPrint = 16;
 
     // Empty constructor
     public Evaluation() {
@@ -244,7 +254,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
         }
         this.labelsList = labels;
-        this.costArray = costArray;
+        this.costArray = costArray == null ? null : costArray.castTo(DataType.FLOAT);
         this.topN = 1;
     }
 
@@ -304,6 +314,29 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         confusion = new ConfusionMatrix<>(classes);
     }
 
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
+
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
+    }
+
 
     /**
      * Collects statistics on the real outcomes vs the
@@ -322,65 +355,71 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     /**
      * Evaluate the network, with optional metadata
      *
-     * @param realOutcomes   Data labels
-     * @param guesses        Network predictions
+     * @param labels   Data labels
+     * @param predictions        Network predictions
      * @param recordMetaData Optional; may be null. If not null, should have size equal to the number of outcomes/guesses
      *
      */
     @Override
-    public void eval(INDArray realOutcomes, final INDArray guesses,
-                     final List<? extends Serializable> recordMetaData) {
-        Preconditions.checkArgument(realOutcomes.rank() == 2, "Expected rank 2 labels for evaluation." +
-                " Got labels array with shape %ndShape. For time series, use evalTimeSeries", realOutcomes);
-        Preconditions.checkArgument(guesses.rank() == 2, "Expected rank 2 network predictions for evaluation." +
-                " Got predictions array with shape %ndShape. For time series, use evalTimeSeries", guesses);
+    public void eval(INDArray labels, INDArray predictions, INDArray mask, final List<? extends Serializable> recordMetaData) {
+        Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labels, predictions, mask, axis);
+        if(p == null){
+            //All values masked out; no-op
+            return;
+        }
 
+        INDArray labels2d = p.getFirst();
+        INDArray predictions2d = p.getSecond();
+        INDArray maskArray = p.getThird();
+        Preconditions.checkState(maskArray == null, "Per-output masking for Evaluation is not supported");
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
-        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(guesses, Conditions.isNan())).getFinalResult().longValue();
+        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictions2d, Conditions.isNan())).getFinalResult().longValue();
         org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
                 " %s NaNs present in predictions INDArray", count);
 
         // Add the number of rows to numRowCounter
-        numRowCounter += realOutcomes.size(0);
+        numRowCounter += labels2d.size(0);
 
-        if(realOutcomes.dataType() != guesses.dataType())
-            realOutcomes = realOutcomes.castTo(guesses.dataType());
+        if(labels2d.dataType() != predictions2d.dataType())
+            labels2d = labels2d.castTo(predictions2d.dataType());
 
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
-            int nClasses = realOutcomes.columns();
+            int nClasses = labels2d.columns();
             if (nClasses == 1)
                 nClasses = 2; //Binary (single output variable) case
-            labelsList = new ArrayList<>(nClasses);
-            for (int i = 0; i < nClasses; i++)
-                labelsList.add(String.valueOf(i));
+            if(labelsList == null || labelsList.isEmpty()) {
+                labelsList = new ArrayList<>(nClasses);
+                for (int i = 0; i < nClasses; i++)
+                    labelsList.add(String.valueOf(i));
+            }
             createConfusion(nClasses);
         }
 
         // Length of real labels must be same as length of predicted labels
-        if (!Arrays.equals(realOutcomes.shape(),guesses.shape())) {
+        if (!Arrays.equals(labels2d.shape(),predictions2d.shape())) {
             throw new IllegalArgumentException("Unable to evaluate. Predictions and labels arrays are not same shape." +
-                    " Predictions shape: " + Arrays.toString(guesses.shape()) + ", Labels shape: " + Arrays.toString(realOutcomes.shape()));
+                    " Predictions shape: " + Arrays.toString(predictions2d.shape()) + ", Labels shape: " + Arrays.toString(labels2d.shape()));
         }
 
         // For each row get the most probable label (column) from prediction and assign as guessMax
         // For each row get the column of the true label and assign as currMax
 
-        final int nCols = realOutcomes.columns();
-        final int nRows = realOutcomes.rows();
+        final int nCols = labels2d.columns();
+        final int nRows = labels2d.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold).castTo(Nd4j.defaultFloatingPointType());
+            INDArray binaryGuesses = predictions2d.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold).castTo(predictions.dataType());
 
-            INDArray notLabel = realOutcomes.rsub(1.0); //Invert entries (assuming 1 and 0)
+            INDArray notLabel = labels2d.rsub(1.0); //Invert entries (assuming 1 and 0)
             INDArray notGuess = binaryGuesses.rsub(1.0);
             //tp: predicted = 1, actual = 1
-            int tp = realOutcomes.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
+            int tp = labels2d.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fp: predicted = 1, actual = 0
             int fp = notLabel.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fn: predicted = 0, actual = 1
-            int fn = notGuess.mul(realOutcomes).castTo(DataType.INT).sumNumber().intValue();
+            int fn = notGuess.mul(labels2d).castTo(DataType.INT).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
             confusion().add(1, 1, tp);
@@ -402,7 +441,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 for (int i = 0; i < binaryGuesses.size(0); i++) {
                     if (i >= recordMetaData.size())
                         break;
-                    int actual = realOutcomes.getDouble(0) == 0.0 ? 0 : 1;
+                    int actual = labels2d.getDouble(0) == 0.0 ? 0 : 1;
                     int predicted = binaryGuesses.getDouble(0) == 0.0 ? 0 : 1;
                     addToMetaConfusionMatrix(actual, predicted, recordMetaData.get(i));
                 }
@@ -417,16 +456,16 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                                     + ". Binary decision threshold can only be used for binary " + "prediction cases");
                 }
 
-                INDArray pClass1 = guesses.getColumn(1);
+                INDArray pClass1 = predictions2d.getColumn(1);
                 guessIndex = pClass1.gt(binaryDecisionThreshold);
             } else if (costArray != null) {
                 //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
-                guessIndex = Nd4j.argMax(guesses.mulRowVector(costArray), 1);
+                guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray.castTo(predictions2d.dataType())), 1);
             } else {
                 //Standard case: argmax
-                guessIndex = Nd4j.argMax(guesses, 1);
+                guessIndex = Nd4j.argMax(predictions2d, 1);
             }
-            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            INDArray realOutcomeIndex = Nd4j.argMax(labels2d, 1);
             val nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
@@ -483,12 +522,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if (nCols > 1 && topN > 1) {
             //Calculate top N accuracy
             //TODO: this could be more efficient
-            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            INDArray realOutcomeIndex = Nd4j.argMax(labels2d, 1);
             val nExamples = realOutcomeIndex.length();
             for (int i = 0; i < nExamples; i++) {
                 int labelIdx = (int) realOutcomeIndex.getDouble(i);
-                double prob = guesses.getDouble(i, labelIdx);
-                INDArray row = guesses.getRow(i);
+                double prob = predictions2d.getDouble(i, labelIdx);
+                INDArray row = predictions2d.getRow(i);
                 int countGreaterThan = (int) Nd4j.getExecutioner()
                                 .exec(new MatchCondition(row, Conditions.greaterThan(prob)))
                                 .getDouble(0);
@@ -756,8 +795,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         warnings.append(" ").append(wasWere);
         warnings.append(" never predicted by the model and ").append(wasWere).append(" excluded from average ")
-                        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
-                        .append(list).append("\n");
+                        .append(metric);
+        if(list.size() <= maxWarningClassesToPrint) {
+            warnings.append("\nClasses excluded from average ").append(metric).append(": ")
+                    .append(list).append("\n");
+        }
     }
 
     /**

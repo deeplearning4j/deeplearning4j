@@ -34,31 +34,15 @@ static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArra
 
     //*output = *input;
 
-//    ResultSet<T>* listOut  = output->allTensorsAlongDimension({output->rankOf()-2, output->rankOf()-1});
-//    ResultSet<T>* listDiag = diagonal->allTensorsAlongDimension({diagonal->rankOf()-1});
+    const int lastDimSize = input->sizeAt(-1);
+    const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);
+    const int lastSmallDim = diagonal->sizeAt(-1);
+    const int batchSize = input->lengthOf()/last2DimSize;
 
-    // TODO: tune this properlys
-//#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-    // condition is hold: listOut->size() == listDiag->size()
-//    for(int i = 0; i < listOut->size(); ++i)       
-//    	for(int j = 0; j < diagonal->sizeAt(-1); ++j)
-//        	(*listOut->at(i))(j,j) = (*listDiag->at(i))(j);            
-//    
-//    delete listOut;
-//    delete listDiag;
-
-            *output = *input;
-
-            const int lastDimSize = input->sizeAt(-1);
-            const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);
-            const int lastSmallDim = diagonal->sizeAt(-1);
-            const int batchSize = input->lengthOf()/last2DimSize;
-    
-// #pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
-            for(int i = 0; i < batchSize; ++i )
-                for(int j = 0; j < lastSmallDim; ++j) {
-                    output->p(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
-                }
+    for(int i = 0; i < batchSize; ++i )
+        for(int j = 0; j < lastSmallDim; ++j) {
+            output->p(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
+        }
              
 
 }

@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.primitives.Pair;
@@ -38,8 +39,8 @@ import java.util.Arrays;
 public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.util.MaskLayer> {
     private Gradient emptyGradient = new DefaultGradient();
 
-    public MaskLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public MaskLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -86,7 +87,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                             Arrays.toString(input.shape()) + ", expected 2d mask array with shape [minibatch, sequenceLength]." +
                             " Got mask with shape: "+ Arrays.toString(maskArray.shape()));
                 }
-                INDArray fwd = workspaceMgr.createUninitialized(type, input.shape(), 'f');
+                INDArray fwd = workspaceMgr.createUninitialized(type, input.dataType(), input.shape(), 'f');
                 Broadcast.mul(input, maskArray, fwd, 0, 2);
                 return fwd;
             case 4:
@@ -102,7 +103,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                     dimensions = Arrays.copyOfRange(dimensions, 0, count);
                 }
 
-                INDArray fwd2 = workspaceMgr.createUninitialized(type, input.shape(), 'c');
+                INDArray fwd2 = workspaceMgr.createUninitialized(type, input.dataType(), input.shape(), 'c');
                 Broadcast.mul(input, maskArray, fwd2, dimensions);
                 return fwd2;
             default:
