@@ -23,6 +23,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace ops {

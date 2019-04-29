@@ -22,6 +22,10 @@
 
 namespace nd4j {
 
+    bool NDIndex::isInterval() {
+        return false;
+    }
+
     Nd4jLong NDIndex::stride() {
         return _stride;
     }
@@ -33,6 +37,19 @@ namespace nd4j {
     nd4j::NDIndexPoint::NDIndexPoint(Nd4jLong point) : nd4j::NDIndex() {
         this->_indices.push_back(point);
     }
+
+    bool NDIndexAll::isInterval() {
+        return false;
+    }
+
+    bool NDIndexPoint::isInterval() {
+        return false;
+    }
+
+    bool NDIndexInterval::isInterval() {
+        return true;
+    }
+
 
 
     nd4j::NDIndexInterval::NDIndexInterval(Nd4jLong start, Nd4jLong end, Nd4jLong stride) : nd4j::NDIndex() {

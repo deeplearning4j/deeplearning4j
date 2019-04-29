@@ -19,6 +19,7 @@ package org.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -937,6 +938,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testMmap2() throws Exception {
         // we don't support MMAP on cuda yet
         if (Nd4j.getExecutioner().getClass().getName().toLowerCase().contains("cuda"))
@@ -985,7 +987,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
@@ -993,7 +995,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
@@ -1001,7 +1003,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             try {
@@ -1009,7 +1011,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             //Detach
@@ -1017,7 +1019,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 invalidArray.detach();
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e){
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
 
@@ -1027,7 +1029,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             try {
@@ -1035,7 +1037,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e) {
                 //Expected exception
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
 
@@ -1044,7 +1046,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 invalidArray.dup();
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e){
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             //Unsafe dup:
@@ -1052,14 +1054,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 invalidArray.unsafeDuplication();
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e){
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
             try{
                 invalidArray.unsafeDuplication(true);
                 fail("Exception should be thrown");
             } catch (ND4JWorkspaceException e){
-                e.printStackTrace();
+                log.info("Expected exception: {}", e.getMessage());
             }
 
 
@@ -1091,7 +1093,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         try {
@@ -1099,7 +1101,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         try {
@@ -1107,7 +1109,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         try {
@@ -1115,7 +1117,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         //Detach
@@ -1123,7 +1125,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             gen2.detach();
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
 
@@ -1133,7 +1135,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         try {
@@ -1141,7 +1143,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
                             //Expected exception
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
 
@@ -1150,7 +1152,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             gen2.dup();
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         //Unsafe dup:
@@ -1158,19 +1160,48 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                             gen2.unsafeDuplication();
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
 
                         try {
                             gen2.unsafeDuplication(true);
                             fail("Exception should be thrown");
                         } catch (ND4JWorkspaceException e) {
-                            e.printStackTrace();
+                            log.info("Expected exception: {}", e.getMessage());
                         }
                     }
                 }
             }
         }
+    }
+
+    @Test
+    public void testDtypeLeverage(){
+
+        for(DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            for (DataType arrayDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+
+                WorkspaceConfiguration configOuter = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.NONE).build();
+                WorkspaceConfiguration configInner = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.NONE).build();
+
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configOuter, "ws")) {
+                    INDArray arr = Nd4j.create(arrayDType, 3, 4);
+                    try (MemoryWorkspace wsInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configOuter, "wsInner")) {
+                        INDArray leveraged = arr.leverageTo("ws");
+                        assertTrue(leveraged.isAttached());
+                        assertEquals(arrayDType, leveraged.dataType());
+
+                        INDArray detached = leveraged.detach();
+                        assertFalse(detached.isAttached());
+                        assertEquals(arrayDType, detached.dataType());
+                    }
+                }
+            }
+        }
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
 

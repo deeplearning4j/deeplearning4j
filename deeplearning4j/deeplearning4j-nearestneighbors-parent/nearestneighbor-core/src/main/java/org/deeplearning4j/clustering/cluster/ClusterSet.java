@@ -17,6 +17,8 @@
 package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
+import org.deeplearning4j.clustering.algorithm.Distance;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -26,20 +28,23 @@ import java.util.*;
 @Data
 public class ClusterSet implements Serializable {
 
-    private String distanceFunction;
+    private Distance distanceFunction;
     private List<Cluster> clusters;
+    private CentersHolder centersHolder;
     private Map<String, String> pointDistribution;
     private boolean inverse;
 
     public ClusterSet(boolean inverse) {
-        this(null, inverse);
+        this(null, inverse, null);
     }
 
-    public ClusterSet(String distanceFunction, boolean inverse) {
+    public ClusterSet(Distance distanceFunction, boolean inverse, long[] shape) {
         this.distanceFunction = distanceFunction;
         this.inverse = inverse;
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
         this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
+        if (shape != null)
+            this.centersHolder = new CentersHolder(shape[0], shape[1]);
     }
 
 
@@ -56,6 +61,7 @@ public class ClusterSet implements Serializable {
         Cluster newCluster = new Cluster(center, distanceFunction);
         getClusters().add(newCluster);
         setPointLocation(center, newCluster);
+        centersHolder.addCenter(center.getArray());
         return newCluster;
     }
 
@@ -123,8 +129,7 @@ public class ClusterSet implements Serializable {
      */
     public Pair<Cluster, Double> nearestCluster(Point point) {
 
-        Cluster nearestCluster = null;
-        double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
+        /*double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
 
         double currentDistance;
         for (Cluster cluster : getClusters()) {
@@ -141,10 +146,13 @@ public class ClusterSet implements Serializable {
                 }
             }
 
-        }
+        }*/
 
+        Pair<Double, Long> nearestCenterData = centersHolder.
+                getCenterByMinDistance(point, distanceFunction);
+        Cluster nearestCluster = getClusters().get(nearestCenterData.getSecond().intValue());
+        double minDistance = nearestCenterData.getFirst();
         return Pair.of(nearestCluster, minDistance);
-
     }
 
     /**
@@ -164,9 +172,9 @@ public class ClusterSet implements Serializable {
      * @param point
      * @return
      */
-    public double getDistanceFromNearestCluster(Point point) {
+    /*public double getDistanceFromNearestCluster(Point point) {
         return nearestCluster(point).getValue();
-    }
+    }*/
 
 
     /**

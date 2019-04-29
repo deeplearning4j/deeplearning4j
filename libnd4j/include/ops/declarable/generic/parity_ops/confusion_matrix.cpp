@@ -79,11 +79,9 @@ namespace nd4j {
                 int maxLabel = labels->reduceNumber(reduce::Max).e<int>(0);
                 numClasses = (maxPrediction >= maxLabel) ?  maxPrediction+1 : maxLabel+1;
             }
-
-            Nd4jLong *newShape;
+            
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, dtype, shape.data(), newShape);
+            Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(dtype, 'c', 2, shape.data(), block.getWorkspace());            
 
             return SHAPELIST(newShape);
         }

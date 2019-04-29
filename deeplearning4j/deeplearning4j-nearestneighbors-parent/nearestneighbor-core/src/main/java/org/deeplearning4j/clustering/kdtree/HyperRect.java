@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.kdtree;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -30,7 +31,12 @@ public class HyperRect implements Serializable {
     private List<Interval> points;
 
     public HyperRect(List<Interval> points) {
-        this.points = points;
+        //this.points = points;
+        this.points = new ArrayList<>(points.size());
+        for (int i = 0; i < points.size(); ++i) {
+            Interval newInterval = new Interval(points.get(i).lower, points.get(i).higher);
+            this.points.add(newInterval);
+        }
     }
 
 
@@ -62,15 +68,15 @@ public class HyperRect implements Serializable {
         for (int i = 0; i < hPoint.length(); i++) {
             double p = hPoint.getDouble(i);
             Interval interval = points.get(i);
-            if (p < interval.lower)
-                ret += Math.pow((p - interval.lower), 2);
-            else
-                ret += Math.pow((p - interval.higher), 2);
+            if (!interval.contains(p)) {
+                if (p < interval.lower)
+                    ret += Math.pow((p - interval.lower), 2);
+                else
+                    ret += Math.pow((p - interval.higher), 2);
+            }
         }
 
         ret = Math.pow(ret, 0.5);
-
-
         return ret;
     }
 
@@ -89,13 +95,24 @@ public class HyperRect implements Serializable {
     public HyperRect getLower(INDArray hPoint, int desc) {
         Interval interval = points.get(desc);
         double d = hPoint.getDouble(desc);
-        if (interval.higher > d)
+        if (interval.lower > d)
             return null;
         HyperRect ret = new HyperRect(new ArrayList<>(points));
         Interval i2 = ret.points.get(desc);
-        if (i2.lower > d)
-            i2.lower = d;
+        if (i2.higher > d)
+            i2.higher = d;
         return ret;
+    }
+
+    @Override
+    public String toString() {
+        String retVal = "";
+        retVal +=  "[";
+        for (val point : points) {
+            retVal +=  "("  + point.lower + " - " + point.higher + ") ";
+        }
+        retVal +=  "]";
+        return retVal;
     }
 
     public static class Interval {

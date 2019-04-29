@@ -62,11 +62,13 @@ namespace nd4j {
 
                 auto rawPtr = (void *)flatArray->buffer()->data();
                 auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
-                auto charPtr = reinterpret_cast<char *>(longPtr + length + 2);
+                auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
                 auto offsets = new Nd4jLong[length+1];
                 for (int e = 0; e <= length; e++) {
-                    auto v = canKeep ?  longPtr[e+1] : BitwiseUtils::swap_bytes<Nd4jLong>(longPtr[e+1]);
-                    offsets[e] = v;
+                    auto o = longPtr[e];
+                    // FIXME: BE vs LE on partials
+                    //auto v = canKeep ?  o : BitwiseUtils::swap_bytes<Nd4jLong>(o);
+                    offsets[e] = o;
                 }
 
                 for (int e = 0; e < length; e++) {
@@ -95,7 +97,7 @@ namespace nd4j {
 
             BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
 
-            auto array = new NDArray(newBuffer, newShape);            
+            auto array = new NDArray(newBuffer, newShape);
             array->triggerAllocationFlag(true);
 
             return array;

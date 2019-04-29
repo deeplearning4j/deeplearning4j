@@ -57,9 +57,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
         INDArray[] in = new INDArray[nRows];
         INDArray[] out = new INDArray[nRows];
         for (int i = 0; i < nRows; i++)
-            in[i] = expIn.getRow(i).dup();
+            in[i] = expIn.getRow(i, true).dup();
         for (int i = 0; i < nRows; i++)
-            out[i] = expOut.getRow(i).dup();
+            out[i] = expOut.getRow(i, true).dup();
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -100,10 +100,10 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
                 i++;
             } else {
-                INDArray in0 = expIn0.getRow(i).dup();
-                INDArray in1 = expIn1.getRow(i).dup();
-                INDArray out0 = expOut0.getRow(i).dup();
-                INDArray out1 = expOut1.getRow(i).dup();
+                INDArray in0 = expIn0.getRow(i, true).dup();
+                INDArray in1 = expIn1.getRow(i, true).dup();
+                INDArray out0 = expOut0.getRow(i, true).dup();
+                INDArray out1 = expOut1.getRow(i, true).dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
@@ -150,12 +150,12 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
                 i++;
             } else {
-                INDArray in0 = expIn0.getRow(i).dup();
-                INDArray in1 = expIn1.getRow(i).dup();
-                INDArray in2 = expIn2.getRow(i).dup();
-                INDArray out0 = expOut0.getRow(i).dup();
-                INDArray out1 = expOut1.getRow(i).dup();
-                INDArray out2 = expOut2.getRow(i).dup();
+                INDArray in0 = expIn0.getRow(i, true).dup();
+                INDArray in1 = expIn1.getRow(i, true).dup();
+                INDArray in2 = expIn2.getRow(i, true).dup();
+                INDArray out0 = expOut0.getRow(i, true).dup();
+                INDArray out1 = expOut1.getRow(i, true).dup();
+                INDArray out2 = expOut2.getRow(i, true).dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
             }
         }
@@ -193,12 +193,12 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
-            INDArray in0 = expIn0.getRow(i).dup();
-            INDArray in1 = expIn1.getRow(i).dup();
-            INDArray in2 = expIn2.getRow(i).dup();
-            INDArray out0 = expOut0.getRow(i).dup();
-            INDArray out1 = expOut1.getRow(i).dup();
-            INDArray out2 = expOut2.getRow(i).dup();
+            INDArray in0 = expIn0.getRow(i, true).dup();
+            INDArray in1 = expIn1.getRow(i, true).dup();
+            INDArray in2 = expIn2.getRow(i, true).dup();
+            INDArray out0 = expOut0.getRow(i, true).dup();
+            INDArray out1 = expOut1.getRow(i, true).dup();
+            INDArray out2 = expOut2.getRow(i, true).dup();
             list.add(new MultiDataSet(new INDArray[] {in0, in1, in2}, new INDArray[] {out0, out1, out2}));
         }
 
@@ -252,8 +252,8 @@ public class MultiDataSetTest extends BaseNd4jTest {
                                 NDArrayIndex.all()).dup();
                 INDArray in1 = expIn1.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.all()).dup();
-                INDArray out0 = expOut0.getRow(i).dup();
-                INDArray out1 = expOut1.getRow(i).dup();
+                INDArray out0 = expOut0.getRow(i, true).dup();
+                INDArray out1 = expOut1.getRow(i, true).dup();
                 list.add(new MultiDataSet(new INDArray[] {in0, in1}, new INDArray[] {out0, out1}));
             }
         }
@@ -531,7 +531,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
             assertArrayEquals(new long[] {1, 10, 10}, m.getFeatures(1).shape());
             assertArrayEquals(new long[] {1, 5, 10, 10}, m.getFeatures(2).shape());
 
-            assertEquals(features[0].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getFeatures(0));
+            assertEquals(features[0].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getFeatures(0));
             assertEquals(features[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
                             m.getFeatures(1));
             assertEquals(features[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
@@ -545,17 +545,17 @@ public class MultiDataSetTest extends BaseNd4jTest {
             assertArrayEquals(new long[] {1, 10, 10}, m.getLabels(1).shape());
             assertArrayEquals(new long[] {1, 5, 10, 10}, m.getLabels(2).shape());
 
-            assertEquals(labels[0].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getLabels(0));
+            assertEquals(labels[0].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getLabels(0));
             assertEquals(labels[1].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all()),
                             m.getLabels(1));
             assertEquals(labels[2].get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.all()), m.getLabels(2));
 
             assertNull(m.getFeaturesMaskArray(0));
-            assertEquals(fMask[1].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getFeaturesMaskArray(1));
+            assertEquals(fMask[1].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getFeaturesMaskArray(1));
 
             assertNull(m.getLabelsMaskArray(0));
-            assertEquals(lMask[1].get(NDArrayIndex.point(i), NDArrayIndex.all()), m.getLabelsMaskArray(1));
+            assertEquals(lMask[1].get(NDArrayIndex.interval(i,i,true), NDArrayIndex.all()), m.getLabelsMaskArray(1));
         }
     }
 

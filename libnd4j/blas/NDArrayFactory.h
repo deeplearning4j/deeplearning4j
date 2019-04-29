@@ -125,6 +125,8 @@ namespace nd4j {
         static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
         static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
+        static ResultSet createSetOfArrs(const Nd4jLong numOfArrs, const void* buffer, const Nd4jLong* shapeInfo, const Nd4jLong* offsets, memory::Workspace* workspace = nullptr);
+
 #endif
     };
 }

@@ -20,6 +20,7 @@
 
 #include "../indexreduce.h"
 #include <op_boilerplate.h>
+#include <Loops.h>
 #include <types/types.h>
 #include <helpers/ConstantTadHelper.h>
 #include "../legacy_ops.h"
@@ -56,28 +57,49 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
 
     //T startingVal = OpType::startingValue(x);
     auto startingIndex = OpType::startingIndexValue(x);
-    Nd4jLong len = shape::length(xShapeInfo);
+    auto len = shape::length(xShapeInfo);
+    auto xEws = shape::elementWiseStride(xShapeInfo);
     nd4j::OmpLaunchHelper info(len);
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                        
-    #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-    {                
-        auto local = OpType::startingIndexValue(x);
-        auto threadNum = omp_get_thread_num();                    
-        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-        
-        #pragma omp simd
-        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {            
-            auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
-            IndexValue<X> curr(x[offset], threadOffset + i);
-            local = OpType::update(local, curr, extraParams);
+
+    if (xEws == 1) {
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        {
+            auto local = OpType::startingIndexValue(x);
+            auto threadNum = omp_get_thread_num();
+            auto threadOffset = info.getThreadOffset(threadNum);
+
+            auto ulen = info.getItersPerThread(threadNum);
+
+            for (Nd4jLong i = 0; i < ulen; i++) {
+                IndexValue<X> curr(x[i + threadOffset], i + threadOffset);
+                local = OpType::update(local, curr, extraParams);
+            }
+
+            PRAGMA_OMP_CRITICAL
+            startingIndex = OpType::update(startingIndex, local, extraParams);
         }
-        
-        #pragma omp critical
-        startingIndex = OpType::update(startingIndex, local, extraParams);        
-    }    
+    } else {
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        {
+            auto local = OpType::startingIndexValue(x);
+            auto threadNum = omp_get_thread_num();
+            auto threadOffset = info.getThreadOffset(threadNum);
+
+            auto ulen = info.getItersPerThread(threadNum);
+
+            for (Nd4jLong i = 0; i < ulen; i++) {
+                auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
+                IndexValue<X> curr(x[offset], threadOffset + i);
+                local = OpType::update(local, curr, extraParams);
+            }
+
+            PRAGMA_OMP_CRITICAL
+            startingIndex = OpType::update(startingIndex, local, extraParams);
+        }
+    }
     return startingIndex.index;
 }
 
@@ -108,32 +130,13 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         if (dimensionLength < 1)
             return;
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-        tadOnlyShapeInfo = packX.primaryShapeInfo();
-        tadOffsets = packX.primaryOffsets();
+        tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+        tadOffsets = tadPack.primaryOffsets();
     }
 
-    int tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    int numThreads = nd4j::math::nd4j_min<int>(zLen, omp_get_max_threads());
-
-    uint tadOnlyShapeInfoCast[MAX_RANK];                    
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(tadOnlyShapeInfo, tadOnlyShapeInfoCast);
-
-    #pragma omp parallel for schedule(guided) num_threads(numThreads) if (numThreads > 1) proc_bind(AFFINITY) default(shared)        
-    for(Nd4jLong i = 0; i < zLen; i++) {
-
-        auto offset = tadOffsets[i];
-        auto indexValue = OpType::startingIndexValue(&x[offset]);
-
-        #pragma omp simd
-        for(int j = 0; j < tadLength; j++) {
-            auto xOffset = offset + shape::indexOffset(j, tadOnlyShapeInfo, tadOnlyShapeInfoCast, tadLength, canCastX);
-            IndexValue<X> comp(x[xOffset], j);
-            indexValue = OpType::update(indexValue,comp,extraParams);
-        }
-        z[i] = indexValue.index;
-    }    
+    nd4j::IndexReductionLoops<X>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
 

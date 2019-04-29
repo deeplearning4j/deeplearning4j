@@ -54,7 +54,7 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
-    public String getStringUnsafe(long index) {
+    public String getString(long index) {
         return null;
     }
 
@@ -98,6 +98,11 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
     @Override
     public INDArray reshape(char order, int... newShape) {
+        return null;
+    }
+
+    @Override
+    public INDArray reshape(char order, boolean enforceView, long... newShape) {
         return null;
     }
 

@@ -68,6 +68,7 @@ Nd4jLong* ShapeDescriptor::toShapeInfo() {
         case 1: {
             auto shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
             shapeInfo[2 + _rank * 2] = _ews;
+            shapeInfo[2] = _strides[0];
             return shapeInfo;
         }
         default: {
@@ -145,7 +146,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 }
 
 //////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides, const Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) { 
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides, const Nd4jLong ews): ShapeDescriptor(type, order, shape, strides) {
     _ews = ews;
 }
 
@@ -155,7 +156,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const Nd4jLong length) : _
 }
 
 ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
-    
+
     _order = shape::order(shapeInfo);
     _ews = shape::elementWiseStride(shapeInfo);
     _rank = shape::rank(shapeInfo);
@@ -216,7 +217,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
             shape::calcStrides(_shape.data(), shape.size(), _strides.data());
         else
             shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
-    } 
+    }
     else {
         _strides = strides;
     }

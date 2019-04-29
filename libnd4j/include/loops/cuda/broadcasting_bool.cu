@@ -53,6 +53,7 @@ namespace functions {
         template <typename OpClass>
         __host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+            nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -70,7 +71,7 @@ namespace functions {
 		                              void *vx, Nd4jLong *xShapeInfo,
 		                              void *vy, Nd4jLong *yShapeInfo,
 		                              void *vz, Nd4jLong *zShapeInfo,
-		                              int *dimension, int dimensionLength, 
+		                              int *dimension, int dimensionLength,
                                       Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
             if (tadOnlyShapeInfoZ == nullptr) {
@@ -93,7 +94,7 @@ namespace functions {
             __shared__ Nd4jLong zEWS;
       
             if (threadIdx.x == 0) {
-        
+
    	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
@@ -107,8 +108,8 @@ namespace functions {
             __shared__ X *rX;
 
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-            
-            if (threadIdx.x == 0) {                            
+
+            if (threadIdx.x == 0) {
                 rZ = z + tadOffsetsZ[r];
                 rX = x + tadOffsets[r];
             }
@@ -117,15 +118,15 @@ namespace functions {
 
             if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
 
-                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) 
-                    rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]); 
+                for (int i = threadIdx.x; i < tadLength; i+= blockDim.x)
+                    rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
             }
             else {
                 // it is expected that x and z tads and y array all have the same length
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                     auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
                     auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
-                    auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);                    
+                    auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
 
                     rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
                 }

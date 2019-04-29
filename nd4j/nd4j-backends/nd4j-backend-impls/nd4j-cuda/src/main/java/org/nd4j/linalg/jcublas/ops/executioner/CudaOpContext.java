@@ -23,6 +23,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.Nd4jCuda;
 
 /**
@@ -52,39 +53,54 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setRootSeed(long seed) {
-
+    public void setRngStates(long rootState, long nodeState) {
+        context.randomGenerator().setStates(rootState, nodeState);
     }
 
     @Override
-    public void setNodeSeed(long seed) {
-
+    public Pair<Long, Long> getRngStates() {
+        return Pair.makePair(context.randomGenerator().rootState(), context.randomGenerator().nodeState());
     }
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        context.setInputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+        context.setInputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
 
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        context.setOutputArray(index, array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
+        context.setOutputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
 
         super.setOutputArray(index, array);
     }
 
     @Override
     public Pointer contextPointer() {
-        for (val v:fastpath_in.values())
+        for (val v:fastpath_in.values()) {
+            if (v.isEmpty())
+                continue;
+
             AtomicAllocator.getInstance().synchronizeHostData(v);
 
+            if (context.isInplace())
+                AtomicAllocator.getInstance().getAllocationPoint(v).tickHostWrite();
+        }
+
         for (val v:fastpath_out.values()) {
+            if (v.isEmpty())
+                continue;
+
             AtomicAllocator.getInstance().synchronizeHostData(v);
             AtomicAllocator.getInstance().getAllocationPoint(v).tickHostWrite();
         }
 
         return context;
+    }
+
+    @Override
+    public void markInplace(boolean reallyInplace) {
+        context.markInplace(reallyInplace);
     }
 }

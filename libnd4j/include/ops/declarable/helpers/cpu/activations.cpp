@@ -22,6 +22,7 @@
 #include <ops/declarable/helpers/activations.h>
 #include <ShapeUtils.h>
 #include <numeric>
+#include <ConstantTadHelper.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -43,34 +44,34 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
 
         if (inEWS == 1 && outEWS == 1) {
 
-            #pragma omp simd reduction(maxT:max)
+            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i]);
 
-            #pragma omp parallel for simd reduction(sumT:sum)
+            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 outBuff[i] = nd4j::math::nd4j_exp<T, T>(inBuff[i] - max);
                 sum += outBuff[i];
             }
 
-            #pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++)
                 outBuff[i] /= sum;
         }
         else {
 
-            #pragma omp simd reduction(maxT:max)
+            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i * inEWS]);
 
-            #pragma omp parallel for simd reduction(sumT:sum)
+            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 T r = nd4j::math::nd4j_exp<T, T>(inBuff[i * inEWS] - max);
                 outBuff[i * outEWS] = r;
                 sum += r;
             }
 
-            #pragma omp simd
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++)
                 outBuff[i * outEWS] /= sum;
         }
@@ -150,16 +151,17 @@ void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArr
         auto length = shape::length(inShapeInfo);
 
         if (inEWS == 1) {
-#pragma omp simd reduction(maxT:max)
+            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, outBuff[i]);
 
-#pragma omp simd reduction(sumT:sum)
+            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 outBuff[i] = nd4j::math::nd4j_exp<T,T>(inBuff[i] - max);
                 sum += outBuff[i];
             }
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++) {
                 outBuff[i] /= sum;
                 outBuff[i] = nd4j::math::nd4j_log<T,T>(outBuff[i]);
@@ -167,16 +169,17 @@ void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArr
         }
         else if (inEWS > 1) {
 
-#pragma omp simd reduction(maxT:max)
+            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, outBuff[i * inEWS]);
 
-#pragma omp simd reduction(sumT:sum)
+            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 outBuff[i * inEWS] = nd4j::math::nd4j_exp<T,T>(inBuff[i * inEWS] - max);
                 sum += outBuff[i * inEWS];
             }
-#pragma omp simd
+
+            PRAGMA_OMP_SIMD
             for (int i = 0; i < length; i++) {
                 outBuff[i * inEWS] /= sum;
                 outBuff[i * inEWS] = nd4j::math::nd4j_log<T, T>(outBuff[i * inEWS]);
@@ -207,86 +210,82 @@ static void softmax_(graph::LaunchContext* context, const NDArray& input, NDArra
         else
             output = 1.;
     }
-    else {
+    else if(input.isSameShapeStrict(&output)) {
 
-        const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {dimension});
-        const uint numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-        const auto subArr = input(0, dimsToExclude);
-        std::vector<Nd4jLong> idxRanges(2 * input.rankOf());
+        TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
+        Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
+        Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
+        const uint numOfSubArrs = tadPack.numberOfTads();
+        const uint tadLen       = shape::length(tadShapeInfo);
 
-        if(subArr.ews() == 1 && subArr.ordering() == 'c') {
+        if(shape::elementWiseStride(tadShapeInfo) == 1){
 
-            #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i = 0; i < numOfSubArrs; ++i) {
 
-                ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-                const auto inSubArr  = input(idxRanges);
-                const uint len       = inSubArr.lengthOf();
-
-                T* inBuff  = inSubArr.bufferAsT<T>();
-                T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0;
-
-                // #pragma omp simd reduction(maxT:max)
-                for(uint j = 0; j < len; ++j)
+                        
+                for(uint j = 0; j < tadLen; ++j)
                     max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
 
-
-                // #pragma omp simd reduction(sumT:sum)
-                for (uint j = 0; j < len; ++j) {
+                for (uint j = 0; j < tadLen; ++j) {
                     T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
                     outBuff[j] = temp;
                     sum += temp;
                 }
-
-                // #pragma omp simd
-                for (uint j = 0; j < len; ++j)
-                    outBuff[j] /= sum;
+            
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[j] /= sum;            
             }
-            return;
         }
+        else {
 
-        uint inShapeInfoCast[MAX_RANK];
-        bool canCast = nd4j::DataTypeUtils::castShapeInfo(subArr.getShapeInfo(), inShapeInfoCast);
+            uint inShapeInfoCast[MAX_RANK];
+            bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
 
-        #pragma omp parallel for simd schedule(guided) firstprivate(idxRanges)
-        for (uint i = 0; i < numOfSubArrs; ++i) {
+            auto offsets = new Nd4jLong[tadLen];
+            shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
 
-            ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
-            const auto inSubArr  = input(idxRanges);
-            const uint len       = inSubArr.lengthOf();
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (uint i = 0; i < numOfSubArrs; ++i) {
 
-            T* inBuff  = inSubArr.bufferAsT<T>();
-            T* outBuff = reinterpret_cast<T*>(output.getBuffer()) + (inBuff - reinterpret_cast<T*>(input.getBuffer()));
+                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
+                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
-            T max = -DataTypeUtils::max<T>();
-            T sum = 0;
+                T max = -DataTypeUtils::max<T>();
+                T sum = 0.f;
 
-            Nd4jLong* offsets = new Nd4jLong[len];
 
-            // #pragma omp simd reduction(maxT:max)
-            for(uint j = 0; j < len; ++j) {
-                offsets[j] = shape::indexOffset(j, inSubArr.getShapeInfo(), inShapeInfoCast, len, canCast);
-                max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
+
+                for(uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
+
+                for (uint j = 0; j < tadLen; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
+                    outBuff[offsets[j]] = temp;
+                    sum += temp;
+                }
+
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[offsets[j]] /= sum;
             }
-
-            // #pragma omp simd reduction(sumT:sum)
-            for (uint j = 0; j < len; ++j) {
-                T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
-                outBuff[offsets[j]] = temp;
-                sum += temp;
-            }
-
-            // #pragma omp simd
-            for (uint j = 0; j < len; ++j)
-                outBuff[offsets[j]] /= sum;
-
             delete []offsets;
         }
     }
+    else {
+        NDArray max = input.reduceAlongDims(nd4j::reduce::Max, {dimension}, true);
+        input.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &max, &output, false);
+        output.applyTransform(nd4j::transform::Exp);
+        NDArray sum = output.reduceAlongDims(nd4j::reduce::Sum, {dimension}, true);
+        output /= sum;
+    }
 }
+
+
 ///////////////////////////////////////////////////////////////////
 void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
 
@@ -300,7 +299,7 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
-#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        PRAGMA_OMP_PARALLEL_FOR_IF(inputLen > Environment::getInstance()->elementwiseThreshold())
         for(Nd4jLong i = 0; i < inputLen; ++i) {
              // FIXME: double!
             double x = input.e<double>(i);
@@ -321,7 +320,6 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
 
         dLdA.assign(0.0f);
 
-//#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
             // FIXME: double
             double x   = input.e<double>(i);

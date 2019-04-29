@@ -422,13 +422,13 @@ namespace shape {
 
     INLINEDEF void TAD::permuteShapeBufferInPlace(Nd4jLong* shapeBuffer, int* rearrange, Nd4jLong* out) {
         memcpy(out, shapeBuffer, sizeof(Nd4jLong) * shape::shapeInfoLength(this->rank));
-        doPermuteShapeBuffer(this->rank, out, rearrange);
+        doPermuteShapeInfo(out, rearrange);
     }
 
     INLINEDEF Nd4jLong* TAD::permuteShapeBuffer(Nd4jLong* shapeBuffer, int *rearrange) {
         int len = shape::shapeInfoLength(this->rank);
         Nd4jLong *copy = shape::copyOf(len,shapeBuffer);
-        doPermuteShapeBuffer(rank, copy,rearrange);
+        doPermuteShapeInfo(copy,rearrange);
         return copy;
     }
 
@@ -451,6 +451,11 @@ namespace shape {
                 && dimensionsDescending(shape::rank(this->originalShapeInfo), this->originalDimension, this->originalDimensionLength)) {
             // for C order, if outer dimensions are used, continuous layout is preserved
             this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] = this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
+        }
+
+        // do not swap order if positive elementwise stride preserved
+        if (shape::elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 1] = shape::order(this->originalShapeInfo);
         }
 
         if (this->tadShape != nullptr)
@@ -750,10 +755,10 @@ namespace shape {
 
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jLong[this->numTads];
-#pragma omp parallel for if (this->numTads > 128) schedule(static) proc_bind(close) default(shared)
-        for(int i = 0; i < this->numTads; i++) {
+        uint nT = this->numTads;
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(uint i = 0; i < nT; i++)
             this->tadOffsets[i] = this->tadOffset(i);
-        }
     }
 
 
@@ -770,7 +775,7 @@ namespace shape {
             // we might have special case here: skipped dimensions might be just full of ones
             Nd4jLong *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
             if (shape::isDimPermuted<int>(dimension, (Nd4jLong) dimensionLength))    // check whether we need permutation
-                shape::doPermuteShapeBuffer(ret, dimension);
+                doPermuteShapeInfo(ret, dimension);
 
             return ret;
         }

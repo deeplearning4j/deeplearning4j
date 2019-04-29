@@ -49,11 +49,33 @@ namespace nd4j {
         }
 
         std::string orders() override {
+            if(_context != nullptr && _context->isFastPath()){
+                std::vector<NDArray*>& ins = _context->fastpath_in();
+                std::string s;
+                for( int i=0; i<ins.size(); i++ ){
+                    if(i > 0){
+                        s += "/";
+                    }
+                    s += ShapeUtils::strideAsString(_context->getNDArray(i));
+                }
+                return s;
+            }
             return "N/A";
         }
 
         std::string strides() override {
-            return "N/A";
+            if (_context != nullptr && _context->isFastPath()) {
+                std::vector<NDArray*>& ins = _context->fastpath_in();
+                std::string s("");
+                for( int i=0; i<ins.size(); i++ ){
+                    if(i > 0){
+                        s += "/";
+                    }
+                    s += ShapeUtils::strideAsString(_context->getNDArray(i));
+                }
+                return s;
+            } else
+                return "N/A";
         }
 
         std::string inplace() override {
@@ -71,17 +93,78 @@ namespace nd4j {
         }
 
         std::string shape() override {
-            if (_context != nullptr && _context->isFastPath())
-                return ShapeUtils::shapeAsString(_context->getNDArray(0));
-            else
+            if (_context != nullptr && _context->isFastPath()) {
+                std::vector<NDArray*>& ins = _context->fastpath_in();
+                std::string s;
+                for( int i=0; i<ins.size(); i++ ){
+                    if(i > 0){
+                        s += "/";
+                    }
+                    s += ShapeUtils::shapeAsString(_context->getNDArray(i));
+                }
+                return s;
+            } else
                 return "N/A";
         }
 
         std::string dataType() override {
-            if (_context != nullptr && _context->isFastPath())
-                return DataTypeUtils::asString(_context->getNDArray(0)->dataType());
-            else
+            if (_context != nullptr && _context->isFastPath()){
+                std::vector<NDArray*>& ins = _context->fastpath_in();
+                std::string s;
+                for( int i=0; i<ins.size(); i++ ){
+                    if(i > 0){
+                        s += "/";
+                    }
+                    s += DataTypeUtils::asString(_context->getNDArray(i)->dataType());
+                }
+                return s;
+            } else
                 return "N/A";
+        }
+
+        std::string extra() override {
+            if(_context != nullptr){
+                std::vector<int>* iargs = _context->getIArguments();
+                std::vector<double>* targs = _context->getTArguments();
+                std::vector<bool>* bargs = _context->getBArguments();
+                std::string e;
+                bool any = false;
+                if(iargs != nullptr){
+                    e += "iargs=[";
+                    for( int i=0; i<iargs->size(); i++ ){
+                        if(i > 0)
+                            e += ",";
+                        e += std::to_string(iargs->at(i));
+                    }
+                    e += "]";
+                    any = true;
+                }
+                if(targs != nullptr){
+                    if(any)
+                        e += ",";
+                    e += "targs=[";
+                    for( int i=0; i<targs->size(); i++ ){
+                        if(i > 0)
+                            e += ",";
+                        e += std::to_string(targs->at(i));
+                    }
+                    e += "]";
+                    any = true;
+                }
+                if(bargs != nullptr){
+                    if(any)
+                        e += ",";
+                    e += "bargs=[";
+                    for( int i=0; i<bargs->size(); i++ ){
+                        if(i > 0)
+                            e += ",";
+                        e += std::to_string(bargs->at(i));
+                    }
+                    e += "]";
+                }
+                return e;
+            }
+            return "N/A";
         }
 
         ~DeclarableBenchmark() {

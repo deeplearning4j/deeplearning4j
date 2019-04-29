@@ -200,6 +200,18 @@ public class GradientCheckUtil {
                             + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
+        DataType netDataType = mln.getLayerWiseConfigurations().getDataType();
+        if (netDataType != DataType.DOUBLE) {
+            throw new IllegalStateException("Cannot perform gradient check: Network datatype is not set to double precision ("
+                    + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
+        }
+
+        if(netDataType != mln.params().dataType()){
+            throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
+                    + "is: " + mln.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
+        }
+
+
         //Check network configuration:
         int layerCount = 0;
         for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
@@ -467,6 +479,17 @@ public class GradientCheckUtil {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                             + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
                             + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+        }
+
+        DataType netDataType = graph.getConfiguration().getDataType();
+        if (netDataType != DataType.DOUBLE) {
+            throw new IllegalStateException("Cannot perform gradient check: Network datatype is not set to double precision ("
+                    + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
+        }
+
+        if(netDataType != graph.params().dataType()){
+            throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
+                    + "is: " + graph.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
 
         //Check configuration

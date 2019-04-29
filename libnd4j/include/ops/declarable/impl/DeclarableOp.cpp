@@ -93,10 +93,14 @@ namespace nd4j {
             NDArray* z = nullptr;
 
             if (ctx.isFastPath()) {
-                if (ctx.fastpath_out().size() <= inputId)
-                    throw std::runtime_error("fastpath_out: unresolved output array");
-
-                z = ctx.fastpath_out()[inputId];
+                if (ctx.fastpath_out().size() <= inputId) {
+                    if (ctx.isInplace()) {
+                        z = ctx.fastpath_in()[inputId];
+                    } else
+                        throw std::runtime_error("fastpath_out: unresolved output array");
+                } else {
+                    z = ctx.fastpath_out()[inputId];
+                }
             } else {
                 std::pair<int, int> pair(ctx.nodeId(), inputId);
 
@@ -186,6 +190,30 @@ namespace nd4j {
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
                 results = outSha->size();
 
+                // we must "validate" our output shapes
+                for (int e = 0; e < results; e++) {
+                    auto ptr = outSha->at(e);
+
+                    // checking for the same pointer used twice
+                    for (int i = 0; i < results; i++){
+                        if (i == e)
+                            continue;
+
+                        auto com = outSha->at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned same shape instance twice [" + *_descriptor->getOpName() + "]");
+                    }
+
+                    // checking for input pointer returned back
+                    for (int i = 0; i < inSha.size(); i++){
+                        auto com = inSha.at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned input shape instance as output [" + *_descriptor->getOpName() + "]");
+                    }
+                }
+
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
                     shapeEnd = std::chrono::system_clock::now();
@@ -240,8 +268,8 @@ namespace nd4j {
                                 outSha->destroy();
                                 delete outSha;
 
-                                nd4j_printf("Expected vs provided shapes mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
-                                throw std::runtime_error("Expected vs provided shapes mismatch");
+                                nd4j_printf("Expected vs provided shape mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
+                                throw std::runtime_error("Expected vs provided shape mismatch");
                             }
                         }
                     }
@@ -464,10 +492,22 @@ namespace nd4j {
 
                 for (int e = 0; e < numOutputs; e++) {
                     // if given output index doesn't exist - we're done
-                    if (!vs->hasVariable(block->nodeId(), e))
-                        break;
 
-                    auto array = vs->getVariable(block->nodeId(), e)->getNDArray();
+                    if (!block->isFastPath()) {
+                        if (!vs->hasVariable(block->nodeId(), e))
+                            break;
+                    } else {
+                        // we have to check either in or out stack, depending on isInplace()
+                        if (block->isInplace()) {
+                            if (block->fastpath_in().size() <= e)
+                                break;
+                        } else {
+                            if (block->fastpath_out().size() <= e)
+                                break;
+                        }
+                    }
+
+                    auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e] : vs->getVariable(block->nodeId(), e)->getNDArray();
 
                     auto shape = ShapeUtils::shapeAsString(array);
                     auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
@@ -790,11 +830,9 @@ namespace nd4j {
             if (block.width() == 0)
                 return ND4J_STATUS_OK;
 
-
-            NDArray *a0 = block.variable(0)->getNDArray();
-            for (auto p: *block.inputs()) {
-                auto v = block.variable(p);
-                NDArray *aV = v->getNDArray();
+            NDArray *a0 = block.array(0);
+            for (int e = 0; e < block.width(); e++) {
+                auto aV = block.array(e);
                 if (!shape::equalsSoft(a0->getShapeInfo(), aV->getShapeInfo()))
                     return ND4J_STATUS_BAD_DIMENSIONS;
             }
@@ -807,9 +845,9 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
 
 
-            Nd4jLong l0 = block.variable(0)->getNDArray()->lengthOf();
+            Nd4jLong l0 = block.array(0)->lengthOf();
             for (uint32_t e = 0; e < block.width(); e++) {
-                if (l0 != block.variable(e)->getNDArray()->lengthOf())
+                if (l0 != block.array(e)->lengthOf())
                     return ND4J_STATUS_BAD_LENGTH;
             }
 

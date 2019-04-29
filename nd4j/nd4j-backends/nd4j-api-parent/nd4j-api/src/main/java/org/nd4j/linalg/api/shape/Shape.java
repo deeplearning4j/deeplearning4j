@@ -32,7 +32,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.*;
@@ -443,6 +443,10 @@ public class Shape {
             result[dim] = 1;
 
         return result;
+    }
+
+    public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims) {
+        return getReducedShape(wholeShape, dimensions, keepDims, true);
     }
 
     public static long[] getReducedShape(long[] wholeShape, int[] dimensions, boolean keepDims, boolean newFormat) {
@@ -1819,7 +1823,7 @@ public class Shape {
             return 1;
 
         if (shape.length == 1 && stride.length == 1)
-            return 1;
+            return stride[0];
 
         int oldnd;
         long[] olddims = ArrayUtil.copy(shape);
@@ -2207,11 +2211,16 @@ public class Shape {
             return 'a';
         else if (isFortran && !cContiguous)
             return 'f';
-        else if (!isFortran && !cContiguous)
-            return 'c';
-        else
-            return 'c';
 
+        //Check if ascending strides
+        boolean stridesAscending = true;
+        for( int j=1; j<stride.length; j++ ){
+            stridesAscending &= (stride[j] >= stride[j-1]);
+        }
+        if(stridesAscending)
+            return 'f';
+
+        return 'c';
     }
 
     /**
@@ -2385,21 +2394,6 @@ public class Shape {
     }
 
     /**
-     * Compute the offset for the given array
-     * given the indices
-     * @param arr the array to compute the offset for
-     * @param indexes the indexes along each dimension to create the offset for
-     * @return the offset for the given array and indexes
-     */
-    public static long offsetFor(INDArray arr, int[] indexes) {
-        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(Shape.toIndexes(indexes));
-        return resolution.getOffset();
-    }
-
-
-
-    /**
      * Assert the both shapes are the same length
      * and shape[i] < lessThan[i]
      * @param shape the shape to check
@@ -2424,22 +2418,6 @@ public class Shape {
                 throw new IllegalStateException("Shape[" + i + "] should be less than lessThan[" + i + "]");
         }
     }
-
-
-
-    /**
-     * Convert the given int indexes
-     * to nd array indexes
-     * @param indices the indices to convert
-     * @return the converted indexes
-     */
-    public static INDArrayIndex[] toIndexes(int[] indices) {
-        INDArrayIndex[] ret = new INDArrayIndex[indices.length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = new NDArrayIndex(indices[i]);
-        return ret;
-    }
-
 
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {
@@ -3341,7 +3319,7 @@ public class Shape {
      * @return true if arr.length == 1 && arr[0] is Integer.MAX_VALUE
      */
     public static boolean wholeArrayDimension(int... arr) {
-        return arr.length == 1 && arr[0] == Integer.MAX_VALUE;
+        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
     }
 
     public static int[] uniquify(int[] array) {
@@ -3402,6 +3380,15 @@ public class Shape {
     public static boolean contentEquals(int[] arr, DataBuffer other) {
         for (int i = 0; i < arr.length; i++) {
             if (other.getInt(i) != arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean contentEquals(long[] arr, long[] other) {
+        for (int i = 0; i < arr.length; i++) {
+            if (other[i] != arr[i]) {
                 return false;
             }
         }
@@ -3732,4 +3719,49 @@ public class Shape {
         else
             return Nd4j.createFromArray(dimensions);
     }
+
+    /**
+     * Calculate the shape of the returned array, for a reduction along dimension
+     * @param x            Input array to reduce
+     * @param dimension    Dimensions/axis to reduce on
+     * @param newFormat    If new format (almost always true; will be removed eventually)
+     * @param keepDims     If reduced dimensions should be kept as size 1 dimensions
+     * @return             Shape of the output array for the reduction
+     */
+    public static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
+        long[] retShape;
+        if(!newFormat) {
+            retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
+
+            //ensure vector is proper shape (if old format)
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+        } else {
+            if(keepDims){
+                retShape = x.shape().clone();
+                if(wholeArray){
+                    for( int i=0; i<retShape.length; i++ ){
+                        retShape[i] = 1;
+                    }
+                } else {
+                    for (int d : dimension) {
+                        retShape[d] = 1;
+                    }
+                }
+            } else {
+                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
+            }
+        }
+        return retShape;
+    }
+
+
+
 }

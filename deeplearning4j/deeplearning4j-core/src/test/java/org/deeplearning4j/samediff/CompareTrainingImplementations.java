@@ -150,6 +150,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Create equivalent DL4J net
                 MultiLayerConfiguration mlc = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
                         .l1Bias(l1Val).l2Bias(l2Val)
@@ -213,6 +214,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check training with updater
                 mlc = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
                         .weightInit(WeightInit.XAVIER).seed(12345)
                         .l1(l1Val).l2(l2Val)
                         .l1Bias(l1Val).l2Bias(l2Val)

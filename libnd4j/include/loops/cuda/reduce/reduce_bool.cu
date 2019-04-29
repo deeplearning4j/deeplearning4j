@@ -103,15 +103,17 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;    
+    __shared__ Z* sPartials;
     __shared__ int tadLength;
     __shared__ int numTads;
-    
+    __shared__ bool isPlainOutput;
+
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
         tadLength = shape::length(tadOnlyShapeInfo); //tadLength(xShapeInfo, dimension, dimensionLength);
-        numTads = shape::length(xShapeInfo) / tadLength;        
+        numTads = shape::length(xShapeInfo) / tadLength;
+        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
     }
     __syncthreads();
     
@@ -120,20 +122,20 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
         Nd4jLong tadOffsetForBlock = tadOffsets[r];
         sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
-        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+          for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
             
             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
-        }
-        __syncthreads();
+          }
+          __syncthreads();
 
-        // aggregate. do NOT reduce for elements > tadLength
-        aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+          // aggregate. do NOT reduce for elements > tadLength
+          aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
-        __syncthreads();
+          __syncthreads();
 
-        if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+          if (threadIdx.x == 0)
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 
@@ -150,7 +152,7 @@ __device__ void ReduceBoolFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
-        
+
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
@@ -231,6 +233,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
         
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -239,6 +242,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolScalar(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

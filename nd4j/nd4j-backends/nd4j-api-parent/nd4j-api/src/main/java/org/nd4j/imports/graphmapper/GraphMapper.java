@@ -50,7 +50,8 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     SameDiff importGraph(InputStream graphFile);
 
-    SameDiff importGraph(InputStream graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(InputStream graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
     /**
      * Import a graph as SameDiff from the given file
@@ -70,7 +71,8 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      *                          operation to import, value is the object used to import it
      * @return Imported graph
      */
-    SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(File graphFile, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
     /**
      * This method converts given graph type (in its native format) to SameDiff
@@ -86,7 +88,8 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param graph Graph to import
      * @return Imported graph
      */
-    SameDiff importGraph(GRAPH_TYPE graph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides);
+    SameDiff importGraph(GRAPH_TYPE graph, Map<String,? extends OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE>> opImportOverrides,
+                         OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
 
     /**
@@ -249,8 +252,11 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * Map a node in to the import state covering the {@link SameDiff} instance
      * @param tfNode the node to map
      * @param importState the current import state
+     * @param opFilter    Optional filter for skipping operations
      */
-    void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState, OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opImportOverride);
+    void mapNodeType(NODE_TYPE tfNode, ImportState<GRAPH_TYPE,TENSOR_TYPE> importState,
+                     OpImportOverride<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opImportOverride,
+                     OpImportFilter<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE> opFilter);
 
 
     /**

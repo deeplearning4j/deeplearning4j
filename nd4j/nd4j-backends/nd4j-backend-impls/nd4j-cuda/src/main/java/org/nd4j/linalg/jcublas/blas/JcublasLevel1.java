@@ -43,8 +43,10 @@ import org.nd4j.nativeblas.Nd4jBlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.bytedeco.javacpp.cublas.*;
-import static org.bytedeco.javacpp.cuda.CUstream_st;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cublas.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cublas.*;
 
 /**
  * @author Adam Gibson
@@ -225,10 +227,6 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         return ret;
 /*
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT asum called");
-        
-        
         CudaContext ctx = allocator.getFlowController().prepareAction(null, X);
         float ret;
         
@@ -512,8 +510,6 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE swap called");
 
         Nd4j.getExecutioner().push();
 
@@ -537,9 +533,6 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dcopy(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE copy called");
-
         Nd4j.getExecutioner().push();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);

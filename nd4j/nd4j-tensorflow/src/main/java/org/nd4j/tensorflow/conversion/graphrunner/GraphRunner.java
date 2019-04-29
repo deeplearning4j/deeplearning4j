@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
-import org.bytedeco.javacpp.tensorflow;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.tensorflow.conversion.TensorflowConversion;
@@ -38,7 +37,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static org.bytedeco.javacpp.tensorflow.*;
+import org.bytedeco.tensorflow.*;
+import static org.bytedeco.tensorflow.global.tensorflow.*;
 
 /**
  * Runs a tensorflow session based on zero copy
@@ -53,15 +53,15 @@ import static org.bytedeco.javacpp.tensorflow.*;
 public class GraphRunner implements Closeable {
     private SavedModelConfig savedModelConfig;
     //the in memory representation parsed from protobuf
-    private tensorflow.TF_Graph graph;
+    private TF_Graph graph;
     //the conversion between nd4j and tensorflow
     private TensorflowConversion conversion =  TensorflowConversion.getInstance();
     //a persistent session to be used when running the graph
-    private tensorflow.TF_Session session;
+    private TF_Session session;
     //the options for the model
-    private tensorflow.TF_SessionOptions options;
+    private TF_SessionOptions options;
     //a status object used
-    private tensorflow.TF_Status status;
+    private TF_Status status;
     @Getter
     @Setter
     private List<String> inputOrder,outputOrder;
@@ -91,7 +91,7 @@ public class GraphRunner implements Closeable {
      *
      *
      */
-    public GraphRunner(List<String> inputNames,List<String> outputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+    public GraphRunner(List<String> inputNames,List<String> outputNames,TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
         this(inputNames,outputNames,graph,graphDef,null);
 
     }
@@ -116,7 +116,7 @@ public class GraphRunner implements Closeable {
      *                                                          graph inputs and outputs
      * @param configProto  the session configuration proto to use with this runner
      */
-    public GraphRunner(List<String> inputNames,List<String> outputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
+    public GraphRunner(List<String> inputNames,List<String> outputNames,TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
         this.graph = graph;
         this.protoBufConfigProto = configProto;
         this.inputOrder = inputNames;
@@ -255,7 +255,7 @@ public class GraphRunner implements Closeable {
      *                                                          things like
      *                                                          graph inputs and outputs
      */
-    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+    public GraphRunner(List<String> inputNames,TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
         this(inputNames,null,graph,graphDef,null);
 
     }
@@ -280,7 +280,7 @@ public class GraphRunner implements Closeable {
      *                                                          graph inputs and outputs
      * @param configProto  the session configuration proto to use with this runner
      */
-    public GraphRunner(List<String> inputNames,tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
+    public GraphRunner(List<String> inputNames,TF_Graph graph,org.tensorflow.framework.GraphDef graphDef,ConfigProto configProto) {
         this(inputNames,null,graph,graphDef,configProto);
 
     }
@@ -398,12 +398,12 @@ public class GraphRunner implements Closeable {
             Map<String,INDArray> outputArrays = new LinkedHashMap<>();
 
             Map<String,TF_Operation> opsByName = new HashMap<>();
-            tensorflow.TF_Output inputOut = new tensorflow.TF_Output(savedModelConfig.getSavedModelInputOrder().size());
+            TF_Output inputOut = new TF_Output(savedModelConfig.getSavedModelInputOrder().size());
 
             TF_Tensor[] inputTensors = new TF_Tensor[savedModelConfig.getSavedModelInputOrder().size()];
             for(int i = 0; i < savedModelConfig.getSavedModelInputOrder().size(); i++) {
                 String[] name = savedModelConfig.getSavedModelInputOrder().get(i).split(":");
-                tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
+                TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
                 opsByName.put(savedModelConfig.getSavedModelInputOrder().get(i),inputOp);
                 inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
                 TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder != null && !inputOrder.isEmpty()
@@ -415,11 +415,11 @@ public class GraphRunner implements Closeable {
             //reset the position of the pointer for execution
             inputOut.position(0);
 
-            TF_Output outputOut = new tensorflow.TF_Output(savedModelConfig.getSaveModelOutputOrder().size());
+            TF_Output outputOut = new TF_Output(savedModelConfig.getSaveModelOutputOrder().size());
             //only setup the output ops
             for(int i = 0; i < savedModelConfig.getSaveModelOutputOrder().size(); i++) {
                 String[] name =savedModelConfig.getSaveModelOutputOrder().get(i).split(":");
-                tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
+                TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
                 opsByName.put(savedModelConfig.getSaveModelOutputOrder().get(i),outputOp);
                 outputOut.position(i).oper(outputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
             }
@@ -467,12 +467,12 @@ public class GraphRunner implements Closeable {
             Map<String,INDArray> outputArrays = new LinkedHashMap<>();
 
             Map<String,TF_Operation> opsByName = new HashMap<>();
-            tensorflow.TF_Output inputOut = new tensorflow.TF_Output(inputOrder.size());
+            TF_Output inputOut = new TF_Output(inputOrder.size());
 
             TF_Tensor[] inputTensors = new TF_Tensor[inputOrder.size()];
             for(int i = 0; i < inputOrder.size(); i++) {
                 String[] name = inputOrder.get(i).split(":");
-                tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
+                TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
                 opsByName.put(inputOrder.get(i),inputOp);
                 inputOut.position(i).oper(inputOp).index(name.length > 1 ? Integer.parseInt(name[1]) : 0);
                 TF_Tensor tf_tensor = conversion.tensorFromNDArray(inputs.get(inputOrder.get(i)));
@@ -483,11 +483,11 @@ public class GraphRunner implements Closeable {
             //reset the position of the pointer for execution
             inputOut.position(0);
 
-            TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
+            TF_Output outputOut = new TF_Output(outputOrder.size());
             //only setup the output ops
             for(int i = 0; i < outputOrder.size(); i++) {
                 String[] name = outputOrder.get(i).split(":");
-                tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
+                TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
                 if(outputOp == null) {
                     throw new IllegalArgumentException("Illegal input found " + inputOrder.get(i) + " - no op found! Mis specified name perhaps?");
                 }
@@ -594,7 +594,7 @@ public class GraphRunner implements Closeable {
         //in the ConfigObject as needed
         if(session == null) {
             initOptionsIfNeeded();
-            session = tensorflow.TF_NewSession(graph, options, status);
+            session = TF_NewSession(graph, options, status);
             if (TF_GetCode(status) != TF_OK) {
                 throw new IllegalStateException("ERROR: Unable to open session " + TF_Message(status).getString());
             }
@@ -639,7 +639,7 @@ public class GraphRunner implements Closeable {
     /**
      * Convert a json string written out
      * by {@link com.github.os72.protobuf351.util.JsonFormat}
-     * to a {@link org.bytedeco.javacpp.tensorflow.ConfigProto}
+     * to a {@link org.bytedeco.tensorflow.ConfigProto}
      * @param json the json to read
      * @return the config proto to use
      */

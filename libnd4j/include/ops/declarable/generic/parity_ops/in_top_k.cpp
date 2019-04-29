@@ -46,13 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
-            Nd4jLong* aShape;
-
-            ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
-            if (shape::order(in) == 'c')
-                shape::shapeBuffer(shape::rank(in), nd4j::DataType::BOOL,  shape::shapeOf(in), aShape);
-            else 
-                shape::shapeBufferFortran(shape::rank(in), nd4j::DataType::BOOL, shape::shapeOf(in), aShape);
+            Nd4jLong *aShape = ShapeBuilders::createShapeInfo(nd4j::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in), block.getWorkspace());
             shapeList->push_back(aShape);
             return shapeList;
         }

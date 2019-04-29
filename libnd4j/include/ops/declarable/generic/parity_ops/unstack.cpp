@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_unstack)
 
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -87,13 +88,12 @@ namespace nd4j {
                 return result;
             }
 
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto numTads = tadPack.numberOfTads();
 
-            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
-            auto numTads = pack.numberOfTads();
-
-            std::vector<Nd4jLong> shape(shape::rank(pack.primaryShapeInfo()));
-            for (int e = 0; e < shape::rank(pack.primaryShapeInfo()); e++)
-                shape[e] = shape::shapeOf(pack.primaryShapeInfo())[e];
+            std::vector<Nd4jLong> shape(shape::rank(tadPack.primaryShapeInfo()));
+            for (int e = 0; e < shape::rank(tadPack.primaryShapeInfo()); e++)
+                shape[e] = shape::shapeOf(tadPack.primaryShapeInfo())[e];
 
             // remove leading and trailing 1
             if (inShape[0] == 2 && shape.size() == 2) {
@@ -106,13 +106,7 @@ namespace nd4j {
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
-                else
-                    shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(),
-                                              newShape);
+                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
                 result->push_back(newShape);
             }
             return result;

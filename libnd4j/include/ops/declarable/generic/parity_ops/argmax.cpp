@@ -23,6 +23,8 @@
 
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
+#include <helpers/ConstantTadHelper.h>
+
 namespace nd4j {
     namespace ops {
         DECLARE_TYPES(argmax) {

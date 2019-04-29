@@ -26,6 +26,7 @@
 #include <string>
 #include <LaunchContext.h>
 
+#include <types.h>
 
 namespace nd4j {
 

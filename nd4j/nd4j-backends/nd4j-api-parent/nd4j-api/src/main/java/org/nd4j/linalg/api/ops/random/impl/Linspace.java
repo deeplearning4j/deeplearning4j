@@ -98,69 +98,6 @@ public class Linspace extends BaseRandomOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "LinSpace";
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        String thisName = nodeDef.getName();
-        INDArray start = null;
-        INDArray stop = null;
-        INDArray num = null;
-        List<NodeDef> allNodes = graph.getNodeList();
-        for(NodeDef nd : allNodes){
-            String n = nd.getName();
-            if(nodeDef.getInput(0).equals(n)){            //"thisName/start"
-                start = TFGraphMapper.getInstance().getNDArrayFromTensor(n, nd, graph);
-            } else if(nodeDef.getInput(1).equals(n)){     //"thisName/start"
-                stop = TFGraphMapper.getInstance().getNDArrayFromTensor(n, nd, graph);
-            } else if(nodeDef.getInput(2).equals(n)){     //"thisName/start"
-                num = TFGraphMapper.getInstance().getNDArrayFromTensor(n, nd, graph);
-            }
-
-            if(start != null && stop != null && num != null)
-                break;
-        }
-        if(start == null || stop == null || num == null)
-            throw new IllegalStateException("Could not find expected input arrays: start=" + start + ", stop=" + stop + ", num=" + num);
-        this.from = start.getDouble(0);
-        this.to = stop.getDouble(0);
-        this.length = (long)num.getDouble(0);
-        this.extraArgs = new Object[]{from, to};
-    }
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-
-        boolean update = false;
-        if(x != null) {
-            this.from = x.getDouble(0);
-            update = true;
-        }
-        if(y != null) {
-            this.to = y.getDouble(0);
-            update = true;
-        }
-        if(z != null && z.length() == 1) {
-            this.length = (long) z.getDouble(0);
-        }
-        if(update) {
-            this.extraArgs = new Object[]{from, to};
-        }
-
-        x = null;
-        y = null;
-    }
-
-    @Override
     public INDArray x(){
         //Workaround/hack for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
         //If x or y is present, can't execute this op properly (wrong signature is used)
@@ -191,6 +128,16 @@ public class Linspace extends BaseRandomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         return Collections.singletonList(LongShapeDescriptor.fromShape(new long[]{length}, DataType.FLOAT));      //TODO Don't hardcode float!
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
 

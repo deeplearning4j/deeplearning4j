@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -125,7 +126,7 @@ public class TestCompGraphCNN extends BaseDL4JTest {
         int nParams = getNumParams();
         assertEquals(nParams, params.length());
 
-        INDArray arr = Nd4j.linspace(0, nParams, nParams, Nd4j.dataType());
+        INDArray arr = Nd4j.linspace(0, nParams, nParams, DataType.FLOAT).reshape(1, nParams);
         assertEquals(nParams, arr.length());
 
         // params are set

@@ -44,7 +44,7 @@ public class RandomDataSetIteratorTest extends BaseDL4JTest {
             assertArrayEquals(new long[]{3,5}, ds.getLabels().shape());
 
             assertTrue(ds.getFeatures().minNumber().doubleValue() >= 0.0 && ds.getFeatures().maxNumber().doubleValue() <= 1.0);
-            assertEquals(Nd4j.ones(3,1), ds.getLabels().sum(1));
+            assertEquals(Nd4j.ones(3), ds.getLabels().sum(1));
         }
         assertEquals(5, count);
     }

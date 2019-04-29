@@ -242,6 +242,7 @@ namespace nd4j {
         auto dx = reinterpret_cast<T *>(vdx);
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+        T off(0.0f);
         __shared__ int counter;
         __shared__ int *shmem;
         __shared__ T *vals;
@@ -253,9 +254,12 @@ namespace nd4j {
         }
         __syncthreads();
 
-        for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
+        Nd4jLong loopRemainder = N % (blockDim.x * gridDim.x);
+        Nd4jLong loopLimit = N + (blockDim.x * gridDim.x - loopRemainder);
+
+        for (Nd4jLong i = tid; i < loopLimit; i += blockDim.x * gridDim.x) {
             // all threads in block reading stuff
-            T val = dx[i];
+            T val = i < N ? dx[i] : off;
             T abs = nd4j::math::nd4j_abs<T>(val);
 
             int byteId = i / 16 + 4;
@@ -264,7 +268,7 @@ namespace nd4j {
             shmem[threadIdx.x] = 0;
             vals[threadIdx.x] = val;
 
-            if (abs >= static_cast<T>(threshold)) {
+            if (abs >= static_cast<T>(threshold) && i < N) {
                 shmem[threadIdx.x] = 1 << (bitId);
                 atomicAdd(&counter, 1);
                 if (val < static_cast<T>(0.0f)) {
@@ -273,7 +277,7 @@ namespace nd4j {
                 } else {
                     vals[threadIdx.x] -= static_cast<T>(threshold);
                 }
-            } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f)) {
+            } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f) && i < N) {
                 atomicAdd(&counter, 1);
                 shmem[threadIdx.x] = 1 << (bitId + 16);
 
@@ -281,7 +285,7 @@ namespace nd4j {
             }
             __syncthreads();
 
-            if (threadIdx.x % 16 == 0) {
+            if (threadIdx.x % 16 == 0 && i < N) {
                 int byte = 0;
                 for (int e = 0; e < 16; e++) {
                     if (i + e >= N)
@@ -293,7 +297,8 @@ namespace nd4j {
             }
             __syncthreads();
 
-            dx[i] = vals[threadIdx.x];
+            if (i < N)
+                dx[i] = vals[threadIdx.x];
         }
         __syncthreads();
 

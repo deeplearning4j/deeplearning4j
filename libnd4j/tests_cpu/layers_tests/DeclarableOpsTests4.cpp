@@ -402,17 +402,17 @@ TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto x = NDArrayFactory::create<double>('c', {5, 30});
     auto sizes = NDArrayFactory::create<int>('c', {1, 3}, {4, 15, 11});
 
-    IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
-    IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
-    IndicesList list2({NDIndex::all(), NDIndex::interval(19, 30)});
+    std::vector<Nd4jLong> list0({0,0, 0,4});
+    std::vector<Nd4jLong> list1({0,0, 4,19});
+    std::vector<Nd4jLong> list2({0,0, 19,30});
 
-    auto sub0 = x.subarray(list0);
-    auto sub1 = x.subarray(list1);
-    auto sub2 = x.subarray(list2);
+    auto sub0 = x(list0, true);
+    auto sub1 = x(list1, true);
+    auto sub2 = x(list2, true);
 
-    sub0->assign(0.0);
-    sub1->assign(1.0);
-    sub2->assign(2.0);
+    sub0.assign(0.0);
+    sub1.assign(1.0);
+    sub2.assign(2.0);
 
 
     nd4j::ops::split_v op;
@@ -426,24 +426,13 @@ TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto z1 = result->at(1);
     auto z2 = result->at(2);
 
-    ASSERT_TRUE(sub0->isSameShape(z0));
-    ASSERT_TRUE(sub1->isSameShape(z1));
-    ASSERT_TRUE(sub2->isSameShape(z2));
-
-    sub0->printShapeInfo("Expect SPLIT0");
-    z0->printShapeInfo("Result SPLIT0");
-    sub1->printShapeInfo("Expect SPLIT1");
-    z1->printShapeInfo("Result SPLIT1");
-    sub2->printShapeInfo("Expect SPLIT2");
-    z2->printShapeInfo("Result SPLIT2");
-
-    ASSERT_TRUE(sub0->equalsTo(z0));
-    ASSERT_TRUE(sub1->equalsTo(z1));
-    ASSERT_TRUE(sub2->equalsTo(z2));
-
-    delete sub0;
-    delete sub1;
-    delete sub2;
+    ASSERT_TRUE(sub0.isSameShape(z0));
+    ASSERT_TRUE(sub1.isSameShape(z1));
+    ASSERT_TRUE(sub2.isSameShape(z2));
+    
+    ASSERT_TRUE(sub0.equalsTo(z0));
+    ASSERT_TRUE(sub1.equalsTo(z1));
+    ASSERT_TRUE(sub2.equalsTo(z2));
 
     delete result;
 }
@@ -453,20 +442,20 @@ TEST_F(DeclarableOpsTests4, Test_Split_2) {
     auto x = NDArrayFactory::create<double>('c', {5, 12});
     auto axis = NDArrayFactory::create<double>('c', {1, 1}, {1.f});
 
-    IndicesList list0({NDIndex::all(), NDIndex::interval(0, 3)});
-    IndicesList list1({NDIndex::all(), NDIndex::interval(3, 6)});
-    IndicesList list2({NDIndex::all(), NDIndex::interval(6, 9)});
-    IndicesList list3({NDIndex::all(), NDIndex::interval(9, 12)});
+    std::vector<Nd4jLong> list0 = {0,0, 0,3};
+    std::vector<Nd4jLong> list1 = {0,0, 3,6};
+    std::vector<Nd4jLong> list2 = {0,0, 6,9};
+    std::vector<Nd4jLong> list3 = {0,0, 9,12};
 
-    auto sub0 = x.subarray(list0);
-    auto sub1 = x.subarray(list1);
-    auto sub2 = x.subarray(list2);
-    auto sub3 = x.subarray(list3);
+    auto sub0 = x(list0, true);
+    auto sub1 = x(list1, true);
+    auto sub2 = x(list2, true);
+    auto sub3 = x(list3, true);
 
-    sub0->assign(0.0f);
-    sub1->assign(1.0f);
-    sub2->assign(2.0f);
-    sub3->assign(3.0f);
+    sub0.assign(0.0f);
+    sub1.assign(1.0f);
+    sub2.assign(2.0f);
+    sub3.assign(3.0f);
 
 
     nd4j::ops::split op;
@@ -478,21 +467,15 @@ TEST_F(DeclarableOpsTests4, Test_Split_2) {
     auto z2 = result->at(2);
     auto z3 = result->at(3);
 
-    ASSERT_TRUE(sub0->isSameShape(z0));
-    ASSERT_TRUE(sub1->isSameShape(z1));
-    ASSERT_TRUE(sub2->isSameShape(z2));
-    ASSERT_TRUE(sub3->isSameShape(z3));
+    ASSERT_TRUE(sub0.isSameShape(z0));
+    ASSERT_TRUE(sub1.isSameShape(z1));
+    ASSERT_TRUE(sub2.isSameShape(z2));
+    ASSERT_TRUE(sub3.isSameShape(z3));
 
-    ASSERT_TRUE(sub0->equalsTo(z0));
-    ASSERT_TRUE(sub1->equalsTo(z1));
-    ASSERT_TRUE(sub2->equalsTo(z2));
-    ASSERT_TRUE(sub3->equalsTo(z3));
-
-
-    delete sub0;
-    delete sub1;
-    delete sub2;
-    delete sub3;
+    ASSERT_TRUE(sub0.equalsTo(z0));
+    ASSERT_TRUE(sub1.equalsTo(z1));
+    ASSERT_TRUE(sub2.equalsTo(z2));
+    ASSERT_TRUE(sub3.equalsTo(z3));
 
     delete result;
 }
@@ -502,17 +485,17 @@ TEST_F(DeclarableOpsTests4, Test_Split_3) {
     auto x = NDArrayFactory::create<double>('c', {6, 12});
     auto axis = NDArrayFactory::create<double>('c', {1, 1}, {0.f});
 
-    IndicesList list0({NDIndex::interval(0, 2), NDIndex::all()});
-    IndicesList list1({NDIndex::interval(2, 4), NDIndex::all()});
-    IndicesList list2({NDIndex::interval(4, 6), NDIndex::all()});
+    std::vector<Nd4jLong> list0 = {0,2, 0,0};
+    std::vector<Nd4jLong> list1 = {2,4, 0,0};
+    std::vector<Nd4jLong> list2 = {4,6, 0,0};
 
-    auto sub0 = x.subarray(list0);
-    auto sub1 = x.subarray(list1);
-    auto sub2 = x.subarray(list2);
+    auto sub0 = x(list0, true);
+    auto sub1 = x(list1, true);
+    auto sub2 = x(list2, true);
 
-    sub0->assign(0.0f);
-    sub1->assign(1.0f);
-    sub2->assign(2.0f);
+    sub0.assign(0.0f);
+    sub1.assign(1.0f);
+    sub2.assign(2.0f);
 
     nd4j::ops::split op;
     auto result = op.execute({&axis, &x}, {}, {3});
@@ -522,17 +505,13 @@ TEST_F(DeclarableOpsTests4, Test_Split_3) {
     auto z1 = result->at(1);
     auto z2 = result->at(2);
 
-    ASSERT_TRUE(sub0->isSameShape(z0));
-    ASSERT_TRUE(sub1->isSameShape(z1));
-    ASSERT_TRUE(sub2->isSameShape(z2));
+    ASSERT_TRUE(sub0.isSameShape(z0));
+    ASSERT_TRUE(sub1.isSameShape(z1));
+    ASSERT_TRUE(sub2.isSameShape(z2));
 
-    ASSERT_TRUE(sub0->equalsTo(z0));
-    ASSERT_TRUE(sub1->equalsTo(z1));
-    ASSERT_TRUE(sub2->equalsTo(z2));
-
-    delete sub0;
-    delete sub1;
-    delete sub2;
+    ASSERT_TRUE(sub0.equalsTo(z0));
+    ASSERT_TRUE(sub1.equalsTo(z1));
+    ASSERT_TRUE(sub2.equalsTo(z2));
 
     delete result;
 }
@@ -920,6 +899,27 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_2) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_3) {
+    auto x = NDArrayFactory::create<double>('c', {1}, {10});
+    auto begin = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto end = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto stride = NDArrayFactory::create<double>('c', {1}, {1});
+    //x.linspace(1);
+    //auto exp = NDArrayFactory::create<double>('c', {1,3,4,5});
+    //exp.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&x, &begin, &end, &stride}, {}, {1,0,0,0,0});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Emply shape expected");
+    ASSERT_TRUE(z->isEmpty());
 
     delete result;
 }
@@ -1606,7 +1606,7 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4});
 
     nd4j::ops::lrn_bp op;
-    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());

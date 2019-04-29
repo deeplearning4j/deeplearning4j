@@ -45,8 +45,8 @@ public class Mean extends BaseReduceFloatOp {
         super(x, dimensions);
     }
 
-    public Mean(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
-        super(x, z, newFormat, keepDims, dimensions);
+    public Mean(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+        super(x, z, keepDims, dimensions);
     }
 
     @Override
@@ -61,8 +61,6 @@ public class Mean extends BaseReduceFloatOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        if(!newFormat)
-            throw new IllegalStateException("Cannot doDiff with newFormat == false");
         //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
         return Collections.singletonList(f().meanBp(arg(), i_v1.get(0), keepDims, dimensions));

@@ -33,6 +33,7 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <array/NDArrayList.h>
 #include <iterator>
+#include <MmulHelper.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -147,6 +148,31 @@ void lstmCell(graph::LaunchContext* context, const NDArray* xt, const NDArray* h
         ht->assign(&htNoPeepHole);
 }
 
+template <typename T>
+static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, NDArray *f, NDArray *h) {
+    //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+    /*
+    z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
+    auto temp = (*f) * (*cLast);
+    *c += temp;                              //c = (i * z) + (zf * (*cLast))
+    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+     */
+
+    auto uLen = static_cast<uint>(z->lengthOf());
+    auto c_ = c->bufferAsT<T>();
+    auto z_ = z->bufferAsT<T>();
+    auto i_ = i->bufferAsT<T>();
+    auto f_ = f->bufferAsT<T>();
+    auto cLast_ = cLast->bufferAsT<T>();
+    auto h_ = h->bufferAsT<T>();
+
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (uint e = 0; e < uLen; e++) {
+        c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
+        h_[e] = nd4j::math::nd4j_tanh<T,T>(c_[e]);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
@@ -189,25 +215,27 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const int numUnits    = cLast->sizeAt(1);
 
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
-    auto concat = new nd4j::ops::concat();
-    std::vector<NDArray*> inputs;
-    std::vector<double> targs;
-    std::vector<Nd4jLong> iargs({1});   //Axis = 1
-    std::vector<bool> bargs;
-    inputs.emplace_back(const_cast<NDArray*>(xt));
-    inputs.emplace_back(const_cast<NDArray*>(yLast));
+    nd4j::ops::concat concat;
+    Context cContext(119);
+    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getWorkspace());
+    cContext.setInputArray(0, const_cast<NDArray*>(xt), false);
+    cContext.setInputArray(1, const_cast<NDArray*>(yLast), false);
+    cContext.setOutputArray(0, &concatOut, false);
+    cContext.getIArguments()->emplace_back(1);
 
-    auto result = concat->execute(inputs, targs, iargs, bargs);
-    auto concatOut = result->at(0);
+    concat.execute(&cContext);
 
-    auto m = mmul(*concatOut, *W);    //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits]
-    m += (*b);
+    //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+    std::vector<Nd4jLong> shape = {bS, 4*numUnits};
+    auto m = NDArrayFactory::create_('c', shape, xt->dataType(), nullptr);
+    MmulHelper::mmul(&concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
+    *m += (*b);  //addiRowVector
 
     //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
-    auto zi = m({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
-    auto zz = m({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
-    auto zf = m({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
-    auto zo = m({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
+    auto zi = (*m)({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
+    auto zz = (*m)({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
+    auto zf = (*m)({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
+    auto zo = (*m)({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
         zi += (*cLast) * (*Wci);       // add peephole connections to input gate
@@ -219,16 +247,32 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         zf += forgetBias;
     }
 
-    zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
-    zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
-    zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+    PRAGMA_OMP_PARALLEL
+    #pragma omp single
+        {
+            #pragma omp task
+            zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
+
+            #pragma omp task
+            zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
+
+            #pragma omp task
+            zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+        }
 
 
-    //cell state = blockInput .* inputGate + prevCellState .* forgetGate
-    z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
-    auto temp = (*f) * (*cLast);
-    *c += temp;                              //c = (i * z) + (zf * (*cLast))
-    c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+    if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1 &&
+        z->ordering() == i->ordering() && z->ordering() == c->ordering() && z->ordering() == cLast->ordering() && z->ordering() == f->ordering() && z->ordering() == h->ordering()) {
+        //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+        BUILD_SINGLE_SELECTOR(z->dataType(), fusedTanh, (z, i, c, cLast, f, h), FLOAT_TYPES);
+    } else {
+        //cell state = blockInput .* inputGate + prevCellState .* forgetGate
+        z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
+        auto temp = (*f) * (*cLast);
+        *c += temp;                              //c = (i * z) + (zf * (*cLast))
+        c->applyTransform(transform::Tanh, h);  //h = tanh(c)
+
+    }
 
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
@@ -246,8 +290,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     // current cell output = ot*tanh(ct)
     c->applyTransform(transform::Tanh, h);  //h = tanh(c)
     o->applyPairwiseTransform(pairwise::Multiply, h, y, nullptr);   //y = o * h
-
-    delete result;
 }
 
 

@@ -81,7 +81,7 @@ public class TestEigen extends BaseNd4jTest {
         INDArray e = Eigen.symmetricGeneralizedEigenvalues(A);
 
         for (int i = 0; i < A.rows(); i++) {
-            INDArray LHS = B.mmul(A.slice(i, 1));
+            INDArray LHS = B.mmul(A.slice(i, 1).reshape(-1, 1));
             INDArray RHS = A.slice(i, 1).mul(e.getFloat(i));
 
             for (int j = 0; j < LHS.length(); j++) {

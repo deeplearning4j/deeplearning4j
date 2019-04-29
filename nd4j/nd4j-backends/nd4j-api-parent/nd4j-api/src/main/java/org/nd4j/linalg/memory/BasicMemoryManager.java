@@ -42,7 +42,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     protected AtomicLong lastGcTime = new AtomicLong(System.currentTimeMillis());
 
-    protected AtomicBoolean periodicEnabled = new AtomicBoolean(true);
+    protected AtomicBoolean periodicEnabled = new AtomicBoolean(false);
 
     protected AtomicInteger averageLoopTime = new AtomicInteger(0);
 
@@ -212,5 +212,10 @@ public abstract class BasicMemoryManager implements MemoryManager {
             //Nd4j.getMemoryManager().setCurrentWorkspace(null);
             return new DummyWorkspace().notifyScopeEntered();//workspace.tagOutOfScopeUse();
         }
+    }
+
+    @Override
+    public void releaseCurrentContext() {
+        // no-op
     }
 }

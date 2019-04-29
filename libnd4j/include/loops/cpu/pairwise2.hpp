@@ -69,31 +69,35 @@ namespace functions {
 
             nd4j::OmpLaunchHelper info(n);
 
-            if (xEws == 1 && yEws == 1 && zEws == 1) {            
+            if (xEws == 1 && yEws == 1 && zEws == 1) {
 
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {                
                     auto threadNum = omp_get_thread_num();
                     Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
                     auto xi = x + threadOffset;
                     auto yi = y + threadOffset;
                     auto zi = z + threadOffset;
-                    #pragma omp simd
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+                    PRAGMA_OMP_SIMD
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         zi[i] = OpType::op(xi[i], yi[i], extraParams);
                 }
             }
             else {
 
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {                
                     auto threadNum = omp_get_thread_num();
                     Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
                     auto xi = x + xEws*threadOffset;
                     auto yi = y + yEws*threadOffset;
                     auto zi = z + zEws*threadOffset;
-                    #pragma omp simd
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) 
+                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+                    PRAGMA_OMP_SIMD
+                    for (Nd4jLong i = 0; i < ulen; i++)
                         zi[i*zEws] = OpType::op(xi[i*xEws], yi[i*yEws], extraParams);
                 }
             }

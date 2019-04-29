@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <Status.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 namespace nd4j {
@@ -137,10 +138,7 @@ namespace nd4j {
                     if (dims.size() > 1)
                         std::sort(dims.begin(), dims.end());
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
                     auto pDims = (int *) manager.replicatePointer(dims.data(), dims.size() * sizeof(int));
                     auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
@@ -180,11 +178,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad;
-                    tad.init(x->getShapeInfo(), axis.data(), axis.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
                     auto pDims = (int *) manager.replicatePointer(axis.data(), axis.size() * sizeof(int));
                     auto pTadShape = (Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = (Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));

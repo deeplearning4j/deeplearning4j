@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -52,9 +53,9 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder ret =
-                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -124,7 +125,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
         }
 
         /**
@@ -133,7 +134,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder corruptionLevel(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
+            this.setCorruptionLevel(corruptionLevel);
             return this;
         }
 
@@ -143,7 +144,7 @@ public class AutoEncoder extends BasePretrainNetwork {
          * @param sparsity Sparsity
          */
         public Builder sparsity(double sparsity) {
-            this.sparsity = sparsity;
+            this.setSparsity(sparsity);
             return this;
         }
 

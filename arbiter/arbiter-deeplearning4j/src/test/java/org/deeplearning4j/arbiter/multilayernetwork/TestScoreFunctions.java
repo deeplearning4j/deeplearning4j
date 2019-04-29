@@ -196,7 +196,7 @@ public class TestScoreFunctions {
                     INDArray argMax = Nd4j.argMax(toPreProcess.getLabels(), 1);
                     INDArray newLabel = Nd4j.create(mb, 2);
                     for( int i=0; i<mb; i++ ){
-                        int idx = (int)argMax.getDouble(i, 0);
+                        int idx = (int)argMax.getDouble(i);
                         newLabel.putScalar(i, (idx < 5 ? 0 : 1), 1.0);
                     }
                     toPreProcess.setLabels(newLabel);

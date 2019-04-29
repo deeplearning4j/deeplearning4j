@@ -63,12 +63,7 @@ namespace nd4j {
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
             
             shape[shape.size()-1] *= 2;
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
-            if (shape::order(inShape) == 'c')
-                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
+            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
 
             return SHAPELIST(newShape);
         }

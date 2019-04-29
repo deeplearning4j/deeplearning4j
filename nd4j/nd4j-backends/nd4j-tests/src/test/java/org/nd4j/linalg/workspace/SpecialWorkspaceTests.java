@@ -219,7 +219,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS109");
 
         INDArray row = Nd4j.linspace(1, 10, 10);
-        INDArray exp = Nd4j.create(1, 10).assign(2.0);
+        INDArray exp = Nd4j.create(10).assign(2.0);
         INDArray result = null;
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS109")) {
             INDArray matrix = Nd4j.create(10, 10);
@@ -250,11 +250,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 for (int x = 0; x < 10; x++) {
-                    System.out.println("Start iteration (" + j + "," + x + ")");
+                    //System.out.println("Start iteration (" + j + "," + x + ")");
                     INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(1,10);
                     INDArray sum = arr.sum(true, 1);
                     Nd4j.create(DataType.BOOL, x+1);        //NOTE: no crash if set to FLOAT/HALF, No crash if removed entirely; same crash for BOOL/UBYTE
-                    System.out.println("End iteration (" + j + "," + x + ")");
+                    //System.out.println("End iteration (" + j + "," + x + ")");
                 }
             }
         }

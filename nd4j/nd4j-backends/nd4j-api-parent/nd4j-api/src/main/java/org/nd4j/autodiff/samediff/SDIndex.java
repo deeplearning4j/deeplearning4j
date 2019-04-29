@@ -28,7 +28,8 @@ public class SDIndex {
     }
 
     private IndexType indexType = IndexType.ALL;
-    private  long pointIndex;
+    private long pointIndex;
+    private boolean pointKeepDim;
     private Long intervalBegin = null;
     private Long intervalEnd = null;
     private Long intervalStrides = 1l;
@@ -45,6 +46,16 @@ public class SDIndex {
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.POINT;
         sdIndex.pointIndex = i;
+        sdIndex.pointKeepDim = false;
+        return sdIndex;
+    }
+
+
+    public static SDIndex point(long i, boolean keepDim){
+        SDIndex sdIndex = new SDIndex();
+        sdIndex.indexType = IndexType.POINT;
+        sdIndex.pointIndex = i;
+        sdIndex.pointKeepDim = keepDim;
         return sdIndex;
     }
 

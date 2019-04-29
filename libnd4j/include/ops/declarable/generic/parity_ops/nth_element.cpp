@@ -38,8 +38,8 @@ namespace nd4j {
             if (output->lengthOf() == input->lengthOf())
                 output->assign(input);
             else {
-                if (!input->isVector() && reverse)
-                    n->assign(lastDim - n->e<Nd4jLong>(0) - 1);
+//                if (!input->isVector() && reverse)
+//                    n->assign(lastDim - n->e<Nd4jLong>(0) - 1);
                 helpers::nthElementFunctor(block.launchContext(), input, n, output, reverse);
             }
             return ND4J_STATUS_OK;

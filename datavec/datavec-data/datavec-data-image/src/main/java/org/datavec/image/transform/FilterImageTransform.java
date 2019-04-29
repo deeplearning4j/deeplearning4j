@@ -26,7 +26,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.avutil.*;
+import static org.bytedeco.ffmpeg.global.avutil.*;
 
 /**
  * Filters images using FFmpeg (libavfilter):

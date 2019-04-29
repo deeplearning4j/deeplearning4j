@@ -30,6 +30,13 @@ __device__ void bitonicSortStepKernel(void *vx, Nd4jLong *xShapeInfo, int j, int
     unsigned int i, ixj; /* Sorting partners: i and ixj */
     i = threadIdx.x + blockDim.x * blockIdx.x;
 
+    __shared__ Nd4jLong xLength;
+    if (threadIdx.x == 0)
+        xLength = shape::length(xShapeInfo);
+
+    __syncthreads();
+
+
     if (i >= length)
         return;
 
@@ -37,8 +44,8 @@ __device__ void bitonicSortStepKernel(void *vx, Nd4jLong *xShapeInfo, int j, int
 
     /* The threads with the lowest ids sort the array. */
     if ((ixj)>i) {
-        int posI = getDevicePosition(xShapeInfo, i);
-        int posIXJ = getDevicePosition(xShapeInfo, ixj);
+        int posI = getDevicePosition(xShapeInfo, i, xLength);
+        int posIXJ = getDevicePosition(xShapeInfo, ixj, xLength);
 
         if ((i&k)==0) {
             /* Sort ascending */
@@ -72,5 +79,6 @@ template<typename T>
 __host__ void bitonicSortStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
 
     execBitonicSortStepKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, j, k, length, descending);
+    nd4j::DebugHelper::checkErrorCode(stream, "bitonicSortStep(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicSortStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending), LIBND4J_TYPES);

@@ -79,7 +79,7 @@ public class DataSetTest extends BaseNd4jTest {
         for( int i=0; i<10; i++ ){
             assertTrue(iter.hasNext());
             DataSet d = iter.next();
-            INDArray exp = f.getRow(i);
+            INDArray exp = f.getRow(i, true);
             assertEquals(exp, d.getFeatures());
             assertEquals(exp, d.getLabels());
         }
@@ -430,7 +430,7 @@ public class DataSetTest extends BaseNd4jTest {
 
 
         assertEquals(first, fMerged.get(interval(0, nExamples1), all(), all(), all()));
-        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2, true), all(), all(), all()));
+        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2), all(), all(), all()));
         assertEquals(labels1, lMerged.get(interval(0, nExamples1), all()));
         assertEquals(labels2, lMerged.get(interval(nExamples1, nExamples1 + nExamples2), all()));
 
@@ -881,8 +881,9 @@ public class DataSetTest extends BaseNd4jTest {
         //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(), newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
-        assertEquals(Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE),
-                        newDs.getLabelsMaskArray().sum(1));
+        INDArray exp = Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE);
+        INDArray act = newDs.getLabelsMaskArray().sum(1);
+        assertEquals(exp, act);
     }
 
     @Test

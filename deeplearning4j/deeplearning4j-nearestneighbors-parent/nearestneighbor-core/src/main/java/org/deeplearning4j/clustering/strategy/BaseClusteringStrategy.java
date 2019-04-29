@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.strategy;
 
 import lombok.*;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
@@ -43,12 +44,12 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     protected boolean inverse;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PROTECTED)
-    protected String distanceFunction;
+    protected Distance distanceFunction;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PROTECTED)
     protected boolean allowEmptyClusters;
 
-    public BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
+    public BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, Distance distanceFunction,
                     boolean allowEmptyClusters, boolean inverse) {
         this.type = type;
         this.initialClusterCount = initialClusterCount;
@@ -58,7 +59,7 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     }
 
     public BaseClusteringStrategy(ClusteringStrategyType clusteringStrategyType, int initialClusterCount,
-                    String distanceFunction, boolean inverse) {
+                    Distance distanceFunction, boolean inverse) {
         this(clusteringStrategyType, initialClusterCount, distanceFunction, false, inverse);
     }
 

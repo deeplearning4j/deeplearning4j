@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +51,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b,c\n1,2,3,4\nx,y\n" + seqSep + "\nA,B,C";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.CONCAT);
             seqRR.initialize(new FileSplit(f));
@@ -104,7 +105,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b\n1,2\nx,y\n" + seqSep + "\nA\nB\nC";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.EQUAL_LENGTH);
             seqRR.initialize(new FileSplit(f));
@@ -154,7 +155,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b\n1\nx\n" + seqSep + "\nA\nB\nC";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.PAD, new Text("PAD"));
             seqRR.initialize(new FileSplit(f));

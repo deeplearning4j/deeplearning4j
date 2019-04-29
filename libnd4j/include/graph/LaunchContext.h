@@ -45,21 +45,23 @@ class ND4J_EXPORT LaunchContext {
 #ifdef __CUDABLAS__
 		void* _reductionPointer;
 		void* _scalarPointer;
-		int* _allocationPointer;		
+		int* _allocationPointer;
 		cudaStream_t *_cudaStream = nullptr;
 		cudaStream_t *_cudaSpecialStream = nullptr;
 		void *_cublasHandle = nullptr;
-#endif		
+
+		bool _isAllocated = false;
+#endif
 	nd4j::memory::Workspace* _workspace = nullptr;
     int _deviceID = 0;
 	public:
 #ifdef __CUDABLAS__
-		
+
 		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 
 		FORCEINLINE void* getReductionPointer () const {return _reductionPointer;};
-		
+
 		FORCEINLINE void* getScalarPointer() const {return _scalarPointer;};
 
 		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
@@ -69,7 +71,7 @@ class ND4J_EXPORT LaunchContext {
 		FORCEINLINE cudaStream_t* getCudaSpecialStream() const {return _cudaSpecialStream;};
 
 		FORCEINLINE void setReductionPointer (void* reductionPointer) {_reductionPointer = reductionPointer;};
-		
+
 		FORCEINLINE void setScalarPointer(void* scalarPointer) {_scalarPointer = scalarPointer;};
 
 		FORCEINLINE void setAllocationPointer(int* allocationPointer) {_allocationPointer = allocationPointer;};
@@ -80,7 +82,7 @@ class ND4J_EXPORT LaunchContext {
 #endif
 
     	LaunchContext();
-    	~LaunchContext() = default;
+    	~LaunchContext();
     	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }
     	void setWorkspace(nd4j::memory::Workspace* theWorkspace) {
     	    _workspace = theWorkspace;

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import com.jakewharton.byteunits.BinaryByteUnit;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,6 +30,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,14 +38,15 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
-import org.nd4j.util.StringUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.bytedeco.javacpp.cuda.*;
-import static org.bytedeco.javacpp.cudnn.*;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
  * cuDNN-based helper for the recurrent LSTM layer (no peephole connections).
@@ -52,6 +55,10 @@ import static org.bytedeco.javacpp.cudnn.*;
  */
 @Slf4j
 public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
+
+    public CudnnLSTMHelper(DataType dataType) {
+        super(dataType);
+    }
 
     private static class CudnnLSTMContext extends CudnnContext {
 
@@ -216,7 +223,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
-        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
+        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, inputWeights.dataType(), new long[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
@@ -392,10 +399,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
         INDArray outputActivations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                        new long[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
-        INDArray finalMemCellState = Nd4j.createUninitialized(
+                        inputWeights.dataType(), new long[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
+        INDArray finalMemCellState = Nd4j.createUninitialized( inputWeights.dataType(),
                         new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
-        INDArray finalStepActivations = Nd4j.createUninitialized(
+        INDArray finalStepActivations = Nd4j.createUninitialized( inputWeights.dataType(),
                         new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();
@@ -487,11 +494,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
             if(log.isTraceEnabled()){
                 if(workSpace == null){
                     log.trace("CudnnLSTMHelper activate: Allocating initial workspace of size {} ({})", workSize,
-                            StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                            BinaryByteUnit.format(workSize, "#.00"));
                 } else {
                     log.trace("CudnnLSTMHelper activate: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
-                            workSize, StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                            workSpace.capacity(), BinaryByteUnit.format(workSpace.capacity(), "#.00"),
+                            workSize, BinaryByteUnit.format(workSize, "#.00"));
                 }
             }
             if(workSpace != null)

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -59,11 +60,9 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     protected Map<String,INDArray> gradTable;
 
 
-    public SameDiffOutputLayer(NeuralNetConfiguration conf){
-        super(conf);
+    public SameDiffOutputLayer(NeuralNetConfiguration conf, DataType dataType){
+        super(conf, dataType);
     }
-
-
 
     @Override
     public Layer clone() {
@@ -248,11 +247,11 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
                 long[] labelShape = labels == null ? new long[]{1} : labels.shape().clone();
-                labelVar = sameDiff.var(LABELS_KEY, labelShape);
+                labelVar = sameDiff.var(LABELS_KEY, dataType, labelShape);
             }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();

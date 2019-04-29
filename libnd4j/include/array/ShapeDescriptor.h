@@ -63,18 +63,18 @@ class ND4J_EXPORT ShapeDescriptor {
 
         // we use default copy assignment operator
         ShapeDescriptor& operator=(const ShapeDescriptor& other) = default;
-        
-        // we use default move assignment operator        
+
+        // we use default move assignment operator
         ShapeDescriptor& operator=(ShapeDescriptor&& other) noexcept = default;
 
         // equal to operator
-        bool operator==(const ShapeDescriptor &other) const;        
-        
+        bool operator==(const ShapeDescriptor &other) const;
+
         // less than operator
         bool operator<(const ShapeDescriptor &other) const;
 
         Nd4jLong* toShapeInfo();
-};
+    };
 
 
 }

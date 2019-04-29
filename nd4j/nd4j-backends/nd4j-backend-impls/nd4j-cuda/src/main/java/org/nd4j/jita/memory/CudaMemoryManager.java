@@ -19,6 +19,7 @@ package org.nd4j.jita.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -55,12 +56,12 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        val allocator = AtomicAllocator.getInstance();
 
         //log.info("Allocating {} bytes in {} memory...", bytes, kind);
 
         if (kind == MemoryKind.HOST) {
-            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from HOST memory");
@@ -70,14 +71,14 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
+            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
             //log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
 
             if (initialize) {
-                CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+                val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
                 int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
                 if (i == 0)
@@ -211,7 +212,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
     @Override
     public void release(Pointer pointer, MemoryKind kind) {
         if (kind == MemoryKind.DEVICE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, null);
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, 0);
             pointer.setNull();
         } else if (kind == MemoryKind.HOST) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
@@ -268,5 +269,24 @@ public class CudaMemoryManager extends BasicMemoryManager {
     @Override
     public long allocatedMemory(Integer deviceId) {
         return AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
+    }
+
+    @Override
+    public void releaseCurrentContext() {
+        // gettting context for this thread
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        if (context == null)
+            return;
+
+        // we dont want any remnaints below this line
+        context.syncOldStream();
+        context.syncSpecialStream();
+
+        val pool = AtomicAllocator.getInstance().getContextPool();
+
+        // push it back to pool
+        pool.releaseContext(context);
+        ((LimitedContextPool) pool).removeAcquired();
     }
 }

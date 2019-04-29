@@ -178,7 +178,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testSliceAssign1() {
         INDArray array = Nd4j.zeros(4, 4);
 
-        INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f}).reshape(1, -1);
+        INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f});
 
         INDArray slice = array.slice(1);
         int[] idx = new int[] {0, 1, 3};
@@ -186,11 +186,11 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
         INDArray subarray = slice.get(range);
 
-        System.out.println("Subarray: " + Arrays.toString(subarray.data().asFloat()) + " isView: " + subarray.isView());
+        //System.out.println("Subarray: " + Arrays.toString(subarray.data().asFloat()) + " isView: " + subarray.isView());
 
         slice.put(range, patch);
 
-        System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
+        //System.out.println("Array after being patched: " + Arrays.toString(array.data().asFloat()));
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
     }

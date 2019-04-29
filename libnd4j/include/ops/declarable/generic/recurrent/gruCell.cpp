@@ -111,8 +111,12 @@ DECLARE_SHAPE_FN(gruCell) {
 
     ShapeUtils::updateStridesAndType(s, x, shape::order(hLast));
 
-    //4 output shapes, all [bs, numUnits]
-    return SHAPELIST(s, s, s, s);
+    Nd4jLong *s1, *s2, *s3;
+    COPY_SHAPE(s, s1);
+    COPY_SHAPE(s, s2);
+    COPY_SHAPE(s, s3);
+
+    return SHAPELIST(s, s1, s2, s3);
 }
 
 

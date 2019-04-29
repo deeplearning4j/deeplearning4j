@@ -21,6 +21,7 @@
 
 #include <PointersManager.h>
 #include <exceptions/cuda_exception.h>
+#include <StringUtils.h>
 #include <logger.h>
 #include <memory/Workspace.h>
 

@@ -102,14 +102,14 @@ public class ParameterServerClientTest {
          * which adds the array for parameter averaging.
          * In this case totalN should be 1.
          */
-        client.pushNDArray(Nd4j.ones(parameterLength));
+        client.pushNDArray(Nd4j.ones(1, parameterLength));
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();
         assertEquals(1, listener.getUpdater().numUpdates());
-        assertEquals(Nd4j.ones(parameterLength), listener.getUpdater().ndArrayHolder().get());
+        assertEquals(Nd4j.ones(1, parameterLength), listener.getUpdater().ndArrayHolder().get());
         INDArray arr = client.getArray();
-        assertEquals(Nd4j.ones(1000), arr);
+        assertEquals(Nd4j.ones(1, 1000), arr);
     }
 
 

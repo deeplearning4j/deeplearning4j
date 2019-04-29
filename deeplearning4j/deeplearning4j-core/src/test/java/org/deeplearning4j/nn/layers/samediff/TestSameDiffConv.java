@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -129,6 +130,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             log.info("Starting test: " + msg);
 
                                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .dataType(DataType.DOUBLE)
                                                     .seed(12345)
                                                     .list()
                                                     .layer(new SameDiffConv.Builder()
@@ -161,6 +163,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             assertNotNull(net.paramTable());
 
                                             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                                                    .dataType(DataType.DOUBLE)
                                                     .weightInit(WeightInit.XAVIER)
                                                     .seed(12345)
                                                     .list()
@@ -260,6 +263,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                         int outW = cm == ConvolutionMode.Same ? imgW : (imgW-2);
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
                                 .seed(12345)
                                 .updater(new NoOp())
                                 .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)

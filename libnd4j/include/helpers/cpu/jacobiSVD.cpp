@@ -76,12 +76,10 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, c
 
         if(j+1 > block.sizeAt(0))
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
-        
-        IndicesList indices({NDIndex::interval(i, j+1, j-i), NDIndex::all()});
-        auto pTemp = block.subarray(indices);
-        auto temp = *pTemp;
-        pTemp->assign(mmul(rotation, temp));
-        delete pTemp;
+
+        auto pTemp = block({i,j+1,j-i,  0,0,0}, true, true);
+        auto temp = pTemp;
+        pTemp.assign(mmul(rotation, temp));
     }
     else {
 
@@ -89,20 +87,15 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, c
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
         
         auto temp = NDArrayFactory::create(block.ordering(), {2, block.sizeAt(1)}, block.dataType(), block.getContext());
-        auto row1 = block.subarray({{i, i+1}, {}});
-        auto row2 = block.subarray({{j, j+1}, {}});
-        auto rowTemp1 = temp.subarray({{0, 1}, {}});
-        auto rowTemp2 = temp.subarray({{1, 2}, {}});
-        rowTemp1->assign(row1);
-        rowTemp2->assign(row2);
+        auto row1     = block({i,i+1, 0,0}, true);
+        auto row2     = block({j,j+1, 0,0}, true);
+        auto rowTemp1 = temp({0,1, 0,0}, true);
+        auto rowTemp2 = temp({1,2, 0,0}, true);
+        rowTemp1.assign(row1);
+        rowTemp2.assign(row2);
         temp.assign(mmul(rotation, temp));
-        row1->assign(rowTemp1);
-        row2->assign(rowTemp2);
-        
-        delete row1;
-        delete row2;
-        delete rowTemp1;
-        delete rowTemp2;
+        row1.assign(rowTemp1);
+        row2.assign(rowTemp2);
     }
 }
 
@@ -114,12 +107,10 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, 
 
         if(j+1 > block.sizeAt(1))
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
-        
-        IndicesList indices({NDIndex::all(), NDIndex::interval(i, j+1, j-i)});
-        auto pTemp = block.subarray(indices);
-        auto temp = *pTemp;
-        pTemp->assign(mmul(temp, rotation));
-        delete pTemp;
+
+        auto pTemp = block({0,0,0,  i,j+1,j-i}, true, true);
+        auto temp = pTemp;
+        pTemp.assign(mmul(temp, rotation));
     }
     else {
 
@@ -127,20 +118,15 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, 
             throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
         
         auto temp = NDArrayFactory::create(block.ordering(), {block.sizeAt(0), 2}, block.dataType(), block.getContext());
-        auto col1 = block.subarray({{}, {i, i+1}});
-        auto col2 = block.subarray({{}, {j, j+1}});
-        auto colTemp1 = temp.subarray({{}, {0, 1}});
-        auto colTemp2 = temp.subarray({{}, {1, 2}});
-        colTemp1->assign(col1);
-        colTemp2->assign(col2);
+        auto col1     = block({0,0, i,i+1}, true);
+        auto col2     = block({0,0, j,j+1}, true);
+        auto colTemp1 = temp({0,0, 0,1}, true);
+        auto colTemp2 = temp({0,0, 1,2}, true);
+        colTemp1.assign(col1);
+        colTemp2.assign(col2);
         temp.assign(mmul(temp, rotation));
-        col1->assign(colTemp1);
-        col2->assign(colTemp2);
-        
-        delete col1;
-        delete col2;
-        delete colTemp1;
-        delete colTemp2;
+        col1.assign(colTemp1);
+        col2.assign(colTemp2);
     }
 }
 
@@ -385,9 +371,8 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
     for(int i = 0; i < _diagSize; ++i) {                
         _s.p(i, math::nd4j_abs<T>(_m.e<T>(i,i)));
         if(_calcU && _m.e<T>(i,i) < (T)0.) {
-            auto temp = _u.subarray({{},{i, i+1}});
-            temp->applyTransform(transform::Neg, temp, nullptr);
-            delete temp;
+            auto temp = _u({0,0, i,i+1}, true);
+            temp.applyTransform(transform::Neg, &temp, nullptr);
         }
     }
   
@@ -412,23 +397,19 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
             //math::nd4j_swap<T>(_s(i), _s(pos));
             
             if(_calcU) {
-                auto temp1 = _u.subarray({{}, {pos, pos+1}});
-                auto temp2 = _u.subarray({{}, {i, i+1}});
-                auto  temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);
-                delete temp1;
-                delete temp2;                
+                auto temp1 = _u({0,0, pos,pos+1}, true);
+                auto temp2 = _u({0,0, i,i+1}, true);
+                auto  temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);
             }
             
             if(_calcV) { 
-                auto temp1 = _v.subarray({{}, {pos, pos+1}});
-                auto temp2 = _v.subarray({{}, {i, i+1}});
-                auto temp3 = *temp1;
-                temp1->assign(temp2);
-                temp2->assign(temp3);
-                delete temp1;
-                delete temp2;                                
+                auto temp1 = _v({0,0, pos, pos+1}, true);
+                auto temp2 = _v({0,0, i, i+1}, true);
+                auto temp3 = temp1;
+                temp1.assign(temp2);
+                temp2.assign(temp3);
             }
         }
     }  

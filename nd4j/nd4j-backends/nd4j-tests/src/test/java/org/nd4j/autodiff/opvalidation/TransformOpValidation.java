@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -36,10 +37,12 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -433,8 +436,8 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable in1 = sd.var("in1", ia);
         SDVariable in2 = sd.var("in2", ib);
 
-        SDVariable index1 = sd.var("index1", indexA);
-        SDVariable index2 = sd.var("index2", indexB);
+        SDVariable index1 = sd.constant("index1", indexA);
+        SDVariable index2 = sd.constant("index2", indexB);
 
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
         SDVariable loss = sd.standardDeviation("loss", t, true);
@@ -522,7 +525,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("e", expOut[i])
                     .gradCheckSkipVariables("e")
-                    .gradientCheck(true));
+                    .gradientCheck(false));
             assertNull(err);
         }
     }
@@ -550,7 +553,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", -1, nOut);
+            SDVariable in = sd.var("in", minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
@@ -735,10 +738,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Transforms.leakyRelu(ia, true));
                     break;
                 case 39:
-                    if(OpValidationSuite.IGNORE_FAILING){
-                        //2018-01-09 - Gradient check is failing - not sure why
+                    if(OpValidationSuite.IGNORE_FAILING)
                         continue;
-                    }
                     t = sd.nn().logSoftmax(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
                     tc.expectedOutput(t.getVarName(), Transforms.log(Transforms.softmax(ia, true)));
@@ -750,29 +751,29 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 41:
                     t = sd.gt(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.gt(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gt(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 42:
                     t = sd.gte(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.gte(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gte(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 43:
                     t = sd.lt(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.lt(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lt(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 44:
                     t = sd.lte(in, 1.0).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), ia.lte(1.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lte(1.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 45:
                     t = sd.eq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.eq(2.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.eq(2.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 46:
                     t = sd.neq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.neq(2.0).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.neq(2.0).castTo(DataType.DOUBLE)).gradientCheck(false);
                     break;
                 case 47:
                     t = sd.math().ceil(in);
@@ -899,11 +900,10 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2}).castTo(DataType.DOUBLE);
-//                    in = sd.var("in", new int[]{1, 2});
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
                     t = sd.fill(in.castTo(DataType.INT), DataType.DOUBLE, value);
-                    tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42));
+                    tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42)).gradientCheck(false);
                     opName = "fill";
                     break;
                 case 62:
@@ -932,11 +932,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 68:
                     t = sd.shape(in).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape()))).gradientCheck(false);
                     break;
                 case 69:
                     t = sd.rank(in).castTo(DataType.DOUBLE);
-                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()}));
+                    tc.expectedOutput(t.getVarName(), Nd4j.scalar((double)ia.rank())).gradientCheck(false);
                     break;
                 case 70:
                     t = sd.onesLike(in);
@@ -976,7 +976,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.matchCondition(in, Conditions.lessThan(0.5)).castTo(DataType.DOUBLE);
                     INDArray exp = ia.dup().lt(0.5).castTo(DataType.DOUBLE);
-                    tc.expected(t, exp);
+                    tc.expected(t, exp).gradientCheck(false);
                     break;
                 case 78:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
@@ -1056,8 +1056,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", DataType.DOUBLE, -1, nOut);
-            SDVariable in2 = sd.var("in2", DataType.DOUBLE, -1, nOut);
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, minibatch, nOut);
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
             INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
@@ -1093,45 +1093,45 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.rdiv(ib));
                     break;
                 case 6:
-                    t = sd.eq(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.eq(in1, in2);
                     opName = "eq";
-                    tc.expectedOutput(t.getVarName(), ia.eq(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.eq(ib)).gradientCheck(false);
                     break;
                 case 7:
-                    t = sd.neq(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.neq(in1, in2);
                     opName = "neq";
-                    tc.expectedOutput(t.getVarName(), ia.neq(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.neq(ib)).gradientCheck(false);;
                     break;
                 case 8:
-                    t = sd.gt(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.gt(in1, in2);
                     opName = "gt";
-                    tc.expectedOutput(t.getVarName(), ia.gt(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.gt(ib)).gradientCheck(false);
                     break;
                 case 9:
-                    t = sd.lt(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.lt(in1, in2);
                     opName = "lt";
-                    tc.expectedOutput(t.getVarName(), ia.lt(ib).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), ia.lt(ib)).gradientCheck(false);
                     break;
                 case 10:
-                    t = sd.gte(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.gte(in1, in2);
                     opName = "gte";
                     INDArray expOut10 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut10}));
-                    tc.expectedOutput(t.getVarName(), expOut10.castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), expOut10).gradientCheck(false);
                     break;
                 case 11:
-                    t = sd.lte(in1, in2).castTo(DataType.DOUBLE);
+                    t = sd.lte(in1, in2);
                     opName = "lte";
                     INDArray expOut11 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut11}));
-                    tc.expectedOutput(t.getVarName(), expOut11.castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), expOut11).gradientCheck(false);
                     break;
                 case 12:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "or";
-                    tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 13:
                     ib = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
@@ -1149,16 +1149,16 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "and";
-                    tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 17:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     opName = "xor";
-                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 18:
                     t = sd.assign(in1, in2);
@@ -1204,7 +1204,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String msg = "test: " + i + " - " + name;
             log.info("***** Starting test: {} *****", msg);
 
-            SDVariable loss = sd.mean("loss", t);
+            SDVariable loss = sd.mean("loss", t.castTo(DataType.DOUBLE));
 
             sd.associateArrayWithVariable(ia, in1);
             sd.associateArrayWithVariable(ib, in2);
@@ -1218,7 +1218,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
-            fail(allFailed.size() + " transforms failed");
+            fail(allFailed.size() + " transforms failed: " + allFailed);
         }
     }
 
@@ -1231,7 +1231,6 @@ public class TransformOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", 4);
 
-            boolean doGrad = true;
             SDVariable out;
             INDArray exp;
             INDArray inArr;
@@ -1256,15 +1255,16 @@ public class TransformOpValidation extends BaseOpValidation {
                     inArr = Nd4j.create(new double[]{0,Double.NaN,10,Double.NaN});
                     exp = Nd4j.create(new boolean[]{false,true,false,true});
                     out = sd.math().isNaN(in);
-                    doGrad = false; //Can't grad check due to NaNs
                     break;
                 default:
                     throw new RuntimeException();
             }
 
-            SDVariable loss = out.castTo(DataType.DOUBLE).mean();
+            SDVariable other = sd.var("other", Nd4j.rand(DataType.DOUBLE, 4));
+
+            SDVariable loss = out.castTo(DataType.DOUBLE).add(other).mean();
             TestCase tc = new TestCase(sd)
-                    .gradientCheck(doGrad)
+                    .gradientCheck(false)   //Can't gradient check - in -> boolean -> cast(double)
                     .expected(out, exp);
 
             in.setArray(inArr);
@@ -1462,15 +1462,20 @@ public class TransformOpValidation extends BaseOpValidation {
                 .addIntegerArguments(0) //0 = CONSTANT
                 .build();
 
+        INDArray exp = Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10});
         OpValidation.validate(new OpTestCase(op)
-                .expectedOutput(0, Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10})));
+                .expectedOutput(0, exp));
+
+        SameDiff sd = SameDiff.create();
+        SDVariable s = sd.var("in", in);
+        SDVariable padded = sd.nn().pad(s, sd.constant(pad), 10.0);
+        String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
+        assertNull(err2);
     }
 
 
     @Test
     public void testMirrorPad(){
-//        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
@@ -1493,12 +1498,17 @@ public class TransformOpValidation extends BaseOpValidation {
             .expectedOutput(0, exp));
 
         assertNull(err);
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable s = sd.var("in", in);
+        SDVariable padded = sd.nn().pad("pad", s, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT, 0.0);
+        String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
+        assertNull(err2);
     }
 
     @Test
     public void testMirrorPad2(){
-//        OpValidationSuite.ignoreFailing();
-
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
@@ -1765,5 +1775,145 @@ public class TransformOpValidation extends BaseOpValidation {
             return true;
         //Note that "boolean" ops are inherit
         return false;
+    }
+
+    @Test
+    public void testStandardize() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testStandardizeOP() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+
+        final INDArray output = Nd4j.zerosLike(res);
+        Nd4j.getExecutioner().exec(new Standardize(random, output, 1));
+
+        assertEquals(res, output);
+    }
+
+    @Test
+    public void testStandardizeNoDeviation() {
+        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        for (int i = 0; i < 4; i++) {
+            random.putScalar(1,i, 7);
+        }
+
+        final int[] axis = new int[]{1};
+        final INDArray means = random.mean(axis);
+        final INDArray std = random.std(false, axis);
+        std.addi(std.eq(0).castTo(DataType.DOUBLE));
+
+        final INDArray res = random.subColumnVector(means).divColumnVector(std);
+        final INDArray expOut = res.norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", random);
+        SDVariable t = sd.math.standardize(sdA, axis);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", expOut)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testMatMulTensor(){
+        final INDArray a = Nd4j.rand(new int[]{1, 2, 3, 4, 5});
+        final INDArray b = Nd4j.rand(new int[]{1, 2, 3, 5, 6});
+
+        final INDArray z = Nd4j.matmul(a, b);
+
+        assertArrayEquals(z.shape(), new long[]{1, 2, 3, 4, 6});
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdA = sd.var("a", a);
+        SDVariable sdB = sd.var("b", b);
+        SDVariable t = sd.mmul(sdA, sdB);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err, err);
+    }
+
+    @Test
+    public void testMatMulTensorTranspose(){
+        for(boolean transposeA: new boolean[]{false, true}) {
+            for (boolean transposeB : new boolean[]{false, true}) {
+                for (boolean transposeResult : new boolean[]{false, true}) {
+                    log.info("Testing with transposeA={}; transposeB={}; transposeResult={};", transposeA, transposeB, transposeResult);
+                    int m = 0, n = 0, k = 0, l = 0, i = 0, j = 0;
+                    if(!transposeA && !transposeB && !transposeResult){ m = 4; n = 5; k = 5;  l = 6; i = 4; j = 6;}
+                    if(!transposeA &&  transposeB && !transposeResult){ m = 4; n = 5; k = 6;  l = 5; i = 4; j = 6;}
+                    if(!transposeA && !transposeB &&  transposeResult){ m = 4; n = 5; k = 5;  l = 6; i = 6; j = 4;}
+                    if(!transposeA &&  transposeB &&  transposeResult){ m = 4; n = 5; k = 6;  l = 5; i = 6; j = 4;}
+                    if( transposeA && !transposeB && !transposeResult){ m = 5; n = 4; k = 5;  l = 6; i = 4; j = 6;}
+                    if( transposeA &&  transposeB && !transposeResult){ m = 5; n = 4; k = 6;  l = 5; i = 4; j = 6;}
+                    if( transposeA && !transposeB &&  transposeResult){ m = 5; n = 4; k = 5;  l = 6; i = 6; j = 4;}
+                    if( transposeA &&  transposeB &&  transposeResult){ m = 5; n = 4; k = 6;  l = 5; i = 6; j = 4;}
+
+                    final INDArray a = Nd4j.rand(new int[]{1, 2, 3, m, n});
+                    final INDArray b = Nd4j.rand(new int[]{1, 2, 3, k, l});
+
+                    final INDArray z = Nd4j.matmul(a, b, transposeA, transposeB, transposeResult);
+
+                    assertArrayEquals(z.shape(), new long[]{1, 2, 3, i, j});
+
+                    SameDiff sd = SameDiff.create();
+                    SDVariable sdA = sd.var("a", a);
+                    SDVariable sdB = sd.var("b", b);
+                    SDVariable t = sd.mmul(sdA, sdB, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).transposeResult(transposeResult).build());
+                    t.norm1("out");
+
+                    String err = OpValidation.validate(new TestCase(sd)
+                            .gradientCheck(true));
+                    assertNull(err, err);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSoftmaxCF(){
+
+        INDArray arrC = Nd4j.rand(DataType.FLOAT, 2, 5);
+        INDArray arrF = arrC.dup('f');
+        INDArray outCC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outCF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+        INDArray outFC = Nd4j.create(DataType.FLOAT, arrC.shape(), 'c');
+        INDArray outFF = Nd4j.create(DataType.FLOAT, arrC.shape(), 'f');
+
+
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrC).addOutputs(outCF).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFC).build());
+        Nd4j.exec(DynamicCustomOp.builder("softmax").addInputs(arrF).addOutputs(outFF).build());
+
+        assertEquals(outCC, outCF);
+        assertEquals(outCC, outFC);
+        assertEquals(outCC, outFF);
     }
 }

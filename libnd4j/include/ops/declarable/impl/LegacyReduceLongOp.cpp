@@ -72,6 +72,9 @@ namespace nd4j {
                         if (dims[e] < 0)
                             dims[e] += x->rankOf();
 
+                    if (dims.size() > 1)
+                        std::sort(dims.begin(), dims.end());
+
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
                     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);

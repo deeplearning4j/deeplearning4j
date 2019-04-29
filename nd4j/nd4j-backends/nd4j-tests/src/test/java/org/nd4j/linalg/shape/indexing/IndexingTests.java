@@ -127,7 +127,7 @@ public class IndexingTests extends BaseNd4jTest {
         
          */
         INDArray viewOne = A.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
-        INDArray viewTwo = A.get(NDArrayIndex.point(1)).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
+        INDArray viewTwo = A.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).get(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(1, 3));
         INDArray expected = Nd4j.zeros(2, 2);
         expected.putScalar(0, 0, 11);
         expected.putScalar(0, 1, 20);
@@ -157,7 +157,7 @@ public class IndexingTests extends BaseNd4jTest {
                     log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
                     INDArrayIndex ndi_I = NDArrayIndex.interval(i, rows);
                     INDArrayIndex ndi_J = NDArrayIndex.interval(j, cols);
-                    INDArray aView = A.get(ndi_Slice).get(ndi_I, ndi_J);
+                    INDArray aView = A.get(ndi_Slice, NDArrayIndex.all(), NDArrayIndex.all()).get(ndi_I, ndi_J);
                     INDArray sameView = A.get(ndi_Slice, ndi_I, ndi_J);
                     String failureMessage = String.format("Fails for (%d , %d - %d, %d - %d)\n", s, i, rows, j, cols);
                     try {
@@ -216,7 +216,7 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
 
-        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(),
+        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2), NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all());
         assertEquals(second, get.dup()); //Passes
         assertEquals(second, get); //Fails
@@ -228,8 +228,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
         val shape = subarray.shape();
-        assertEquals(shape[0], 1);
-        assertEquals(shape[1], 2);
+        assertArrayEquals(new long[]{2}, shape);
     }
 
     @Test

@@ -45,7 +45,7 @@ import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
+import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -62,6 +62,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCMultiClass;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -613,6 +614,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (initCalled)
             return;
 
+        DataType netDtype = getLayerWiseConfigurations().getDataType();
+        if(parameters != null && parameters.dataType() != netDtype){
+            if(cloneParametersArray){
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    parameters = parameters.castTo(netDtype);
+                }
+            } else {
+                throw new IllegalStateException("Error initializing network: Network datatype is set to " + netDtype
+                        + " but provided array has datatype " + parameters.dataType() + " with cloneParametersArray argument" +
+                        " set to false. Cannot initialize net with specified datatype array if that array does not match network datatype");
+            }
+        }
+
         if (layerMap == null)
             layerMap = new LinkedHashMap<>();
 
@@ -664,7 +678,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 initializeParams = false;
             } else if(paramLength > 0){
-                flattenedParams = Nd4j.create(1, paramLength);
+                flattenedParams = Nd4j.create(netDtype, 1, paramLength);
                 initializeParams = true;
             } else {
                 //Edge case: 0 params in network
@@ -682,7 +696,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             for (int i = 0; i < nLayers; i++) {
                 INDArray paramsView;
                 if (nParamsPerLayer[i] > 0) {
-                    paramsView = flattenedParams.get(NDArrayIndex.point(0),
+                    paramsView = flattenedParams.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
                 } else {
                     paramsView = null;
@@ -690,7 +704,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = conf.getLayer().instantiate(conf, trainingListeners, i, paramsView, initializeParams);
+                layers[i] = conf.getLayer().instantiate(conf, trainingListeners, i, paramsView, initializeParams, netDtype);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -769,14 +783,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             if(paramLength > 0) {
-                flattenedGradients = Nd4j.zeros(new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
             }
 
             long paramsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
-                INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0),
+                INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParamsPerLayer[i]));
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
                 paramsSoFar += nParamsPerLayer[i];
@@ -1013,6 +1027,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
                                 storeLastForTBPTT, workspaceMgr);
+                    } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, train,storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, train, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);
@@ -1100,6 +1117,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
+                    }else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT);
                         input = temp.get(temp.size() - 1);
@@ -1255,6 +1275,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         //rnnTimeStep case
                         if (layers[i] instanceof RecurrentLayer) {
                             input = ((RecurrentLayer) layers[i]).rnnTimeStep(reshapeTimeStepInput(input), mgr);
+                        } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer){
+                            RecurrentLayer rl = ((RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying());
+                            input = rl.rnnTimeStep(reshapeTimeStepInput(input), mgr);
                         } else if (layers[i] instanceof MultiLayerNetwork) {
                             input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(reshapeTimeStepInput(input));
                         } else {
@@ -1471,7 +1494,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 long range = layer.numParams();
                 if (range <= 0)
                     continue; //Some layers: no parameters (subsampling, etc)
-                INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, range + idx));
+                INDArray get = params.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(idx, range + idx));
                 layer.setParams(get);
                 idx += range;
             }
@@ -1494,7 +1517,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for (Layer layer : layers) {
             if (layer.numParams() == 0)
                 continue;
-            layer.setBackpropGradientsViewArray(gradients.get(NDArrayIndex.point(0),
+            layer.setBackpropGradientsViewArray(gradients.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
             paramsSoFar += layer.numParams();
         }
@@ -1582,8 +1605,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         DataSetIterator iter;
         boolean destructable = false;
         if (iterator.asyncSupported()) {
-            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
-                    layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2), true);
             destructable = true;
         } else {
             iter = iterator;
@@ -1886,7 +1908,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     if(currPair.getSecond() != null) {
                         //Edge case: may be null for Embedding layer, for example
-                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, numLayers - 1,
+                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                 false, "Backprop");
                     }
 
@@ -2336,7 +2358,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
-            return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
+            if (outputAdapter instanceof ModelAdapter)
+                return ((ModelAdapter<T>) outputAdapter).apply(this, new INDArray[]{inputs}, new INDArray[]{ inputMasks}, new INDArray[]{labelMasks});
+            else
+                return outputAdapter.apply(output(inputs, false, inputMasks, labelMasks, ws));
         }
     }
 
@@ -2355,13 +2380,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     /**
      * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array.
      * See {@link #output(INDArray)}<br>
-     * NOTE: The output array can require a considerable amount of memory for iterators with a large number of examples
+     * NOTE 1: The output array can require a considerable amount of memory for iterators with a large number of examples<br>
+     * NOTE 2: This method cannot be used for variable length time series outputs, as this would require padding arrays
+     * for some outputs, or returning a mask array (which cannot be done with this method). For variable length time
+     * series applications, use one of the other output methods. This method also cannot be used with fully convolutional
+     * networks with different output sizes (for example, segmentation on different input image sizes).
+     *
      *
      * @param iterator Data to pass through the network
      * @return output for all examples in the iterator, concatenated into a
      */
     public INDArray output(DataSetIterator iterator, boolean train) {
         List<INDArray> outList = new ArrayList<>();
+        long[] firstOutputShape = null;
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
             INDArray features = next.getFeatures();
@@ -2371,7 +2402,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             INDArray fMask = next.getFeaturesMaskArray();
             INDArray lMask = next.getLabelsMaskArray();
-            outList.add(this.output(features, train, fMask, lMask));
+            INDArray output = this.output(features, train, fMask, lMask);
+            outList.add(output);
+            if(firstOutputShape == null){
+                firstOutputShape = output.shape();
+            } else {
+                //Validate that shapes are the same (may not be, for some RNN variable length time series applications)
+                long[] currShape = output.shape();
+                Preconditions.checkState(firstOutputShape.length == currShape.length, "Error during forward pass:" +
+                        "different minibatches have different output array ranks - first minibatch shape %s, last minibatch shape %s", firstOutputShape, currShape);
+                for( int i=1; i<currShape.length; i++ ){    //Skip checking minibatch dimension, fine if this varies
+                    Preconditions.checkState(firstOutputShape[i] == currShape[i], "Current output shape does not match first" +
+                            " output array shape at position %s: all dimensions must match other than the first dimension.\n" +
+                            " For variable length output size/length use cases such as for RNNs with multiple sequence lengths," +
+                            " use one of the other (non iterator) output methods. First batch output shape: %s, current batch output shape: %s",
+                            i, firstOutputShape, currShape);
+                }
+            }
         }
         return Nd4j.concat(0, outList.toArray(new INDArray[outList.size()]));
     }
@@ -3035,9 +3082,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public Map<String, INDArray> rnnGetPreviousState(int layer) {
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
-        if (!(layers[layer] instanceof RecurrentLayer))
+        Layer l = layers[layer];
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
+        if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
-        return ((RecurrentLayer) layers[layer]).rnnGetPreviousState();
+        return ((RecurrentLayer) l).rnnGetPreviousState();
     }
 
     /**Set the state of the RNN layer.
@@ -3047,10 +3098,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void rnnSetPreviousState(int layer, Map<String, INDArray> state) {
         if (layer < 0 || layer >= layers.length)
             throw new IllegalArgumentException("Invalid layer number");
-        if (!(layers[layer] instanceof RecurrentLayer))
+        Layer l = layers[layer];
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
+        if (!(l instanceof RecurrentLayer))
             throw new IllegalArgumentException("Layer is not an RNN layer");
-
-        RecurrentLayer r = (RecurrentLayer) layers[layer];
+        RecurrentLayer r = (RecurrentLayer) l;
         r.rnnSetPreviousState(state);
     }
 
@@ -3064,6 +3118,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 ((RecurrentLayer) layers[i]).rnnClearPreviousState();
             else if (layers[i] instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork) layers[i]).rnnClearPreviousState();
+            } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer){
+                ((RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying()).rnnClearPreviousState();
             }
         }
     }
@@ -3688,6 +3744,37 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public ComputationGraph toComputationGraph(){
         return NetworkUtils.toComputationGraph(this);
+    }
+
+    /**
+     * Return a copy of the network with the parameters and activations set to use the specified (floating point) data type.
+     * If the existing datatype is the same as the requested dataype, the original network will be returned unchanged.
+     * Only floating point datatypes (DOUBLE, FLOAT, HALF) may be used.
+     *
+     * @param dataType Datatype to convert the network to
+     * @return The network, set to use the specified datatype for the parameters and activations
+     */
+    public MultiLayerNetwork convertDataType(@NonNull DataType dataType){
+        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert network to a floating point type", dataType);
+        if(dataType == params().dataType()){
+            return this;
+        }
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            INDArray newParams = params().castTo(dataType);
+            String jsonConfig = getLayerWiseConfigurations().toJson();
+            MultiLayerConfiguration newConf = MultiLayerConfiguration.fromJson(jsonConfig);
+            newConf.setDataType(dataType);
+            MultiLayerNetwork newNet = new MultiLayerNetwork(newConf);
+            newNet.init(newParams, false);
+
+            Updater u = getUpdater(false);
+            if(u != null && u.getStateViewArray() != null){
+                INDArray oldUpdaterState = u.getStateViewArray();
+                newNet.getUpdater(true).getStateViewArray().assign(oldUpdaterState);
+            }
+            return newNet;
+        }
     }
 
     /**

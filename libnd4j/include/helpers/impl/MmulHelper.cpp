@@ -27,7 +27,7 @@
 #include <NDArrayFactory.h>
 
 namespace nd4j {
-    
+
 //////////////////////////////////////////////////////////////////////////
 nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB) {
     std::vector<int> aA(axesA);
@@ -316,7 +316,7 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
 
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
-#pragma omp parallel for schedule(guided)
+//PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto xSubArr = (*xT)(i, dimsToExclude);
                 auto ySubArr = (*yT)(i, dimsToExclude);

@@ -47,8 +47,6 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 
 	T item;
 	T result = (T)0.;
-// #pragma omp declare reduction (add : double,float,float16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
-// #pragma omp simd private(item) reduction(add:result)
 	for(int i = 0; i < maxIter; ++i) {		
 		
 		item = math::nd4j_pow((q + i),-x);
@@ -117,9 +115,10 @@ template <typename T>
 static NDArray zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
 
 	//auto result = NDArray(&x, false, context);
+	int xLen = x.lengthOf();
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
-	for(int i = 0; i < x.lengthOf(); ++i)
+	PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
+	for(int i = 0; i < xLen; ++i)
 		output->p(i, zeta<T>(context, x.e<T>(i), q.e<T>(i)));
 
 	return *output;

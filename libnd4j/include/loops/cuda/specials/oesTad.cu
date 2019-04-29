@@ -30,110 +30,82 @@ void oesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                 bool descending) {
 
     auto x = static_cast<T*>(vx);
-    
+    const int sharedSize = 32768;
+
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
     __shared__ T *shmem;
-    __shared__ T *dx;
+    __shared__ bool cached;
     if (threadIdx.x == 0) {
         xLength = shape::length(xShapeInfo);
-        xTadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        xTadLength = shape::length(tadShapeInfo);
         numTads = xLength / xTadLength;
 
         extern __shared__ unsigned char shrd[];
         shmem = (T *) shrd;
+
+        cached = xTadLength <= (sharedSize / sizeof(T));
     }
     __syncthreads();
 
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        if (threadIdx.x == 0) {
-            dx = x + tadOffsets[r];
-        }
-        __syncthreads();
+        auto dx = x + tadOffsets[r];
 
         // this is general loop, we go uncached
-
-        int rem = xTadLength % 2;
-        if (xTadLength > 1024) {
-
-            for (int i = 0; i < (xTadLength / 2) + rem; i++) {
-
-                // since we can have TAD larger then blockDim, we'll have this loop here
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
-                    if((!(tid & 1)) && tid < xTadLength - 1) {
-                        int t0 = getDevicePosition(tadShapeInfo, tid);
-                        int t1 = getDevicePosition(tadShapeInfo, tid+1);
-
-                        if(!descending == (dx[t0] > dx[t1])) {
-                            T temp = dx[t1];
-                            dx[t1] = dx[t0];
-                            dx[t0] = temp;
-                        }
-                    }
-                }
-               // __syncthreads();
-
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
-                    if((tid & 1) && tid < xTadLength - 1) {
-                        int t0 = getDevicePosition(tadShapeInfo, tid);
-                        int t1 = getDevicePosition(tadShapeInfo, tid+1);
-
-                        if(!descending == (dx[t0] > dx[t1])) {
-                            T temp = dx[t1];
-                            dx[t1] = dx[t0];
-                            dx[t0] = temp;
-                        }
-                    }
-                }
-                //__syncthreads();
+        int iterations = xTadLength;
+        if (cached) {
+            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                auto t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
+                shmem[tid] = dx[t0];
             }
 
-        } else {
-            // we just load up to 1024 elements into shared memory, and sort will be applied there
-            for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
-                shmem[e] = dx[getDevicePosition(tadShapeInfo, e)];
-
-//            __syncthreads();
-
-
-            for(int i=0; i < (xTadLength / 2) + rem; i++) {
-
-                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
-                    if((!(tid & 1)) && tid < xTadLength - 1) {
-                        int t0 = tid;
-                        int t1 = tid+1;
-
-                        if(!descending == (shmem[t0] > shmem[t1])) {
-                            T temp = shmem[t1];
-                            shmem[t1] = shmem[t0];
-                            shmem[t0] = temp;
-                        }
-                    }
-//                    __syncthreads();
-
-                    if((tid & 1) && tid < xTadLength - 1) {
-                        int t0 = tid;
-                        int t1 = tid+1;
-
-                        if(!descending == (shmem[t0] > shmem[t1])) {
-                            T temp = shmem[t1];
-                            shmem[t1] = shmem[t0];
-                            shmem[t0] = temp;
-                        }
-                    }
-//                    __syncthreads();
-                }
-            }
-
-            // we're dumping our shared memory back to device memory
-            for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
-                dx[getDevicePosition(tadShapeInfo, e)] = shmem[e];
-
-//            __syncthreads();
+            __syncthreads();
+            dx = shmem;
         }
 
-//        __syncthreads();
+        for (int i = 0; i < iterations; i++) {
+
+            if (i % 2 == 0) {
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                    auto top = 2 * tid + 1;
+                    if (top < xTadLength) {
+                        auto t0 = cached ? top - 1 : getDevicePosition(tadShapeInfo, top - 1, xTadLength);
+                        auto t1 = cached ? top : getDevicePosition(tadShapeInfo, top, xTadLength);
+
+                        if (!descending == (dx[t0] > dx[t1])) {
+                            T dt0 = dx[t0];
+                            dx[t0] = dx[t1];
+                            dx[t1] = dt0;
+                        }
+                    }
+                }
+            } else {
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                    auto top = 2 * tid + 2;
+                    if (top < xTadLength) {
+                        auto t0 = cached ? top - 1 : getDevicePosition(tadShapeInfo, top - 1, xTadLength);
+                        auto t1 = cached ? top : getDevicePosition(tadShapeInfo, top, xTadLength);
+
+                        if (!descending == (dx[t0] > dx[t1])) {
+                            T dt0 = dx[t0];
+                            dx[t0] = dx[t1];
+                            dx[t1] = dt0;
+                        }
+                    }
+                }
+            }
+            __syncthreads();
+        }
+
+
+        if (cached) {
+            dx = x + tadOffsets[r];
+            for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
+                auto t0 = getDevicePosition(tadShapeInfo, tid, xTadLength);
+                dx[t0] = shmem[tid];
+            }
+        }
     }
 }
 
@@ -156,5 +128,6 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream,
                                 bool descending) {
 
     execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    nd4j::DebugHelper::checkErrorCode(stream, "oesTad(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT oesTadGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending), LIBND4J_TYPES);

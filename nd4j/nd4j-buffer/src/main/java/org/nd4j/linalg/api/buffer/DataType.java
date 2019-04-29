@@ -59,4 +59,27 @@ public enum DataType {
     public boolean isIntType(){
         return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE;
     }
+
+    public static DataType fromNumpy(String numpyDtypeName){
+        switch (numpyDtypeName.toLowerCase()){
+            case "bool": return BOOL;
+            case "byte": return BYTE;
+            case "int8": return BYTE;
+            case "int16": return SHORT;
+            case "int32": return INT;
+            case "int64": return LONG;
+            case "uint8": return UBYTE;
+            case "float16": return HALF;
+            case "float32": return FLOAT;
+            case "float64": return DOUBLE;
+            case "uint16":
+            case "uint32":
+            case "uint64":
+            case "complex64":
+            case "complex128":
+            case "complex_":
+            default:
+                throw new IllegalStateException("Unknown datatype or no ND4J equivalent datatype exists: " + numpyDtypeName);
+        }
+    }
 }

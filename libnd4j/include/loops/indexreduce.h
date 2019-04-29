@@ -30,6 +30,7 @@
 #include <ops/ops.h>
 #include <op_boilerplate.h>
 #include <OmpLaunchHelper.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <helper_cuda.h>

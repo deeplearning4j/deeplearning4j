@@ -30,6 +30,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -115,7 +117,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             String error = OpValidation.validate(new TestCase(sd)
                     .expectedOutput(nonZero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 4.0))
                     .expectedOutput(zero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 0.0))
-                    .gradientCheck(i != 0)
+                    .gradientCheck(false)
             );
             if (error != null)
                 allFailed.add(error);
@@ -324,15 +326,14 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-//            for (int i = 0; i < 18; i++) {
-            for (int i = 2; i < 3; i++) {
+            for (int i = 0; i < 16; i++) {
 
                 SameDiff sd = SameDiff.create();
 
                 int nOut = 4;
                 int minibatch = 10;
-                SDVariable input = sd.placeHolder("in", DataType.DOUBLE, -1, nOut);
-                SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, nOut);
+                SDVariable input = sd.var("in", DataType.DOUBLE, minibatch, nOut);
+                SDVariable label = sd.var("label", DataType.DOUBLE, minibatch, nOut);
 
                 SDVariable diff = input.sub(label);
                 SDVariable sqDiff = diff.mul(diff);
@@ -342,6 +343,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 String name;
                 TestCase tc = new TestCase(sd);
                 boolean uDistInput = false;
+                boolean gradientCheckable = true;
+                INDArray exp = null;
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -384,12 +387,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "normmax";
                         break;
                     case 10:
-                        loss = sd.math().countNonZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countNonZero";
+                        loss = sd.math().entropy("loss", msePerEx, dim);
+                        name = "entropy";
                         break;
                     case 11:
-                        loss = sd.math().countZero("loss", msePerEx, dim).castTo(DataType.DOUBLE);
-                        name = "countZero";
+                        name = "logEntropy";
+                        loss = sd.math().logEntropy("loss", msePerEx, dim);
+                        uDistInput = true;
                         break;
                     case 12:
                         loss = sd.math().amax("loss", msePerEx, dim);
@@ -407,15 +411,6 @@ public class ReductionOpValidation extends BaseOpValidation {
                         loss = sd.math().amean("loss", msePerEx, dim);
                         name = "amean";
                         break;
-                    case 16:
-                        loss = sd.math().entropy("loss", msePerEx, dim);
-                        name = "entropy";
-                        break;
-                    case 17:
-                        name = "logEntropy";
-                        loss = sd.math().logEntropy("loss", msePerEx, dim);
-                        uDistInput = true;
-                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -429,6 +424,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
+
+                tc.gradientCheck(gradientCheckable);
+                if(exp != null){
+                    tc.expectedOutput(loss.getVarName(), exp);
+                }
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -471,7 +471,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
-                SDVariable in = sd.var("in", -1, d1, d2);
+                SDVariable in = sd.var("in", d0, d1, d2);
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
 
@@ -482,6 +482,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable reduced;
                 String name;
                 TestCase tc = new TestCase(sd);
+                boolean gradCheck = true;
+                INDArray exp = null;
                 switch (i) {
                     case 0:
                         reduced = sd.mean("reduced", second, reduceDim);
@@ -543,18 +545,26 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 10:
                         reduced = sd.argmax("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).argMax(reduceDim);
                         name = "argmax";
                         break;
                     case 11:
                         reduced = sd.argmin("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = Nd4j.argMin(inputArr.mul(2), reduceDim);
                         name = "argmin";
                         break;
                     case 12:
                         reduced = sd.math().countNonZero("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).neq(0).castTo(DataType.LONG).sum(reduceDim);
                         name = "countNonZero";
                         break;
                     case 13:
                         reduced = sd.math().countZero("reduced", second, reduceDim);
+                        gradCheck = false;
+                        exp = inputArr.mul(2).eq(0).castTo(DataType.LONG).sum(reduceDim);
                         name = "countZero";
                         break;
                     case 14:
@@ -592,8 +602,10 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 tc.gradCheckMaxRelativeError(maxRelError);
                 tc.gradCheckMinAbsError(minAbsError);
-
-//                sd.execAndEndResult();
+                tc.gradientCheck(gradCheck);
+                if(exp != null){
+                    tc.expected(reduced, exp);
+                }
 
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -795,8 +807,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
-                    .expected(all, Nd4j.create(new boolean[]{expAll[i]}))
-                    .expected(any, Nd4j.create(new boolean[]{expAny[i]})));
+                    .expected(all, Nd4j.scalar(expAll[i]))
+                    .expected(any, Nd4j.scalar(expAny[i])));
 
             assertNull(err);
         }
@@ -854,7 +866,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         reduce = sd.math().lastIndex(s, Conditions.greaterThan(0), dim);
                         if (t == 0) exp = Nd4j.create(new double[]{2, 2, 2, 2});
                         else if (t == 1) exp = Nd4j.create(new double[]{3, 3, 3});
-                        else exp = Nd4j.create(new double[]{11});
+                        else exp = Nd4j.scalar(11.0);
                         exp = exp.castTo(DataType.DOUBLE);
                         name = "lastindex";
                         break;
@@ -862,7 +874,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
                         if (t == 0) exp = Nd4j.create(new double[]{3, 3, 3, 3});
                         else if (t == 1) exp = Nd4j.create(new double[]{4, 4, 4});
-                        else exp = Nd4j.create(new double[]{12});
+                        else exp = Nd4j.scalar(12.0);
                         exp = exp.castTo(DataType.DOUBLE);
                         name = "matchConditionCount";
                         break;
@@ -881,6 +893,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 TestCase tc = new TestCase(sd)
                         .expected(reduce, exp)
+                        .gradientCheck(false)
                         .testName(name + " - " + (dim == null ? null : Arrays.toString(dim)));
 
                 log.info("Starting: {}", tc.testName());
@@ -919,40 +932,43 @@ public class ReductionOpValidation extends BaseOpValidation {
                 INDArray expOut;
                 SDVariable reduced;
                 String name;
+                System.out.println(i);
                 switch (i) {
                     case 0:
                         reduced = sd.math().manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, null, false, reduceDims));
                         break;
                     case 1:
                         reduced = sd.math().euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, null, false, reduceDims));
                         break;
                     case 2:
                         reduced = sd.math().cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b, null, false, reduceDims));
                         break;
                     case 3:
                         reduced = sd.math().jaccardDistance(in, in2, reduceDims);
                         name = "jaccard";
-                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b, null, false, reduceDims));
                         break;
                     case 4:
                         reduced = sd.math().hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b, null, false, reduceDims));
                         break;
                     case 5:
                         reduced = sd.math().cosineDistance(in, in2, reduceDims);
                         name = "reduced";
-                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b, null, true, false, reduceDims));
+                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b, null, false, reduceDims));
                         break;
                     default:
                         throw new RuntimeException();
                 }
+                System.out.println(i + " - end");
+
 
                 long[] expShape;
                 if (Arrays.equals(new int[]{0}, reduceDims)) {
@@ -998,8 +1014,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 3;
-            SDVariable input = sd.var("in", new long[]{-1, nOut});
-            SDVariable label = sd.var("label", new long[]{-1, nOut});
+            SDVariable input = sd.var("in", DataType.DOUBLE, new long[]{minibatch, nOut});
+            SDVariable label = sd.var("label", DataType.DOUBLE, new long[]{minibatch, nOut});
 
             SDVariable diff = input.sub(label);
             SDVariable sqDiff = diff.mul(diff);
@@ -1044,8 +1060,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-            INDArray inputArr = Nd4j.rand(minibatch, nOut);
-            INDArray labelArr = Nd4j.rand(minibatch, nOut);
+            INDArray inputArr = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+            INDArray labelArr = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
 
             sd.associateArrayWithVariable(inputArr, input);
             sd.associateArrayWithVariable(labelArr, label);
@@ -1054,6 +1070,265 @@ public class ReductionOpValidation extends BaseOpValidation {
             assertEquals(1, result.length());
 
             sd.execBackwards(Collections.emptyMap());
+        }
+    }
+
+    @Test
+    public void testDotProductAttention(){
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, null, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput("out", finalOut)
+                    .gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testDotProductAttentionWithMask(){
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+        final INDArray mask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
+
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+        SDVariable sdMask = sd.constant("mask", mask);
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradCheckSkipVariables("mask")
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testDotProductAttentionMultiHeadInputWithMask(){
+        final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 2});
+        final INDArray mask = Nd4j.rand(2, 3).gte(0.2).castTo(DataType.DOUBLE);
+
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(-2)));
+        exec.addi(Nd4j.tile(mask.reshape(2, 1, 3, 1), 1, 5, 1, 2).sub(1).muli(1e9));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+        SDVariable sdMask = sd.constant("mask", mask);
+
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradCheckSkipVariables("mask")
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testDotProductAttentionMultiHeadInput(){
+        final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 1});
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(-2)));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, null, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+
+
+    @Test
+    public void testMultiHeadedDotProductAttention(){
+        final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray q = Nd4j.rand(new int[]{10, 4, 2});
+
+        final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8});
+
+        final INDArray kP = Nd4j.tensorMmul(k, Wk, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray vP = Nd4j.tensorMmul(v, Wv, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray qP = Nd4j.tensorMmul(q, Wq, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+
+        final INDArray mask = Nd4j.rand(10, 5).gte(0.2).castTo(DataType.DOUBLE);
+
+        final DynamicCustomOp dot_product_attention = DynamicCustomOp
+                .builder("dot_product_attention")
+                .addInputs(qP, kP, vP, mask)
+                .addIntegerArguments(1, 0)
+                .build();
+
+        final INDArray[] outputs = Nd4j.exec(dot_product_attention);
+        final INDArray attOut = outputs[0].permutei(0, 3, 1, 2).reshape(k.size(0), q.size(2), Wv.size(0) * Wv.size(1));
+
+        final INDArray out = Nd4j.tensorMmul(attOut, Wo, new int[][]{{2}, {0}}).permutei(0, 2, 1);
+        final INDArray finalOut = out.norm2();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", q);
+        SDVariable sdK = sd.var("k", k);
+        SDVariable sdV = sd.var("v", v);
+        SDVariable sdWq = sd.var("Wq", Wq);
+        SDVariable sdWk = sd.var("Wk", Wk);
+        SDVariable sdWv = sd.var("Wv", Wv);
+        SDVariable sdWo = sd.var("Wo", Wo);
+        SDVariable sdMask = sd.constant("mask", mask);
+
+
+        SDVariable t = sd.nn.multiHeadDotProductAttention(sdQ, sdK, sdV, sdWq, sdWk, sdWv, sdWo, sdMask, true);
+        t.norm2("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("out", finalOut)
+                .gradientCheck(true)
+                .gradCheckSkipVariables("mask"));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testDotProductAttentionWeirdInputs(){
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+        final INDArray mask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        for (char queryOrder : new char[]{'f', 'c'}) {
+            for (char keyOrder : new char[]{'f', 'c'}) {
+                for (char valueOrder : new char[]{'f', 'c'}) {
+                    log.info("-*- Starting Test: query order = {}, key order = {}, value order = {}-*-", queryOrder, keyOrder, valueOrder);
+                    SameDiff sd = SameDiff.create();
+                    SDVariable sdQ = sd.var("q", query.dup(queryOrder));
+                    SDVariable sdK = sd.var("k", keys.dup(keyOrder));
+                    SDVariable sdV = sd.var("v", values.dup(valueOrder));
+                    SDVariable sdMask = sd.constant("mask", mask);
+
+                    SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
+                    t.norm1("out").markAsLoss();
+
+                    String err = OpValidation.validate(new TestCase(sd)
+                            .expectedOutput("out", finalOut)
+                            .gradientCheck(true)
+                            .gradCheckPrint(false)
+                            .gradCheckSkipVariables("mask"));
+                    assertNull(err);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMultiHeadedDotProductAttentionWeirdInputs(){
+        final INDArray k = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray v = Nd4j.rand(new int[]{10, 4, 5});
+        final INDArray q = Nd4j.rand(new int[]{10, 4, 2});
+
+        final INDArray Wk = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wv = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wq = Nd4j.rand(new int[]{2, 3, 4});
+        final INDArray Wo = Nd4j.rand(new int[]{2* 3, 8});
+
+        final INDArray mask = Nd4j.rand(10, 5).gte(0.2).castTo(DataType.DOUBLE);
+
+        final INDArray kP = Nd4j.tensorMmul(k, Wk, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray vP = Nd4j.tensorMmul(v, Wv, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+        final INDArray qP = Nd4j.tensorMmul(q, Wq, new int[][]{{1}, {2}}).permutei(0, 2, 3, 1);
+
+        final DynamicCustomOp dot_product_attention = DynamicCustomOp
+                .builder("dot_product_attention")
+                .addInputs(qP, kP, vP, mask)
+                .addIntegerArguments(1, 0)
+                .build();
+
+        final INDArray[] outputs = Nd4j.exec(dot_product_attention);
+        final INDArray attOut = outputs[0].permutei(0, 3, 1, 2).reshape(k.size(0), q.size(2), Wv.size(0) * Wv.size(1));
+
+        final INDArray out = Nd4j.tensorMmul(attOut, Wo, new int[][]{{2}, {0}}).permutei(0, 2, 1);
+        final INDArray finalOut = out.norm2();
+
+        for (char orderWeights: new char[]{'f', 'c'}){
+            for (char orderInput: new char[]{'f', 'c'}){
+                log.info("-*- Starting Test: input Order = {}, weightOrder = {} -*-", orderInput, orderWeights);
+
+
+                SameDiff sd = SameDiff.create();
+                SDVariable sdQ = sd.var("q", q.dup(orderInput));
+                SDVariable sdK = sd.var("k", k.dup(orderInput));
+                SDVariable sdV = sd.var("v", v.dup(orderInput));
+                SDVariable sdWq = sd.var("Wq", Wq.dup(orderWeights));
+                SDVariable sdWk = sd.var("Wk", Wk.dup(orderWeights));
+                SDVariable sdWv = sd.var("Wv", Wv.dup(orderWeights));
+                SDVariable sdWo = sd.var("Wo", Wo.dup(orderWeights));
+                SDVariable sdMask = sd.constant("mask", mask);
+
+
+                SDVariable t = sd.nn.multiHeadDotProductAttention(sdQ, sdK, sdV, sdWq, sdWk, sdWv, sdWo, sdMask, true);
+                t.norm2("out");
+
+                String err = OpValidation.validate(new TestCase(sd)
+                        .expectedOutput("out", finalOut)
+                        .gradientCheck(false)
+                        .gradCheckSkipVariables("mask"));
+
+                assertNull(err);
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ package org.nd4j.evaluation.classification;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.ReliabilityDiagram;
@@ -29,14 +30,18 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossUtil;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
-import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.serde.jackson.shaded.NDArrayDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArraySerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>
@@ -66,6 +71,9 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private final int histogramNumBins;
     private final boolean excludeEmptyBins;
 
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
+
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinPosCount;
@@ -76,22 +84,22 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinSumPredictions;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray labelCountsEachClass;
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray predictionCountsEachClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray residualPlotOverall;
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray residualPlotByLabelClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class)
-    @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray probHistogramOverall; //Simple histogram over all probabilities
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
@@ -129,33 +137,63 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         this.excludeEmptyBins = excludeEmptyBins;
     }
 
-    @Override
-    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
 
-        if (labels.rank() == 3) {
-            evalTimeSeries(labels, networkPredictions, maskArray);
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray predictions, INDArray mask) {
+
+        Triple<INDArray,INDArray, INDArray> triple = BaseEvaluation.reshapeAndExtractNotMasked(labels, predictions, mask, axis);
+        if(triple == null){
+            //All values masked out; no-op
             return;
         }
+
+        INDArray labels2d = triple.getFirst();
+        INDArray predictions2d = triple.getSecond();
+        INDArray maskArray = triple.getThird();
+        Preconditions.checkState(maskArray == null, "Per-output masking for EvaluationCalibration is not supported");
 
         //Stats for the reliability diagram: one reliability diagram for each class
         // For each bin, we need: (a) the number of positive cases AND total cases, (b) the average probability
 
-        val nClasses = labels.size(1);
+        val nClasses = labels2d.size(1);
 
         if (rDiagBinPosCount == null) {
+            DataType dt = DataType.DOUBLE;
             //Initialize
-            rDiagBinPosCount = Nd4j.create(reliabilityDiagNumBins, nClasses);
-            rDiagBinTotalCount = Nd4j.create(reliabilityDiagNumBins, nClasses);
-            rDiagBinSumPredictions = Nd4j.create(reliabilityDiagNumBins, nClasses);
+            rDiagBinPosCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
+            rDiagBinTotalCount = Nd4j.create(DataType.LONG, reliabilityDiagNumBins, nClasses);
+            rDiagBinSumPredictions = Nd4j.create(dt, reliabilityDiagNumBins, nClasses);
 
-            labelCountsEachClass = Nd4j.create(1, nClasses);
-            predictionCountsEachClass = Nd4j.create(1, nClasses);
+            labelCountsEachClass = Nd4j.create(DataType.LONG, 1, nClasses);
+            predictionCountsEachClass = Nd4j.create(DataType.LONG, 1, nClasses);
 
-            residualPlotOverall = Nd4j.create(1, histogramNumBins);
-            residualPlotByLabelClass = Nd4j.create(histogramNumBins, nClasses);
+            residualPlotOverall = Nd4j.create(dt, 1, histogramNumBins);
+            residualPlotByLabelClass = Nd4j.create(dt, histogramNumBins, nClasses);
 
-            probHistogramOverall = Nd4j.create(1, histogramNumBins);
-            probHistogramByLabelClass = Nd4j.create(histogramNumBins, nClasses);
+            probHistogramOverall = Nd4j.create(dt, 1, histogramNumBins);
+            probHistogramByLabelClass = Nd4j.create(dt, histogramNumBins, nClasses);
         }
 
 
@@ -163,8 +201,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         double histogramBinSize = 1.0 / histogramNumBins;
         double reliabilityBinSize = 1.0 / reliabilityDiagNumBins;
 
-        INDArray p = networkPredictions;
-        INDArray l = labels;
+        INDArray p = predictions2d;
+        INDArray l = labels2d;
 
         if (maskArray != null) {
             //2 options: per-output masking, or
@@ -177,13 +215,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         }
 
         for (int j = 0; j < reliabilityDiagNumBins; j++) {
-            INDArray geqBinLower = p.gte(j * reliabilityBinSize).castTo(Nd4j.defaultFloatingPointType());
+            INDArray geqBinLower = p.gte(j * reliabilityBinSize).castTo(predictions2d.dataType());
             INDArray ltBinUpper;
             if (j == reliabilityDiagNumBins - 1) {
                 //Handle edge case
-                ltBinUpper = p.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpper = p.lte(1.0).castTo(predictions2d.dataType());
             } else {
-                ltBinUpper = p.lt((j + 1) * reliabilityBinSize).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpper = p.lt((j + 1) * reliabilityBinSize).castTo(predictions2d.dataType());
             }
 
             //Calculate bit-mask over each entry - whether that entry is in the current bin or not
@@ -197,13 +235,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             }
 
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
-            INDArray maskedProbs = networkPredictions.mul(currBinBitMask);
+            INDArray maskedProbs = predictions2d.mul(currBinBitMask);
 
             INDArray numPredictionsCurrBin = currBinBitMask.sum(0);
 
-            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0));
-            rDiagBinPosCount.getRow(j).addi(isPosLabelForBin.sum(0));
-            rDiagBinTotalCount.getRow(j).addi(numPredictionsCurrBin);
+            rDiagBinSumPredictions.getRow(j).addi(maskedProbs.sum(0).castTo(rDiagBinSumPredictions.dataType()));
+            rDiagBinPosCount.getRow(j).addi(isPosLabelForBin.sum(0).castTo(rDiagBinPosCount.dataType()));
+            rDiagBinTotalCount.getRow(j).addi(numPredictionsCurrBin.castTo(rDiagBinTotalCount.dataType()));
         }
 
 
@@ -213,21 +251,21 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         //(c) residual plots, for each class - (i) all instances, (ii) positive instances only, (iii) negative only
         //(d) Histograms of probabilities, for each class
 
-        labelCountsEachClass.addi(labels.sum(0));
+        labelCountsEachClass.addi(labels2d.sum(0).castTo(labelCountsEachClass.dataType()));
         //For prediction counts: do an IsMax op, but we need to take masking into account...
         INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p.dup(), 1));
         if (maskArray != null) {
             LossUtil.applyMask(isPredictedClass, maskArray);
         }
-        predictionCountsEachClass.addi(isPredictedClass.sum(0));
+        predictionCountsEachClass.addi(isPredictedClass.sum(0).castTo(predictionCountsEachClass.dataType()));
 
 
 
         //Residual plots: want histogram of |labels - predicted prob|
 
         //ND4J's histogram op: dynamically calculates the bin positions, which is not what I want here...
-        INDArray labelsSubPredicted = labels.sub(networkPredictions);
-        INDArray maskedProbs = networkPredictions.dup();
+        INDArray labelsSubPredicted = labels2d.sub(predictions2d);
+        INDArray maskedProbs = predictions2d.dup();
         Transforms.abs(labelsSubPredicted, false);
 
         //if masking: replace entries with < 0 to effectively remove them
@@ -238,19 +276,18 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             maskedProbs.addiColumnVector(newMask);
         }
 
-        INDArray notLabels = Transforms.not(labels);
         for (int j = 0; j < histogramNumBins; j++) {
-            INDArray geqBinLower = labelsSubPredicted.gte(j * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
+            INDArray geqBinLower = labelsSubPredicted.gte(j * histogramBinSize).castTo(predictions2d.dataType());
             INDArray ltBinUpper;
-            INDArray geqBinLowerProbs = maskedProbs.gte(j * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
+            INDArray geqBinLowerProbs = maskedProbs.gte(j * histogramBinSize).castTo(predictions2d.dataType());
             INDArray ltBinUpperProbs;
             if (j == histogramNumBins - 1) {
                 //Handle edge case
-                ltBinUpper = labelsSubPredicted.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
-                ltBinUpperProbs = maskedProbs.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpper = labelsSubPredicted.lte(1.0).castTo(predictions2d.dataType());
+                ltBinUpperProbs = maskedProbs.lte(1.0).castTo(predictions2d.dataType());
             } else {
-                ltBinUpper = labelsSubPredicted.lt((j + 1) * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
-                ltBinUpperProbs = maskedProbs.lt((j + 1) * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpper = labelsSubPredicted.lt((j + 1) * histogramBinSize).castTo(predictions2d.dataType());
+                ltBinUpperProbs = maskedProbs.lt((j + 1) * histogramBinSize).castTo(predictions2d.dataType());
             }
 
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
@@ -262,20 +299,25 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
 
-            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0));
+            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0).castTo(residualPlotByLabelClass.dataType()));
 
             int probNewTotalCount = probHistogramOverall.getInt(0, j) + currBinBitMaskProbs.sumNumber().intValue();
             probHistogramOverall.putScalar(0, j, probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
             INDArray temp = isPosLabelForBinProbs.sum(0);
-            probHistogramByLabelClass.getRow(j).addi(temp);
+            probHistogramByLabelClass.getRow(j).addi(temp.castTo(probHistogramByLabelClass.dataType()));
         }
     }
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -331,9 +373,10 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         INDArray totalCountBins = rDiagBinTotalCount.getColumn(classIdx);
         INDArray countPositiveBins = rDiagBinPosCount.getColumn(classIdx);
 
-        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classIdx).div(totalCountBins).data().asDouble();
+        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classIdx).castTo(DataType.DOUBLE)
+                .div(totalCountBins.castTo(DataType.DOUBLE)).data().asDouble();
 
-        double[] fracPositives = countPositiveBins.div(totalCountBins).data().asDouble();
+        double[] fracPositives = countPositiveBins.castTo(DataType.DOUBLE).div(totalCountBins.castTo(DataType.DOUBLE)).data().asDouble();
 
         if (excludeEmptyBins) {
             val condition = new MatchCondition(totalCountBins, Conditions.equals(0));

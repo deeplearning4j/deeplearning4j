@@ -49,7 +49,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 	__shared__ Nd4jLong len;
 
 	if (threadIdx.x == 0) {
-		
+
 		xEws = shape::elementWiseStride(xShapeInfo);
 		yEws = shape::elementWiseStride(yShapeInfo);
     	zEws = shape::elementWiseStride(zShapeInfo);
@@ -57,7 +57,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 		yOrder = shape::order(yShapeInfo);
 		zOrder = shape::order(zShapeInfo);
 		len = shape::length(xShapeInfo);
-	}	
+	}
 	__syncthreads();
 
 
@@ -65,7 +65,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
 		}
-	} 
+	}
 	else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
@@ -73,7 +73,7 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 				
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
-	} 
+	}
 	else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
@@ -91,13 +91,14 @@ namespace pairwise_transforms {
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void __host__ PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
+void __host__ PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream,
 														void *vx, Nd4jLong *xShapeInfo,
 														void *vy, Nd4jLong *yShapeInfo,
 														void *vz, Nd4jLong *zShapeInfo,
 														void *vextraParams){
 
 	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
+	nd4j::DebugHelper::checkErrorCode(stream, "PWT (...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

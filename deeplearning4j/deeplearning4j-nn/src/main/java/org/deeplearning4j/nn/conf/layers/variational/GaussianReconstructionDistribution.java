@@ -140,7 +140,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray dLdsigma = sigma.rdiv(-1).addi(xSubMeanSq.divi(sigma3));
         INDArray dLdlogSigma2 = sigma.divi(2).muli(dLdsigma);
 
-        INDArray dLdx = Nd4j.createUninitialized(output.shape());
+        INDArray dLdx = Nd4j.createUninitialized(preOutDistributionParams.dataType(), output.shape());
         dLdx.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, size)}, dLdmu);
         dLdx.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size)}, dLdlogSigma2);
         dLdx.negi();

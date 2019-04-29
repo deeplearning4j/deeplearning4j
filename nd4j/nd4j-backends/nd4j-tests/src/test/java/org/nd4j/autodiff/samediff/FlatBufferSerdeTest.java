@@ -33,6 +33,7 @@ public class FlatBufferSerdeTest {
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.nn().tanh("out", in);
+        tanh.markAsLoss();
 
         ByteBuffer bb = sd.asFlatBuffers();
 
@@ -76,11 +77,14 @@ public class FlatBufferSerdeTest {
         //Check placeholders:
         assertEquals(1, fg.placeholdersLength());
         assertEquals("in", fg.placeholders(0));
+
+        //Check loss variables:
+        //assertEquals(sd.getLossVariables(), fg)
     }
 
     @Test
     public void testSimple() throws Exception {
-        for( int i=8; i<10; i++ ) {
+        for( int i=0; i<10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
@@ -127,6 +131,10 @@ public class FlatBufferSerdeTest {
                     default:
                         throw new RuntimeException();
                 }
+                if(x.dataType().isFPType()) {
+                    //Can't mark argmax as loss, because it's not FP
+                    x.markAsLoss();
+                }
 
                 if(execFirst){
                     sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
@@ -152,6 +160,8 @@ public class FlatBufferSerdeTest {
                 for (int j = 0; j < sd.functions().length; j++) {
                     assertEquals(fOrig[j].getClass(), fRestored[j].getClass());
                 }
+
+                assertEquals(sd.getLossVariables(), restored.getLossVariables());
 
 
                 Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));

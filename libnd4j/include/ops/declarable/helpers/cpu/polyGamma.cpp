@@ -39,8 +39,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-#pragma omp declare reduction (dot : double,float,float16,bfloat16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
-#pragma omp parallel for reduction(dot : result) schedule(static)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(prodT : result)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	
@@ -72,9 +71,10 @@ static FORCEINLINE T polyGammaScalar(graph::LaunchContext* context, const int n,
 template <typename T>
 static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray& result = output; //NDArray(&x, false, x.getWorkspace());
+	NDArray& result = output;
 
-#pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
+	int xLen = x.lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
 	for(int i = 0; i < x.lengthOf(); ++i)
 		result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
 

@@ -124,8 +124,6 @@ Seq[Any](format.raw/*1.40*/("""
                                         한글</span></a></li>
                                     <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
                                         русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'overview')"><i class="icon-file-alt"></i><span class="hidden-tablet">
-                                        український</span></a></li>
                                 </ul>
                             </li>
                         </ul>
@@ -148,13 +146,13 @@ Seq[Any](format.raw/*1.40*/("""
 
                         <div class="box span8">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*127.41*/i18n/*127.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*127.91*/("""</b></h2>
+                                <h2><b>"""),_display_(/*125.41*/i18n/*125.45*/.getMessage("train.overview.chart.scoreTitle")),format.raw/*125.91*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="scoreiterchart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*131.55*/i18n/*131.59*/.getMessage("train.overview.chart.scoreTitleShort")),format.raw/*131.110*/("""
-                                    """),format.raw/*132.37*/(""":</b> <span id="y">0</span>, <b>"""),_display_(/*132.70*/i18n/*132.74*/.getMessage("train.overview.charts.iteration")),format.raw/*132.120*/("""
-                                    """),format.raw/*133.37*/(""":</b> <span id="x">
+                                <p id="hoverdata"><b>"""),_display_(/*129.55*/i18n/*129.59*/.getMessage("train.overview.chart.scoreTitleShort")),format.raw/*129.110*/("""
+                                    """),format.raw/*130.37*/(""":</b> <span id="y">0</span>, <b>"""),_display_(/*130.70*/i18n/*130.74*/.getMessage("train.overview.charts.iteration")),format.raw/*130.120*/("""
+                                    """),format.raw/*131.37*/(""":</b> <span id="x">
                                     0</span></p>
                             </div>
                         </div>
@@ -162,44 +160,44 @@ Seq[Any](format.raw/*1.40*/("""
                             <!-- Start Model Table-->
                         <div class="box span4">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*141.41*/i18n/*141.45*/.getMessage("train.overview.perftable.title")),format.raw/*141.90*/("""</b></h2>
+                                <h2><b>"""),_display_(/*139.41*/i18n/*139.45*/.getMessage("train.overview.perftable.title")),format.raw/*139.90*/("""</b></h2>
                             </div>
                             <div class="box-content">
                                 <table class="table table-bordered table-striped table-condensed">
                                     <tr>
-                                        <td>"""),_display_(/*146.46*/i18n/*146.50*/.getMessage("train.overview.modeltable.modeltype")),format.raw/*146.100*/("""</td>
+                                        <td>"""),_display_(/*144.46*/i18n/*144.50*/.getMessage("train.overview.modeltable.modeltype")),format.raw/*144.100*/("""</td>
                                         <td id="modelType">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*150.46*/i18n/*150.50*/.getMessage("train.overview.modeltable.nLayers")),format.raw/*150.98*/("""</td>
+                                        <td>"""),_display_(/*148.46*/i18n/*148.50*/.getMessage("train.overview.modeltable.nLayers")),format.raw/*148.98*/("""</td>
                                         <td id="nLayers">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*154.46*/i18n/*154.50*/.getMessage("train.overview.modeltable.nParams")),format.raw/*154.98*/("""</td>
+                                        <td>"""),_display_(/*152.46*/i18n/*152.50*/.getMessage("train.overview.modeltable.nParams")),format.raw/*152.98*/("""</td>
                                         <td id="nParams">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*158.46*/i18n/*158.50*/.getMessage("train.overview.perftable.startTime")),format.raw/*158.99*/("""</td>
+                                        <td>"""),_display_(/*156.46*/i18n/*156.50*/.getMessage("train.overview.perftable.startTime")),format.raw/*156.99*/("""</td>
                                         <td id="startTime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*162.46*/i18n/*162.50*/.getMessage("train.overview.perftable.totalRuntime")),format.raw/*162.102*/("""</td>
+                                        <td>"""),_display_(/*160.46*/i18n/*160.50*/.getMessage("train.overview.perftable.totalRuntime")),format.raw/*160.102*/("""</td>
                                         <td id="totalRuntime">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*166.46*/i18n/*166.50*/.getMessage("train.overview.perftable.lastUpdate")),format.raw/*166.100*/("""</td>
+                                        <td>"""),_display_(/*164.46*/i18n/*164.50*/.getMessage("train.overview.perftable.lastUpdate")),format.raw/*164.100*/("""</td>
                                         <td id="lastUpdate">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*170.46*/i18n/*170.50*/.getMessage("train.overview.perftable.totalParamUpdates")),format.raw/*170.107*/("""</td>
+                                        <td>"""),_display_(/*168.46*/i18n/*168.50*/.getMessage("train.overview.perftable.totalParamUpdates")),format.raw/*168.107*/("""</td>
                                         <td id="totalParamUpdates">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*174.46*/i18n/*174.50*/.getMessage("train.overview.perftable.updatesPerSec")),format.raw/*174.103*/("""</td>
+                                        <td>"""),_display_(/*172.46*/i18n/*172.50*/.getMessage("train.overview.perftable.updatesPerSec")),format.raw/*172.103*/("""</td>
                                         <td id="updatesPerSec">Loading...</td>
                                     </tr>
                                     <tr>
-                                        <td>"""),_display_(/*178.46*/i18n/*178.50*/.getMessage("train.overview.perftable.examplesPerSec")),format.raw/*178.104*/("""</td>
+                                        <td>"""),_display_(/*176.46*/i18n/*176.50*/.getMessage("train.overview.perftable.examplesPerSec")),format.raw/*176.104*/("""</td>
                                         <td id="examplesPerSec">Loading...</td>
                                     </tr>
                                 </table>
@@ -213,15 +211,15 @@ Seq[Any](format.raw/*1.40*/("""
                             <!--Start Ratio Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*192.41*/i18n/*192.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*192.97*/(""": log<sub>10</sub></b></h2>
+                                <h2><b>"""),_display_(/*190.41*/i18n/*190.45*/.getMessage("train.overview.chart.updateRatioTitle")),format.raw/*190.97*/(""": log<sub>10</sub></b></h2>
                             </div>
                             <div class="box-content">
                                 <div id="updateRatioChart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*196.55*/i18n/*196.59*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*196.116*/("""
-                                    """),format.raw/*197.37*/(""":</b> <span id="yRatio">0</span>, <b>log<sub>
-                                    10</sub> """),_display_(/*198.47*/i18n/*198.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*198.108*/("""
-                                    """),format.raw/*199.37*/(""":</b> <span id="yLogRatio">0</span>
-                                    , <b>"""),_display_(/*200.43*/i18n/*200.47*/.getMessage("train.overview.charts.iteration")),format.raw/*200.93*/(""":</b> <span id="xRatio">
+                                <p id="hoverdata"><b>"""),_display_(/*194.55*/i18n/*194.59*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*194.116*/("""
+                                    """),format.raw/*195.37*/(""":</b> <span id="yRatio">0</span>, <b>log<sub>
+                                    10</sub> """),_display_(/*196.47*/i18n/*196.51*/.getMessage("train.overview.chart.updateRatioTitleShort")),format.raw/*196.108*/("""
+                                    """),format.raw/*197.37*/(""":</b> <span id="yLogRatio">0</span>
+                                    , <b>"""),_display_(/*198.43*/i18n/*198.47*/.getMessage("train.overview.charts.iteration")),format.raw/*198.93*/(""":</b> <span id="xRatio">
                                         0</span></p>
                             </div>
                         </div>
@@ -229,20 +227,20 @@ Seq[Any](format.raw/*1.40*/("""
                             <!--Start Variance Table -->
                         <div class="box span6">
                             <div class="box-header">
-                                <h2><b>"""),_display_(/*208.41*/i18n/*208.45*/.getMessage("train.overview.chart.stdevTitle")),format.raw/*208.91*/(""": log<sub>10</sub></b></h2>
+                                <h2><b>"""),_display_(/*206.41*/i18n/*206.45*/.getMessage("train.overview.chart.stdevTitle")),format.raw/*206.91*/(""": log<sub>10</sub></b></h2>
                                 <ul class="nav tab-menu nav-tabs" style="position:absolute; margin-top: -11px; right: 22px;">
-                                    <li class="active" id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">"""),_display_(/*210.156*/i18n/*210.160*/.getMessage("train.overview.chart.stdevBtn.activations")),format.raw/*210.216*/("""</a></li>
-                                    <li id="stdevGradients"><a href="javascript:void(0);" onclick="selectStdevChart('stdevGradients')">"""),_display_(/*211.137*/i18n/*211.141*/.getMessage("train.overview.chart.stdevBtn.gradients")),format.raw/*211.195*/("""</a></li>
-                                    <li id="stdevUpdates"><a href="javascript:void(0);" onclick="selectStdevChart('stdevUpdates')">"""),_display_(/*212.133*/i18n/*212.137*/.getMessage("train.overview.chart.stdevBtn.updates")),format.raw/*212.189*/("""</a></li>
+                                    <li class="active" id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">"""),_display_(/*208.156*/i18n/*208.160*/.getMessage("train.overview.chart.stdevBtn.activations")),format.raw/*208.216*/("""</a></li>
+                                    <li id="stdevGradients"><a href="javascript:void(0);" onclick="selectStdevChart('stdevGradients')">"""),_display_(/*209.137*/i18n/*209.141*/.getMessage("train.overview.chart.stdevBtn.gradients")),format.raw/*209.195*/("""</a></li>
+                                    <li id="stdevUpdates"><a href="javascript:void(0);" onclick="selectStdevChart('stdevUpdates')">"""),_display_(/*210.133*/i18n/*210.137*/.getMessage("train.overview.chart.stdevBtn.updates")),format.raw/*210.189*/("""</a></li>
                                 </ul>
                             </div>
                             <div class="box-content">
                                 <div id="stdevChart" class="center" style="height: 300px;" ></div>
-                                <p id="hoverdata"><b>"""),_display_(/*217.55*/i18n/*217.59*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*217.110*/("""
-                                    """),format.raw/*218.37*/(""":</b> <span id="yStdev">0</span>, <b>log<sub>
-                                    10</sub> """),_display_(/*219.47*/i18n/*219.51*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*219.102*/("""
-                                    """),format.raw/*220.37*/(""":</b> <span id="yLogStdev">0</span>
-                                    , <b>"""),_display_(/*221.43*/i18n/*221.47*/.getMessage("train.overview.charts.iteration")),format.raw/*221.93*/(""":</b> <span id="xStdev">
+                                <p id="hoverdata"><b>"""),_display_(/*215.55*/i18n/*215.59*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*215.110*/("""
+                                    """),format.raw/*216.37*/(""":</b> <span id="yStdev">0</span>, <b>log<sub>
+                                    10</sub> """),_display_(/*217.47*/i18n/*217.51*/.getMessage("train.overview.chart.stdevTitleShort")),format.raw/*217.102*/("""
+                                    """),format.raw/*218.37*/(""":</b> <span id="yLogStdev">0</span>
+                                    , <b>"""),_display_(/*219.43*/i18n/*219.47*/.getMessage("train.overview.charts.iteration")),format.raw/*219.93*/(""":</b> <span id="xStdev">
                                         0</span></p>
                             </div>
                         </div>
@@ -285,16 +283,16 @@ Seq[Any](format.raw/*1.40*/("""
 
         <!-- Execute once on page load -->
         <script>
-                $(document).ready(function () """),format.raw/*264.47*/("""{"""),format.raw/*264.48*/("""
-                    """),format.raw/*265.21*/("""renderOverviewPage(true);
-                """),format.raw/*266.17*/("""}"""),format.raw/*266.18*/(""");
+                $(document).ready(function () """),format.raw/*262.47*/("""{"""),format.raw/*262.48*/("""
+                    """),format.raw/*263.21*/("""renderOverviewPage(true);
+                """),format.raw/*264.17*/("""}"""),format.raw/*264.18*/(""");
         </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
-                setInterval(function () """),format.raw/*271.41*/("""{"""),format.raw/*271.42*/("""
-                    """),format.raw/*272.21*/("""renderOverviewPage(false);
-                """),format.raw/*273.17*/("""}"""),format.raw/*273.18*/(""", 2000);
+                setInterval(function () """),format.raw/*269.41*/("""{"""),format.raw/*269.42*/("""
+                    """),format.raw/*270.21*/("""renderOverviewPage(false);
+                """),format.raw/*271.17*/("""}"""),format.raw/*271.18*/(""", 2000);
         </script>
             <!-- End JavaScript-->
 
@@ -320,11 +318,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Tue Feb 05 22:28:50 AEDT 2019
+                  DATE: Wed Mar 13 15:34:55 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 85cb554a35f8ae9837d903b0d208d7dc710aeb8a
-                  MATRIX: 604->1|737->39|765->41|1683->932|1696->936|1747->966|2379->1811|2416->1821|3534->2912|3547->2916|3598->2946|3746->3067|3759->3071|3814->3105|3868->3131|4184->3420|4197->3424|4259->3465|4313->3491|5067->4217|5081->4221|5136->4254|5285->4375|5299->4379|5351->4409|5505->4535|5519->4539|5572->4570|5647->4747|5705->4777|5884->4928|5898->4932|5953->4965|8685->7669|8699->7673|8767->7719|9055->7979|9069->7983|9143->8034|9210->8072|9271->8105|9285->8109|9354->8155|9421->8193|9839->8583|9853->8587|9920->8632|10237->8921|10251->8925|10324->8975|10565->9188|10579->9192|10649->9240|10888->9451|10902->9455|10972->9503|11211->9714|11225->9718|11296->9767|11537->9980|11551->9984|11626->10036|11870->10252|11884->10256|11957->10306|12199->10520|12213->10524|12293->10581|12542->10802|12556->10806|12632->10859|12877->11076|12891->11080|12968->11134|13565->11703|13579->11707|13653->11759|13961->12039|13975->12043|14055->12100|14122->12138|14243->12231|14257->12235|14337->12292|14404->12330|14511->12409|14525->12413|14593->12459|15023->12861|15037->12865|15105->12911|15445->13222|15460->13226|15539->13282|15715->13429|15730->13433|15807->13487|15979->13630|15994->13634|16069->13686|16392->13981|16406->13985|16480->14036|16547->14074|16668->14167|16682->14171|16756->14222|16823->14260|16930->14339|16944->14343|17012->14389|19963->17311|19993->17312|20044->17334|20116->17377|20146->17378|20315->17518|20345->17519|20396->17541|20469->17585|20499->17586
-                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|57->33|58->34|83->59|83->59|83->59|85->61|85->61|85->61|86->62|91->67|91->67|91->67|92->68|108->84|108->84|108->84|109->85|109->85|109->85|110->86|110->86|110->86|111->87|112->88|113->89|113->89|113->89|151->127|151->127|151->127|155->131|155->131|155->131|156->132|156->132|156->132|156->132|157->133|165->141|165->141|165->141|170->146|170->146|170->146|174->150|174->150|174->150|178->154|178->154|178->154|182->158|182->158|182->158|186->162|186->162|186->162|190->166|190->166|190->166|194->170|194->170|194->170|198->174|198->174|198->174|202->178|202->178|202->178|216->192|216->192|216->192|220->196|220->196|220->196|221->197|222->198|222->198|222->198|223->199|224->200|224->200|224->200|232->208|232->208|232->208|234->210|234->210|234->210|235->211|235->211|235->211|236->212|236->212|236->212|241->217|241->217|241->217|242->218|243->219|243->219|243->219|244->220|245->221|245->221|245->221|288->264|288->264|289->265|290->266|290->266|295->271|295->271|296->272|297->273|297->273
+                  HASH: 1de0097ec528376537eead526e6aa8e4e1a7c4db
+                  MATRIX: 604->1|737->39|765->41|1683->932|1696->936|1747->966|2379->1811|2416->1821|3534->2912|3547->2916|3598->2946|3746->3067|3759->3071|3814->3105|3868->3131|4184->3420|4197->3424|4259->3465|4313->3491|5067->4217|5081->4221|5136->4254|5285->4375|5299->4379|5351->4409|5505->4535|5519->4539|5572->4570|5647->4747|5705->4777|5884->4928|5898->4932|5953->4965|8428->7412|8442->7416|8510->7462|8798->7722|8812->7726|8886->7777|8953->7815|9014->7848|9028->7852|9097->7898|9164->7936|9582->8326|9596->8330|9663->8375|9980->8664|9994->8668|10067->8718|10308->8931|10322->8935|10392->8983|10631->9194|10645->9198|10715->9246|10954->9457|10968->9461|11039->9510|11280->9723|11294->9727|11369->9779|11613->9995|11627->9999|11700->10049|11942->10263|11956->10267|12036->10324|12285->10545|12299->10549|12375->10602|12620->10819|12634->10823|12711->10877|13308->11446|13322->11450|13396->11502|13704->11782|13718->11786|13798->11843|13865->11881|13986->11974|14000->11978|14080->12035|14147->12073|14254->12152|14268->12156|14336->12202|14766->12604|14780->12608|14848->12654|15188->12965|15203->12969|15282->13025|15458->13172|15473->13176|15550->13230|15722->13373|15737->13377|15812->13429|16135->13724|16149->13728|16223->13779|16290->13817|16411->13910|16425->13914|16499->13965|16566->14003|16673->14082|16687->14086|16755->14132|19706->17054|19736->17055|19787->17077|19859->17120|19889->17121|20058->17261|20088->17262|20139->17284|20212->17328|20242->17329
+                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|57->33|58->34|83->59|83->59|83->59|85->61|85->61|85->61|86->62|91->67|91->67|91->67|92->68|108->84|108->84|108->84|109->85|109->85|109->85|110->86|110->86|110->86|111->87|112->88|113->89|113->89|113->89|149->125|149->125|149->125|153->129|153->129|153->129|154->130|154->130|154->130|154->130|155->131|163->139|163->139|163->139|168->144|168->144|168->144|172->148|172->148|172->148|176->152|176->152|176->152|180->156|180->156|180->156|184->160|184->160|184->160|188->164|188->164|188->164|192->168|192->168|192->168|196->172|196->172|196->172|200->176|200->176|200->176|214->190|214->190|214->190|218->194|218->194|218->194|219->195|220->196|220->196|220->196|221->197|222->198|222->198|222->198|230->206|230->206|230->206|232->208|232->208|232->208|233->209|233->209|233->209|234->210|234->210|234->210|239->215|239->215|239->215|240->216|241->217|241->217|241->217|242->218|243->219|243->219|243->219|286->262|286->262|287->263|288->264|288->264|293->269|293->269|294->270|295->271|295->271
                   -- GENERATED --
               */
           

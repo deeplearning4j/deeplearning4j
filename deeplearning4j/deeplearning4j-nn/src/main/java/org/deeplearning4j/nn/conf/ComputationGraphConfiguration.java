@@ -37,6 +37,7 @@ import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -81,7 +82,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected CacheMode cacheMode;
 
-    protected boolean validateOutputLayerConfig = true;     //Default for 10.0.-beta3 and earlier nets
+    @Getter
+    @Setter
+    protected DataType dataType = DataType.FLOAT;   //Default to float for 1.0.0-beta3 and earlier nets
+
+    protected boolean validateOutputLayerConfig = true;     //Default for 1.0.0-beta3 and earlier nets
 
     /**
      * List of inputs to the network, by name
@@ -315,6 +320,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
         conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
+        conf.dataType = this.dataType;
 
         return conf;
     }
@@ -662,6 +668,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
 
+        protected String lastAdded = null;
+
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
         }
@@ -754,7 +762,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
          *                    on a combination of the two.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
@@ -763,11 +771,23 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Add a layer, with no {@link InputPreProcessor}, with the specified name
+         * and input from the last added layer/vertex.
+         *
+         * @param layerName   Name/label of the layer to add
+         * @param layer       The layer configuration
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
+        public GraphBuilder appendLayer(String layerName, Layer layer) {
+            return appendLayer(layerName, layer, null);
+        }
+
+        /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
          *                    on a combination of the two.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
@@ -780,7 +800,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param layerName   Name/label of the layer to add
          * @param layer       The layer configuration
-         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         * @param layerInputs Inputs to this layer. Inputs may be other layers, GraphVertex objects,
          *                    on a combination of the two.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
@@ -794,7 +814,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         * @param layerInputs  Inputs to this layer. Inputs may be other layers, GraphVertex objects,
          *                     on a combination of the two.
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
@@ -807,12 +827,30 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Add a layer and an {@link InputPreProcessor}, with the specified name
+         * and input from the last added layer/vertex.
+         *
+         * @param layerName    Name/label of the layer to add
+         * @param layer        The layer configuration
+         * @param preProcessor The InputPreProcessor to use with this layer.
+         */
+        public GraphBuilder appendLayer(String layerName, Layer layer, InputPreProcessor preProcessor) {
+
+            if(lastAdded == null){
+                throw new IllegalStateException("Can not use appendLayer with no previous layers");
+            }
+
+            addLayer(layerName, layer, preProcessor, lastAdded);
+            return this;
+        }
+
+        /**
          * Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName    Name/label of the layer to add
          * @param layer        The layer configuration
          * @param preProcessor The InputPreProcessor to use with this layer.
-         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         * @param layerInputs  Inputs to this layer. Inputs may be other layers, GraphVertex objects,
          *                     on a combination of the two.
          */
         public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
@@ -881,6 +919,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addInputs(String... inputNames) {
             Collections.addAll(networkInputs, inputNames);
+            lastAdded = networkInputs.get(networkInputs.size() - 1);
             return this;
         }
 
@@ -891,6 +930,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addInputs(Collection<String> inputNames) {
             networkInputs.addAll(inputNames);
+            lastAdded = networkInputs.get(networkInputs.size() - 1);
             return this;
         }
 
@@ -934,9 +974,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *
          * @param vertexName   The name of the GraphVertex to add
          * @param vertex       The GraphVertex to add
-         * @param vertexInputs The inputs/activations to this GraphVertex
+         * @param vertexInputs The inputs/activations to this GraphVertex.
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+
             Preconditions.checkState(!vertices.containsKey(vertexName), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexName);
             vertices.put(vertexName, vertex);
 
@@ -948,6 +989,29 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             } else if (vertexInputs != null) {
                 this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
             }
+
+            this.lastAdded = vertexName;
+
+            return this;
+        }
+
+        /**
+         * Add a {@link GraphVertex} to the network configuration, with input from the last added vertex/layer. A GraphVertex defines forward and backward pass methods,
+         * and can contain a {@link LayerVertex}, a {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex} to do element-wise
+         * addition/subtraction, a {@link MergeVertex} to combine/concatenate the activations out of multiple layers or vertices,
+         * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
+         * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
+         *
+         * @param vertexName   The name of the GraphVertex to add
+         * @param vertex       The GraphVertex to add
+         */
+        public GraphBuilder appendVertex(String vertexName, GraphVertex vertex) {
+
+            if(lastAdded == null){
+                throw new IllegalStateException("Can not use appendLayer with no previous layers");
+            }
+
+            addVertex(vertexName, vertex, lastAdded);
             return this;
         }
 
@@ -1062,6 +1126,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
             conf.cacheMode = globalConfiguration.cacheMode;
             conf.validateOutputLayerConfig = validateOutputConfig;
+            conf.dataType = globalConfiguration.dataType;
 
             conf.defaultConfiguration = globalConfiguration.build();
 

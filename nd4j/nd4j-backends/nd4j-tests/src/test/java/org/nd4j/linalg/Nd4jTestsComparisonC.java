@@ -106,7 +106,7 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
                         String errorMsgft = getGemmErrorMsg(i, j, false, true, a, b, p1, p2T);
                         String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1T, p2);
                         String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1T, p2T);
-                        System.out.println((String.format("Running iteration %d %d %d %d", i, j, k, m)));
+                        //System.out.println((String.format("Running iteration %d %d %d %d", i, j, k, m)));
                         assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff, false, false, a,
                                         b, 1e-4, 1e-6));
                         assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft, false, true, a,

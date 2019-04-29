@@ -17,18 +17,26 @@
 package org.deeplearning4j.clustering.randomprojection;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class RPTreeTest {
+
+    @Before
+    public void setUp() {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
 
     @Test

@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.MaskedReductionUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -76,8 +77,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     private final PoolingType poolingType;
     private final int pNorm;
 
-    public GlobalPoolingLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public GlobalPoolingLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
 
         org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
@@ -149,7 +150,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             if (input.rank() == 3) {
                 //Masked time series
 
-                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm, dataType);
             } else if (input.rank() == 4) {
                 //Masked convolutions. 4d convolution data, shape [minibatch, channels, h, w]
                 //and 2d mask array.
@@ -167,7 +168,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                                     + " 4d masks should have shape [batchSize,1,h,1] or [batchSize,1,w,1] or [batchSize,1,h,w]" + layerId());
                 }
 
-                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, pNorm);
+                reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, pNorm, dataType);
             } else {
                 throw new UnsupportedOperationException("Invalid input: is rank " + input.rank() + " " + layerId());
             }
@@ -191,7 +192,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Layer clone() {
-        return new GlobalPoolingLayer(conf);
+        return new GlobalPoolingLayer(conf, dataType);
     }
 
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {
@@ -227,6 +228,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             //Reshape it to 2d, to get rid of the 1s
             epsilon = epsilon.reshape(epsilon.ordering(), origShape[0], origShape[1]);
         }
+
+        INDArray input = this.input.castTo(dataType);       //No-op if already correct dtype
 
         Gradient retGradient = new DefaultGradient(); //Empty: no params
 
@@ -267,7 +270,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonTimeSeries(poolingType, input, maskArray, epsilon,
                         pNorm);
             } else if (input.rank() == 4) {
-                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon, pNorm);
+                epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon, pNorm, dataType);
             } else {
                 throw new UnsupportedOperationException(layerId());
             }
@@ -301,13 +304,13 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 for (int d : poolDim) {
                     n *= inputArray.size(d);
                 }
-                INDArray ret = Nd4j.create(inputArray.shape());
+                INDArray ret = inputArray.ulike();
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(ret, epsilon, ret, broadcastDims));
                 ret.divi(n);
 
                 return ret;
             case SUM:
-                INDArray retSum = Nd4j.create(inputArray.shape());
+                INDArray retSum = inputArray.ulike();
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(retSum, epsilon, retSum, broadcastDims));
                 return retSum;
             case PNORM:

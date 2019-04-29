@@ -87,36 +87,28 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     int inRank = shape::rank(inShapeInfo);
     if (inputShape->size() == 2u) {
         int outRank = inRank;
-
-        Nd4jLong *outShapeInfo = nullptr;
-
-        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+        
         std::vector<Nd4jLong> shapeInfo(outRank);
 
         shapeInfo[0] = indecesShapeInfo[1]; // vector - how many elements
         for (int e = 1; e < outRank; e++)
             shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
-        if (shape::order(inShapeInfo) == 'c')
-            shape::shapeBuffer(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
-        else
-            shape::shapeBufferFortran(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
+
+        Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
 
         return SHAPELIST(outShapeInfo);
     }
 
-    Nd4jLong *outShapeInfo = nullptr;
-    int outRank = inRank + 1;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+    
+    int outRank = inRank + 1;    
     std::vector<Nd4jLong> shapeInfo(outRank);
     auto indeces = INPUT_VARIABLE(block.width() - 1);
     shapeInfo[0] = indeces->lengthOf(); // vector - how many elements
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
-    if (shape::order(inShapeInfo) == 'c')
-        shape::shapeBuffer(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
-    else
-        shape::shapeBufferFortran(outRank, block.dataType(), shapeInfo.data(), outShapeInfo);
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
+    
+    Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
+    
     return SHAPELIST(outShapeInfo);
 }
 

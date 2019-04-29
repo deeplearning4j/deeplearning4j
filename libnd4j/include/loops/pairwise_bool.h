@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

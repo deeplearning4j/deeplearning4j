@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -259,7 +260,7 @@ public class TestWeightNoise extends BaseDL4JTest {
         INDArray outTrain = d.getParameter(l, "W", 0, 0, true, LayerWorkspaceMgr.noWorkspaces());
         assertNotEquals(l.getParam("W"), outTrain);
 
-        assertEquals(l.getParam("W"), Nd4j.ones(10, 10));
+        assertEquals(l.getParam("W"), Nd4j.ones(DataType.FLOAT, 10, 10));
 
         int countZeros = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(0))).getInt(0);
         int countOnes = Nd4j.getExecutioner().exec(new MatchCondition(outTrain, Conditions.equals(1))).getInt(0);

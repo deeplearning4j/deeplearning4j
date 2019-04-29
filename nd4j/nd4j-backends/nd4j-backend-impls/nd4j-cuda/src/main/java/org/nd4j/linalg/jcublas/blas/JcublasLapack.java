@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.jcublas.blas;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
@@ -41,10 +39,12 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import static org.bytedeco.javacpp.cuda.CUstream_st;
-import static org.bytedeco.javacpp.cusolver.*;
-import static org.bytedeco.javacpp.cublas.* ;
-
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cublas.*;
+import org.bytedeco.cuda.cusolver.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cublas.*;
+import static org.bytedeco.cuda.global.cusolver.*;
 
 /**
  * JCublas lapack
@@ -524,7 +524,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(solverDn, new CUstream_st(ctx.getOldStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -979,11 +979,11 @@ public class JcublasLapack extends BaseLapack {
 
     static class Workspace extends Pointer {
         public Workspace(long size) {
-            super(NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(size, null, 0));
+            super(NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(size, 0, 0));
             deallocator(new Deallocator() {
                 @Override
                 public void deallocate() {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(Workspace.this, null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(Workspace.this, 0);
                 }
             });
         }

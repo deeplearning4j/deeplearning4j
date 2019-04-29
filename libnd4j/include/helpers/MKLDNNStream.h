@@ -40,7 +40,7 @@ namespace nd4j {
 
         mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::cpu, 0);
         std::vector<mkldnn::memory> _memory;
-        mkldnn::primitive _operation;
+        std::vector<mkldnn::primitive> _operations;
 
     public:
         template <typename X, typename Y>
@@ -66,7 +66,7 @@ namespace nd4j {
                 _outputs = outputs;
                 _floatArguments = floatArguments;
                 _intArguments = intArguments;
-                _operation.reset(nullptr);
+                _operations.clear();
                 _memory.clear();
                 return true;
             }
@@ -78,15 +78,17 @@ namespace nd4j {
 
         const std::vector<mkldnn::memory> &getMemory() { return _memory; }
         void setMemory(const std::vector<mkldnn::memory> &memory) { _memory = memory; }
+        void addMemory(const mkldnn::memory &memory) { _memory.push_back(memory); }
 
-        const mkldnn::primitive &getOperation() { return _operation; }
-        void setOperation(const mkldnn::primitive &operation) { _operation = operation; }
+        const std::vector<mkldnn::primitive> &getOperations() { return _operations; }
+        void setOperations(const std::vector<mkldnn::primitive> &operations) { _operations = operations; }
+        void addOperation(const mkldnn::primitive &operation) { _operations.push_back(operation); }
 
         bool submitAndWait(mkldnn::stream::kind kind = mkldnn::stream::kind::eager) {
             nd4j_debug("Executing %s with MKL-DNN\n", _opName.c_str());
             // need to create a new one because already executed streams become unusable
             mkldnn::stream stream(kind);
-            return stream.submit({_operation}).wait();
+            return stream.submit(_operations).wait();
         }
     };
 }

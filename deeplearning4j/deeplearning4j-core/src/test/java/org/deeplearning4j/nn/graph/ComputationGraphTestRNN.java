@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -121,7 +122,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                 INDArray expOutSubset;
                 if (inLength == 1) {
                     val sizes = new long[] {fullOutL3.size(0), fullOutL3.size(1), 1};
-                    expOutSubset = Nd4j.create(sizes);
+                    expOutSubset = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset.tensorAlongDimension(0, 1, 0).assign(fullOutL3.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
                 } else {
@@ -286,7 +287,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                 INDArray expOutSubset0;
                 if (inLength == 1) {
                     val sizes = new long[] {fullActOut0.size(0), fullActOut0.size(1), 1};
-                    expOutSubset0 = Nd4j.create(sizes);
+                    expOutSubset0 = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset0.tensorAlongDimension(0, 1, 0).assign(fullActOut0.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
                 } else {
@@ -297,7 +298,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                 INDArray expOutSubset1;
                 if (inLength == 1) {
                     val sizes = new long[] {fullActOut1.size(0), fullActOut1.size(1), 1};
-                    expOutSubset1 = Nd4j.create(sizes);
+                    expOutSubset1 = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset1.tensorAlongDimension(0, 1, 0).assign(fullActOut1.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
                 } else {
