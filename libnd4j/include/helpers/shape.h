@@ -1423,7 +1423,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong *shape, int rank, int startNum, Nd4jLong *ret) {
         if (isVector(shape, rank)) {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 1; i++)
                 ret[i] = 1;
             return ret;
 
