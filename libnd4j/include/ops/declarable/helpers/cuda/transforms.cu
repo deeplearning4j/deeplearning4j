@@ -190,6 +190,41 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
             //}
     }
 
+    template <typename T>
+    static __global__ void setOriginalPadKernel(void* output, Nd4jLong* outputShape, void* input, Nd4jLong* inputShape, Nd4jLong numOfSubArrs, Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets, Nd4jLong* inputTadShape, Nd4jLong inputTadOffsets) {
+
+////#pra/gma omp parallel for schedule(guided)
+//        for(Nd4jLong j = tid; j < numOfSubArrs; j+= step) {
+//
+//            NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
+//            NDArray inSubArr     = input(j, dimsToExclude);
+//            NDArray outSubArrMid = outSubArr1(outIdx[1]);
+//
+//            outSubArrMid.assign(inSubArr);      // assign middle
+//
+//            if(mode == 0)  { // CONSTANT
+//                if(numLeft != 0) {
+//                    NDArray temp = outSubArr1(outIdx[2]);
+//                    temp.assign(padValue);                        // assign left
+//                }
+//                if(numRight != 0) {
+//                    NDArray temp = outSubArr1(outIdx[3]);
+//                    temp.assign(padValue);                        // assign right
+//                }
+//            }
+//            else {                                                              // REFLECT or SYMMETRIC
+//
+//#pragma omp parallel for schedule(guided)
+//                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
+//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+//
+//#pragma omp parallel for schedule(guided)
+//                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
+//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+//            }
+//        }
+    }
+
     template<typename T>
     void pad_(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
         const int rank = output.rankOf();
