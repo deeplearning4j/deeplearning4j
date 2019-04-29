@@ -2295,6 +2295,7 @@ PRAGMA_OMP_CRITICAL
 
 					tadShapeShapeInfo = tadPack.primaryShapeInfo();
 					tadOffsets = tadPack.primaryOffsets();
+                    tadShapeInfo = tadShapeShapeInfo;
 				}						                                				
 
                 auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeBuffer, dimension, dimensionLength);
