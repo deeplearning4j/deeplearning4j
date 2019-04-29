@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.spark.models.sequencevectors.learning.sequence;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.BaseSparkLearningAlgorithm;
@@ -54,7 +54,7 @@ public class SparkDM extends SparkCBOW {
         if (vectorsConfiguration.getVariableWindows() != null
                         && vectorsConfiguration.getVariableWindows().length != 0) {
             currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
-                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
+                            .nextInt(0, vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {

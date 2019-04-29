@@ -52,6 +52,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.stats.EventStats;
 import org.deeplearning4j.spark.stats.ExampleCountEventStats;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -296,7 +297,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         List<Tuple2<String, DataSet>> dataWithKeys = new ArrayList<>();
         for (int i = 0; i < nRows; i++) {
-            DataSet ds = new DataSet(features.getRow(i).dup(), labels.getRow(i).dup());
+            DataSet ds = new DataSet(features.getRow(i,true).dup(), labels.getRow(i,true).dup());
             dataWithKeys.add(new Tuple2<>(String.valueOf(i), ds));
         }
         JavaPairRDD<String, DataSet> dataWithKeysRdd = sc.parallelizePairs(dataWithKeys);
@@ -321,7 +322,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         List<DataSet> dataNoKeys = new ArrayList<>();
         for (int i = 0; i < nRows; i++) {
-            dataNoKeys.add(new DataSet(features.getRow(i).dup(), labels.getRow(i).dup()));
+            dataNoKeys.add(new DataSet(features.getRow(i,true).dup(), labels.getRow(i,true).dup()));
         }
         JavaRDD<DataSet> dataNoKeysRdd = sc.parallelize(dataNoKeys);
 
@@ -791,7 +792,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test @Ignore   //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimple() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -826,7 +827,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         sparkNet.fit(data);
     }
 
-    @Test
+    @Test @Ignore    //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
     public void testVaePretrainSimpleCG() {
         //Simple sanity check on pretraining
         int nIn = 8;

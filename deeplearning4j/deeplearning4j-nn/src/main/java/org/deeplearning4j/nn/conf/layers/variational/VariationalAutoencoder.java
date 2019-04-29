@@ -30,6 +30,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -75,11 +76,11 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
-                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf, networkDataType);
 
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -199,7 +200,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         private int numSamples = 1;
 
 
-
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
          * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
@@ -208,10 +208,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
          */
         public Builder encoderLayerSizes(int... encoderLayerSizes) {
-            if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
-                throw new IllegalArgumentException("Encoder layer sizes array must have length > 0");
-            }
-            this.encoderLayerSizes = encoderLayerSizes;
+            this.setEncoderLayerSizes(encoderLayerSizes);
             return this;
         }
 
@@ -223,8 +220,11 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
          */
-        public void setEncoderLayerSizes(int[] encoderLayerSizes) {
-            encoderLayerSizes(encoderLayerSizes);
+        public void setEncoderLayerSizes(int... encoderLayerSizes) {
+            if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
+                throw new IllegalArgumentException("Encoder layer sizes array must have length > 0");
+            }
+            this.encoderLayerSizes = encoderLayerSizes;
         }
 
 
@@ -236,10 +236,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
          */
         public Builder decoderLayerSizes(int... decoderLayerSizes) {
-            if (decoderLayerSizes == null || decoderLayerSizes.length < 1) {
-                throw new IllegalArgumentException("Decoder layer sizes array must have length > 0");
-            }
-            this.decoderLayerSizes = decoderLayerSizes;
+            this.setDecoderLayerSizes(decoderLayerSizes);
             return this;
         }
 
@@ -250,8 +247,11 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
          */
-        public void setDecoderLayerSizes(int[] decoderLayerSizes) {
-            decoderLayerSizes(decoderLayerSizes);
+        public void setDecoderLayerSizes(int... decoderLayerSizes) {
+            if (decoderLayerSizes == null || decoderLayerSizes.length < 1) {
+                throw new IllegalArgumentException("Decoder layer sizes array must have length > 0");
+            }
+            this.decoderLayerSizes = decoderLayerSizes;
         }
 
 
@@ -264,7 +264,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param distribution Reconstruction distribution
          */
         public Builder reconstructionDistribution(ReconstructionDistribution distribution) {
-            this.outputDistribution = distribution;
+            this.setOutputDistribution(distribution);
             return this;
         }
 
@@ -317,7 +317,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param activationFunction Activation function for p(z|x)
          */
         public Builder pzxActivationFn(IActivation activationFunction) {
-            this.pzxActivationFn = activationFunction;
+            this.setPzxActivationFn(activationFunction);
             return this;
         }
 
@@ -352,7 +352,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param numSamples Number of samples per data point for pretraining
          */
         public Builder numSamples(int numSamples) {
-            this.numSamples = numSamples;
+            this.setNumSamples(numSamples);
             return this;
         }
 

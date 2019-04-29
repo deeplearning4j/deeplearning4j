@@ -96,6 +96,7 @@ import java.util.Scanner;
                                               "ops/declarable/headers/bitwise.h",
                                               "ops/declarable/headers/loss.h",
                                               "ops/declarable/headers/datatypes.h",
+                                              "helpers/DebugInfo.h",
                                               "ops/declarable/headers/third_party.h"},
                                    exclude = {"ops/declarable/headers/activations.h",
                                               "ops/declarable/headers/boolean.h",
@@ -117,7 +118,8 @@ import java.util.Scanner;
                                               "cnpy/cnpy.h"
                                    },
                                 compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu",
-                                preloadresource = "org/bytedeco/javacpp/", preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
+                                preloadresource = {"org/bytedeco/mkldnn/", "org/bytedeco/openblas/"},
+                                preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
                                 @Platform(value = "linux", preload = {"gomp@.1", "iomp5", "mklml_intel", "mkldnn@.0"},
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
@@ -164,7 +166,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
                .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
-                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
+                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable", "nd4j::NDArray::subarray").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())

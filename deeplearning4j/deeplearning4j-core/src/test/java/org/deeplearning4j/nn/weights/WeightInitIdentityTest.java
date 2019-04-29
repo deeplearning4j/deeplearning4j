@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -24,7 +25,7 @@ public class WeightInitIdentityTest {
      */
     @Test
     public void testIdConv1D() {
-        final INDArray input = Nd4j.randn(new long[] {1,5,7});
+        final INDArray input = Nd4j.randn(DataType.FLOAT, 1,5,7);
         final String inputName = "input";
         final String conv = "conv";
         final String output = "output";
@@ -51,7 +52,7 @@ public class WeightInitIdentityTest {
      */
     @Test
     public void testIdConv2D() {
-        final INDArray input = Nd4j.randn(1,5,7,11);
+        final INDArray input = Nd4j.randn(DataType.FLOAT,1,5,7,11);
         final String inputName = "input";
         final String conv = "conv";
         final String output = "output";
@@ -78,7 +79,7 @@ public class WeightInitIdentityTest {
      */
     @Test
     public void testIdConv3D() {
-        final INDArray input = Nd4j.randn(1,5,7,11,13);
+        final INDArray input = Nd4j.randn(DataType.FLOAT, 1,5,7,11,13);
         final String inputName = "input";
         final String conv = "conv";
         final String output = "output";

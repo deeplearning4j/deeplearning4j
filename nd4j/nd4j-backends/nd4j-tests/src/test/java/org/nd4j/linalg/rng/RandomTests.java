@@ -79,7 +79,7 @@ public class RandomTests extends BaseNd4jTest {
     @Test
     public void testCrossBackendEquality1() {
 
-        int[] shape = {1, 12};
+        int[] shape = {12};
         double mean = 0;
         double standardDeviation = 1.0;
         INDArray exp = Nd4j.create(new double[] {-0.832718168582558, 1.3312306172061867, -0.27101354040045766, 1.0368130323476494, -0.6257379511224601, 0.30653534119847814, 0.28250229228899343, -0.5464191486048424, 0.5182898732953277, 1.463107608378911, 0.5634855878214299, -1.4979616922031507});
@@ -214,7 +214,7 @@ public class RandomTests extends BaseNd4jTest {
     public void testLinspace1() {
         INDArray z1 = Nd4j.linspace(1, 100, 200, DataType.DOUBLE);
 
-        Linspace linspace = new Linspace(1, 100, 200, DataType.DOUBLE);
+        Linspace linspace = new Linspace((double) 1, (double) 100, 200, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(linspace, Nd4j.getRandom());
 
         INDArray z2 = linspace.z();
@@ -297,7 +297,7 @@ public class RandomTests extends BaseNd4jTest {
 
         INDArray z1 = Nd4j.create(DataType.DOUBLE, 1000000);
         INDArray z2 = Nd4j.create(DataType.DOUBLE, 1000000);
-        INDArray zDup = z1.dup();
+        INDArray zDup = z1.like();
 
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
@@ -309,6 +309,11 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
 
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
+
+        val d1 = z1.toDoubleVector();
+        val d2 = z2.toDoubleVector();
+
+        assertArrayEquals(d1, d2, 1e-4);
 
         assertEquals(z1, z2);
     }
@@ -626,6 +631,30 @@ public class RandomTests extends BaseNd4jTest {
             assertNotEquals(array3[e], array4[e]);
             assertTrue(array1[e] >= 0);
         }
+    }
+
+    @Test
+    public void testJavaSide5() {
+        Nd4j.getRandom().setSeed(7);
+        int length = 100;
+
+        val jarray_A = new int[length];
+        val jarray_B = new int[length];
+
+        for (int e = 0; e < length; e++)
+            jarray_A[e] = Nd4j.getRandom().nextInt(0, 1000);
+
+        Nd4j.getRandom().setSeed(7);
+        for (int e = 0; e < length; e++)
+            jarray_B[e] = Nd4j.getRandom().nextInt(0, 1000);
+
+        assertArrayEquals(jarray_A, jarray_B);
+
+        int sum = 0;
+        for (int e = 0; e < length; e++)
+            sum += jarray_A[e];
+
+        assertNotEquals(0, sum);
     }
 
 
@@ -1370,6 +1399,16 @@ public class RandomTests extends BaseNd4jTest {
 
             assertTrue(i >= 10 && i < 20);
         }
+    }
+
+    @Test
+    public void testBernoulli(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
+        Nd4j.exec(new BernoulliDistribution(arr, 0.5));
+        System.out.println(arr);
+        double sum = arr.sumNumber().doubleValue();
+        assertTrue(String.valueOf(sum), sum > 0.0 && sum < 100.0);
     }
 
     private List<INDArray> getList(int numBatches){

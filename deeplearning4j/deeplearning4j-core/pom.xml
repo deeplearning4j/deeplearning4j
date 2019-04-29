@@ -29,7 +29,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <argLine>-Ddtype=double</argLine>
+                        <argLine>-Ddtype=float</argLine>
+                        <includes>
+                            <!-- Default setting only runs tests that start/end with Test -->
+                            <include>*.java</include>
+                            <include>**/*.java</include>
+                        </includes>
                     </configuration>
                 </plugin>
             </plugins>
@@ -55,7 +60,7 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-10.0</artifactId>
+                <artifactId>nd4j-cuda-10.1</artifactId>
                 <version>${nd4j.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -195,8 +200,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.0</id>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
-
 </project>

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.util;
 
+import com.jakewharton.byteunits.BinaryByteUnit;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.util.StringUtils;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
@@ -353,7 +353,7 @@ public class CrashReportingUtil {
     }
 
     private static String fBytes(long bytes){
-        String s = StringUtils.TraditionalBinaryPrefix.long2String(bytes, "B", 2);
+        String s = BinaryByteUnit.format(bytes, "#.00");
         String format = "%10s";
         s = String.format(format, s);
         if(bytes >= 1024){
@@ -400,13 +400,12 @@ public class CrashReportingUtil {
                 try {
                     Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
                     Constructor<?> constructor = c.getConstructor(long.class);
-                    Pointer p = (Pointer) constructor.newInstance((long) i);
-                    String name = nativeOps.getDeviceName(p);
-                    long total = nativeOps.getDeviceTotalMemory(p);
-                    long free = nativeOps.getDeviceFreeMemory(p);
+                    String name = nativeOps.getDeviceName(i);
+                    long total = nativeOps.getDeviceTotalMemory(i);
+                    long free = nativeOps.getDeviceFreeMemory(i);
                     long current = total - free;
-                    int major = nativeOps.getDeviceMajor(p);
-                    int minor = nativeOps.getDeviceMinor(p);
+                    int major = nativeOps.getDeviceMajor(i);
+                    int minor = nativeOps.getDeviceMinor(i);
 
                     sb.append(String.format(fGpu, name, major + "." + minor, fBytes(total), fBytes(current), fBytes(free))).append("\n");
                 } catch (Exception e) {

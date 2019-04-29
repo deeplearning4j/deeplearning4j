@@ -128,6 +128,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         T currentWord = sequence.getElementByIndex(i);
 
         List<Integer> intsList = new ArrayList<>();
+        List<Boolean> statusesList = new ArrayList<>();
         for (int a = b; a < end; a++) {
             if (a != window) {
                 int c = i - window + a;
@@ -135,6 +136,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                     T lastWord = sequence.getElementByIndex(c);
 
                     intsList.add(lastWord.getIndex());
+                    statusesList.add(lastWord.isLocked());
                 }
             }
         }
@@ -146,18 +148,20 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
 
         int[] windowWords = new int[intsList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
         for (int x = 0; x < windowWords.length; x++) {
             windowWords[x] = intsList.get(x);
+            statuses[x] = false;
         }
 
         int batchSize = configuration.getBatchSize();
         if (batchSize == 1 || isInference) {
             // pass for underlying
-            cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
+            cbow.iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
                     configuration.isTrainElementsVectors(), inferenceVector);
         }
         else {
-            batchSequences.put(currentWord, windowWords, nextRandom.get(), alpha, labels == null ? 0 : labels.size());
+            batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha, labels == null ? 0 : labels.size());
         }
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {

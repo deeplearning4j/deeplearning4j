@@ -67,27 +67,27 @@ namespace ops {
 
         int pos = 0;
         int split = input->sizeAt(axis) / num_splits;
+        std::vector<Nd4jLong> indices(2 * input->rankOf());
+        
         for (int e = 0; e < num_splits; e++) {
+            
             auto out = OUTPUT_VARIABLE(e);
-
-            IndicesList indices;
+            
             for (int d = 0; d < input->rankOf(); d++) {
-                if (d == axis)
-                    indices.push_back(NDIndex::interval(pos, pos + split));
+                if (d == axis) {
+                    indices[2*d]     = pos;
+                    indices[2*d + 1] = pos + split; 
+                }
                 else 
-                    indices.push_back(NDIndex::all());
+                    indices[2*d] = indices[2*d + 1] = 0;
             }
 
-            auto sub = input->subarray(indices);
+            auto sub = (*input)(indices, true);
             
             out->assign(sub);
 
-            delete sub;
-
             pos += split;
         }
-
-
 
         return Status::OK();
     }
@@ -133,9 +133,9 @@ namespace ops {
 		
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		if(INPUT_VARIABLE(inputVar)->isEmpty()){
-			Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
-			ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
 			for (int e = 0; e < num_splits; e++) {
+                auto empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
+                ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
 				shapes->push_back(empty);
 			}
 			return shapes;
@@ -154,17 +154,9 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e) / num_splits;
             else 
                 shape[e] = shape::sizeAt(input, e);
-
         
-
         for (int e = 0; e < num_splits; e++) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
-
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), dataType, shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), dataType, shape.data(), newShape);
+            auto newShape = ShapeBuilders::createShapeInfo(dataType, shape::order(input), shape, block.getWorkspace());
             shapes->push_back(newShape);
         }
 

@@ -614,7 +614,7 @@ public abstract class DifferentialFunction {
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
-            SDVariable grad = var.getGradient();
+            SDVariable grad = var.hasGradient() ? var.getGradient() : null;
             if(grad != null) {
                 if(!copied){
                     //Don't mutate the original - this could mess with the original op's state!

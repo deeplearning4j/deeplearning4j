@@ -55,15 +55,9 @@ TEST_F(AveragingArrayTests, test_basic_reads_1) {
 
     ASSERT_TRUE(r);
 
-    auto row1 = original.subarray({NDIndex::point(1), NDIndex::all()});
-    auto row2 = original.subarray({NDIndex::point(2), NDIndex::all()});
+    auto row1 = original({1,2, 0,0}, true);
+    auto row2 = original({2,3, 0,0}, true);
 
-    row1->printIndexedBuffer("row1");
-    row2->printIndexedBuffer("row2");
-
-    ASSERT_EQ(exp0, *row1);
-    ASSERT_EQ(exp0, *row2);
-
-    delete row1;
-    delete row2;
+    ASSERT_EQ(exp0, row1);
+    ASSERT_EQ(exp0, row2);
 }

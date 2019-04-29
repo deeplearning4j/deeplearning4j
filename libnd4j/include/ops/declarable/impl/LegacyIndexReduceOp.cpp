@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <Status.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 namespace nd4j {
@@ -129,12 +130,9 @@ namespace nd4j {
                     if (dims.size() > 1)
                         std::sort(dims.begin(), dims.end());
 
-                    shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
-                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());                }
             } else {
                 // TF mode
                 auto indices = INPUT_VARIABLE(1);
@@ -158,12 +156,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad(x->getShapeInfo(), axis.data(), axis.size());
-                    tad.createTadOnlyShapeInfo();
-                    tad.createOffsets();
+                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
-                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
                 }
             }
 

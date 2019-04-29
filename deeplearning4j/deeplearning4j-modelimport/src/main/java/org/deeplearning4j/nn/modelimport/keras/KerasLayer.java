@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -30,7 +31,6 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.util.StringUtils;
 
 import java.util.*;
 
@@ -307,7 +307,7 @@ public class KerasLayer {
             /* Check for parameters in layer for which we don't have weights. */
             paramsInLayer.removeAll(paramsInKerasLayer);
             if (!paramsInLayer.isEmpty()) {
-                String joinedParamsInLayer = StringUtils.join(", ", paramsInLayer);
+                String joinedParamsInLayer = StringUtils.join(paramsInLayer, ", ");
                 throw new InvalidKerasConfigurationException(
                         msg + "(no stored weights for parameters: " + joinedParamsInLayer + ")");
             }
@@ -315,7 +315,7 @@ public class KerasLayer {
             /* Check for parameters NOT in layer for which we DO have weights. */
             paramsInKerasLayer.removeAll(layer.paramTable().keySet());
             if (!paramsInKerasLayer.isEmpty()) {
-                String joinedParamsInKerasLayer = StringUtils.join(", ", paramsInKerasLayer);
+                String joinedParamsInKerasLayer = StringUtils.join(paramsInKerasLayer, ", ");
                 throw new InvalidKerasConfigurationException(
                         msg + "(found no parameters named: " + joinedParamsInKerasLayer + ")");
             }

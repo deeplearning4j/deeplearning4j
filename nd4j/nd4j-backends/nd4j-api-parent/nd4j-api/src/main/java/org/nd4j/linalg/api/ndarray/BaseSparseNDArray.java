@@ -36,7 +36,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
@@ -263,57 +262,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray put(List<List<Integer>> indices, INDArray element) {
-        if(indices.size() == rank()) {
-            NdIndexIterator ndIndexIterator = new NdIndexIterator(element.shape());
-            INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
-            for(int i = 0; i < indArrayIndices.length; i++) {
-                indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
-            }
-            boolean hasNext = true;
-            Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
-            while(hasNext) {
-                try {
-                    List<List<Long>> next = iterate.next();
-                    for(int i = 0; i < next.size(); i++) {
-                        int[] curr = Ints.toArray(next.get(i));
-                        putScalar(curr,element.getDouble(ndIndexIterator.next()));
-                    }
-                }
-                catch(NoSuchElementException e) {
-                    hasNext = false;
-                }
-            }
-
-        }
-        else {
-            List<INDArray> arrList = new ArrayList<>();
-
-            if(indices.size() >= 2) {
-                for(int i = 0; i < indices.size(); i++) {
-                    List<Integer> row = indices.get(i);
-                    for(int j = 0; j < row.size(); j++) {
-                        INDArray slice = slice(row.get(j));
-                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
-                        arrList.add(slice(row.get(j)));
-                    }
-
-
-                }
-            }
-            else if(indices.size() == 1) {
-                for(int i = 0; i < indices.size(); i++) {
-                    arrList.add(slice(indices.get(0).get(i)));
-                }
-            }
-
-        }
-
-
-        return this;
-    }
-
-    @Override
     public INDArray put(INDArray indices, INDArray element) {
         INDArrayIndex[] realIndices = new INDArrayIndex[indices.rank()];
         for(int i = 0; i < realIndices.length; i++) {
@@ -459,7 +407,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray tensorAlongDimension(int index, int... dimension) {
+    public INDArray tensorAlongDimension(long index, int... dimension) {
         return null;
     }
 
@@ -845,11 +793,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray repmat(int... shape) {
-        return null;
-    }
-
-    @Override
-    public INDArray repeat(int dimension, int... repeats) {
         return null;
     }
 
@@ -1318,12 +1261,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray subArray(ShapeOffsetResolution resolution) {
+    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         return null;
     }
 
     @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
+    public Number getNumber(long index) {
+        return null;
+    }
+
+    @Override
+    public Number getNumber(long... indices) {
         return null;
     }
 
@@ -1513,7 +1461,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray getColumn(long i, boolean keepDim) {
+        return null;
+    }
+
+    @Override
     public INDArray getRow(long i) {
+        return null;
+    }
+
+    @Override
+    public INDArray getRow(long i, boolean keepDim) {
         return null;
     }
 
@@ -1673,7 +1631,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
         INDArray n = (INDArray) o;
 
-        if (this.lengthLong() != n.lengthLong())
+        if (this.length() != n.length())
             return false;
 
         if (isScalar() && n.isScalar()) {

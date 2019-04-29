@@ -526,7 +526,7 @@ public class TestDropout extends BaseDL4JTest {
             for( int j=0; j<8; j++ ){
                 double value = out.getDouble(i,j,0);
                 assertTrue( value == 0 || value == 2.0);
-                INDArray exp = Nd4j.valueArrayOf(new int[]{1,12}, value);
+                INDArray exp = Nd4j.valueArrayOf(new int[]{12}, value);
                 INDArray act = out.get(point(i), point(j), all());
                 assertEquals(exp, act);
 
@@ -555,7 +555,7 @@ public class TestDropout extends BaseDL4JTest {
                     for( int j=0; j<8; j++ ){
                         double value = out.getDouble(m,j,0);
                         assertTrue( value == 0 || value == 2.0);
-                        INDArray exp = Nd4j.valueArrayOf(new int[]{1, 12}, value);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{12}, value);
                         INDArray act = out.get(point(m), point(j), all());
                         assertEquals(exp, act);
 
@@ -577,7 +577,7 @@ public class TestDropout extends BaseDL4JTest {
                     for( int j=0; j<8; j++ ){
                         double value = out.getDouble(m,j,0);
                         assertTrue( value == 0 || value == 10.0);
-                        INDArray exp = Nd4j.valueArrayOf(new int[]{1,12}, value);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{12}, value);
                         INDArray act = out.get(point(m), point(j), all());
                         assertEquals(exp, act);
 

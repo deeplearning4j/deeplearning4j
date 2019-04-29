@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -63,9 +64,9 @@ public class RepeatVector extends FeedForwardLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
-        org.deeplearning4j.nn.layers.RepeatVector ret = new org.deeplearning4j.nn.layers.RepeatVector(conf);
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
+        org.deeplearning4j.nn.layers.RepeatVector ret = new org.deeplearning4j.nn.layers.RepeatVector(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -101,6 +102,8 @@ public class RepeatVector extends FeedForwardLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         private int n = 1; // no repetition by default
@@ -118,11 +121,11 @@ public class RepeatVector extends FeedForwardLayer {
          * @param n upsampling size in height and width dimensions
          */
         public void setRepetitionFactor(int n) {
-            this.n = n;
+            this.setN(n);
         }
 
         public Builder(int n) {
-            this.n = n;
+            this.setN(n);
         }
 
         /**
@@ -131,7 +134,7 @@ public class RepeatVector extends FeedForwardLayer {
          * @param n upsampling size in height and width dimensions
          */
         public Builder repetitionFactor(int n) {
-            this.n = n;
+            this.setN(n);
             return this;
         }
 

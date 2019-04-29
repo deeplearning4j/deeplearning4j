@@ -47,7 +47,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;

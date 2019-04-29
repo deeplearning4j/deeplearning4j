@@ -88,4 +88,9 @@ public class CudaNativeRandom extends NativeRandom {
     public long nodeState() {
         return ((Nd4jCuda.RandomGenerator) statePointer).nodeState();
     }
+
+    @Override
+    public void setStates(long rootState, long nodeState) {
+        ((Nd4jCuda.RandomGenerator) statePointer).setStates(rootState, nodeState);
+    }
 }

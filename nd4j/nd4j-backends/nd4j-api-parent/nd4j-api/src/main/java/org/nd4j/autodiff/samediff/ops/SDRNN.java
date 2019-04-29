@@ -2,14 +2,11 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * SameDiff Recurrent Neural Network operations<br>
@@ -31,8 +28,9 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable gru(GRUCellConfiguration configuration) {
-        return new GRUCell(sd, configuration).outputVariables()[0];
+    public List<SDVariable> gru(GRUCellConfiguration configuration) {
+        GRUCell c = new GRUCell(sd, configuration);
+        return Arrays.asList(c.outputVariables());
     }
 
     /**
@@ -42,8 +40,9 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable gru(String baseName, GRUCellConfiguration configuration) {
-        return new GRUCell(sd, configuration).outputVariables(baseName)[0];
+    public List<SDVariable> gru(String baseName, GRUCellConfiguration configuration) {
+        GRUCell c = new GRUCell(sd, configuration);
+        return Arrays.asList(c.outputVariables(baseName));
     }
 
 
@@ -54,10 +53,19 @@ public class SDRNN extends SDOps {
      * @param configuration the configuration to use
      * @return
      */
-    public SDVariable lstm(String baseName, LSTMCellConfiguration configuration) {
+    public SDVariable lstmCell(String baseName, LSTMCellConfiguration configuration) {
         return new LSTMCell(sd, configuration).outputVariables(baseName)[0];
     }
 
+    public List<SDVariable> lstmBlockCell(String name, LSTMBlockCellConfiguration configuration){
+        SDVariable[] v = new LSTMBlockCell(sd, configuration).outputVariables(name);
+        return Arrays.asList(v);
+    }
+
+    public List<SDVariable> lstmLayer(String name, LSTMConfiguration configuration){
+        SDVariable[] v = new LSTMLayer(sd, configuration).outputVariables(name);
+        return Arrays.asList(v);
+    }
 
     /**
      * Simple recurrent unit

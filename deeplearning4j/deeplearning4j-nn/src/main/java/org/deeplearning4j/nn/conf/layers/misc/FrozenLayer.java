@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.serde.FrozenLayerDeserializer;
 import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -77,12 +78,12 @@ public class FrozenLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
         org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), trainingListeners,
-                        layerIndex, layerParamsView, initializeParams);
+                        layerIndex, layerParamsView, initializeParams, networkDataType);
 
         NeuralNetConfiguration nncUnderlying = underlying.conf();
         if (nncUnderlying.variables() != null) {
@@ -167,7 +168,7 @@ public class FrozenLayer extends Layer {
         private Layer layer;
 
         public Builder layer(Layer layer) {
-            this.layer = layer;
+            this.setLayer(layer);
             return this;
         }
 

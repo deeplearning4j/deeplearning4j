@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -27,6 +26,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -60,10 +61,10 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -172,11 +173,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
                         int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+            setKernelSize(kernelSize);
+            setPadding(padding);
+            setStride(stride);
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+            this.poolingType = poolingType.toPoolingType();
+            setKernelSize(kernelSize);
+            setStride(stride);
+            setPadding(padding);
         }
 
         @SuppressWarnings("unchecked")
@@ -197,7 +203,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
-            this.kernelSize[0] = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -207,7 +213,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         public Subsampling1DLayer.Builder stride(int stride) {
-            this.stride[0] = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -217,7 +223,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         public Subsampling1DLayer.Builder padding(int padding) {
-            this.padding[0] = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -227,9 +233,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 kernelSize value - got %s", kernelSize);
-            super.setKernelSize(kernelSize);
+        public void setKernelSize(int... kernelSize) {
+            this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
         }
 
         /**
@@ -238,9 +243,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         @Override
-        public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1, "Must have 1 stride value - got %s", stride);
-            super.setStride(stride);
+        public void setStride(int... stride) {
+            this.stride[0] = ValidationUtils.validate1NonNegative(stride, "stride")[0];
         }
 
         /**
@@ -249,9 +253,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         @Override
-        public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 padding value - got %s", padding);
-            super.setPadding(padding);
+        public void setPadding(int... padding) {
+            this.padding[0] = ValidationUtils.validate1NonNegative(padding, "padding")[0];
         }
     }
 }

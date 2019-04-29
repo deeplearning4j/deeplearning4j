@@ -30,7 +30,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_cbow)
-        DECLARE_CONFIGURABLE_OP(cbow, 14, 14, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(cbow, 15, 15, true, 0, 0);
         #endif
     }
 }

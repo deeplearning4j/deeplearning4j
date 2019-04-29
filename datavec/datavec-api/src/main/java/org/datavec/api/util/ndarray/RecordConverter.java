@@ -306,8 +306,8 @@ public class RecordConverter {
         List<List<Writable>> writableMatrix = new ArrayList<>();
 
         for (int i = 0; i < dataSet.numExamples(); i++) {
-            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i));
-            writables.add(new IntWritable(Nd4j.argMax(dataSet.getLabels().getRow(i), 1).getInt(0)));
+            List<Writable> writables = toRecord(dataSet.getFeatures().getRow(i, true));
+            writables.add(new IntWritable(Nd4j.argMax(dataSet.getLabels().getRow(i)).getInt(0)));
 
             writableMatrix.add(writables);
         }

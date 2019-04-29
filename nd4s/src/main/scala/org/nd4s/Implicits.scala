@@ -184,7 +184,7 @@ object Implicits {
 
   implicit class NDArrayIndexWrapper(val underlying: INDArrayIndex) extends IndexNumberRange {
     protected[nd4s] override def asRange(max: => Int): DRange =
-      DRange(underlying.current().asInstanceOf[Int],
+      DRange(underlying.offset().asInstanceOf[Int],
              underlying.end().asInstanceOf[Int],
              false,
              underlying.stride().asInstanceOf[Int],
@@ -194,7 +194,7 @@ object Implicits {
       underlying
 
     override def toString: String =
-      s"${underlying.current}->${underlying.end} by ${underlying.stride}"
+      s"${underlying.offset()}->${underlying.end} by ${underlying.stride}"
 
     override def hasNegative: Boolean = false
   }

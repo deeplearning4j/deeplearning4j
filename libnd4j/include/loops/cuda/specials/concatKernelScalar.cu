@@ -47,7 +47,8 @@ namespace nd4j {
     __host__ void
     concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Nd4jPointer *data, void *vz) {
 
-        execConcatKernelScalar<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (numArrays, data, vz);
+        execConcatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, vz);
+        nd4j::DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelScalarGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, void * vz), LIBND4J_TYPES);

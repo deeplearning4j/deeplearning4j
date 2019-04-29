@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -44,13 +45,13 @@ public class SubsetVertex extends BaseGraphVertex {
     private int to; //inclusive
     private long[] forwardShape;
 
-    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to) {
-        this(graph, name, vertexIndex, null, null, from, to);
+    public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, from, to, dataType);
     }
 
     public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int from, int to) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, int from, int to, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.from = from;
         this.to = to;
     }
@@ -96,7 +97,7 @@ public class SubsetVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, forwardShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), forwardShape);
         switch (forwardShape.length) {
             case 2:
                 out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);

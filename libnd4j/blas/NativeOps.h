@@ -69,10 +69,18 @@ bool verbose = false;
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
 #include <graph/ResultWrapper.h>
+#include <DebugInfo.h>
 
 class ND4J_EXPORT NativeOps {
 
 public:
+
+    /**
+     *
+     * @param p
+     * @param len
+     */
+    void tryPointer(Nd4jPointer extra, Nd4jPointer p, int len);
 
     /**
      *
@@ -615,7 +623,7 @@ public:
      * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
      * @param flags optional parameter
      */
-    Nd4jPointer mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags);
+    Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags);
 
     /**
      * This method releases previously allocated host memory space
@@ -630,7 +638,7 @@ public:
      * @param pointer pointer that'll be freed
      * @param ptrToDeviceId pointer to deviceId.
      */
-    int freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId);
+    int freeDevice(Nd4jPointer pointer, int deviceId);
 
     /**
      *
@@ -697,7 +705,7 @@ public:
      * @param ptrToDeviceId
      * @return
      */
-    int setDevice(Nd4jPointer ptrToDeviceId);
+    int setDevice(int deviceId);
 
     /**
      *
@@ -724,35 +732,41 @@ public:
      * @param ptrToDeviceId
      * @return
      */
-    Nd4jLong getDeviceFreeMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jLong getDeviceFreeMemory(int deviceId);
+
+    /**
+     * Returns amount of free memory for current device
+     * @return
+     */
+    Nd4jLong getDeviceFreeMemory();
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    Nd4jLong getDeviceTotalMemory(Nd4jPointer ptrToDeviceId);
+    Nd4jLong getDeviceTotalMemory(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    int getDeviceMajor(Nd4jPointer ptrToDeviceId);
+    int getDeviceMajor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    int getDeviceMinor(Nd4jPointer ptrToDeviceId);
+    int getDeviceMinor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    const char * getDeviceName(Nd4jPointer ptrToDeviceId);
+    const char * getDeviceName(int deviceId);
 
     /**
      *
@@ -1216,7 +1230,9 @@ public:
  * @param headerSize
  * @return
  */
-    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
+
+    template <typename T>
+    static Nd4jPointer _numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
         Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
         int  rank = shape::rank(shapeBufferCast);
         Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
@@ -1226,24 +1242,25 @@ public:
         }
 
         Nd4jLong length = shape::prodLong(shape,rank);
-        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        auto npHeader = cnpy::createNpyHeader<T>(data,npShape,rank,wordSize);
         char *ret = new char[npHeader.size() + 1];
         int count = 0;
         for(int i = 0; i < npHeader.size(); i++) {
-            if (npHeader[i] != '\0') {
                 ret[count] = npHeader[i];
                 count++;
-            }
-            else {
-                nd4j_debug("Found null terminated at %d. Skipping\n",i);
-            }
         }
 
         ret[count] = '\0';
         count++;
+
         *headerSize = count;
         return reinterpret_cast<Nd4jPointer>(ret);
+    }
 
+    Nd4jPointer numpyHeaderForNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize,Nd4jLong *headerSize) {
+        auto shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        auto type = nd4j::ArrayOptions::dataType(shapeBufferCast);
+        BUILD_SINGLE_SELECTOR(type, return _numpyHeaderForNd4j, (data, shapeBuffer, wordSize, headerSize), LIBND4J_TYPES);
     }
 
 /**
@@ -1277,7 +1294,9 @@ public:
    * @param wordSize  the word size (4 for float, 8 for doubles)
    * @return a pointer to a numpy array
    */
-    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+
+    template <typename T>
+    static Nd4jPointer _numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
         Nd4jLong *shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
         int  rank = shape::rank(shapeBufferCast);
         Nd4jLong *shape = shape::shapeOf(shapeBufferCast);
@@ -1287,7 +1306,7 @@ public:
         }
 
         Nd4jLong length = shape::prodLong(shape,rank);
-        auto npHeader = cnpy::createNpyHeader(data,npShape,rank,wordSize);
+        auto npHeader = cnpy::createNpyHeader<T>(data,npShape,rank,wordSize);
         char *dataChar = reinterpret_cast<char *>(data);
         char *npHeaderData = npHeader.data();
         char *ret = new char[(wordSize * length) +  npHeader.size()];
@@ -1301,6 +1320,13 @@ public:
     }
 
 
+    Nd4jPointer numpyFromNd4j(Nd4jPointer data,Nd4jPointer shapeBuffer,Nd4jLong wordSize) {
+        auto shapeBufferCast = reinterpret_cast<Nd4jLong *>(shapeBuffer);
+        auto type = nd4j::ArrayOptions::dataType(shapeBufferCast);
+        BUILD_SINGLE_SELECTOR(type, return _numpyFromNd4j, (data, shapeBuffer, wordSize), LIBND4J_TYPES);
+    }
+
+
 /**
  *
  * @param npyArray
@@ -1308,8 +1334,9 @@ public:
  */
     Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
         cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-        auto shape = new unsigned int[arr.shape.size()];
-        for(unsigned int i = 0; i < arr.shape.size(); i++) {
+        unsigned int shapeSize = arr.shape.size();
+        auto shape = new unsigned int[shapeSize];
+        for(unsigned int i = 0; i < shapeSize; i++) {
             shape[i] = arr.shape[i];
         }
 
@@ -1587,6 +1614,8 @@ public:
 
     // customOp executioner
     int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
+    int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext);
+
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs);
 
@@ -1619,6 +1648,15 @@ public:
     //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
     Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
     void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+
+    void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
+                      void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
+                      void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
+                      void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
+                      void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
+                      int* hIindexes, int* dIindexes);
+
+    void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 };
 
 

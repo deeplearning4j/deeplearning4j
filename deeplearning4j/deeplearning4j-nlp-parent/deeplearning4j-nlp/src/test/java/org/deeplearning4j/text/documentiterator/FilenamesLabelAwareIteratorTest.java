@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +34,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class FilenamesLabelAwareIteratorTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Before
     public void setUp() throws Exception {
 
@@ -38,8 +44,12 @@ public class FilenamesLabelAwareIteratorTest {
 
     @Test
     public void testNextDocument() throws Exception {
+        ClassPathResource big = new ClassPathResource("/big");
+        val tempDir = testDir.newFolder();
+        big.copyDirectory(tempDir);
+
         FilenamesLabelAwareIterator iterator = new FilenamesLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/big").getFile()).useAbsolutePathAsLabel(false).build();
+                        .addSourceFolder(tempDir).useAbsolutePathAsLabel(false).build();
 
         List<String> labels = new ArrayList<>();
 
@@ -55,6 +65,12 @@ public class FilenamesLabelAwareIteratorTest {
         LabelledDocument doc4 = iterator.nextDocument();
         labels.add(doc4.getLabel());
 
+        LabelledDocument doc5 = iterator.nextDocument();
+        labels.add(doc5.getLabel());
+
+        LabelledDocument doc6 = iterator.nextDocument();
+        labels.add(doc6.getLabel());
+
         assertFalse(iterator.hasNextDocument());
 
         System.out.println("Labels: " + labels);
@@ -63,5 +79,8 @@ public class FilenamesLabelAwareIteratorTest {
         assertTrue(labels.contains("occurrences.txt"));
         assertTrue(labels.contains("raw_sentences.txt"));
         assertTrue(labels.contains("tokens.txt"));
+        assertTrue(labels.contains("raw_sentences_2.txt"));
+        assertTrue(labels.contains("rnj.txt"));
+
     }
 }

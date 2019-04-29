@@ -26,7 +26,7 @@ namespace helpers {
 
     template <typename T>
     static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
-#pragma omp parallel for if(maxIndex > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
         for (Nd4jLong i = 0; i < maxIndex; i++)
             for(Nd4jLong k = 0; k < input->lengthOf(); k++)
                 if (i < input->e<int>(k))

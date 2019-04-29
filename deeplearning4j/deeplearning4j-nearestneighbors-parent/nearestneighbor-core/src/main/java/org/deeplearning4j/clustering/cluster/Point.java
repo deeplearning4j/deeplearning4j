@@ -81,7 +81,7 @@ public class Point implements Serializable {
     public static List<Point> toPoints(INDArray matrix) {
         List<Point> arr = new ArrayList<>(matrix.rows());
         for (int i = 0; i < matrix.rows(); i++) {
-            arr.add(new Point(matrix.slice(i)));
+            arr.add(new Point(matrix.getRow(i)));
         }
 
         return arr;

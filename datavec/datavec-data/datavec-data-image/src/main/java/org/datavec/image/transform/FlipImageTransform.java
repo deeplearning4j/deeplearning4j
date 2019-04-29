@@ -23,8 +23,8 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_core.flip;
+import org.bytedeco.opencv.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Flips images deterministically or randomly.

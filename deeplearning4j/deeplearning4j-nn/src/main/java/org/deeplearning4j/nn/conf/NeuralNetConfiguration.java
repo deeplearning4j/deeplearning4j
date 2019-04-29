@@ -51,6 +51,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -97,6 +98,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     // this field defines preOutput cache
     protected CacheMode cacheMode;
+
+    protected DataType dataType = DataType.FLOAT;   //Default to float for deserialization of legacy format nets
 
     //Counter for the number of parameter updates so far for this layer.
     //Note that this is only used for pretrain layers (AE, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
@@ -261,6 +264,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
                             .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                            .dataType(globalConfig.dataType)
                             .build();
         }
 
@@ -471,6 +475,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
         protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
+        protected double gainInit = 1.0;
         protected List<Regularization> regularization = new ArrayList<>();
         protected List<Regularization> regularizationBias = new ArrayList<>();
         protected IDropout idropOut;
@@ -495,6 +500,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean setTWM = false;
         protected boolean setIWM = false;
         protected CacheMode cacheMode = CacheMode.NONE;
+        protected DataType dataType = DataType.FLOAT;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
         protected ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
@@ -1151,6 +1157,18 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+
+        /**
+         * Set the DataType for the network parameters and activations. Must be a floating point type: {@link DataType#DOUBLE},
+         * {@link DataType#FLOAT} or {@link DataType#HALF}.<br>
+         */
+        public Builder dataType(@NonNull DataType dataType){
+            Preconditions.checkState(dataType == DataType.DOUBLE || dataType == DataType.FLOAT || dataType == DataType.HALF,
+                    "Data type must be a floating point type: one of DOUBLE, FLOAT, or HALF. Got datatype: %s", dataType);
+            this.dataType = dataType;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -1167,6 +1185,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.stepFunction = stepFunction;
             conf.miniBatch = miniBatch;
             conf.cacheMode = this.cacheMode;
+            conf.dataType = this.dataType;
 
             configureLayer(layer);
             if (layer instanceof FrozenLayer) {
@@ -1253,6 +1272,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setWeightInitFn(weightInitFn);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
+                if (Double.isNaN(bLayer.getGainInit()))
+                    bLayer.setGainInit(gainInit);
 
                 //Configure weight noise:
                 if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){

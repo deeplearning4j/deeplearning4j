@@ -106,13 +106,14 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
     //  __shared__ shape::TAD *tad;
     __shared__ int tadLength;
     __shared__ int numTads;
-
+    __shared__ bool isPlainOutput;
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
         tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);        
-        numTads = shape::length(xShapeInfo) / tadLength;        
+        numTads = shape::length(xShapeInfo) / tadLength;
+        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
     }
     __syncthreads();
     
@@ -134,7 +135,7 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
           __syncthreads();
 
           if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 

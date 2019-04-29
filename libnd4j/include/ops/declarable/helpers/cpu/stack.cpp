@@ -33,18 +33,20 @@ template <typename T>
 static void stack_(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
 
 	if(inArrs[0]->rankOf() == 0) {
+	    int inSize = inArrs.size();
 
-#pragma omp parallel for if(inArrs.size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-		for(int i=0; i < inArrs.size(); ++i)
+        PRAGMA_OMP_PARALLEL_FOR_IF(inSize > Environment::getInstance()->tadThreshold())
+		for(int i=0; i < inSize; ++i)
 			outArr.p(i, inArrs[i]->e<T>(0));
 	}
 	else {
 
 		std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(outArr.rankOf(), {dim});
 		auto list = outArr.allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
-		
-#pragma omp parallel for if(list->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-		for(int i=0; i<list->size(); ++i)
+        int listSize = list->size();
+
+        PRAGMA_OMP_PARALLEL_FOR_IF(listSize > Environment::getInstance()->tadThreshold())
+		for(int i=0; i<listSize; ++i)
 			list->at(i)->assign(inArrs[i]);
 		
 		delete list;

@@ -152,7 +152,9 @@ namespace nd4j {
         }
 		
 		DECLARE_SHAPE_FN(im2col_bp) {
-            auto inShape = inputShape->at(0);
+            Nd4jLong *inShape;
+            COPY_SHAPE(inputShape->at(0), inShape);
+
 			return SHAPELIST(inShape);
 		}
     }

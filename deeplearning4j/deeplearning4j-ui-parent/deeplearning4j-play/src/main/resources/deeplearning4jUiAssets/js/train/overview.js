@@ -48,21 +48,25 @@ function renderOverviewPage(firstLoad) {
 }
 
 function executeOverviewUpdate(){
-    $.ajax({
-        url: "/train/overview/data",
-        async: true,
-        error: function (query, status, error) {
-            console.log("Error getting data: " + error);
-        },
-        success: function (data) {
-            lastUpdateSession = currSession;
-            lastUpdateTime = data["updateTimestamp"];
-            renderScoreVsIterChart(data);
-            renderModelPerformanceTable(data);
-            renderUpdatesRatio(data);
-            renderStdevChart(data);
-        }
+    getSessionSettings(function(){
+        var overviewUrl = multiSession ? "/train/" + currSession + "/overview/data" : "/train/overview/data";
+        $.ajax({
+            url: overviewUrl,
+            async: true,
+            error: function (query, status, error) {
+                console.log("Error getting data: " + error);
+            },
+            success: function (data) {
+                lastUpdateSession = currSession;
+                lastUpdateTime = data["updateTimestamp"];
+                renderScoreVsIterChart(data);
+                renderModelPerformanceTable(data);
+                renderUpdatesRatio(data);
+                renderStdevChart(data);
+            }
+        });
     });
+
 }
 
 /* ---------- Score vs. Iteration Chart ---------- */

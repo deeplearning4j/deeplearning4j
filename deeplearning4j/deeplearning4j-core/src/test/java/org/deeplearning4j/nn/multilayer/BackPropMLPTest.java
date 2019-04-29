@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
@@ -258,13 +259,13 @@ public class BackPropMLPTest extends BaseDL4JTest {
             INDArray[] layerActivations = new INDArray[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 INDArray layerInput = (i == 0 ? x : layerActivations[i - 1]);
-                layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
+                layerZs[i] = layerInput.castTo(layerWeights[i].dataType()).mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
                 layerActivations[i] = (i == nLayers - 1 ? doSoftmax(layerZs[i].dup()) : doSigmoid(layerZs[i].dup()));
             }
 
             //Do backward pass:
             INDArray[] deltas = new INDArray[nLayers];
-            deltas[nLayers - 1] = layerActivations[nLayers - 1].sub(y); //Out - labels; shape=[miniBatchSize,nOut];
+            deltas[nLayers - 1] = layerActivations[nLayers - 1].sub(y.castTo(layerActivations[nLayers-1].dataType())); //Out - labels; shape=[miniBatchSize,nOut];
             assertArrayEquals(deltas[nLayers - 1].shape(), new long[] {miniBatchSize, 3});
             for (int i = nLayers - 2; i >= 0; i--) {
                 INDArray sigmaPrimeOfZ;
@@ -279,7 +280,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
             for (int i = 0; i < nLayers; i++) {
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i - 1]);
                 //Raw gradients, so not yet divided by mini-batch size (division is done in BaseUpdater)
-                dLdw[i] = deltas[i].transpose().mmul(prevActivations).transpose(); //Shape: [nIn, nOut]
+                dLdw[i] = deltas[i].transpose().castTo(prevActivations.dataType()).mmul(prevActivations).transpose(); //Shape: [nIn, nOut]
                 dLdb[i] = deltas[i].sum(true, 0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);

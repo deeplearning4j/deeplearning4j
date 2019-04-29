@@ -331,7 +331,7 @@ namespace helpers {
     static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         // reduce along axis with
         std::unique_ptr<NDArray> tempInput(input->dup());
-        input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get());
+        input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get(), nullptr);
         tempInput->applyTransform(transform::Exp, nullptr, nullptr);
 
         std::vector<int> axisVector;

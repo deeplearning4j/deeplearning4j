@@ -23,11 +23,10 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -56,12 +55,8 @@ import java.util.Arrays;
  */
 public class Deconvolution2DLayer extends ConvolutionLayer {
 
-    public Deconvolution2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public Deconvolution2DLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public Deconvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 
@@ -82,15 +77,14 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
-        int inDepth = (int) weights.size(0);
+        long inDepth = weights.size(0);
 
-        int kH = (int) weights.size(2);
-        int kW = (int) weights.size(3);
+        long kH = weights.size(2);
+        long kW = weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -99,7 +93,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, null, convolutionMode, dilation);
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)inH, (int)inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
@@ -108,12 +102,12 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray biasGradView = gradientViews.get(DeconvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(DeconvolutionParamInitializer.WEIGHT_KEY);
 
-        INDArray outEps = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEps = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, weights.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
         int[] args = new int[] {
-                kH, kW, strides[0], strides[1],
+                (int)kH, (int)kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
@@ -217,7 +211,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
 
         val miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new long[]{miniBatch, outDepth, outH, outW}, 'c');
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{miniBatch, outDepth, outH, outW}, 'c');
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -261,7 +255,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         IActivation afn = layerConf().getActivationFn();
 
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn());
+            INDArray ret = helper.activate(z, layerConf().getActivationFn(), training);
             if (ret != null) {
                 return ret;
             }

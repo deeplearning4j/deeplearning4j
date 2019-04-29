@@ -166,8 +166,13 @@ public class Transpose extends DynamicCustomOp {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));
-        } else if (permuteDims != null && arg() != null && arg().getShape() != null) {
-            val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
+        } else if (permuteDims != null && arg() != null && (!inputArguments.isEmpty() || arg().getShape() != null)) {
+            long[] shape = null;
+            if(!inputArguments.isEmpty())
+                shape = inputArguments.get(0).shape();
+            else
+                shape = arg().getShape();
+            val permutedShape = ArrayUtil.permute(shape, permuteDims);
             SDVariable lArg = larg();
             DataType lArgType = lArg.dataType();
             return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, lArgType));

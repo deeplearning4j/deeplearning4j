@@ -67,7 +67,7 @@ public class OldRDivOp extends BaseTransformAnyOp {
 
     @Override
     public String onnxName() {
-        return "Div";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

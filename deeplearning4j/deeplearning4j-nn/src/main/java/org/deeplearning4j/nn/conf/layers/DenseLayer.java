@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -39,22 +40,24 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
 
+    private boolean hasLayerNorm = false;
     private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        this.hasLayerNorm = builder.hasLayerNorm;
 
         initializeConstraints(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("DenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -105,6 +108,10 @@ public class DenseLayer extends FeedForwardLayer {
         return hasBias;
     }
 
+    public boolean hasLayerNorm(){
+        return hasLayerNorm;
+    }
+
     @NoArgsConstructor
     @Getter
     @Setter
@@ -122,9 +129,20 @@ public class DenseLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this model
          */
         public Builder hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return this;
         }
+
+        /**
+         * If true (default = false): enable layer normalization on this layer
+         *
+         */
+        private boolean hasLayerNorm = false;
+        public Builder hasLayerNorm(boolean hasLayerNorm){
+            this.hasLayerNorm = hasLayerNorm;
+            return this;
+        }
+
 
         @Override
         @SuppressWarnings("unchecked")

@@ -23,12 +23,18 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.transform.categorical.FirstDigitTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
+import org.datavec.python.PythonTransform;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
@@ -229,6 +235,136 @@ public class ExecutionTest extends BaseSparkTest {
         List<Writable> c1 = l.get("col1");
         assertEquals(3, c1.size());
         assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
+    }
+
+    @Test
+    public void testPythonExecution() throws Exception {
+        Schema schema = new Schema.Builder().addColumnInteger("col0")
+                .addColumnString("col1").addColumnDouble("col2").build();
+
+        Schema finalSchema = new Schema.Builder().addColumnInteger("col0")
+                .addColumnInteger("col1").addColumnDouble("col2").build();
+        String pythonCode = "col1 = ['state0', 'state1', 'state2'].index(col1)\ncol2 += 10.0";
+        TransformProcess tp = new TransformProcess.Builder(schema).transform(
+          new PythonTransform(
+                pythonCode,
+                  finalSchema
+          )
+        ).build();
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
+
+        List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.execute(rdd, tp).collect());
+
+        Collections.sort(out, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
+            }
+        });
+
+        List<List<Writable>> expected = new ArrayList<>();
+        expected.add(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(2), new DoubleWritable(10.1)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(1), new DoubleWritable(11.1)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(2), new IntWritable(0), new DoubleWritable(12.1)));
+
+        assertEquals(expected, out);
+    }
+
+    @Test
+    public void testPythonExecutionWithNDArrays() throws Exception {
+        long[] shape = new long[]{3, 2};
+        Schema schema = new Schema.Builder().addColumnInteger("id").addColumnNDArray("col1", shape)
+                .addColumnNDArray("col2", shape).build();
+
+        Schema finalSchema = new Schema.Builder().addColumnInteger("id").addColumnNDArray("col1", shape)
+                .addColumnNDArray("col2", shape).addColumnNDArray("col3", shape).build();
+
+        String pythonCode = "col3 = col1 + col2";
+        TransformProcess tp = new TransformProcess.Builder(schema).transform(
+                new PythonTransform(
+                        pythonCode,
+                        finalSchema
+                )
+        ).build();
+
+        INDArray zeros = Nd4j.zeros(shape);
+        INDArray ones = Nd4j.ones(shape);
+        INDArray twos = ones.add(ones);
+
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new NDArrayWritable(zeros), new NDArrayWritable(zeros)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new NDArrayWritable(zeros), new NDArrayWritable(ones)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new NDArrayWritable(ones), new NDArrayWritable(ones)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
+
+        List<List<Writable>> out = new ArrayList<>(SparkTransformExecutor.execute(rdd, tp).collect());
+
+        Collections.sort(out, new Comparator<List<Writable>>() {
+            @Override
+            public int compare(List<Writable> o1, List<Writable> o2) {
+                return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
+            }
+        });
+
+        List<List<Writable>> expected = new ArrayList<>();
+        expected.add(Arrays.<Writable>asList(new IntWritable(0), new NDArrayWritable(zeros), new NDArrayWritable(zeros), new NDArrayWritable(zeros)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(1), new NDArrayWritable(zeros), new NDArrayWritable(ones), new NDArrayWritable(ones)));
+        expected.add(Arrays.<Writable>asList(new IntWritable(2), new NDArrayWritable(ones), new NDArrayWritable(ones), new NDArrayWritable(twos)));
+    }
+
+    @Test
+    public void testFirstDigitTransformBenfordsLaw(){
+        Schema s = new Schema.Builder()
+                .addColumnString("data")
+                .addColumnDouble("double")
+                .addColumnString("stringNumber")
+                .build();
+
+        List<List<Writable>> in = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new DoubleWritable(3.14159), new Text("8e-4")),
+                Arrays.<Writable>asList(new Text("a2"), new DoubleWritable(3.14159), new Text("7e-4")),
+                Arrays.<Writable>asList(new Text("b"), new DoubleWritable(2.71828), new Text("7e2")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("6e8")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.0")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.1")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(1.61803), new Text("2.2")),
+                Arrays.<Writable>asList(new Text("c"), new DoubleWritable(-2), new Text("non numerical")));
+
+        //Test Benfords law use case:
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .firstDigitTransform("double", "fdDouble", FirstDigitTransform.Mode.EXCEPTION_ON_INVALID)
+                .firstDigitTransform("stringNumber", "stringNumber", FirstDigitTransform.Mode.INCLUDE_OTHER_CATEGORY)
+                .removeAllColumnsExceptFor("stringNumber")
+                .categoricalToOneHot("stringNumber")
+                .reduce(new Reducer.Builder(ReduceOp.Sum).build())
+                .build();
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(in);
+
+
+        List<List<Writable>> out = SparkTransformExecutor.execute(rdd, tp).collect();
+        assertEquals(1, out.size());
+
+        List<Writable> l = out.get(0);
+        List<Writable> exp = Arrays.<Writable>asList(
+                new IntWritable(0),  //0
+                new IntWritable(0),  //1
+                new IntWritable(3),  //2
+                new IntWritable(0),  //3
+                new IntWritable(0),  //4
+                new IntWritable(0),  //5
+                new IntWritable(1),  //6
+                new IntWritable(2),  //7
+                new IntWritable(1),  //8
+                new IntWritable(0),  //9
+                new IntWritable(1)); //Other
+        assertEquals(exp, l);
     }
 
 }

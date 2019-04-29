@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
@@ -67,10 +68,10 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret =
-                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
+                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -188,9 +189,9 @@ public class LocalResponseNormalization extends Layer {
         }
 
         public Builder(double k, double alpha, double beta) {
-            this.k = k;
-            this.alpha = alpha;
-            this.beta = beta;
+            this.setK(k);
+            this.setAlpha(alpha);
+            this.setBeta(beta);
         }
 
         public Builder() {}
@@ -201,7 +202,7 @@ public class LocalResponseNormalization extends Layer {
          * @param k Scaling constant
          */
         public Builder k(double k) {
-            this.k = k;
+            this.setK(k);
             return this;
         }
 
@@ -211,7 +212,7 @@ public class LocalResponseNormalization extends Layer {
          * @param n Number of adjacent kernel maps
          */
         public Builder n(double n) {
-            this.n = n;
+            this.setN(n);
             return this;
         }
 
@@ -221,7 +222,7 @@ public class LocalResponseNormalization extends Layer {
          * @param alpha Scaling constant
          */
         public Builder alpha(double alpha) {
-            this.alpha = alpha;
+            this.setAlpha(alpha);
             return this;
         }
 
@@ -231,7 +232,7 @@ public class LocalResponseNormalization extends Layer {
          * @param beta Scaling constant
          */
         public Builder beta(double beta) {
-            this.beta = beta;
+            this.setBeta(beta);
             return this;
         }
 
@@ -243,7 +244,7 @@ public class LocalResponseNormalization extends Layer {
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
         public Builder cudnnAllowFallback(boolean allowFallback) {
-            this.cudnnAllowFallback = allowFallback;
+            this.setCudnnAllowFallback(allowFallback);
             return this;
         }
 

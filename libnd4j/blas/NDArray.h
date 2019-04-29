@@ -164,9 +164,8 @@ namespace nd4j {
         */
         NDArray(NDArray&& other) noexcept;
 
-
         /**
-        *  constructor, create empty array stored at given workspace
+        *  constructor, create array stored at given workspace
         */
         NDArray(nd4j::memory::Workspace* workspace);
 
@@ -185,7 +184,7 @@ namespace nd4j {
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype = DOUBLE, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
@@ -200,12 +199,12 @@ namespace nd4j {
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
+        explicit NDArray(const NDArray *other, const bool copyStrides = false, memory::Workspace* workspace = nullptr);
 
         /**
-        *  this constructor creates scalar and set its value = 0
+        *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace = nullptr, const bool isScalar = true);
 
 
         /**
@@ -255,6 +254,11 @@ namespace nd4j {
         NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
 
         /**
+         * This method fills this array with zeros
+         */
+        void nullify();
+
+        /**
          * This method returns quantized copy of given array
          *
          * @param array
@@ -279,15 +283,7 @@ namespace nd4j {
         /**
         *  creates array which is view of this array
         */
-        NDArray* getView();
-
-        /**
-        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-        */
-        NDArray* subarray(IndicesList& indices) const;
-        NDArray* subarray(IndicesList& indices, std::vector<Nd4jLong>& strides) const;
-        NDArray* subarray(const std::initializer_list<NDIndex*>& idx) const;
-        NDArray* subarray(const Intervals& idx) const;
+        NDArray* getView();        
 
         /**
         *  cast array elements to given dtype
@@ -628,7 +624,7 @@ namespace nd4j {
         *  target - where to store result
         */
         template <typename T>
-        void applyPairwiseLambda(NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
+        void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
 
         template <typename T>
         void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
@@ -682,8 +678,10 @@ namespace nd4j {
         *  dimensions - vector of dimensions to calculate variance along
         */
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
-
         NDArray* varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
+        NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
         void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
 
@@ -881,8 +879,10 @@ namespace nd4j {
         *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        *  isStrided - if true then idx has length (3 * this->rankOf()) and contains additional stride numbers which correspond to stride between dimStart and dimEnd,
+        *              so structure of idx is like {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
         */
-        NDArray operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape = false)  const;
+        NDArray operator()(const std::vector<Nd4jLong>& idx, const bool keepUnitiesInShape = false, const bool isStrided = false)  const;
 
         /**
         *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx and dimensions in dimsToExclude
@@ -891,6 +891,17 @@ namespace nd4j {
         *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
         */ 
         NDArray operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape = false)  const;
+        
+        /**
+        * processes whole set of sub-arrays 
+        * evaluates shapeInfo of sub-arrays (all sub-arrays have the same shapeInfo) and their buffer offsets (each sub-array has its own unique offset from original this-buffer)         
+        * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *                 if dimsToExclude.size() = array rank it means sub-array is whole array and copy of original_shapeInfo will be returned and one zero offset
+        * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
+        * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
+        * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
+        */ 
+        void getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape = false) const;
 
         /**
         *  addition operator: array + other
@@ -1012,14 +1023,7 @@ namespace nd4j {
         *  left - input array
         *  right - input array
         */
-        friend NDArray mmul(const NDArray& left, const NDArray& right);
-
-        /**
-        *  this method assigns elements of other array to the subarray of this array defined by given intervals
-        *  other - input array to assign elements from
-        *  idx - intervals of indexes which define the subarray
-        */ 
-        void assign(const NDArray& other, const Intervals& idx);
+        friend NDArray mmul(const NDArray& left, const NDArray& right);        
 
         /**
         *  return vector containing _buffer as flat binary array
@@ -1088,9 +1092,11 @@ namespace nd4j {
 
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 
+        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+
         ResultSet* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
 
-        ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
+        ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
 
         ResultSet* allExamples()const ;
 
@@ -1128,6 +1134,7 @@ namespace nd4j {
         *  set _shapeInfo
         */
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo);
+        FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
 
         /**
         *  set _buffer
@@ -1287,6 +1294,14 @@ namespace nd4j {
         void pIdx(const Nd4jLong* indices, const T value);
 
         /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
+        NDArray* subarray(IndicesList& indices) const;
+        NDArray* subarray(IndicesList& indices, std::vector<Nd4jLong>& strides) const;
+        NDArray* subarray(const std::initializer_list<NDIndex*>& idx) const;
+        NDArray* subarray(const Intervals& idx) const;
+
+        /**
         *  returns true if array is 2D
         */
         FORCEINLINE bool isMatrix() const;
@@ -1305,6 +1320,13 @@ namespace nd4j {
         *  returns true if array is row vector
         */
         FORCEINLINE bool isRowVector() const;
+
+        /**
+        *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
+        *  posOfNonUnityDim - one dimension with value > 1
+        */
+        FORCEINLINE bool isCommonVector(int& posOfNonUnityDim) const;
+
 
         /**
         *  returns true if array is scalar
@@ -1438,11 +1460,36 @@ namespace nd4j {
 
         _shapeInfo = shapeInfo;
 
-        if (shapeInfo != nullptr) {
-            this->_length = shape::length(shapeInfo);
-            this->_dataType = ArrayOptions::dataType(shapeInfo);
-        } else {
-            this->_dataType = nd4j::DataType::INHERIT;
+        if (shapeInfo != nullptr) {            
+            _dataType = ArrayOptions::dataType(_shapeInfo);
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(_shapeInfo);
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
+            _length = 0;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
+        if(_isShapeAlloc && _workspace == nullptr)
+            delete []_shapeInfo;
+
+        _shapeInfo = shapeInfo;
+
+        if (shapeInfo != nullptr) {            
+            _dataType = dtype;
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(_shapeInfo);
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
+            _length = 0;
         }
     }
 
@@ -1551,7 +1598,8 @@ namespace nd4j {
     bool NDArray::isVector() const {
         if (isEmpty())
             return false;
-
+        if (rankOf() == 1)
+            return true;
         return !isScalar() && shape::isVector(this->_shapeInfo);
     }
 
@@ -1573,6 +1621,12 @@ namespace nd4j {
             return true;
 
         return !isScalar() && shape::isRowVector(this->_shapeInfo);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::isCommonVector(int& posOfNonUnityDim) const {        
+
+        return shape::isCommonVector(_shapeInfo, posOfNonUnityDim);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1858,8 +1912,8 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
-    if (this->dataType() != other.dataType())
-            return false;
+    // if (this->dataType() != other.dataType())    // this comparison is already present in equalsTo
+    //         return false;
 
     if (!this->isSameShape(&other))
         return false;
@@ -1888,8 +1942,8 @@ DataType NDArray::dataType() const {
 template <typename T>
 T& NDArray::t(const Nd4jLong i) {
 
-    if (i >= _length)
-        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    // if (i >= _length)
+    //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
     
@@ -1914,8 +1968,8 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
 template <typename T>
 T NDArray::t(const Nd4jLong i) const {
 
-    if (i >= _length)
-        throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
+    // if (i >= _length)
+    //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
 

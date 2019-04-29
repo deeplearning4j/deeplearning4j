@@ -57,15 +57,15 @@ namespace nd4j {
 
             return r;
         } else {
-            auto readable = _original->subarray({NDIndex::point(row), NDIndex::all()});
+            auto readable = (*_original)({row,row+1, 0,0});
 
             _lock.lock();
 
-            _references.emplace_back(readable);
+            _references.emplace_back(&readable);
 
             _lock.unlock();
 
-            return readable;
+            // return readable;
         }
     }
 
@@ -87,11 +87,10 @@ namespace nd4j {
             return r;
         } else {
             // if doesn't - let's create it
-            auto orig = _original->subarray({NDIndex::point(row), NDIndex::all()});
+            auto orig = (*_original)({row,row+1, 0,0});
 
             // we don't want views here for obvious reasons
-            auto writeable = orig->dup('c');
-            delete orig;
+            auto writeable = orig.dup('c');            
 
             _lock.lock();
 
@@ -121,20 +120,18 @@ namespace nd4j {
             auto row = _rows[r];
             auto list = _writeablesLinear.at(row);
 
-            auto originalRow = _original->subarray({NDIndex::point(row), NDIndex::all()});
+            auto originalRow = (*_original)({row,row+1, 0,0});
 
             if (list.size() == 1) {
-                originalRow->assign(list.at(0));
+                originalRow.assign(list.at(0));
             } else {
-                originalRow->assign(0.0);
+                originalRow.assign(0.0);
 
                 for (int e = 0; e < list.size(); e++)
-                    *originalRow += *(list.at(e));
+                    originalRow += *(list.at(e));
 
-                *originalRow /= (int) list.size();
+                originalRow /= (int) list.size();
             }
-
-            delete originalRow;
         }
 
         return true;

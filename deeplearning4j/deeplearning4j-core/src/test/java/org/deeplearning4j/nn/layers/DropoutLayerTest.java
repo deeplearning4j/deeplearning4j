@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -220,6 +219,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
 
     @Test
     public void testDropoutLayerWithConvMnist() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE); //Set to double datatype - MKL-DNN not used for CPU (otherwise different strides due to Dl4J impl permutes)
         DataSetIterator iter = new MnistDataSetIterator(2, 2);
         DataSet next = iter.next();
 
@@ -279,8 +279,8 @@ public class DropoutLayerTest extends BaseDL4JTest {
         assertEquals(netIntegrated.getLayer(1).getParam("b"), netSeparate.getLayer(2).getParam("b"));
 
         // check activations
-        netIntegrated.setInput(next.getFeatures());
-        netSeparate.setInput(next.getFeatures());
+        netIntegrated.setInput(next.getFeatures().dup());
+        netSeparate.setInput(next.getFeatures().dup());
 
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(true);
@@ -289,11 +289,13 @@ public class DropoutLayerTest extends BaseDL4JTest {
         assertEquals(actTrainIntegrated.get(1), actTrainSeparate.get(1));
         assertEquals(actTrainIntegrated.get(2), actTrainSeparate.get(3));
 
+        netIntegrated.setInput(next.getFeatures().dup());
+        netSeparate.setInput(next.getFeatures().dup());
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestIntegrated = netIntegrated.feedForward(false);
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestSeparate = netSeparate.feedForward(false);
-        assertEquals(actTestIntegrated.get(1), actTrainSeparate.get(1));
+        assertEquals(actTestIntegrated.get(1), actTestSeparate.get(1));
         assertEquals(actTestIntegrated.get(2), actTestSeparate.get(3));
     }
 }

@@ -148,26 +148,34 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
     }
 
     // tad preparation
-    auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadShapeInfo);
+    auto tadEws = shape::elementWiseStride(tadShapeInfo);
+    auto zEws = shape::elementWiseStride(tadShapeInfoZ);
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        auto offset = tadOffsets[r];
-        auto offsetZ = tadOffsetsZ[r];
-        X scalar = scalars[r];
+    if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {
 
-        if (tadEWS >= 1 && zEWS >= 1) {
-            Z *oZ = z + offsetZ;
-            X *oX = x + offset;
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
 
-            for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
-                oZ[f] = OpType::op(oX[f], scalar, extraParams);
-        } 
-        else        
-            printf("Super-bad loop visited. Shouldn't ever happen\n");
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
+        }
+    } else {
+        // main loop, rolling over tads
+        for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+            Z *oZ = z + tadOffsetsZ[r];
+            X *oX = x + tadOffsets[r];
+
+            auto s = scalars[r];
+
+            for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+        }
     }
 }
 
@@ -185,6 +193,7 @@ _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchD
                                                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarAlongDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -196,7 +205,8 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
                                                             void* vscalar, 
                                                             void *vextraParams, int *allocPointer){
     
-    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);    
+    scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShaped(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

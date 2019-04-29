@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -189,7 +190,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         int currentWindow = window;
 
         if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
         }
 
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
@@ -232,7 +233,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         int currentWindow = window;
 
         if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
+            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
         }
         //batchSequences = new BatchSequences<>(configuration.getBatchSize());
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
@@ -301,7 +302,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
                             BatchSequences<T> batchSequences) {
         final T word = sentence.get(i);
-        if (word == null || sentence.isEmpty())
+        if (word == null || sentence.isEmpty() || word.isLocked())
             return 0.0;
 
         double score = 0.0;

@@ -82,7 +82,8 @@ namespace nd4j {
     __host__ void
     accumulateKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vx, void *vz, int n, const Nd4jLong length) {
 
-        execAccumulateKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (vx, vz, n, length);
+        execAccumulateKernel<T><<< launchDims.x, launchDims.y, launchDims.z, *stream>>> (vx, vz, n, length);
+        nd4j::DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT accumulateKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vx, void * vz, int n, const Nd4jLong length), LIBND4J_TYPES);

@@ -32,14 +32,15 @@ namespace nd4j {
 
             auto output = OUTPUT_VARIABLE(0);
             Nd4jLong lastDim = input->sizeAt(-1);
-            REQUIRE_TRUE(n->e<Nd4jLong>(0) < lastDim && n->e<Nd4jLong>(0) > 0, 0, "nth_element: n should be positive and less than last dimension size, but %i was given.", lastDim);
+            int nVal = n->e<int>(0);
+            REQUIRE_TRUE(nVal < lastDim && nVal >= 0, 0, "nth_element: n should be non-negative and less than last dimension size (%lld), but %i was given.", lastDim, n);
             REQUIRE_TRUE(input->rankOf() > 0, 0, "nth_element: The rank of input array should be at least 1, but %i is given", input->rankOf());            //
             if (output->lengthOf() == input->lengthOf())
                 output->assign(input);
             else {
-                if (reverse)
-                    (*n) = lastDim - n->e<Nd4jLong>(0) - 1;
-                helpers::nthElementFunctor(input, n, output);
+//                if (!input->isVector() && reverse)
+//                    n->assign(lastDim - n->e<Nd4jLong>(0) - 1);
+                helpers::nthElementFunctor(input, n, output, reverse);
             }
             return ND4J_STATUS_OK;
         }

@@ -19,13 +19,14 @@ set -eu
 
 # cd to the directory containing this script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $DIR
+cd "$DIR"
 
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
 fi
 export MAKE_COMMAND="make"
+export MAKE_ARGUMENTS=
 echo eval $CMAKE_COMMAND
 
 [[ -z ${MAKEJ:-} ]] && MAKEJ=4
@@ -51,6 +52,7 @@ OPERATIONS=
 CLEAN="false"
 MINIFIER="false"
 TESTS="false"
+VERBOSE="false"
 NAME=
 while [[ $# > 0 ]]
 do
@@ -118,6 +120,9 @@ case $key in
     ;;
     -t|--tests)
     TESTS="true"
+    ;;
+    -V|--verbose)
+    VERBOSE="true"
     ;;
     --default)
     DEFAULT=YES
@@ -450,13 +455,8 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-if [ "$OS" == "$HOST" ]; then
-    MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.17.2-1.4.4-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
-    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.5-1.4.4-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
-else
-    MKLDNN_PATH=""
-    OPENBLAS_PATH=""
-fi
+[[ -z ${MKLDNN_PATH:-} ]] && MKLDNN_PATH=""
+[[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
 
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"
@@ -473,15 +473,16 @@ if [[ -n "${BUILD_PATH:-}" ]]; then
 fi
 
 if [[ ! -f "$MKLDNN_PATH/include/mkldnn.h" ]]; then
-    echo "Could not find MKL-DNN, please make sure to run the build with Maven"
+    echo "Could not find MKL-DNN, please make sure to run the build with Maven or set the MKLDNN_PATH variable"
     MKLDNN_PATH=""
 fi
 
 if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
-    echo "Could not find OpenBLAS, please make sure to run the build with Maven"
+    echo "Could not find OpenBLAS, please make sure to run the build with Maven or set the OPENBLAS_PATH variable"
     OPENBLAS_PATH=""
 fi
 
+# replace any backslash with a slash
 MKLDNN_PATH="${MKLDNN_PATH//\\//}"
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
@@ -514,7 +515,9 @@ mkbuilddir
 pwd
 eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DMKLDNN_PATH="$MKLDNN_PATH" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
-        eval $MAKE_COMMAND -j $MAKEJ && cd ../../..
-    else
-        eval $MAKE_COMMAND && cd ../../..
+    MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi
+if [ "$VERBOSE" == "true" ]; then
+    MAKE_ARGUMENTS="$MAKE_ARGUMENTS VERBOSE=1"
+fi
+eval $MAKE_COMMAND $MAKE_ARGUMENTS && cd ../../..

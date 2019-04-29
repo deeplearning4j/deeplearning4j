@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
@@ -115,7 +114,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     double getDoubleUnsafe(long offset);
 
-    String getStringUnsafe(long index);
+    String getString(long index);
 
     /**
      * Insert a scalar
@@ -158,7 +157,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray tensorAlongDimension(int index, int... dimension);
+    INDArray tensorAlongDimension(long index, int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -167,6 +166,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
+    @Deprecated
     INDArray javaTensorAlongDimension(int index, int... dimension);
 
 
@@ -739,6 +739,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param indices an ndaray of the indices to get the elements for
      * @return the elements to get the array for
      */
+    @Deprecated
     INDArray get(List<List<Integer>> indices);
 
     /**
@@ -885,11 +886,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param dimension the dimension to repeat
      * @param repeats the number of elements to repeat on each element
-     * @return
+     * @return Repeated array
      */
-    @Deprecated
-    INDArray repeat(int dimension, int... repeats);
-
     INDArray repeat(int dimension, long... repeats);
 
 
@@ -947,22 +945,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the (1-norm) distance.
      */
     double distance1(INDArray other);
-
-
-
-    /**
-     * Put element in to the indices denoted by
-     * the indices ndarray.
-     * This is equivalent to:
-     * a[indices] = element
-     *
-     *  in numpy.
-     *
-     * @param indices the indices to put
-     * @param element the element array to put
-     * @return this array
-     */
-    INDArray put(List<List<Integer>> indices,INDArray element);
 
 
     /**
@@ -1834,15 +1816,6 @@ public interface INDArray extends Serializable, AutoCloseable {
     void setOrder(char order);
 
     /**
-     * Sub array based on the
-     * pre calculated shape,strides, offsets
-     * @param resolution the resolution to use
-     * @return the sub array based on the calculations from the resolution
-     */
-    INDArray subArray(ShapeOffsetResolution resolution);
-    //INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis);
-
-    /**
      * @param offsets
      * @param shape
      * @param stride
@@ -1870,6 +1843,10 @@ public interface INDArray extends Serializable, AutoCloseable {
     long getLong(long index);
 
     long getLong(long... indices);
+
+    Number getNumber(long index);
+
+    Number getNumber(long... indices);
 
     /**
      * Get a double value at the specified indices.
@@ -2031,7 +2008,26 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray reshape(char order, long... newShape);
 
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
+     * without copying is impossible.
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
     INDArray reshape(char order, int... newShape);
+
+    /**
+     * Reshapes the ndarray (note: it's not possible to change the length of the ndarray).
+     * Typically this will be a view, unless reshaping without copying (i.e., returning a view) is impossible.<br>
+     * In that case, the behaviour will depend on the enforceView argument:
+     * enforceView == true: throw an exception<br>
+     * enforceView == false: return a copy<br>
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
+    INDArray reshape(char order, boolean enforceView, long... newShape);
 
 
     /**
@@ -2152,13 +2148,33 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray getColumn(long i);
 
     /**
-     * Returns the specified row.
+     * Returns the specified column. Throws an exception if its not a matrix (rank 2).
+     * Returned array will either be 1D (keepDim = false) or 2D (keepDim = true) with shape [length, 1]
+     *
+     * @param i the row to get
+     * @param keepDim If true: return [length, 1] array. Otherwise: return [length] array
+     * @return the specified row
+     */
+    INDArray getColumn(long i, boolean keepDim);
+
+    /**
+     * Returns the specified row as a 1D vector.
      * Throws an exception if its not a matrix
      *
      * @param i the row to getScalar
      * @return the specified row
      */
     INDArray getRow(long i);
+
+    /**
+     * Returns the specified row. Throws an exception if its not a matrix.
+     * Returned array will either be 1D (keepDim = false) or 2D (keepDim = true) with shape [1, length]
+     *
+     * @param i the row to get
+     * @param keepDim If true: return [1,length] array. Otherwise: return [length] array
+     * @return the specified row
+     */
+    INDArray getRow(long i, boolean keepDim);
 
     /**
      * Returns the number of columns in this matrix (throws exception if not 2d)

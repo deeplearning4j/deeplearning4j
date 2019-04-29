@@ -46,7 +46,6 @@ public class KFoldIterator implements DataSetIterator {
      * Create a k-fold cross-validation iterator given the dataset and k=10 train-test splits.
      * N number of samples are split into k batches. The first (N%k) batches contain (N/k)+1 samples, while the remaining batches contain (N/k) samples. 
      * In case the number of samples (N) in the dataset is a multiple of k, all batches will contain (N/k) samples.
-     * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
      */
     public KFoldIterator(DataSet allData) {

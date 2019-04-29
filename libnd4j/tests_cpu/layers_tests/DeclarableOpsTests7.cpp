@@ -39,6 +39,18 @@ public:
     }
 };
 
+template <typename T>
+class TypedDeclarableOpsTests7 : public testing::Test {
+public:
+
+    TypedDeclarableOpsTests7() {
+        printf("\n");
+        fflush(stdout);
+    }
+};
+
+typedef ::testing::Types<double, float> TestingTypes;
+TYPED_TEST_CASE(TypedDeclarableOpsTests7, TestingTypes);
 
 TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LARGE) {
     double inputData[150] = {
@@ -2022,6 +2034,37 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProdBP_4) {
+    auto x = NDArrayFactory::create<double>('c', {8}, {
+            5,1,7,2,3,4,1,3});
+    auto gradO = NDArrayFactory::create<double>('c', {4}, {1.0,2.0,3.0,4.0});
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({0,0,0,1,2,2,3,3});
+    auto exp = NDArrayFactory::create<double>('c', {8}, {
+            7.000000, 35.000000, 5.000000, 2.000000, 12.000000, 9.000000, 12.000000, 4.000000
+    });
+//            1., 1., 1., 1.,      1., 1.,1.,1.,     1.,1.,1.,1.,     1.,1.,1.,1.,
+//
+//            143871.0, 75768.0, 215673.0, 67584.,     45843.75, 121426.96, 495597.0, 21952.0,
+//            1547562.8, 12020.262, 161306.38, 19409.092,  22344.0, 185191.27, 30495.531, 150579.0,
+//
+//            91., 82., 37., 64,     55.1, 46.400002, 73, 28,    119.1, 12.1, 112.7, 13.1,    14.0, 114.2, 16.2, 117.0});
+
+    nd4j::ops::unsorted_segment_prod_bp op;
+
+    auto result = op.execute({&x, &idx, &gradO}, {}, {4});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("Output");
+    //result->at(0)->printShapeInfo("Out Shape");
+    //exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_1) {
     auto x = NDArrayFactory::create<double>('c', {2,4, 4, 4}, {
      91.,  82.,  37.,  64.,     55.,  46.,  73.,  28.,   119.,  12., 112.,  13.,     14., 114.,  16., 117.,
@@ -2112,14 +2155,9 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_3) {
 //[1, 1, 1, 1]
 //[1, 3, 2, 1]
 auto exp = NDArrayFactory::create<double>('c', {3, 1, 2, 6}, {
-     11.,  12.,  13.,   5.,   6.,   7.,
-     15.,  16.,  17.,  35.,  36.,  37.,
-
-      9.,   8.,   7.,  15.,  16.,  17.,
-     49.,  48.,  47., 135., 136., 137.,
-
-    211.,  12.,  13.,  25.,   6.,   7.,
-     15., 216.,  17.,  35.,  36., 327.
+        11.,  12.,  13.,   5.,   6.,   7.,  15.,  16.,  17.,  35.,  36.,  37.,   9.,   8.,
+        7.,  15.,  16.,  17.,  49.,  48.,  47., 135., 136., 137., 211.,  12.,  13.,  25.,
+        6.,   7.,  15., 216.,  17.,  35.,  36., 327.
  });
 // ----------------------------------------------------------------
     nd4j::ops::extract_image_patches op;
@@ -2128,9 +2166,9 @@ auto exp = NDArrayFactory::create<double>('c', {3, 1, 2, 6}, {
     ASSERT_EQ(result->status(), Status::OK());
 //    x.printIndexedBuffer("images");
 //    nd4j_printf("input params: ksize = [1, 2, 1, 1], strides = [1, 3, 2, 1], rates = [1, 2, 2, 1]\n", "");
-//    result->at(0)->printIndexedBuffer("Output");
+    result->at(0)->printBuffer("Output");
     //result->at(0)->printShapeInfo("Out Shape");
-//    exp.printIndexedBuffer("Expect");
+    exp.printBuffer("Expect");
     //exp.printShapeInfo("Exp Shape");
 
     ASSERT_TRUE(exp.isSameShape(result->at(0)));
@@ -2293,6 +2331,373 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_8) {
     auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
     ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9) {
+    auto x = NDArrayFactory::create<double>('c', {1, 6, 6, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 6, 6, 18}, {
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.,  3.,  4.,  0.,  0., 13., 14., 15., 16.,
+            0.,  0.,  0.,  0.,  0.,  0.,  1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18.,
+            0.,  0.,  0.,  0.,  0.,  0.,  3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20.,
+            0.,  0.,  0.,  0.,  0.,  0.,  5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22.,
+            0.,  0.,  0.,  0.,  0.,  0.,  7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24.,
+            0.,  0.,  0.,  0.,  0.,  0.,  9., 10., 11., 12.,  0.,  0., 21., 22., 23., 24.,  0.,  0.,
+            0.,  0.,  1.,  2.,  3.,  4.,  0.,  0., 13., 14., 15., 16.,  0.,  0., 25., 26., 27., 28.,
+            1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30.,
+            3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32.,
+            5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34.,
+            7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36.,
+            9., 10., 11., 12.,  0.,  0., 21., 22., 23., 24.,  0.,  0., 33., 34., 35., 36.,  0.,  0.,
+            0.,  0., 13., 14., 15., 16.,  0.,  0., 25., 26., 27., 28.,  0.,  0., 37., 38., 39., 40.,
+           13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42.,
+           15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44.,
+           17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46.,
+           19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48.,
+           21., 22., 23., 24.,  0.,  0., 33., 34., 35., 36.,  0.,  0., 45., 46., 47., 48.,  0.,  0.,
+            0.,  0., 25., 26., 27., 28.,  0.,  0., 37., 38., 39., 40.,  0.,  0., 49., 50., 51., 52.,
+           25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54.,
+           27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56.,
+           29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58.,
+           31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60.,
+           33., 34., 35., 36.,  0.,  0., 45., 46., 47., 48.,  0.,  0., 57., 58., 59., 60.,  0.,  0.,
+            0.,  0., 37., 38., 39., 40.,  0.,  0., 49., 50., 51., 52.,  0.,  0., 61., 62., 63., 64.,
+           37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,
+           39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,
+           41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,
+           43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.,
+           45., 46., 47., 48.,  0.,  0., 57., 58., 59., 60.,  0.,  0., 69., 70., 71., 72.,  0.,  0.,
+            0.,  0., 49., 50., 51., 52.,  0.,  0., 61., 62., 63., 64.,  0.,  0.,  0.,  0.,  0.,  0.,
+           49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,  0.,  0.,  0.,  0.,  0.,  0.,
+           51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,  0.,  0.,  0.,  0.,  0.,  0.,
+           53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,  0.,  0.,  0.,  0.,  0.,  0.,
+           55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.,  0.,  0.,  0.,  0.,  0.,  0.,
+           57., 58., 59., 60.,  0.,  0., 69., 70., 71., 72.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 2}, {1, 116, 2, 116, 3, 116, 4, 116,
+                                                                5, 117, 6, 117, 7, 117, 8, 117,
+                                                                9, 118, 10, 118, 11, 118, 12, 118,
+                                                                13, 119, 14, 119, 15, 119, 16, 119});
+    //x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
+ 1, 116,   2, 116,   5, 117,   6, 117,   2, 116,   3, 116,   6, 117,   7, 117,   3, 116,
+ 4, 116,   7, 117,   8, 117,   4, 116,   0,   0,   8, 117,   0,   0,   5, 117,   6, 117,
+ 9, 118,  10, 118,   6, 117,   7, 117,  10, 118,  11, 118,   7, 117,   8, 117,  11, 118,
+12, 118,   8, 117,   0,   0,  12, 118,   0,   0,   9, 118,  10, 118,  13, 119,  14, 119,
+10, 118,  11, 118,  14, 119,  15, 119,  11, 118,  12, 118,  15, 119,  16, 119,  12, 118,
+ 0,   0,  16, 119,   0,   0,  13, 119,  14, 119,   0,   0,   0,   0,  14, 119,  15, 119,
+ 0,   0,   0,   0,  15, 119,  16, 119,   0,   0,   0,   0,  16, 119,   0,   0,   0,   0,
+ 0,   0
+
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+//
+//
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
+    auto x = NDArrayFactory::create<double>('c', {1, 6, 6, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 18}, {
+            1.,  2.,  3.,  4.,  5.,  6., 13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30.,
+            3.,  4.,  5.,  6.,  7.,  8., 15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32.,
+            5.,  6.,  7.,  8.,  9., 10., 17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34.,
+            7.,  8.,  9., 10., 11., 12., 19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36.,
+           13., 14., 15., 16., 17., 18., 25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42.,
+           15., 16., 17., 18., 19., 20., 27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44.,
+           17., 18., 19., 20., 21., 22., 29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46.,
+           19., 20., 21., 22., 23., 24., 31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48.,
+           25., 26., 27., 28., 29., 30., 37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54.,
+           27., 28., 29., 30., 31., 32., 39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56.,
+           29., 30., 31., 32., 33., 34., 41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58.,
+           31., 32., 33., 34., 35., 36., 43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60.,
+           37., 38., 39., 40., 41., 42., 49., 50., 51., 52., 53., 54., 61., 62., 63., 64., 65., 66.,
+           39., 40., 41., 42., 43., 44., 51., 52., 53., 54., 55., 56., 63., 64., 65., 66., 67., 68.,
+           41., 42., 43., 44., 45., 46., 53., 54., 55., 56., 57., 58., 65., 66., 67., 68., 69., 70.,
+           43., 44., 45., 46., 47., 48., 55., 56., 57., 58., 59., 60., 67., 68., 69., 70., 71., 72.});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {3,3, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 4}, {
+            1,  2,  5,  6,  2,  3,  6,  7,  3,  4,  7,  8,  5,  6,  9, 10,  6,  7, 10, 11,  7,  8, 11, 12,
+            9, 10, 13, 14, 10, 11, 14, 15, 11, 12, 15, 16});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 4}, {
+            1,  2,  5,  6,  2,  3,  6,  7,  3,  4,  7,  8,  4,  0,  8,  0,  5,  6,  9, 10,  6,  7, 10, 11,
+            7,  8, 11, 12,  8,  0, 12,  0,  9, 10, 13, 14, 10, 11, 14, 15, 11, 12, 15, 16, 12,  0, 16,  0,
+            13, 14,  0,  0, 14, 15,  0,  0, 15, 16,  0,  0, 16,  0,  0,  0});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputSame");
+//    exp.printBuffer("ExpectSame");
+//    exp.printIndexedBuffer("Expect Same Formatted");
+//    output->printIndexedBuffer("Output Same Formatted");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_011) {
+    auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 4}, {
+            1,  3,  9, 11,  2,  4, 10, 12,  5,  7, 13, 15,  6,  8, 14, 16,
+            });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+    //x.printIndexedBuffer("Images");
+    //x.printBuffer("Images linear");
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 0}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("OutputValid");
+//    exp.printBuffer("ExpectValid");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_11) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 4, 4, 8}, {
+            1,   2,   3,   4,  17,  18,  19,  20,   5,   6,   7,   8,  21,  22,  23,  24,   9,  10,
+            11, 12,  25,  26,  27,  28,  13,  14,  15,  16,  29,  30,  31,  32,  33,  34,  35,  36,
+            49,  50,  51,  52,  37,  38,  39,  40,  53,  54,  55,  56,  41,  42,  43,  44,  57,  58,
+            59,  60,  45,  46,  47,  48,  61,  62,  63,  64,  65,  66,  67,  68,  81,  82,  83,  84,
+            69,  70,  71,  72,  85,  86,  87,  88,  73,  74,  75,  76,  89,  90,  91,  92,  77,  78,
+            79,  80, 93,  94,  95,  96, 97,  98,  99, 100, 113, 114, 115, 116, 101, 102, 103, 104,
+            117, 118, 119, 120, 105, 106, 107, 108, 121, 122, 123, 124, 109, 110, 111, 112, 125, 126,
+            127, 128});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 2,2, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
+    auto x = NDArrayFactory::create<double>('c', {1, 8, 8, 2});
+    x.linspace(1);
+
+//Images shape is  (1, 3, 3, 4)
+//[1, 1, 1, 1]
+//[1, 3, 2, 1]
+    auto exp = NDArrayFactory::create<double>('c', {1, 8, 8, 8}, {
+              0,   0,   0,   0,   0,   0,  19,  20,   0,   0,   0,   0,  17,  18,  21,  22,   0,   0,
+              0,   0,  19,  20,  23,  24,   0,   0,   0,   0,  21,  22,  25,  26,   0,   0,   0,   0,
+             23,  24,  27,  28,   0,   0,   0,   0,  25,  26,  29,  30,   0,   0,   0,   0,  27,  28,
+             31,  32,   0,   0,   0,   0,  29,  30,   0,   0,   0,   0,   3,   4,   0,   0,  35,  36,
+              1,   2,   5,   6,  33,  34,  37,  38,   3,   4,   7,   8,  35,  36,  39,  40,   5,   6,
+              9,  10,  37,  38,  41,  42,   7,   8,  11,  12,  39,  40,  43,  44,   9,  10,  13,  14,
+             41,  42,  45,  46,  11,  12,  15,  16,  43,  44,  47,  48,  13,  14,   0,   0,  45,  46,
+              0,   0,   0,   0,  19,  20,   0,   0,  51,  52,  17,  18,  21,  22,  49,  50,  53,  54,
+             19,  20,  23,  24,  51,  52,  55,  56,  21,  22,  25,  26,  53,  54,  57,  58,  23,  24,
+             27,  28,  55,  56,  59,  60,  25,  26,  29,  30,  57,  58,  61,  62,  27,  28,  31,  32,
+             59,  60,  63,  64,  29,  30,   0,   0,  61,  62,   0,   0,   0,   0,  35,  36,   0,   0,
+             67,  68,  33,  34,  37,  38,  65,  66,  69,  70,  35,  36,  39,  40,  67,  68,  71,  72,
+             37,  38,  41,  42,  69,  70,  73,  74,  39,  40,  43,  44,  71,  72,  75,  76,  41,  42,
+             45,  46,  73,  74,  77,  78,  43,  44,  47,  48,  75,  76,  79,  80,  45,  46,   0,   0,
+             77,  78,   0,   0,   0,   0,  51,  52,   0,   0,  83,  84,  49,  50,  53,  54,  81,  82,
+             85,  86,  51,  52,  55,  56,  83,  84,  87,  88,  53,  54,  57,  58,  85,  86,  89,  90,
+             55,  56,  59,  60,  87,  88,  91,  92,  57,  58,  61,  62,  89,  90,  93,  94,  59,  60,
+             63,  64,  91,  92,  95,  96,  61,  62,   0,   0,  93,  94,   0,   0,   0,   0,  67,  68,
+              0,   0,  99, 100,  65,  66,  69,  70,  97,  98, 101, 102,  67,  68,  71,  72,  99, 100,
+            103, 104,  69,  70,  73,  74, 101, 102, 105, 106,  71,  72,  75,  76, 103, 104, 107, 108,
+             73,  74,  77,  78, 105, 106, 109, 110,  75,  76,  79,  80, 107, 108, 111, 112,  77,  78,
+              0,   0, 109, 110,   0,   0,   0,   0,  83,  84,   0,   0, 115, 116,  81,  82,  85,  86,
+            113, 114, 117, 118,  83,  84,  87,  88, 115, 116, 119, 120,  85,  86,  89,  90, 117, 118,
+            121, 122,  87,  88,  91,  92, 119, 120, 123, 124,  89,  90,  93,  94, 121, 122, 125, 126,
+             91,  92,  95,  96, 123, 124, 127, 128,  93,  94,   0,   0, 125, 126,   0,   0,   0,   0,
+             99, 100,   0,   0,   0,   0,  97,  98, 101, 102,   0,   0,   0,   0,  99, 100, 103, 104,
+              0,   0,   0,   0, 101, 102, 105, 106,   0,   0,   0,   0, 103, 104, 107, 108,   0,   0,
+              0,   0, 105, 106, 109, 110,   0,   0,   0,   0, 107, 108, 111, 112,   0,   0,   0,   0,
+            109, 110,   0,   0,   0,   0,   0,   0});
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 2,2, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,2,2,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+    //output->printShapeInfo("Output shape");
+//    output->printIndexedBuffer("Output");
+//    exp.printBuffer("Expect");
+//    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
+//        if (exp.e<double>(e) != output->e<double>(e))
+//            printf("%lld ", e);
+//    printf("\n");
+    //result->at(1)->printBuffer("OUtput2");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_13) {
+    auto x = NDArrayFactory::create<double>('c', {1, 3, 3, 2});
+    x.linspace(1);
+
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 3, 8}, {
+            1.,  2.,  3.,  4.,  7.,  8.,  9., 10.,  3.,  4.,  5.,  6.,  9., 10., 11., 12.,  5.,  6.,
+            0.,  0., 11., 12.,  0.,  0.,  7.,  8.,  9., 10., 13., 14., 15., 16.,  9., 10., 11., 12.,
+            15., 16., 17., 18., 11., 12.,  0.,  0., 17., 18.,  0.,  0., 13., 14., 15., 16.,  0.,  0.,
+            0.,  0., 15., 16., 17., 18.,  0.,  0.,  0.,  0., 17., 18.,  0.,  0.,  0.,  0.,  0.,  0. });
+// ----------------------------------------------------------------
+    nd4j::ops::extract_image_patches op;
+
+    auto result = op.execute({&x}, {}, {2,2, 1,1, 1,1, 1}); // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
+    ASSERT_EQ(result->status(), Status::OK());
+    auto output = result->at(0);
+//    output->printShapeInfo("Output shape");
 //    output->printBuffer("Output");
 //    exp.printBuffer("Expect");
 //    for (Nd4jLong e = 0; e < exp.lengthOf(); e++)
@@ -2546,16 +2951,16 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, maxpool2d_bp_test1) {
+TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test1) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
                                                      0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.9, 1. ,0. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.3, 1.4,0. , 1.5, 1.6,
                                                      0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.7, 1.8,0. , 1.9, 2. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.1, 2.2,0. , 2.3, 2.4});
     input.linspace(1.);
@@ -2574,16 +2979,16 @@ TEST_F(DeclarableOpsTests7, maxpool2d_bp_test1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, maxpool2d_bp_test2) {
+TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test2) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
     int oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {0. ,  0. ,  0. , 0.1,  0.2,  0.7, 0.5,  0.6,  1.5, 2.2,  2.4,  5.4, 0. ,  0. ,  0. , 1.7,  1.8,  3.9, 2.1,  2.2,  4.7, 5.4,  5.6, 11.8,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0. ,  0. ,  0. , 0.1,  0.2,  0.7, 0.5,  0.6,  1.5, 2.2,  2.4,  5.4, 0. ,  0. ,  0. , 1.7,  1.8,  3.9, 2.1,  2.2,  4.7, 5.4,  5.6, 11.8,
                                                      0. ,  0. ,  0. , 3.3,  3.4,  7.1, 3.7,  3.8,  7.9, 8.6,  8.8, 18.2, 0. ,  0. ,  0. , 4.9,  5. , 10.3, 5.3,  5.4, 11.1,11.8, 12. , 24.6,
                                                      0. ,  0. ,  0. , 6.5,  6.6, 13.5, 6.9,  7. , 14.3,15. , 15.2, 31. , 0. ,  0. ,  0. , 8.1,  8.2, 16.7, 8.5,  8.6, 17.5,18.2, 18.4, 37.4});
     input.linspace(1.);
@@ -2602,16 +3007,16 @@ TEST_F(DeclarableOpsTests7, maxpool2d_bp_test2) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, maxpool2d_bp_test3) {
+TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test3) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
     int oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iH, iW, iC}, {0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0. , 0. , 0. , 1. , 1.1, 1.2, 2.9, 3.1, 3.3,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0. , 0. , 0. , 1. , 1.1, 1.2, 2.9, 3.1, 3.3,
                                                      0. , 0. , 0. , 4.7, 4.9, 5.1,11.2,11.6,12. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 3.7, 3.8, 3.9, 8.3, 8.5, 8.7,
                                                      0. , 0. , 0. , 4.6, 4.7, 4.8,10.1,10.3,10.5, 0. , 0. , 0. ,11.9,12.1,12.3,25.6,26. ,26.4});
     input.linspace(1.);
@@ -2628,18 +3033,17 @@ TEST_F(DeclarableOpsTests7, maxpool2d_bp_test3) {
     delete results;
 }
 
-
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, maxpool2d_bp_test4) {
+TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test4) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
     int oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iH, iW, iC}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0.1, 0.2, 0.3,0.4, 0.5, 0.6,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0.1, 0.2, 0.3,0.4, 0.5, 0.6,
                                                      0. , 0. , 0. ,0.7, 0.8, 0.9,1. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,
                                                      0. , 0. , 0. ,1.3, 1.4, 1.5,1.6, 1.7, 1.8,0. , 0. , 0. ,1.9, 2. , 2.1,2.2, 2.3, 2.4});
     input.linspace(1.);
@@ -2656,9 +3060,33 @@ TEST_F(DeclarableOpsTests7, maxpool2d_bp_test4) {
     delete results;
 }
  
- 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test1) {
+TEST_F(DeclarableOpsTests7, maxpool2d_bp_test5) {
+
+    int bS=2, iH=56,iW=56,  iC=3,  kH=2,kW=2,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=28,oW=28;
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    auto input    = NDArrayFactory::create<float16>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<float16>('c', {bS, iC, oH, oW});
+    
+    input.linspace(1.);
+    gradO.linspace(0.1, 0.1);
+    
+    nd4j::ops::maxpool2d_bp op;
+    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    // auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    // ASSERT_TRUE(expected.isSameShape(output));
+    // ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests7, pnormpool2d_bp_test1) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int oH=2,oW=2;
@@ -2668,9 +3096,9 @@ TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test1) {
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {9.661570e-04,9.671602e-03,1.306569e-02,3.679184e-02,1.297220e-01,1.040181e-01,1.126750e-01,3.320884e-01,2.340406e-01,1.333333e-01,3.352886e-01,2.070211e-01,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {9.661570e-04,9.671602e-03,1.306569e-02,3.679184e-02,1.297220e-01,1.040181e-01,1.126750e-01,3.320884e-01,2.340406e-01,1.333333e-01,3.352886e-01,2.070211e-01,
                                                      8.991618e-02,2.160601e-01,1.283173e-01,2.744226e-01,6.364498e-01,3.662123e-01,3.869788e-01,8.808994e-01,4.984556e-01,2.613189e-01,5.818475e-01,3.225517e-01,
                                                      2.065654e-01,4.553546e-01,2.501175e-01,5.190718e-01,1.131343e+00,6.148388e-01,6.362602e-01,1.377521e+00,7.439550e-01,3.833026e-01,8.227519e-01,4.407146e-01,
                                                      3.261206e-01,6.969233e-01,3.717564e-01,7.627507e-01,1.620991e+00,8.600952e-01,8.814538e-01,1.866888e+00,9.873542e-01,5.046682e-01,1.064004e+00,5.602558e-01,
@@ -2694,7 +3122,7 @@ TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test2) {
+TYPED_TEST(TypedDeclarableOpsTests7, pnormpool2d_bp_test2) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int oH=2,oW=2;
@@ -2704,9 +3132,9 @@ TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test2) {
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {0.007931,0.042891,0.040544,0.09369 ,0.276841,0.191675,0.163957,0.442946,0.287512,0.154919,0.373153,0.221172,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.007931,0.042891,0.040544,0.09369 ,0.276841,0.191675,0.163957,0.442946,0.287512,0.154919,0.373153,0.221172,
                                                      0.15901 ,0.365232,0.207846,0.428282,0.959455,0.534076,0.508585,1.128771,0.623089,0.319794,0.698063,0.379547,
                                                      0.321068,0.692438,0.372316,0.757521,1.620323,0.864566,0.838684,1.787943,0.951023,0.483194,1.023434,0.541058,
                                                      0.483937,1.019414,0.536145,1.085348,2.276996,1.192917,1.166749,2.443606,1.278126,0.646499,1.349361,0.703463,
@@ -2728,16 +3156,16 @@ TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test2) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, avgpool2d_bp_test1) {
+TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test1) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {0.016667,0.05    ,0.033333,0.066667,0.166667,0.1     ,0.066667,0.166667,0.1     ,0.05    ,0.116667,0.066667,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.016667,0.05    ,0.033333,0.066667,0.166667,0.1     ,0.066667,0.166667,0.1     ,0.05    ,0.116667,0.066667,
                                                      0.083333,0.183333,0.1     ,0.2     ,0.433333,0.233333,0.2     ,0.433333,0.233333,0.116667,0.25    ,0.133333,
                                                      0.15    ,0.316667,0.166667,0.333333,0.7     ,0.366667,0.333333,0.7     ,0.366667,0.183333,0.383333,0.2     ,
                                                      0.216667,0.45    ,0.233333,0.466667,0.966667,0.5     ,0.466667,0.966667,0.5     ,0.25    ,0.516667,0.266667,
@@ -2759,16 +3187,16 @@ TEST_F(DeclarableOpsTests7, avgpool2d_bp_test1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, avgpool2d_bp_test2) {
+TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test2) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
     int oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iH, iW}, {0.233333,0.3     ,0.366667,0.55    ,0.65    ,0.75    ,0.95    ,1.05    ,1.15    ,0.766667,0.833333,0.9     ,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.233333,0.3     ,0.366667,0.55    ,0.65    ,0.75    ,0.95    ,1.05    ,1.15    ,0.766667,0.833333,0.9     ,
                                                      1.3     ,1.366667,1.433333,2.15    ,2.25    ,2.35    ,2.55    ,2.65    ,2.75    ,1.833333,1.9     ,1.966667,
                                                      2.366667,2.433333,2.5     ,3.75    ,3.85    ,3.95    ,4.15    ,4.25    ,4.35    ,2.9     ,2.966667,3.033333,
                                                      3.433333,3.5     ,3.566667,5.35    ,5.45    ,5.55    ,5.75    ,5.85    ,5.95    ,3.966667,4.033333,4.1     ,
@@ -2790,16 +3218,16 @@ TEST_F(DeclarableOpsTests7, avgpool2d_bp_test2) {
 
 
 ////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, avgpool2d_bp_test3) {
+TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test3) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
     int oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iH, iW, iC}, {0.19167, 0.23333, 0.275, 0.50833, 0.59167, 0.675, 1.2  , 1.325, 1.45 ,0.50833,0.56667, 0.625, 1.19167,1.30833, 1.425, 2.4  ,2.575, 2.75 ,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0.19167, 0.23333, 0.275, 0.50833, 0.59167, 0.675, 1.2  , 1.325, 1.45 ,0.50833,0.56667, 0.625, 1.19167,1.30833, 1.425, 2.4  ,2.575, 2.75 ,
                                                      1.18333, 1.24167, 1.3  , 2.54167, 2.65833, 2.775, 4.425, 4.6  , 4.775,1.01667,1.05833, 1.1  , 2.15833,2.24167, 2.325, 3.675,3.8  , 3.925,
                                                      1.69167, 1.73333, 1.775, 3.50833, 3.59167, 3.675, 5.7  , 5.825, 5.95 ,2.60833,2.66667, 2.725, 5.39167,5.50833, 5.625, 8.7  ,8.875, 9.05 ,
                                                      3.28333, 3.34167, 3.4  , 6.74167, 6.85833, 6.975,10.725,10.9  ,11.075,2.51667,2.55833, 2.6  , 5.15833,5.24167, 5.325, 8.175,8.3  , 8.425});
@@ -2819,16 +3247,16 @@ TEST_F(DeclarableOpsTests7, avgpool2d_bp_test3) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, avgpool2d_bp_test4) {
+TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test4) {
 
     int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
     int oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iH, iW, iC}, {0.01667,0.03333,0.05,0.08333,0.11667,0.15,0.06667,0.08333,0.1,0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0.01667,0.03333,0.05,0.08333,0.11667,0.15,0.06667,0.08333,0.1,0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,
                                                      0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,0.11667,0.13333,0.15,0.28333,0.31667,0.35,0.16667,0.18333,0.2,
                                                      0.21667,0.23333,0.25,0.48333,0.51667,0.55,0.26667,0.28333,0.3,0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,
                                                      0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,0.31667,0.33333,0.35,0.68333,0.71667,0.75,0.36667,0.38333,0.4});
@@ -2838,6 +3266,11 @@ TEST_F(DeclarableOpsTests7, avgpool2d_bp_test4) {
     nd4j::ops::avgpool2d_bp op;
     auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
     auto output = results->at(0);
+
+    for (int i = 0; i < output->lengthOf(); ++i)
+    {
+        printf("%f %f \n", ((NDArray*)&expected)->e<TypeParam>(i), ((NDArray*)output)->e<TypeParam>(i));
+    }
     
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -3974,9 +4407,9 @@ TEST_F(DeclarableOpsTests7, Test_Matmul_Once_Again) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests7, Test_Pnorm_Once_Again) {
-    auto input = NDArrayFactory::create<double>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
-    auto exp = NDArrayFactory::create<double>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
+TYPED_TEST(TypedDeclarableOpsTests7, Test_Pnorm_Once_Again) {
+    auto input = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
 
     nd4j::ops::pnormpool2d op;
     auto result = op.execute({&input}, {}, {1,1,  1,1,  0,0,  1,1,1,  3,  0});
@@ -5121,12 +5554,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_3) {
     x.linspace(1);
     x.p(2,2, -1.f);
     exp.p(2,2, 0.5f);
-//    x.printIndexedBuffer("Input is");
-//    exp.printIndexedBuffer("Expected ");
+    // x.printIndexedBuffer("Input is");
+    // exp.printIndexedBuffer("Expected ");
     nd4j::ops::reduce_min_bp op;
     auto result = op.execute({&x, &eps}, {1.f}, {});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -5229,12 +5662,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
     exp.p(22, eps.e<double>(2));
     exp.p(23, eps.e<double>(3));
     x.linspace(1);
-//    x.printIndexedBuffer("Input is");
-//    exp.printIndexedBuffer("Expected ");
+    // x.printIndexedBuffer("Input is");
+    // exp.printIndexedBuffer("Expected ");
     nd4j::ops::reduce_max_bp op;
     auto result = op.execute({&x, &eps}, {}, {0, 1});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -5388,8 +5821,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
     auto result = op.execute({&x, &eps}, {}, {0,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
-    exp.printIndexedBuffer("Expect is");
+    // output->printIndexedBuffer("Result is");
+    // exp.printIndexedBuffer("Expect is");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -5445,7 +5878,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_1) {
     nd4j::ops::reduce_norm2_bp op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(x.isSameShape(output));

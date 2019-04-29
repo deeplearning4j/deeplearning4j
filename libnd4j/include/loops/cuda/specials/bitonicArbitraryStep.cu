@@ -33,9 +33,11 @@ void bitonicArbitraryStepKernel(void *vx, Nd4jLong *xShapeInfo, int window, int 
     int half = window>>1;
 
     __shared__ T *shmem;
+    __shared__ Nd4jLong xLength;
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shrd[];
         shmem = (T *) shrd;
+        xLength = shape::length(xShapeInfo);
     }
     __syncthreads();
 
@@ -83,8 +85,8 @@ void bitonicArbitraryStepKernel(void *vx, Nd4jLong *xShapeInfo, int window, int 
             int it = (reverse) ? i + j + half : i + window - j - 1;
             int ij = i+j;
             if (it < length && ij < length ) {
-                int posIT = getDevicePosition(xShapeInfo,it);
-                int posIJ = getDevicePosition(xShapeInfo, ij);
+                int posIT = getDevicePosition(xShapeInfo,it, xLength);
+                int posIJ = getDevicePosition(xShapeInfo, ij, xLength);
 
                 shmem[threadIdx.x] = x[posIJ];
                 shmem[threadIdx.x + blockDim.x] = x[posIT];
@@ -110,5 +112,6 @@ template<typename T>
 __host__ void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
 
     execBitonicArbitraryStepKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, window, length, reverse, descending);
+    nd4j::DebugHelper::checkErrorCode(stream, "bitonicArbitrary(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES);

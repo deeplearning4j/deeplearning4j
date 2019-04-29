@@ -108,7 +108,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
          * @param lossFunction Loss function for the output layer
          */
         public Builder(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
         }
 
         /**
@@ -124,7 +124,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this model
          */
         public T hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return (T) this;
         }
 
@@ -132,7 +132,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
          * @param lossFunction Loss function for the output layer
          */
         public T lossFunction(ILossFunction lossFunction) {
-            this.lossFn = lossFunction;
+            this.setLossFn(lossFunction);
             return (T) this;
         }
     }

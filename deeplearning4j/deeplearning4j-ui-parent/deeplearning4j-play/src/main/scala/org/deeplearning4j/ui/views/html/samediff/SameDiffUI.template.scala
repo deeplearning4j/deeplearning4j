@@ -50,7 +50,7 @@ Seq[Any](format.raw/*1.4*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
 
         <link href="/assets/css/samediff/samediff.css" rel="stylesheet">
 
@@ -69,7 +69,7 @@ Seq[Any](format.raw/*1.4*/("""
             <!-- Start JavaScript-->
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
-        <script src="/assets/webjars/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/bootstrap/4.2.1/dist/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
 
@@ -223,10 +223,10 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Tue Feb 05 22:28:50 AEDT 2019
+                  DATE: Wed Mar 13 15:34:54 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 0c99ff525b71b9ca24441939ad34c68158a15ff2
-                  MATRIX: 561->1|657->3|685->5|4980->4297|5017->4307|6797->6088|6844->6106|7025->6318|7076->6340|7745->7044|7796->7066|8578->7885|8629->7907|10475->9724|10505->9725|10556->9747|10625->9787|10655->9788
+                  HASH: fb990759266c42da63c2679f551c6d2ddd026f17
+                  MATRIX: 561->1|657->3|685->5|4990->4307|5027->4317|6807->6098|6854->6116|7035->6328|7086->6350|7755->7054|7806->7076|8588->7895|8639->7917|10485->9734|10515->9735|10566->9757|10635->9797|10665->9798
                   LINES: 20->1|25->1|26->2|104->80|105->81|131->107|132->108|133->109|134->110|147->123|148->124|167->143|168->144|200->176|200->176|201->177|202->178|202->178
                   -- GENERATED --
               */

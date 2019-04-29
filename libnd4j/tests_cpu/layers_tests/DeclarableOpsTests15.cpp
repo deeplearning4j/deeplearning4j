@@ -135,3 +135,74 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests15, Test_standarize_1) {
+    auto x = NDArrayFactory::create<float>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<float>('c', {5}, {0, 0, 0, 0, 0});
+
+    nd4j::ops::standardize op;
+    auto result = op.execute({&x}, {&x}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
+    auto x = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+    auto eps = NDArrayFactory::create<float>('c', {5}, {0., 0., 0., 0., 0.});
+
+    nd4j::ops::standardize_bp op;
+    auto result = op.execute({&x, &eps}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, test_matmul_bp_1) {
+    auto a = NDArrayFactory::create<double>('c', {1, 3});
+    auto b = NDArrayFactory::create<double>('c', {1, 4});
+    auto gI = NDArrayFactory::create<double>('c', {3, 4});
+
+    auto gA = NDArrayFactory::create<double>('c', {1, 3});
+    auto gB = NDArrayFactory::create<double>('c', {1, 4});
+
+    nd4j::ops::matmul_bp op;
+    auto status = op.execute({&a, &b, &gI}, {&gA, &gB}, {}, {1, 0, 0}, {});
+    ASSERT_EQ(Status::OK(), status);
+}
+
+TEST_F(DeclarableOpsTests15, test_non_decreasing_1) {
+    auto x = NDArrayFactory::create<double>(1.0);
+    auto z = NDArrayFactory::create<bool>(false);
+    auto e = NDArrayFactory::create<bool>(true);
+
+    nd4j::ops::is_non_decreasing op;
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+
+    nd4j::ops::layer_norm op;
+    auto result = op.execute({&x, &g, &b}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
+
+    nd4j::ops::layer_norm_bp op;
+    auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    delete result;
+}

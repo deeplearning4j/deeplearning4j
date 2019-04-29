@@ -73,7 +73,8 @@ public class VPTreeFillSearch {
             for (int i = 0; i < k; i++) {
                 int idx = sortWithIndices[0].getInt(i);
                 results.add(new DataPoint(idx, vpTree.getItems().getRow(idx)));
-                distances.add(sortWithIndices[1].getDouble(idx));
+                //distances.add(sortWithIndices[1].getDouble(idx));
+                distances.add(sortWithIndices[1].getDouble(i));
             }
         }
 

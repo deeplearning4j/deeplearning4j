@@ -23,6 +23,7 @@
 
 #include <templatemath.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 //#include <ops/ops.h>
 //#include <loops/reduce.h>
 
@@ -35,7 +36,7 @@ namespace simdOps {
 
         constexpr static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
-        op_def static T startingValue(T *input) {
+        op_def static T startingValue(const T *input) {
             return (T) 0.0f;
         }
 
@@ -149,20 +150,14 @@ namespace simdOps {
 
             auto tadOnlyShapeInfo = tadShapeInfo;
             auto tadOffsets = tadOffset;
-            shape::TAD *tad = nullptr;
 
             if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
-                tad->createTadOnlyShapeInfo();
-                tad->createOffsets();
-
-                if (tad->dimensionLength < 1) {
-                    delete tad;
+                if (dimensionLength < 1)
                     return;
-                }
 
-                tadOnlyShapeInfo = tad->tadOnlyShapeInfo;
-                tadOffsets = tad->tadOffsets;
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                tadOnlyShapeInfo = tadPack.primaryShapeInfo();
+                tadOffsets = tadPack.primaryOffsets();
             }
 
 
@@ -176,7 +171,7 @@ namespace simdOps {
 
             if (tadEWS > 0 && (numTads == 1 || shape::isVector(tadOnlyShapeInfo) || shape::isScalar(tadOnlyShapeInfo))) {
 
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(close) default(shared)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (int i = 0; i < resultLength; i++) {
 
                     T *iter = x + tadOffsets[i];
@@ -197,7 +192,7 @@ namespace simdOps {
             }
             else {
 
-#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(close) default(shared)
+                PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
                 for (int i = 0; i < resultLength; i++) {
 
                     auto offset = tadOffsets[i];
@@ -211,10 +206,6 @@ namespace simdOps {
                     result[i] = postProcess(start, tadLength, &result[i]);;
                 }
             }
-
-            if (tad != nullptr)
-                delete tad;
-
         }
     };
 }

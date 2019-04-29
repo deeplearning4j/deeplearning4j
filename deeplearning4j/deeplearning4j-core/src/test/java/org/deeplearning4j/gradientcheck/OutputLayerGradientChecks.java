@@ -105,6 +105,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345L)
+                                .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .list()
                                 .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -210,6 +211,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().seed(12345L)
+                                    .dataType(DataType.DOUBLE)
                                     .updater(new NoOp())
                                     .convolutionMode(ConvolutionMode.Same)
                                     .list()
@@ -356,6 +358,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                 new NeuralNetConfiguration.Builder().seed(12345L)
+                                        .dataType(DataType.DOUBLE)
                                         .updater(new NoOp())
                                         .convolutionMode(ConvolutionMode.Same)
                                         .list()

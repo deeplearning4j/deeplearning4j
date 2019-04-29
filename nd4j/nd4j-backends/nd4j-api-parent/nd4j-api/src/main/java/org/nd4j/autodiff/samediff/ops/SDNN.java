@@ -2,6 +2,13 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.validateFloatingPoint;
 
 /**
  * SameDiff general neural network operations<br>
@@ -34,6 +41,11 @@ public class SDNN extends SDOps {
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
                                 SDVariable beta, boolean applyGamma, boolean applyBeta, double epsilon, int... axis) {
+        validateFloatingPoint("batchNorm", "input", input);
+        validateFloatingPoint("batchNorm", "mean", mean);
+        validateFloatingPoint("batchNorm", "variance", variance);
+        validateFloatingPoint("batchNorm", "gamma", gamma);
+        validateFloatingPoint("batchNorm", "beta", beta);
         SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon, axis);
         return updateVariableNameAndReference(res, name);
     }
@@ -76,6 +88,8 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
+        validateFloatingPoint("biasAdd", "input", input);
+        validateFloatingPoint("biasAdd", "bias", bias);
         SDVariable ret = f().biasAdd(input, bias);
         return updateVariableNameAndReference(ret, name);
     }
@@ -95,6 +109,7 @@ public class SDNN extends SDOps {
      * @return
      */
     public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
+        validateFloatingPoint("dropout", input);
         SDVariable res = f().dropout(input, inputRetainProbability);
         return updateVariableNameAndReference(res, name);
     }
@@ -127,6 +142,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable elu(String name, SDVariable x) {
+        validateFloatingPoint("elu", x);
         SDVariable result = f().elu(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -151,6 +167,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable eluDerivative(String name, SDVariable x) {
+        validateFloatingPoint("eluDerivative", x);
         SDVariable result = f().eluDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -177,6 +194,7 @@ public class SDNN extends SDOps {
      * @return Output variable - GELU applied to the input
      */
     public SDVariable gelu(String name, SDVariable x) {
+        validateFloatingPoint("gelu", x);
         SDVariable ret = f().gelu(x, false);    //Defaults to si
         return updateVariableNameAndReference(ret, name);
     }
@@ -205,6 +223,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardSigmoid(String name, SDVariable in) {
+        validateFloatingPoint("hard sigmoid", in);
         SDVariable ret = f().hardSigmoid(in);
         return updateVariableNameAndReference(ret, name);
     }
@@ -233,6 +252,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardTanh(String name, SDVariable in) {
+        validateFloatingPoint("hard Tanh", in);
         SDVariable result = f().hardTanh(in);
         return updateVariableNameAndReference(result, name);
     }
@@ -255,6 +275,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable hardTanhDerivative(String name, SDVariable x) {
+        validateFloatingPoint("hard Tanh derivative", x);
         SDVariable result = f().hardTanhDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -284,6 +305,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable leakyRelu(String name, SDVariable x, double alpha) {
+        validateFloatingPoint("leaky ReLU", x);
         SDVariable result = f().leakyRelu(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
@@ -297,6 +319,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable leakyReluDerivative(String name, SDVariable x, double alpha) {
+        validateFloatingPoint("leaky ReLU derivative", x);
         SDVariable result = f().leakyReluDerivative(x, alpha);
         return updateVariableNameAndReference(result, name);
     }
@@ -319,6 +342,9 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable linear(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        validateFloatingPoint("linear", "input", input);
+        validateFloatingPoint("linear", "weights", weights);
+        validateFloatingPoint("linear", "bias", bias);
         SDVariable res = f().xwPlusB(input, weights, bias);
         return updateVariableNameAndReference(res, name);
     }
@@ -341,6 +367,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable logSigmoid(String name, SDVariable x) {
+        validateFloatingPoint("log sigmoid", x);
         SDVariable ret = f().logSigmoid(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -363,6 +390,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable logSoftmax(String name, SDVariable x) {
+        validateFloatingPoint("log softmax", x);
         SDVariable ret = f().logSoftmax(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -391,6 +419,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable relu(String name, SDVariable x, double cutoff) {
+        validateFloatingPoint("ReLU", x);
         SDVariable result = f().relu(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
@@ -417,6 +446,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable relu6(String name, SDVariable x, double cutoff) {
+        validateFloatingPoint("ReLU6", x);
         SDVariable result = f().relu6(x, cutoff);
         return updateVariableNameAndReference(result, name);
     }
@@ -439,6 +469,9 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable reluLayer(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        validateFloatingPoint("reluLayer", "input", input);
+        validateFloatingPoint("reluLayer", "weights", weights);
+        validateFloatingPoint("reluLayer", "bias", bias);
         SDVariable res = f().reluLayer(input, weights, bias);
         return updateVariableNameAndReference(res, name);
     }
@@ -467,6 +500,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable selu(String name, SDVariable x) {
+        validateFloatingPoint("selu", x);
         SDVariable ret = f().selu(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -489,6 +523,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable sigmoid(String name, SDVariable x) {
+        validateFloatingPoint("sigmoid", x);
         SDVariable result = f().sigmoid(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -513,6 +548,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable sigmoidDerivative(String name, SDVariable x, SDVariable wrt) {
+        validateFloatingPoint("sigmoidDerivative", x);
         SDVariable result = f().sigmoidDerivative(x, wrt);
         return updateVariableNameAndReference(result, name);
     }
@@ -534,6 +570,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softmax(String name, SDVariable x) {
+        validateFloatingPoint("softmax", x);
         SDVariable result = f().softmax(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -547,6 +584,7 @@ public class SDNN extends SDOps {
     }
 
     public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, Integer dimension) {
+        validateFloatingPoint("softmaxDerivative", x);
         SDVariable result = f().softmaxDerivative(x, wrt, dimension);
         return updateVariableNameAndReference(result, name);
     }
@@ -569,6 +607,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softplus(String name, SDVariable x) {
+        validateFloatingPoint("softplus", x);
         SDVariable result = f().softplus(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -591,6 +630,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable softsign(String name, SDVariable x) {
+        validateFloatingPoint("softsign", x);
         SDVariable result = f().softsign(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -613,6 +653,7 @@ public class SDNN extends SDOps {
      * @return Output varible
      */
     public SDVariable softsignDerivative(String name, SDVariable x) {
+        validateFloatingPoint("softsignDerivative", x);
         SDVariable result = f().softsignDerivative(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -637,6 +678,7 @@ public class SDNN extends SDOps {
      * @return Output variable
      */
     public SDVariable swish(String name, SDVariable x) {
+        validateFloatingPoint("swish", x);
         SDVariable ret = f().swish(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -647,5 +689,278 @@ public class SDNN extends SDOps {
 
     public SDVariable tanh(SDVariable x) {
         return sd.math().tanh(x);
+    }
+
+    /**
+     * Apply Layer Normalization
+     *
+     * y = gain * standardize(x) + bias
+     *
+     * @return Output variable
+     */
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+        return layerNorm(null, input, gain, bias, dimensions);
+    }
+
+    /**
+     * Apply Layer Normalization
+     *
+     * y = gain * standardize(x) + bias
+     *
+     * @param name Name of the output variable
+     * @param input Input variable
+     * @param gain gain
+     * @param bias bias
+     * @return Output variable
+     */
+    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+        validateFloatingPoint("layerNorm", "input", input);
+        validateFloatingPoint("layerNorm", "gain", gain);
+        validateFloatingPoint("layerNorm", "bias", bias);
+        SDVariable result = f().layerNorm(input, gain, bias, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Apply Layer Normalization without bias
+     *
+     * y = gain * standardize(x)
+     *
+     * @return Output variable
+     */
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, int... dimensions) {
+        return layerNorm((String)null, input, gain, dimensions);
+    }
+
+    /**
+     * Apply Layer Normalization
+     *
+     * y = gain * standardize(x)
+     *
+     * @param name Name of the output variable
+     * @param input Input variable
+     * @param gain gain
+     * @return Output variable
+     */
+    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
+        validateFloatingPoint("layerNorm", "input", input);
+        validateFloatingPoint("layerNorm", "gain", gain);
+        SDVariable result = f().layerNorm(input, gain, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #pad(SDVariable, SDVariable, double)}
+     */
+    public SDVariable pad(SDVariable input, int[][] padding, double constant){
+        return pad(input, sd.constant(Nd4j.createFromArray(padding)), constant);
+    }
+
+    /**
+     * Perform padding on the given array, where padded values are the specified constant.<br>
+     * Example:<br>
+     * Input array:<br>
+     * [1, 2]<br>
+     * [3, 4]<br>
+     * Padding array:<br>
+     * [2, 0]<br>
+     * [1, 1]<br>
+     * Contant = 0<br>
+     * Result:<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 1, 2, 0]<br>
+     * [0, 3, 4, 0]<br>
+     * <br>
+     *
+     *
+     * @param input    Input array to pad
+     * @param padding  Padding array
+     * @param constant Constant to use for padded values
+     * @return Padded array
+     */
+    public SDVariable pad(SDVariable input, SDVariable padding, double constant){
+        return pad(null, input, padding, Pad.Mode.CONSTANT, constant);
+    }
+
+    /**
+     * As per {@link #pad(SDVariable, SDVariable, double)} but also supports multiple {@link Pad.Mode} modes.<br>
+     * Example:
+     * Input array:<br>
+     * [1, 2]<br>
+     * [3, 4]<br>
+     * [5, 6]<br>
+     * Padding array:<br>
+     * [2, 0]<br>
+     * [1, 1]<br>
+     * Contant = 0<br>
+     * Result: CONSTANT mode<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 1, 2, 0]<br>
+     * [0, 3, 4, 0]<br>
+     * [0, 5, 6, 0]<br>
+     * <br>
+     * Result: SYMMETRIC mode<br>
+     * [3, 3, 4, 4]<br>
+     * [1, 1, 2, 2]<br>
+     * [1, 1, 2, 2]<br>
+     * [3, 3, 4, 4]<br>
+     * [5, 5, 6, 6]<br>
+     * <br>
+     * Result: REFLECT:<br>
+     * [6, 5, 6, 0]<br>
+     * [2, 3, 4, 3]<br>
+     * [2, 1, 2, 1]<br>
+     * [4, 3, 4, 3]<br>
+     * [6, 5, 6, 5]<br>
+     * <br>
+     * @param outputName
+     * @param input
+     * @param padding
+     * @param mode
+     * @param constant
+     * @return
+     */
+    public SDVariable pad(String outputName, SDVariable input, SDVariable padding, Pad.Mode mode, double constant){
+        SDVariable out = f().pad(input, padding, mode, constant);
+        return updateVariableNameAndReference(out, outputName);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        return dotProductAttention(null, queries, keys, values, mask, scaled);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled){
+        final SDVariable result = f().dotProductAttention(queries, keys, values, mask, scaled);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public List<SDVariable> dotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        return dotProductAttention(null, queries, keys, values, mask, scaled, withWeights);
+    }
+
+
+    /**
+     * This operation performs dot product attention on the given timeseries input with the given queries
+     * out = sum(similarity(k_i, q) * v_i)
+     *
+     * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+     *
+     * Optionally with normalization step:
+     * similarity(k, q) = softmax(k * q / sqrt(size(q))
+     *
+     * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+     *
+     * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+     * be 3D but can have queryCount = 1
+     *
+     * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+     * both.
+     *
+     * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
+     * output rank will depend on the input rank.
+     *
+     * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     *                or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+     * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     *             or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+     * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     *               or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+     * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+     * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
+     *
+     * Output Arrays:
+     * @return [ Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
+     *           (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]]
+     */
+    public List<SDVariable> dotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().dotProductAttention(queries, keys, values, mask, scaled, withWeights);
+        if(withWeights){
+            return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
+        }else{
+            return Arrays.asList(
+                    updateVariableNameAndReference(result.get(0), name),
+                    updateVariableNameAndReference(result.get(1), name+":weights")
+            );
+        }
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public SDVariable multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled){
+        final SDVariable result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * @see #multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     */
+    public List<SDVariable> multiHeadDotProductAttention(SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        return multiHeadDotProductAttention(null, queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
+    }
+
+
+    /**
+     * This performs multi-headed dot product attention on the given timeseries input
+     * out = concat(head_1, head_2, ..., head_n) * Wo
+     * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+     *
+     * Optionally with normalization when calculating the attention for each head.
+     *
+     * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+     *
+     * This makes use of dot_product_attention OP support for rank 4 inputs.
+     * @see #dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
+     *
+     * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+     * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+     * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
+     * @param Wq input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+     * @param Wk input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+     * @param Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+     * @param Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+     * @param mask OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+     * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+     * @param withWeights return attention weights as well, false -> only one output, true -> two outputs
+     *
+     * Output Arrays:
+     * @return [ Attention result arrays of shape [batchSize, outSize, queryCount]
+     *           (optionally) Attention Weights of shape [batchSize, numHeads, timesteps, queryCount]
+     */
+    public List<SDVariable> multiHeadDotProductAttention(String name, SDVariable queries, SDVariable keys, SDVariable values, SDVariable Wq, SDVariable Wk, SDVariable Wv, SDVariable Wo, SDVariable mask, boolean scaled, boolean withWeights){
+        List<SDVariable> result = f().multiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, withWeights);
+        if(withWeights){
+            return Collections.singletonList(updateVariableNameAndReference(result.get(0), name));
+        }else{
+            return Arrays.asList(
+                    updateVariableNameAndReference(result.get(0), name),
+                    updateVariableNameAndReference(result.get(1), name+":weights")
+            );
+        }
     }
 }

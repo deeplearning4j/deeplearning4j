@@ -212,10 +212,10 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                 encoderLayerNIn = encoderLayerSizes[i - 1];
             }
             val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
-            INDArray weightView = paramsView.get(NDArrayIndex.point(0),
+            INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
-            INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + encoderLayerSizes[i]));
             soFar += encoderLayerSizes[i];
 
@@ -235,9 +235,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         //Last encoder layer -> p(z|x)
         val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
-                        paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+                        paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
-        INDArray pzxBiasMean = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        INDArray pzxBiasMean = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nOut));
         soFar += nOut;
 
         INDArray pzxWeightsMeanReshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
@@ -252,9 +252,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         //Pretrain params
         INDArray pzxWeightsLogStdev2 =
-                        paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+                        paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
-        INDArray pzxBiasLogStdev2 = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        INDArray pzxBiasLogStdev2 = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nOut));
         soFar += nOut;
 
         INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
@@ -274,10 +274,10 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                 decoderLayerNIn = decoderLayerSizes[i - 1];
             }
             val weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
-            INDArray weightView = paramsView.get(NDArrayIndex.point(0),
+            INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
-            INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + decoderLayerSizes[i]));
             soFar += decoderLayerSizes[i];
 
@@ -298,9 +298,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =
-                        paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
+                        paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
         soFar += pxzWeightCount;
-        INDArray pxzBiasView = paramsView.get(NDArrayIndex.point(0),
+        INDArray pxzBiasView = paramsView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(soFar, soFar + nDistributionParams));
 
         INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length - 1],
@@ -334,10 +334,10 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                 encoderLayerNIn = encoderLayerSizes[i - 1];
             }
             val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
-            INDArray weightGradView = gradientView.get(NDArrayIndex.point(0),
+            INDArray weightGradView = gradientView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
-            INDArray biasGradView = gradientView.get(NDArrayIndex.point(0),
+            INDArray biasGradView = gradientView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + encoderLayerSizes[i]));
             soFar += encoderLayerSizes[i];
 
@@ -351,9 +351,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         //Last encoder layer -> p(z|x)
         val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
-                        gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
-        INDArray pzxBiasMean = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        INDArray pzxBiasMean = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nOut));
         soFar += nOut;
 
         INDArray pzxWeightGradMeanReshaped =
@@ -365,9 +365,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         ////////////////////////////////////////////////////////
 
         INDArray pzxWeightsLogStdev2 =
-                        gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
-        INDArray pzxBiasLogStdev2 = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nOut));
+        INDArray pzxBiasLogStdev2 = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + nOut));
         soFar += nOut;
 
         INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
@@ -384,10 +384,10 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                 decoderLayerNIn = decoderLayerSizes[i - 1];
             }
             long weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
-            INDArray weightView = gradientView.get(NDArrayIndex.point(0),
+            INDArray weightView = gradientView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
-            INDArray biasView = gradientView.get(NDArrayIndex.point(0),
+            INDArray biasView = gradientView.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(soFar, soFar + decoderLayerSizes[i]));
             soFar += decoderLayerSizes[i];
 
@@ -406,9 +406,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =
-                        gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
+                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
         soFar += pxzWeightCount;
-        INDArray pxzBiasView = gradientView.get(NDArrayIndex.point(0),
+        INDArray pxzBiasView = gradientView.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(soFar, soFar + nDistributionParams));
 
         INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length - 1],

@@ -23,13 +23,13 @@ public class BatchSequences<T extends SequenceElement> {
         buffer.add(newItem);
     }
 
-    public void put(T word, int[] windowWords, long randomValue, double alpha) {
-        BatchItem<T> newItem = new BatchItem<>(word, windowWords, randomValue, alpha);
+    public void put(T word, int[] windowWords, boolean[] wordStatuses, long randomValue, double alpha) {
+        BatchItem<T> newItem = new BatchItem<>(word, windowWords, wordStatuses, randomValue, alpha);
         buffer.add(newItem);
     }
 
-    public void put(T word, int[] windowWords, long randomValue, double alpha, int numLabels) {
-        BatchItem<T> newItem = new BatchItem<>(word, windowWords, randomValue, alpha, numLabels);
+    public void put(T word, int[] windowWords, boolean[] wordStatuses, long randomValue, double alpha, int numLabels) {
+        BatchItem<T> newItem = new BatchItem<>(word, windowWords, wordStatuses, randomValue, alpha, numLabels);
         buffer.add(newItem);
     }
 

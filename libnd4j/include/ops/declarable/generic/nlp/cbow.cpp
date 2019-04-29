@@ -26,7 +26,7 @@
 
 namespace nd4j {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(cbow, 14, 1, true, 0, 0) {
+        CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
             auto target = INPUT_VARIABLE(0);
             auto ngStarter = INPUT_VARIABLE(1);
 
@@ -46,7 +46,9 @@ namespace nd4j {
             auto randomValue = INPUT_VARIABLE(11);
             auto numLabels = INPUT_VARIABLE(12);
 
-            auto inferenceVector = INPUT_VARIABLE(13);
+            auto lockedWords = INPUT_VARIABLE(13);
+
+            auto inferenceVector = INPUT_VARIABLE(14);
 
             auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
             auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
@@ -60,7 +62,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "CBOW: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context, *indices, *codes, *alpha, *randomValue, *numLabels, *inferenceVector, trainWords, numWorkers);
+            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context, *lockedWords, *indices, *codes, *alpha, *randomValue, *numLabels, *inferenceVector, trainWords, numWorkers);
 
 
             return Status::OK();
@@ -81,8 +83,8 @@ namespace nd4j {
                     ->setAllowedInputTypes(10, {ALL_FLOATS})
                     ->setAllowedInputTypes(11, nd4j::DataType::INT64)
                     ->setAllowedInputTypes(12, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(13, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(nd4j::DataType::INT8);
+                    ->setAllowedInputTypes(13, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(14, {ALL_FLOATS});
         }
     }
 }

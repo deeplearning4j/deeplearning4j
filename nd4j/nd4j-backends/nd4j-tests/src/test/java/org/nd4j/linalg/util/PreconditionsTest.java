@@ -28,7 +28,6 @@ public class PreconditionsTest extends BaseNd4jTest {
             Preconditions.checkArgument(false, "Shape is: %ndShape with rank %ndRank", arr, arr);
             fail("Expected exception");
         } catch (Throwable t){
-            t.printStackTrace();
             assertEquals("Shape is: [3, 4, 5] with rank 3", t.getMessage());
         }
 

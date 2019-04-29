@@ -264,8 +264,8 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     auto mean = result->at(0);
     auto variance = result->at(1);
 
-    mean->printIndexedBuffer("Mean");
-    variance->printIndexedBuffer("Variance");
+    // mean->printIndexedBuffer("Mean");
+    // variance->printIndexedBuffer("Variance");
 
     ASSERT_NEAR(nd4j::math::nd4j_abs(mean->e<float>(0)), 0.f, 0.2f);
     ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
@@ -343,13 +343,13 @@ TEST_F(RNGTests, Test_Truncated_1) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 1.0");
+    // mean.printIndexedBuffer("Mean 1.0");
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 2.0");
-    x1.printIndexedBuffer("Distribution TN");
+    // deviation.printIndexedBuffer("Deviation should be 2.0");
+    // x1.printIndexedBuffer("Distribution TN");
 
 }
 TEST_F(RNGTests, Test_Truncated_2) {
@@ -367,12 +367,12 @@ TEST_F(RNGTests, Test_Truncated_2) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 1.0");
+    // mean.printIndexedBuffer("Mean 1.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 2.0");
+    // deviation.printIndexedBuffer("Deviation should be 2.0");
     //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.5);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
@@ -388,11 +388,11 @@ TEST_F(RNGTests, Test_Truncated_21) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    mean0.printIndexedBuffer("0Mean 1.0");
+    // mean0.printIndexedBuffer("0Mean 1.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    deviation0.printIndexedBuffer("0Deviation should be 2.0");
+    // deviation0.printIndexedBuffer("0Deviation should be 2.0");
 
     //ASSERT_FALSE(x0.equalsTo(nexp0));
     //ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -400,26 +400,26 @@ TEST_F(RNGTests, Test_Truncated_21) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 1.0");
+    // mean.printIndexedBuffer("Mean 1.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 2.0");
+    // deviation.printIndexedBuffer("Deviation should be 2.0");
     //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.002);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
     nd4j::ops::moments op;
     auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
-    result->at(0)->printBuffer("MEAN");
-    result->at(1)->printBuffer("VARIANCE");
+    // result->at(0)->printBuffer("MEAN");
+    // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
     auto minRes = minOp.execute({&x1}, {}, {}, {});
     auto maxRes = maxOp.execute({&x0}, {}, {}, {});
-    minRes->at(0)->printBuffer("MIN for Truncated");
-    maxRes->at(0)->printBuffer("MAX for Truncated");
+    // minRes->at(0)->printBuffer("MIN for Truncated");
+    // maxRes->at(0)->printBuffer("MAX for Truncated");
 
     delete minRes;
     delete maxRes;
@@ -435,11 +435,11 @@ TEST_F(RNGTests, Test_Truncated_22) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    mean0.printIndexedBuffer("0Mean 2.0");
+    // mean0.printIndexedBuffer("0Mean 2.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    deviation0.printIndexedBuffer("0Deviation should be 4.0");
+    // deviation0.printIndexedBuffer("0Deviation should be 4.0");
 
     //ASSERT_FALSE(x0.equalsTo(nexp0));
     //ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -447,26 +447,26 @@ TEST_F(RNGTests, Test_Truncated_22) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 2.0");
+    // mean.printIndexedBuffer("Mean 2.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 4.0");
+    // deviation.printIndexedBuffer("Deviation should be 4.0");
     //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 2.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 4.f, 0.5);
     nd4j::ops::moments op;
     auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
-    result->at(0)->printBuffer("MEAN");
-    result->at(1)->printBuffer("VARIANCE");
+    // result->at(0)->printBuffer("MEAN");
+    // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
     auto minRes = minOp.execute({&x1}, {}, {}, {});
     auto maxRes = maxOp.execute({&x0}, {}, {}, {});
-    minRes->at(0)->printBuffer("MIN for Truncated2");
-    maxRes->at(0)->printBuffer("MAX for Truncated2");
+    // minRes->at(0)->printBuffer("MIN for Truncated2");
+    // maxRes->at(0)->printBuffer("MAX for Truncated2");
 
     delete minRes;
     delete maxRes;
@@ -482,11 +482,11 @@ TEST_F(RNGTests, Test_Truncated_23) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    mean0.printIndexedBuffer("0Mean 2.0");
+    // mean0.printIndexedBuffer("0Mean 2.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    deviation0.printIndexedBuffer("0Deviation should be 4.0");
+    // deviation0.printIndexedBuffer("0Deviation should be 4.0");
 
     //ASSERT_FALSE(x0.equalsTo(nexp0));
     //ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -494,26 +494,26 @@ TEST_F(RNGTests, Test_Truncated_23) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 2.0");
+    // mean.printIndexedBuffer("Mean 2.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 4.0");
+    // deviation.printIndexedBuffer("Deviation should be 4.0");
     //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 0.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 1.f, 0.5);
     nd4j::ops::moments op;
     auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
-    result->at(0)->printBuffer("MEAN");
-    result->at(1)->printBuffer("VARIANCE");
+    // result->at(0)->printBuffer("MEAN");
+    // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
     auto minRes = minOp.execute({&x1}, {}, {}, {});
     auto maxRes = maxOp.execute({&x0}, {}, {}, {});
-    minRes->at(0)->printBuffer("MIN for Truncated3");
-    maxRes->at(0)->printBuffer("MAX for Truncated3");
+    // minRes->at(0)->printBuffer("MIN for Truncated3");
+    // maxRes->at(0)->printBuffer("MAX for Truncated3");
 
     delete minRes;
     delete maxRes;
@@ -534,12 +534,12 @@ TEST_F(RNGTests, Test_Truncated_3) {
 
     // Check up distribution
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean 1.0");
+    // mean.printIndexedBuffer("Mean 1.0");
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 2.0");
+    // deviation.printIndexedBuffer("Deviation should be 2.0");
     //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.3);
@@ -965,13 +965,27 @@ TEST_F(RNGTests, Test_Uniform_4) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    mean.printIndexedBuffer("Mean should be 1.5");
+    // mean.printIndexedBuffer("Mean should be 1.5");
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsVariance, false);
     //deviation /= (double)x1.lengthOf();
-    deviation.printIndexedBuffer("Deviation should be 1/12 (0.083333)");
+    // deviation.printIndexedBuffer("Deviation should be 1/12 (0.083333)");
 
     ASSERT_NEAR(mean.e<double>(0), 1.5, 1e-3);
     ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
+}
+
+TEST_F(RNGTests, test_choice_1) {
+    auto x = NDArrayFactory::linspace<double>(0, 10, 11);
+    auto prob = NDArrayFactory::valueOf<double>({11}, 1.0/11, 'c');
+    auto z = NDArrayFactory::create<double>('c', {1000});
+
+    RandomGenerator rng(119, 256);
+    NativeOpExcutioner::execRandom(random::Choice, &rng, x->buffer(), x->shapeInfo(), prob->buffer(), prob->shapeInfo(), z.buffer(), z.shapeInfo(), nullptr);
+
+    // z.printIndexedBuffer("z");
+
+    delete x;
+    delete prob;
 }

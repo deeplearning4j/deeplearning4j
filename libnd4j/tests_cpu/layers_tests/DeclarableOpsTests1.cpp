@@ -268,11 +268,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
-    // exp->p(0, 1090.0);
-    // exp->p(1, 2818.0);
-    // exp->p(2, 1168.0);
-    // exp->p(3, 3040.0);
+    auto exp = NDArrayFactory::create_<float>('f', {2, 2});   
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
@@ -297,7 +293,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
 
     auto z = variableSpace->getVariable(1)->getNDArray();
 
-    //z->printBuffer("Result: ");
+    // z->printIndexedBuffer("Result: ");
 
     ASSERT_TRUE(exp->equalsTo(z));
 
@@ -1449,7 +1445,7 @@ TEST_F(DeclarableOpsTests1, Reshapeas1) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};
     
-    auto x = NDArrayFactory::create_<float>('c', xShape);
+    auto x = NDArrayFactory::create_<float>('f', xShape);
     auto y = NDArrayFactory::create_<float>('f', yShape);
 
 
@@ -1630,7 +1626,7 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};    
     
-    auto x = NDArrayFactory::create_<float>('c', xShape);
+    auto x = NDArrayFactory::create_<float>('f', xShape);
     auto y = NDArrayFactory::create_<float>('f', yShape);
 
     auto variableSpace = new VariableSpace();
@@ -1661,7 +1657,7 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
     const std::vector<Nd4jLong> yShape = {3,5,4};    
     
     auto x = NDArrayFactory::create_<float>('c', xShape);
-    auto y = NDArrayFactory::create_<float>('f', yShape);
+    auto y = NDArrayFactory::create_<float>('c', yShape);
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -3396,6 +3392,8 @@ TEST_F(DeclarableOpsTests1, OneHotTests_3) {
 
     auto z = result->at(0);
 
+    z->printIndexedBuffer("z");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -3438,6 +3436,19 @@ TEST_F(DeclarableOpsTests1, OneHotTests_5) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, OneHotTests_6) {
+    auto indices = NDArrayFactory::create<float>('c', {3}, {0., 1., 2.});
+    auto e = NDArrayFactory::create<float>('c', {3, 3}, {1., 0., 0., 0., 1., 0., 0., 0., 1.});
+
+    nd4j::ops::onehot op;
+    auto result = op.execute({&indices}, {1.0, 0.0}, {0, 3});
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
 
     delete result;
 }

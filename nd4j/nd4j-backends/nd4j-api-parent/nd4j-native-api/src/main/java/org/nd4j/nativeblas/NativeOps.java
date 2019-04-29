@@ -687,11 +687,11 @@ public abstract class NativeOps extends Pointer {
 
     public abstract Pointer mallocHost(long memorySize, int flags);
 
-    public abstract Pointer mallocDevice(long memorySize, Pointer ptrToDeviceId, int flags);
+    public abstract Pointer mallocDevice(long memorySize, int ptrToDeviceId, int flags);
 
     public abstract int freeHost(Pointer pointer);
 
-    public abstract int freeDevice(Pointer pointer, Pointer deviceId);
+    public abstract int freeDevice(Pointer pointer, int deviceId);
 
     public abstract Pointer createContext();
 
@@ -703,7 +703,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract int destroyEvent(Pointer event);
 
-    public abstract int setDevice(Pointer ptrToDeviceId);
+    public abstract int setDevice(int ptrToDeviceId);
 
     public abstract int getDevice();
 
@@ -711,15 +711,17 @@ public abstract class NativeOps extends Pointer {
 
     public abstract int eventSynchronize(Pointer event);
 
-    public abstract long getDeviceFreeMemory(Pointer ptrToDeviceId);
+    public abstract long getDeviceFreeMemory(int ptrToDeviceId);
 
-    public abstract long getDeviceTotalMemory(Pointer ptrToDeviceId);
+    public abstract long getDeviceFreeMemory();
 
-    public abstract int getDeviceMajor(Pointer ptrToDeviceId);
+    public abstract long getDeviceTotalMemory(int ptrToDeviceId);
 
-    public abstract int getDeviceMinor(Pointer ptrToDeviceId);
+    public abstract int getDeviceMajor(int ptrToDeviceId);
 
-    public abstract String getDeviceName(Pointer ptrToDeviceId);
+    public abstract int getDeviceMinor(int ptrToDeviceId);
+
+    public abstract String getDeviceName(int ptrToDeviceId);
 
     public abstract int memcpy(Pointer dst, Pointer src, long size, int flags, Pointer reserved);
 
@@ -1088,6 +1090,8 @@ public abstract class NativeOps extends Pointer {
 
     public abstract String getAllOperations();
 
+    public abstract int execCustomOp(PointerPointer extraPointers, long opHashCode, Pointer context);
+
     public abstract int execCustomOp(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, boolean isInplace);
 
     public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
@@ -1126,8 +1130,22 @@ public abstract class NativeOps extends Pointer {
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
 
+    public abstract void scatterUpdate(PointerPointer extraPointers, int opCode, int numOfUpdates,
+                                       Pointer hX, @Cast("Nd4jLong *") LongPointer hXShapeInfo, @Cast("Nd4jLong *") LongPointer hxOffsets,
+                                       Pointer dX, @Cast("Nd4jLong *") LongPointer dXShapeInfo, @Cast("Nd4jLong *") LongPointer dxOffsets,
+                                       Pointer hY, @Cast("Nd4jLong *") LongPointer hYShapeInfo, @Cast("Nd4jLong *") LongPointer hyOffsets,
+                                       Pointer dY, @Cast("Nd4jLong *") LongPointer dYShapeInfo, @Cast("Nd4jLong *") LongPointer dyOffsets,
+                                       IntPointer hIndices, IntPointer dIndices);
 
     //public abstract void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
     public abstract Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
     public abstract void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
+
+
+    public abstract void inspectArray(PointerPointer extraPointers, Pointer buffer, @Cast("Nd4jLong *") LongPointer shapeInfo, Pointer specialBuffer, @Cast("Nd4jLong *") LongPointer specialShapeInfo, @Cast("nd4j::DebugInfo *") Pointer debugInfo);
+
+    /**
+     * this method tries to read numBytes bytes from buffer to provoke crash in certain scenarios
+     */
+    public abstract void tryPointer(Pointer extras, Pointer buffer, int numBytesToRead);
 }

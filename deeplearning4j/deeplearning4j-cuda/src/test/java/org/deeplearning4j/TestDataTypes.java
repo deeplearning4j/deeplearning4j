@@ -79,56 +79,60 @@ public class TestDataTypes extends BaseDL4JTest {
 
         Map<DataType, INDArray> outMapTrain = new HashMap<>();
         Map<DataType, INDArray> outMapTest = new HashMap<>();
-        for(DataType type : new DataType[]{DataType.HALF, DataType.FLOAT, DataType.DOUBLE}) {
-            log.info("Starting test: {}", type);
-            Nd4j.setDataType(type);
-            assertEquals(type, Nd4j.dataType());
+        for(DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
+            for(DataType netDType : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+                log.info("Starting test: global dtype = {}, net dtype = {}", globalDtype, netDType);
+                assertEquals(globalDtype, Nd4j.dataType());
+                assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .convolutionMode(ConvolutionMode.Same)
-                    .activation(Activation.TANH)
-                    .seed(12345)
-                    .weightInit(WeightInit.XAVIER)
-                    .list()
-                    .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
-                    .layer(new SubsamplingLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).build())
-                    .layer(new BatchNormalization())
-                    .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
-                    .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .setInputType(InputType.convolutionalFlat(28, 28, 1))
-                    .build();
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(netDType)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .activation(Activation.TANH)
+                        .seed(12345)
+                        .weightInit(WeightInit.XAVIER)
+                        .list()
+                        .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
+                        .layer(new SubsamplingLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).build())
+                        .layer(new BatchNormalization.Builder().eps(1e-3).build())
+                        .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nOut(3).build())
+                        .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                        .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
 
-            Field f1 = org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class.getDeclaredField("helper");
-            f1.setAccessible(true);
+                Field f1 = org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class.getDeclaredField("helper");
+                f1.setAccessible(true);
 
-            Field f2 = org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class.getDeclaredField("helper");
-            f2.setAccessible(true);
+                Field f2 = org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class.getDeclaredField("helper");
+                f2.setAccessible(true);
 
-            Field f3 = org.deeplearning4j.nn.layers.normalization.BatchNormalization.class.getDeclaredField("helper");
-            f3.setAccessible(true);
+                Field f3 = org.deeplearning4j.nn.layers.normalization.BatchNormalization.class.getDeclaredField("helper");
+                f3.setAccessible(true);
 
-            assertNotNull(f1.get(net.getLayer(0)));
-            assertNotNull(f2.get(net.getLayer(1)));
-            assertNotNull(f3.get(net.getLayer(2)));
-            assertNotNull(f1.get(net.getLayer(3)));
+                assertNotNull(f1.get(net.getLayer(0)));
+                assertNotNull(f2.get(net.getLayer(1)));
+                assertNotNull(f3.get(net.getLayer(2)));
+                assertNotNull(f1.get(net.getLayer(3)));
 
-            DataSet ds = new MnistDataSetIterator(32, true, 12345).next();
+                DataSet ds = new MnistDataSetIterator(32, true, 12345).next();
 
-            //Simple sanity checks:
-            //System.out.println("STARTING FIT");
-            net.fit(ds);
-            net.fit(ds);
+                //Simple sanity checks:
+                //System.out.println("STARTING FIT");
+                net.fit(ds);
+                net.fit(ds);
 
-            //System.out.println("STARTING OUTPUT");
-            INDArray outTrain = net.output(ds.getFeatures(), false);
-            INDArray outTest = net.output(ds.getFeatures(), true);
+                //System.out.println("STARTING OUTPUT");
+                INDArray outTrain = net.output(ds.getFeatures(), false);
+                INDArray outTest = net.output(ds.getFeatures(), true);
 
-            outMapTrain.put(type, outTrain.castTo(DataType.DOUBLE));
-            outMapTest.put(type, outTest.castTo(DataType.DOUBLE));
+                outMapTrain.put(netDType, outTrain.castTo(DataType.DOUBLE));
+                outMapTest.put(netDType, outTest.castTo(DataType.DOUBLE));
+            }
         }
 
         Nd4j.setDataType(DataType.DOUBLE);

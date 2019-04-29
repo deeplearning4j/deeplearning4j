@@ -89,7 +89,7 @@ public class TestSameDiffOutput extends BaseDL4JTest {
 
 
     @Test
-    public void testMSEOutputLayer(){
+    public void testMSEOutputLayer(){       //Faliing 2019/04/17 - https://github.com/deeplearning4j/deeplearning4j/issues/7560
         Nd4j.getRandom().setSeed(12345);
 
         for(Activation a : new Activation[]{Activation.IDENTITY, Activation.TANH, Activation.SOFTMAX}) {

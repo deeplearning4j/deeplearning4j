@@ -108,7 +108,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>
                 label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),
                                 numPossibleLabels);
             else
-                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString()));
+                label = Nd4j.scalar(Double.parseDouble(currList.get(1).toString())).reshape(1,1);
             NDArrayWritable ndArrayWritable = (NDArrayWritable) currList.get(0);
             featureVector = ndArrayWritable.get();
             DataSet ds = new DataSet(featureVector, label);
@@ -135,7 +135,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>
                 if (regression) {
                     //single and multi-label regression
                     if (label == null) {
-                        label = Nd4j.zeros(labelIndexTo - labelIndex + 1);
+                        label = Nd4j.zeros(1, labelIndexTo - labelIndex + 1);
                     }
                     label.putScalar(0, labelCount++, current.toDouble());
                 } else {
@@ -159,7 +159,7 @@ public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>
                             featureVector = Nd4j.create(1, currList.size() - nLabels);
                         } else {
                             //Classification case, and also no-labels case
-                            featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+                            featureVector = Nd4j.create(1, labelIndex >= 0 ? currList.size() - 1 : currList.size());
                         }
                     }
                     featureVector.putScalar(featureCount++, value);

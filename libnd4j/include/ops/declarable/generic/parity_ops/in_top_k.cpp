@@ -38,6 +38,7 @@ namespace nd4j {
             REQUIRE_TRUE(target->rankOf() == 1, 0, "in_top_k: The target should be a vector");
 
             int k = INT_ARG(0);
+            result->nullify();
             return helpers::inTopKFunctor(predictions, target, result, k);
         }
 
@@ -46,13 +47,8 @@ namespace nd4j {
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
-            Nd4jLong* aShape;
+            Nd4jLong *aShape = ShapeBuilders::createShapeInfo(nd4j::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in), block.getWorkspace());
 
-            ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
-            if (shape::order(in) == 'c')
-                shape::shapeBuffer(shape::rank(in), nd4j::DataType::BOOL,  shape::shapeOf(in), aShape);
-            else 
-                shape::shapeBufferFortran(shape::rank(in), nd4j::DataType::BOOL, shape::shapeOf(in), aShape);
             shapeList->push_back(aShape);
             return shapeList;
         }

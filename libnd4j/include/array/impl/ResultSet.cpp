@@ -38,8 +38,10 @@ namespace nd4j {
                     }
 
                     // we just create empty array here
+                    int s0 = shapeInfo.at(0);
+
                     std::vector<Nd4jLong> shape;
-                    for (int i = 0; i < shapeInfo.at(0); i++) {
+                    for (int i = 0; i < s0; i++) {
                         shape.emplace_back(shapeInfo.at(i + 1));
                     }
 
@@ -55,6 +57,58 @@ namespace nd4j {
         }
     }
 
+    ResultSet::ResultSet(const ResultSet& other) noexcept{
+        for (const auto v:other._content)
+            _content.emplace_back(v);
+
+        _status = other._status;
+        _removable = false;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // move constructor
+    ResultSet::ResultSet(ResultSet&& other) noexcept {
+
+        _content = std::move(other._content);
+        _status = other._status;
+        _removable = other._removable;
+        other._removable = false;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // move assignment operator
+    ResultSet& ResultSet::operator=(ResultSet&& other) noexcept {
+
+        if (this == &other) 
+            return *this;
+
+        this->~ResultSet();
+
+        _content = std::move(other._content);
+        _status = other._status;
+        _removable = other._removable;
+        other._removable = false;
+
+        return *this;
+    }
+
+    ResultSet& ResultSet::operator=(const ResultSet& other) noexcept {
+
+        if (this == &other)
+            return *this;
+
+        this->~ResultSet();
+
+        for (const auto v:other._content)
+            _content.emplace_back(v);
+
+        _status = other._status;
+        _removable = false;
+
+        return *this;
+    }
+
+
     ResultSet::~ResultSet() {
         if (_removable)
             for (auto v: _content)
@@ -69,8 +123,12 @@ namespace nd4j {
         return (int) _content.size();
     }
 
-    nd4j::NDArray* ResultSet::at(unsigned long idx) {
+    nd4j::NDArray* ResultSet::at(const unsigned long idx) const {
         return _content.at(idx);
+    }
+
+    nd4j::NDArray* ResultSet::operator[](const unsigned long idx) const {
+        return _content[idx];
     }
 
     void ResultSet::push_back(nd4j::NDArray *array) {

@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -49,14 +50,14 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
-    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName) {
-        this(graph, name, vertexIndex, null, null, inputName);
+    public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, String inputName, DataType dataType) {
+        this(graph, name, vertexIndex, null, null, inputName, dataType);
     }
 
 
     public LastTimeStepVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, String inputName) {
-        super(graph, name, vertexIndex, inputVertices, outputVertices);
+                    VertexIndices[] outputVertices, String inputName, DataType dataType) {
+        super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.inputName = inputName;
         this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
         if (inputIdx == -1)
@@ -94,13 +95,13 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
             val outShape = new long[] {inputs[0].size(0), inputs[0].size(1)};
-            out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
+            out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape);
 
             //Want the index of the last non-zero entry in the mask array.
             //Check a little here by using mulRowVector([0,1,2,3,...]) and argmax
             // FIXME: int cast
             int maxTsLength = (int) fwdPassShape[2];
-            INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength);
+            INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength, mask.dataType());
             INDArray temp = mask.mulRowVector(row);
             INDArray lastElementIdx = Nd4j.argMax(temp, 1);
             fwdPassTimeSteps = new int[(int)fwdPassShape[0]];
@@ -122,7 +123,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         //Allocate the appropriate sized array:
-        INDArray epsilonsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, fwdPassShape, 'f');
+        INDArray epsilonsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), fwdPassShape, 'f');
 
         if (fwdPassTimeSteps == null) {
             //Last time step for all examples

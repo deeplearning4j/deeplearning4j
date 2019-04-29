@@ -158,7 +158,7 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
     }
 
     protected INDArray makeBOWNDArray(Collection<Integer> indices) {
-        INDArray counts = Nd4j.zeros(vocabulary.size());
+        INDArray counts = Nd4j.zeros(1, vocabulary.size());
         for (Integer idx : indices)
             counts.putScalar(idx, counts.getDouble(idx) + 1);
         Nd4j.getExecutioner().commit();

@@ -16,12 +16,12 @@
 
 package org.datavec.api.conf;
 
+import org.apache.commons.lang3.StringUtils;
 import org.datavec.api.util.ReflectionUtils;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.JsonGenerator;
-import org.nd4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
@@ -771,7 +771,9 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
      */
     public Collection<String> getStringCollection(String name) {
         String valueString = get(name);
-        return StringUtils.getStringCollection(valueString);
+        if(valueString == null)
+            return null;
+        return Arrays.asList(StringUtils.split(valueString, ","));
     }
 
     /**
@@ -785,7 +787,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
      */
     public String[] getStrings(String name) {
         String valueString = get(name);
-        return StringUtils.getStrings(valueString);
+        return StringUtils.split(valueString, ",");
     }
 
     /**
@@ -803,7 +805,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
         if (valueString == null) {
             return defaultValue;
         } else {
-            return StringUtils.getStrings(valueString);
+            return StringUtils.split(valueString, ",");
         }
     }
 
@@ -820,7 +822,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
         if (null == valueString) {
             return Collections.emptyList();
         }
-        return StringUtils.getTrimmedStringCollection(valueString);
+        return Arrays.asList(StringUtils.stripAll(StringUtils.split(valueString, ",")));
     }
 
     /**
@@ -834,7 +836,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
      */
     public String[] getTrimmedStrings(String name) {
         String valueString = get(name);
-        return StringUtils.getTrimmedStrings(valueString);
+        return StringUtils.stripAll(StringUtils.split(valueString, ","));
     }
 
     /**
@@ -852,7 +854,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
         if (null == valueString) {
             return defaultValue;
         } else {
-            return StringUtils.getTrimmedStrings(valueString);
+            return StringUtils.stripAll(StringUtils.split(valueString, ","));
         }
     }
 
@@ -864,7 +866,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
      * @param values The values
      */
     public void setStrings(String name, String... values) {
-        set(name, StringUtils.arrayToString(values));
+        set(name, StringUtils.join(values, ","));
     }
 
     /**

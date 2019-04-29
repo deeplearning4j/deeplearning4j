@@ -19,6 +19,7 @@
 //
 
 #include <op_boilerplate.h>
+#include <Loops.h>
 #include <types/types.h>
 #include <loops/transform_any.h>
 #include <loops/legacy_ops.h>
@@ -41,98 +42,28 @@ namespace functions {
                     DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_ANY_OPS);
 		}
 
-        template <typename X, typename Z>
-        template<typename OpType>
-		void _CUDA_H TransformAny<X, Z>::exec(
-                    void *vx,
-                    Nd4jLong *xShapeInfo,
-                    void *vz,
-                    Nd4jLong *zShapeInfo,
-                    void *vextraParams,
-                    Nd4jLong *tadShapeInfo,
-                    Nd4jLong *tadOffsets) {
+/////////////////////////////////////////////////////////////////////
+template <typename X, typename Z>
+template<typename OpType>
+void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
+                                    void *vz,Nd4jLong *zShapeInfo,
+                                    void *vextraParams,
+                                    Nd4jLong *tadShapeInfo,Nd4jLong *tadOffsets) {
 
-		    auto x = reinterpret_cast<X *>(vx);
-		    auto z = reinterpret_cast<Z *>(vz);
-		    auto extraParams = reinterpret_cast<X *>(vextraParams);
+	auto x = reinterpret_cast<X *>(vx);
+	auto z = reinterpret_cast<Z *>(vz);
+	auto extraParams = reinterpret_cast<X *>(vextraParams);
              
-            if(OpType::requiresSpecial) {
-                OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                return;
-            }
-
-            const auto len = shape::length(xShapeInfo);
-                        
-            nd4j::OmpLaunchHelper info(len);
-
-            if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-
-                    auto tz = z + threadOffset;
-                    auto tx = x + threadOffset;
-
-                    #pragma omp simd
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                        tz[i] = OpType::op(tx[i], extraParams);
-                }
-            } else if (shape::elementWiseStride(zShapeInfo) == 1 && shape::order(zShapeInfo) == 'c') {
-                // this is reshape + copy edge case
-                uint xShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-
-                    auto tz = z + threadOffset;
-
-                    #pragma omp simd
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++)
-                        tz[i] = OpType::op(x[shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX)], extraParams);
-                }
-            } else if (shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-                uint xShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);                        
-
-                    #pragma omp simd
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
-                        auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-                        z[offset] = OpType::op(x[offset], extraParams);
-                    }
-                }
-            }
-            else {
-                uint xShapeInfoCast[MAX_RANK];
-                uint zShapeInfoCast[MAX_RANK];
-
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
-
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-
-                    #pragma omp simd
-                    for (unsigned int i = 0; i < info.getItersPerThread(threadNum); i++) {
-                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
-                        z[zOffset] = OpType::op(x[xOffset], extraParams);
-                    }
-                }
-            }
-        }
-
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+    if(OpType::requiresSpecial) {
+        OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        return;
     }
+
+    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
+}
+
+
+
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+}
 }

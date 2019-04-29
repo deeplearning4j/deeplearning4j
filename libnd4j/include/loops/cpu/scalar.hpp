@@ -21,6 +21,7 @@
 #include "../scalar.h"
 #include <op_boilerplate.h>
 #include <types/types.h>
+#include <LoopKind.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -37,40 +38,54 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                                 void *vz, Nd4jLong *zShapeInfo, 
                                                 void *vscalars, 
                                                 int *dimension, int dimensionLength, 
-                                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
-                                                Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, 
+                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
         
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalars = reinterpret_cast<Y *>(vscalars);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    if (tadShapeInfoZ == nullptr) {
-        tadShapeInfoZ = tadShapeInfo;
-        tadOffsetsZ = tadOffsets;
+    if (zTadShapeInfo == nullptr) {
+        zTadShapeInfo = xTadShapeInfo;
+        zTadOffsets   = xTadOffsets;
     }
 
-    // tad preparation
-    int tadEws = shape::elementWiseStride(tadShapeInfo);
-    int zEws = shape::elementWiseStride(tadShapeInfo);
-    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    int numTads =shape::length(xShapeInfo) / tadLength;
+    const int xTadEws    = shape::elementWiseStride(xTadShapeInfo);
+    const int zTadEws    = shape::elementWiseStride(zTadShapeInfo);
+    const int tadLength  = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    const int numTads    = shape::length(xShapeInfo) / tadLength;
 
-    if(tadEws < 1 || zEws < 1) {
-        printf("ScalarTransform<X, Y, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
+
+    if (kindOfLoop != nd4j::LoopKind::EWS1 && kindOfLoop != nd4j::LoopKind::EWSNONZERO) {
+        printf("ScalarTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
         return;
     }
 
-    int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());            
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-    for (int r = 0; r < numTads; r++) {
-        auto oZ = z + tadOffsetsZ[r];
-        auto oX = x + tadOffsets[r];
-                                
-// TODO: nested loop should be used here probably, instead of simd
-#pragma omp simd
-        for (int f = 0; f < tadLength; f++) 
-            oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
+    int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
+
+    if (kindOfLoop == nd4j::LoopKind::EWS1) {
+        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+        for (unsigned int r = 0; r < numTads; r++) {
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
+
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
+        }
+    } 
+    else {
+        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
+        for (unsigned int r = 0; r < numTads; r++) {
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
+
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
+        }
     }
 }
 
@@ -82,10 +97,10 @@ void ScalarTransform<X,Y,Z>::transform(int opNum,
                               void *z, Nd4jLong *zShapeInfo,
                               void *scalars,
                               int *dimension, int dimensionLength,
-                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                              Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                              Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
+                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -127,16 +142,13 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     const auto len = shape::length(xShapeInfo);
     const auto xEws = shape::elementWiseStride(xShapeInfo);
     const auto zEws = shape::elementWiseStride(zShapeInfo);
-    const auto xOrder = shape::order(xShapeInfo);
-    const auto zOrder = shape::order(zShapeInfo);
+    
+    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
-    if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+    if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
         transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len);              
     }
     else {
-                
-        const bool xSimpe = shape::isStrideSimple(xShapeInfo);
-        const bool zSimpe = shape::isStrideSimple(zShapeInfo);
 
         uint xShapeInfoCast[MAX_RANK];
         const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
@@ -144,13 +156,15 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         nd4j::OmpLaunchHelper info(len);
 
         if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
-                        
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+
+            PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
             {
                 auto threadNum = omp_get_thread_num();                    
-                Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                #pragma omp simd
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+                PRAGMA_OMP_SIMD
+                for (unsigned int i = 0; i < ulen; i++) {
                     auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);                    
                     z[offset] = OpType::op(x[offset], scalar, extraParams);
                 }
@@ -161,12 +175,14 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
-            #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+            PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
             {
                 auto threadNum = omp_get_thread_num();                    
-                Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                #pragma omp simd
-                for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+                auto threadOffset = info.getThreadOffset(threadNum);
+                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
+
+                PRAGMA_OMP_SIMD
+                for (unsigned int i = 0; i < ulen; i++) {
                     auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
                     auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
                     z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
@@ -194,28 +210,31 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
 
     if (xEws == 1 && zEws == 1) {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
-            Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+            auto threadOffset = info.getThreadOffset(threadNum);
             auto xi = x + threadOffset;
             auto zi = z + threadOffset;
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-#pragma omp simd
-            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+            PRAGMA_OMP_SIMD
+            for (unsigned int i = 0; i < ulen; i++)
                 zi[i] = OpType::op(xi[i], scalar, extraParams);
         }
-    } else {
+    } 
+    else {
 
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
         {
             auto threadNum = omp_get_thread_num();
-            Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+            auto threadOffset = info.getThreadOffset(threadNum);
             auto xi = x + xEws * threadOffset;
             auto zi = z + zEws * threadOffset;
+            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-            #pragma omp simd
-            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+            PRAGMA_OMP_SIMD
+            for (unsigned int i = 0; i < ulen; i++)
                 zi[i * zEws] = OpType::op(xi[i * xEws], scalar, extraParams);
         }
     }

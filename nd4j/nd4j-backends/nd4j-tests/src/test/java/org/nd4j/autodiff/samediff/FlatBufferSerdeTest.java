@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,6 +33,7 @@ public class FlatBufferSerdeTest {
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.nn().tanh("out", in);
+        tanh.markAsLoss();
 
         ByteBuffer bb = sd.asFlatBuffers();
 
@@ -75,15 +77,18 @@ public class FlatBufferSerdeTest {
         //Check placeholders:
         assertEquals(1, fg.placeholdersLength());
         assertEquals("in", fg.placeholders(0));
+
+        //Check loss variables:
+        //assertEquals(sd.getLossVariables(), fg)
     }
 
     @Test
     public void testSimple() throws Exception {
-        for( int i=8; i<10; i++ ) {
+        for( int i=0; i<10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
-                INDArray arr = Nd4j.linspace(1, 12, 12, org.nd4j.linalg.api.buffer.DataType.FLOAT).reshape(3, 4);
+                INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape());
                 SDVariable x;
                 switch (i) {
@@ -115,16 +120,20 @@ public class FlatBufferSerdeTest {
                         break;
                     case 8:
                         //Reduce 3:
-                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.math().cosineSimilarity(in, y);
                         break;
                     case 9:
                         //Reduce 3 (along dim)
-                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.math().cosineSimilarity(in, z, 1);
                         break;
                     default:
                         throw new RuntimeException();
+                }
+                if(x.dataType().isFPType()) {
+                    //Can't mark argmax as loss, because it's not FP
+                    x.markAsLoss();
                 }
 
                 if(execFirst){
@@ -151,6 +160,8 @@ public class FlatBufferSerdeTest {
                 for (int j = 0; j < sd.functions().length; j++) {
                     assertEquals(fOrig[j].getClass(), fRestored[j].getClass());
                 }
+
+                assertEquals(sd.getLossVariables(), restored.getLossVariables());
 
 
                 Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));

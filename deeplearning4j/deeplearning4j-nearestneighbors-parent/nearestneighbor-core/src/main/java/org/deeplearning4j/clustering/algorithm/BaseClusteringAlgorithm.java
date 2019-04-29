@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.algorithm;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
@@ -112,7 +113,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
             removePoints();
             classifyPoints();
             applyClusteringStrategy();
-            log.info("Completed clustering iteration {}", ++iterationCount);
+            log.trace("Completed clustering iteration {}", ++iterationCount);
         }
     }
 
@@ -134,12 +135,13 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         List<Point> points = new ArrayList<>(initialPoints);
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
-        Random random = new Random();
-        String distanceFn = clusteringStrategy.getDistanceFunction();
-        clusterSet = new ClusterSet(distanceFn,
-                        clusteringStrategy.inverseDistanceCalculation());
-        clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
+        val random = Nd4j.getRandom();
+        Distance distanceFn = clusteringStrategy.getDistanceFunction();
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
+        clusterSet = new ClusterSet(distanceFn,
+                        clusteringStrategy.inverseDistanceCalculation(), new long[]{initialClusterCount, points.get(0).getArray().length()});
+        clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
+
 
         //dxs: distances between
         // each point and nearest cluster to that point

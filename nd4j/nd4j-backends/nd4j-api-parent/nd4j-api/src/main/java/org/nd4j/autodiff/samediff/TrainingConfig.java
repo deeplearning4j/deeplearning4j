@@ -47,6 +47,7 @@ public class TrainingConfig {
     private List<String> dataSetFeatureMaskMapping;
     private List<String> dataSetLabelMaskMapping;
     private List<String> trainableParams;   //Will be inferred automatically if null
+    private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
 
@@ -64,7 +65,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), Collections.<String>emptyList(), null);
+                Collections.<String>emptyList(), Collections.<String>emptyList(), null, null);
     }
 
     /**
@@ -85,7 +86,7 @@ public class TrainingConfig {
      *                                  If non-null, this defines the set of parameters that should be modified during training
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams) {
+                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams, List<String> lossVariables) {
         this.updater = updater;
         this.regularization = regularization;
         this.minimize = minimize;
@@ -94,6 +95,7 @@ public class TrainingConfig {
         this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
         this.dataSetLabelMaskMapping = dataSetLabelMaskMapping;
         this.trainableParams = trainableParams;
+        this.lossVariables = lossVariables;
     }
 
     /**
@@ -133,7 +135,9 @@ public class TrainingConfig {
         private List<String> dataSetFeatureMaskMapping;
         private List<String> dataSetLabelMaskMapping;
         private List<String> trainableParams;   //Will be inferred automatically if null
+        private List<String> lossVariables;
         private boolean skipValidation = false;
+        private boolean markLabelsUnused = false;
 
         /**
          * Set the updater (such as {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs}
@@ -295,6 +299,17 @@ public class TrainingConfig {
         }
 
         /**
+         * Calling this method will mark the label as unused. This is basically a way to turn off label mapping validation in
+         * TrainingConfig builder, for training models without labels.<br>
+         * Put another way: usually you need to call {@link #dataSetLabelMapping(String...)} to set labels, this method
+         * allows you to say that the DataSet/MultiDataSet labels aren't used in training.
+         */
+        public Builder markLabelsUnused(){
+            this.markLabelsUnused = true;
+            return this;
+        }
+
+        /**
          * Set the name of the placeholders/variables that should be set using the feature mask INDArray(s) from the
          * DataSet or MultiDataSet. For example, if the network had 2 mask variables called "mask1" and "mask2"
          * and the MultiDataSet features masks should be mapped with {@code MultiDataSet.getFeatureMaskArray(0)->"mask1"}
@@ -348,17 +363,23 @@ public class TrainingConfig {
             return this;
         }
 
+        public Builder minimize(String... lossVariables){
+            this.lossVariables = Arrays.asList(lossVariables);
+            return this;
+        }
+
         public TrainingConfig build(){
             if(!skipValidation) {
                 Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
                 Preconditions.checkState(dataSetFeatureMapping != null, "No DataSet feature mapping has been provided. A " +
-                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetFeatureMapping(...) to set this");
-                Preconditions.checkState(dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
-                        "mapping between DataSet array positions and variables/placeholders must be provided - use  dateSetLabelMapping(...) to set this");
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use dateSetFeatureMapping(...) to set this");
+                Preconditions.checkState(markLabelsUnused || dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
+                        "mapping between DataSet array positions and variables/placeholders must be provided - use dataSetLabelMapping(...) to set this," +
+                        " or use markLabelsUnused() to mark labels as unused (for example, for unsupervised learning)");
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
-                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams);
+                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams, lossVariables);
         }
     }
 

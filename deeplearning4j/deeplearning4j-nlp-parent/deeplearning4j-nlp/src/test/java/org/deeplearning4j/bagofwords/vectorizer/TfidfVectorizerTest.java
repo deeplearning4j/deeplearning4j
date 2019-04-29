@@ -35,17 +35,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.SerializationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 
 /**
@@ -60,7 +56,12 @@ public class TfidfVectorizerTest {
 
     @Test(timeout = 60000L)
     public void testTfIdfVectorizer() throws Exception {
-        File rootDir = new ClassPathResource("tripledir").getFile();
+        val rootDir = testDir.newFolder();
+        ClassPathResource resource = new ClassPathResource("tripledir/");
+        resource.copyDirectory(rootDir);
+        
+        assertTrue(rootDir.isDirectory());
+
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
 

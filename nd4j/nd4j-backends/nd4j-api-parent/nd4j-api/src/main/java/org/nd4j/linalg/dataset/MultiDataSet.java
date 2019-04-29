@@ -354,7 +354,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         //So (point,all,all) on a 3d input returns a 2d output. Whereas, we want a 3d [1,x,y] output here
         switch (array.rank()) {
             case 2:
-                return array.get(NDArrayIndex.point(idx), NDArrayIndex.all());
+                return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all());
             case 3:
                 return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
@@ -604,19 +604,19 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         long reqMem = 0;
 
         for (INDArray f : features)
-            reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
+            reqMem += f == null ? 0 : f.length() * Nd4j.sizeOfDataType();
 
         if (featuresMaskArrays != null)
             for (INDArray f : featuresMaskArrays)
-                reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
+                reqMem += f == null ? 0 : f.length() * Nd4j.sizeOfDataType();
 
         if (labelsMaskArrays != null)
             for (INDArray f : labelsMaskArrays)
-                reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
+                reqMem += f == null ? 0 : f.length() * Nd4j.sizeOfDataType();
 
         if (labels != null)
             for (INDArray f : labels)
-                reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
+                reqMem += f == null ? 0 : f.length() * Nd4j.sizeOfDataType();
 
         return reqMem;
     }

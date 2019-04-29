@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -47,14 +48,9 @@ import java.util.Arrays;
 public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling3D> {
 
 
-    public Upsampling3D(NeuralNetConfiguration conf) {
-        super(conf);
+    public Upsampling3D(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
-
-    public Upsampling3D(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
-    }
-
 
     @Override
     public double calcRegularizationScore(boolean backpropParamsOnly){
@@ -82,7 +78,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int[] intArgs = new int[] {1}; // 1 is channels first
 
         INDArray reshapedEpsilon = workspaceMgr.createUninitialized(
-                ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inChannels, inD, inH, inW}, 'c');
+                ArrayType.ACTIVATION_GRAD, epsilon.dataType(), new long[]{miniBatch, inChannels, inD, inH, inW}, 'c');
 
 
         Gradient gradient = new DefaultGradient();
@@ -119,22 +115,21 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inChannels = (int) input.size(1);
-        int inD = (int) input.size(2);
-        int inH = (int) input.size(3);
-        int inW = (int) input.size(4);
+        long miniBatch = (int) input.size(0);
+        long inChannels = (int) input.size(1);
+        long inD = (int) input.size(2);
+        long inH = (int) input.size(3);
+        long inW = (int) input.size(4);
 
         int[] size = getSize();
-        int outD = inD * size[0];
-        int outH = inH * size[1];
-        int outW = inW * size[2];
+        long outD = inD * size[0];
+        long outH = inH * size[1];
+        long outW = inW * size[2];
 
         int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
 
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                new int[]{miniBatch, inChannels, outD, outH, outW}, 'c');
+                input.dataType(), new long[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
 
         CustomOp upsampling = DynamicCustomOp.builder("upsampling3d")

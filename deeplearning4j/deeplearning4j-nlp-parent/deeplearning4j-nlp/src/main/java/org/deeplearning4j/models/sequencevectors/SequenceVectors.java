@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors;
 
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
@@ -84,10 +85,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected static final Logger log = LoggerFactory.getLogger(SequenceVectors.class);
 
     protected transient WordVectors existingModel;
+    protected transient WordVectors intersectModel;
     protected transient T unknownElement;
     protected transient AtomicDouble scoreElements = new AtomicDouble(0.0);
     protected transient AtomicDouble scoreSequences = new AtomicDouble(0.0);
     protected transient boolean configured = false;
+    protected transient boolean lockFactor = false;
 
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
@@ -211,6 +214,30 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
     }
 
+    private void initIntersectVectors() {
+        if (intersectModel != null && intersectModel.vocab().numWords() > 0) {
+            List<Integer> indexes = new ArrayList<>();
+            for (int i = 0; i < intersectModel.vocab().numWords(); ++i) {
+                String externalWord = intersectModel.vocab().wordAtIndex(i);
+                int index = this.vocab.indexOf(externalWord);
+                if (index >= 0) {
+                    this.vocab.wordFor(externalWord).setLocked(lockFactor);
+                    indexes.add(index);
+                }
+            }
+
+            if (indexes.size() > 0) {
+                int[] intersectIndexes = Ints.toArray(indexes);
+
+                Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
+                        ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                        Nd4j.createFromArray(intersectIndexes),
+                        ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
+                        1);
+            }
+        }
+    }
+
     /**
      * Starts training over
      */
@@ -270,7 +297,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             val randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                             .divi(configuration.getLayersSize());
 
-                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
                             realElement.setInit(true);
                         }
                     }
@@ -286,7 +313,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             INDArray randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                             .divi(configuration.getLayersSize());
 
-                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
                             realElement.setInit(true);
                         }
                     }
@@ -297,6 +324,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         initLearners();
+        initIntersectVectors();
 
         log.info("Starting learning process...");
         timeSpent.set(System.currentTimeMillis());
@@ -390,6 +418,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected ModelUtils<T> modelUtils = new BasicModelUtils<>();
 
         protected WordVectors existingVectors;
+        protected SequenceVectors<T> intersectVectors;
+        protected boolean lockFactor = false;
 
         protected double sampling = 0;
         protected double negative = 0;
@@ -969,6 +999,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             return this;
         }
 
+        public Builder<T> intersectModel(@NonNull SequenceVectors<T> intersectVectors, boolean lockFactor) {
+            this.intersectVectors = intersectVectors;
+            this.lockFactor = lockFactor;
+            return this;
+        }
+
         /**
          * Build SequenceVectors instance with defined settings/options
          * @return
@@ -1016,7 +1052,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.sequenceLearningAlgorithm = this.sequenceLearningAlgorithm;
 
             vectors.existingModel = this.existingVectors;
+            vectors.intersectModel = this.intersectVectors;
             vectors.enableScavenger = this.enableScavenger;
+            vectors.lockFactor = this.lockFactor;
 
             this.configuration.setLearningRate(this.learningRate);
             this.configuration.setLayersSize(layerSize);
@@ -1197,6 +1235,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     .cyclesBeforeInitialization(3)
                     .initialSize(25L * 1024L * 1024L)
                     .build();
+            val workspace_id = "sequence_vectors_training_" + java.util.UUID.randomUUID().toString();
 
             Nd4j.getAffinityManager().getDeviceForCurrentThread();
             while (digitizer.hasMoreLines()) {
@@ -1223,7 +1262,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
+                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
                                 Sequence<T> sequence = sequences.get(x);
 
                                 //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);

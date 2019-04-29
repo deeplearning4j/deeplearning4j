@@ -61,9 +61,10 @@ public class SentenceIteratorTest {
 
     @Test
     public void testUimaSentenceIterator() throws Exception {
-        SentenceIterator multiIter = UimaSentenceIterator.createWithPath("multidir");
-        SentenceIterator iter = UimaSentenceIterator.createWithPath("dir");
+        SentenceIterator multiIter = UimaSentenceIterator.createWithPath(testMulti.getAbsolutePath());
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(testSingle.getAbsolutePath());
         testMulti(multiIter, 1);
+        testMulti(iter, 1);
 
     }
 

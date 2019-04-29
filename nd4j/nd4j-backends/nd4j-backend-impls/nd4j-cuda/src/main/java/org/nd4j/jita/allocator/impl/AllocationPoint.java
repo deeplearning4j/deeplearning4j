@@ -60,6 +60,7 @@ public class AllocationPoint {
     @Getter
     @Setter
     private Long objectId;
+
     @Getter
     @Setter
     private Long bucketId;
@@ -72,44 +73,32 @@ public class AllocationPoint {
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 
     private transient TimeProvider timeProvider = new OperativeProvider();
-    private transient TimeProvider realTimeProvider = new MillisecondsProvider();
 
     // corresponding access times in TimeProvider quants
-    private final AtomicLong accessHostRead = new AtomicLong(0);
-    private final AtomicLong accessDeviceRead = new AtomicLong(0);
+    private long accessHostRead = 0L;
+    private long accessDeviceRead = 0L;
 
-    private final AtomicLong accessHostWrite = new AtomicLong(0);
-    private final AtomicLong accessDeviceWrite = new AtomicLong(0);
-
-    private final List<Long> threadsTrace = new ArrayList<>();
-
-    // real time here
-    private final AtomicLong deviceAccessTime = new AtomicLong(0);
+    private long accessHostWrite = 0L;
+    private long accessDeviceWrite = 0L;
 
     protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-
+/*
     @Getter
     @Setter
     protected volatile cudaEvent_t writeLane;
 
     @Getter
     protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
-
+*/
     @Getter
     @Setter
     private boolean constant;
-
-    // TODO: timer should be instantiated externally
-    //    @Getter private final RateTimer timerShort = new SimpleTimer(10, TimeUnit.SECONDS); //new BinaryTimer(5, TimeUnit.SECONDS);
-    //    @Getter private final RateTimer timerLong = new SimpleTimer(60, TimeUnit.SECONDS);
 
     /*
      device, where memory was/will be allocated.
     Valid integer >= 0 is deviceId, null for undefined
     */
     private volatile int deviceId;
-
-    private volatile ReentrantLock lock = new ReentrantLock();
 
     public AllocationPoint() {
         //
@@ -138,16 +127,6 @@ public class AllocationPoint {
     @Setter
     private AllocationShape shape;
 
-    private AtomicLong deviceTicks = new AtomicLong(0);
-
-    //    private Map<AllocationShape, NestedPoint> usedChunks = new ConcurrentHashMap<>();
-
-    //    @Getter private AtomicState accessState = new AtomicState();
-
-    private volatile WeakReference<BaseDataBuffer> originalDataBufferReference;
-
-    private volatile GarbageBufferReference garbageBufferReference;
-
     private AtomicBoolean enqueued = new AtomicBoolean(false);
 
     @Getter
@@ -157,8 +136,6 @@ public class AllocationPoint {
     @Getter
     @Setter
     private cudaEvent_t lastReadEvent;
-
-    private cudaEvent_t lastEvent;
 
     private volatile CudaContext currentContext;
 
@@ -186,31 +163,11 @@ public class AllocationPoint {
         return shape.getNumberOfBytes();
     }
 
+    /*
     public void addReadLane(cudaEvent_t event) {
         readLane.add(event);
     }
-
-    public void setLastEvent(cudaEvent_t event) {
-        if (event != null && lastEvent != null) {
-            nativeOps.destroyEvent(lastEvent);
-        }
-        lastEvent = event;
-    }
-
-    public List<Long> getThreadsTrace() {
-        return threadsTrace;
-    }
-
-    // TODO: to be removed after debug finished
-    public void addThreadToTrace(Long threadId) {
-        if (!threadsTrace.contains(threadId))
-            threadsTrace.add(threadId);
-    }
-
-    public cudaEvent_t getLastEvent() {
-        return lastEvent;
-    }
-
+    */
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer
@@ -218,11 +175,11 @@ public class AllocationPoint {
      * @param buffer
      */
     public void attachBuffer(@NonNull BaseDataBuffer buffer) {
-        originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
+        //originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
     }
 
     public void attachReference(GarbageBufferReference reference) {
-        garbageBufferReference = reference;
+        //garbageBufferReference = reference;
     }
 
     /**
@@ -233,10 +190,10 @@ public class AllocationPoint {
      * @return
      */
     public DataBuffer getBuffer() {
-        if (originalDataBufferReference != null) {
-            return originalDataBufferReference.get();
-        } else
-            return null;
+        //if (originalDataBufferReference != null) {
+        //    return originalDataBufferReference.get();
+        //} else
+        return null;
     }
 
     /**
@@ -299,40 +256,27 @@ public class AllocationPoint {
         return this.pointerInfo;
     }
 
-    public long getDeviceTicks() {
-        return deviceTicks.get();
-    }
 
-    public void tickDeviceRead() {
+    public synchronized void tickDeviceRead() {
         //        this.deviceTicks.incrementAndGet();
         //        this.timerShort.triggerEvent();
         //        this.timerLong.triggerEvent();
         //this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-        this.accessDeviceRead.set(timeProvider.getCurrentTime());
+        this.accessDeviceRead  = (timeProvider.getCurrentTime());
     }
 
-    public void tackDevice() {
-        //this.deviceTicks.incrementAndGet();
-        this.accessDeviceRead.set(timeProvider.getCurrentTime());
-        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-    }
 
     /**
      * Returns time, in milliseconds, when this point was accessed on host side
      *
      * @return
      */
-    public long getHostReadTime() {
-        return accessHostRead.get();
-    }
+    public synchronized long getHostReadTime() {
+        return accessHostRead;
+    };
 
-    public long getHostWriteTime() {
-        return accessHostWrite.get();
-    }
-
-
-    public long getRealDeviceAccessTime() {
-        return deviceAccessTime.get();
+    public synchronized long getHostWriteTime() {
+        return accessHostWrite;
     }
 
     /**
@@ -340,8 +284,8 @@ public class AllocationPoint {
      *
      * @return
      */
-    public long getDeviceAccessTime() {
-        return accessDeviceRead.get();
+    public synchronized long getDeviceAccessTime() {
+        return accessDeviceRead;
     }
 
     /**
@@ -349,30 +293,30 @@ public class AllocationPoint {
      *
      * @return
      */
-    public long getDeviceWriteTime() {
-        return accessDeviceWrite.get();
+    public synchronized long getDeviceWriteTime() {
+        return accessDeviceWrite;
     }
 
-    public void tickHostRead() {
-        accessHostRead.set(timeProvider.getCurrentTime());
+    public synchronized void tickHostRead() {
+        accessHostRead = (timeProvider.getCurrentTime());
     }
 
     /**
      * This method sets time when this point was changed on device
      *
      */
-    public void tickDeviceWrite() {
+    public synchronized void tickDeviceWrite() {
         //        deviceAccessTime.set(realTimeProvider.getCurrentTime());
         tickDeviceRead();
-        accessDeviceWrite.set(timeProvider.getCurrentTime());
+        accessDeviceWrite = (timeProvider.getCurrentTime());
     }
 
     /**
      * This method sets time when this point was changed on host
      */
-    public void tickHostWrite() {
+    public synchronized void tickHostWrite() {
         tickHostRead();
-        accessHostWrite.set(timeProvider.getCurrentTime());
+        accessHostWrite = (timeProvider.getCurrentTime());
     }
 
     /**
@@ -380,11 +324,10 @@ public class AllocationPoint {
      *
      * @return true, if data is actual, false otherwise
      */
-    public boolean isActualOnHostSide() {
-        //log.info("isActuialOnHostSide() -> Host side: [{}], Device side: [{}]", accessHostRead.get(), accessDeviceRead.get());
-        boolean result = accessHostWrite.get() >= accessDeviceWrite.get()
-                        || accessHostRead.get() >= accessDeviceWrite.get();
-        //log.info("isActuialOnHostSide() -> {}, shape: {}", result, shape);
+    public synchronized boolean isActualOnHostSide() {
+        boolean result = accessHostWrite >= accessDeviceWrite
+                        || accessHostRead >= accessDeviceWrite;
+
         return result;
     }
 
@@ -393,20 +336,17 @@ public class AllocationPoint {
      *
      * @return
      */
-    public boolean isActualOnDeviceSide() {
-        //log.info("isActuialOnDeviceSide() -> Host side: [{}], Device side: [{}]", accessHostWrite.get(), accessDeviceWrite.get());
-        boolean result = accessDeviceWrite.get() >= accessHostWrite.get()
-                        || accessDeviceRead.get() >= accessHostWrite.get(); //accessHostWrite.get() <= getDeviceAccessTime();
-        //        log.info("isActuialOnDeviceSide() -> {} ({}), Shape: {}", result, objectId, shape);
+    public synchronized boolean isActualOnDeviceSide() {
+        boolean result = accessDeviceWrite >= accessHostWrite
+                        || accessDeviceRead >= accessHostWrite;
         return result;
     }
 
     /**
      * This method sets device access time equal to host write time
      */
-    public void tickDeviceToHost() {
-        accessDeviceRead.set(accessHostRead.get());
-        this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
+    public synchronized void tickDeviceToHost() {
+        accessDeviceRead = (accessHostRead);
     }
 
     @Override
