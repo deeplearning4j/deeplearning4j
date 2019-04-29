@@ -44,6 +44,7 @@ The math involved with deep learning is basically linear algebra, calculus and p
 * [An Introduction to MCMC for Machine Learning](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf)
 * [Eigenvectors, Eigenvalues, PCA, Covariance and Entropy](https://skymind.ai/wiki/eigenvector)
 * [Markov Chain Monte Carlo (MCMC) & Machine Learning](https://skymind.ai/wiki/markov-chain-monte-carlo)
+* [Relearning Matrices as Linear Functions](https://www.dhruvonmath.com/2018/12/31/matrices/)
 
 ## Programming
 
