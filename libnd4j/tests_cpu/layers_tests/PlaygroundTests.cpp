@@ -53,7 +53,7 @@ public:
     }
 };
 
-
+/*
 TEST_F(PlaygroundTests, LSTMBenchmarks_DebugTNS) {
 
     BenchmarkHelper helper(5,10);
@@ -162,6 +162,7 @@ TEST_F(PlaygroundTests, BroadcastOps2d) {
     nd4j_printf("About to execute\n","");
     helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
 }
+ */
 
 TEST_F(PlaygroundTests, test_small_reductions) {
     auto f = NDArrayFactory::create<float>('c', {1024 ,1024});
@@ -771,7 +772,7 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
     float *buff = reinterpret_cast<float*>(source.buffer());
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 100; e++) {
         //auto v = pool1[poolSize - 1 - cnt];
         //v->template applyScalar<simdOps::Add<float>>(2.0f);
         source.applyScalar(scalar::Add,2.0f);
@@ -810,7 +811,7 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
     float * array = reinterpret_cast<float*>(source.buffer());
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 1000; e++) {
 
 #pragma omp simd
         for (int i = 0; i < source.lengthOf(); i++) {
@@ -1619,7 +1620,6 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     delete[] array;
     delete[] z;
 }
-*/
 
 TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
@@ -1682,7 +1682,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
 
-/*
+
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
@@ -1939,19 +1939,19 @@ TEST_F(PlaygroundTests, im2col_2) {
     image.linspace(1, 1);
     ExtraArguments extras(std::vector<double>({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, 0., 0.}));
 
-    const int N = 20;
+    const int N = 1;
 
     // warm up
     void* params = extras.argumentsAsT(column.dataType());
-    NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col, nullptr, image.getShapeInfo(), image.getSpecialBuffer(), image.getSpecialShapeInfo(), nullptr, column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), params, nullptr, nullptr);
+    NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col, image.buffer(), image.getShapeInfo(), image.getSpecialBuffer(), image.getSpecialShapeInfo(), column.buffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), params, nullptr, nullptr);
 
     // ---------------------------------------- //
     auto timeStart2 = std::chrono::system_clock::now();
 
     for (int i = 0; i < N ; i++) {
         NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col,
-                                                nullptr, image.getShapeInfo(), image.getSpecialBuffer(),   image.getSpecialShapeInfo(),
-                                                nullptr, column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(),
+                                                image.buffer(), image.getShapeInfo(), image.getSpecialBuffer(),   image.getSpecialShapeInfo(),
+                                                column.buffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(),
                                                 params,
                                                 nullptr, nullptr);
     }
