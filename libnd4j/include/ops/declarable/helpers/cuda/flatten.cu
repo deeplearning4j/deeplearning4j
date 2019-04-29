@@ -15,20 +15,17 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+//  @author raver119@gmail.com
 //
 
-#include <ResultSet.h>
-#include <ops/declarable/helpers/reduce_dot.h>
+#include <ops/declarable/helpers/flatten.h>
 
 namespace nd4j {
-namespace ops {
-namespace helpers {
+    namespace ops {
+        namespace helpers {
+            void flatten(std::vector<NDArray*> &inputs, NDArray *output, char order) {
 
-    void reduceDotBP(graph::LaunchContext* context, NDArray* inputX, NDArray* inputY, NDArray* epsilon, NDArray* outputX, NDArray* outputY, std::vector<int> const& axes) {
-
+            }
+        }
     }
-
-}
-}
 }

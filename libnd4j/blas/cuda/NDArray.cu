@@ -734,7 +734,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong *shapeInfoNew;
         ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
+
+        throw std::runtime_error("FIXME");
+
         // we can do this only if there was no permute applied, or there are no weird strides
+        /*
         if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {            
             setShapeInfo(shapeInfoNew);
         } 
@@ -749,6 +753,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
+        */
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1799,7 +1804,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) const {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, &other, true, newShapeInfo, _context->getWorkspace()))          // the rank of new array = max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, _context->getWorkspace()))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         NDArray result(newShapeInfo, true, this->_context);
 
@@ -2092,6 +2097,39 @@ NDArray::~NDArray() noexcept {
         }
 
         NDArray::registerSpecialUse({result}, {this});
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        NDArray result(newShape, true, _context);
+        RELEASE(newShape, _context->getWorkspace());
+
+        NDArray::prepareSpecialUse({&result}, {this});
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result.getBuffer(), result.getShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), biasCorrected);
+        else {
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
+
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, nullptr, copy.size(), packX.specialShapeInfo(), packX.specialOffsets(), biasCorrected);
+
+            auto res = cudaStreamSynchronize(*_context->getCudaStream());
+            if (res != 0)
+                throw cuda_exception::build("varianceAlongDimension failed", res);
+        }
+
+        NDArray::registerSpecialUse({&result}, {this});
 
         return result;
     }
@@ -2776,6 +2814,23 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), ret->lengthOf(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), *stream), LIBND4J_TYPES);
 
         return ret;
+    }
+
+    void NDArray::nullify() {
+        if (isEmpty())
+            return;
+
+        if (isS())
+            throw std::runtime_error("Can't nullify string array");
+
+        if (isView()) {
+            this->assign(0);
+        } else {
+            if (_buffer != nullptr)
+                memset(_buffer, 0, this->lengthOf() * this->sizeOfT());
+
+            cudaMemsetAsync(_bufferD, 0, this->lengthOf() * this->sizeOfT(), *(this->_context->getCudaStream()));
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////

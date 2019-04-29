@@ -218,9 +218,10 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_6) {
 }
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_7) {
+    int zero = 0;
     auto matrix = NDArrayFactory::create<double>('c', {5, 4});
-    auto b = NDArrayFactory::create<int>('c', {1}, {(int)0});
-    auto e = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto b = NDArrayFactory::create<int>('c', {1}, {zero});
+    auto e = NDArrayFactory::create<int>('c', {1}, {zero});
     auto s = NDArrayFactory::create<int>('c', {1}, {1});
 
     //auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});

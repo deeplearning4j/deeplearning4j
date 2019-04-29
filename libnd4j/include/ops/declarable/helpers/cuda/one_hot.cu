@@ -15,25 +15,27 @@
  ******************************************************************************/
 
 //
-//  @author sgazeos@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 
-#include <ops/declarable/helpers/axis.h>
+
+#include<ops/declarable/helpers/one_hot.h>
+#include <array/ResultSet.h>
+#include <helpers/ShapeUtils.h>
+#include <numeric>
+#include <NDArrayFactory.h>
+#include <helpers/TAD.h>
+#include <exceptions/cuda_exception.h>
+#include <PointersManager.h>
+#include <ConstantTadHelper.h>
+
 
 namespace nd4j {
-namespace ops {
-namespace helpers {
-
-    template <typename T>
-    static void _minMaxReduceFunctor(NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize) {
-
+    namespace ops {
+        namespace helpers {
+            void onehot(graph::LaunchContext* context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off) {
+                //
+            }
+        }
     }
-
-    void minMaxReduceFunctor(graph::LaunchContext* context, NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize) {
-        BUILD_SINGLE_SELECTOR(gradOut->dataType(), _minMaxReduceFunctor, (input, gradOut, tempVals, output, normalize), FLOAT_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void _minMaxReduceFunctor, (NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize), FLOAT_TYPES);
-}
-}
 }
