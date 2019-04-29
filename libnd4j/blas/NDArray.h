@@ -1368,10 +1368,7 @@ namespace nd4j {
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
         */
-        NDArray* subarray(IndicesList& indices) const;
         NDArray* subarray(IndicesList& indices, std::vector<Nd4jLong>& strides) const;
-        NDArray* subarray(const std::initializer_list<NDIndex*>& idx) const;
-        NDArray* subarray(const Intervals& idx) const;
 
         /**
         *  returns true if array is 2D

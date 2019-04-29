@@ -1580,28 +1580,6 @@ void NativeOps::concat(
 //        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
     }
 
-    // allocate and copy all buffers and shapes arrays to global memory
-    PointersManager manager(LaunchContext::defaultContext(), "NativeOps::concat");
-    void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
-    void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
-    void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
-    void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
-
-    manager.synchronize();
-
-    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
-
-//    nd4j_printf("Prepare device pointers...", "");
-    // prepare arrays of pointers on buffers and shapes
-    std::vector<void*>     hOutBuffers(numArrays), hInBuffers(numArrays);
-    std::vector<Nd4jLong*> hOutShapeInfo(numArrays), hInShapeInfo(numArrays);
-    for(int i = 0; i < numArrays; ++i) {
-        hOutBuffers[i]   = outSubArrsBuffs[i];
-        hInBuffers[i]    = ddata[i];//->getSpecialBuffer();
-        hOutShapeInfo[i] = outSubArrsShapes[i];
-        hInShapeInfo[i]  = (Nd4jLong*)(dShapePointers[i]);//->getSpecialShapeInfo();
-//        nd4j_printf("X_%i shape ptr: %p; data ptr: %p;\n", i, hInShapeInfo[i], hInBuffers[i]);
-    }
 //    nd4j_printf(" done\n", "");
     LaunchContext context(stream);
     // allocate and copy all buffers and shapes arrays to global memory
@@ -1611,32 +1589,8 @@ void NativeOps::concat(
     void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
     void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
 
-//    nd4j_printf("Concat itself run...", "");
-
     BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
     manager.synchronize();
-//    nd4j_printf(" done\n", "");
-
-//    nd4j_printf("Postprocessing...", "");
-
-//    cudaError_t res = cudaStreamSynchronize(*stream);
-//    checkCudaErrors(res);
-//    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
-//    nd4j_printf(" done\n", "");
-//    nd4j_printf("Free up rest...", "");
-    cudaError_t err;
-    for(int i = 0; i < numArrays; ++i) {
-        err = cudaFree(outSubArrsShapes[i]);
-        if (err != 0) {
-            printf("Error %d occured when shape %i was deallocating.\n", err, i);
-            throw std::runtime_error("Cannot deallocate memory for shapes.");
-        }
-    }
-//    nd4j_printf(" done\n", "");
-//    nd4j_printf("All done!!!\n", "");
-    cudaError_t res = cudaStreamSynchronize(*stream);
-    checkCudaErrors(res);
-    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 
     cudaError_t err;
     for(int i = 0; i < numArrays; ++i) {
