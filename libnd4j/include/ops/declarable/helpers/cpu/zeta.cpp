@@ -57,7 +57,7 @@ static FORCEINLINE T zetaScalarSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static void zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray* output) {
+static void zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray &z) {
 
 	//auto result = NDArray(&x, false, context);
 	int xLen = x.lengthOf();
