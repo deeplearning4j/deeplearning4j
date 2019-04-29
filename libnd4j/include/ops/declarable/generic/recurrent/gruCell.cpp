@@ -102,21 +102,21 @@ DECLARE_SHAPE_FN(gruCell) {
     REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
     REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==numUnits, 0, "gruCell: cell biases must be rank 1, size numUnits");
 
-    Nd4jLong *s(nullptr);
-    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
+    Nd4jLong *s0(nullptr);
+    ALLOCATE(s0, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
-    s[0] = rank;
-    s[1] = bS;
-    s[2] = numUnits;
+    s0[0] = rank;
+    s0[1] = bS;
+    s0[2] = numUnits;
 
-    ShapeUtils::updateStridesAndType(s, x, shape::order(hLast));
+    ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
 
-    Nd4jLong *s1, *s2, *s3;
-    COPY_SHAPE(s, s1);
-    COPY_SHAPE(s, s2);
-    COPY_SHAPE(s, s3);
+    Nd4jLong* s1 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
+    Nd4jLong* s2 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
+    Nd4jLong* s3 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
 
-    return SHAPELIST(s, s1, s2, s3);
+    //4 output shapes, all [bs, numUnits]
+    return SHAPELIST(s0, s1, s2, s3);
 }
 
 

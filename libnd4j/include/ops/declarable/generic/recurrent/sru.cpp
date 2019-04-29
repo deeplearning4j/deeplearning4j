@@ -159,7 +159,7 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     const int inSize      = x->shapeOf()[1];                     // inSize - number of features
     const int time      = x->shapeOf()[2];                     // time - number of time steps
 
-    // multiplication matrix = matmul(w,x)
+      // multiplication matrix = matmul(w,x)
     auto wi = MmulHelper::mmul(w, x, nullptr, 1., 0.);            // U [bS x 3K x time]
     auto wiZ = (*wi)({0,0,  0,inSize,          0,0}, true);       // [bS x inSize x time]
     auto wiF = (*wi)({0,0,  inSize,2*inSize,   0,0}, true);       // forget gate [bS x inSize x time]

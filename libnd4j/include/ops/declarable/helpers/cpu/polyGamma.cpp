@@ -62,14 +62,14 @@ static FORCEINLINE T polyGammaScalar(graph::LaunchContext* context, const int n,
 	int sign = (n + 1) % 2  ?  -1 : 1;
 	// T factorial = (T)std::tgamma(n + 1);		
 
-	return sign * getFactorial<T>(n) * zeta<T>(context, (T)(n + 1), x);
+	return sign * getFactorial<T>(n) * zetaScalar<T>((T)(n + 1), x);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
+static void polyGamma_(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
 
 	NDArray& result = output;
 
@@ -82,10 +82,10 @@ static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const ND
 }
 
 	void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (context, n, x, output), FLOAT_TYPES);
+		BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template void _polyGamma, (graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void polyGamma_, (graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 

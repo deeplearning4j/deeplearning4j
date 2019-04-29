@@ -78,8 +78,7 @@ namespace nd4j {
 NDArray::NDArray(const NDArray& other) {
 
     _context = other._context;
-
-    setShapeInfo(other._shapeInfo);
+    setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
     ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
 
@@ -153,8 +152,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
         _context = context;
         setShapeInfo(ShapeDescriptor(other->_shapeInfo));
     } else
-        setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->getShapeAsVector()));
-
+        setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->shapeOf(), other->rankOf()));
     triggerAllocationFlag(true);
 
     // memcpy is handled within execTransformAny
@@ -194,15 +192,10 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 
     if (copyStrides)
         setShapeInfo(ShapeDescriptor(shapeInfo));
-    else {
+    else
         setShapeInfo(ShapeDescriptor(dtype, shape::order(shapeInfo), shape::shapeOf(shapeInfo), shape::rank(shapeInfo)));
-    }
 
-    if (this->isEmpty()) {
-        _length = 0;
-        triggerAllocationFlag(false);
-    }
-    else {
+    if (!isEmpty()) {
         ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOfElement(_dataType), int8_t);
         memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
         triggerAllocationFlag(true);
@@ -239,12 +232,9 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if(_isBuffAlloc && _context->getWorkspace() == nullptr)
             delete []_buffer;
 
-        _length = other._length;
-        _dataType = other._dataType;
+        _context = other._context;
+        setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
-        _context= other._context;
-
-        _shapeInfo = other._shapeInfo;
         ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
 
         triggerAllocationFlag(true);

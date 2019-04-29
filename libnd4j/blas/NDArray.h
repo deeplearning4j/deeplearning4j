@@ -340,6 +340,13 @@ namespace nd4j {
         NDArray* getView();
 
         /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
+        NDArray* subarray(IndicesList& indices) const;
+        NDArray* subarray(const std::initializer_list<NDIndex*>& idx) const;
+        NDArray* subarray(const Intervals& idx) const;
+
+        /**
         *  cast array elements to given dtype
         */
         template <typename T>
