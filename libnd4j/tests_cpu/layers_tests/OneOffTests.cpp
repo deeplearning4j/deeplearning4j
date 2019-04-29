@@ -60,6 +60,7 @@ TEST_F(OneOffTests, test_non2d_0A_1) {
     delete graph;
 }
 
+/*
 TEST_F(OneOffTests, test_assert_scalar_float32_1) {
     nd4j::ops::Assert op;
     nd4j::ops::identity op1;
@@ -73,7 +74,7 @@ TEST_F(OneOffTests, test_assert_scalar_float32_1) {
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
     delete graph;
-}
+}*/
 
 TEST_F(OneOffTests, test_assert_scalar_float32_2) {
     nd4j::ops::Assert op;

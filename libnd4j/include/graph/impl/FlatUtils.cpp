@@ -100,6 +100,7 @@ namespace nd4j {
             auto array = new NDArray(newBuffer, newShape);
             array->triggerAllocationFlag(true);
 
+            delete[] newShape;
             return array;
         }
     }

@@ -1024,8 +1024,18 @@ NDArray& NDArray::operator=(const NDArray& other) {
 
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
-        auto u = e<utf8string>(i);
-        std::string r(u._buffer);
+        if (!isS())
+            throw std::runtime_error("Can't get std::string out of non-string array");
+
+        // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
+        auto offset = getOffset(i);
+        auto offsets = reinterpret_cast<Nd4jLong *>(_buffer);
+        auto offsetsLength = ShapeUtils::stringBufferHeaderRequirements(this->lengthOf());
+        auto start = offsets[offset];
+        auto end = offsets[offset + 1];
+        auto data = _buffer + offsetsLength + start;
+
+        std::string r(reinterpret_cast<const char *>(data), (end - start));
         return r;
     }
 
