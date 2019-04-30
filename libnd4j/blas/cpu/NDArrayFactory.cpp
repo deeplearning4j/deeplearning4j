@@ -52,9 +52,11 @@ namespace nd4j {
 
         res.setBuffer(buffer);
         res.setContext(context);
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace()));
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace());
+        res.setShapeInfo(shapeInfo);
 
         res.triggerAllocationFlag(true);
+        RELEASE(shapeInfo, context->getWorkspace());
 
         return res;
     }
@@ -74,8 +76,10 @@ namespace nd4j {
         memcpy(data, str.c_str(), str.length());
 
         res->setBuffer(buffer);
-        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace()));
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace());
+        res->setShapeInfo(shapeInfo);
         res->setContext(context);
+        RELEASE(shapeInfo, context->getWorkspace());
 
         res->triggerAllocationFlag(true);
 
