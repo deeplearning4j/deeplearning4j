@@ -972,16 +972,27 @@ NDArray& NDArray::operator=(const NDArray& other) {
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 
-        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _context->getWorkspace());
-        void* outBuffer = nullptr;
-        ALLOCATE(outBuffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
+        // for now string arrays require special treatment
+        if (this->dataType() == DataType::UTF8) {
+            std::vector<std::string> strings(_length);
+            for (int e = 0; e < _length; e++)
+                strings[e] = this->e<std::string>(e);
 
-        auto result = new NDArray(outBuffer, outShapeInfo, _context, true);
-        result->assign(this);
+            auto result = NDArrayFactory::string_(order, this->getShapeAsVector(), strings, _context);
+            return result;
+        } else {
+            auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(),
+                                                               _context->getWorkspace());
+            void *outBuffer = nullptr;
+            ALLOCATE(outBuffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
 
-        RELEASE(outShapeInfo, _context->getWorkspace());
+            auto result = new NDArray(outBuffer, outShapeInfo, _context, true);
+            result->assign(this);
 
-        return result;
+            RELEASE(outShapeInfo, _context->getWorkspace());
+
+            return result;
+        }
     }
 
 ////////////////////////////////////////////////////////////////////////
