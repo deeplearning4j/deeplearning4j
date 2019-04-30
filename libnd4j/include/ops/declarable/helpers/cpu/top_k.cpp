@@ -149,7 +149,7 @@ namespace helpers {
             std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI));
             NDArray* values = nullptr;
             int status = topKFunctor(context, input, values, indices.get(), k, true);
-
+            result->assign(0);
             if (status == ND4J_STATUS_OK) {
                 bool condition = target->lengthOf() > Environment::getInstance()->tadThreshold();
                 PRAGMA_OMP_PARALLEL_FOR_IF(condition)
