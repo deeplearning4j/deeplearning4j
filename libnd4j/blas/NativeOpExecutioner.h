@@ -239,6 +239,18 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
+    static void execInverseBroadcast(nd4j::graph::LaunchContext *lc,
+                                     int opNum,
+                                     void *x, Nd4jLong *xShapeInfo,
+                                     void *dX, Nd4jLong *dXShapeInfo,
+                                     void *y, Nd4jLong *yShapeInfo,
+                                     void *dY, Nd4jLong *dYShapeInfo,
+                                     void *result, Nd4jLong *resultShapeInfo,
+                                     void *dZ, Nd4jLong *dZShapeInfo,
+                                     int *dimension, int dimensionLength,
+                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                     Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
 
     static void execBroadcastBool(nd4j::graph::LaunchContext *lc,
                             int opNum,
@@ -251,6 +263,18 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+
+    static void execInverseBroadcastBool(nd4j::graph::LaunchContext *lc,
+                                     int opNum,
+                                     void *x, Nd4jLong *xShapeInfo,
+                                     void *dX, Nd4jLong *dXShapeInfo,
+                                     void *y, Nd4jLong *yShapeInfo,
+                                     void *dY, Nd4jLong *dYShapeInfo,
+                                     void *result, Nd4jLong *resultShapeInfo,
+                                     void *dZ, Nd4jLong *dZShapeInfo,
+                                     int *dimension, int dimensionLength,
+                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                     Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
     
 /**
   *
