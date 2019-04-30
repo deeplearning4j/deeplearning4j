@@ -1108,12 +1108,11 @@ TEST_F(DeclarableOpsTests9, matmul_test11) {
 
     x.linspace(1.);
     y.linspace(0.5, 0.5);
- 
     nd4j::ops::matmul op;
     auto results = op.execute({&x, &y}, {}, {1, 1});
-    auto z = results->at(0);
- 
     ASSERT_EQ(Status::OK(), results->status());
+
+    auto z = results->at(0);
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1132,9 +1131,9 @@ TEST_F(DeclarableOpsTests9, matmul_test12) {
  
     nd4j::ops::matmul op;
     auto results = op.execute({&x, &y}, {}, {1, 1});
-    auto z = results->at(0);
- 
+
     ASSERT_EQ(Status::OK(), results->status());
+    auto z = results->at(0);
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 

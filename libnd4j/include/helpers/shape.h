@@ -1423,13 +1423,13 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong *shape, int rank, int startNum, Nd4jLong *ret) {
         if (isVector(shape, rank)) {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < rank; i++)
                 ret[i] = 1;
             return ret;
 
         }
 
-        int dimensions = rank;
+        //int dimensions = rank;
 
         int st = startNum;
         for (int j = 0; j < rank; j++) {
@@ -2041,11 +2041,11 @@ template <typename T>
                return ews * index;
 
         Nd4jLong offset = 0;
-
+        Nd4jLong rank = shapeInfo[0];
         for(int i = 1; i <= shapeInfo[0]; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + shapeInfo[0]];
+                offset += (index / arrLen) * shapeInfo[i + rank];
                 index %= arrLen;
             }
         }
