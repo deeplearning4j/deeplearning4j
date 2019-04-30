@@ -2010,7 +2010,7 @@ TEST_F(MultiDataTypeTests, assign_2)
 {    
     NDArray x('c', {4}, {1.5,2.5,3.5,4.5}, nd4j::DataType::FLOAT32);
     NDArray y('c', {4}, nd4j::DataType::INT32);
-    NDArray expected('c', {4}, {2,2,3,4}, nd4j::DataType::INT32);
+    NDArray expected('c', {4}, {1,2,3,4}, nd4j::DataType::INT32);
     
     y.assign(x);
     y.printBuffer();
