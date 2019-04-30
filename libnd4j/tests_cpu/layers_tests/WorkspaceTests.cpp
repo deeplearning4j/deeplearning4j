@@ -255,8 +255,9 @@ TEST_F(WorkspaceTests, Test_Externalized_1) {
 
     auto x = NDArrayFactory::create<float>('c', {10, 10}, &ctx);
 
-    ASSERT_EQ(64 + 400, ws.getUsedSize());
-    ASSERT_EQ(64 + 400, ws.getCurrentOffset());
+    // only buffer size goes into account
+    ASSERT_EQ(400, ws.getUsedSize());
+    ASSERT_EQ(400, ws.getCurrentOffset());
 
     x.assign(2.0);
 
