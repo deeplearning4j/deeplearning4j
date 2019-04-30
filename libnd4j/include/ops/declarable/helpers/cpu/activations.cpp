@@ -373,7 +373,7 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
         if(input.isVector()) {
 
             if(rank == 1 || input.sizeAt(dimension) != 1) {
-                //BUILD_SINGLE_SELECTOR(input.dataType(), logSoftMaxForVector_, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(input.dataType(), logSoftMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
             }
             else
                 output = 0.;
