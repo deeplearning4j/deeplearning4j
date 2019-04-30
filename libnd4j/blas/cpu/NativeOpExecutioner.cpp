@@ -561,10 +561,10 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     if (xType != yType)
-        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", xType, yType);
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
 
     if (zType != nd4j::DataType::BOOL)
-        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", nd4j::DataType::BOOL, zType);
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", nd4j::DataType::BOOL, zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), LIBND4J_TYPES, BOOL_TYPES);
 }
@@ -588,10 +588,10 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     if (xType != yType)
-        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", xType, yType);
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
 
     if (zType != nd4j::DataType::BOOL)
-        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", nd4j::DataType::BOOL, zType);
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", nd4j::DataType::BOOL, zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
