@@ -118,8 +118,8 @@ namespace nd4j {
                     newShape[5] = 0;
                     newShape[6] = 1;
                     newShape[7] = 99;
-
-                    ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
+                    ShapeUtils::updateStridesAndType(newShape, nd4j::DataType::INT64, 'c');
+                    //ArrayOptions::setDataType(newShape, );
                 }
                 else {
                     newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
