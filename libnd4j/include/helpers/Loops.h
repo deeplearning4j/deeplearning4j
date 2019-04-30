@@ -296,207 +296,259 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //         printf("%u - %lld\n", i, zOffset);
             //     }
             // }
-            case LoopKind::SMALLARR2DX: {
-                const auto uTadLen        = static_cast<uint>(tadLen);
-                const auto uZLenMinusOne  = static_cast<uint>(zLen - 1);
-                const auto xLen           = static_cast<uint>(zLen * uTadLen);
-                const auto sv             = static_cast<Z>(OpType::startingValue(x));
+            // case LoopKind::SMALLARR2DX: {
+            //     const auto uTadLen        = static_cast<uint>(tadLen);
+            //     const auto uZLenMinusOne  = static_cast<uint>(zLen - 1);
+            //     const auto xLen           = static_cast<uint>(zLen * uTadLen);
+            //     const auto sv             = static_cast<Z>(OpType::startingValue(x));
 
-                for (uint i = 0; i <= uZLenMinusOne; i++)
-                    z[i] = OpType::startingValue(x);
+            //     for (uint i = 0; i <= uZLenMinusOne; i++)
+            //         z[i] = OpType::startingValue(x);
 
-                uint zOffset = 0;
-                for (uint i = 0; i < xLen; ++i) {
-                    z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
-                    zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
-                }
+            //     uint zOffset = 0;
+            //     for (uint i = 0; i < xLen; ++i) {
+            //         z[zOffset] = OpType::update(z[zOffset], OpType::op(x[i], extraParams), extraParams);
+            //         zOffset = zOffset == uZLenMinusOne ? 0 : zOffset + 1;
+            //     }
 
-                for (uint i = 0; i <= uZLenMinusOne; i++)
-                    z[i] = OpType::postProcess(z[i], tadLen, extraParams);
-            }
-                break;
+            //     for (uint i = 0; i <= uZLenMinusOne; i++)
+            //         z[i] = OpType::postProcess(z[i], tadLen, extraParams);
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::EWS1: {
+            //     //*********************************************//
+            // case LoopKind::EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        start = OpType::update(start, OpType::op(tad[j], extraParams), extraParams);
+            //         for (uint j = 0; j < tadLen; j++)
+            //             start = OpType::update(start, OpType::op(tad[j], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::EWSNONZERO: {
+            //     //*********************************************//
+            // case LoopKind::EWSNONZERO: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
+            //         for (uint j = 0; j < tadLen; j++)
+            //             start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
 
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::RANK1: {
+            //     //*********************************************//
+            // case LoopKind::RANK1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint i0 = 0; i0 < tadLen; ++i0)
-                        start = OpType::update(start, OpType::op(tad[i0 * tadStride[0]], extraParams), extraParams);
+            //         for (uint i0 = 0; i0 < tadLen; ++i0)
+            //             start = OpType::update(start, OpType::op(tad[i0 * tadStride[0]], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::RANK2: {
+            //     //*********************************************//
+            // case LoopKind::RANK2: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; ++i) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; ++i) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0)
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1)
-                            start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1]], extraParams), extraParams);
+            //         for (uint i0 = 0; i0 < tadShape[0]; ++i0)
+            //             for (uint i1 = 0; i1 < tadShape[1]; ++i1)
+            //                 start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1]], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::RANK3: {
+            //     //*********************************************//
+            // case LoopKind::RANK3: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; ++i) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; ++i) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0)
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1)
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2)
-                                start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2]], extraParams), extraParams);
+            //         for (uint i0 = 0; i0 < tadShape[0]; ++i0)
+            //             for (uint i1 = 0; i1 < tadShape[1]; ++i1)
+            //                 for (uint i2 = 0; i2 < tadShape[2]; ++i2)
+            //                     start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2]], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::RANK4: {
+            //     //*********************************************//
+            // case LoopKind::RANK4: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; ++i) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; ++i) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0)
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1)
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2)
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3)
-                                    start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3]], extraParams), extraParams);
+            //         for (uint i0 = 0; i0 < tadShape[0]; ++i0)
+            //             for (uint i1 = 0; i1 < tadShape[1]; ++i1)
+            //                 for (uint i2 = 0; i2 < tadShape[2]; ++i2)
+            //                     for (uint i3 = 0; i3 < tadShape[3]; ++i3)
+            //                         start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3]], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::RANK5: {
+            //     //*********************************************//
+            // case LoopKind::RANK5: {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; ++i) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; ++i) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0)
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1)
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2)
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3)
-                                    for (uint i4 = 0; i4 < tadShape[4]; ++i4)
-                                        start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3] + i4*tadStride[4] ], extraParams), extraParams);
+            //         for (uint i0 = 0; i0 < tadShape[0]; ++i0)
+            //             for (uint i1 = 0; i1 < tadShape[1]; ++i1)
+            //                 for (uint i2 = 0; i2 < tadShape[2]; ++i2)
+            //                     for (uint i3 = 0; i3 < tadShape[3]; ++i3)
+            //                         for (uint i4 = 0; i4 < tadShape[4]; ++i4)
+            //                             start = OpType::update(start, OpType::op(tad[i0*tadStride[0] + i1*tadStride[1] + i2*tadStride[2] + i3*tadStride[3] + i4*tadStride[4] ], extraParams), extraParams);
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::X_EWSNONZERO: {
-                uint castZShapeInfo[MAX_RANK];
-                const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
+            //     //*********************************************//
+            // case LoopKind::X_EWSNONZERO: {
+            //     uint castZShapeInfo[MAX_RANK];
+            //     const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++)
-                        start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
+            //         for (uint j = 0; j < tadLen; j++)
+            //             start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
 
-                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
-                    z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+            //         z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
-            case LoopKind::Z_EWSNONZERO: {
-                uint castTadShapeInfo[MAX_RANK];
-                const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
+            //     //*********************************************//
+            // case LoopKind::Z_EWSNONZERO: {
+            //     uint castTadShapeInfo[MAX_RANK];
+            //     const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
-                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
-                        start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
-                    }
+            //         for (uint j = 0; j < tadLen; j++) {
+            //             auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+            //             start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
+            //         }
 
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
-            }
-                break;
+            //         z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+            //     break;
 
-                //*********************************************//
+            //*********************************************//
+            // default: {
+            //     uint castTadShapeInfo[MAX_RANK];
+            //     uint castZShapeInfo[MAX_RANK];
+            //     const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
+            //     const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
+
+            //     PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+            //     for (uint i = 0; i < zLen; i++) {
+            //         auto tad = x + tadOffsets[i];
+            //         auto start = OpType::startingValue(tad);
+
+            //         for (uint j = 0; j < tadLen; j++) {
+            //             auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+            //             start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
+            //         }
+
+            //         auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+            //         z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
+            //     }
+            // }
+
+            //*********************************************//
             default: {
-                uint castTadShapeInfo[MAX_RANK];
+
+
                 uint castZShapeInfo[MAX_RANK];
-                const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
                 const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+                const int tadRankMinusOne = shape::rank(tadShapeInfo) - 1;
+                Nd4jLong* offsetPerDimTad = new Nd4jLong[tadRankMinusOne];                
+                Nd4jLong* idxTad  = new Nd4jLong[tadRankMinusOne];
+                memset(idxTad, 0, sizeof(Nd4jLong) * tadRankMinusOne);
+                const Nd4jLong* shapeTad  = shape::shapeOf(tadShapeInfo);
+                const Nd4jLong* strideTad = shape::stride(tadShapeInfo);
+
+                PRAGMA_OMP_SIMD
+                for (int k = 0; k < tadRankMinusOne; ++k) 
+                    offsetPerDimTad[k] = (shapeTad[k] - 1) * strideTad[k];                
+                
+
+                // PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
                 for (uint i = 0; i < zLen; i++) {
                     auto tad = x + tadOffsets[i];
                     auto start = OpType::startingValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
-                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+                    // first iteration
+                    start = OpType::update(start, OpType::op(tad[0], extraParams), extraParams);
+
+                    
+                    Nd4jLong initTad(0), tadOffset(0);
+                    Nd4jLong ind = tadRankMinusOne, l = 1;
+                    
+                    while(ind >= 0) {
+
+                       if(shapeTad[ind] == 1) { --ind; continue; } // ignore dimensions equal to unity
+
+                        if(ind == tadRankMinusOne) {              // last dimension
+                            if(l < shapeTad[ind]) {tadOffset += strideTad[ind]; ++l;}
+                            else                    {l = 1; --ind; continue; }
+                        }
+                        else if(idxTad[ind] < shapeTad[ind] - 1) { initTad += strideTad[ind]; tadOffset = initTad; ++idxTad[ind]; ind = tadRankMinusOne; }
+                        else                                     { initTad -= offsetPerDimTad[ind]; idxTad[ind--] = 0; continue;}
+
                         start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
                     }
 
                     auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
                     z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
+                                delete []idxTad;
+                delete []offsetPerDimTad;
             }
         }
     }

@@ -1875,8 +1875,8 @@ TEST_F(PlaygroundTests, loops_2) {
 TEST_F(PlaygroundTests, loops_3) {
     
     const uint N = 5;
-    const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
-    // const Nd4jLong dim0(10), dim1(10), dim2(10);
+    // const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
+    const Nd4jLong dim0(10), dim1(10), dim2(10);
 
     const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,99};
     const Nd4jLong len = shape::length(shapeInfo);
@@ -2016,4 +2016,26 @@ TEST_F(PlaygroundTests, loops_3) {
     nd4j_printf("Old time: %lld us;\n", oldTime);
 
     delete []buff;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loops_4) {
+
+    const uint N = 1;
+    const Nd4jLong dim0(256), dim1(256), dim2(256), dim3(256);
+    NDArray x('c', {dim0, dim1, dim2, dim3});
+    NDArray z('c', {dim0, dim2});
+
+    x = 0.1;
+    
+    // warm up
+    for (int i = 0; i < 1000; ++i) 32*512;
+
+    
+    auto timeStart = std::chrono::system_clock::now();    
+    for (uint i = 0; i < N; ++i)
+        x.reduceAlongDimension(reduce::Sum, &z, {1,3});
+    auto timeEnd = std::chrono::system_clock::now();
+    auto myTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N) .count();
+    nd4j_printf("My  time: %lld us;\n", myTime);
 }
