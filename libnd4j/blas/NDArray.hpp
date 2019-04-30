@@ -111,7 +111,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc) {
     
-    if (buffer == nullptr)
+    if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
         throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
     
     if (shapeInfo == nullptr)

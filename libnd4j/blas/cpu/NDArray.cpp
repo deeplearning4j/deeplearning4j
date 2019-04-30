@@ -964,6 +964,8 @@ NDArray& NDArray::operator=(const NDArray& other) {
     ////////////////////////////////////////////////////////////////////////
     // This method returns new copy of this NDArray, optionally in different order
     NDArray* NDArray::dup(const char newOrder) {
+        if (isEmpty())
+            return NDArrayFactory::empty_(this->dataType(), this->_context);
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 

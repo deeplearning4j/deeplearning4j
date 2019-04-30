@@ -268,7 +268,9 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
 
     result->setAttached(context->getWorkspace() != nullptr);
 
-    result->setShapeInfo(ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace()));
+    auto shapeInfo = ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace());
+    result->setShapeInfo(shapeInfo);
+    RELEASE(shapeInfo, context->getWorkspace());
 
     if (result->lengthOf() != data.size()) {
         nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->shapeInfo()));
@@ -511,6 +513,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         auto result = new NDArray(nullptr, shapeInfo, context, false);
+        RELEASE(shapeInfo, context->getWorkspace());
 
         return result;
     }
@@ -527,6 +530,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         NDArray result(nullptr, shapeInfo, context);
         result.triggerAllocationFlag(false);
+        RELEASE(shapeInfo, context->getWorkspace());
 
         return result;
     }
