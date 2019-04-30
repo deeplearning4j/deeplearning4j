@@ -341,8 +341,25 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Where_SGO_Test_02) {
+    auto input = NDArrayFactory::create<bool>('c', {2, 2, 2}, {true, false, false, true, true, true, true, false});
+    //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5, 3}, {0LL, 0LL, 0LL, 0LL, 1LL, 1LL, 1LL, 0LL, 0LL, 1LL, 0LL, 1LL, 1LL, 1LL, 0LL});
+
+    nd4j::ops::Where op;
+    auto res = op.execute({&input}, {}, {});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    auto  resA = res->at(0);
+    resA->printIndexedBuffer("Where02");
+    resA->printBuffer("Where02lINEAR");
+    ASSERT_TRUE(exp.equalsTo(resA));
+    ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
-//    auto cond3d = NDArrayFactory::create<bool>('c', {2, 2, 2}, {1, 0, 0, 1, 1, 1, 1, 0}); // bool not implemented yet
     auto cond3d = NDArrayFactory::create<bool>('c', {2, 2, 2}, {true, false, false, true, true, true, true, false});
 //    auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
     auto exp1 = NDArrayFactory::create<Nd4jLong>({0, 0, 1, 1, 1});
@@ -355,6 +372,9 @@ TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
     auto res1 = res->at(0);
     auto res2 = res->at(1);
     auto res3 = res->at(2);
+//    res1->printShapeInfo("Res1 shape"); res1->printBuffer("Res1");
+//    res2->printShapeInfo("Res2 shape"); res2->printBuffer("Res2");
+//    res3->printShapeInfo("Res3 shape"); res3->printBuffer("Res3");
     ASSERT_TRUE(exp1.equalsTo(res1));
     ASSERT_TRUE(exp2.equalsTo(res2));
     ASSERT_TRUE(exp3.equalsTo(res3));
