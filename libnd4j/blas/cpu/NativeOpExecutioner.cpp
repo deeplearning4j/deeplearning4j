@@ -140,6 +140,33 @@ void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 #endif
 }
 
+void NativeOpExecutioner::execInverseBroadcast(nd4j::graph::LaunchContext *lc,
+                                               int opNum,
+                                               void *hX, Nd4jLong *hXShapeInfo,
+                                               void *dX, Nd4jLong *dXShapeInfo,
+                                               void *hY, Nd4jLong *hYShapeInfo,
+                                               void *dY, Nd4jLong *dYShapeInfo,
+                                               void *hZ, Nd4jLong *hZShapeInfo,
+                                               void *dZ, Nd4jLong *dZShapeInfo,
+                                               int *dimension, int dimensionLength,
+                                               Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                               Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
+        if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
+
+#ifdef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+#endif
+
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
@@ -159,6 +186,28 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOpExecutioner::execInverseBroadcastBool(nd4j::graph::LaunchContext *lc,
+                                                  int opNum,
+                                                  void *hX, Nd4jLong *hXShapeInfo,
+                                                  void *dX, Nd4jLong *dXShapeInfo,
+                                                  void *hY, Nd4jLong *hYShapeInfo,
+                                                  void *dY, Nd4jLong *dYShapeInfo,
+                                                  void *hZ, Nd4jLong *hZShapeInfo,
+                                                  void *dZ, Nd4jLong *dZShapeInfo,
+                                                  int *dimension, int dimensionLength,
+                                                  Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                                  Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
+        if (yType != xType || nd4j::DataType::BOOL != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type", xType, yType);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

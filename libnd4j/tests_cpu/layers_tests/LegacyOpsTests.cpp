@@ -446,10 +446,9 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
 
     shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
 
-    //NativeOpExecutioner::execInverseBroadcast(broadcast::Add, x.buffer(), x.shapeInfo(), y.buffer(), y.shapeInfo(), y.buffer(), y.shapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    NativeOpExecutioner::execInverseBroadcast(LaunchContext::defaultContext(), broadcast::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-    //ASSERT_EQ(e, y);
-    throw std::runtime_error("FIXME");
+    ASSERT_EQ(e, y);
 }
 
 TEST_F(LegacyOpsTests, PowDerivative_1) {
