@@ -168,7 +168,7 @@ TEST_F(PlaygroundTests, test_small_reductions) {
     auto f = NDArrayFactory::create<float>('c', {1024 ,1024});
     f.assign(1.0f);
 
-    int iterations = 100;
+    int iterations = 1;
     std::vector<Nd4jLong> results(iterations);
     Nd4jLong mean = 0L;
     Nd4jLong max = 0L;
@@ -213,7 +213,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
 
     //x.printShapeInfo("x");
 
-    int iterations = 100;
+    int iterations = 1;
     std::vector<Nd4jLong> results(iterations);
     Nd4jLong mean = 0L;
     Nd4jLong max = 0L;
@@ -737,7 +737,7 @@ TEST_F(PlaygroundTests, ReductionTest_1) {
 
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 1; e++) {
         auto v = pool1[poolSize - 1 - cnt];
         auto r = v->sumNumber();
 
@@ -1279,7 +1279,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     
     NDArray x('c', {40, 25}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 10;
+    const int iterations = 1;
     const int arrays = 10;
 
     std::vector<NDArray> arrs(arrays);
@@ -1375,7 +1375,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test3) {
     
     NDArray x('c', {50, 250}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 100;
+    const int iterations = 1;
     const int arrays = 100;
 
     std::vector<NDArray> arrs(arrays);
@@ -1471,7 +1471,7 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
     //indices.printIndexedBuffer("indices");
     //codes.printIndexedBuffer("codes");
 
-    auto iterations = 10;
+    auto iterations = 1;
 
     nd4j::ops::skipgram op;
 
@@ -1499,11 +1499,11 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_1) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
     // warm up
-    for (int e = 0; e < 5; e++) {
+    for (int e = 0; e < 1; e++) {
         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
-    int iterations = 10;
+    int iterations = 1;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
@@ -1521,11 +1521,11 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
      // warm up
-     for (int e = 0; e < 100; e++) {
+     for (int e = 0; e < 1; e++) {
          NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
      }
 
-     int iterations = 100;
+     int iterations = 1;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
          NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
@@ -1543,11 +1543,11 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
     // warm up
-    for (int e = 0; e < 100; e++) {
+    for (int e = 0; e < 1; e++) {
         NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
-    int iterations = 100;
+    int iterations = 1;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
         NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
@@ -1572,7 +1572,7 @@ TEST_F(PlaygroundTests, test_assign_float) {
          NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
      }
 
-     int iterations = 10;
+     int iterations = 1;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
          NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
@@ -1717,7 +1717,7 @@ TEST_F(PlaygroundTests, conv2d_1) {
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, batchnorm_1) {
 
-    const int N   = 100;
+    const int N   = 1;
     NDArray input   ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray output  ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray mean    ('c', {32}, nd4j::DataType::FLOAT32);
@@ -1745,7 +1745,7 @@ TEST_F(PlaygroundTests, batchnorm_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, softmax_1) {
     
-    const int N = 100;
+    const int N = 1;
     NDArray input('c', {1024, 256}, nd4j::DataType::FLOAT32);
     NDArray output('c', {1024, 256}, nd4j::DataType::FLOAT32);
 
@@ -1857,7 +1857,7 @@ TEST_F(PlaygroundTests, loops_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, newTads_1) {
 
-    const int N = 1000;
+    const int N = 1;
 
     Nd4jLong shapeInfo[] = {4, 1024,1024,1024,1024,  1024*1024*1024,1024*1024,1024,1,  16384,1,99};
     const int rank = shape::rank(shapeInfo);
@@ -1903,7 +1903,7 @@ TEST_F(PlaygroundTests, im2col_1) {
 
     image.linspace(1, 1);
 
-    const int N = 20;
+    const int N = 1;
 
     // warm up
     nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);   // warm up
@@ -1960,7 +1960,7 @@ TEST_F(PlaygroundTests, im2col_2) {
     auto duration2 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd2 - timeStart2) / N).count();
     printf("duration old %ld\n", duration2);
 }
-
+/*
 TEST_F(PlaygroundTests, test_scatter_119) {
     auto output = NDArrayFactory::create<float>('c', {65536, 512});
     auto updates = NDArrayFactory::create<float>('c', {65536, 512});
@@ -1972,7 +1972,7 @@ TEST_F(PlaygroundTests, test_scatter_119) {
 
     indices.syncToDevice();
 
-    int N = 10;
+    int N = 1;
 
     auto timeStart1 = std::chrono::system_clock::now();
 
@@ -1998,7 +1998,7 @@ TEST_F(PlaygroundTests, test_scatter_120) {
 
     indices->syncToDevice();
 
-    int N = 10;
+    int N = 1;
 
     auto timeStart1 = std::chrono::system_clock::now();
 
@@ -2017,7 +2017,7 @@ TEST_F(PlaygroundTests, test_scatter_120) {
     delete updates;
 }
 
-/*
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, mmulMxM_1) {
 
