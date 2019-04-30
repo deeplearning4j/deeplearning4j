@@ -16,6 +16,7 @@
 
 package org.datavec.nlp.vectorizer;
 
+import lombok.Getter;
 import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -47,16 +48,19 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
     public final static String MIN_WORD_FREQUENCY = "org.nd4j.nlp.minwordfrequency";
     public final static String STOP_WORDS = "org.nd4j.nlp.stopwords";
     public final static String TOKENIZER = "org.datavec.nlp.tokenizerfactory";
+    public static final String PREPROCESSOR = "org.datavec.nlp.preprocessor";
     public final static String VOCAB_CACHE = "org.datavec.nlp.vocabcache";
     protected Collection<String> stopWords;
+    @Getter
     protected VocabCache cache;
 
     @Override
     public void initialize(Configuration conf) {
         tokenizerFactory = createTokenizerFactory(conf);
         minWordFrequency = conf.getInt(MIN_WORD_FREQUENCY, 5);
-        stopWords = conf.getStringCollection(STOP_WORDS);
-        if (stopWords == null || stopWords.isEmpty())
+        if(conf.get(STOP_WORDS) != null)
+            stopWords = conf.getStringCollection(STOP_WORDS);
+        if (stopWords == null)
             stopWords = StopWords.getStopWords();
 
         String clazz = conf.get(VOCAB_CACHE, DefaultVocabCache.class.getName());
@@ -80,12 +84,10 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
             Record record = reader.nextRecord();
             String s = toString(record.getRecord());
             Tokenizer tokenizer = tokenizerFactory.create(s);
-            cache.incrementNumDocs(1);
             doWithTokens(tokenizer);
             if (callBack != null)
                 callBack.onRecord(record);
-
-
+            cache.incrementNumDocs(1);
         }
     }
 
@@ -101,19 +103,11 @@ public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_T
 
 
     protected String toString(Collection<Writable> record) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        for (Writable w : record) {
-            if (w instanceof Text) {
-                try {
-                    w.write(dos);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        StringBuilder sb = new StringBuilder();
+        for(Writable w : record){
+            sb.append(w.toString());
         }
-
-        return new String(bos.toByteArray());
+        return sb.toString();
     }
 
 

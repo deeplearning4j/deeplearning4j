@@ -73,18 +73,6 @@
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-data-image</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-data-codec</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
             <artifactId>datavec-geo</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

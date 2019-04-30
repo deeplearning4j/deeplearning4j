@@ -104,7 +104,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
             affiliated.set(new AtomicBoolean(false));
 
             if (threadId == Thread.currentThread().getId()) {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
                 //logger.error("setDevice({}) called for thread {}", deviceId, Thread.currentThread().getName());
                 affiliated.get().set(true);
             }
@@ -117,7 +117,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
                     affiliated.set(new AtomicBoolean(false));
 
                 if (!affiliated.get().get()) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(aff));
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(aff);
                     //logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
                     affiliated.get().set(true);
                     return aff;
@@ -280,7 +280,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         if (currentDeviceId != deviceId.intValue()) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
             attachThreadToDevice(Thread.currentThread().getId(), deviceId);
         }
 
@@ -292,7 +292,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (currentDeviceId != deviceId.intValue()) {
             Nd4j.getMemoryManager().releaseCurrentContext();
             attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(currentDeviceId);
         }
 
 
@@ -314,7 +314,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
         if (currentDeviceId != deviceId) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
             Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
         }
 
@@ -323,7 +323,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         if (currentDeviceId != deviceId) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(currentDeviceId));
+            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(currentDeviceId);
             Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
         }
 
@@ -373,7 +373,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public void unsafeSetDevice(Integer deviceId) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
     }
 
     @Override

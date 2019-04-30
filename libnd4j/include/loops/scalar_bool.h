@@ -34,6 +34,7 @@
 #include "helpers/logger.h"
 #include <helper_cuda.h>
 #include <OmpLaunchHelper.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

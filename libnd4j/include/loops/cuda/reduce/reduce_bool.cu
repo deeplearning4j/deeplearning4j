@@ -231,6 +231,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
         
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -239,6 +240,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolScalar(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

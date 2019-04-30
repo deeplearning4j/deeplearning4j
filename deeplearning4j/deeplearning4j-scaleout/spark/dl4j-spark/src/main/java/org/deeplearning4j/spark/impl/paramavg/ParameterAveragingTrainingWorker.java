@@ -211,13 +211,13 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
             val result =  getFinalResult(network);
 
             // releasing Context here
-            Nd4j.getMemoryManager().releaseCurrentContext();
+//            Nd4j.getMemoryManager().releaseCurrentContext();
 
             return result;
         }
 
         // releasing Context here
-        Nd4j.getMemoryManager().releaseCurrentContext();
+//        Nd4j.getMemoryManager().releaseCurrentContext();
 
         return null;
     }
@@ -258,13 +258,13 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
             val result = getFinalResult(graph);
 
             // releasing Context here
-            Nd4j.getMemoryManager().releaseCurrentContext();
+//            Nd4j.getMemoryManager().releaseCurrentContext();
 
             return result;
         }
 
         // releasing Context here
-        Nd4j.getMemoryManager().releaseCurrentContext();
+//        Nd4j.getMemoryManager().releaseCurrentContext();
 
         return null;
     }

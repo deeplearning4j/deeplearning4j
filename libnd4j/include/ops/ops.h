@@ -3479,7 +3479,7 @@ namespace simdOps {
             return (d1 == d2) ? static_cast<Y>(0.0f) :  static_cast<Y>(1.0f);
         }
 
-        op_def static void aggregateExtraParams(X *extraParamsTotal, X *extraParamsLocal) {
+        op_def static void aggregateExtraParams(Y *extraParamsTotal, Y *extraParamsLocal) {
 
         }
 

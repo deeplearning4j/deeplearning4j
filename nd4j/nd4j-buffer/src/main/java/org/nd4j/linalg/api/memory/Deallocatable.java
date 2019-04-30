@@ -33,4 +33,10 @@ public interface Deallocatable {
      * @return
      */
     Deallocator deallocator();
+
+
+    /**
+     * This method returns deviceId it's affined with, so deallocator thread will be guaranteed to match it
+     */
+    int targetDevice();
 }
