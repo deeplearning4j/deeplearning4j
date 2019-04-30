@@ -596,16 +596,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
     // default destructor
     NDArray::~NDArray() noexcept {
         if (_isBuffAlloc && !_isAttached && _buffer != nullptr) {
-            if (!isS()) {
                 delete[] _buffer;
-            } else {
-                for (int e = 0; e < lengthOf(); e++) {
-                    auto t = reinterpret_cast<utf8string**>(_buffer);
-                    delete t[e];
-                };
-
-                delete[] _buffer;
-            }
         }
     }
 

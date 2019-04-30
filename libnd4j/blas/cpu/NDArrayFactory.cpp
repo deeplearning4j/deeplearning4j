@@ -650,7 +650,9 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         res.setAttached(context->getWorkspace() != nullptr);
 
-        res.setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
+        auto newShape = ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace());
+        res.setShapeInfo(newShape);
+        delete[] newShape;
 
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
@@ -693,7 +695,9 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         res->setAttached(context->getWorkspace() != nullptr);
 
-        res->setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
+        auto newShape = ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace());
+        res->setShapeInfo(newShape);
+        delete[] newShape;
 
         if (res->lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
