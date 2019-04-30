@@ -656,7 +656,7 @@ TEST_F(DeclarableOpsTests6, BinCount_4) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_5) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
             1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -672,8 +672,8 @@ TEST_F(DeclarableOpsTests6, BinCount_5) {
     nd4j::ops::bincount op;
 
     auto res = op.execute({&x, &weights, &minV, &maxV}, {}, {});
-    res->at(0)->printBuffer("BC out");
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    res->at(0)->printBuffer("BC out");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
