@@ -44,14 +44,15 @@ namespace nd4j {
     }
 
     template <typename T>
-    NDArray* NDArray::asT() {
+    NDArray* NDArray::asT() const{
         auto result = new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
-        this->applyTransform(transform::Assign, result, nullptr);
+
+        NativeOpExecutioner::execTransformAny(_context, transform::AnyOps::Assign, _buffer, _shapeInfo, _bufferD, _shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, nullptr, nullptr, nullptr);
 
         return result;
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray* NDArray::asT, (), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray* NDArray::asT, () const, LIBND4J_TYPES);
 
 /////////////////   7///////////////////////////////////////////////////////
 // move constructor
@@ -1684,7 +1685,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     }
 
 
-    NDArray* NDArray::asT(DataType dtype) {
+    NDArray* NDArray::asT(DataType dtype) const {
         if (isS())
             throw std::runtime_error("NDArray::asT: you can't use this method on String array!");
 
@@ -1699,7 +1700,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
         return this->asT<T>();
     }
-    NDArray* NDArray::cast(DataType dtype) {
+    NDArray* NDArray::cast(DataType dtype) const {
         if (isS())
             throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
         return this->asT(dtype);

@@ -94,10 +94,6 @@ void NDArray::lazyAllocateBuffer() const {
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-    if (shape.empty())
-        throw std::runtime_error("NDArray constructor: input shape is empty !");
-
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -930,8 +926,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if (other.isScalar()) {
             if(this->isScalar()) {
                 if (!this->isEmpty() && !other.isEmpty()) {
-                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
-                                          (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
                 }
                 else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
                     if (other.isEmpty())
@@ -939,9 +934,15 @@ NDArray& NDArray::operator=(const NDArray& other) {
                     else
                         *this = other;
                 }
-            }
-            else {
-                NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
+            } else {
+                if (this->dataType() != other.dataType()) {
+                    auto tmp = other.cast(this->dataType());
+
+                    NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, tmp->_buffer, tmp->_shapeInfo, tmp->_bufferD, tmp->_shapeInfoD, nullptr);
+
+                    delete tmp;
+                } else
+                    NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
             }
             return;
         }

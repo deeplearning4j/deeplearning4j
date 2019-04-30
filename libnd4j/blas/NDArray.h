@@ -353,7 +353,7 @@ namespace nd4j {
         template <typename T>
         NDArray* cast();
 
-        NDArray* cast(DataType dtype);
+        NDArray* cast(DataType dtype) const;
 
         void cast(NDArray* target, DataType dtype);
 
@@ -1139,9 +1139,9 @@ namespace nd4j {
 #endif
 
         template <typename N>
-        NDArray* asT();
+        NDArray* asT() const;
 
-        NDArray* asT(DataType dtype);
+        NDArray* asT(DataType dtype) const;
 
 
         void linspace(const double start);
