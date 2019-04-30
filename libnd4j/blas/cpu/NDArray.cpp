@@ -203,18 +203,21 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, const bool isScalar) {
 
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
 
     auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, _context->getWorkspace());
-    setShapeInfo(shapeInfo);
-
-    ALLOCATE(_buffer, _context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
-    triggerAllocationFlag(true);
-
+    if (isScalar) {
+        setShapeInfo(shapeInfo);
+        ALLOCATE(_buffer, _context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
+        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
+        triggerAllocationFlag(true);
+    }
+    else {
+        setShapeInfo(ShapeBuilders::emptyShapeInfo(dtype, context->getWorkspace()));
+    }
     RELEASE(shapeInfo, _context->getWorkspace());
 }
 

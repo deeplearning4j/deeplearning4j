@@ -227,7 +227,7 @@ namespace nd4j {
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isScalar = true);
 
         /**
          * This method blocks until asynchronous operation finishes
