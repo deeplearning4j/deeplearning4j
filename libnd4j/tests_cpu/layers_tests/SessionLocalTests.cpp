@@ -36,6 +36,9 @@ TEST_F(SessionLocalTests, BasicTests_1) {
     VariableSpace variableSpace;
     SessionLocalStorage storage(&variableSpace, nullptr);
 
+    if (omp_get_max_threads() <= 1)
+        return;
+
     PRAGMA_OMP_PARALLEL_FOR_THREADS(4)
     for (int e = 0; e < 4; e++) {
         storage.startSession();
@@ -55,6 +58,10 @@ TEST_F(SessionLocalTests, BasicTests_1) {
 TEST_F(SessionLocalTests, BasicTests_2) {
     VariableSpace variableSpace;
     SessionLocalStorage storage(&variableSpace, nullptr);
+
+    if (omp_get_max_threads() <= 1)
+        return;
+
     auto alpha = nd4j::NDArrayFactory::create_<float>('c',{5,5});
     alpha->assign(0.0);
 
