@@ -502,53 +502,69 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             default: {
 
-
-                uint castZShapeInfo[MAX_RANK];
-                const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
-
                 const int tadRankMinusOne = shape::rank(tadShapeInfo) - 1;
-                Nd4jLong* offsetPerDimTad = new Nd4jLong[tadRankMinusOne];                
-                Nd4jLong* idxTad  = new Nd4jLong[tadRankMinusOne];
+                const int zRankMinusOne   = shape::rank(zShapeInfo) - 1;
+                
+                Nd4jLong* offsetPerDimTad = new Nd4jLong[tadRankMinusOne];
+                Nd4jLong* offsetPerDimZ   = new Nd4jLong[zRankMinusOne];
+
+                int* idxTad = new int[tadRankMinusOne];
+                int* idxZ   = new int[tadRankMinusOne];
+                
                 memset(idxTad, 0, sizeof(Nd4jLong) * tadRankMinusOne);
+                memset(idxZ,   0, sizeof(Nd4jLong) * zRankMinusOne);
+
                 const Nd4jLong* shapeTad  = shape::shapeOf(tadShapeInfo);
                 const Nd4jLong* strideTad = shape::stride(tadShapeInfo);
+                const Nd4jLong* shapeZ    = shape::shapeOf(zShapeInfo);
+                const Nd4jLong* strideZ   = shape::stride(zShapeInfo);
 
                 PRAGMA_OMP_SIMD
                 for (int k = 0; k < tadRankMinusOne; ++k) 
-                    offsetPerDimTad[k] = (shapeTad[k] - 1) * strideTad[k];                
+                    offsetPerDimTad[k] = (shapeTad[k] - 1) * strideTad[k];
+                PRAGMA_OMP_SIMD
+                for (int k = 0; k < zRankMinusOne; ++k) 
+                    offsetPerDimZ[k] = (shapeZ[k] - 1) * strideZ[k];
                 
+                int dimZ = zRankMinusOne, lZ = 0;
+                Nd4jLong initZ = 0, zOffset = -strideZ[dimZ], e = 0;
+                
+                while (dimZ >= 0) {                    
 
-                // PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-                for (uint i = 0; i < zLen; i++) {
-                    auto tad = x + tadOffsets[i];
-                    auto start = OpType::startingValue(tad);
-
-                    // first iteration
-                    start = OpType::update(start, OpType::op(tad[0], extraParams), extraParams);
-
-                    
-                    Nd4jLong initTad(0), tadOffset(0);
-                    Nd4jLong ind = tadRankMinusOne, l = 1;
-                    
-                    while(ind >= 0) {
-
-                       if(shapeTad[ind] == 1) { --ind; continue; } // ignore dimensions equal to unity
-
-                        if(ind == tadRankMinusOne) {              // last dimension
-                            if(l < shapeTad[ind]) {tadOffset += strideTad[ind]; ++l;}
-                            else                    {l = 1; --ind; continue; }
+                    if(shapeZ[dimZ] == 1) { --dimZ; continue; } // ignore dimensions equal to unity
+                        if(dimZ == zRankMinusOne) {              // last dimension
+                            if(lZ < shapeZ[dimZ]) { zOffset += strideZ[dimZ]; ++lZ;}
+                            else                  { lZ = 0; --dimZ; continue; }
                         }
-                        else if(idxTad[ind] < shapeTad[ind] - 1) { initTad += strideTad[ind]; tadOffset = initTad; ++idxTad[ind]; ind = tadRankMinusOne; }
-                        else                                     { initTad -= offsetPerDimTad[ind]; idxTad[ind--] = 0; continue;}
+                    else if(idxZ[dimZ] < shapeZ[dimZ] - 1) { initZ += strideZ[dimZ]; zOffset = initZ; ++idxZ[dimZ]; dimZ = zRankMinusOne; }
+                    else                                   { initZ -= offsetPerDimZ[dimZ]; idxZ[dimZ--] = 0; continue;}
 
+                    auto tad   = x + tadOffsets[e++];
+                    auto start = OpType::startingValue(tad);
+                                        
+                    int dimTad = tadRankMinusOne, lTad = 0;
+                    Nd4jLong initTad = 0, tadOffset = -strideTad[dimTad];                    
+                    
+                    while(dimTad >= 0) {
+
+                        if(shapeTad[dimTad] == 1) { --dimTad; continue; } // ignore dimensions equal to unity
+                        if(dimTad == tadRankMinusOne) {              // last dimension
+                            if(lTad < shapeTad[dimTad]) {tadOffset += strideTad[dimTad]; ++lTad;}
+                            else                        {lTad = 0; --dimTad; continue; }
+                        }
+                        else if(idxTad[dimTad] < shapeTad[dimTad] - 1) { initTad += strideTad[dimTad]; tadOffset = initTad; ++idxTad[dimTad]; dimTad = tadRankMinusOne; }
+                        else                                           { initTad -= offsetPerDimTad[dimTad]; idxTad[dimTad--] = 0; continue;}
+                        
                         start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
                     }
-
-                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+                    
                     z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
-                                delete []idxTad;
+                
+                delete []idxTad;
+                delete []idxZ;
                 delete []offsetPerDimTad;
+                delete []offsetPerDimZ;
             }
         }
     }
