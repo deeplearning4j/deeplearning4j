@@ -10,14 +10,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class Nd4jCommonValidator {
 
     private Nd4jCommonValidator(){ }
 
-    protected static ValidationResult isValidFile(@NonNull File f, String formatType, boolean allowEmpty){
+    public static ValidationResult isValidFile(@NonNull File f, String formatType, boolean allowEmpty){
         String path;
         try{
             path = f.getAbsolutePath(); //Very occasionally: getAbsolutePath not possible (files in JARs etc)
@@ -43,7 +44,7 @@ public class Nd4jCommonValidator {
                     .build();
         }
 
-        if(f.length() <= 0){
+        if(!allowEmpty && f.length() <= 0){
             return ValidationResult.builder()
                     .valid(false)
                     .formatType(formatType)
@@ -110,6 +111,84 @@ public class Nd4jCommonValidator {
                 .build();
     }
 
+
+    public static ValidationResult isValidZipFile(@NonNull File f, boolean allowEmpty) {
+        return isValidZipFile(f, allowEmpty, null);
+    }
+
+    public static ValidationResult isValidZipFile(@NonNull File f, boolean allowEmpty, List<String> requiredEntries){
+        ValidationResult vr = isValidFile(f, "Zip File", false);
+        if(vr != null)
+            return vr;
+
+        ZipFile zf;
+        try {
+            zf = new ZipFile(f);
+        } catch (Throwable e) {
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType("Zip File")
+                    .path(getPath(f))
+                    .issues(Collections.singletonList("File does not appear to be valid zip file"))
+                    .exception(e)
+                    .build();
+        }
+
+        try{
+            int numEntries = zf.size();
+            if(!allowEmpty && numEntries <= 0){
+                return ValidationResult.builder()
+                        .valid(false)
+                        .formatType("Zip File")
+                        .path(getPath(f))
+                        .issues(Collections.singletonList("Zip file is empty"))
+                        .build();
+            }
+
+            if(requiredEntries != null && !requiredEntries.isEmpty()) {
+                List<String> missing = null;
+                for (String s : requiredEntries){
+                    ZipEntry ze = zf.getEntry(s);
+                    if(ze == null){
+                        if(missing == null)
+                            missing = new ArrayList<>();
+                        missing.add(s);
+                    }
+                }
+
+                if(missing != null){
+                    String s = "Zip file is missing " + missing.size() + " of " + requiredEntries.size() + " required entries: " + requiredEntries;
+                    return ValidationResult.builder()
+                            .valid(false)
+                            .formatType("Zip File")
+                            .path(getPath(f))
+                            .issues(Collections.singletonList(s))
+                            .build();
+                }
+            }
+
+        } catch (Throwable t){
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType("Zip File")
+                    .path(getPath(f))
+                    .issues(Collections.singletonList("Error reading zip file"))
+                    .exception(t)
+                    .build();
+        } finally {
+            try {
+                zf.close();
+            } catch (IOException e){ }  //Ignore, can't do anything about it...
+        }
+
+        return ValidationResult.builder()
+                .valid(true)
+                .formatType("Zip File")
+                .path(getPath(f))
+                .build();
+    }
+
+
     private static String getPath(File f){
         if(f == null)
             return null;
@@ -119,4 +198,7 @@ public class Nd4jCommonValidator {
             return f.getPath();
         }
     }
+
+
+
 }
