@@ -133,13 +133,23 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         System.out.println(perplexityOutput);
     }
 
-    //@Test
-    public void testCorrectness() {
-        //INDArray X = Nd4j.createFromArray(new double[]{0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1}).reshape(6,2);
-        INDArray X = Nd4j.rand(new int[]{4,3});
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
-                .useAdaGrad(false).numDimension(2).build();
-        b.fit(X);
+    @Test
+    public void testAgainstSklearnTSNE() {
+        INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
+                0.2938,    0.3655,
+                0.3968,    0.0990,
+                0.0796,    0.9245}).reshape(4,2);
+
+        BarnesHutTsne b = new BarnesHutTsne.Builder().build();
+        //b.setSimiarlityFunction("cosine");
+
+        b.fit(input);
+
+        INDArray expected = Nd4j.createFromArray(
+                new double[]{-274.30356, -330.32452, 426.03946, 19.620352, 250.9052, -505.65094,-99.169014,194,9484})
+                .reshape(4,2);
+
+        //TODO: assert
     }
 
 }
