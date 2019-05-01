@@ -561,12 +561,12 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
-                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
+                //TODO: uncomment when C++ implementation is available
+                /*BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
                 Nd4j.getExecutioner().exec(op);
                 INDArray output = op.getResult();
-
-                vals = output.divi(vals.sum(Integer.MAX_VALUE));
-                //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));*/
+                vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
 
