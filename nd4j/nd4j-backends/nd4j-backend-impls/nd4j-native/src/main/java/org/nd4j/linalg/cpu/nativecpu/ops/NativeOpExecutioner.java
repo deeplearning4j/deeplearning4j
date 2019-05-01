@@ -2033,11 +2033,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
         boolean mklOverride = false;
         try {
-            val opName = op.opName();
-            val state = mklOverrides.get(op);
-            if (state != null && state == true) {
-                mklOverride = true;
-                Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
+            if (Nd4jCpu.Environment.getInstance().isUseMKLDNN()) {
+                val opName = op.opName();
+                val state = mklOverrides.get(op);
+                if (state != null && state == true) {
+                    mklOverride = true;
+                    Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
+                }
             }
 
             loop.execCustomOp(null, op.opHash(), context.contextPointer());
