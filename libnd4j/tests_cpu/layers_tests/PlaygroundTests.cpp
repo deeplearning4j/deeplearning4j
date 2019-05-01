@@ -176,9 +176,13 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 }
 
 TEST_F(PlaygroundTests, test_reduce_3) {
-    auto x = NDArrayFactory::create<float>('c', {4096, 8192});
-    auto y = NDArrayFactory::create<float>('c', {8192});
-    auto z = NDArrayFactory::create<float>('c', {4096});
+    // auto x = NDArrayFactory::create<float>('c', {4096, 8192});
+    // auto y = NDArrayFactory::create<float>('c', {8192});
+    // auto z = NDArrayFactory::create<float>('c', {4096});
+
+    auto x = NDArrayFactory::create<float>('c', {2048, 4096});
+    auto y = NDArrayFactory::create<float>('c', {4096});
+    auto z = NDArrayFactory::create<float>('c', {2048});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     auto iterations = 100;
@@ -1442,8 +1446,11 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
 
 
 TEST_F(PlaygroundTests, test_assign_float) {
-     auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
-     auto target = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+     // auto array = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+     // auto target = NDArrayFactory::create<float>('c', {32, 128, 256, 256});
+
+     auto array = NDArrayFactory::create<float>('c', {32, 64, 128, 128});
+     auto target = NDArrayFactory::create<float>('c', {32, 64, 128, 128});
 
      array.assign(119);
 
@@ -2021,8 +2028,9 @@ TEST_F(PlaygroundTests, loops_3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_4) {
 
-    const uint N = 1;
-    const Nd4jLong dim0(256), dim1(256), dim2(256), dim3(256);
+    const uint N = 2;
+    // const Nd4jLong dim0(256), dim1(256), dim2(256), dim3(256);
+    const Nd4jLong dim0(10), dim1(10), dim2(10), dim3(10);
     NDArray x('c', {dim0, dim1, dim2, dim3});
     NDArray z('c', {dim0, dim2});
 
@@ -2035,6 +2043,32 @@ TEST_F(PlaygroundTests, loops_4) {
     auto timeStart = std::chrono::system_clock::now();    
     for (uint i = 0; i < N; ++i)
         x.reduceAlongDimension(reduce::Sum, &z, {1,3});
+    auto timeEnd = std::chrono::system_clock::now();
+    auto myTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N) .count();
+    nd4j_printf("My  time: %lld us;\n", myTime);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, loops_5) {
+
+    const uint N = 2;
+    const Nd4jLong dim0(1024), dim1(1024), dim2(256);
+    // const Nd4jLong dim0(10), dim1(10);
+    NDArray x('c', {dim0, dim1, dim2});
+    NDArray z('c', {dim0, dim1, dim2});
+
+    // provide worst case 
+    *shape::ews(x.shapeInfo()) = 0;
+    *shape::ews(z.shapeInfo()) = 0;
+
+    x = 0.1;
+    
+    // warm up
+    for (int i = 0; i < 1000; ++i) 32*512;
+    
+    auto timeStart = std::chrono::system_clock::now();    
+    for (uint i = 0; i < N; ++i)
+        x.applyTransform(transform::Log, &z);
     auto timeEnd = std::chrono::system_clock::now();
     auto myTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N) .count();
     nd4j_printf("My  time: %lld us;\n", myTime);
