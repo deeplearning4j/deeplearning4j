@@ -69,6 +69,7 @@ Nd4jLong* ShapeDescriptor::toShapeInfo() {
             auto shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
             shapeInfo[2 + _rank * 2] = _ews;
             shapeInfo[2] = _strides[0];
+            shapeInfo[2 + _rank * 2 + 1] = _order;
             return shapeInfo;
         }
         default: {
