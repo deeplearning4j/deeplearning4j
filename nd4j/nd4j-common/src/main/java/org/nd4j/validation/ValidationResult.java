@@ -26,7 +26,7 @@ public class ValidationResult implements Serializable {
     private String path;             //Path of file (if applicable)
     private boolean valid;           //Whether the file/model is valid
     private List<String> issues;     //List of issues (generally only present if not valid)
-    private Exception exception;     //Exception, if applicable
+    private Throwable exception;     //Exception, if applicable
 
 
 
