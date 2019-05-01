@@ -1708,6 +1708,8 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
 
+        delete[] newShape;
+
         return result;
     }
 

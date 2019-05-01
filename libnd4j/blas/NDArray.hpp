@@ -729,6 +729,8 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
+    RELEASE(newShape, _context->getWorkspace());
+
     return result;
 }
 
@@ -768,6 +770,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
     result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    RELEASE(newShape, _context->getWorkspace());
 
     return result;
 }
@@ -788,6 +791,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
     result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    RELEASE(newShape, _context->getWorkspace());
 
     return result;
 }
@@ -2437,7 +2441,9 @@ template void NDArray::operator/=(const bool scalar);
         int8_t* buffer(nullptr);
         ALLOCATE(buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
         auto result = new NDArray(buffer, newShape, _context);
-        result->triggerAllocationFlag(true);        
+        result->triggerAllocationFlag(true);
+
+        RELEASE(newShape, _context->getWorkspace());
 
         return result;
     }
