@@ -86,8 +86,9 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     helpers::rnnTimeLoop(block.launchContext(), x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);
 
     auto seqLen = maxTimeStep;    
-    if(seqLen == nullptr) {    	        
-    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.getVariableSpace()->launchContext());	  // [bS]
+    if(seqLen == nullptr) {
+//        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.getVariableSpace()->launchContext());	  // [bS]
+    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, nd4j::DataType::INT64, block.getVariableSpace()->launchContext());	  // [bS]
         *seqLen = x->sizeAt(0);                                 			                  // set each element of seqLen to be equal to time
     }    
     
