@@ -605,16 +605,8 @@ NDArray& NDArray::operator=(const NDArray& other) {
     bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
 
         // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
-        if(order == ordering() && rankOf() == cshape.size()) {
-            bool areShapesSame = true;
-            for(int i = 0; i < cshape.size(); ++i)
-                if(cshape[i] != sizeAt(i)) {
-                    areShapesSame = false;
-                    break;
-                }
-            if(areShapesSame)
-                return areShapesSame;
-        }
+        if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))
+            return true;
 
         std::vector<Nd4jLong> shape(cshape);
         int rank = shape.size();

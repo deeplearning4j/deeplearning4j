@@ -2643,7 +2643,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
     }
         
     // check if there is possibility to set ews = 1
-    shape::calcEws(newShape, subArrLen);
+    shape::setEws(newShape, subArrLen);
 
     #ifdef __CUDABLAS__
         makeBothBuffersActual();
@@ -2706,7 +2706,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     }
 
     // evaluate ews
-    shape::calcEws(outShapeInfo, subArrLen);
+    shape::setEws(outShapeInfo, subArrLen);
 
     // calculation of sub-array offsets (subArrOffsets)
     shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
