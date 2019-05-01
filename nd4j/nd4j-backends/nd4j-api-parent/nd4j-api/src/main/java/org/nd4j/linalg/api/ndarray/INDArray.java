@@ -114,7 +114,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     double getDoubleUnsafe(long offset);
 
-    String getStringUnsafe(long index);
+    String getString(long index);
 
     /**
      * Insert a scalar

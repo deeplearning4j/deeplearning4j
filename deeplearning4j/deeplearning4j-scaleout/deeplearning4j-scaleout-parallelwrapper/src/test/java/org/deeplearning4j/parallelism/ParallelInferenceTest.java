@@ -301,8 +301,8 @@ public class ParallelInferenceTest {
 
         f = BatchedInferenceObservable.class.getDeclaredField("inputs");
         f.setAccessible(true);
-        f.set(observable3, Arrays.asList(new INDArray[]{bigOutput.getRow(0)},
-                new INDArray[]{bigOutput.getRow(1)}, new INDArray[]{bigOutput.getRow(2)}));
+        f.set(observable3, Arrays.asList(new INDArray[]{bigOutput.getRow(0, true)},
+                new INDArray[]{bigOutput.getRow(1, true)}, new INDArray[]{bigOutput.getRow(2, true)}));
 
 
         observable3.setOutputBatches(Collections.singletonList(new INDArray[]{bigOutput}));

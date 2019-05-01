@@ -3276,20 +3276,17 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_02) {
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_03) {
 
     auto x = NDArrayFactory::create<TypeParam>('c', {1, 1, 1, 10}, { 1, 2., 3, 4, 5, 6, 7, 8, 9, 10});
-
-//    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 1, 6}, {
-//            0.2581989 , 0.3592106 , 0.40089184, 0.4193139, 0.5360563, 0.67936623}
-//    );
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 1, 10}, {0.10425719, 0.16843036, 0.2095291 , 0.23652494, 0.25449327,0.3053919 , 0.35675305, 0.4098524 , 0.46662825, 0.52999896});
 
     nd4j::ops::lrn op;
     auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
     auto out = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
-    //ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
+    ASSERT_TRUE(exp.isSameShape(out));
+    // out->printIndexedBuffer("LRN out");
 //    exp.printIndexedBuffer("LRN exp");
-    //ASSERT_TRUE(exp.equalsTo(out));
+    ASSERT_TRUE(exp.equalsTo(out));
 
     delete results;
 }

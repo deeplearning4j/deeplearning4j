@@ -199,7 +199,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             int i=0;
             for(String s : config.getVertexParams().getInputs()){
                 val inputShape = inputs[i++].shape().clone();
-                SDVariable inputVar = sameDiff.var(s, inputShape);
+                SDVariable inputVar = sameDiff.var(s, dataType, inputShape);
                 inputVars.put(s, inputVar);
                 SDVariable maskVar = sameDiff.constant(s + "_mask", createMask(dataType, inputShape));
                 maskVars.put(s, maskVar);
@@ -209,7 +209,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
                 val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, ps);
+                SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }
             SDVariable layerOutput = config.defineVertex(sameDiff, inputVars, params, maskVars);

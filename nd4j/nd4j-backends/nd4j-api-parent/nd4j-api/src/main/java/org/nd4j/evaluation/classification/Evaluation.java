@@ -115,6 +115,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
 
+    /**
+     * For stats(): When classes are excluded from precision/recall, what is the maximum number we should print?
+     * If this is set to a high value, the output (potentially thousands of classes) can become unreadable.
+     */
+    @Getter @Setter
+    protected int maxWarningClassesToPrint = 16;
+
     // Empty constructor
     public Evaluation() {
         this.topN = 1;
@@ -788,8 +795,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         warnings.append(" ").append(wasWere);
         warnings.append(" never predicted by the model and ").append(wasWere).append(" excluded from average ")
-                        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
-                        .append(list).append("\n");
+                        .append(metric);
+        if(list.size() <= maxWarningClassesToPrint) {
+            warnings.append("\nClasses excluded from average ").append(metric).append(": ")
+                    .append(list).append("\n");
+        }
     }
 
     /**

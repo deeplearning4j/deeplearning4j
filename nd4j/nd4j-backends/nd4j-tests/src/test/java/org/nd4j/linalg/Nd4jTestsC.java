@@ -1336,7 +1336,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             concat.add(arr.dup());
         }
 
-        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{1,12});
+        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{12});
         INDArray flattened = Nd4j.toFlattened(concat);
         assertEquals(assertion, flattened);
 
@@ -5294,9 +5294,40 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    protected boolean checkIfUnique(INDArray array, int iteration) {
+        var jarray = array.data().asInt();
+        var set = new HashSet<Integer>();
+
+        for (val v : jarray) {
+            if (set.contains(Integer.valueOf(v)))
+                throw new IllegalStateException("Duplicate value found: [" + v + "] on iteration " + iteration);
+
+            set.add(Integer.valueOf(v));
+        }
+
+        return true;
+    }
+
+    @Test
+    public void shuffleTest() {
+        for (int e = 0; e < 5; e++) {
+            //log.info("---------------------");
+            val array = Nd4j.linspace(1, 1011, 1011, DataType.INT);
+
+            checkIfUnique(array, e);
+            Nd4j.getExecutioner().commit();
+
+            Nd4j.shuffle(array, 0);
+            Nd4j.getExecutioner().commit();
+
+            checkIfUnique(array, e);
+        }
+    }
+
     @Test
     public void testNativeSortAlongDimension3() {
-        INDArray array = Nd4j.create(2000, 2000);
+        INDArray array = Nd4j.create(2000,  2000);
         INDArray exp1 = Nd4j.linspace(1, 2000, 2000, DataType.DOUBLE);
         INDArray dps = exp1.dup();
 
@@ -5310,13 +5341,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
             array.getRow(r).assign(dps);
         }
 
+        val arow = array.getRow(0).toFloatVector();
+
         long time1 = System.currentTimeMillis();
         INDArray res = Nd4j.sort(array, 1, true);
         long time2 = System.currentTimeMillis();
 
         log.info("Time spent: {} ms", time2 - time1);
 
+        val jexp = exp1.toFloatVector();
         for (int r = 0; r < array.rows(); r++) {
+            val jrow = res.getRow(r).toFloatVector();
+            //log.info("jrow: {}", jrow);
+            assertArrayEquals("Failed at " + r, jexp, jrow, 1e-5f);
             assertEquals("Failed at " + r, exp1, res.getRow(r));
             //assertArrayEquals("Failed at " + r, exp1.data().asDouble(), res.getRow(r).dup().data().asDouble(), 1e-5);
         }
