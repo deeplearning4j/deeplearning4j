@@ -468,17 +468,23 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
                 return false;
     }
 
-    ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), Nd4jLong);
-    memset(resultShapeInfo, 0, shape::shapeInfoByteLength(maxRank));
-    resultShapeInfo[0] = maxRank;
+    Nd4jLong *tmpShapeInfo = nullptr;
+    ALLOCATE(tmpShapeInfo, workspace, shape::shapeInfoLength(maxRank), Nd4jLong);
+    memset(tmpShapeInfo, 0, shape::shapeInfoByteLength(maxRank));
+    tmpShapeInfo[0] = maxRank;
 
     for(const auto& item : arrays ) {
         for(int i = -1; i >= -item->rankOf(); --i) 
-            if(resultShapeInfo[i + 1 + maxRank] < item->sizeAt(i))
-                resultShapeInfo[i + 1 + maxRank] = item->sizeAt(i);
+            if(tmpShapeInfo[i + 1 + maxRank] < item->sizeAt(i))
+                tmpShapeInfo[i + 1 + maxRank] = item->sizeAt(i);
     }
 
-    shape::updateStrides(resultShapeInfo, arrays[0]->ordering());
+    shape::updateStrides(tmpShapeInfo, arrays[0]->ordering());
+    ArrayOptions::setDataType(tmpShapeInfo, arrays[0]->dataType());
+
+    ShapeDescriptor descriptor(tmpShapeInfo);
+    RELEASE(tmpShapeInfo, workspace);
+    resultShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
 
     return true;
 }

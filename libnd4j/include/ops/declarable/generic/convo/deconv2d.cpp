@@ -136,25 +136,20 @@ DECLARE_SHAPE_FN(deconv2d) {
     int oH, oW;                                         // output height, width
     ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
     
-    Nd4jLong* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
+    Nd4jLong outputShape[4];
 
-    outputShapeInfo[0] = rank;
-    outputShapeInfo[1] = bS;
-
+    outputShape[0] = bS;
     if (isNCHW) {
-        outputShapeInfo[2] = oC;
-        outputShapeInfo[3] = oH;
-        outputShapeInfo[4] = oW;
+        outputShape[1] = oC;
+        outputShape[2] = oH;
+        outputShape[3] = oW;
     } else {
-        outputShapeInfo[2] = oH;
-        outputShapeInfo[3] = oW;
-        outputShapeInfo[4] = oC;
+        outputShape[1] = oH;
+        outputShape[2] = oW;
+        outputShape[3] = oC;
     }
-    
-    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
 
-    return SHAPELIST(outputShapeInfo);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4)));
 }
 
     DECLARE_TYPES(deconv2d_bp) {

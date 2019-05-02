@@ -191,6 +191,7 @@ namespace nd4j {
                 results = outSha->size();
 
                 // we must "validate" our output shapes
+                /*
                 for (int e = 0; e < results; e++) {
                     auto ptr = outSha->at(e);
 
@@ -213,6 +214,7 @@ namespace nd4j {
                             throw std::runtime_error("ShapeFunction returned input shape instance as output [" + *_descriptor->getOpName() + "]");
                     }
                 }
+                */
 
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {

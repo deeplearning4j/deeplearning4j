@@ -157,7 +157,6 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const Nd4jLong length) : _
 }
 
 ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
-
     _order = shape::order(shapeInfo);
     _ews = shape::elementWiseStride(shapeInfo);
     _rank = shape::rank(shapeInfo);
@@ -174,6 +173,14 @@ ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
 
 ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo) {
     _dataType = dtypeOverride;
+}
+
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
+    //
+}
+
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride, const Nd4jLong *orderOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
+    _order = shape::order(orderOverride);
 }
 
 int ShapeDescriptor::rank() const {

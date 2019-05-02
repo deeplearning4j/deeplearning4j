@@ -53,15 +53,7 @@ namespace nd4j {
             repeats.pop_back();
             
             auto outShape = ShapeUtils::evalRepeatShape(dimension, ArrayUtils::toLongVector(repeats), *x);
-            int rank = outShape.size();
-
-            Nd4jLong* newShapeInfo = nullptr; 
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
-            newShapeInfo[0] = rank;
-            std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
-            ShapeUtils::updateStridesAndType(newShapeInfo, x->getShapeInfo(), x->ordering());
-
-            return SHAPELIST(newShapeInfo);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x->dataType(), x->ordering(), outShape)));
         }
     }
 }

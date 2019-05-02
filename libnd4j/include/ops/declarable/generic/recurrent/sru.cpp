@@ -131,10 +131,9 @@ DECLARE_SHAPE_FN(sru_logic) {
     newShapeInfo1[3] = N;
     
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
-
-    Nd4jLong* newShapeInfo2 = ShapeBuilders::copyShapeInfo(newShapeInfo1, true, block.getWorkspace());
-    
-    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShapeInfo1));
+    RELEASE(newShapeInfo1, block.getWorkspace());
+    return SHAPELIST(result, result);
 }   
 
 
@@ -226,7 +225,7 @@ DECLARE_SHAPE_FN(sru_old) {
     int time    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    Nd4jLong *newShapeInfo1 = nullptr, *newShapeInfo2 = nullptr;
+    Nd4jLong *newShapeInfo1 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
 
     newShapeInfo1[0] = rank;
@@ -236,9 +235,9 @@ DECLARE_SHAPE_FN(sru_old) {
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
-
-    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShapeInfo1));
+    RELEASE(newShapeInfo1, block.getWorkspace());
+    return SHAPELIST(result, result);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -336,7 +335,7 @@ DECLARE_SHAPE_FN(sru) {
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
+    Nd4jLong* newShapeInfo1 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
 
     newShapeInfo1[0] = rank;
@@ -345,10 +344,10 @@ DECLARE_SHAPE_FN(sru) {
     newShapeInfo1[3] = time;
 
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
-    
-    COPY_SHAPE(newShapeInfo1,newShapeInfo2);
-
-    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+    ShapeDescriptor descriptor(newShapeInfo1);
+    RELEASE(newShapeInfo1, block.getWorkspace());
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
+    return SHAPELIST(result, result);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -521,35 +520,12 @@ DECLARE_SHAPE_FN(sru_bp) {
     auto time    = inShape[3];
     char order = (char)(inShape[9]);
 
-    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, Nd4jLong);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, Nd4jLong);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  Nd4jLong);    
-    
-    newShapeInfo1[0] = 3;
-    newShapeInfo1[1] = bS;
-    newShapeInfo1[2] = inSize;
-    newShapeInfo1[3] = time;
-    ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
+    ShapeDescriptor descriptor1(ArrayOptions::dataType(inShape), order, {bS, inSize, time});
+    ShapeDescriptor descriptor2(ArrayOptions::dataType(inShape), order, {bS, 3 * inSize, inSize});
+    ShapeDescriptor descriptor3(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
+    ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
-    newShapeInfo2[0] = 3;        
-    newShapeInfo2[1] = bS;
-    newShapeInfo2[2] = 3*inSize;
-    newShapeInfo2[3] = inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo2, inShape, order);
-
-    newShapeInfo3[0] = 2;
-    newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo3, inShape, order);
-
-    newShapeInfo4[0] = 2;        
-    newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo4, inShape, order);
-    
-    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
 }   
  
 
@@ -701,35 +677,12 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
     auto time    = inShape[3];
     char order = shape::order(inShape);
 
-    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, Nd4jLong);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, Nd4jLong);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  Nd4jLong);    
-    
-    newShapeInfo1[0] = 3;
-    newShapeInfo1[1] = bS;
-    newShapeInfo1[2] = inSize;
-    newShapeInfo1[3] = time;
-    ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
+    ShapeDescriptor descriptor1(ArrayOptions::dataType(inShape), order, {bS, inSize, time});
+    ShapeDescriptor descriptor2(ArrayOptions::dataType(inShape), order, {bS, 3 * inSize, inSize});
+    ShapeDescriptor descriptor3(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
+    ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
-    newShapeInfo2[0] = 3;        
-    newShapeInfo2[1] = bS;
-    newShapeInfo2[2] = 3*inSize;
-    newShapeInfo2[3] = inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo2, inShape, order);
-
-    newShapeInfo3[0] = 2;
-    newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo3, inShape, order);
-
-    newShapeInfo4[0] = 2;        
-    newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo4, inShape, order);
-    
-    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
 }   
 
 //////////////////////////////////////////////////////////////////////////
@@ -820,19 +773,9 @@ DECLARE_SHAPE_FN(sru_bi) {
 
     char order = shape::order(xShapeInfo);
 
-    Nd4jLong* newShapeInfo1 = nullptr, *newShapeInfo2;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-    newShapeInfo1[0] = rank;
-    newShapeInfo1[1] = time;
-    newShapeInfo1[2] = bS;
-    newShapeInfo1[3] = 2*inSize;
-
-    ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, order);
-    
-    COPY_SHAPE(newShapeInfo1, newShapeInfo2);
-
-    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+    ShapeDescriptor descriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
+    return SHAPELIST(result, result);
 }
 
 
@@ -949,36 +892,12 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
     const char order = shape::order(xShapeInfo);
 
-    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank),   Nd4jLong);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank),   Nd4jLong);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong);    
-    
-    // gradInput
-    newShapeInfo1[0] = 3;
-    newShapeInfo1[1] = time;
-    newShapeInfo1[2] = bS;
-    newShapeInfo1[3] = 2*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, order);
-    // gradWeights
-    newShapeInfo2[0] = 3;        
-    newShapeInfo2[1] = time;
-    newShapeInfo2[2] = 2*inSize;
-    newShapeInfo2[3] = 6*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo2, xShapeInfo, order);
-    // gradB
-    newShapeInfo3[0] = 2;
-    newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 4*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo3, xShapeInfo, order);
-    // gradInit
-    newShapeInfo4[0] = 2;        
-    newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = 2*inSize;
-    ShapeUtils::updateStridesAndType(newShapeInfo4, xShapeInfo, order);
-    
-    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
+    ShapeDescriptor descriptor1(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
+    ShapeDescriptor descriptor2(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize});
+    ShapeDescriptor descriptor3(ArrayOptions::dataType(xShapeInfo), order, {1, 4 * inSize});
+    ShapeDescriptor descriptor4(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize});
+
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
 }   
 
 }

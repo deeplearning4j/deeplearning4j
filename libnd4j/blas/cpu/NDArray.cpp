@@ -277,10 +277,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
                 throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
             if(_dataType != other->_dataType)
                 throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
-
-            // if workspace is not null - do not call delete.
-            if (_context->getWorkspace() == nullptr)
-                delete[] newShapeInfo;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
@@ -1364,8 +1360,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
-        nd4j_printf("Float op %i transform:\n", (int)op);
-
         if (isS())
             throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
 

@@ -102,8 +102,9 @@ DECLARE_SHAPE_FN(pad) {
     	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
 	
     ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-
-    return SHAPELIST(outShapeInfo);
+    ShapeDescriptor descriptor(outShapeInfo);
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
     
 }
 

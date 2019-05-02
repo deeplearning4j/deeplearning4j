@@ -178,7 +178,9 @@ DECLARE_SHAPE_FN(concat) {
     for(int index : shapesToDelete)        
         RELEASE(nonEmptyArrShapes[index], block.getWorkspace());
 
-    return SHAPELIST(outShapeInfo);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(result);
 }
 
 
