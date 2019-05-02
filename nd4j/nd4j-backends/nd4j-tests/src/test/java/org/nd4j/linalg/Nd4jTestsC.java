@@ -7624,6 +7624,25 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(scalarRank2, scalarRank2.dup());
     }
 
+    @Ignore // https://github.com/deeplearning4j/deeplearning4j/issues/7632
+    @Test
+    public void testGetWhereINDArray() {
+        INDArray input = Nd4j.create(new double[] { 1, -3, 4, 8, -2, 5 });
+        INDArray expected = Nd4j.create(new double[] { 4, 8, 5 });
+        INDArray actual = input.getWhere(input, Conditions.greaterThan(1));
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testGetWhereNumber() {
+        INDArray input = Nd4j.create(new double[] { 1, -3, 4, 8, -2, 5 });
+        INDArray expected = Nd4j.create(new double[] { 8, 5 });
+        INDArray actual = input.getWhere(4, Conditions.greaterThan(6));
+
+        assertEquals(expected, actual);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
