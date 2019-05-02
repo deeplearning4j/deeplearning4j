@@ -1146,9 +1146,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
     NDArray* NDArray::transpose() const {
-        
-        auto newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());
-        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
+        auto newArr = new NDArray(_buffer, _bufferD, _shapeInfo, _context, false, false);
         newArr->transposei();
 
         return newArr;
@@ -1280,9 +1278,7 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     // create new array with corresponding order and shape, new array will point to the same _buffer as this array
     NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
-
-        auto newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());
-        auto newArr = new NDArray(_buffer, _bufferD, newShapeInfo, _context, false, false);
+        auto newArr = new NDArray(_buffer, _bufferD, _shapeInfo, _context, false, false);
         newArr->reshapei(order, shape);
         return newArr;
     }
@@ -1290,7 +1286,6 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
     void NDArray::tilei(const std::vector<Nd4jLong>& reps) {
-
         *this = this->tile(reps);
     }
 

@@ -959,12 +959,12 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestMmulHelper2) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
-    auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 8192, 1, 99};
+    Nd4jLong xShape[8] = {2, 5, 3, 3, 1, 8192, 1, 99};
     auto x = new NDArray(xBuffer, xShape, graph::LaunchContext::defaultContext(), true);
 
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 8192, 1, 99};
+    Nd4jLong yShape[8] = {2, 3, 1, 1, 1, 8192, 1, 99};
     auto y = new NDArray(yBuffer, yShape, graph::LaunchContext::defaultContext(), true);
 
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
