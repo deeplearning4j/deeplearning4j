@@ -321,7 +321,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
             else {                                                              // REFLECT or SYMMETRIC
 
-#pragma omp parallel for schedule(guided)
+//#pragma omp parallel for schedule(guided)
                 for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
                     outIdxOuter[0] = k;
                     outIdxOuter[1] = k+1;
@@ -332,7 +332,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
                     outSubArrOuter.assign(outSubArrInner);
                 }
 
-#pragma omp parallel for schedule(guided)
+///#pragma omp parallel for schedule(guided)
                 for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right side
                     outIdxOuter[0] = k;
                     outIdxOuter[1] = k+1;
