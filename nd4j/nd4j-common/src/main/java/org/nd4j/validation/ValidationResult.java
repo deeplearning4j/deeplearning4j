@@ -42,16 +42,20 @@ public class ValidationResult implements Serializable {
         if(path != null){
             lines.add("Path: " + path);
         }
-        lines.add("Model valid: " + valid);
+        lines.add("Format valid: " + valid);
         if(issues != null && !issues.isEmpty()){
-            lines.add("Issues:\n");
-            for(String s : issues){
-                addWithIndent(s, lines, "- ", "  ");
+            if(issues.size() == 1){
+                addWithIndent(issues.get(0), lines, "Issue: ", "       ");
+            } else {
+                lines.add("Issues:");
+                for (String s : issues) {
+                    addWithIndent(s, lines, "- ", "  ");
+                }
             }
         }
         if(exception != null){
             String ex = ExceptionUtils.getStackTrace(exception);
-            lines.add("Stack Trace:\n");
+            lines.add("Stack Trace:");
             addWithIndent(ex, lines, "  ", "  ");
         }
         //Would use String.join but that's Java 8...

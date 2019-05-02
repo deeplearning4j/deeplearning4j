@@ -9,16 +9,24 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Nd4jCommonValidator {
 
     private Nd4jCommonValidator(){ }
+
+    public static ValidationResult isValidFile(@NonNull File f){
+        ValidationResult vr = isValidFile(f, "File", false);
+        if(vr != null)
+            return vr;
+        return ValidationResult.builder()
+                .valid(true)
+                .formatType("File")
+                .path(getPath(f))
+                .build();
+    }
 
     public static ValidationResult isValidFile(@NonNull File f, String formatType, boolean allowEmpty){
         String path;
@@ -28,21 +36,21 @@ public class Nd4jCommonValidator {
             path = f.getPath();
         }
 
+        if(f.exists() && !f.isFile()){
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType(formatType)
+                    .path(path)
+                    .issues(Collections.singletonList(f.isDirectory() ? "Specified path is a directory" : "Specified path is not a file"))
+                    .build();
+        }
+
         if(!f.exists() || !f.isFile()){
             return ValidationResult.builder()
                     .valid(false)
                     .formatType(formatType)
                     .path(path)
                     .issues(Collections.singletonList("File does not exist"))
-                    .build();
-        }
-
-        if(!f.isFile()){
-            return ValidationResult.builder()
-                    .valid(false)
-                    .formatType(formatType)
-                    .path(path)
-                    .issues(Collections.singletonList(f.isDirectory() ? "Specified path is a directory" : "Specified path is not a file"))
                     .build();
         }
 
@@ -115,7 +123,11 @@ public class Nd4jCommonValidator {
 
 
     public static ValidationResult isValidZipFile(@NonNull File f, boolean allowEmpty) {
-        return isValidZipFile(f, allowEmpty, null);
+        return isValidZipFile(f, allowEmpty, (List<String>)null);
+    }
+
+    public static ValidationResult isValidZipFile(@NonNull File f, boolean allowEmpty, String... requiredEntries){
+        return isValidZipFile(f, allowEmpty, requiredEntries == null ? null : Arrays.asList(requiredEntries));
     }
 
     public static ValidationResult isValidZipFile(@NonNull File f, boolean allowEmpty, List<String> requiredEntries){
@@ -159,7 +171,7 @@ public class Nd4jCommonValidator {
                 }
 
                 if(missing != null){
-                    String s = "Zip file is missing " + missing.size() + " of " + requiredEntries.size() + " required entries: " + requiredEntries;
+                    String s = "Zip file is missing " + missing.size() + " of " + requiredEntries.size() + " required entries: " + missing;
                     return ValidationResult.builder()
                             .valid(false)
                             .formatType("Zip File")
