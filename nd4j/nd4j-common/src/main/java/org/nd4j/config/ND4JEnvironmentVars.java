@@ -124,6 +124,11 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_CUDA_MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
 
+    /**
+     * Applicability: nd4j-native
+     */
+    public static final String ND4J_MKL_FALLBACK = "ND4J_MKL_FALLBACK";
+
     private ND4JEnvironmentVars() {
     }
 }
