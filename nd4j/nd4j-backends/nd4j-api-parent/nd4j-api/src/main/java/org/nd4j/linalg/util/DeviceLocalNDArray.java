@@ -17,9 +17,12 @@
 package org.nd4j.linalg.util;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 /**
  * DeviceLocal implementation for INDArray, with special broadcast method
@@ -49,6 +52,12 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
 
         Nd4j.getExecutioner().commit();
 
+        val config = OpProfiler.getInstance().getConfig();
+        val locality = config.isCheckLocality();
+
+        if (locality)
+            config.setCheckLocality(false);
+
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int i = 0; i < numDevices; i++) {
             // if current thread equal to this device - we just save it, without duplication
@@ -59,5 +68,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             }
 
         }
+
+        config.setCheckLocality(locality);
     }
 }

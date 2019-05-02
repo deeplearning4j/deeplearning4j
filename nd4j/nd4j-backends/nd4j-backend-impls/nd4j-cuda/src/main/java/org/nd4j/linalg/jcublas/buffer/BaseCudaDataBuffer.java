@@ -1553,4 +1553,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public Deallocator deallocator() {
         return new CudaDeallocator(this);
     }
+
+    @Override
+    public int targetDevice() {
+        return AtomicAllocator.getInstance().getAllocationPoint(this).getDeviceId();
+    }
 }

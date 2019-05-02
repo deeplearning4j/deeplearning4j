@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.shape.concat;
 
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
 import javax.xml.crypto.Data;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -297,6 +299,20 @@ public class ConcatTestsC extends BaseNd4jTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testLargeConcat() {
+        val list = new ArrayList<INDArray>();
+
+        for (int e = 0; e < 20000; e++)
+            list.add(Nd4j.create(DataType.INT, 1, 300).assign(e));
+
+        val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+
+        for (int e = 0; e < 20000; e++)
+            assertEquals((float) e, result.getRow(e).meanNumber().floatValue(), 1e-5f);
     }
 
 

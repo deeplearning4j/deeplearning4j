@@ -1080,7 +1080,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
     // not supported
     return 0L;
 }
@@ -1103,7 +1103,7 @@ int NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, int deviceId) {
     // not supported
     return 0L;
 }
@@ -1143,11 +1143,11 @@ Nd4jPointer NativeOps::createEvent() {
     return 0L;
 }
 
-int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+int NativeOps::getDeviceMajor(int deviceId ) {
     return 0;
 }
 
-int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+int NativeOps::getDeviceMinor(int deviceId) {
     return 0;
 }
 
@@ -1155,11 +1155,11 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
     return 0L;
 }
 
-int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
+int NativeOps::setDevice(int deviceId) {
     return 0L;
 }
 
-Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jLong NativeOps::getDeviceFreeMemory(int deviceId) {
     return 0L;
 }
 
@@ -1167,7 +1167,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory() {
     return 0L;
 }
 
-Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jLong NativeOps::getDeviceTotalMemory(int deviceId) {
     return 0L;
 }
 
@@ -1601,7 +1601,7 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
             tadOffsetsZ);
 }
 
-const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
+const char * NativeOps::getDeviceName(int deviceId) {
     if (!nameSet) {
         name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
 
@@ -2556,6 +2556,13 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
     NDArray array(buffer, shapeInfo, nullptr);
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+}
+
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+    auto buf = reinterpret_cast<int8_t*>(p);
+    int cnt = 0;
+    for (int i = 0; i < len; i++)
+        cnt += buf[cnt];
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);

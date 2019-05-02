@@ -72,8 +72,8 @@ __host__ void AggregatedFunction<X>::aggregateKernelGeneric(dim3& launchDims, cu
                                 int **intArrays, int numIntArrays,
                                 void *realArguments, int numRealArguments) {
 
-    execAggregateKernel<X><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);       
-    
+    execAggregateKernel<X><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    nd4j::DebugHelper::checkErrorCode(stream, "aggregateKernelGeneric(...) failed");
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -133,6 +133,7 @@ __host__ void AggregatedFunction<X>::aggregateBatchKernelGeneric(dim3& launchDim
                                                     void *ptrToArguments) {
 
     execAggregateBatch<X><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments);
+    nd4j::DebugHelper::checkErrorCode(stream, "aggregateBatchKernel(...) failed");
 }
 
 

@@ -1267,8 +1267,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             size = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getCompressedLength();
             ssize = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getOriginalLength();
 
-            srcPtr = nativeOps.mallocDevice(ssize, null, 0);
-            dstPtr = nativeOps.mallocDevice(size, null, 0);
+            srcPtr = nativeOps.mallocDevice(ssize, 0, 0);
+            dstPtr = nativeOps.mallocDevice(size, 0, 0);
 
             nativeOps.memcpyAsync(srcPtr, source, ssize, CudaConstants.cudaMemcpyHostToDevice, stream);
         } else {
@@ -1282,8 +1282,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         stream.synchronize();
 
         if (buffer instanceof CompressedDataBuffer) {
-            nativeOps.freeDevice(srcPtr, null);
-            nativeOps.freeDevice(dstPtr, null);
+            nativeOps.freeDevice(srcPtr, 0);
+            nativeOps.freeDevice(dstPtr, 0);
         }
     }
 
@@ -1315,7 +1315,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             if (source instanceof CompressedDataBuffer) {
                 log.info("Replacing source ptr");
                 val size = ((CompressedDataBuffer) source).getCompressionDescriptor().getCompressedLength();
-                srcPtr = nativeOps.mallocDevice(size, null, 0);
+                srcPtr = nativeOps.mallocDevice(size, 0, 0);
                 nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
                 stream.synchronize();
             } else
@@ -1325,7 +1325,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             if (target instanceof CompressedDataBuffer) {
                 log.info("Replacing target ptr");
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
-                dstPtr = nativeOps.mallocDevice(size, null, 0);
+                dstPtr = nativeOps.mallocDevice(size, 0, 0);
                 //nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
                 //stream.synchronize();
             } else
@@ -1345,7 +1345,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
                 // no-op, workspace was used
             } else
-                nativeOps.freeDevice(dstPtr, null);
+                nativeOps.freeDevice(dstPtr, 0);
         }
 
         // we were decompressing something from host memory
@@ -1353,7 +1353,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
                 // no-op, workspace was used
             } else
-                nativeOps.freeDevice(srcPtr, null);
+                nativeOps.freeDevice(srcPtr, 0);
 
         }
 
@@ -1549,7 +1549,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         nativeOps.sortTad(extraz,
                     null,
                     (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    (DoublePointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    AtomicAllocator.getInstance().getPointer(x, context),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
                     (IntPointer) dimensionPointer,
                     dimension.length,

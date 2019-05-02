@@ -47,7 +47,7 @@ public class TestDeepWalk {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void testBasic() throws IOException {
         //Very basic test. Load graph, build tree, call fit, make sure it doesn't throw any exceptions
 
@@ -85,10 +85,10 @@ public class TestDeepWalk {
         }
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 180000L)
     public void testParallel() {
 
-        IGraph<String, String> graph = generateRandomGraph(1000, 10);
+        IGraph<String, String> graph = generateRandomGraph(100, 4);
 
         int vectorSize = 20;
         int windowSize = 2;
@@ -99,7 +99,7 @@ public class TestDeepWalk {
 
 
 
-        deepWalk.fit(graph, 8);
+        deepWalk.fit(graph, 6);
     }
 
 
@@ -119,7 +119,7 @@ public class TestDeepWalk {
     }
 
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void testVerticesNearest() {
 
         int nVertices = 20;
@@ -164,7 +164,7 @@ public class TestDeepWalk {
         }
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void testLoadingSaving() throws IOException {
         String out = "dl4jdwtestout.txt";
 
@@ -201,7 +201,7 @@ public class TestDeepWalk {
         }
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 180000L)
     public void testDeepWalk13Vertices() throws IOException {
 
         int nVertices = 13;
@@ -214,7 +214,7 @@ public class TestDeepWalk {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int nEpochs = 200;
+        int nEpochs = 50;
 
         //Set up network
         DeepWalk<String, String> deepWalk =
@@ -235,7 +235,7 @@ public class TestDeepWalk {
             System.out.println(deepWalk.getVertexVector(i));
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void testDeepWalkWeightedParallel() throws IOException {
 
         //Load graph

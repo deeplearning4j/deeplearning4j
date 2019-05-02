@@ -473,7 +473,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val maxShape = Shape.getMaxShape(op.x(),op.y());
 
         val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
-        long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
+        val retShape = Shape.reductionShape(op.y() == null ? op.x() : op.x().length() > op.y().length() ? op.x() : op.y(), dimension, true, op.isKeepDims());
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -517,6 +517,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
+
             if (op.z().length() != (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape)))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
         }
@@ -1800,13 +1801,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> deviceProps = new HashMap<>();
 
-                CudaPointer devPtr = new CudaPointer(i);
-
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(devPtr));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(devPtr));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(i));
 
                 devicesList.add(i, deviceProps);
             }
@@ -1829,10 +1828,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             // just update information that might change over time
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> dev = devicesList.get(i);
-                CudaPointer devPtr = new CudaPointer(i);
 
-                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(devPtr));
-                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(devPtr));
+                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
+                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
             }
 
             properties.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);

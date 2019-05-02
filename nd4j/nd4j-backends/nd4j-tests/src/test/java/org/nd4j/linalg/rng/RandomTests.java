@@ -633,6 +633,30 @@ public class RandomTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testJavaSide5() {
+        Nd4j.getRandom().setSeed(7);
+        int length = 100;
+
+        val jarray_A = new int[length];
+        val jarray_B = new int[length];
+
+        for (int e = 0; e < length; e++)
+            jarray_A[e] = Nd4j.getRandom().nextInt(0, 1000);
+
+        Nd4j.getRandom().setSeed(7);
+        for (int e = 0; e < length; e++)
+            jarray_B[e] = Nd4j.getRandom().nextInt(0, 1000);
+
+        assertArrayEquals(jarray_A, jarray_B);
+
+        int sum = 0;
+        for (int e = 0; e < length; e++)
+            sum += jarray_A[e];
+
+        assertNotEquals(0, sum);
+    }
+
 
 
     @Test

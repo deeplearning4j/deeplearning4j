@@ -90,6 +90,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.MathUtils;
 
