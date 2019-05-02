@@ -143,7 +143,7 @@ public class Nd4jCommonValidator {
                     .valid(false)
                     .formatType("Zip File")
                     .path(getPath(f))
-                    .issues(Collections.singletonList("File does not appear to be valid zip file"))
+                    .issues(Collections.singletonList("File does not appear to be valid zip file (not a zip file or content is corrupt)"))
                     .exception(e)
                     .build();
         }
