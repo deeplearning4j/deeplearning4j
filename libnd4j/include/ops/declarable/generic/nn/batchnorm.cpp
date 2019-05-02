@@ -149,9 +149,9 @@ DECLARE_SHAPE_FN(batchnorm) {
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
 
-    ArrayOptions::setDataType(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)));
-
-    return SHAPELIST(outShapeInfo);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in))));
+    RELEASE(result, block.getWorkspace())
+    return SHAPELIST(result);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -58,63 +58,23 @@ namespace nd4j {
 				shapeList->push_back(empty);
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {
-                    Nd4jLong *newshape;
-                    COPY_SHAPE(x, newshape);
-
-                    ArrayOptions::setDataType(newshape, dtype);
-                    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                    RELEASE(newshape, block.getWorkspace());
-                    shapeList->push_back(result);
+                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
                 } else {
-                    Nd4jLong *newshape;
-                    COPY_SHAPE(y, newshape);
-
-                    ArrayOptions::setDataType(newshape, dtype);
-                    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                    RELEASE(newshape, block.getWorkspace());
-                    shapeList->push_back(result);
+                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(y, dtype)));
                 }
             } else if (shape::equalsSoft(x, y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                ArrayOptions::setDataType(newshape, dtype);
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                RELEASE(newshape, block.getWorkspace());
-                shapeList->push_back(result);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
             } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(y, newshape);
-
-                ArrayOptions::setDataType(newshape, dtype);
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                RELEASE(newshape, block.getWorkspace());
-                shapeList->push_back(result);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(y, dtype)));
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                ArrayOptions::setDataType(newshape, dtype);
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                RELEASE(newshape, block.getWorkspace());
-                shapeList->push_back(result);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
             } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
                 Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-
-                ArrayOptions::setDataType(newshape, dtype);
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                RELEASE(newshape, block.getWorkspace());
-                shapeList->push_back(result);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
             } else {
                 // in this case we'll throw exception later
-                Nd4jLong *newshape;
-                COPY_SHAPE(x, newshape);
-
-                ArrayOptions::setDataType(newshape, dtype);
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
-                RELEASE(newshape, block.getWorkspace());
-                shapeList->push_back(result);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
             }
 
             return shapeList;

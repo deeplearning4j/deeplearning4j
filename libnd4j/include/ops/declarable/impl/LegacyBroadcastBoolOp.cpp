@@ -91,14 +91,7 @@ namespace nd4j {
         */
         ShapeList* LegacyBroadcastBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
-
-            // FIXME: remove memcpy
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-            ArrayOptions::setDataType(newShape, DataType::BOOL);
-            auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
-            RELEASE(newShape, block.getWorkspace());
-            return SHAPELIST(result);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

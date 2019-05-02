@@ -98,11 +98,6 @@ namespace nd4j {
                     return SHAPELIST(newShape);
                 }
             }
-
-            ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
-            auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
-            RELEASE(newShape, block.getWorkspace());
-            return SHAPELIST(result);
         }
 
         /**

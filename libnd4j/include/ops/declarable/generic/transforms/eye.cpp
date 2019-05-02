@@ -102,9 +102,7 @@ namespace ops {
         }
         
         shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]));
-        ArrayOptions::setDataType(outShapeInfo, dtype);
-
-        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
+        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, dtype));
         RELEASE(outShapeInfo, block.getWorkspace());
         return SHAPELIST(result);
     }

@@ -65,13 +65,7 @@ namespace nd4j {
             auto yShape = inputShape->at(1);
 
             auto dtype = ArrayOptions::dataType(yShape);
-            Nd4jLong *newShape;
-            COPY_SHAPE(xShape, newShape);
-            ArrayOptions::setDataType(newShape, dtype);
-
-            ShapeDescriptor descriptor(newShape);
-            RELEASE(newShape, block.getWorkspace());
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(xShape, dtype)));
         }
 
         DECLARE_TYPES(biasadd_bp) {
