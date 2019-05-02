@@ -18,6 +18,7 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -134,6 +135,24 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testReproducibility() {
+        INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
+                0.2938,    0.3655,
+                0.3968,    0.0990,
+                0.0796,    0.9245}).reshape(4,2);
+
+        BarnesHutTsne b1 = new BarnesHutTsne.Builder().build(),
+                b2 = new BarnesHutTsne.Builder().build();
+        b1.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
+
+        b1.fit(input);
+        INDArray ret1 = b1.getData();
+        b2.fit(input);
+        INDArray ret2 = b2.getData();
+        assertEquals(ret1, ret2);
+    }
+
+    @Test
     public void testAgainstSklearnTSNE() {
         INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
                 0.2938,    0.3655,
@@ -141,15 +160,14 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.0796,    0.9245}).reshape(4,2);
 
         BarnesHutTsne b = new BarnesHutTsne.Builder().build();
-        //b.setSimiarlityFunction("cosine");
+        b.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
 
         b.fit(input);
 
         INDArray expected = Nd4j.createFromArray(
-                new double[]{-274.30356, -330.32452, 426.03946, 19.620352, 250.9052, -505.65094,-99.169014,194,9484})
+                new double[]{-274.30356, -330.32452, 426.03946, 19.620352, 250.9052, -505.65094,-99.169014,194.9484})
                 .reshape(4,2);
 
-        //TODO: assert
+        assertEquals(expected, b.getData());
     }
-
 }
