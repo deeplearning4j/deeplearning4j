@@ -432,7 +432,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             tmpShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
-    ShapeUtils::updateStridesAndType(resultShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
+    ShapeUtils::updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
 
     ShapeDescriptor descriptor(tmpShapeInfo);
     RELEASE(tmpShapeInfo, workspace);
@@ -527,7 +527,9 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     shape::updateStrides(newShapeInfo, arr.ordering());
     ArrayOptions::setDataType(newShapeInfo, arr.dataType());
 
-    return newShapeInfo;
+    ShapeDescriptor descriptor(newShapeInfo);
+    RELEASE(newShapeInfo, workspace);
+    return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
 }
 
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(Nd4jLong *shapeInfo) {
