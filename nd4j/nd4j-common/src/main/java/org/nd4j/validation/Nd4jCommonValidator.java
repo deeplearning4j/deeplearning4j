@@ -2,7 +2,6 @@ package org.nd4j.validation;
 
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.JavaType;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -10,7 +9,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -189,7 +191,7 @@ public class Nd4jCommonValidator {
     }
 
 
-    private static String getPath(File f){
+    public static String getPath(File f){
         if(f == null)
             return null;
         try{
