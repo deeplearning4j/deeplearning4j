@@ -600,259 +600,261 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         switch (kindOfLoop) {
 
-            // //*********************************************//
-            // case LoopKind::EWS1: {
+            //*********************************************//
+            case LoopKind::EWS1: {
 
-            //     PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
-            //     {
-            //         const auto threadNum = omp_get_thread_num();
-            //         const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
-            //         const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
+                PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
+                {
+                    const auto threadNum = omp_get_thread_num();
+                    const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
+                    const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
 
-            //         const auto xi = x + threadOffset;
-            //         const auto zi = z + threadOffset;
+                    const auto xi = x + threadOffset;
+                    const auto zi = z + threadOffset;
 
-            //         PRAGMA_OMP_SIMD
-            //         for (uint i = 0; i < lenPerThread; i++)
-            //             zi[i] = OpType::op(xi[i], extraParams);
-            //     }
-            // }
-            //     break;
+                    PRAGMA_OMP_SIMD
+                    for (uint i = 0; i < lenPerThread; i++)
+                        zi[i] = OpType::op(xi[i], extraParams);
+                }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::EWSNONZERO: {
-            //     const uint xEws = shape::elementWiseStride(xShapeInfo);
-            //     const uint zEws = shape::elementWiseStride(zShapeInfo);
+                //*********************************************//
+            case LoopKind::EWSNONZERO: {
+                const uint xEws = shape::elementWiseStride(xShapeInfo);
+                const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-            //     PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
-            //     {
-            //         const auto threadNum = omp_get_thread_num();
-            //         const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
-            //         const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
+                PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
+                {
+                    const auto threadNum = omp_get_thread_num();
+                    const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
+                    const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
 
-            //         const auto xi = x + threadOffset * xEws;
-            //         auto zi = z + threadOffset * zEws;
+                    const auto xi = x + threadOffset * xEws;
+                    auto zi = z + threadOffset * zEws;
 
-            //         PRAGMA_OMP_SIMD
-            //         for (uint i = 0; i < lenPerThread; i++)
-            //             zi[i*zEws] = OpType::op(xi[i*xEws], extraParams);
-            //     }
-            // }
-            //     break;
+                    PRAGMA_OMP_SIMD
+                    for (uint i = 0; i < lenPerThread; i++)
+                        zi[i*zEws] = OpType::op(xi[i*xEws], extraParams);
+                }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::Z_EWSNONZERO: {
-            //     const uint zEws = shape::elementWiseStride(zShapeInfo);
-            //     uint castXShapeInfo[MAX_RANK];
-            //     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
+                //*********************************************//
+            case LoopKind::Z_EWSNONZERO: {
+                const uint zEws = shape::elementWiseStride(zShapeInfo);
+                uint castXShapeInfo[MAX_RANK];
+                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
 
-            //     PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
-            //     {
-            //         const auto threadNum = omp_get_thread_num();
-            //         const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
-            //         const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
+                PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
+                {
+                    const auto threadNum = omp_get_thread_num();
+                    const auto threadOffset = threadsInfo.getThreadOffset(threadNum);
+                    const auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
 
-            //         auto zi = z + threadOffset * zEws;
+                    auto zi = z + threadOffset * zEws;
 
-            //         if (zEws > 1) {
+                    if (zEws > 1) {
 
-            //             PRAGMA_OMP_SIMD
-            //             for (uint i = 0; i < lenPerThread; i++) {
-            //                 const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
-            //                 zi[i * zEws] = OpType::op(x[xOffset], extraParams);
-            //             }
-            //         } else {
-            //             PRAGMA_OMP_SIMD
-            //             for (uint i = 0; i < lenPerThread; i++) {
-            //                 const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
-            //                 zi[i] = OpType::op(x[xOffset], extraParams);
-            //             }
-            //         }
-            //     }
-            // }
-            //     break;
+                        PRAGMA_OMP_SIMD
+                        for (uint i = 0; i < lenPerThread; i++) {
+                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                            zi[i * zEws] = OpType::op(x[xOffset], extraParams);
+                        }
+                    } else {
+                        PRAGMA_OMP_SIMD
+                        for (uint i = 0; i < lenPerThread; i++) {
+                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                            zi[i] = OpType::op(x[xOffset], extraParams);
+                        }
+                    }
+                }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::RANK1: {
-            //     PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(threadsInfo._numThreads)
-            //     for (uint i0 = 0; i0 < len; ++i0)
-            //         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
-            // }
-            //     break;
+                //*********************************************//
+            case LoopKind::RANK1: {
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(threadsInfo._numThreads)
+                for (uint i0 = 0; i0 < len; ++i0)
+                    z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::RANK2: {
-            //     auto uXShape0 = static_cast<uint>(xShape[0]);
-            //     auto uXShape1 = static_cast<uint>(xShape[1]);
+                //*********************************************//
+            case LoopKind::RANK2: {
+                auto uXShape0 = static_cast<uint>(xShape[0]);
+                auto uXShape1 = static_cast<uint>(xShape[1]);
 
-            //     //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(threadsInfo._numThreads)
-            //     PRAGMA_OMP_PARALLEL_FOR_SIMD
-            //     for (uint i0 = 0; i0 < uXShape0; ++i0) {
+                //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(threadsInfo._numThreads)
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (uint i0 = 0; i0 < uXShape0; ++i0) {
 
-            //         auto z0 = i0 * zStride[0];
-            //         auto x0 = i0 * xStride[0];
-            //         for (uint i1 = 0; i1 < uXShape1; ++i1)
-            //             z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
-            //     }
-            // }
-            //     break;
+                    auto z0 = i0 * zStride[0];
+                    auto x0 = i0 * xStride[0];
+                    for (uint i1 = 0; i1 < uXShape1; ++i1)
+                        z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
+                }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::RANK3: {
-            //     auto uXShape0 = static_cast<uint>(xShape[0]);
-            //     auto uXShape1 = static_cast<uint>(xShape[1]);
-            //     auto uXShape2 = static_cast<uint>(xShape[2]);
+                //*********************************************//
+            case LoopKind::RANK3: {
+                auto uXShape0 = static_cast<uint>(xShape[0]);
+                auto uXShape1 = static_cast<uint>(xShape[1]);
+                auto uXShape2 = static_cast<uint>(xShape[2]);
 
-            //     PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
-            //     for (uint i0 = 0; i0 < uXShape0; ++i0)
-            //         for (uint i1 = 0; i1 < uXShape1; ++i1) {
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
+                for (uint i0 = 0; i0 < uXShape0; ++i0)
+                    for (uint i1 = 0; i1 < uXShape1; ++i1) {
 
-            //             auto z0 = i0 * zStride[0] + i1 * zStride[1];
-            //             auto x0 = i0 * xStride[0] + i1 * xStride[1];
+                        auto z0 = i0 * zStride[0] + i1 * zStride[1];
+                        auto x0 = i0 * xStride[0] + i1 * xStride[1];
 
-            //             for (uint i2 = 0; i2 < uXShape2; ++i2)
-            //                 z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
-            //         }
-            // }
-            //     break;
+                        for (uint i2 = 0; i2 < uXShape2; ++i2)
+                            z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+                    }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::RANK4: {
-            //     auto uXShape0 = static_cast<uint>(xShape[0]);
-            //     auto uXShape1 = static_cast<uint>(xShape[1]);
-            //     auto uXShape2 = static_cast<uint>(xShape[2]);
-            //     auto uXShape3 = static_cast<uint>(xShape[3]);
+                //*********************************************//
+            case LoopKind::RANK4: {
+                auto uXShape0 = static_cast<uint>(xShape[0]);
+                auto uXShape1 = static_cast<uint>(xShape[1]);
+                auto uXShape2 = static_cast<uint>(xShape[2]);
+                auto uXShape3 = static_cast<uint>(xShape[3]);
 
-            //     PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
-            //     for (uint i0 = 0; i0 < uXShape0; ++i0)
-            //         for (uint i1 = 0; i1 < uXShape1; ++i1)
-            //             for (uint i2 = 0; i2 < uXShape2; ++i2) {
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
+                for (uint i0 = 0; i0 < uXShape0; ++i0)
+                    for (uint i1 = 0; i1 < uXShape1; ++i1)
+                        for (uint i2 = 0; i2 < uXShape2; ++i2) {
 
-            //                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
-            //                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+                            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+                            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
 
-            //                 for (uint i3 = 0; i3 < uXShape3; ++i3)
-            //                     z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
-            //             }
-            // }
-            //     break;
+                            for (uint i3 = 0; i3 < uXShape3; ++i3)
+                                z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
+                        }
+            }
+                break;
 
-            //     //*********************************************//
-            // case LoopKind::RANK5: {
-            //     auto uXShape0 = static_cast<uint>(xShape[0]);
-            //     auto uXShape1 = static_cast<uint>(xShape[1]);
-            //     auto uXShape2 = static_cast<uint>(xShape[2]);
-            //     auto uXShape3 = static_cast<uint>(xShape[3]);
-            //     auto uXShape4 = static_cast<uint>(xShape[4]);
+                //*********************************************//
+            case LoopKind::RANK5: {
+                auto uXShape0 = static_cast<uint>(xShape[0]);
+                auto uXShape1 = static_cast<uint>(xShape[1]);
+                auto uXShape2 = static_cast<uint>(xShape[2]);
+                auto uXShape3 = static_cast<uint>(xShape[3]);
+                auto uXShape4 = static_cast<uint>(xShape[4]);
 
-            //     PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 3)
-            //     for (uint i0 = 0; i0 < uXShape0; ++i0)
-            //         for (uint i1 = 0; i1 < uXShape1; ++i1)
-            //             for (uint i2 = 0; i2 < uXShape2; ++i2) {
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 3)
+                for (uint i0 = 0; i0 < uXShape0; ++i0)
+                    for (uint i1 = 0; i1 < uXShape1; ++i1)
+                        for (uint i2 = 0; i2 < uXShape2; ++i2) {
 
-            //                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
-            //                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+                            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+                            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
 
-            //                 for (uint i3 = 0; i3 < uXShape3; ++i3) {
+                            for (uint i3 = 0; i3 < uXShape3; ++i3) {
 
-            //                     auto z1 = z0 + i3 * zStride[3];
-            //                     auto x1 = x0 + i3 * xStride[3];
+                                auto z1 = z0 + i3 * zStride[3];
+                                auto x1 = x0 + i3 * xStride[3];
 
-            //                     for (uint i4 = 0; i4 < uXShape4; ++i4)
-            //                         z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
+                                for (uint i4 = 0; i4 < uXShape4; ++i4)
+                                    z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
 
-            //                 }
-            //             }
-            // }
-            //     break;
+                            }
+                        }
+            }
+                break;
 
             //*********************************************//
-            // default: {
-            //     uint xShapeInfoCast[MAX_RANK];
-            //     uint zShapeInfoCast[MAX_RANK];
+            default: {
+                uint xShapeInfoCast[MAX_RANK];
+                uint zShapeInfoCast[MAX_RANK];
 
-            //     bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-            //     bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-            //     PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
-            //     {
-            //         auto threadNum = omp_get_thread_num();
-            //         auto threadOffset = threadsInfo.getThreadOffset(threadNum);
-            //         auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
+                PRAGMA_OMP_PARALLEL_THREADS(threadsInfo._numThreads)
+                {
+                    auto threadNum = omp_get_thread_num();
+                    auto threadOffset = threadsInfo.getThreadOffset(threadNum);
+                    auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
 
-            //         PRAGMA_OMP_SIMD
-            //         for (uint i = 0; i < lenPerThread; i++) {
-            //             auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-            //             auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
-            //             z[zOffset] = OpType::op(x[xOffset], extraParams);
-            //         }
-            //     }
-            // }
-
-            default: {                                
-                
-                const int xRankMinusOne = shape::rank(xShapeInfo) - 1;
-                const int zRankMinusOne = shape::rank(zShapeInfo) - 1;
-
-                uint* xIdx = new uint[xRankMinusOne + 1];
-                uint* zIdx = new uint[zRankMinusOne + 1];
-
-                Nd4jLong* xOffsetPerDim = new Nd4jLong[xRankMinusOne];
-                Nd4jLong* zOffsetPerDim = new Nd4jLong[zRankMinusOne];
-
-                memset(xIdx, 0, sizeof(uint) * xRankMinusOne);
-                memset(zIdx, 0, sizeof(uint) * zRankMinusOne);
-
-                xIdx[xRankMinusOne] = zIdx[zRankMinusOne] = 1;
-
-                const Nd4jLong* xShape  = shape::shapeOf(xShapeInfo);
-                const Nd4jLong* zShape  = shape::shapeOf(zShapeInfo);
-                const Nd4jLong* xStride = shape::stride(xShapeInfo);            
-                const Nd4jLong* zStride = shape::stride(zShapeInfo);
-
-                PRAGMA_OMP_SIMD
-                for (int k = 0; k < xRankMinusOne; ++k)
-                    xOffsetPerDim[k] = (xShape[k] - 1) * xStride[k];
-                PRAGMA_OMP_SIMD
-                for (int k = 0; k < zRankMinusOne; ++k)
-                    zOffsetPerDim[k] = (zShape[k] - 1) * zStride[k];
-
-                Nd4jLong xInit = 0, zInit = 0, xOffset = 0, zOffset = 0;
-                int jX = xRankMinusOne, jZ = zRankMinusOne;
-
-                // first iteration 
-                z[0] = OpType::op(x[0], extraParams);
-
-                // rest iterations
-                for (uint i = 1; i < len; i++) {
-
-                    while(true) {
-                        if(xShape[jX] == 1) { --jX; continue; } 
-                        if(jX == xRankMinusOne) {
-                            if(xIdx[jX] < xShape[jX]) { xOffset += xStride[jX]; ++xIdx[jX]; break; }
-                            else                      { xIdx[jX] = 1; --jX; continue; }    
-                        }
-                        else if(xIdx[jX] < xShape[jX] - 1) { xInit += xStride[jX]; xOffset = xInit; ++xIdx[jX]; jX = xRankMinusOne; break; }
-                        else                               { xInit -= xOffsetPerDim[jX]; xIdx[jX--] = 0; continue; }
+                    PRAGMA_OMP_SIMD
+                    for (uint i = 0; i < lenPerThread; i++) {
+                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
+                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                        z[zOffset] = OpType::op(x[xOffset], extraParams);
                     }
-                    
-                    while(true) {
-                        if(zShape[jZ] == 1) { --jZ; continue; } 
-                        if(jZ == zRankMinusOne) {
-                            if(zIdx[jZ] < zShape[jZ]) { zOffset += zStride[jZ]; ++zIdx[jZ]; break; }
-                            else                      { zIdx[jZ] = 1; --jZ; continue; }
-                        }
-                        else if(zIdx[jZ] < zShape[jZ] - 1) { zInit += zStride[jZ]; zOffset = zInit; ++zIdx[jZ]; jZ = zRankMinusOne; break; }
-                        else                               { zInit -= zOffsetPerDim[jZ]; zIdx[jZ--] = 0; continue; }
-                    }
-                    z[zOffset] = OpType::op(x[xOffset], extraParams);
                 }
-
-                delete []xIdx;
-                delete []zIdx;
-                delete []xOffsetPerDim;
-                delete []zOffsetPerDim;
             }
+
+            // default: {                                
+                
+            //     const int xRankMinusOne = shape::rank(xShapeInfo) - 1;
+            //     const int zRankMinusOne = shape::rank(zShapeInfo) - 1;
+
+            //     printf("%i  %i \n", xRankMinusOne, zRankMinusOne);
+
+            //     uint* xIdx = new uint[xRankMinusOne + 1];
+            //     uint* zIdx = new uint[zRankMinusOne + 1];
+
+            //     Nd4jLong* xOffsetPerDim = new Nd4jLong[xRankMinusOne];
+            //     Nd4jLong* zOffsetPerDim = new Nd4jLong[zRankMinusOne];
+
+            //     memset(xIdx, 0, sizeof(uint) * xRankMinusOne);
+            //     memset(zIdx, 0, sizeof(uint) * zRankMinusOne);
+
+            //     xIdx[xRankMinusOne] = zIdx[zRankMinusOne] = 1;
+
+            //     const Nd4jLong* xShape  = shape::shapeOf(xShapeInfo);
+            //     const Nd4jLong* zShape  = shape::shapeOf(zShapeInfo);
+            //     const Nd4jLong* xStride = shape::stride(xShapeInfo);            
+            //     const Nd4jLong* zStride = shape::stride(zShapeInfo);
+
+            //     PRAGMA_OMP_SIMD
+            //     for (int k = 0; k < xRankMinusOne; ++k)
+            //         xOffsetPerDim[k] = (xShape[k] - 1) * xStride[k];
+            //     PRAGMA_OMP_SIMD
+            //     for (int k = 0; k < zRankMinusOne; ++k)
+            //         zOffsetPerDim[k] = (zShape[k] - 1) * zStride[k];
+
+            //     Nd4jLong xInit = 0, zInit = 0, xOffset = 0, zOffset = 0;
+            //     int jX = xRankMinusOne, jZ = zRankMinusOne;
+
+            //     // first iteration 
+            //     z[0] = OpType::op(x[0], extraParams);
+
+            //     // rest iterations
+            //     for (uint i = 1; i < len; i++) {
+
+            //         while(true) {
+            //             if(xShape[jX] == 1) { --jX; continue; } 
+            //             if(jX == xRankMinusOne) {
+            //                 if(xIdx[jX] < xShape[jX]) { xOffset += xStride[jX]; ++xIdx[jX]; break; }
+            //                 else                      { xIdx[jX] = 1; --jX; continue; }    
+            //             }
+            //             else if(xIdx[jX] < xShape[jX] - 1) { xInit += xStride[jX]; xOffset = xInit; ++xIdx[jX]; jX = xRankMinusOne; break; }
+            //             else                               { xInit -= xOffsetPerDim[jX]; xIdx[jX--] = 0; continue; }
+            //         }
+                    
+            //         while(true) {
+            //             if(zShape[jZ] == 1) { --jZ; continue; } 
+            //             if(jZ == zRankMinusOne) {
+            //                 if(zIdx[jZ] < zShape[jZ]) { zOffset += zStride[jZ]; ++zIdx[jZ]; break; }
+            //                 else                      { zIdx[jZ] = 1; --jZ; continue; }
+            //             }
+            //             else if(zIdx[jZ] < zShape[jZ] - 1) { zInit += zStride[jZ]; zOffset = zInit; ++zIdx[jZ]; jZ = zRankMinusOne; break; }
+            //             else                               { zInit -= zOffsetPerDim[jZ]; zIdx[jZ--] = 0; continue; }
+            //         }
+            //         z[zOffset] = OpType::op(x[xOffset], extraParams);
+            //     }
+
+            //     delete []xIdx;
+            //     delete []zIdx;
+            //     delete []xOffsetPerDim;
+            //     delete []zOffsetPerDim;
+            // }
         }
     }
 

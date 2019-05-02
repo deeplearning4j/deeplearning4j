@@ -2052,8 +2052,8 @@ TEST_F(PlaygroundTests, loops_4) {
 TEST_F(PlaygroundTests, loops_5) {
 
     const uint N = 2;
-    const Nd4jLong dim0(1024), dim1(1024), dim2(256);
-    // const Nd4jLong dim0(10), dim1(10);
+    // const Nd4jLong dim0(1024), dim1(1024), dim2(256);
+    const Nd4jLong dim0(10), dim1(10), dim2(10);
     NDArray x('c', {dim0, dim1, dim2});
     NDArray z('c', {dim0, dim1, dim2});
 
