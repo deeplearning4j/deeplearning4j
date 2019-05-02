@@ -235,6 +235,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 ShapeDescriptor ShapeDescriptor::emptyDescriptor(const DataType type) {
     ShapeDescriptor descriptor;
     descriptor._dataType = type;
+    descriptor._empty = true;
     descriptor._rank = 0;
     descriptor._order = 'c';
     descriptor._ews = 1;
@@ -245,7 +246,7 @@ ShapeDescriptor ShapeDescriptor::emptyDescriptor(const DataType type) {
 ShapeDescriptor ShapeDescriptor::scalarDescriptor(const DataType type) {
     ShapeDescriptor descriptor;
     descriptor._dataType = type;
-    descriptor._empty = true;
+    descriptor._empty = false;
     descriptor._rank = 0;
     descriptor._order = 'c';
     descriptor._ews = 1;

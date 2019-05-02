@@ -186,7 +186,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template <typename T>
     NDArray NDArrayFactory::create(DataType type, const T scalar, nd4j::graph::LaunchContext* context) {
 
-        NDArray res(type, context);
+        NDArray res(type, context, true);
 
         //int8_t *buffer;
         //ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);

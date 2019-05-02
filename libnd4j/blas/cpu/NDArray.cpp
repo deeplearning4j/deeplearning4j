@@ -205,7 +205,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, cons
     _isAttached = _context->getWorkspace() != nullptr;
 
     if (isScalar) {
-        setShapeInfo(ConstantShapeHelper::getInstance()->scalarShapeInfo(dtype));
+        setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
         ALLOCATE(_buffer, _context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
         memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
         triggerAllocationFlag(true);
