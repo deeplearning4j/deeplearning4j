@@ -16,7 +16,9 @@
 
 package org.deeplearning4j.spark.models.sequencevectors;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
@@ -73,6 +75,7 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
     protected transient VocabCache<ShallowSequenceElement> shallowVocabCache;
     protected boolean isAutoDiscoveryMode = true;
 
+    @Getter @Setter
     protected SparkModelExporter<T> exporter;
 
     protected SparkElementsLearningAlgorithm ela;

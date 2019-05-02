@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.mixed;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -36,7 +38,7 @@ public class StringArrayTests {
         assertEquals(0, array.rank());
         assertEquals(DataType.UTF8, array.dataType());
 
-        assertEquals("alpha", array.getStringUnsafe(0));
+        assertEquals("alpha", array.getString(0));
         String s = array.toString();
         assertTrue(s, s.contains("alpha"));
         System.out.println(s);
@@ -51,9 +53,9 @@ public class StringArrayTests {
         assertEquals(1, array.rank());
         assertEquals(DataType.UTF8, array.dataType());
 
-        assertEquals("alpha", array.getStringUnsafe(0));
-        assertEquals("beta", array.getStringUnsafe(1));
-        assertEquals("gamma", array.getStringUnsafe(2));
+        assertEquals("alpha", array.getString(0));
+        assertEquals("beta", array.getString(1));
+        assertEquals("gamma", array.getString(2));
         String s = array.toString();
         assertTrue(s, s.contains("alpha"));
         assertTrue(s, s.contains("beta"));
@@ -70,5 +72,33 @@ public class StringArrayTests {
         assertEquals(arrayX, arrayX);
         assertEquals(arrayX, arrayY);
         assertNotEquals(arrayX, arrayZ);
+    }
+
+    @Test
+    public void testBasicStrings_4() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+
+        val fb = new FlatBufferBuilder();
+        val i = arrayX.toFlatArray(fb);
+        fb.finish(i);
+        val db = fb.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(arrayX, restored);
+        assertEquals("alpha", restored.getString(0));
+        assertEquals("beta", restored.getString(1));
+        assertEquals("gamma", restored.getString(2));
+    }
+
+    @Test
+    public void testBasicStrings_5() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        val arrayZ0 = arrayX.dup();
+        val arrayZ1 = arrayX.dup(arrayX.ordering());
+
+        assertEquals(arrayX, arrayZ0);
+        assertEquals(arrayX, arrayZ1);
     }
 }

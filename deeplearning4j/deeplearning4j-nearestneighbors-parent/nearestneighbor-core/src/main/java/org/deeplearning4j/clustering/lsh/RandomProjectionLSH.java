@@ -177,7 +177,7 @@ public class RandomProjectionLSH implements LSH {
 
             // loop, addi + conditionalreplace -> poor man's OR function
             for (int i = 0; i < numTables; i++) {
-                INDArray row = entropyQueries.getRow(i);
+                INDArray row = entropyQueries.getRow(i, true);
                 queryRes.addi(rawBucketOf(row));
             }
             BooleanIndexing.replaceWhere(queryRes, 1.0, Conditions.greaterThan(0.0));

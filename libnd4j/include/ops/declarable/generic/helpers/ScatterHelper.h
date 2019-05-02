@@ -103,19 +103,17 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
         }
     } 
     else {
-
-        std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
+        
+        ResultSet indSubArrs = indices.allTensorsAlongDims({indRank-1});
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
-        std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
+        std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);        
 
         PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) firstprivate(idxRangeOut))
         for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
-            
-            auto indSubArr = indices(i, dimsToExcludeInd);
 
             for(Nd4jLong j = 0; j < indLastDim; ++j) {
-                idxRangeOut[2*j] = indSubArr.e<Nd4jLong>(j);
+                idxRangeOut[2*j] = indSubArrs[i]->e<Nd4jLong>(j);
                 idxRangeOut[2*j + 1] = idxRangeOut[2*j] + 1;
             }
 

@@ -114,7 +114,7 @@ public class ParagraphVectorsTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 2400000)
     public void testParagraphVectorsVocabBuilding1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();//.getParentFile();
@@ -161,7 +161,7 @@ public class ParagraphVectorsTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 3000000)
     public void testParagraphVectorsModelling1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();
@@ -354,7 +354,7 @@ public class ParagraphVectorsTest {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testParagraphVectorsDM() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();
@@ -418,7 +418,7 @@ public class ParagraphVectorsTest {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testParagraphVectorsDBOW() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();
@@ -494,7 +494,7 @@ public class ParagraphVectorsTest {
 
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
         ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile();
@@ -631,7 +631,7 @@ public class ParagraphVectorsTest {
         log.info("Similarity positive: " + simV);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testParallelIterator() throws IOException {
         TokenizerFactory factory = new DefaultTokenizerFactory();
         SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
@@ -654,12 +654,12 @@ public class ParagraphVectorsTest {
         }
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testIterator() throws IOException {
         val folder_labeled = testDir.newFolder();
         val folder_unlabeled = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
-        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
@@ -701,14 +701,14 @@ public class ParagraphVectorsTest {
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
         there's no need in this test within travis, use it manually only for problems detection
     */
-    @Test
+    @Test(timeout = 300000)
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
 
         // we build w2v from multiple sources, to cover everything
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
 
         val folder_mixed = testDir.newFolder();
-        ClassPathResource resource_mixed = new ClassPathResource("/paravec");
+        ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         resource_mixed.copyDirectory(folder_mixed);
 
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
@@ -735,8 +735,8 @@ public class ParagraphVectorsTest {
 
         val folder_labeled = testDir.newFolder();
         val folder_unlabeled = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(folder_labeled);
-        new ClassPathResource("/paravec/unlabeled").copyDirectory(folder_unlabeled);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
+        new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
@@ -993,13 +993,15 @@ public class ParagraphVectorsTest {
         log.info("SimilarityB: {}", simB);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testDirectInference() throws Exception {
         ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
-        ClassPathResource resource_mixed = new ClassPathResource("/paravec");
+        ClassPathResource resource_mixed = new ClassPathResource("paravec/");
+        File local_resource_mixed = testDir.newFolder();
+        resource_mixed.copyDirectory(local_resource_mixed);
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
                         .addSentenceIterator(new BasicLineIterator(resource_sentences.getFile()))
-                        .addSentenceIterator(new FileSentenceIterator(resource_mixed.getFile())).build();
+                        .addSentenceIterator(new FileSentenceIterator(local_resource_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -1040,7 +1042,7 @@ public class ParagraphVectorsTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testHash() {
         VocabWord w1 = new VocabWord(1.0, "D1");
         VocabWord w2 = new VocabWord(1.0, "Bo");
@@ -1105,7 +1107,7 @@ public class ParagraphVectorsTest {
         }
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testJSONSerialization() {
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -1144,35 +1146,35 @@ public class ParagraphVectorsTest {
         }
     }
 
-        @Test
-        public void testDoubleFit() throws Exception {
-            ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-            File file = resource.getFile();
-            SentenceIterator iter = new BasicLineIterator(file);
+    @Test(timeout = 300000)
+    public void testDoubleFit() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
+        File file = resource.getFile();
+        SentenceIterator iter = new BasicLineIterator(file);
 
-            TokenizerFactory t = new DefaultTokenizerFactory();
-            t.setTokenPreProcessor(new CommonPreprocessor());
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
 
-            LabelsSource source = new LabelsSource("DOC_");
+        LabelsSource source = new LabelsSource("DOC_");
 
-            val builder = new ParagraphVectors.Builder();
-            ParagraphVectors vec = builder.minWordFrequency(1).iterations(5).seed(119).epochs(1)
-                    .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
-                    .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
-                    .usePreciseWeightInit(true)
-                    .batchSize(8192)
-                    .allowParallelTokenization(false)
-                    .tokenizerFactory(t).workers(1).sampling(0).build();
+        val builder = new ParagraphVectors.Builder();
+        ParagraphVectors vec = builder.minWordFrequency(1).iterations(5).seed(119).epochs(1)
+                .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
+                .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
+                .usePreciseWeightInit(true)
+                .batchSize(8192)
+                .allowParallelTokenization(false)
+                .tokenizerFactory(t).workers(1).sampling(0).build();
 
-            vec.fit();
-            long num1 = vec.vocab().totalNumberOfDocs();
+        vec.fit();
+        long num1 = vec.vocab().totalNumberOfDocs();
 
-            vec.fit();
-            System.out.println(vec.vocab().totalNumberOfDocs());
-            long num2 = vec.vocab().totalNumberOfDocs();
+        vec.fit();
+        System.out.println(vec.vocab().totalNumberOfDocs());
+        long num2 = vec.vocab().totalNumberOfDocs();
 
-            assertEquals(num1, num2);
-        }
+        assertEquals(num1, num2);
     }
+}
 
 

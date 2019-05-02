@@ -226,7 +226,7 @@ public class TestStatsClasses {
                 for (boolean hasSoftwareInfo : tf) {
                     for (boolean hasModelInfo : tf) {
 
-                        System.out.println(hasHardwareInfo + "\t" + hasSoftwareInfo + "\t" + hasModelInfo);
+                        //System.out.println(hasHardwareInfo + "\t" + hasSoftwareInfo + "\t" + hasModelInfo);
 
                         StatsInitializationReport report;
                         if (useJ7) {

@@ -470,6 +470,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     /**
      *
+     * @param p
+     * @param len
+     */
+    public native void tryPointer(@Cast("Nd4jPointer") Pointer extra, @Cast("Nd4jPointer") Pointer p, int len);
+
+    /**
+     *
      * @param num
      */
     public native void setElementThreshold(int num);
@@ -1611,7 +1618,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
      * @param flags optional parameter
      */
-    public native @Cast("Nd4jPointer") Pointer mallocDevice(@Cast("Nd4jLong") long memorySize, @Cast("Nd4jPointer") Pointer ptrToDeviceId, int flags);
+    public native @Cast("Nd4jPointer") Pointer mallocDevice(@Cast("Nd4jLong") long memorySize, int deviceId, int flags);
 
     /**
      * This method releases previously allocated host memory space
@@ -1626,7 +1633,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param pointer pointer that'll be freed
      * @param ptrToDeviceId pointer to deviceId.
      */
-    public native int freeDevice(@Cast("Nd4jPointer") Pointer pointer, @Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int freeDevice(@Cast("Nd4jPointer") Pointer pointer, int deviceId);
 
     /**
      *
@@ -1693,7 +1700,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native int setDevice(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int setDevice(int deviceId);
 
     /**
      *
@@ -1720,7 +1727,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("Nd4jLong") long getDeviceFreeMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("Nd4jLong") long getDeviceFreeMemory(int deviceId);
 
     /**
      * Returns amount of free memory for current device
@@ -1733,28 +1740,28 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("Nd4jLong") long getDeviceTotalMemory(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("Nd4jLong") long getDeviceTotalMemory(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native int getDeviceMajor(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int getDeviceMajor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native int getDeviceMinor(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native int getDeviceMinor(int deviceId);
 
     /**
      *
      * @param ptrToDeviceId
      * @return
      */
-    public native @Cast("char*") String getDeviceName(@Cast("Nd4jPointer") Pointer ptrToDeviceId);
+    public native @Cast("char*") String getDeviceName(int deviceId);
 
     /**
      *
@@ -2371,6 +2378,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
  * @param headerSize
  * @return
  */
+
     public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongPointer headerSize);
     public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") LongBuffer headerSize);
     public native @Cast("Nd4jPointer") Pointer numpyHeaderForNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize,@Cast("Nd4jLong*") long[] headerSize);
@@ -2392,6 +2400,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
    * @param wordSize  the word size (4 for float, 8 for doubles)
    * @return a pointer to a numpy array
    */
+
+
     public native @Cast("Nd4jPointer") Pointer numpyFromNd4j(@Cast("Nd4jPointer") Pointer data,@Cast("Nd4jPointer") Pointer shapeBuffer,@Cast("Nd4jLong") long wordSize);
 
 
@@ -20609,37 +20619,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-//         #endif
-
-        /**
-         * Local response normalization implementation.
-         * Reference: http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks
-         * Expected arguments:
-         * input: 4D array
-         * 
-         * T args:
-         * 0: alpha
-         * 1: beta
-         * 2: bias
-         * 3: depth
-         */
-//         #if NOT_EXCLUDED(OP_lrn_old)
-        @Namespace("nd4j::ops") public static class lrn_old extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public lrn_old(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public lrn_old(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public lrn_old position(long position) {
-                return (lrn_old)super.position(position);
-            }
-        
-                                                                                    public lrn_old() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
+//         #endif       
 
         /**
          * Local response normalization implementation as TF.

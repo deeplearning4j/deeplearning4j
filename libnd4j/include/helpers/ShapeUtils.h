@@ -156,6 +156,13 @@ namespace nd4j {
         *  calculates strides using "dest" shape and "order", also set "dtype" into "dest"         
         */
         static void updateStridesAndType(Nd4jLong* dest, const DataType dtype, const char order);
+
+        /**
+         * This method retuns number of bytes required for string tensor
+         * @param numStrings
+         * @return
+         */
+        static Nd4jLong stringBufferHeaderRequirements(Nd4jLong numStrings);
     };
 
 

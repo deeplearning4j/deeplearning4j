@@ -249,8 +249,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(sorted[1], sorted2);
         INDArray shouldIndex = Nd4j.create(new double[] {1, 1, 0, 0}, new long[] {2, 2});
         assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
+    }
 
+    @Test
+    public void testSortDeadlock() {
+        val toSort = Nd4j.linspace(DataType.DOUBLE, 1, 32*768, 1).reshape(32, 768);
 
+        val sorted = Nd4j.sort(toSort.dup(), 1, false);
     }
 
 
@@ -263,8 +268,6 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(sorted[1], sorted2);
         INDArray shouldIndex = Nd4j.create(new double[] {0, 0, 1, 1}, new long[] {2, 2});
         assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
-
-
     }
 
     @Test

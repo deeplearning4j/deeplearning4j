@@ -1090,7 +1090,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public String getStringUnsafe(long index) {
+    public String getString(long index) {
         return null;
     }
 

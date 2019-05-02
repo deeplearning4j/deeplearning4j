@@ -1625,7 +1625,7 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4});
 
     nd4j::ops::lrn_bp op;
-    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
+    auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
     auto out = results->at(0);
         
     ASSERT_EQ(Status::OK(), results->status());

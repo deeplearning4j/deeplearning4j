@@ -265,8 +265,8 @@ namespace nd4j {
                                       Nd4jLong *zOffsets) {
 
 
-        execConcatKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
-                                                                           (numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+        execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+        nd4j::DebugHelper::checkErrorCode(stream, "concatGenericLegacy(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, Nd4jPointer * inputShapeInfos, void * vz, Nd4jLong *zShapeInfo, Nd4jPointer * tadPointers, Nd4jPointer * offsetPointers, Nd4jLong * zTadShape, Nd4jLong * zOffsets), LIBND4J_TYPES);

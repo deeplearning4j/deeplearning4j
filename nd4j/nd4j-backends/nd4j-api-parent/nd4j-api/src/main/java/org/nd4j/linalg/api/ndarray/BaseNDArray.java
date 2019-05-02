@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
@@ -1813,17 +1814,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
-        WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
-        if (this.isCompressed() && this.ordering() == Nd4j.order()) {
-            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
-            ret.markAsCompressed(true);
-            return ret;
-        }
-        if(isEmpty())
-            return this;
-        Nd4j.getCompressor().autoDecompress(this);
-        INDArray ret = Shape.toOffsetZeroCopy(this);
-        return ret;
+        return dup(Nd4j.order());
     }
 
     @Override
@@ -1836,6 +1827,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         if(isEmpty())
             return this;
+
+        // fixme: eventually it would be nice to have this in native code
+        if (isS()) {
+            val list = new ArrayList<String>();
+            for (int e = 0; e < this.length(); e++)
+                list.add(this.getString(e));
+
+            return Nd4j.create(list, this.shape(), this.ordering());
+        }
+
         Nd4j.getCompressor().autoDecompress(this);
         return Shape.toOffsetZeroCopy(this, order);
     }
@@ -2455,7 +2456,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
-        if(isEmpty())
+        if(isEmpty() || isS())
             return false;
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataType.INT)
@@ -4827,7 +4828,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
-
+        Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
         return tensorAlongDimension(c, 0);
     }
 
@@ -5153,8 +5154,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // meh
         if (this.dataType() == DataType.UTF8 && n.dataType() == DataType.UTF8) {
             for (long e = 0; e < this.length(); e++) {
-                val str1 = this.getStringUnsafe(e);
-                val str2 = n.getStringUnsafe(e);
+                val str1 = this.getString(e);
+                val str2 = n.getString(e);
 
                 if (!str1.equals(str2))
                     return false;
@@ -6342,31 +6343,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
 
+            val numWords = this.length();
             val ub = (Utf8Buffer) buffer;
             // writing length first
             val t = length();
-            dos.writeLong(t);
+            val ptr = (BytePointer) ub.pointer();
 
-            // FIXME: probably we don't want int limitation here?
-            val list = new ArrayList<String>((int) length());
-
-            // now write all offsets
-            int lastLength = 0;
-            for (int i = 0; i < length(); i++) {
-                val string = Nd4j.getExecutioner().getString(ub, i);
-                list.add(string);
-                dos.writeLong(lastLength);
-                lastLength += string.length();
-            }
-            // writing out last value
-            dos.writeLong(lastLength);
-
-            // now write all strings
-            for (int i = 0; i < list.size(); i++) {
-                dos.writeBytes(list.get(i));
+            // now write all strings as bytes
+            for (int i = 0; i < ub.length(); i++) {
+                dos.writeByte(ptr.get(i));
             }
 
-            return FlatArray.createBufferVector(builder, bos.toByteArray());
+            val bytes = bos.toByteArray();
+            return FlatArray.createBufferVector(builder, bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -6535,11 +6524,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public String getStringUnsafe(long index) {
+    public String getString(long index) {
         if (!isS())
             throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
 
-        return Nd4j.getExecutioner().getString(((Utf8Buffer) this.data()), index);
+        return ((Utf8Buffer) data).getString(index);
     }
 
     /**

@@ -173,7 +173,7 @@ public class NDArrayStrings {
                 long arrElement = arr.getLong(0);
                 return arrElement == 0 ? "false" : "true";
             } else if (arr.dataType() == DataType.UTF8){
-                String s = arr.getStringUnsafe(0);
+                String s = arr.getString(0);
                 return "\"" + s.replaceAll("\n","\\n") + "\"";
             } else
                 throw new ND4JIllegalStateException();
@@ -261,7 +261,7 @@ public class NDArrayStrings {
                     long arrElement = arr.getLong(i);
                     sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
                 } else if(arr.dataType() == DataType.UTF8){
-                    String s = arr.getStringUnsafe(i);
+                    String s = arr.getString(i);
                     s = "\"" + s.replaceAll("\n", "\\n") + "\"";
                     sb.append(s);
                 }

@@ -62,11 +62,13 @@ namespace nd4j {
 
                 auto rawPtr = (void *)flatArray->buffer()->data();
                 auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
-                auto charPtr = reinterpret_cast<char *>(longPtr + length + 2);
+                auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
                 auto offsets = new Nd4jLong[length+1];
                 for (int e = 0; e <= length; e++) {
-                    auto v = canKeep ?  longPtr[e+1] : BitwiseUtils::swap_bytes<Nd4jLong>(longPtr[e+1]);
-                    offsets[e] = v;
+                    auto o = longPtr[e];
+                    // FIXME: BE vs LE on partials
+                    //auto v = canKeep ?  o : BitwiseUtils::swap_bytes<Nd4jLong>(o);
+                    offsets[e] = o;
                 }
 
                 for (int e = 0; e < length; e++) {
@@ -75,6 +77,7 @@ namespace nd4j {
                     auto len = end - start;
 
                     auto c = (char *) malloc(len+1);
+                    nd4j_printf("<String %i> start: %lld; end: %lld; length: %lld;\n", e, start, end, len);
                     CHECK_ALLOC(c, "Failed temp allocation");
                     memset(c, '\0', len + 1);
                     memcpy(c, charPtr + start, len);

@@ -137,6 +137,7 @@ void _CUDA_H ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaSt
     auto length = shape::length(hxShapeInfo);
 
     scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShapedA(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +145,7 @@ template<typename X, typename Y, typename Z>
 template<typename OpType>
 void _CUDA_H ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    nd4j::DebugHelper::checkErrorCode(stream, "scalarAlongDimA(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
