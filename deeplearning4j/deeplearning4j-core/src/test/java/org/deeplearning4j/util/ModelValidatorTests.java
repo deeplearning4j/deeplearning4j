@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -13,7 +14,9 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.validation.ValidationResult;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -21,8 +24,13 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
@@ -116,6 +124,37 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals(MultiLayerNetwork.class, vr5.getFormatClass());
         assertNull(vr5.getException());
         System.out.println(vr5.toString());
+
+
+        //Test valid model with corrupted JSON
+        File f6 = new File(f, "modelBadJson.zip");
+        getSimpleNet().save(f6);
+        try(ZipFile zf = new ZipFile(f5); ZipOutputStream zo = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f6)))){
+            Enumeration<? extends ZipEntry> e = zf.entries();
+            while(e.hasMoreElements()){
+                ZipEntry ze = e.nextElement();
+                zo.putNextEntry(new ZipEntry(ze.getName()));
+                if(ze.getName().equals(ModelSerializer.CONFIGURATION_JSON)){
+                    zo.write("totally not valid json! - {}".getBytes(StandardCharsets.UTF_8));
+                } else {
+                    byte[] bytes;
+                    try(ZipInputStream zis = new ZipInputStream(zf.getInputStream(ze))){
+                        bytes = IOUtils.toByteArray(zis);
+                    }
+                    zo.write(bytes);
+                    System.out.println("WROTE: " + ze.getName());
+                }
+            }
+        }
+        ValidationResult vr6 = DL4JModelValidator.isValidMultiLayerNetwork(f6);
+        assertFalse(vr6.isValid());
+        s = vr6.getIssues().get(0);
+        assertEquals(1, vr6.getIssues().size());
+        assertTrue(s, s.contains("JSON") && s.contains("valid") && s.contains("MultiLayerConfiguration"));
+        assertEquals("MultiLayerNetwork", vr6.getFormatType());
+        assertEquals(MultiLayerNetwork.class, vr6.getFormatClass());
+        assertNotNull(vr6.getException());
+        System.out.println(vr6.toString());
     }
 
 
