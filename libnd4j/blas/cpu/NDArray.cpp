@@ -370,10 +370,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
-
-            // if workspace is not null - do not call delete.
-            if (_context->getWorkspace() == nullptr)
-                delete[] newShapeInfo;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);

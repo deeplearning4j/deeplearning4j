@@ -245,7 +245,7 @@ namespace nd4j {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(shape);
 
-                                outSha->destroy();
+                                //outSha->destroy();
                                 delete outSha;
 
                                 nd4j_printf("Expected vs provided shapes mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
@@ -265,7 +265,7 @@ namespace nd4j {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
 
-                                outSha->destroy();
+                                //outSha->destroy();
                                 delete outSha;
 
                                 nd4j_printf("Expected vs provided shape mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
@@ -275,7 +275,7 @@ namespace nd4j {
                     }
                 }
 
-                outSha->destroy();
+                //outSha->destroy();
                 delete outSha;
 
                 // saving arrayTime
