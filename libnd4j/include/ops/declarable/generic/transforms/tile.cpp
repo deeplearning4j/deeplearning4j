@@ -87,8 +87,7 @@ DECLARE_SHAPE_FN(tile) {
     for (int e = 0; e < shape::rank(inShape); e++)
         shape[e] = shape::sizeAt(inShape, e) * reps[e];
 
-    Nd4jLong* newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());    
-
+    auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
     return SHAPELIST(newShape);
 }
 

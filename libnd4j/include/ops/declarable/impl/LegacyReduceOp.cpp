@@ -116,8 +116,6 @@ namespace nd4j {
 
                     NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-                    RELEASE(newShape, x->getWorkspace());
-
 
                     // keepDims processing, for TF compatibility
                     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {

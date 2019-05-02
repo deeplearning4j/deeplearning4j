@@ -93,8 +93,7 @@ namespace nd4j {
             auto inP = inputShape->at(0);
 
             std::vector<Nd4jLong> shape({shape::shapeOf(inP)[0], (Nd4jLong) block.getIArguments()->size()});
-            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape);
             return SHAPELIST(newShape);
         }
 

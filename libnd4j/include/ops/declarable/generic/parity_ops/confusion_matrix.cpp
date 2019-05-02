@@ -81,8 +81,7 @@ namespace nd4j {
             }
             
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(dtype, 'c', 2, shape.data(), block.getWorkspace());            
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', 2, shape.data());
             return SHAPELIST(newShape);
         }
     }

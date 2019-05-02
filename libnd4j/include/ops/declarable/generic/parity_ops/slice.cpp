@@ -117,7 +117,7 @@ namespace nd4j {
                 shape.emplace_back(stop);
             }
 
-            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
             return SHAPELIST(newShape);
         }
 

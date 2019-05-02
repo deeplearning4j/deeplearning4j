@@ -42,7 +42,7 @@ class ND4J_EXPORT ShapeDescriptor {
         bool _empty = false;
 
     public:
-        explicit ShapeDescriptor(const ShapeDescriptor &other);
+        ShapeDescriptor(const ShapeDescriptor &other);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo);
         explicit ShapeDescriptor(const DataType type, const Nd4jLong length);
         explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank);
@@ -74,6 +74,11 @@ class ND4J_EXPORT ShapeDescriptor {
         bool operator<(const ShapeDescriptor &other) const;
 
         Nd4jLong* toShapeInfo();
+
+
+        static ShapeDescriptor emptyDescriptor(const DataType type);
+        static ShapeDescriptor scalarDescriptor(const DataType type);
+        static ShapeDescriptor vectorDescriptor(const Nd4jLong length, const DataType type);
     };
 
 

@@ -59,11 +59,11 @@ namespace nd4j {
                 ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
             }
             else if (outRank == 1) {
-                outputShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), shape::sizeAt(in, 0), block.workspace());
+                outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outputShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(in), block.workspace());
+                outputShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in));
             }
             return SHAPELIST(outputShape);
         }

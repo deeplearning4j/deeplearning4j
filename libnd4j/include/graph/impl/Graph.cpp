@@ -181,9 +181,9 @@ namespace nd4j {
                             }
 
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            Nd4jLong numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            auto shape = new Nd4jLong[2]{1, (int) numTads};
-                            newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);                            
+                            auto numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+                            Nd4jLong shape[2] = {1, (int) numTads};
+                            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);

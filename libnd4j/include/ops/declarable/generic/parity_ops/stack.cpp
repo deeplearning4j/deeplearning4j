@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(stack) {
 	 REQUIRE_TRUE(dim <= inShapeInfo[0], 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", inShapeInfo[0], dim);
 	
 	if(rank == 0) {
-  		return SHAPELIST(ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShapeInfo), block.width(), block.workspace()));
+  		return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
 	}
 	
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo

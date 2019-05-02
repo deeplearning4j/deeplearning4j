@@ -104,8 +104,7 @@ DECLARE_SHAPE_FN(gather) {
 
 	//Edge case: empty indices, empty input -> empty output
 	if(block.width() > 1 && INPUT_VARIABLE(0)->isEmpty() && INPUT_VARIABLE(1)->isEmpty()){
-		Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
-		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+		auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
 		return SHAPELIST(empty);
 	}
 

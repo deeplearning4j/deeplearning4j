@@ -114,10 +114,8 @@ namespace ops  {
         auto keys_shape = inputShape->at(1);
         auto values_shape = inputShape->at(2);
 
-        Nd4jLong *weights_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c',
-                                                                 ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false), block.workspace());
-        Nd4jLong *output_shape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c',
-                                                                ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false), block.workspace());
+        auto weights_shape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
+        auto output_shape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
         if(INT_ARG(1)){
             return SHAPELIST(output_shape, weights_shape);

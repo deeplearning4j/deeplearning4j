@@ -108,7 +108,7 @@ void NDArray::lazyAllocateBuffer() const {
 
 ////////////////////////////////////////////////////////////////////////
 // scalar constructor
-NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, const bool isScalar) {
 
     auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
     setShapeInfo(shapeInfo);
@@ -118,8 +118,6 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
     cudaMemset(_bufferD, 0, sizeOfT());    
     
     tickWriteDevice();
-
-    RELEASE(shapeInfo, context->getWorkspace());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -813,11 +811,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!isActualOnDeviceSide())
             syncToDevice();
 
-        Nd4jLong *theNewShape;
         Nd4jLong rank = this->rankOf();
-        ALLOCATE(theNewShape, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-//        ALLOCATE_SPECIAL(newShapeD, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-//
+
         int8_t *newBuffer = nullptr;
         int8_t* newBufferD;
         ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
@@ -827,14 +822,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         for (int e = 0; e < this->rankOf(); e++)
             shape[e] = this->sizeAt(e);
 
-        if (order == 'c')
-            shape::shapeBuffer(this->rankOf(), dataType(), shape.data(), theNewShape);
-        else
-            shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), theNewShape);
+        auto theNewShape = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());
 
         ShapeDescriptor descriptor(theNewShape);
         auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        RELEASE(theNewShape, this->_context->getWorkspace());
+
         if (!isView()) {
             NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, (Nd4jLong*)shapeBuffer.primary(), newBufferD, (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
             //memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());

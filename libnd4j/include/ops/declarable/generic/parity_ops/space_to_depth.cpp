@@ -77,8 +77,7 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
 
-        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data(), block.getWorkspace());        
-
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

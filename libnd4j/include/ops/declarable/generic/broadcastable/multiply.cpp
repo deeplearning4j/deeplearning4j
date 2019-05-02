@@ -37,7 +37,6 @@ namespace ops {
         Nd4jLong* zShapeInfo = nullptr;
         const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
         REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
-        RELEASE(zShapeInfo, block.getWorkspace());
 
         auto tZ = BroadcastHelper::broadcastApply(nd4j::BroadcastOpsTuple::Multiply(), x, y, z);
         if (tZ == nullptr)
@@ -75,7 +74,6 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY_BP OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
     REQUIRE_TRUE(shape::equalsSoft(dLdz->shapeInfo(), dLdzShapeInfo), 0, "MULTIPLY_BP OP: wrong shape of next epsilon array (dLdOut), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils::shapeAsString(dLdz).c_str());
-    RELEASE(dLdzShapeInfo, block.getWorkspace());
 
     const Nd4jLong xLen = x->lengthOf();
     const Nd4jLong yLen = y->lengthOf();

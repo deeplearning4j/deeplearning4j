@@ -116,7 +116,7 @@ namespace ops {
                     shape[d] = c_size;
             }
 
-            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(input), shape::order(input), shape, block.getWorkspace());
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(input), shape::order(input), shape);
             shapeList->push_back(newShape);
         }
 

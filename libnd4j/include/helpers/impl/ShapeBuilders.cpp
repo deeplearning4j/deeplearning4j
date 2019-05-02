@@ -22,7 +22,7 @@
 
 namespace nd4j {
 
-    
+
     Nd4jLong* ShapeBuilders::createScalarShapeInfo(const nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
         Nd4jLong *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(0), Nd4jLong);
@@ -54,7 +54,7 @@ namespace nd4j {
 
     ////////////////////////////////////////////////////////////////////////////////
     Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace) {
-    
+
         if (rank)
             if(shapeOnly[0] == 0) // scalar case
                 rank = 0;
@@ -84,45 +84,45 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
 
-    return ShapeBuilders::createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
-
-    return ShapeBuilders::createShapeInfo(dataType, order, std::vector<Nd4jLong>(shapeOnly), workspace);
-}
+        return ShapeBuilders::createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace);
+    }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::copyShapeInfo(const Nd4jLong* inShapeInfo, const bool copyStrides, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
 
-    Nd4jLong *outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), Nd4jLong);
-    
-    memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
-
-    if(!copyStrides)
-        shape::updateStrides(outShapeInfo, shape::order(outShapeInfo));
-
-    return outShapeInfo;
-}
+        return ShapeBuilders::createShapeInfo(dataType, order, std::vector<Nd4jLong>(shapeOnly), workspace);
+    }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const DataType dtype, const bool copyStrides, memory::Workspace* workspace) {
-    
-    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfo(inShapeInfo, copyStrides, workspace);
-    ArrayOptions::setDataType(outShapeInfo, dtype);
+    Nd4jLong* ShapeBuilders::copyShapeInfo(const Nd4jLong* inShapeInfo, const bool copyStrides, memory::Workspace* workspace) {
 
-    return outShapeInfo;
-}
+        Nd4jLong *outShapeInfo = nullptr;
+        ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), Nd4jLong);
+
+        memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
+
+        if(!copyStrides)
+            shape::updateStrides(outShapeInfo, shape::order(outShapeInfo));
+
+        return outShapeInfo;
+    }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const Nd4jLong* shapeInfoToGetTypeFrom, const bool copyStrides, memory::Workspace* workspace) {
-    
-    return ShapeBuilders::copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides, workspace);
-}
+    Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const DataType dtype, const bool copyStrides, memory::Workspace* workspace) {
+
+        Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfo(inShapeInfo, copyStrides, workspace);
+        ArrayOptions::setDataType(outShapeInfo, dtype);
+
+        return outShapeInfo;
+    }
+
+////////////////////////////////////////////////////////////////////////////////
+    Nd4jLong* ShapeBuilders::copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const Nd4jLong* shapeInfoToGetTypeFrom, const bool copyStrides, memory::Workspace* workspace) {
+
+        return ShapeBuilders::copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides, workspace);
+    }
 
 
 }

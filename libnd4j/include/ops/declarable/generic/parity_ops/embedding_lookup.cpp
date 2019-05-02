@@ -94,8 +94,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
         for (int e = 1; e < outRank; e++)
             shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
-        Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
-
+        auto outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(inShapeInfo), shapeInfo);
         return SHAPELIST(outShapeInfo);
     }
 
@@ -107,8 +106,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
     
-    Nd4jLong *outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo, block.getWorkspace());
-    
+    auto outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo);
     return SHAPELIST(outShapeInfo);
 }
 

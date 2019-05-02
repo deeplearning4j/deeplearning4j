@@ -99,11 +99,9 @@ namespace nd4j {
                 memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
                 ShapeUtils::insertDimension(rank, shape, axis, depth);
-
-                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank, shape, block.getWorkspace());
-
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', rank, shape);
                 RELEASE(shape, block.getWorkspace());
-            } 
+            }
             else {                
 
                 if (axis < 0)
@@ -114,7 +112,7 @@ namespace nd4j {
                     shape.push_back(shape::shapeOf(inShape)[e]);
 
                 shape.insert(shape.begin() + axis, depth);
-                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank + 1, shape.data(), block.getWorkspace());                
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', rank + 1, shape.data());
             }
 
             return SHAPELIST(newShape);

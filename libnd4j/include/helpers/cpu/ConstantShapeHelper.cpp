@@ -71,7 +71,7 @@ namespace nd4j {
         return bufferForShapeInfo(descriptor);
     }
 
-    bool ConstantShapeHelper::checkBufferExistanceForShapeInfo(ShapeDescriptor &descriptor) {
+    bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor) {
         bool result;
         int deviceId = 0;
         _mutex.lock();
@@ -84,6 +84,31 @@ namespace nd4j {
         _mutex.unlock();
 
         return result;
+    }
+
+    Nd4jLong* ConstantShapeHelper::createShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
+        ShapeDescriptor descriptor(dataType, order, shape, rank);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    Nd4jLong* ConstantShapeHelper::emptyShapeInfo(const nd4j::DataType dataType) {
+        auto descriptor = ShapeDescriptor::emptyDescriptor(dataType);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    Nd4jLong* ConstantShapeHelper::scalarShapeInfo(const nd4j::DataType dataType) {
+        auto descriptor = ShapeDescriptor::scalarDescriptor(dataType);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    Nd4jLong* ConstantShapeHelper::vectorShapeInfo(const Nd4jLong length, const nd4j::DataType dataType) {
+        auto descriptor = ShapeDescriptor::vectorDescriptor(length, dataType);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    Nd4jLong* ConstantShapeHelper::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape) {
+        ShapeDescriptor descriptor(dataType, order, shape);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
 
     nd4j::ConstantShapeHelper* nd4j::ConstantShapeHelper::_INSTANCE = 0;

@@ -81,9 +81,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
         
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
-
-    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -100,9 +98,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
         
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
-
-    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -119,9 +115,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
 
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
-
-    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -142,8 +136,6 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
     //  std::cout<<std::endl;
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
-
-    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////

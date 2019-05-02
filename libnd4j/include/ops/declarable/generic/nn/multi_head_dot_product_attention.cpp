@@ -139,10 +139,8 @@ namespace ops  {
         auto numHeads = shape::sizeAt(WkShape, 0);
         auto timeSteps = shape::sizeAt(keysShape, 2);
 
-        Nd4jLong *weightsShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c',
-                                                                 {batchSize, numHeads, timeSteps, queryCount}, block.workspace());
-        Nd4jLong *outputShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c',
-                                                                {batchSize, outSize, queryCount}, block.workspace());
+        auto weightsShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
+        auto outputShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
 
         if(INT_ARG(1)){
             return SHAPELIST(outputShape, weightsShape);

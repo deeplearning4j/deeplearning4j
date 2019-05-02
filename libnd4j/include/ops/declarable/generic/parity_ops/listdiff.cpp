@@ -54,10 +54,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            auto shapeX = ShapeBuilders::createVectorShapeInfo(values->dataType(), saved, block.workspace());
-//            auto shapeY = ShapeBuilders::createVectorShapeInfo(keep->dataType(), saved, block.workspace());
-            auto shapeY = ShapeBuilders::createVectorShapeInfo(DataType::INT64, saved, block.workspace());
-
+            auto shapeX = ConstantShapeHelper::getInstance()->vectorShapeInfo(saved, values->dataType());
+            auto shapeY = ConstantShapeHelper::getInstance()->vectorShapeInfo(saved, DataType::INT64);
             return SHAPELIST(shapeX, shapeY);
         }
 

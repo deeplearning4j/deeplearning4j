@@ -128,16 +128,24 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
             for(int i = 0; i < rank; ++i)
                 newShapeInfo[i+1] = 1;
             ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
-            return newShapeInfo;
+
+            ShapeDescriptor descriptor(newShapeInfo);
+            RELEASE(newShapeInfo, workspace);
+            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
         else if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
             shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+            ShapeDescriptor descriptor(newShapeInfo);
+            RELEASE(newShapeInfo, workspace);
+            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
         else {
             newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+            ShapeDescriptor descriptor(newShapeInfo);
+            RELEASE(newShapeInfo, workspace);
+            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
-        return newShapeInfo;
     }
 
     shape::checkDimensions(rank, dimensions);
@@ -155,8 +163,9 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
                 newShapeInfo[i+1] = shapeInfo[i+1];
 
         ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
-
-        return newShapeInfo;
+        ShapeDescriptor descriptor(newShapeInfo);
+        RELEASE(newShapeInfo, workspace);
+        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
     
 	int newRank = rank - dimSize;
@@ -165,11 +174,16 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
             shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+            ShapeDescriptor descriptor(newShapeInfo);
+            RELEASE(newShapeInfo, workspace);
+            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
         else {
             newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+            ShapeDescriptor descriptor(newShapeInfo);
+            RELEASE(newShapeInfo, workspace);
+            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
-            return newShapeInfo;
 	}
        
     ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(newRank), Nd4jLong);
@@ -196,8 +210,10 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     } 
     
 	ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
-       
-    return newShapeInfo;
+
+	ShapeDescriptor descriptor(newShapeInfo);
+	RELEASE(newShapeInfo, workspace);
+	return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -258,7 +274,9 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         // perform buffer permutation
         shape::doPermuteShapeInfo(shapeInfoNew, dimensions);
 
-        return shapeInfoNew;
+        ShapeDescriptor descriptor(shapeInfoNew);
+        RELEASE(shapeInfoNew, workspace);
+        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
 
 
@@ -279,9 +297,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         for (int i = 0; i < rank; ++i)
             dimensions[i] = rank - 1 - i;
 
-        auto shapeInfoNew = evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace);
-
-        return shapeInfoNew;
+        return evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -406,16 +422,21 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
     // evaluate shapeInfo for resulting array
     if(resultShapeInfo != nullptr)
         throw std::runtime_error("std::runtime_error(ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !");
-    
-    ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), Nd4jLong);
+
+    Nd4jLong *tmpShapeInfo = nullptr;
+    ALLOCATE(tmpShapeInfo, workspace, shape::shapeInfoLength(maxRank), Nd4jLong);
 
     // FIXME: get rid of memcpy here
-    memcpy(resultShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
+    memcpy(tmpShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
     for (int i = 0; i < minRank; ++i)
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
-            resultShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
+            tmpShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
     ShapeUtils::updateStridesAndType(resultShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
+
+    ShapeDescriptor descriptor(tmpShapeInfo);
+    RELEASE(tmpShapeInfo, workspace);
+    resultShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
 
     return true;
 }

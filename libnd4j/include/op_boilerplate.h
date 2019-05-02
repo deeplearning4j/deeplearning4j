@@ -1313,7 +1313,7 @@
                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                     auto shapeList = SHAPELIST(); \
                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
+                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                         shapeList->push_back(newshape); \
                                                     } \
                                                     return shapeList; \
@@ -1373,7 +1373,7 @@
                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                                                     auto shapeList = SHAPELIST(); \
                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
+                                                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \

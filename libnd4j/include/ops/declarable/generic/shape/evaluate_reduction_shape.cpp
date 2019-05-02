@@ -34,17 +34,13 @@ namespace nd4j {
 
             auto shape = inputShape->asVectorT<Nd4jLong>();
 
-            auto tempShapeInfo = ShapeBuilders::createShapeInfo(nd4j::DataType::INT64, 'c', shape, block.workspace());
+            auto tempShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::DataType::INT64, 'c', shape);
             auto tempReductionShapeInfo = ShapeUtils::evalReduceShapeInfo('c', axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
 
             REQUIRE_TRUE(output->lengthOf() == shape::rank(tempReductionShapeInfo), 0, "evaluate_reduction_shape: output length should be %i, but got %i instead", shape::rank(tempReductionShapeInfo), output->lengthOf());
 
             for (int e = 0; e < shape::rank(tempReductionShapeInfo); e++)
                 output->p(e, tempReductionShapeInfo[e+1]);
-
-            // we must release temporary shapeInfo
-            RELEASE(tempReductionShapeInfo, block.workspace());
-            RELEASE(tempShapeInfo, block.workspace());
 
             return Status::OK();
         }
@@ -77,7 +73,7 @@ namespace nd4j {
                 }
             }
 
-            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, length, block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(length, nd4j::DataType::INT64));
         }
     }
 }

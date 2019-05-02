@@ -298,7 +298,7 @@ namespace ops {
         //nd4j_printv("STB shape: ", external_output_shape);
 
         // we always give out C order here
-        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());        
+        newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape);
 
         return SHAPELIST(newShape);
     }

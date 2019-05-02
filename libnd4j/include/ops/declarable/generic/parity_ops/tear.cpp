@@ -63,7 +63,7 @@ namespace nd4j {
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()), block.getWorkspace());
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()));
                 result->push_back(newShape);
             }
 

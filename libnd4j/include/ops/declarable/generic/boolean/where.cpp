@@ -122,7 +122,7 @@ namespace nd4j {
                     //ArrayOptions::setDataType(newShape, );
                 }
                 else {
-                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
+                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64);
                     ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
                 }
 

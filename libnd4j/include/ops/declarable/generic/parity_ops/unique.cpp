@@ -46,15 +46,14 @@ namespace nd4j {
             int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 
             if (uniqueCount == 0) { // empty value Shape
-                valuesShape = ShapeBuilders::createScalarShapeInfo(source->dataType(), block.workspace());
-                ArrayOptions::setPropertyBit(valuesShape, ARRAY_EMPTY);
+                valuesShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(source->dataType());
             }
             else {
             // all output shapes are 1D arrays (vectors)
-                valuesShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), uniqueCount, block.workspace());
+                valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, ArrayOptions::dataType(in));
             }
             // second output is always LONG
-            indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::length(in), block.workspace());
+            indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::length(in), nd4j::DataType::INT64);
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 
@@ -78,13 +77,13 @@ namespace nd4j {
             int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
             // all output shapes are 1D arrays (vectors)
             // all output shapes are 1D arrays (vectors)
-            auto valuesShape = ShapeBuilders::createVectorShapeInfo(source->dataType(), uniqueCount, block.workspace());
+            auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, source->dataType());
 
             // second output is always LONG
-            auto indicesShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, source->lengthOf(), block.workspace());
+            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(source->lengthOf(), nd4j::DataType::INT64);
 
             // third one as well
-            auto countsShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, uniqueCount, block.workspace());
+            auto countsShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, nd4j::DataType::INT64);
 
             return SHAPELIST(valuesShape, indicesShape, countsShape);
         }

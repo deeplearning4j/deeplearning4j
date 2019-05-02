@@ -47,9 +47,8 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 DECLARE_SHAPE_FN(tri) {
 	const int rows = INT_ARG(0);
     const int cols = block.numI() > 1 ? INT_ARG(1) : rows;
-    const int rank = 2;
 
-    return SHAPELIST(ShapeBuilders::createShapeInfo(block.dataType(), 'c', {rows, cols}, block.workspace()));
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {rows, cols}));
 }
 
 

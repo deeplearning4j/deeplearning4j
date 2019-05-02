@@ -132,9 +132,8 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, 2, 1, false, 0, 0) {
 
         if(!keepDims) {
 
-            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+            auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-            RELEASE(gradOShapeKeepDims, block.getWorkspace());
         }
 
         *gradI *= *gradO;

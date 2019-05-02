@@ -109,7 +109,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                newShape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
+                newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
                 
@@ -129,7 +129,7 @@ namespace ops {
         helpers::_dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
-        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), block.getWorkspace());        
+        newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

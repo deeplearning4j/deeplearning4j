@@ -63,7 +63,7 @@ namespace nd4j {
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
             
             shape[shape.size()-1] *= 2;
-            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
 
             return SHAPELIST(newShape);
         }

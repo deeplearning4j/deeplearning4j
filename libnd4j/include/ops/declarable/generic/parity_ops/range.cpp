@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(range) {
             }
 
             if (limit == start)
-                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -178,7 +178,7 @@ DECLARE_SHAPE_FN(range) {
             nd4j_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
 
             if (limit == start)
-                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -204,7 +204,7 @@ DECLARE_SHAPE_FN(range) {
         }
 
         if (limit == start)
-            return SHAPELIST(ShapeBuilders::emptyShapeInfo(nd4j::DataType::INT32, block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT32));
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -235,7 +235,7 @@ DECLARE_SHAPE_FN(range) {
 
         //REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
         if (limit == start)
-            return SHAPELIST(ShapeBuilders::emptyShapeInfo(Environment::getInstance()->defaultFloatDataType(), block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(Environment::getInstance()->defaultFloatDataType()));
 
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -254,7 +254,7 @@ DECLARE_SHAPE_FN(range) {
 
     REQUIRE_TRUE(steps > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
 
-    return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dataType, steps, block.workspace()));
+    return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(steps, dataType));
 }
 
 

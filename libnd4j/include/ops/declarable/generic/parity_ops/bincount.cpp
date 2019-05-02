@@ -111,7 +111,7 @@ namespace nd4j {
                 outLength = nd4j::math::nd4j_min(outLength, max->e<int>(0));
             }
 
-            auto newshape = ShapeBuilders::createVectorShapeInfo(dtype, outLength, block.workspace());
+            auto newshape = ConstantShapeHelper::getInstance()->vectorShapeInfo(outLength, dtype);
 
             shapeList->push_back(newshape); 
             return shapeList;

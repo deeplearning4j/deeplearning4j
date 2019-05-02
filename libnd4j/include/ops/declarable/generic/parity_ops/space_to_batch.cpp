@@ -287,7 +287,7 @@ namespace ops {
         internal_output_shape.emplace_back(depth);
 
         // we always give out C order here
-        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape);
         return SHAPELIST(newShape);
     }
 }

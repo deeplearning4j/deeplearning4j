@@ -46,7 +46,7 @@ namespace nd4j {
             if (block.numI() > 0)
                 dtype = DataTypeUtils::fromInt(INT_ARG(0));
 
-            return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dtype, shape::rank(inShape), block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::rank(inShape), dtype));
         };
 
         DECLARE_TYPES(shape_of) {

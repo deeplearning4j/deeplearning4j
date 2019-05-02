@@ -347,7 +347,7 @@ namespace nd4j {
                 auto zShapeVector = zShapeArr->asVectorT<Nd4jLong>();
                 auto dtype = block.dataType();
 
-                newShape = ShapeBuilders::createShapeInfo(dtype, 'c', zShapeVector, block.workspace());
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', zShapeVector);
                 return SHAPELIST(newShape);
             } else
                 throw std::runtime_error("LegacyRandomOp: Unknown input data type!");

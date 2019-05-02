@@ -105,7 +105,6 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
-    RELEASE(outShapeInfo, block.getWorkspace());
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
@@ -351,8 +350,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
-    RELEASE(outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");
 
     // ***** calculations ***** //
 
@@ -436,8 +434,7 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
-    RELEASE(outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");
 
     Nd4jLong* dLdIShapeInfo(nullptr), *dLdMShapeInfo(nullptr), *dLdVShapeInfo(nullptr), *dLdGShapeInfo(nullptr), *dLdBShapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), dLdIShapeInfo);

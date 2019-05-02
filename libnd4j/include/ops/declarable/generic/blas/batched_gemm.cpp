@@ -129,8 +129,7 @@ namespace nd4j {
             std::vector<Nd4jLong> shape({M, N});
 
             for (int e = 0; e < batchSize; e++) {
-                
-                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(block.dataType(), 'f', shape, block.getWorkspace());
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'f', shape);
                 shapeList->push_back(newShape);
             }
 

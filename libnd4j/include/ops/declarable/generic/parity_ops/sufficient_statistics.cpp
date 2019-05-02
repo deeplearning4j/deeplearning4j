@@ -71,14 +71,14 @@ namespace nd4j {
             helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
             //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            auto scalarShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace());
+            auto scalarShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)));
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            ArrayOptions::setDataType(sumShape, ArrayOptions::dataType(inputShape->at(0)));
+
             auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            ArrayOptions::setDataType(squareShape, ArrayOptions::dataType(inputShape->at(0)));
+
             auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
             if (block.numT() > 0)
-                shapeList->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
+                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
             
             return shapeList;
         }

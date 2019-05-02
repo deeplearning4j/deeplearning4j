@@ -51,9 +51,7 @@ namespace nd4j {
         ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) {
             // TODO: ensure this method isn't ever called
 
-            std::vector<Nd4jLong> shape({1, 1});
-            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());            
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {1, 1});
             return SHAPELIST(newShape);
         }
 

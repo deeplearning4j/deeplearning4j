@@ -57,8 +57,7 @@ namespace nd4j {
 
             auto shapeLength = nd4j::math::nd4j_max(theFirstLen, theSecondLen);
 
-            auto newshape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(theFirst), shapeLength, block.workspace());
-
+            auto newshape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shapeLength, ArrayOptions::dataType(theFirst));
             shapeList->push_back(newshape); 
             return shapeList;
         }

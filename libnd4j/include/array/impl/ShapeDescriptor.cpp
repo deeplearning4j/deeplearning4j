@@ -231,3 +231,38 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
         }
     }
 }
+
+ShapeDescriptor ShapeDescriptor::emptyDescriptor(const DataType type) {
+    ShapeDescriptor descriptor;
+    descriptor._dataType = type;
+    descriptor._rank = 0;
+    descriptor._order = 'c';
+    descriptor._ews = 1;
+
+    return descriptor;
+}
+
+ShapeDescriptor ShapeDescriptor::scalarDescriptor(const DataType type) {
+    ShapeDescriptor descriptor;
+    descriptor._dataType = type;
+    descriptor._empty = true;
+    descriptor._rank = 0;
+    descriptor._order = 'c';
+    descriptor._ews = 1;
+
+    return descriptor;
+}
+
+ShapeDescriptor ShapeDescriptor::vectorDescriptor(const Nd4jLong length, const DataType type) {
+    ShapeDescriptor descriptor;
+    descriptor._dataType = type;
+    descriptor._shape.emplace_back(length);
+    descriptor._strides.emplace_back(1);
+    descriptor._order = 'c';
+    descriptor._ews = 1;
+    descriptor._rank = 1;
+
+    return descriptor;
+}
+
+

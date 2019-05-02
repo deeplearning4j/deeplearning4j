@@ -59,8 +59,7 @@ DECLARE_SHAPE_FN(random_crop) {
     for (int e = 0; e < shape.size(); e++)
         shape[e] = (*in).e<Nd4jLong>(e);
     
-    Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(typeShape), 'c', shape, block.getWorkspace());
-
+    auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(typeShape), 'c', shape);
     return SHAPELIST(newShape);
 }
 

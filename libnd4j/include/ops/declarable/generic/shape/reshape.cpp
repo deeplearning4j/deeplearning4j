@@ -178,8 +178,7 @@ namespace nd4j {
                 //Special case: empty.reshape(-1) -> return empty
                 if (INPUT_VARIABLE(0)->isEmpty()) {
                     REQUIRE_TRUE((int) arguments->size() == 1 && arguments->at(0) == -1, 0, "Reshape: when input is empty, iargs must be [-1]");
-                    Nd4jLong *newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp), block.getWorkspace());
-                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    auto newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inp));
                     return SHAPELIST(newShape);
                 }
 
@@ -227,13 +226,12 @@ namespace nd4j {
                 // special case here
                 if (y->isEmpty()) {
                     REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
-                    return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp),block.getWorkspace()));
+                    return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inp)));
                 }
                 //Special case: empty.reshape(-1) -> return empty
                 if (x->isEmpty()) {
                     REQUIRE_TRUE(y->lengthOf() == 1 && y->e<Nd4jLong>(0) == -1, 0, "Reshape: when input is empty, shape must be [-1]");
-                    Nd4jLong *newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp), block.getWorkspace());
-                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    auto newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inp));
                     return SHAPELIST(newShape);
                 }
 
@@ -257,8 +255,7 @@ namespace nd4j {
                     }
                 }
 
-                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew, block.getWorkspace());
-
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew);
                 return SHAPELIST(newShape);
             }
         }

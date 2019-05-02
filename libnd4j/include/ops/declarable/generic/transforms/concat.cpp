@@ -122,7 +122,7 @@ DECLARE_SHAPE_FN(concat) {
             
             if(inputShape->at(i)[0] == 0) {
                 // FIXME, use this instead: block.dataType()
-                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(INPUT_VARIABLE(0)->dataType(), 1, block.workspace()));
+                nonEmptyArrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
                 shapesToDelete.push_back(index);
             }
             else{
@@ -136,8 +136,7 @@ DECLARE_SHAPE_FN(concat) {
 
     if(numOfArrs == 0){
         //All inputs are empty arrays -> return empty, mainly for TF import compatibility
-        Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
-		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+        auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
         return SHAPELIST(empty);
     }
     

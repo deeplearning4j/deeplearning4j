@@ -41,7 +41,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(size_at) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));
         }
 
         DECLARE_TYPES(size_at) {

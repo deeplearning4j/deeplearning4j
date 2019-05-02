@@ -42,13 +42,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.workspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded                
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -89,13 +89,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -130,13 +130,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());                
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }

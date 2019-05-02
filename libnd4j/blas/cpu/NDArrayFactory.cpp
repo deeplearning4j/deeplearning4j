@@ -52,11 +52,9 @@ namespace nd4j {
 
         res.setBuffer(buffer);
         res.setContext(context);
-        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace());
-        res.setShapeInfo(shapeInfo);
+        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
 
         res.triggerAllocationFlag(true);
-        RELEASE(shapeInfo, context->getWorkspace());
 
         return res;
     }
@@ -76,10 +74,8 @@ namespace nd4j {
         memcpy(data, str.c_str(), str.length());
 
         res->setBuffer(buffer);
-        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace());
-        res->setShapeInfo(shapeInfo);
+        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
         res->setContext(context);
-        RELEASE(shapeInfo, context->getWorkspace());
 
         res->triggerAllocationFlag(true);
 
@@ -167,16 +163,12 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
-        auto shapeinfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
-
         res->setContext(context);
-        res->setShapeInfo(shapeinfo);
+        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()));
         res->setBuffer(buffer);
         res->triggerAllocationFlag(true);
 
         res->assign(scalar);
-
-        RELEASE(shapeinfo, context->getWorkspace());
 
         return res;
     }
@@ -233,16 +225,12 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
-        auto shape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
-
         res.setContext(context);
-        res.setShapeInfo(shape);
+        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()));
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true);
 
         res.bufferAsT<T>()[0] = scalar;
-
-        RELEASE(shape, context->getWorkspace());
 
         return res;
     }
@@ -272,9 +260,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
 
     result->setAttached(context->getWorkspace() != nullptr);
 
-    auto shapeInfo = ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace());
-    result->setShapeInfo(shapeInfo);
-    RELEASE(shapeInfo, context->getWorkspace());
+    result->setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
 
     if (result->lengthOf() != data.size()) {
         nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->shapeInfo()));
@@ -460,7 +446,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
     memset(buffer, 0, DataTypeUtils::sizeOfElement(dtype));
     res.setBuffer(buffer);
     res.setContext(context);
-    res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
+    res.setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
     res.triggerAllocationFlag(true);
     
     return res;
@@ -477,10 +463,7 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
         context = nd4j::graph::LaunchContext::defaultContext();
 
     res.setAttached(context->getWorkspace() != nullptr);
-
-    Nd4jLong* shapeInfo = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), context->getWorkspace());
-    res.setShapeInfo(shapeInfo);
-    RELEASE(shapeInfo, context->getWorkspace());
+    res.setShapeInfo(ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()));
         
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), values.size() * sizeof(T), int8_t);
@@ -514,10 +497,8 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         if (context == nullptr)
             context = nd4j::graph::LaunchContext::defaultContext();
 
-        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
-        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        auto shapeInfo = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
         auto result = new NDArray(nullptr, shapeInfo, context, false);
-        RELEASE(shapeInfo, context->getWorkspace());
 
         return result;
     }
@@ -530,11 +511,9 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
     BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::empty, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
 
     NDArray NDArrayFactory::empty(nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
-        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
-        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        auto shapeInfo = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
         NDArray result(nullptr, shapeInfo, context);
         result.triggerAllocationFlag(false);
-        RELEASE(shapeInfo, context->getWorkspace());
 
         return result;
     }
@@ -587,12 +566,9 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     result.setAttached(context->getWorkspace() != nullptr);
 
     result.setBuffer(reinterpret_cast<uint8_t*>(buffer));
-    Nd4jLong* shapeInfo = ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace());
-    result.setShapeInfo(shapeInfo);
+    result.setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
     result.setContext(context);
     result.triggerAllocationFlag(false);
-
-    RELEASE(shapeInfo, context->getWorkspace())
     
     return result;
 }
@@ -657,10 +633,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
             context = nd4j::graph::LaunchContext::defaultContext();
 
         res.setAttached(context->getWorkspace() != nullptr);
-
-        auto newShape = ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace());
-        res.setShapeInfo(newShape);
-        delete[] newShape;
+        res.setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
@@ -702,10 +675,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
             context = nd4j::graph::LaunchContext::defaultContext();
 
         res->setAttached(context->getWorkspace() != nullptr);
-
-        auto newShape = ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace());
-        res->setShapeInfo(newShape);
-        delete[] newShape;
+        res->setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res->lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");

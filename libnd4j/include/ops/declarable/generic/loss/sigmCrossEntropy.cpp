@@ -139,7 +139,7 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
     Nd4jLong* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
-    	outShapeInfo = ShapeBuilders::createScalarShapeInfo(outType, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
     else 							// in this case output has the same shape as labels and logits
     	outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 	

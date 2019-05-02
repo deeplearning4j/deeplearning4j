@@ -47,11 +47,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     ASSERT_EQ(nd4j::DataType::BFLOAT16, descriptor.dataType());
     ASSERT_FALSE(descriptor.isEmpty());
 
-    ASSERT_FALSE(ConstantShapeHelper::getInstance()->checkBufferExistanceForShapeInfo(descriptor));
+    ASSERT_FALSE(ConstantShapeHelper::getInstance()->checkBufferExistenceForShapeInfo(descriptor));
 
     auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-    ASSERT_TRUE(ConstantShapeHelper::getInstance()->checkBufferExistanceForShapeInfo(descriptor));
+    ASSERT_TRUE(ConstantShapeHelper::getInstance()->checkBufferExistenceForShapeInfo(descriptor));
 
     auto buffer2 = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor2);
 
@@ -59,9 +59,6 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     ASSERT_TRUE(buffer.primary() != nullptr);
     ASSERT_TRUE(buffer.primary() == buffer2.primary());
     ASSERT_TRUE(buffer.special() == buffer2.special());
-
-    // shape::printShapeInfoLinear("0", reinterpret_cast<Nd4jLong *>(buffer.primary()));
-    // shape::printShapeInfoLinear("1", reinterpret_cast<Nd4jLong *>(buffer2.primary()));
 
     delete []ptr;
 }

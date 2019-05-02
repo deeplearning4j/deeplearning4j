@@ -70,13 +70,13 @@ namespace nd4j {
             if (shape::rank(inShape) == 0) {
 
                 Nd4jLong x = 1;
-                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x, block.getWorkspace());                
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x);
                 return SHAPELIST(newShape);
             }
 
             // FIXME: temp workaround for TF
             if (shape::isScalar(inShape)) {                
-                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, shape::shapeOf(inShape), block.getWorkspace());
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, shape::shapeOf(inShape));
                 return SHAPELIST(newShape);
             }
 
@@ -94,8 +94,7 @@ namespace nd4j {
 
             shape.insert(shape.begin() + axis, 1);
 
-            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), order, shape, block.getWorkspace());
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
             return SHAPELIST(newShape);
         }
     }

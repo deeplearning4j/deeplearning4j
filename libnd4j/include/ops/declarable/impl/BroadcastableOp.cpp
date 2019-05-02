@@ -54,7 +54,7 @@ namespace nd4j {
 
             if(shape::isEmpty(x) || shape::isEmpty(y)) {
                 //Edge case: broadcasting with empty array gives empty array output (behaviour to match TF for import cases)
-                Nd4jLong* empty = ShapeBuilders::emptyShapeInfo(dtype, block.getWorkspace());
+                auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype);
 				shapeList->push_back(empty);
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {

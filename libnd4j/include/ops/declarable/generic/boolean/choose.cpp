@@ -82,8 +82,7 @@ namespace nd4j {
             Nd4jLong* newShape;
             COPY_SHAPE(shape, newShape);
 
-            auto shapeScalar = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace());
-
+            auto shapeScalar = ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64);
             return SHAPELIST(newShape, shapeScalar);
         }
 

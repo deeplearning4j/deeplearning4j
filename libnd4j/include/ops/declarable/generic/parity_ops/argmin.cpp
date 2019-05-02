@@ -74,16 +74,10 @@ namespace nd4j {
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
             }
 
-            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShape->at(0), dims);
-
-            auto tadLength = shape::length(pack.primaryShapeInfo());
-            auto numTads = pack.numberOfTads();
-
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, in, false, false, block.getWorkspace());
-            ArrayOptions::setDataType(newShape, DataType::INT64);
             return SHAPELIST(newShape);
         }
 

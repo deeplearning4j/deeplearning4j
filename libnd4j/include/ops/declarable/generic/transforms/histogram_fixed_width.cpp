@@ -57,8 +57,7 @@ DECLARE_TYPES(histogram_fixed_width) {
 DECLARE_SHAPE_FN(histogram_fixed_width) {
 
     const int nbins = block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
-    auto outShapeInfo = ShapeBuilders::createVectorShapeInfo(DataType::INT64, nbins, block.workspace());
-       
+    auto outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(nbins, DataType::INT64);
     return SHAPELIST(outShapeInfo);
 }
 
