@@ -77,10 +77,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_NORM1 OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
-
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace()));
 }
 
 DECLARE_TYPES(reduce_norm1) {

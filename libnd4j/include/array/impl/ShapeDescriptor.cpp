@@ -54,7 +54,7 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
     return std::tie(_empty, _rank, _dataType, _ews, _order, _shape, _strides) < std::tie(other._empty, other._rank, other._dataType, other._ews, other._order, other._shape, other._strides);
 }
 
-Nd4jLong* ShapeDescriptor::toShapeInfo() {
+Nd4jLong* ShapeDescriptor::toShapeInfo() const {
     if (_empty)
         return ShapeBuilders::emptyShapeInfo(_dataType);
 
@@ -170,6 +170,10 @@ ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
 
     for (int e = 0; e < _rank; e++)
         _strides.emplace_back(shapeInfo[e + 1 + _rank]);
+}
+
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo) {
+    _dataType = dtypeOverride;
 }
 
 int ShapeDescriptor::rank() const {

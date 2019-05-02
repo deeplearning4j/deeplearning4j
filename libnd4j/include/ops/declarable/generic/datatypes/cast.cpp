@@ -65,7 +65,9 @@ namespace nd4j {
                 ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
             }
 
-            return SHAPELIST(newShape);
+            ShapeDescriptor descriptor(newShape);
+            RELEASE(newShape, block.getWorkspace());
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
         }
 
         DECLARE_TYPES(cast) {

@@ -55,7 +55,7 @@ namespace nd4j {
         return bufferForShapeInfo(descriptor);
     }
 
-    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor &descriptor) {
+    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = getCurrentDevice();
 
         _mutex.lock();
@@ -120,6 +120,10 @@ namespace nd4j {
 
     Nd4jLong* ConstantShapeHelper::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape) {
         ShapeDescriptor descriptor(dataType, order, shape);
+        return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    Nd4jLong* ConstantShapeHelper::createShapeInfo(const ShapeDescriptor &descriptor) {
         return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
 

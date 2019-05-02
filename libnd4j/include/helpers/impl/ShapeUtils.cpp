@@ -108,14 +108,22 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
     return evalShapeForTensorDot(a->getShapeInfo(), b->getShapeInfo(), axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
 }
 
-//////////////////////////////////////////////////////////////////////////
 Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
-    return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), keepDims, supportOldShapes, workspace);
+    return evalReduceShapeInfo(order, dimensions, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
+}
+
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+    return evalReduceShapeInfo(order, dimensions, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims, supportOldShapes, workspace);
+}
+
+//////////////////////////////////////////////////////////////////////////
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+    return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), dataType, keepDims, supportOldShapes, workspace);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
-Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
     Nd4jLong* newShapeInfo = nullptr;
 
     int rank = shape::rank(const_cast<Nd4jLong*>(shapeInfo));
@@ -128,6 +136,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
             for(int i = 0; i < rank; ++i)
                 newShapeInfo[i+1] = 1;
             ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
+            ArrayOptions::setDataType(newShapeInfo, dataType);
 
             ShapeDescriptor descriptor(newShapeInfo);
             RELEASE(newShapeInfo, workspace);
@@ -135,13 +144,13 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         }
         else if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+            shape::shapeOldScalar(dataType, newShapeInfo, 'c');
             ShapeDescriptor descriptor(newShapeInfo);
             RELEASE(newShapeInfo, workspace);
             return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
         }
         else {
-            newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+            newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
             ShapeDescriptor descriptor(newShapeInfo);
             RELEASE(newShapeInfo, workspace);
             return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();

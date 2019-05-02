@@ -845,8 +845,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
         auto result = new NDArray(newShape, true, _context);
 
         if(rankOf() == copy.size() || copy.empty())
@@ -867,8 +866,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
         NDArray result(newShape, true, _context);
 
         if(rankOf() == copy.size() || copy.empty())
@@ -1646,8 +1644,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
         if (isS())
             throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', const_cast<std::vector<int>&>(dimensions), *this, false, false, _context->getWorkspace());
-        ArrayOptions::setDataType(newShape, nd4j::INT64);
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', const_cast<std::vector<int>&>(dimensions), *this, DataType::INT64, false, false, _context->getWorkspace());
         auto result = new NDArray(newShape, true, _context);
 
         if (rankOf() == dimensions.size()) {
@@ -1746,8 +1743,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
         auto result = new NDArray(newShape, true, _context);
         // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;

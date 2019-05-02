@@ -94,29 +94,18 @@ namespace nd4j {
             auto shapeList = SHAPELIST();
             auto arguments = block.getIArguments();
             if (shape::rank(inputShape->at(0)) == 0) {
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), Nd4jLong);
-                newshape[0] = 0;
-                newshape[1] = 0;
-                newshape[2] = 1;
-                newshape[3] = 99;
-                ArrayOptions::setDataType(newshape, ArrayOptions::dataType(inputShape->at(0)));
-                shapeList->push_back(newshape);
-            } else if (inputShape->size() == 1 && arguments->size() > 0) {
-                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
-                shapeList->push_back(outputShapeInfo);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+            } else if (inputShape->size() == 1 && !arguments->empty()) {
+                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace()));
             } else if (inputShape->size() == 2) {
                 // dead end
-                Nd4jLong *newshape;
-                COPY_SHAPE(inputShape->at(0), newshape);
-                shapeList->push_back(newshape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0))));
             } else {
                 int rank = shape::rank(inputShape->at(0));
                 for (int e = rank - 1; e >= 0; e--)
                     arguments->emplace_back(e);
 
-                auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
-                shapeList->push_back(outputShapeInfo);
+                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace()));
             }
     
             return shapeList;

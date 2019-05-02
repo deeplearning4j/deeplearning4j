@@ -69,7 +69,9 @@ namespace nd4j {
             COPY_SHAPE(xShape, newShape);
             ArrayOptions::setDataType(newShape, dtype);
 
-            return SHAPELIST(newShape);
+            ShapeDescriptor descriptor(newShape);
+            RELEASE(newShape, block.getWorkspace());
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
         }
 
         DECLARE_TYPES(biasadd_bp) {

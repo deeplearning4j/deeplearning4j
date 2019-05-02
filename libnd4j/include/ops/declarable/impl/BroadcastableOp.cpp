@@ -62,45 +62,59 @@ namespace nd4j {
                     COPY_SHAPE(x, newshape);
 
                     ArrayOptions::setDataType(newshape, dtype);
-                    shapeList->push_back(newshape);
+                    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                    RELEASE(newshape, block.getWorkspace());
+                    shapeList->push_back(result);
                 } else {
                     Nd4jLong *newshape;
                     COPY_SHAPE(y, newshape);
 
                     ArrayOptions::setDataType(newshape, dtype);
-                    shapeList->push_back(newshape);
+                    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                    RELEASE(newshape, block.getWorkspace());
+                    shapeList->push_back(result);
                 }
             } else if (shape::equalsSoft(x, y)) {
                 Nd4jLong *newshape;
                 COPY_SHAPE(x, newshape);
 
                 ArrayOptions::setDataType(newshape, dtype);
-                shapeList->push_back(newshape);
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                RELEASE(newshape, block.getWorkspace());
+                shapeList->push_back(result);
             } else if (shape::isScalar(x) && !shape::isScalar(y)) {
                 Nd4jLong *newshape;
                 COPY_SHAPE(y, newshape);
 
                 ArrayOptions::setDataType(newshape, dtype);
-                shapeList->push_back(newshape);
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                RELEASE(newshape, block.getWorkspace());
+                shapeList->push_back(result);
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
                 Nd4jLong *newshape;
                 COPY_SHAPE(x, newshape);
 
                 ArrayOptions::setDataType(newshape, dtype);
-                shapeList->push_back(newshape);
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                RELEASE(newshape, block.getWorkspace());
+                shapeList->push_back(result);
             } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
                 Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
 
                 ArrayOptions::setDataType(newshape, dtype);
-                shapeList->push_back(newshape);
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                RELEASE(newshape, block.getWorkspace());
+                shapeList->push_back(result);
             } else {
                 // in this case we'll throw exception later
                 Nd4jLong *newshape;
                 COPY_SHAPE(x, newshape);
 
                 ArrayOptions::setDataType(newshape, dtype);
-                shapeList->push_back(newshape);
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape));
+                RELEASE(newshape, block.getWorkspace());
+                shapeList->push_back(result);
             }
 
             return shapeList;

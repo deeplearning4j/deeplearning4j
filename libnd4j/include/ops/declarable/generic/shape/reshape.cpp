@@ -182,7 +182,7 @@ namespace nd4j {
                     return SHAPELIST(newShape);
                 }
 
-                std::vector<int> shapeNew;
+                std::vector<Nd4jLong> shapeNew;
 
                 int e2 = e;
                 for (; e < (int) arguments->size(); e++) {
@@ -205,19 +205,7 @@ namespace nd4j {
                     }
                 }
 
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) shapeNew.size()), Nd4jLong);
-
-
-                newShape[0] = shapeNew.size();
-                int cnt = 1;
-                for (auto v: shapeNew)
-                    newShape[cnt++] = v;
-
-                shape::updateStrides(newShape, order);
-                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inp));
-
-                return SHAPELIST(newShape);
+                return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inp), order, shapeNew)));
             } else {
                 // or, with second input "as shape"
                 auto x = INPUT_VARIABLE(0);
@@ -255,8 +243,7 @@ namespace nd4j {
                     }
                 }
 
-                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew);
-                return SHAPELIST(newShape);
+                return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew));
             }
         }
     }

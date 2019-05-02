@@ -96,8 +96,9 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
             ArrayOptions::setDataType(newShape, DataType::BOOL);
-
-            return SHAPELIST(newShape);
+            auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
+            RELEASE(newShape, block.getWorkspace());
+            return SHAPELIST(result);
         }
     }
 }

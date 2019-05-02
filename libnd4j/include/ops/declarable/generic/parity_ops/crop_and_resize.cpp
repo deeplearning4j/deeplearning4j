@@ -56,10 +56,9 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(crop_and_resize) {
-            auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(0);
 
-            Nd4jLong* outputShape;
+            Nd4jLong outputShape[4];
 
             int width;
             int height;
@@ -68,17 +67,13 @@ namespace nd4j {
             //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
             width = newImageSize->e<int>(0);
             height = newImageSize->e<int>(1);
-            
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-            outputShape[0] = 4;
-            outputShape[1] = in[1];
-            outputShape[2] = width;
-            outputShape[3] = height;
-            outputShape[4] = in[4];
-            shape::updateStrides(outputShape, shape::order(in));
-            ArrayOptions::setDataType(outputShape, ArrayOptions::dataType(in));
-            shapeList->push_back(outputShape); 
-            return shapeList;
+
+            outputShape[0] = in[1];
+            outputShape[1] = width;
+            outputShape[2] = height;
+            outputShape[3] = in[4];
+
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
         }
         DECLARE_TYPES(crop_and_resize) {
             getOpDescriptor()

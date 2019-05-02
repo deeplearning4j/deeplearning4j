@@ -50,7 +50,9 @@ namespace nd4j {
 
             ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
 
-            return SHAPELIST(newShape);
+            auto shape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
+            RELEASE(newShape, block.getWorkspace());
+            return SHAPELIST(shape);
         }
 
         DECLARE_TYPES(test_scalar) {

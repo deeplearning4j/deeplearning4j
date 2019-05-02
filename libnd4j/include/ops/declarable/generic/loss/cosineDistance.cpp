@@ -147,8 +147,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     else { 							// in this case output has the same shape as labels reduced  by dim axis
 
     	std::vector<int> dimensions = {dim};
-    	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo, true, false, block.getWorkspace());
-    	ArrayOptions::setDataType(outShapeInfo, outType);
+    	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo, outType, true, false, block.getWorkspace());
 
     	// weights array can be single scalar or has the same rank as output, and must be broadcastable to output
     	REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(outShapeInfo), 0, "COSINE_DISTANCE_LOSS OP: weights array should be scalar or have the same rank as output array, but got %i and %i correspondingly!", shape::rank(weightsShapeInfo), shape::rank(outShapeInfo));

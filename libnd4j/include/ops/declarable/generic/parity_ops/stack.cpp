@@ -91,21 +91,7 @@ DECLARE_SHAPE_FN(stack) {
 	
 	// insert (int) block.width() at dim position of input shape to get output shape	
 	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
-	
-	// evaluate output ShapeInfo
-	int newRank = outShape.size();
-	Nd4jLong* outShapeInfo = nullptr;
-  	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(newRank), Nd4jLong);
-  	outShapeInfo[0] = newRank;
-  	
-  	for(int i=1; i <= newRank; ++i)
-  		outShapeInfo[i] = outShape[i-1];
-  	
-  	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-  	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
-
-  	
-  	return SHAPELIST(outShapeInfo);
+  	return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
 }
 
 // 1) 1х4 + 1х4 = 2х1х4 (along dim=0) = 2x4 

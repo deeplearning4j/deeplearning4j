@@ -53,14 +53,16 @@ namespace nd4j {
                 newShape[4] = 1;
                 newShape[6] = 1;
                 newShape[7] = 99;
+
+                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+                RELEASE(newShape, block.getWorkspace());
+                return SHAPELIST(result);
             } else if (block.getAxis()->size()){
                 // in this case we're building proper shape for reduction
                 auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
-                //array->triggerAllocationFlag(false);
 
-                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, false, true, block.workspace());
-
-                //delete array;
+                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, DataType::INT64, false, true, block.workspace());
+                return SHAPELIST(newShape);
             }
             else {
                 bool allAxes = false;
@@ -85,18 +87,22 @@ namespace nd4j {
                         newShape[4] = 1;
                         newShape[6] = 1;
                         newShape[7] = 99;
+
+                        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+                        RELEASE(newShape, block.getWorkspace());
+                        return SHAPELIST(result);
                 } else {
                     // in this case we're building proper shape for reduction
                     auto array = INPUT_VARIABLE(0); //new NDArray(nullptr, inShape, block.getWorkspace());
-                    //array->triggerAllocationFlag(false);
-
-                    newShape = ShapeUtils::evalReduceShapeInfo('c', axis, *array, false, true, block.workspace());
+                    newShape = ShapeUtils::evalReduceShapeInfo('c', axis, *array, DataType::INT64, false, true, block.workspace());
+                    return SHAPELIST(newShape);
                 }
             }
 
             ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
-
-            return SHAPELIST(newShape);
+            auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
+            RELEASE(newShape, block.getWorkspace());
+            return SHAPELIST(result);
         }
 
         /**

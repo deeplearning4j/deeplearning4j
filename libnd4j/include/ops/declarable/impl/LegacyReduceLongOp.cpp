@@ -145,10 +145,7 @@ namespace nd4j {
                 allAxes = true;
 
             // in this case we're building proper shape for reduction
-            newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, inShape, keepDims, !newFormat, block.workspace());
-            ArrayOptions::setDataType(newShape, DataType::INT64);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, inShape, DataType::INT64, keepDims, !newFormat, block.workspace()));
         }
     }
 }

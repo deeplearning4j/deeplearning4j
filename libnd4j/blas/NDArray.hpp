@@ -717,9 +717,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
     
     std::vector<int> copy(dimensions);
 
-    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
-    if(!isR())
-        ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
+    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, isR() ? dataType() : Environment::getInstance()->defaultFloatDataType(), keepDims, supportOldShapes, _context->getWorkspace());
 
     NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
@@ -755,9 +753,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
 
     std::vector<int> copy(dimensions);
 
-    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
-    if(!isB())
-        ArrayOptions::setDataType(newShape, DataType::BOOL);
+    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::BOOL, keepDims, supportOldShapes, _context->getWorkspace());
 
     NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
@@ -775,9 +771,7 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
     
     std::vector<int> copy(dimensions);
 
-    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
-    if(_dataType != DataType::INT64)
-        ArrayOptions::setDataType(newShape, DataType::INT64);
+    auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::INT64, keepDims, supportOldShapes, _context->getWorkspace());
 
     NDArray result(newShape, true, _context);
     if (!isActualOnDeviceSide())
@@ -2541,6 +2535,8 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             result->tickWriteDevice();
         else if (isActualOnHostSide())
             result->tickWriteHost();
+
+        RELEASE(outShapeInfo, _context->getWorkspace());
 
         return result;
     }

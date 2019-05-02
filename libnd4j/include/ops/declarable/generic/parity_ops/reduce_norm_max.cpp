@@ -79,10 +79,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_NORM_MAX OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(in));
-
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace()));
 }
 
 DECLARE_TYPES(reduce_norm_max) {

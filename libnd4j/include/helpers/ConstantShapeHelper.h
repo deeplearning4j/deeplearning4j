@@ -47,13 +47,14 @@ namespace nd4j {
 
 
         DataBuffer& bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        DataBuffer& bufferForShapeInfo(ShapeDescriptor &descriptor);
+        DataBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
         DataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
 
 
         Nd4jLong* emptyShapeInfo(const nd4j::DataType dataType);
         Nd4jLong* scalarShapeInfo(const nd4j::DataType dataType);
         Nd4jLong* vectorShapeInfo(const Nd4jLong length, const nd4j::DataType dataType);
+        Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
         Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape);
         Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
 

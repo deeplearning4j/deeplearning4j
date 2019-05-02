@@ -59,7 +59,10 @@ DECLARE_SHAPE_FN(trace) {
 
     shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
     ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
-    return SHAPELIST(outShapeInfo);
+
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(result);
 }
 
 }

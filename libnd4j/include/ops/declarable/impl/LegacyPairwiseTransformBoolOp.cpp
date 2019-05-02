@@ -70,12 +70,7 @@ namespace nd4j {
         */
         ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-            ArrayOptions::setDataType(newShape, DataType::BOOL);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

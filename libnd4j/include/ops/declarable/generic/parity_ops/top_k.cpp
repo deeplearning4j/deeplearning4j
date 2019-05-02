@@ -77,7 +77,9 @@ namespace nd4j {
 
                 shape::updateStrides(aShape, shape::order(in));
                 ArrayOptions::setDataType(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::INT64));
-                shapeList->push_back(aShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(aShape)));
+
+                RELEASE(aShape, block.getWorkspace());
             }
             return shapeList;
         }
