@@ -167,7 +167,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     Nd4jLong *gradIShape;
     COPY_SHAPE(inShape, gradIShape);
 
-    return SHAPELIST(gradIShape);
+    return SHAPELIST(CONSTANT(gradIShape));
 
 }
 

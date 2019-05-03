@@ -57,6 +57,7 @@ namespace nd4j {
                 outputShape[e + 1] = in[e + 1];
 
                 ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+                outputShape = CONSTANT(outputShape);
             }
             else if (outRank == 1) {
                 outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));

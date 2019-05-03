@@ -116,11 +116,8 @@ namespace nd4j {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
                         output->p<Nd4jLong>(e, whereTrue->e<Nd4jLong>(e, outNext));
-                        //throw std::runtime_error("Not implemented");
                     }
                 }
-//                auto result = list.stack();
-//                OVERWRITE_RESULT(result);
             }
 
             return ND4J_STATUS_OK;

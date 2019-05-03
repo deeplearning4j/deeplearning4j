@@ -119,11 +119,11 @@ namespace nd4j {
                     newShape[6] = 1;
                     newShape[7] = 99;
                     ShapeUtils::updateStridesAndType(newShape, nd4j::DataType::INT64, 'c');
-                    //ArrayOptions::setDataType(newShape, );
+
+                    newShape = CONSTANT(newShape);
                 }
                 else {
-                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64);
-                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64);
                 }
 
                 return SHAPELIST(newShape);

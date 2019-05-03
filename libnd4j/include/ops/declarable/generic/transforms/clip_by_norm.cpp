@@ -58,7 +58,7 @@ namespace ops  {
         Nd4jLong *newShape = nullptr;
         COPY_SHAPE(inShapeInfo, newShape);
 
-        return SHAPELIST(newShape);
+        return SHAPELIST(CONSTANT(newShape));
     }
 
     DECLARE_TYPES(clipbynorm) {

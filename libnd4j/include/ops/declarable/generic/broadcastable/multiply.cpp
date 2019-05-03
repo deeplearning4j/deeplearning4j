@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(multiply_bp) {
     COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
     COPY_SHAPE(yShapeInfo, dLdyShapeInfo);
 
-    return SHAPELIST(dLdxShapeInfo, dLdyShapeInfo);     
+    return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdyShapeInfo));
 }
 /*
         CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {

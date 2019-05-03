@@ -84,7 +84,7 @@ namespace nd4j {
             outputShape[4] = in[4];
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            shapeList->push_back(outputShape); 
+            shapeList->push_back(CONSTANT(outputShape));
             return shapeList;
         }
         DECLARE_TYPES(resize_nearest_neighbor) {

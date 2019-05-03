@@ -123,7 +123,6 @@ DECLARE_SHAPE_FN(concat) {
             if(inputShape->at(i)[0] == 0) {
                 // FIXME, use this instead: block.dataType()
                 nonEmptyArrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
-                shapesToDelete.push_back(index);
             }
             else{
                 nonEmptyArrShapes.push_back(inputShape->at(i));
@@ -166,7 +165,7 @@ DECLARE_SHAPE_FN(concat) {
     // case when we have only one input array
     if(numOfArrs == 1) {    
         ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));        
-        return SHAPELIST(outShapeInfo);
+        return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
     for(int i = 1; i < numOfArrs; ++i)
@@ -175,7 +174,7 @@ DECLARE_SHAPE_FN(concat) {
     ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
-    for(int index : shapesToDelete)        
+    for(int index : shapesToDelete)
         RELEASE(nonEmptyArrShapes[index], block.getWorkspace());
 
     auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));

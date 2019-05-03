@@ -857,6 +857,8 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         auto shape = ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64);
         NDArray result(shape, true, this->_context);
 
+        result.printShapeInfo("result shape");
+
         if (!isActualOnDeviceSide())
             syncToDevice();
 

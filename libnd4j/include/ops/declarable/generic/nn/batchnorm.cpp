@@ -303,9 +303,9 @@ DECLARE_SHAPE_FN(batchnorm_new) {
     auto inShapeInfo = inputShape->at(0);
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShapeInfo));
      
-    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
+    auto outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
 
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -448,15 +448,15 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
     }
 
     if(!applyScale && !applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo));
 
     if(applyScale && !applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdGShapeInfo));
 
     if(!applyScale && applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdBShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdBShapeInfo));
 
-    return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo, dLdBShapeInfo);
+    return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdGShapeInfo), CONSTANT(dLdBShapeInfo));
 }
         // //////////////////////////////////////////////////////////////////////////
         // CONFIGURABLE_OP_IMPL(batchnorm_bp, 5, 1, true, 0, 1) {

@@ -167,7 +167,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(in, gradIshapeInfo);
         
-    return SHAPELIST(gradIshapeInfo);
+    return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_stdev_bp) {

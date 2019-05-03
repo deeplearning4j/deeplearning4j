@@ -146,7 +146,7 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 
-    return SHAPELIST(gradIshapeInfo);
+    return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 
