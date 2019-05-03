@@ -465,8 +465,6 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     res.setSpecialBuffer(specialBuffer);//, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
     res.triggerAllocationFlag(true);
 
-    nd4j_printf("Created NdArray with shape %lu and shape rank %lld.\n", shape.size(), res.getShapeInfo()[0]);
-
     return res;
 }
 
