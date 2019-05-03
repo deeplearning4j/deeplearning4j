@@ -490,7 +490,6 @@ TEST_F(LegacyOpsTests, reduce3_1) {
         ASSERT_EQ(distancesAssertion[i],result[i]);
     
     delete[] shapeBuffer;
-    delete[] tadShapeBuffer;
     delete[] xShapeBuffer;
 }
 

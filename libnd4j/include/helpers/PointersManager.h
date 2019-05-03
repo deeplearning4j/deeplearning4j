@@ -50,11 +50,14 @@ class PointersManager {
 
         template<typename T>
         void printDevContentOnHost(const void* pDev, const Nd4jLong len) const;
-        
+
+
 #ifdef __CUDABLAS__
         template<typename T>
         static void printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid = 0);
+#endif
 
+#ifdef __CUDACC__
         template<typename T>
         static FORCEINLINE __device__ void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid = 0) {
             if(blockIdx.x * blockDim.x + threadIdx.x != tid)
