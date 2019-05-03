@@ -67,14 +67,18 @@ namespace ops {
 
         auto shapes = SHAPELIST();
         int outRank = shape::rank(in) - shape::rank(idx) + 1;
-        std::vector<Nd4jLong> newShape(outRank);
         for (int e = 0; e < numPartition; e++) {
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+            //shape::shapeVector(partitionSizes[e], newShape);
+            newShape[0] = outRank;
+            newShape[1] = partitionSizes[e];
+            for (int i = 1; i < outRank; ++i)
+                newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
-            newShape[0] = partitionSizes[e];
-            for (int i = 0; i < outRank; ++i)
-                newShape[i + 1] = shape::sizeAt(in, outRank + i);
-
-            shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), newShape)));
+            shape::updateStrides(newShape, shape::order(in));
+            ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
+            shapes->push_back(CONSTANT(newShape));
         }
 
         return shapes;
@@ -121,7 +125,7 @@ namespace ops {
         for (Nd4jLong i = 0; i < 2; i++) {
             Nd4jLong *newShape;
             COPY_SHAPE(inputShape->at(i), newShape);
-            shapes->push_back(newShape);
+            shapes->push_back(CONSTANT(newShape));
         }
 
         return shapes;

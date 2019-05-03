@@ -63,7 +63,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
         CUSTOM_OP_IMPL(unsorted_segment_sum_bp, 3, 2, false, 0, 1) {
             return helpers::unsortedSegmentSumFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
@@ -77,7 +77,7 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
 
         }
         DECLARE_TYPES(unsorted_segment_sum_bp) {

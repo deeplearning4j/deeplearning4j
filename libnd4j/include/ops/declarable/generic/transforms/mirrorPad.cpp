@@ -91,6 +91,8 @@ DECLARE_SHAPE_FN(mirror_pad) {
         for(int i = 0; i < rank; ++i)
             outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
         ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
+
+        outShapeInfo = CONSTANT(outShapeInfo);
     }
 
     return SHAPELIST(outShapeInfo);

@@ -91,7 +91,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
     }
 }

@@ -50,7 +50,7 @@ namespace nd4j {
             auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false,
                     ArrayOptions::dataType(inputShape->at(0)), block.getWorkspace());
             
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         DECLARE_TYPES(xw_plus_b) {

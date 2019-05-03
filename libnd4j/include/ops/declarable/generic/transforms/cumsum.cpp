@@ -132,12 +132,12 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
         COPY_SHAPE(inp, newShapeX);
 
         if (block.width() == 2) {
-            return SHAPELIST(newShapeX);
+            return SHAPELIST(CONSTANT(newShapeX));
         } else {
             Nd4jLong *newShapeA = nullptr;
             COPY_SHAPE(inputShape->at(1), newShapeA);
 
-            return SHAPELIST(newShapeX, newShapeA);
+            return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));
         }
     }
 }

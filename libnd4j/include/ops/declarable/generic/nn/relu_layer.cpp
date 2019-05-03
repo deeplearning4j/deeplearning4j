@@ -56,7 +56,7 @@ namespace nd4j {
             auto weightsShape = inputShape->at(1);
             auto outputShape = ShapeUtils::matrixProductShape(inShape, weightsShape, false, false, ArrayOptions::dataType(inShape), block.getWorkspace());
             
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         DECLARE_TYPES(relu_layer) {

@@ -107,7 +107,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
     COPY_SHAPE(inputShape->at(0), outShapeInfo1);
     COPY_SHAPE(inputShape->at(1), outShapeInfo2);
 
-    return SHAPELIST(outShapeInfo1, outShapeInfo2);
+    return SHAPELIST(CONSTANT(outShapeInfo1), CONSTANT(outShapeInfo2));
 }
 
 DECLARE_TYPES(reduce_dot_bp) {

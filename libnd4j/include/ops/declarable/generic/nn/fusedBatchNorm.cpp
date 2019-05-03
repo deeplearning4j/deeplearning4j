@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(fused_batch_norm) {
     COPY_SHAPE(scaleShapeInfo, batchMeanShapeInfo);
     COPY_SHAPE(scaleShapeInfo, batchVarShapeInfo);    
     
-    return SHAPELIST(outShapeInfo, batchMeanShapeInfo, batchVarShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo), CONSTANT(batchMeanShapeInfo), CONSTANT(batchVarShapeInfo));
 }
 
 

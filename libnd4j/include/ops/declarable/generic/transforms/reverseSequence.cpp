@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(reverse_sequence) {
     Nd4jLong* outShapeInfo = nullptr;
     COPY_SHAPE(inShapeInfo, outShapeInfo);
         
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

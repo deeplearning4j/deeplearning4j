@@ -82,7 +82,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
-            return SHAPELIST(outShapeInfo);
+            return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
         DECLARE_TYPES(sequence_mask) {
