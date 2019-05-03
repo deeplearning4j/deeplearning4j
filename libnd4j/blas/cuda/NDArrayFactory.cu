@@ -49,12 +49,12 @@ namespace nd4j {
         Nd4jLong* specialShape = nullptr;
         //int8_t* specialBuffer = nullptr;
         res.setBuffer(buffer);
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace()));
-        ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res.shapeInfo()), Nd4jLong);
+        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
+        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res.shapeInfo()), Nd4jLong);
 
-        cudaMemcpy(specialShape, res.shapeInfo(), shape::shapeInfoByteLength(res.shapeInfo()), cudaMemcpyHostToDevice);
+        //cudaMemcpy(specialShape, res.shapeInfo(), shape::shapeInfoByteLength(res.shapeInfo()), cudaMemcpyHostToDevice);
         cudaMemcpy(specialBuffer, res.buffer(), sizeof(utf8string*), cudaMemcpyHostToDevice);
-        res.setSpecialBuffers(specialBuffer, specialShape);
+        res.setSpecialBuffer(specialBuffer);//, specialShape);
         res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
         res.triggerAllocationFlag(true);
@@ -72,16 +72,16 @@ namespace nd4j {
         us[0] = new utf8string(str);
 
         res->setBuffer(buffer);
-        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace()));
-        Nd4jLong* specialShape = nullptr;
+        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(nd4j::DataType::UTF8));
+        //Nd4jLong* specialShape = nullptr;
         int8_t* specialBuffer = nullptr;
 
-        ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
+        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
 
-        cudaMemcpy(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
+        //cudaMemcpy(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
         cudaMemcpy(specialBuffer, res->buffer(), sizeof(utf8string*), cudaMemcpyHostToDevice);
-        res->setSpecialBuffers(specialBuffer, specialShape);
+        res->setSpecialBuffer(specialBuffer);//, specialShape);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
 
         res->triggerAllocationFlag(true);
@@ -164,19 +164,19 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
-        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
+        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>())); //ShapeBuilders::createScalarShapeInfo(, context->getWorkspace()));
         res->setBuffer(buffer);
         res->triggerAllocationFlag(true);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
         int8_t* specialBuffer = nullptr;
-        Nd4jLong* specialShape = nullptr;
-        ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
+        //Nd4jLong* specialShape = nullptr;
+        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(DataTypeUtils::fromT<T>()), int8_t);
-        res->setSpecialBuffers(specialBuffer, specialShape);
+        res->setSpecialBuffer(specialBuffer);//, specialShape);
 
         res->bufferAsT<T>()[0] = scalar;
 
-        cudaMemcpyAsync(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice, *context->getCudaStream());
+        //cudaMemcpyAsync(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice, *context->getCudaStream());
         cudaMemcpyAsync(specialBuffer, res->buffer(), sizeof(T), cudaMemcpyHostToDevice, *context->getCudaStream()); // only one element
         cudaStreamSynchronize(*context->getCudaStream());
 
@@ -237,7 +237,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         size_t bufferSize = sizeof(T);
         ALLOCATE(buffer, context->getWorkspace(), bufferSize, int8_t);
 
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
+        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()));
         size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true);
@@ -245,15 +245,15 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t* specialBuffer = nullptr;
         Nd4jLong* specialShape = nullptr;
 
-        ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shapeSize, Nd4jLong);
+        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shapeSize, Nd4jLong);
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), bufferSize, int8_t);
 
         res.bufferAsT<T>()[0] = scalar;
-        cudaMemcpyAsync(specialShape, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *context->getCudaStream());
+        //cudaMemcpyAsync(specialShape, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *context->getCudaStream());
         cudaMemcpyAsync(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice, *context->getCudaStream()); // only one element
         cudaStreamSynchronize(*context->getCudaStream());
 
-        res.setSpecialBuffers(specialBuffer, specialShape);
+        res.setSpecialBuffer(specialBuffer);//.., specialShape);
         res.tickWriteDevice();
         res.tickReadHost();
 
@@ -280,7 +280,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
 
     auto result = new NDArray();
 
-    result->setShapeInfo(ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace()));
+    result->setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
 
     if (result->lengthOf() != data.size()) {
         nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->shapeInfo()));
@@ -298,12 +298,12 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
     int8_t* specialBuffer = nullptr;
     Nd4jLong* specialShape = nullptr;
 
-    ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shapeSize, Nd4jLong);
+    //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shapeSize, Nd4jLong);
     ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), bufferSize, int8_t);
 
-    cudaMemcpy(specialShape, result->shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
+    //cudaMemcpy(specialShape, result->shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
     cudaMemcpy(specialBuffer, result->buffer(), bufferSize, cudaMemcpyHostToDevice); // only one element
-    result->setSpecialBuffers(specialBuffer, specialShape);
+    result->setSpecialBuffer(specialBuffer);//, specialShape);
     result->tickWriteDevice();
     result->tickReadHost();
 
@@ -392,14 +392,14 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), length * sizeof(T), int8_t);
 
-        res->setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), length, context->getWorkspace()));
+        res->setShapeInfo(ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()));
 
-        ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
+        //ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
 
-        cudaMemcpy(specialShapeInfo, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
+        //cudaMemcpy(specialShapeInfo, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
         res->setBuffer(buffer);
         res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-        res->setSpecialBuffers(specialBuffer, specialShapeInfo);
+        res->setSpecialBuffer(specialBuffer);
         res->triggerAllocationFlag(true);
 
         // tick this before potential assign call, to avoid additional sync before assign
@@ -448,10 +448,10 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     NDArray res;
 
-    ShapeDescriptor descriptor(dtype, order, shape);
-    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+    //......;
+    //auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-    res.setShapeInfo(reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
+    res.setShapeInfo(ShapeDescriptor(dtype, order, shape)); //reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
 
     int8_t* specialBuffer = nullptr;
     size_t bufferSize = res.lengthOf() * res.sizeOfT();
@@ -462,8 +462,10 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     res.tickWriteDevice();
     res.setContext(context);
-    res.setSpecialBuffers(specialBuffer, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
+    res.setSpecialBuffer(specialBuffer);//, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
     res.triggerAllocationFlag(true);
+
+    nd4j_printf("Created NdArray with shape %lu and shape rank %lld.\n", shape.size(), res.getShapeInfo()[0]);
 
     return res;
 }
@@ -480,18 +482,18 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
     memset(buffer, 0, bufferSize);
     res.setBuffer(buffer);
     res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-    res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
+    res.setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
     res.triggerAllocationFlag(true);
     int8_t* specialBuffer = nullptr;
-    Nd4jLong* specialShapeInfo = nullptr;
+    //Nd4jLong* specialShapeInfo = nullptr;
     size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
 
-    ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shapeSize, Nd4jLong);
+    //ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shapeSize, Nd4jLong);
     ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
 
     cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
-    cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
-    res.setSpecialBuffers(specialBuffer, specialShapeInfo);
+    //cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
+    res.setSpecialBuffer(specialBuffer);//, specialShapeInfo);
 
     return res;
 }
@@ -503,7 +505,7 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
         
     NDArray res;        
 
-    res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), context->getWorkspace()));
+    res.setShapeInfo(ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()));
         
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), values.size() * sizeof(T), int8_t);
@@ -515,13 +517,13 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
     size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
     res.setBuffer(buffer);
 
-    ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shapeSize, Nd4jLong);
+    //ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shapeSize, Nd4jLong);
     ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), bufferSize, int8_t);
 
     cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
-    cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
+    //cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
 
-    res.setSpecialBuffers(specialBuffer, specialShapeInfo);
+    res.setSpecialBuffer(specialBuffer);//, specialShapeInfo);
 
     res.triggerAllocationFlag(true);
     res.setContext(context);
@@ -600,13 +602,14 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         size_t allocationSize = res.lengthOf() * res.sizeOfT();
         ALLOCATE(buffer, context->getWorkspace(), allocationSize, int8_t);
         res.setBuffer(buffer);
+        //res.setShapeInfo(ShapeDescriptor( order, DataTypeUtils::fromT<T>(), shape));
         //res.lazyAllocateBuffer();
         //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
         memcpyFromVector<T>(res.buffer(), data);
         size_t bufferSize = data.size() * sizeof(T);
-        size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
+        //size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
         cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
-        cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
+        //cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
         res.tickWriteDevice();
         res.tickReadHost();
         res.triggerAllocationFlag(true);
@@ -638,7 +641,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
     result.setBuffer(reinterpret_cast<int8_t*>(buffer));
-    result.setShapeInfo(reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
+    result.setShapeInfo(descriptor);//reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
     result.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     result.triggerAllocationFlag(false);
 
@@ -647,7 +650,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
 
     cudaMemcpy(specialBuffer, result.buffer(), result.lengthOf() * sizeof(T), cudaMemcpyHostToDevice);
 
-    result.setSpecialBuffers(specialBuffer, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
+    result.setSpecialBuffer(specialBuffer);//, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
     result.tickWriteDevice();
     result.tickReadHost();
 
@@ -709,7 +712,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         NDArray res;
 
-        res.setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
+        res.setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
@@ -732,7 +735,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         auto res = new NDArray();
 
-        res->setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
+        res->setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res->lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");

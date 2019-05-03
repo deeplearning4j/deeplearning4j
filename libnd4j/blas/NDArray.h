@@ -400,7 +400,7 @@ namespace nd4j {
         /**
         *  set values for _bufferD and _shapeInfoD
         */
-        void setSpecialBuffers(void *buffer, Nd4jLong *shape);
+        void setSpecialBuffer(void *buffer);
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
