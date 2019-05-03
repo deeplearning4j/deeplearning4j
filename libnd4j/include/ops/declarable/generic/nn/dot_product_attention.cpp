@@ -218,7 +218,7 @@ namespace ops  {
         Nd4jLong *dLdv_shape;
         COPY_SHAPE(inputShape->at(2), dLdv_shape);
 
-        return SHAPELIST(dLdq_shape, dLdk_shape, dLdv_shape);
+        return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape));
     }
 
 }

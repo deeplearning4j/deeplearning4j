@@ -155,9 +155,7 @@ namespace nd4j {
             Nd4jLong *inShape;
             COPY_SHAPE(inputShape->at(0), inShape);
 
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-			return SHAPELIST(CONSTANT(newShape));
+			return SHAPELIST(CONSTANT(inShape));
 		}
     }
 }

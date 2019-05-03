@@ -141,13 +141,11 @@ namespace nd4j {
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 if (numOfTrue) {
                     for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-                        auto newShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(numOfTrue, nd4j::DataType::INT64);
-                        shapes->push_back(newShape);
+                        shapes->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(numOfTrue, nd4j::DataType::INT64));
                     }
                 }
                 else {
-                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64);
-                    shapes->push_back(newShape);
+                    shapes->push_back(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64));
                 }
             }
             return shapes;

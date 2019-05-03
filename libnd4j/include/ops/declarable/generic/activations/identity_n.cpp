@@ -45,7 +45,7 @@ namespace nd4j {
             for (size_t i = 0; i < inputShape->size(); ++i) {
                 Nd4jLong* shape;
                 COPY_SHAPE_EX(inputShape->at(i), shape, block.getWorkspace());
-                shapes->push_back(shape);
+                shapes->push_back(CONSTANT(shape));
             }
             return shapes;
         }

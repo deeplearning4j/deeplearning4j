@@ -95,7 +95,7 @@ namespace nd4j {
                 Nd4jLong *newshape;
                 COPY_SHAPE(inShape, newshape);
 
-                return SHAPELIST(newshape);
+                return SHAPELIST(CONSTANT(newshape));
             } else {
                 // FIXME: we can't estimate result here in this case
                 // output shape is the 2D tensor num_true x rankOf (inShape)
