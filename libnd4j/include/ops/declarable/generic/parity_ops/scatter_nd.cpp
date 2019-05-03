@@ -82,7 +82,7 @@ namespace ops {
 
             ShapeUtils::updateStridesAndType(outShapeInfo, updShapeInfo, shape::order(updShapeInfo));
 
-            return SHAPELIST(outShapeInfo);
+            return SHAPELIST(CONSTANT(outShapeInfo));
         }
 
 }

@@ -115,9 +115,9 @@ namespace ops  {
         if(inputShape->size() > 3){
             Nd4jLong *dLdb_shape;
             COPY_SHAPE(inputShape->at(2), dLdb_shape);
-            return SHAPELIST(dLdx_shape, dLdg_shape, dLdb_shape);
+            return SHAPELIST(CONSTANT(dLdx_shape), CONSTANT(dLdg_shape), CONSTANT(dLdb_shape));
         }
-        return SHAPELIST(dLdx_shape, dLdg_shape);
+        return SHAPELIST(CONSTANT(dLdx_shape), CONSTANT(dLdg_shape));
     }
 
 }

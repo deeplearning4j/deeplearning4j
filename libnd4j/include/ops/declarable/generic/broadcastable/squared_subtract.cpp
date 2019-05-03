@@ -148,9 +148,7 @@ namespace nd4j {
             COPY_SHAPE(x, shapeE);
             COPY_SHAPE(y, shapeG);
 
-            auto shapeList = SHAPELIST(shapeE, shapeG);
-
-            return shapeList;
+            return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
         }
 
         DECLARE_TYPES(squaredsubtract_bp) {

@@ -192,7 +192,7 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
             COPY_SHAPE(inputShape->at(0), xShapeInfo);
             COPY_SHAPE(inputShape->at(1), yShapeInfo);
 
-            return SHAPELIST(xShapeInfo, yShapeInfo);
+            return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(yShapeInfo));
         }
 
         DECLARE_TYPES(matmul_bp) {
