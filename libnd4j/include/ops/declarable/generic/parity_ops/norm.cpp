@@ -46,7 +46,6 @@ namespace nd4j {
                     output = new NDArray(shape, false, block.getVariableSpace()->launchContext());
                     overwrite = true;
                 }
-                RELEASE(shape, input->getContext()->getWorkspace());
             }
             output->printShapeInfo("Output Shape Info");
             switch(mode) {

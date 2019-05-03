@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(parallel_stack) {
 	
 	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
   	
-  	return SHAPELIST(outShapeInfo);
+  	return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

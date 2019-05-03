@@ -154,7 +154,7 @@ DECLARE_SHAPE_FN(reduce_norm2_bp) {
     Nd4jLong* outShapeInfo;
     COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_norm2_bp) {

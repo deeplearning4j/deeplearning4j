@@ -103,7 +103,7 @@ DECLARE_SHAPE_FN(sruCell) {
     ShapeUtils::updateStridesAndType(hShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
          
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createFromExisting(hShapeInfo, block.workspace()), ConstantShapeHelper::getInstance()->createFromExisting(cShapeInfo, block.workspace()));
 }   
 
 

@@ -292,15 +292,8 @@ namespace ops {
             depth *= size;
         }
 
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
-
-        //nd4j_printv("STB shape: ", external_output_shape);
-
         // we always give out C order here
-        newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape);
-
-        return SHAPELIST(newShape);
+        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape));
     }
 }
 }

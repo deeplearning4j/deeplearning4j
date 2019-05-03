@@ -133,7 +133,7 @@ namespace nd4j {
                 auto inShape = inputShape->at(1);
                 COPY_SHAPE(inShape, newShape);
 
-                shapes->push_back(newShape);
+                shapes->push_back(CONSTANT(newShape));
             } else {
                 auto condition = INPUT_VARIABLE(0);
 

@@ -28,6 +28,7 @@
 #include <vector>
 #include <ShapeDescriptor.h>
 #include <DataBuffer.h>
+#include <memory/Workspace.h>
 
 namespace nd4j {
 
@@ -57,6 +58,9 @@ namespace nd4j {
         Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
         Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape);
         Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
+
+        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, nd4j::memory::Workspace *workspace);
+        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
 
         bool checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor);
     };

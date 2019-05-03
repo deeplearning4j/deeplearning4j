@@ -154,7 +154,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 
-    return SHAPELIST(gradIshapeInfo);
+    return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_sqnorm_bp) {

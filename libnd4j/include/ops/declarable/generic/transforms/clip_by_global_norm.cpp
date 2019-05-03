@@ -52,7 +52,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
                 
         Nd4jLong* newShape;
         COPY_SHAPE(in, newShape);
-        shapeList->push_back(newShape);
+        shapeList->push_back(CONSTANT(newShape));
     }
 
     shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));

@@ -110,13 +110,10 @@ DECLARE_SHAPE_FN(gruCell) {
     s0[2] = numUnits;
 
     ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
-
-    Nd4jLong* s1 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
-    Nd4jLong* s2 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
-    Nd4jLong* s3 = ShapeBuilders::copyShapeInfo(s0, true, block.getWorkspace());
+    auto ts0 = ConstantShapeHelper::getInstance()->createFromExisting(s0, block.workspace());
 
     //4 output shapes, all [bs, numUnits]
-    return SHAPELIST(s0, s1, s2, s3);
+    return SHAPELIST(ts0, ts0, ts0, ts0);
 }
 
 

@@ -150,7 +150,7 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
     ShapeUtils::updateStridesAndType(hShapeInfo, WhShapeInfo, shape::order(xShapeInfo));
     ShapeUtils::updateStridesAndType(hPrevShapeInfo, WhShapeInfo, shape::order(xShapeInfo));
          
-    return SHAPELIST(hShapeInfo, hPrevShapeInfo);
+    return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(hPrevShapeInfo));
 }   
 
 

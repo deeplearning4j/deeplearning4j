@@ -66,7 +66,7 @@ DECLARE_SHAPE_FN(triu) {
 
 	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
 
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 
@@ -106,7 +106,7 @@ DECLARE_SHAPE_FN(triu_bp) {
     auto in = inputShape->at(0);
     ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

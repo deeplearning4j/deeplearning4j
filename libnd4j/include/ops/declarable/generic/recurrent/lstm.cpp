@@ -153,7 +153,7 @@ DECLARE_SHAPE_FN(lstm) {
     ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, xShapeInfo, shape::order(c0ShapeInfo));
          
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+    return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(cShapeInfo));
 }   
 
 

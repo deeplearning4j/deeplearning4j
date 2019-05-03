@@ -661,7 +661,9 @@ Nd4jLong* ShapeUtils::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j::me
         
     ShapeUtils::updateStridesAndType(outputShapeInfo, shapeInfo, shape::order(shapeInfo));
 
-    return outputShapeInfo;
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(outputShapeInfo);
+    RELEASE(outputShapeInfo, workspace);
+    return result;
 }
 
 std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const Nd4jLong *operandShapeInfo, const Nd4jLong *resultShapeInfo) {

@@ -128,7 +128,7 @@ DECLARE_SHAPE_FN(static_rnn) {
     ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
     ShapeUtils::updateStridesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
          
-    return SHAPELIST(hShapeInfo, hPrevShapeInfo);
+    return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(hPrevShapeInfo));
 }   
 
 

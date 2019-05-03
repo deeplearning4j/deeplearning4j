@@ -67,8 +67,8 @@ namespace nd4j {
             COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());
 
             auto shapeList = SHAPELIST(); 
-            shapeList->push_back(meanShape);
-            shapeList->push_back(varianceShape);
+            shapeList->push_back(CONSTANT(meanShape));
+            shapeList->push_back(CONSTANT(varianceShape));
 
             return shapeList;
         }

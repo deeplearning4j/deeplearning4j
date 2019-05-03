@@ -61,7 +61,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         DECLARE_TYPES(segment_max) {
@@ -86,7 +86,7 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
 
         }
         DECLARE_TYPES(segment_max_bp) {

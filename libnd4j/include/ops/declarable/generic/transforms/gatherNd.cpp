@@ -80,7 +80,7 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
     //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 
