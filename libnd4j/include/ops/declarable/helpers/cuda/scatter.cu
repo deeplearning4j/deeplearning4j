@@ -187,6 +187,13 @@ __global__ static void scatterNDCuda(const void *vx, const Nd4jLong *xShapeInfo,
     __shared__ Nd4jLong yLen, totalThreads, *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;    
     
     if (threadIdx.x == 0) {
+
+        PointersManager::printDevContentOnDev<int>(vx, 2);
+        PointersManager::printDevContentOnDev<Nd4jLong>(xShapeInfo, 8);
+        PointersManager::printDevContentOnDev<float>(vy, 8);
+        PointersManager::printDevContentOnDev<Nd4jLong>(yShapeInfo, 8);
+        PointersManager::printDevContentOnDev<Nd4jLong>(zShapeInfo, 8);
+
         yLen = shape::length(yShapeInfo);    
         totalThreads = gridDim.x * blockDim.x;
         xRank = shape::rank(xShapeInfo);
