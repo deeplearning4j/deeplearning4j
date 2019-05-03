@@ -40,8 +40,9 @@ namespace ops {
         const Nd4jLong shapeLen  = shape->lengthOf();
 
         REQUIRE_TRUE(shapeRank == 1, 0, "SCATTER_ND OP: the rank of shape array must be 1, but got %i instead !", shapeRank);
-        REQUIRE_TRUE(indices->sizeAt(-1) <= shapeRank, 0, "SCATTER_ND OP: last dimension of indices array must be <= rank of shape array, but got %i and %i correspondingly !", indices->sizeAt(-1), shapeRank);
-        REQUIRE_TRUE(updRank == (indRank + shapeLen - 2), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank + shape_length - 2) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, shape_length = %i !", updRank, indRank, shapeLen);
+        REQUIRE_TRUE(indices->sizeAt(-1) <= shapeLen, 0, "SCATTER_ND OP: last dimension of indices array must be <= length of shape array, but got %i and %i correspondingly !", indices->sizeAt(-1), shapeLen);
+        // REQUIRE_TRUE(updRank == (indRank + shapeLen - 2), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank + shape_length - 2) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, shape_length = %i !", updRank, indRank, shapeLen);
+        REQUIRE_TRUE(updRank == (indRank - 1 + shapeLen - indices->sizeAt(-1)), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank - 1 + shape_length - last_indices_dimension) must be true for input arrays, but got instead: updates_rank = %i, shape_length = %i, last_indices_dimension = %i !", updRank, shapeLen, indices->sizeAt(-1));        
 
         std::vector<Nd4jLong> outShape = shape->getBufferAsVector<Nd4jLong>();
         std::vector<Nd4jLong> updShape = updates->getShapeAsVector();

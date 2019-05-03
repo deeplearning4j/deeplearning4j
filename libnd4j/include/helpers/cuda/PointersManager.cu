@@ -74,7 +74,7 @@ PointersManager::~PointersManager() {
 }
 
 template <typename T>
-static __global__ void _printDevContentOnDev(void* pDev, Nd4jLong len, int tid) {
+static __global__ void printDevContentOnDev_(void* pDev, Nd4jLong len, int tid) {
 
     if(blockIdx.x * blockDim.x + threadIdx.x != tid)
         return;
@@ -89,7 +89,7 @@ static __global__ void _printDevContentOnDev(void* pDev, Nd4jLong len, int tid) 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 void PointersManager::printDevContentOnDev(void* pDev, Nd4jLong len, int tid) {
-    _printDevContentOnDev<T><<<512, 512, 1024, *graph::LaunchContext::defaultContext()->getCudaStream()>>>(pDev, len, tid);
+    printDevContentOnDev_<T><<<512, 512, 1024, *graph::LaunchContext::defaultContext()->getCudaStream()>>>(pDev, len, tid);
     auto res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaStream());
     if (res != 0)
         throw std::runtime_error("PointersManager::printDevContentOnDev: cudaStreamSynchronize failed!");
