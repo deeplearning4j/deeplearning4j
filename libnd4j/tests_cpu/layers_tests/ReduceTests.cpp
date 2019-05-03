@@ -80,7 +80,6 @@ TEST_F(EuclideanDistanceTest,Test1) {
                                              dimensionLength);
 
     ASSERT_EQ(result[1],result[0]);
-    delete[] tadShapeBuffer;
 }
 
 
@@ -114,7 +113,6 @@ TEST_F(StdTest,MultiDimTest) {
         // printf("%f\n",result[i]);
 
     delete[] result;
-    delete[] resultShapeInfo;
     delete tad;
     delete[] xShapeInfo;
 }
@@ -152,7 +150,6 @@ TEST_F(ReduceTest,MatrixTest) {
     // for(int i = 0; i < shape::length(resultShapeInfo); i++)
     //     printf("%f\n",result[i]);
 
-    delete[] resultShapeInfo;
     delete tad;
     delete[] xShapeInfo;
 }
