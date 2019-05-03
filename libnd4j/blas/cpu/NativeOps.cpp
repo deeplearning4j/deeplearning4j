@@ -2100,6 +2100,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
         inShapes.push_back(reinterpret_cast<Nd4jLong *>(inputShapes[e]));
 
     auto shapeList = op->calculateOutputShape(&inShapes, block);
+    shapeList->detach();
 
     return shapeList;
 }

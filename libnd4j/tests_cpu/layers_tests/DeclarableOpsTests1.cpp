@@ -2043,7 +2043,6 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
     ASSERT_EQ(1,shapes->at(0)[2]);
 
     delete[] inP;
-    shapes->destroy();
     delete variableSpace;
     delete block;
     delete inshape;
@@ -2077,7 +2076,6 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
     ASSERT_EQ(4,shapes->at(0)[1]);
     ASSERT_EQ(1,shapes->at(0)[2]);
 
-    shapes->destroy();
     delete variableSpace;
     delete block;
     delete shapes;
@@ -2107,7 +2105,6 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     ASSERT_EQ(input->getShapeInfo()[2] * 2, shapes->at(0)[2]);
     ASSERT_EQ(input->getShapeInfo()[3] * 2, shapes->at(0)[3]);
 
-    shapes->destroy();
     delete variableSpace;
     delete block;
     delete shapes;

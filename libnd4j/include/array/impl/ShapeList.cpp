@@ -57,12 +57,12 @@ namespace nd4j {
     void ShapeList::destroy() {
         if (_destroyed)
             return;
-/*
+
         if (!_workspace)
             for (auto v:_shapes)
                 if(v != nullptr)
                     delete[] v;
-*/
+
         _destroyed = true;
     }
 
