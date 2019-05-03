@@ -1352,7 +1352,7 @@
                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                                     Nd4jLong* newshape; \
                                                                     COPY_SHAPE(inputShape->at(0), newshape); \
-                                                                    shapeList->push_back(newshape); \
+                                                                    shapeList->push_back(CONSTANT(newshape)); \
                                                                 } \
                                                                 return shapeList; \
                                                             } \
