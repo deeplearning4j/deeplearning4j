@@ -97,14 +97,14 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
     if (biasShapeInfo) 
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "POINTWISECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));    
 
-    Nd4jLong* outputShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, weightsShapeInfo, true, block.getWorkspace());
+    auto outputShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, weightsShapeInfo, true, block.getWorkspace());
 
     // do not forget to put oC instead of iC in outputShapeInfo
     outputShapeInfo[indIOioC + 1] = oC;                                   
 
     shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
 
-    return SHAPELIST(outputShapeInfo);        
+    return SHAPELIST(CONSTANT(outputShapeInfo));
 }
 
 

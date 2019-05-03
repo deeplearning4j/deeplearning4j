@@ -149,8 +149,6 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1)
     auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
-
-    delete []newShapeInfo;
 }
 
 //////////////////////////////////////////////////////////////////
@@ -164,8 +162,6 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2)
     auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
-
-    delete []newShapeInfo;
 }
 
 //////////////////////////////////////////////////////////////////
@@ -180,7 +176,6 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test3)
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
-    delete []newShapeInfo;
 }
 
 //////////////////////////////////////////////////////////////////
@@ -194,8 +189,6 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test4)
     auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
-
-    delete []newShapeInfo;
 }
 
 TEST_F(ShapeUtilsTests, Test_Strings_1) {

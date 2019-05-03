@@ -79,7 +79,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
-            return SHAPELIST(zShape);
+            return SHAPELIST(CONSTANT(zShape));
         }
 
         DECLARE_TYPES(col2im) {

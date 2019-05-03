@@ -101,7 +101,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
-            return SHAPELIST(zShape);
+            return SHAPELIST(CONSTANT(zShape));
         }
 
 		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
@@ -157,7 +157,7 @@ namespace nd4j {
 
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
-			return SHAPELIST(newShape);
+			return SHAPELIST(CONSTANT(newShape));
 		}
     }
 }
