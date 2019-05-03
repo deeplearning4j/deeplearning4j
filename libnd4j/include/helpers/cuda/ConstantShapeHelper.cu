@@ -127,5 +127,25 @@ namespace nd4j {
         return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
 
+    Nd4jLong* ConstantShapeHelper::createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal) {
+        ShapeDescriptor descriptor(shapeInfo);
+        auto result = createShapeInfo(descriptor);
+
+        if (destroyOriginal)
+            delete[] shapeInfo;
+
+        return result;
+    }
+
+    Nd4jLong* ConstantShapeHelper::createFromExisting(Nd4jLong *shapeInfo, nd4j::memory::Workspace *workspace) {
+        ShapeDescriptor descriptor(shapeInfo);
+        auto result = createShapeInfo(descriptor);
+
+        if (workspace == nullptr)
+            delete[] shapeInfo;
+
+        return result;
+    }
+
     nd4j::ConstantShapeHelper* nd4j::ConstantShapeHelper::_INSTANCE = 0;
 }
