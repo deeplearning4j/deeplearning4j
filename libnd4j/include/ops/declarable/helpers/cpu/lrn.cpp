@@ -135,7 +135,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {rank - 1});
     TadPack outTadPack;
 
-    if(shape::haveSameOffsets(input->getShapeInfo(), output->getShapeInfo()))
+    if(shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo()))
         outTadPack = inTadPack;
     else
         outTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {rank - 1});
@@ -247,7 +247,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
     TadPack gradITadPack;
 
-    if(shape::haveSameOffsets(input.getShapeInfo(), gradI.getShapeInfo()))
+    if(shape::haveSameShapeAndStrides(input.getShapeInfo(), gradI.getShapeInfo()))
         gradITadPack = inTadPack;
     else
         gradITadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});

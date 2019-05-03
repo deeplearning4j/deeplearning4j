@@ -1226,21 +1226,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         return res;
     }
 
-//////////////////////////////////////////////////////////////////////////
-    bool NDArray::isContiguous() {
-        Nd4jLong z = 1;
-        int d;
-        for(d = this->rankOf() - 1; d >= 0; d--)  {
-            if(this->sizeAt(d) != 1) {
-                if(this->stridesOf()[d] == z)
-                    z *= this->sizeAt(d);
-                else
-                    return false;
-            }
-        }
-        return true;
-    }
-
     bool NDArray::hasNaNs() {
         if (isS())
             throw std::runtime_error("NDArray::hasNaNs: you can't use this method on String array!");
