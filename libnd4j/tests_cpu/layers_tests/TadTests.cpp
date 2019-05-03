@@ -279,6 +279,33 @@ TEST_F(TadTests, test_column_1) {
     ASSERT_TRUE(shape::equalsStrict(tadPack.primaryShapeInfo(), scalarViewPack.primaryShapeInfo()));
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(TadTests, calcOffsets_1) {
+    
+    Nd4jLong shapeInfoF[10]  = {3, 2,3,4,  1,2,6,   8192, 1, 102};
+    Nd4jLong shapeInfoC[10]  = {3, 2,3,4,  12,4,1,  8192, 1, 99};
+    Nd4jLong shapeInfoFC[10] = {3, 2,3,4,  1,2,6,   8192, 1, 99};;
+    
+    Nd4jLong expOffsetsF[24] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
+    Nd4jLong expOffsetsC[24] = {0,12,4,16,8,20,1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23};
+ 
+    Nd4jLong offsets[24];
+
+    shape::calcOffsets(shapeInfoF, offsets, 'f');
+
+    for (int e = 0; e < 24; e++)
+        ASSERT_TRUE(offsets[e] == expOffsetsF[e]);    
+
+    shape::calcOffsets(shapeInfoC, offsets, 'f');
+
+    for (int e = 0; e < 24; e++)         
+        ASSERT_TRUE(offsets[e] == expOffsetsC[e]);
+
+    shape::calcOffsets(shapeInfoFC, offsets, 'f');
+
+    for (int e = 0; e < 24; e++)         
+        ASSERT_TRUE(offsets[e] == expOffsetsF[e]);
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(TadTests, outerArrayIndexes_1) {

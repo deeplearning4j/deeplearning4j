@@ -85,46 +85,45 @@ TEST_F(ShapeTests, Test_ShapeEquality_2) {
 
 TEST_F(ShapeTests, Test_Ind2SubC_1) {
     Nd4jLong shape[] = {3, 5};
-    auto c0 = shape::ind2subC(2, shape, 0);
+    Nd4jLong c0[2];
+    shape::index2coords(2, shape, 0, c0);
 
     ASSERT_EQ(0, c0[0]);
     ASSERT_EQ(0, c0[1]);
 
-    auto c1 = shape::ind2subC(2, shape, 1);
+    Nd4jLong c1[2];
+    shape::index2coords(2, shape, 1, c1);
 
     ASSERT_EQ(0, c1[0]);
     ASSERT_EQ(1, c1[1]);
 
-    auto c6 = shape::ind2subC(2, shape, 5);
+    Nd4jLong c6[2];
+    shape::index2coords(2, shape, 5, c6);
 
     ASSERT_EQ(1, c6[0]);
-    ASSERT_EQ(0, c6[1]);
-
-    delete[] c0;
-    delete[] c1;
-    delete[] c6;
+    ASSERT_EQ(0, c6[1]);    
 }
 
 TEST_F(ShapeTests, Test_Ind2Sub_1) {
     Nd4jLong shape[] = {3, 5};
-    auto c0 = shape::ind2sub(2, shape, 0);
+    
+    Nd4jLong c0[2];
+    shape::index2coords(2, shape, 0, c0, 'f');
 
     ASSERT_EQ(0, c0[0]);
     ASSERT_EQ(0, c0[1]);
 
-    auto c1 = shape::ind2sub(2, shape, 1);
+    Nd4jLong c1[2];
+    shape::index2coords(2, shape, 1, c1, 'f');
 
     ASSERT_EQ(1, c1[0]);
     ASSERT_EQ(0, c1[1]);
 
-    auto c6 = shape::ind2sub(2, shape, 5);
+    Nd4jLong c6[2];
+    shape::index2coords(2, shape, 5, c6, 'f');
 
     ASSERT_EQ(2, c6[0]);
-    ASSERT_EQ(1, c6[1]);
-
-    delete[] c0;
-    delete[] c1;
-    delete[] c6;
+    ASSERT_EQ(1, c6[1]);    
 }
 
 TEST_F(ShapeTests, Test_ShapeDetector_1) {

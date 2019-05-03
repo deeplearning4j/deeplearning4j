@@ -31,7 +31,7 @@ namespace nd4j {
 
                 Nd4jLong idx[MAX_RANK];
                 for (int e = 0; e < condition.lengthOf(); e++) {
-                    shape::ind2subC(condition.rankOf(), condition.shapeOf(), e, idx);
+                    shape::index2coords(condition.rankOf(), condition.shapeOf(), e, idx);
 
                     auto offset = shape::getOffset(0, condition.shapeOf(), condition.stridesOf(), idx, condition.rankOf());
                     if (condition.e<bool>(offset)) {

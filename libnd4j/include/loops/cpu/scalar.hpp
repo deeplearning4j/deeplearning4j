@@ -155,7 +155,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
         nd4j::OmpLaunchHelper info(len);
 
-        if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
+        if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
             PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
             {

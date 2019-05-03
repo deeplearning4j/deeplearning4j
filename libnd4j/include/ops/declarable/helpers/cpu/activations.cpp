@@ -248,7 +248,7 @@ static void softmax_(graph::LaunchContext* context, const NDArray& input, NDArra
             bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
 
             auto offsets = new Nd4jLong[tadLen];
-            shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+            shape::calcOffsets(tadShapeInfo, offsets);
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (uint i = 0; i < numOfSubArrs; ++i) {
