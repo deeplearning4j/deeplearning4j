@@ -65,7 +65,7 @@ __global__ static void im2colCuda(const void *in, void *out,
     
     const auto indexes = colIndices + threadIdx.x * colRank;    
 
-    shape::ind2subC(colRank, colShape, colInd, colLen, indexes);
+    shape::index2coords(colRank, colShape, colInd, colLen, indexes);
 
     const auto imh = (-pH + indexes[2] * dH) + indexes[4] * sH;
     const auto imw = (-pW + indexes[3] * dW) + indexes[5] * sW;

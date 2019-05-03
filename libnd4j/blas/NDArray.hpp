@@ -2637,45 +2637,15 @@ NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& di
 ////////////////////////////////////////////////////////////////////////
 void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
 
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
-    const int rank = rankOf();        
-    const int dimsSize = dimsToExclude.size();        
+    const int rank = rankOf();
+    const int subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);      
 
     // allocate memory 
-    ALLOCATE(subArrShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(rank - dimsSize), Nd4jLong);
+    ALLOCATE(subArrShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(subArrRank), Nd4jLong);
     ALLOCATE(subArrOffsets,   _context->getWorkspace(), numOfSubArrs, Nd4jLong);        
 
-    Nd4jLong *outShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
-    std::vector<Nd4jLong> shape(dimsSize), strides(dimsSize);
-
-    Nd4jLong subArrLen = 1;
-
-    for(int j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
-        if(j >= 0 && i == dimsToExclude[j]) {
-            strides[j] = shape::stride(outShapeInfo)[i];
-            shape[j--] = shape::shapeOf(outShapeInfo)[i];
-            shape::shapeOf(outShapeInfo)[i] = 1;
-        }
-        else
-            subArrLen *= shape::shapeOf(outShapeInfo)[i];
-    }
-
-    // evaluate ews
-    shape::setEws(outShapeInfo, subArrLen);
-
-    // calculation of sub-array offsets (subArrOffsets)
-    shape::calcSubArrOffsets(numOfSubArrs, dimsSize, shape.data(), strides.data(), subArrOffsets);
-        
-    // remove unities from outShapeInfo if required 
-    if(!keepUnitiesInShape) {
-        std::vector<Nd4jLong> shapeNoUnities = ShapeUtils::evalDimsWithoutUnities(outShapeInfo);
-        //shape::reshapeCF(rank, outShapeInfo, shapeNoUnities.size(), shapeNoUnities.data(), ordering() == 'f', subArrShapeInfo);
-        throw std::runtime_error("FIXME");
-    }
-    else
-        memcpy(subArrShapeInfo, outShapeInfo, shape::shapeInfoLength(rank)*sizeof(Nd4jLong));
-        
-    RELEASE(outShapeInfo, _context->getWorkspace());
+    shape::calcSubArrShapeAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), subArrShapeInfo, subArrOffsets, keepUnitiesInShape);
 }
 
 

@@ -216,7 +216,7 @@ __global__ static void scatterNDCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
     for (Nd4jLong i = tid; i < yLen; i += totalThreads) {
         
-        shape::ind2subC(yRank, yShape, i, yLen, yCoord);
+        shape::index2coords(yRank, yShape, i, yLen, yCoord);
         
         for (uint j = 0; j < xRank - 1; ++j)
             xCoord[j] = yCoord[j];
@@ -228,12 +228,12 @@ __global__ static void scatterNDCuda(const void *vx, const Nd4jLong *xShapeInfo,
         }
 
         for (uint j = xLastDim; j < zRank; ++j)
-            zCoord[j] = yCoord[xRank - 1 + j];
+            zCoord[j] = yCoord[yRank - zRank + j];
 
         const auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
         const auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
-        z[zOffset] = y[yOffset];
+        z[zOffset] += y[yOffset];
     }    
 }
 

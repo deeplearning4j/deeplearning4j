@@ -1026,12 +1026,7 @@ namespace shape {
     * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
     */
     ND4J_EXPORT _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo, const Nd4jLong numOfSubArrs, const int dimsSize, const int* dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape = false);
-
-    // deduce element-wise stride
-    // if array is scalar or unit length vector then ews = 1
-    // if array is common vector then ews = stride of non-unity dimension
-    // if strides are normal set ews = 1, otherwise ews = 0
-    ND4J_EXPORT _CUDA_HD void setEws(Nd4jLong* shapeInfo, Nd4jLong len);
+    
 
 
 
@@ -4530,6 +4525,63 @@ INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong
 
     delete []idx;
     delete []offsetPerDim;
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void _CUDA_HD setEws(Nd4jLong* shapeInfo, Nd4jLong len) {
+
+   
+    const int rank          = shape::rank(shapeInfo);
+    const Nd4jLong* shape   = shape::shapeOf(shapeInfo);
+    const Nd4jLong* strides = shape::stride(shapeInfo);
+    const char order        = shape::order(shapeInfo);
+    Nd4jLong* ews           = shape::ews(shapeInfo);
+    
+    if(len == -1)   // calculate array length if it is not given 
+        len = shape::length(shapeInfo);
+        
+    if(len <= 1) {  //  empty, scalar or unity-vector case
+        *ews = 1;
+        return;
+    }
+
+    int nonUnityDim(0);
+    if(shape::isCommonVector(shapeInfo, nonUnityDim)) {
+        *ews = strides[nonUnityDim];
+        return;
+    }
+
+    // check last(c)/first(f) dimension, it should be equal to 1
+    if((order == 'c' && shape[rank - 1] != 1 && strides[rank - 1] != 1) || (order == 'f' && shape[0] != 1 && strides[0] != 1)) {
+        *ews = 0;
+        return;
+    }
+
+    Nd4jLong correctStride = 1;
+    if(order == 'c') {
+        for (int i = rank - 2; i >= 0 ; i--) {            
+            correctStride *= shape[i + 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
+        }
+    }
+    else {
+        for (int i = 1; i < rank; ++i) {            
+            correctStride *= shape[i - 1];
+            if(shape[i] == 1)
+                continue;
+            if(correctStride != strides[i]) {
+                *ews = 0;
+                return;
+            }
+        }
+    }      
+    
+    *ews = 1;    
 }
 
 //////////////////////////////////////////////////////////////////////

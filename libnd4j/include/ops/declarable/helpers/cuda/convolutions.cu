@@ -85,7 +85,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
     // const int b    = temp;
 
     Nd4jLong coord[colRank];
-    shape::ind2subC(volRank, volShapeInfo+1, ind, colLen, coord);
+    shape::index2coords(volRank, volShapeInfo+1, ind, colLen, coord);
 
     const int colW = coord[7];
     const int colH = coord[6];
