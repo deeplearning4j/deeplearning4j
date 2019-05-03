@@ -406,11 +406,7 @@ DECLARE_SHAPE_FN(concat) {
 
             for (int e = 0; e < inputShape->size() - 1; e++) {
                 auto inShape = inputShape->at(e);
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
-                memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
-
-                shapeList->push_back(newShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
             }
 
             return shapeList;

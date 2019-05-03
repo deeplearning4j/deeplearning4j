@@ -149,8 +149,11 @@ DECLARE_SHAPE_FN(lstmCell) {
 
     ShapeUtils::updateStridesAndType(hShapeInfo, xtShapeInfo, shape::order(ht_1ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, xtShapeInfo, shape::order(ct_1ShapeInfo));
-         
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+
+    auto result = SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(hShapeInfo), ConstantShapeHelper::getInstance()->createShapeInfo(cShapeInfo));
+    RELEASE(hShapeInfo, block.workspace());
+    RELEASE(cShapeInfo, block.workspace());
+    return result;
 }   
 
 }

@@ -43,7 +43,7 @@ class ND4J_EXPORT ShapeDescriptor {
 
     public:
         ShapeDescriptor(const ShapeDescriptor &other);
-        explicit ShapeDescriptor(const Nd4jLong *shapeInfo);
+        ShapeDescriptor(const Nd4jLong *shapeInfo, bool inheritDtype = true);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride, const Nd4jLong *orderOverride);

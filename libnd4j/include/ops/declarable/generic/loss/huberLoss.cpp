@@ -134,7 +134,7 @@ DECLARE_SHAPE_FN(huber_loss) {
     if(INT_ARG(0) != 0) 			// in this case output is scalar
     	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
     else 							// in this case output has the same shape as labels and predictions
-    	outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
     return SHAPELIST(outShapeInfo);
 }

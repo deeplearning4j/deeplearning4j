@@ -166,8 +166,10 @@ DECLARE_SHAPE_FN(gather) {
 	if(isEmpty){
 		ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
 	}
-	
-    return SHAPELIST(outputShapeInfo);
+
+	auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outputShapeInfo));
+	RELEASE(outputShapeInfo, block.getWorkspace());
+    return SHAPELIST(result);
 
 }
 

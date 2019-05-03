@@ -156,11 +156,13 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const Nd4jLong length) : _
     _strides = {1};
 }
 
-ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, bool inheritDtype) {
     _order = shape::order(shapeInfo);
     _ews = shape::elementWiseStride(shapeInfo);
     _rank = shape::rank(shapeInfo);
-    _dataType = ArrayOptions::dataType(shapeInfo);
+
+    if (inheritDtype)
+        _dataType = ArrayOptions::dataType(shapeInfo);
 
     _empty = shape::isEmpty(shapeInfo);
 
@@ -171,7 +173,7 @@ ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo) {
         _strides.emplace_back(shapeInfo[e + 1 + _rank]);
 }
 
-ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo) {
+ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride) : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
     _dataType = dtypeOverride;
 }
 

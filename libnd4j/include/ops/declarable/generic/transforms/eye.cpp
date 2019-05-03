@@ -57,7 +57,6 @@ namespace ops {
                 for (int e = 0; e < input->lengthOf(); e++) {
                     params.emplace_back(input->e<int>(e));
                 }
-                delete input;
             }
         }
 

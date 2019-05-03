@@ -110,10 +110,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(crelu_bp) {
             auto inShape = inputShape->at(0);
-            Nd4jLong* newShape;
-            COPY_SHAPE(inShape, newShape);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape)));
         }
     }
 }
