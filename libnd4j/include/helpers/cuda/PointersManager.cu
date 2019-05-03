@@ -73,25 +73,6 @@ PointersManager::~PointersManager() {
         cudaFree(p);
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-__device__ void PointersManager::printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid) {
-
-    if(blockIdx.x * blockDim.x + threadIdx.x != tid)
-        return;
-
-    printf("device print out: \n");
-    for(Nd4jLong i = 0; i < len; ++i)
-        printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
-
-    printf("\n");
-}
-
-template void __device__ PointersManager::printDevContentOnDev<Nd4jLong>(const void* pDev, const Nd4jLong len, const int tid);
-template void __device__ PointersManager::printDevContentOnDev<int>(const void* pDev, const Nd4jLong len, const int tid);
-template void __device__ PointersManager::printDevContentOnDev<float>(const void* pDev, const Nd4jLong len, const int tid);
-template void __device__ PointersManager::printDevContentOnDev<double>(const void* pDev, const Nd4jLong len, const int tid);
-
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

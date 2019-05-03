@@ -56,7 +56,16 @@ class PointersManager {
         static void printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid = 0);
 
         template<typename T>
-        __device__ static void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid = 0);
+        static FORCEINLINE __device__ void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid = 0) {
+            if(blockIdx.x * blockDim.x + threadIdx.x != tid)
+                return;
+
+            printf("device print out: \n");
+            for(Nd4jLong i = 0; i < len; ++i)
+                printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
+
+            printf("\n");
+        }
 
 #endif
 
