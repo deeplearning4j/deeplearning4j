@@ -204,9 +204,9 @@ namespace nd4j {
             }
 
             // this is the only place where we deallocate shapes.
-            if (_variableSpace->launchContext()->getWorkspace() == nullptr)
-                for (auto v: shapes)
-                    delete[] v;
+            //if (_variableSpace->launchContext()->getWorkspace() == nullptr)
+            //    for (auto v: shapes)
+            //        delete[] v;
 
             return result;
         }
