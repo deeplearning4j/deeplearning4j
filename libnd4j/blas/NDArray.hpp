@@ -625,7 +625,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::isContiguous() {
+    bool NDArray::isContiguous() const {
         Nd4jLong z = 1;
         int d;
         for(d = this->rankOf() - 1; d >= 0; d--)  {

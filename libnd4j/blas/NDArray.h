@@ -234,6 +234,8 @@ namespace nd4j {
          */
         void synchronize() const;
 
+        bool isContiguous() const;
+
         /**
          * This method allows to set _isAttached flag
          * @param reallyAttached
