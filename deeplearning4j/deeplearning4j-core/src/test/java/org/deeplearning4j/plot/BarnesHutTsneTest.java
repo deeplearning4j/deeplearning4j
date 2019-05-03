@@ -136,6 +136,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
     @Test
     public void testReproducibility() {
+        Nd4j.getRandom().setSeed(123);
         INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
                 0.2938,    0.3655,
                 0.3968,    0.0990,
@@ -154,6 +155,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
     @Test
     public void testAgainstSklearnTSNE() {
+        Nd4j.getRandom().setSeed(1);
         INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
                 0.2938,    0.3655,
                 0.3968,    0.0990,
