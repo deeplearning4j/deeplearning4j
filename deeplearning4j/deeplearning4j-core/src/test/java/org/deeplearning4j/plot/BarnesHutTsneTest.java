@@ -145,6 +145,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         BarnesHutTsne b1 = new BarnesHutTsne.Builder().build(),
                 b2 = new BarnesHutTsne.Builder().build();
         b1.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
+        b2.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
 
         b1.fit(input);
         INDArray ret1 = b1.getData();
