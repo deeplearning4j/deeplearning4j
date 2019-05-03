@@ -149,6 +149,8 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         b1.fit(input);
         INDArray ret1 = b1.getData();
+
+        Nd4j.getRandom().setSeed(10);
         b2.fit(input);
         INDArray ret2 = b2.getData();
         assertEquals(ret1, ret2);
