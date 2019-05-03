@@ -73,33 +73,47 @@ PointersManager::~PointersManager() {
         cudaFree(p);
 }
 
-template <typename T>
-static __global__ void printDevContentOnDev_(void* pDev, Nd4jLong len, int tid) {
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+__device__ void PointersManager::printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid) {
 
     if(blockIdx.x * blockDim.x + threadIdx.x != tid)
         return;
 
     printf("device print out: \n");
     for(Nd4jLong i = 0; i < len; ++i)
-        printf("%f, ", (double)reinterpret_cast<T*>(pDev)[i]);
+        printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
 
     printf("\n");
 }
 
+template void __device__ PointersManager::printDevContentOnDev<Nd4jLong>(const void* pDev, const Nd4jLong len, const int tid);
+template void __device__ PointersManager::printDevContentOnDev<int>(const void* pDev, const Nd4jLong len, const int tid);
+template void __device__ PointersManager::printDevContentOnDev<float>(const void* pDev, const Nd4jLong len, const int tid);
+template void __device__ PointersManager::printDevContentOnDev<double>(const void* pDev, const Nd4jLong len, const int tid);
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+static __global__ void printDevContentOnDev_(const void* pDev, const Nd4jLong len, const int tid) {
+
+    PointersManager::printDevContentOnDev<T>(pDev, len, tid);
+}
+
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-void PointersManager::printDevContentOnDev(void* pDev, Nd4jLong len, int tid) {
+void PointersManager::printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid) {
     printDevContentOnDev_<T><<<512, 512, 1024, *graph::LaunchContext::defaultContext()->getCudaStream()>>>(pDev, len, tid);
     auto res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaStream());
     if (res != 0)
-        throw std::runtime_error("PointersManager::printDevContentOnDev: cudaStreamSynchronize failed!");
+        throw std::runtime_error("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
 }
-template void PointersManager::printDevContentOnDev<Nd4jLong>(void* pDev, Nd4jLong len, int tid);
-template void PointersManager::printDevContentOnDev<int>(void* pDev, Nd4jLong len, int tid);
-template void PointersManager::printDevContentOnDev<float>(void* pDev, Nd4jLong len, int tid);
-template void PointersManager::printDevContentOnDev<double>(void* pDev, Nd4jLong len, int tid);
+template void PointersManager::printDevContentOnDevFromHost<Nd4jLong>(const void* pDev, const Nd4jLong len, const int tid);
+template void PointersManager::printDevContentOnDevFromHost<int>(const void* pDev, const Nd4jLong len, const int tid);
+template void PointersManager::printDevContentOnDevFromHost<float>(const void* pDev, const Nd4jLong len, const int tid);
+template void PointersManager::printDevContentOnDevFromHost<double>(const void* pDev, const Nd4jLong len, const int tid);
 
-//BUILD_SINGLE_TEMPLATE(template void PointersManager::printDevContentOnDev, (void* pDev, Nd4jLong len, int tid), LIBND4J_TYPES);
+//BUILD_SINGLE_TEMPLATE(template void PointersManager::printDevContentOnDevFromHost, (void* pDev, Nd4jLong len, int tid), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
