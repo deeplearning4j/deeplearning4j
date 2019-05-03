@@ -74,9 +74,9 @@ void NDArray::operator delete(void* p) {
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
     
-    _context = other._context;    
-    
-    setShapeInfo(other.getShapeInfo());
+    _context = other._context;
+
+    setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     triggerAllocationFlag(true);
@@ -89,7 +89,7 @@ NDArray::NDArray(const NDArray& other) {
         auto res = cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
         if (res != 0)
             throw cuda_exception::build("cudaMemcpy failed", res);
-    }        
+    }
 
     tickWriteDevice();
 }
@@ -110,14 +110,21 @@ void NDArray::lazyAllocateBuffer() const {
 // scalar constructor
 NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, const bool isScalar) {
 
-    auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
-    setShapeInfo(shapeInfo);
+    //auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace());
+   // setShapeInfo(shapeInfo);
+    _context = context;
+    _isAttached = _context->getWorkspace() != nullptr;
 
-    ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
-    _isBuffDAlloc = true;
-    cudaMemset(_bufferD, 0, sizeOfT());    
-    
-    tickWriteDevice();
+    if (isScalar) {
+        setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
+        ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
+        _isBuffDAlloc = true;
+        cudaMemset(_bufferD, 0, sizeOfT());
+        tickWriteDevice();
+    }
+    else {
+        setShapeInfo(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -130,10 +137,14 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    _context = context;        
+    _context = context;
+    if (copyStrides)
+        setShapeInfo(ShapeDescriptor(shapeInfo));
+    else
+        setShapeInfo(ShapeDescriptor(dtype, shape::order(shapeInfo), shape::shapeOf(shapeInfo), shape::rank(shapeInfo)));
 
-    auto shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, copyStrides, _context->getWorkspace());
-    setShapeInfo(shapeInfoTemp);
+//    auto shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, copyStrides, _context->getWorkspace());
+//    setShapeInfo(shapeInfoTemp);
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, 0, _length * sizeOfT());
@@ -169,7 +180,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     for(Nd4jLong i=0; i < _length; ++i) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
     }    
-        
     syncToDevice();
     tickReadHost();
 }
@@ -189,7 +199,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, '\0', _length * sizeOfT()); // zero all memory
-    _isBuffDAlloc = true;    
+    _isBuffDAlloc = true;
 
     tickWriteDevice();
 }
@@ -256,13 +266,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         _context= other._context;
         _buffer = nullptr;
 
-        setShapeInfo(other._shapeInfo);
-
+        //setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.getShapeInfoAsVector()));
+        setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
         ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
         _isBuffDAlloc = true;        
                 
         this->assign(&other);
     }
+    nd4j_printf("Assigned array with shape rank %lld.\n", this->getShapeInfo()[0]);
 
     return *this;
 }
@@ -413,7 +424,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
-
         NDArray::prepareSpecialUse({target}, {this, other});
 
         if (isScalar()) {
@@ -426,16 +436,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             return;
         }
 
-        const NDArray* min(nullptr), *max(nullptr);
-        if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
-        }
-        else {
+        const NDArray* min(other);
+        const NDArray* max(this);
+
+        if(this->rankOf() < other->rankOf()) {
             max = other;
             min = this;
         }
-
         if(checkTargetShape) {
             Nd4jLong* newShapeInfo = nullptr;
             if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _context->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
@@ -449,6 +456,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
+
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
@@ -839,8 +847,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             }
 
             _buffer == nullptr;
-            _shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
-            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
+            //_shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+            setShapeInfo(descriptor);
+            setSpecialBuffer(newBufferD);//, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
             //this->_buffer = newBuffer;
             this->_isBuffAlloc = false;
             this->_isBuffDAlloc = true;
@@ -855,8 +864,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
             _buffer = nullptr;
             //setBuffer(newBuffer);
-            _shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
-            setSpecialBuffers(newBufferD, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
+            setShapeInfo(descriptor);
+            //_shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+            setSpecialBuffer(newBufferD); //, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
             this->_isBuffAlloc = false;
             this->_isBuffDAlloc = true;
         }

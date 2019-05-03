@@ -123,7 +123,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
 
-    setShapeInfo(shapeInfo);
+    setShapeInfo(ShapeDescriptor(shapeInfo));
 
     if (this->isEmpty()) {        
         tickReadDevice();
@@ -158,7 +158,7 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::Launch
      
     _context = context;
 
-    setShapeInfo(shapeInfo);
+    setShapeInfo(ShapeDescriptor(shapeInfo));
     
     if (!isEmpty()) {
         
@@ -424,9 +424,9 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::setSpecialBuffers(void * buffer, Nd4jLong *shape) {
+    void NDArray::setSpecialBuffer(void * buffer) {
         _bufferD = reinterpret_cast<int8_t *>(buffer);
-        _shapeInfoD = shape;
+        //_shapeInfoD = shape; // no more needed
     }
 
 ////////////////////////////////////////////////////////////////////////

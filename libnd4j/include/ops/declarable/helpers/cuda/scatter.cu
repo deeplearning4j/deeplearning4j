@@ -232,11 +232,8 @@ __global__ static void scatterNDCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void scatterNDCudaLauncher(const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
-
-    int threadsPerBlock = MAX_NUM_THREADS;
-    int blocksPerGrid = (shape::length(yShapeInfo) + threadsPerBlock - 1) / threadsPerBlock;
-
+static void scatterNDCudaLauncher(const int blocksPerGrid, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
+        
     scatterNDCuda<X,Y><<<blocksPerGrid, MAX_NUM_THREADS, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
@@ -247,24 +244,34 @@ void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& i
 
     NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
+    // manager.printDevContentOnHost<int>(indices.getSpecialBuffer(), indices.lengthOf());
+    // manager.printDevContentOnHost<Nd4jLong>(indices.getSpecialShapeInfo(), shape::shapeInfoLength(indices.rankOf()));
+    // manager.printDevContentOnHost<float>(updates.getSpecialBuffer(), updates.lengthOf());
+    // manager.printDevContentOnHost<Nd4jLong>(updates.getSpecialShapeInfo(), shape::shapeInfoLength(updates.rankOf()));
+    // manager.printDevContentOnHost<Nd4jLong>(output.getSpecialShapeInfo(), shape::shapeInfoLength(output.rankOf()));
+
+    const int blocksPerGrid = (updates.lengthOf() + MAX_NUM_THREADS - 1) / MAX_NUM_THREADS;
+
     const auto xType = indices.dataType();
     const auto yType = updates.dataType();
-    BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher, (context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher, (blocksPerGrid, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
 
     NDArray::registerSpecialUse({&output}, {&updates, &indices});
     manager.synchronize();        
 }
 
-BUILD_DOUBLE_TEMPLATE(template void scatterNDCudaLauncher,  (const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
-
-            void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
-                BUILD_SINGLE_SELECTOR(output.dataType(), scatter_, (context, op, indices, updates, output, lock), LIBND4J_TYPES);
-            }
+BUILD_DOUBLE_TEMPLATE(template void scatterNDCudaLauncher, (const int blocksPerGrid, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
 
 
-            void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
 
-            }
+void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+    BUILD_SINGLE_SELECTOR(output.dataType(), scatter_, (context, op, indices, updates, output, lock), LIBND4J_TYPES);
+}
+
+
+void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+
+}
 
 
 
