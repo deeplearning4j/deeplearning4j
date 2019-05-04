@@ -817,7 +817,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_02) {
     nd4j::ops::reduce_sum op;
     auto result = op.execute({&x}, {1.}, {0, 1});
     auto output = result->at(0);    
-//    output->printIndexedBuffer("Result is");
+   // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 

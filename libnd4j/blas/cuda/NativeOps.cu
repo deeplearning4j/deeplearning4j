@@ -2049,7 +2049,7 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     }
 
     // check if there is possibility to set ews = 1
-    shape::calcEws(newShape, subArrLen);
+    shape::setEws(newShape, subArrLen);
 
     //makeBothBuffersActual();
     outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));

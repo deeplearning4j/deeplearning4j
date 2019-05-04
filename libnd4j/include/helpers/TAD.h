@@ -544,7 +544,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape, index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape, index,len, sub);
 
 
         for(int i = 0; i < leftOverIndexLen; i++) {
@@ -738,7 +738,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape,index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape,index,len, sub);
 
         for(int i = 0; i < leftOverIndexLen; i++) {
             ret[leftOverIndexes[i]] = sub[i];

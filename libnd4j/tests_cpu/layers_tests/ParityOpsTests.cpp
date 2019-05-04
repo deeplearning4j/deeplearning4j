@@ -1036,6 +1036,78 @@ TEST_F(ParityOpsTests, scatterND_test4) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_5) {    
+        
+    NDArray indices('c', {4, 1}, {1, 1, 1, 1}, nd4j::DataType::INT32);
+    auto updates = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    auto shape = NDArrayFactory::create<int>('c', {1}, {8});
+    auto exp = NDArrayFactory::create<float>('c', {8}, {0.f, 10.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f});
+    
+    nd4j::ops::scatter_nd op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test6) {    
+        
+    NDArray indices('c', {3, 2}, {0,1,1,0,3,2}, nd4j::DataType::INT32);
+    NDArray updates('c', {3, 2, 3},  nd4j::DataType::FLOAT32);
+    NDArray shape('c', {4}, {5,4,2,3},  nd4j::DataType::INT32);
+
+    NDArray exp('c', {5,4,2,3}, {0.,  0.,  0.,0.,  0.,  0.,1.,  2.,  3.,4.,  5.,  6.,0.,  0.,  0.,0.,  0.,  0.,   0.,  0.,  0.,0.,  0.,  0.,
+                                7.,  8.,  9., 10., 11., 12., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0.,
+                                0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0.,
+                                0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 13., 14., 15., 16., 17., 18., 0.,  0.,  0., 0.,  0.,  0.,
+                                0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0., 0.,  0.,  0.},  nd4j::DataType::FLOAT32);
+    updates.linspace(1);
+    
+    nd4j::ops::scatter_nd op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatterND_test7) {    
+        
+    NDArray indices('c', {4,3,2}, {0,1,1,0,3,2,1,0,0,1,1,0,3,2,1,0,0,1,1,0,3,2,1,0}, nd4j::DataType::INT32);
+    NDArray updates('c', {4,3,2,3},  nd4j::DataType::FLOAT32);
+    NDArray shape('c', {4}, {5,4,2,3},  nd4j::DataType::INT32);
+
+    NDArray exp('c', {5,4,2,3}, {0.,   0.,   0., 0.,   0.,   0., 75.,  78.,  81., 84.,  87.,  90., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0.,
+                                 222., 228., 234., 240., 246., 252., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0.,
+                                 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0.,
+                                 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 111., 114., 117., 120., 123., 126., 0.,   0.,   0., 0.,   0.,   0.,
+                                 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0., 0.,   0.,   0.},  nd4j::DataType::FLOAT32);
+    updates.linspace(1);
+    
+    nd4j::ops::scatter_nd op;
+    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0); 
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
 TEST_F(ParityOpsTests, scatterND_add_test1) {    
     
     auto input = NDArrayFactory::create<float>('c', {8}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
