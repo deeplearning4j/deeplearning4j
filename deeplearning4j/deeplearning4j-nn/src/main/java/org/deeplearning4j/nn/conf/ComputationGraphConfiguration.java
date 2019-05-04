@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf;
 
+import javafx.scene.shape.VertexFormat;
 import lombok.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -31,6 +32,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.graph.vertex.impl.VertexKey;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -67,8 +69,9 @@ import java.util.*;
 public class ComputationGraphConfiguration implements Serializable, Cloneable {
     private static Logger log = LoggerFactory.getLogger(ComputationGraphConfiguration.class);
 
-    protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
-    protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
+    protected  Map<String, List<VertexKey>> layerUsages = new LinkedHashMap<>();
+    protected Map<VertexKey, GraphVertex> vertices = new LinkedHashMap<>();
+    protected Map<VertexKey, List<VertexKey>> vertexInputs = new LinkedHashMap<>();
 
     @Getter
     @Setter
@@ -91,12 +94,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     /**
      * List of inputs to the network, by name
      */
-    protected List<String> networkInputs;
+    protected List<VertexKey> networkInputs;
 
     /**
      * List of network outputs, by name
      */
-    protected List<String> networkOutputs;
+    protected List<VertexKey> networkOutputs;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -112,7 +115,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int epochCount = 0;
 
     protected int[] topologicalOrder;
-    protected List<String> topologicalOrderStr;
+    protected List<VertexKey> topologicalOrderStr;
 
     /**
      * @return YAML representation of configuration
@@ -186,9 +189,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //To maintain backward compatibility after activation function refactoring (configs generated with v0.7.1 or earlier)
         // Previously: enumeration used for activation functions. Now: use classes
         int layerCount = 0;
-        Map<String, GraphVertex> vertexMap = conf.getVertices();
+        Map<VertexKey, GraphVertex> vertexMap = conf.getVertices();
         JsonNode vertices = null;
-        for (Map.Entry<String, GraphVertex> entry : vertexMap.entrySet()) {
+        for (Map.Entry<VertexKey, GraphVertex> entry : vertexMap.entrySet()) {
             if (!(entry.getValue() instanceof LayerVertex)) {
                 continue;
             }
@@ -297,12 +300,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
 
         conf.vertices = new LinkedHashMap<>();
-        for (Map.Entry<String, GraphVertex> entry : this.vertices.entrySet()) {
+        for (Map.Entry<VertexKey, GraphVertex> entry : this.vertices.entrySet()) {
             conf.vertices.put(entry.getKey(), entry.getValue().clone());
         }
 
         conf.vertexInputs = new LinkedHashMap<>();
-        for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
+        for (Map.Entry<VertexKey, List<VertexKey>> entry : this.vertexInputs.entrySet()) {
             conf.vertexInputs.put(entry.getKey(), new ArrayList<>(entry.getValue()));
         }
 
@@ -356,33 +359,32 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         //Check uniqueness of names for inputs, layers, GraphNodes
-        for (String s : networkInputs) {
-            if (vertices.containsKey(s)) {
-                throw new IllegalStateException("Invalid configuration: name \"" + s
+        for (VertexKey vk : networkInputs) {
+            if (vertices.containsKey(vk)) {
+                throw new IllegalStateException("Invalid configuration: name \"" + vk
                                 + "\" is present in both network inputs and graph vertices/layers");
             }
         }
 
         //Check: each layer & node has at least one input
-        for (Map.Entry<String, List<String>> e : vertexInputs.entrySet()) {
-            String nodeName = e.getKey();
+        for (Map.Entry<VertexKey, List<VertexKey>> e : vertexInputs.entrySet()) {
             if (e.getValue() == null || e.getValue().isEmpty()) {
-                throw new IllegalStateException("Invalid configuration: vertex \"" + nodeName + "\" has no inputs");
+                throw new IllegalStateException("Invalid configuration: vertex \"" + e.getKey() + "\" has no inputs");
             }
-            for (String inputName : e.getValue()) {
-                if (!vertices.containsKey(inputName) && !networkInputs.contains(inputName)) {
-                    throw new IllegalStateException("Invalid configuration: Vertex \"" + nodeName + "\" has input \""
-                                    + inputName + "\" that does not exist");
+            for (VertexKey input : e.getValue()) {
+                if (!vertices.containsKey(input) && !networkInputs.contains(input.getLayerName())) {
+                    throw new IllegalStateException("Invalid configuration: Vertex \"" + e.getKey() + "\" has input \""
+                                    + input + "\" that does not exist");
                 }
             }
         }
 
         //Check output names:
         if(networkOutputs != null) {
-            for (String s : networkOutputs) {
-                if (!vertices.containsKey(s)) {
+            for (VertexKey vk : networkOutputs) {
+                if (!vertices.containsKey(vk)) {
                     throw new IllegalStateException(
-                            "Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
+                            "Invalid configuration: Output name \"" + vk + "\" is not a valid vertex");
                 }
             }
         }
@@ -392,13 +394,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             //A vertex is considered disconnected if it is (a) not an output vertex, and (b) isn't used an as input
             // to another layer
 
-            Set<String> seenAsInput = new HashSet<>();
+            Set<VertexKey> seenAsInput = new HashSet<>();
             seenAsInput.addAll(networkOutputs);
-            for(Map.Entry<String,List<String>> e : vertexInputs.entrySet()){
+            for(Map.Entry<VertexKey,List<VertexKey>> e : vertexInputs.entrySet()){
                 seenAsInput.addAll(e.getValue());
             }
 
-            Set<String> disconnected = new HashSet<>();
+            Set<VertexKey> disconnected = new HashSet<>();
             disconnected.addAll(networkInputs);
             disconnected.addAll(vertices.keySet());
             disconnected.removeAll(seenAsInput);
@@ -434,7 +436,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
      */
-    public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes){
+    public Map<VertexKey,InputType> getLayerActivationTypes(InputType... inputTypes){
         return getLayerActivationTypes(true, inputTypes);
     }
 
@@ -447,7 +449,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
      */
-    public Map<String,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary, InputType... inputTypes){
+    public Map<VertexKey,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary, InputType... inputTypes){
 
         if (inputTypes == null || inputTypes.length != networkInputs.size()) {
             throw new IllegalArgumentException(
@@ -459,25 +461,25 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //To do this: need to know what the output types are for each GraphVertex.
 
         //Do topological sort
-        List<String> topologicalOrdering = topologicalOrdering();
+        List<VertexKey> topologicalOrdering = topologicalOrdering();
 
         //Now, given the topological sort: do equivalent of forward pass
-        Map<String, InputType> vertexOutputs = new LinkedHashMap<>();
+        Map<VertexKey, InputType> vertexOutputs = new LinkedHashMap<>();
         int currLayerIdx = -1;
-        for (String s : topologicalOrdering) {
-            int inputIdx = networkInputs.indexOf(s);
+        for (VertexKey vk : topologicalOrdering) {
+            int inputIdx = networkInputs.indexOf(vk);
             if (inputIdx != -1) {
-                vertexOutputs.put(s, inputTypes[inputIdx]);
+                vertexOutputs.put(vk, inputTypes[inputIdx]);
                 continue;
             }
 
-            GraphVertex gv = vertices.get(s);
+            GraphVertex gv = vertices.get(vk);
 
             List<InputType> inputTypeList = new ArrayList<>();
 
             if (gv instanceof LayerVertex) {
                 //Add preprocessor, if necessary:
-                String in = vertexInputs.get(s).get(0);
+                VertexKey in = vertexInputs.get(vk).get(0);
                 InputType layerInput = vertexOutputs.get(in);
                 inputTypeList.add(layerInput);
 
@@ -502,78 +504,78 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                 currLayerIdx++;
             } else {
-                List<String> inputs = vertexInputs.get(s);
+                List<VertexKey> inputs = vertexInputs.get(vk);
                 if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
+                    for (VertexKey inputVertexKey : inputs) {
+                        inputTypeList.add(vertexOutputs.get(inputVertexKey));
                     }
                 }
             }
 
             InputType outputFromVertex =
                     gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
-            vertexOutputs.put(s, outputFromVertex);
+            vertexOutputs.put(vk, outputFromVertex);
         }
 
         return vertexOutputs;
     }
 
-    private Map<String, List<String>> verticesOutputTo() {
-        Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
-            String vertexName = entry.getKey();
-            List<String> vertexInputNames;
-            vertexInputNames = vertexInputs.get(vertexName);
+    private Map<VertexKey, List<VertexKey>> verticesOutputTo() {
+        Map<VertexKey, List<VertexKey>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
+        for (Map.Entry<VertexKey, GraphVertex> entry : vertices.entrySet()) {
+            VertexKey vertexKey = entry.getKey();
+            List<VertexKey> vertexInputKeys;
+            vertexInputKeys = vertexInputs.get(vertexKey);
 
-            if (vertexInputNames == null)
+            if (vertexInputKeys == null)
                 continue;
 
             //Build reverse network structure:
-            for (String s : vertexInputNames) {
-                List<String> list = verticesOutputTo.get(s);
+            for (VertexKey s : vertexInputKeys) {
+                List<VertexKey> list = verticesOutputTo.get(s);
                 if (list == null) {
                     list = new ArrayList<>();
                     verticesOutputTo.put(s, list);
                 }
-                list.add(vertexName); //Edge: s -> vertexName
+                list.add(vertexKey); //Edge: s -> vertexName
             }
         }
 
         return verticesOutputTo;
     }
 
-    private List<String> topologicalOrdering() {
+    private List<VertexKey> topologicalOrdering() {
         //First step: build network in reverse order (i.e., define map of a -> list(b) instead of list(a) -> b)
-        Map<String, List<String>> verticesOutputTo = verticesOutputTo();
-        LinkedList<String> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
-        List<String> topologicalOrdering = new ArrayList<>();
+        Map<VertexKey, List<VertexKey>> verticesOutputTo = verticesOutputTo();
+        LinkedList<VertexKey> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
+        List<VertexKey> topologicalOrdering = new ArrayList<>();
 
-        Map<String, Set<String>> inputEdges = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : vertexInputs.entrySet()) {
+        Map<VertexKey, Set<VertexKey>> inputEdges = new HashMap<>();
+        for (Map.Entry<VertexKey, List<VertexKey>> entry : vertexInputs.entrySet()) {
             inputEdges.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
 
         while (!noIncomingEdges.isEmpty()) {
-            String next = noIncomingEdges.removeFirst();
+            VertexKey next = noIncomingEdges.removeFirst();
             topologicalOrdering.add(next);
 
             //Remove edges next -> vertexOuputsTo[...] from graph;
-            List<String> nextEdges = verticesOutputTo.get(next);
+            List<VertexKey> nextEdges = verticesOutputTo.get(next);
 
             if (nextEdges != null && !nextEdges.isEmpty()) {
-                for (String s : nextEdges) {
-                    Set<String> set = inputEdges.get(s);
+                for (VertexKey vk : nextEdges) {
+                    Set<VertexKey> set = inputEdges.get(vk);
                     set.remove(next);
                     if (set.isEmpty()) {
-                        noIncomingEdges.add(s); //No remaining edges for vertex i -> add to list for processing
+                        noIncomingEdges.add(vk); //No remaining edges for vertex i -> add to list for processing
                     }
                 }
             }
         }
 
         //If any edges remain in the graph: graph has cycles:
-        for (Map.Entry<String, Set<String>> entry : inputEdges.entrySet()) {
-            Set<String> set = entry.getValue();
+        for (Map.Entry<VertexKey, Set<VertexKey>> entry : inputEdges.entrySet()) {
+            Set<VertexKey> set = entry.getValue();
             if (set == null)
                 continue;
             if (!set.isEmpty())
@@ -596,32 +598,32 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
 
         Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
-        List<String> topologicalOrdering = topologicalOrdering();
+        List<VertexKey> topologicalOrdering = topologicalOrdering();
 
-        Map<String, InputType> vertexOutputs = new HashMap<>();
+        Map<VertexKey, InputType> vertexOutputs = new HashMap<>();
         int currLayerIdx = -1;
-        for (String s : topologicalOrdering) {
-            int inputIdx = networkInputs.indexOf(s);
+        for (VertexKey vk : topologicalOrdering) {
+            int inputIdx = networkInputs.indexOf(vk);
             if (inputIdx != -1) {
-                vertexOutputs.put(s, inputTypes[inputIdx]);
+                vertexOutputs.put(vk, inputTypes[inputIdx]);
                 continue;
             }
 
-            GraphVertex gv = vertices.get(s);
+            GraphVertex gv = vertices.get(vk);
 
             List<InputType> inputTypeList = new ArrayList<>();
 
             if (gv instanceof LayerVertex) {
                 //Add preprocessor, if necessary:
-                String in = vertexInputs.get(s).get(0);
+                VertexKey in = vertexInputs.get(vk).get(0);
                 InputType layerInput = vertexOutputs.get(in);
                 inputTypeList.add(layerInput);
                 currLayerIdx++;
             } else {
-                List<String> inputs = vertexInputs.get(s);
+                List<VertexKey> inputs = vertexInputs.get(vk);
                 if (inputs != null) {
-                    for (String inputVertexName : inputs) {
-                        inputTypeList.add(vertexOutputs.get(inputVertexName));
+                    for (VertexKey inputVertexKey : inputs) {
+                        inputTypeList.add(vertexOutputs.get(inputVertexKey));
                     }
                 }
             }
@@ -630,11 +632,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             InputType outputFromVertex =
                             gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
-            vertexOutputs.put(s, outputFromVertex);
+            vertexOutputs.put(vk, outputFromVertex);
 
             MemoryReport mr = gv.getMemoryReport(inputTypeList.toArray(new InputType[inputTypeList.size()]));
 
-            memoryReportMap.put(s, mr);
+            memoryReportMap.put(vk.toString(), mr);
         }
 
         return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph",
@@ -645,16 +647,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     public static class GraphBuilder {
         private static final int DEFAULT_TBPTT_LENGTH = 20;
 
-        protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
+        protected Map<VertexKey, GraphVertex> vertices = new LinkedHashMap<>();
 
         /**
          * Key: graph node. Values: input to that node
          */
-        protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
+        protected Map<VertexKey, List<VertexKey>> vertexInputs = new LinkedHashMap<>();
 
-        protected List<String> networkInputs = new ArrayList<>();
+        protected List<VertexKey> networkInputs = new ArrayList<>();
         protected List<InputType> networkInputTypes = new ArrayList<>();
-        protected List<String> networkOutputs = new ArrayList<>();
+        protected List<VertexKey> networkOutputs = new ArrayList<>();
+        protected Map<String, List<VertexKey>> layerUsages = new HashMap<>();
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
         protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
@@ -668,7 +671,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
 
-        protected String lastAdded = null;
+        protected VertexKey lastAdded = null;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -687,6 +690,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
             this.tbpttBackLength = clonedConf.getTbpttBackLength();
             this.globalConfiguration = globalConfiguration;
+            this.layerUsages = clonedConf.layerUsages;
             //this.getGlobalConfiguration().setSeed(clonedConf.getDefaultConfiguration().getSeed());
         }
 
@@ -818,12 +822,28 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *                     on a combination of the two.
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
-                        String... layerInputs) {
+                        VertexKey... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
+            LayerVertex vertex = new LayerVertex(builder.build(), preProcessor);
+            if (!layerUsages.containsKey(layerName)){
+                layerUsages.put(layerName, new ArrayList<VertexKey>());
+            }
+            int usageCount = layerUsages.get(layerName).size();
+            VertexKey vk = VertexKey.create(layerName, usageCount);
+            addVertex(vk, vertex, layerInputs);
+            layerUsages.get(layerName).add(vk);
             layer.setLayerName(layerName);
             return this;
+        }
+
+        public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
+                                     String... layerInputs){
+            VertexKey[] vertexKeys = new VertexKey[layerInputs.length];
+            for(int i=0; i<vertexKeys.length; i++){
+                vertexKeys[i] = VertexKey.create(layerInputs[i]);
+            }
+            return addLayer(layerName, layer, preProcessor, vertexKeys);
         }
 
         /**
@@ -862,10 +882,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * Intended for use with the transfer learning API. Users discouraged from employing it directly.
          * Removes the specified vertex from the vertices list, it's connections and associated preprocessor
          * If the vertex removed is an output vertex it will also be removed from the list of outputs
-         * @param vertexName Name of the vertex to remove
+         * @param vertexKey Name of the vertex to remove
          */
-        public GraphBuilder removeVertex(String vertexName) {
-            removeVertex(vertexName, true);
+        public GraphBuilder removeVertex(VertexKey vertexKey) {
+            removeVertex(vertexKey, true);
             return this;
         }
 
@@ -875,27 +895,27 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * Removes it's connections (associated preprocessor and if an output also removes it from list of outputs) if "removeConnections" is specified as true
          * Specifying as false can leave the graph in an invalid state with references to vertices that donot exist unless a new vertex is added back in with the same name
          * @param removeConnections Specify true to remove connections
-         * @param vertexName Name of the vertex to remove
+         * @param vertexKey Name of the vertex to remove
          */
-        public GraphBuilder removeVertex(String vertexName, boolean removeConnections) {
-            vertices.remove(vertexName);
-            vertexInputs.remove(vertexName);
-            if (networkInputs.contains(vertexName)) {
-                networkInputs.remove(vertexName);
+        public GraphBuilder removeVertex(VertexKey vertexKey, boolean removeConnections) {
+            vertices.remove(vertexKey);
+            vertexInputs.remove(vertexKey);
+            if (networkInputs.contains(vertexKey)) {
+                networkInputs.remove(vertexKey);
             }
             if (removeConnections) {
-                if (networkOutputs.contains(vertexName)) {
-                    networkOutputs.remove(vertexName);
+                if (networkOutputs.contains(vertexKey)) {
+                    networkOutputs.remove(vertexKey);
                 }
-                Map<String,List<String>> newVertexInputs = new LinkedHashMap<>();
-                for (Map.Entry<String, List<String>> entry : this.vertexInputs.entrySet()) {
-                    List<String> inputs = entry.getValue();
-                    if (inputs.contains(vertexName)) {
+                Map<VertexKey,List<VertexKey>> newVertexInputs = new LinkedHashMap<>();
+                for (Map.Entry<VertexKey, List<VertexKey>> entry : this.vertexInputs.entrySet()) {
+                    List<VertexKey> inputs = entry.getValue();
+                    if (inputs.contains(vertexKey)) {
                         //Some lists are not modifiable. So we'll make a new copy, minus the one to be removed
-                        List<String> newList = new ArrayList<>(inputs.size()-1);
-                        for(String s : inputs){
-                            if(!vertexName.equals(s)){
-                                newList.add(s);
+                        List<VertexKey> newList = new ArrayList<>(inputs.size()-1);
+                        for(VertexKey vk : inputs){
+                            if(!vertexKey.equals(vk)){
+                                newList.add(vk);
                             }
                         }
                         newVertexInputs.put(entry.getKey(), newList);
@@ -905,8 +925,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
                 this.vertexInputs = newVertexInputs;
 
-                if (inputPreProcessors.containsKey(vertexName)) {
-                    inputPreProcessors.remove(vertexName);
+                if (inputPreProcessors.containsKey(vertexKey)) {
+                    inputPreProcessors.remove(vertexKey);
                 }
             }
             return this;
@@ -918,8 +938,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param inputNames The names of the inputs. This also defines their order
          */
         public GraphBuilder addInputs(String... inputNames) {
-            Collections.addAll(networkInputs, inputNames);
-            lastAdded = networkInputs.get(networkInputs.size() - 1);
+            for (String inputName: inputNames){
+                networkInputs.add(VertexKey.create(inputName));
+            }
             return this;
         }
 
@@ -929,8 +950,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param inputNames The names of the inputs. This also defines their order
          */
         public GraphBuilder addInputs(Collection<String> inputNames) {
-            networkInputs.addAll(inputNames);
-            lastAdded = networkInputs.get(networkInputs.size() - 1);
+            for (String inputName: inputNames){
+                networkInputs.add(VertexKey.create(inputName));
+            }
             return this;
         }
 
@@ -959,9 +981,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param outputNames The names of the output layers. This also defines their order.
          */
         public GraphBuilder setOutputs(String... outputNames) {
-            networkOutputs.clear();
-            Collections.addAll(networkOutputs, outputNames);
-
+            for (String outputName: outputNames){
+                networkInputs.add(VertexKey.create(outputName));
+            }
             return this;
         }
 
@@ -972,25 +994,25 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
          * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
          *
-         * @param vertexName   The name of the GraphVertex to add
+         * @param vertexKey   The name of the GraphVertex to add
          * @param vertex       The GraphVertex to add
          * @param vertexInputs The inputs/activations to this GraphVertex.
          */
-        public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
+        public GraphBuilder addVertex(VertexKey vertexKey, GraphVertex vertex, VertexKey... vertexInputs) {
 
-            Preconditions.checkState(!vertices.containsKey(vertexName), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexName);
-            vertices.put(vertexName, vertex);
+            Preconditions.checkState(!vertices.containsKey(vertexKey), "Cannot add vertex: a vertex with name \"%s\" already exists", vertexKey);
+            vertices.put(vertexKey, vertex);
 
             //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
             if (vertex.maxVertexInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
-                String mergeName = vertexName + "-merge";
-                addVertex(mergeName, new MergeVertex(), vertexInputs);
-                this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));
+                String mergeName = vertexKey + "-merge";
+                addVertex(VertexKey.create(mergeName), new MergeVertex(), vertexInputs);
+                this.vertexInputs.put(vertexKey, Collections.singletonList(VertexKey.create(mergeName)));
             } else if (vertexInputs != null) {
-                this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+                this.vertexInputs.put(vertexKey, Arrays.asList(vertexInputs));
             }
 
-            this.lastAdded = vertexName;
+            this.lastAdded = vertexKey;
 
             return this;
         }
@@ -1002,16 +1024,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * a {@link org.deeplearning4j.nn.conf.graph.SubsetVertex} to select a subset of the activations out of another layer/GraphVertex.<br>
          * Custom GraphVertex objects (that extend the abstract {@link GraphVertex} class) may also be used.
          *
-         * @param vertexName   The name of the GraphVertex to add
+         * @param vertexKey   The name of the GraphVertex to add
          * @param vertex       The GraphVertex to add
          */
-        public GraphBuilder appendVertex(String vertexName, GraphVertex vertex) {
+        public GraphBuilder appendVertex(VertexKey vertexKey, GraphVertex vertex) {
 
             if(lastAdded == null){
                 throw new IllegalStateException("Can not use appendLayer with no previous layers");
             }
 
-            addVertex(vertexName, vertex, lastAdded);
+            addVertex(vertexKey, vertex, lastAdded);
             return this;
         }
 
@@ -1077,7 +1099,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * first
          * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
          */
-        public Map<String,InputType> getLayerActivationTypes(){
+        public Map<VertexKey,InputType> getLayerActivationTypes(){
             Preconditions.checkArgument(networkInputs != null && networkInputs.size() > 0,
                     "Cannot calculate activation types if no inputs have been set (use addInputs(String...))");
             Preconditions.checkArgument(networkInputTypes != null && networkInputTypes.size() == networkInputs.size(),
@@ -1127,12 +1149,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.cacheMode = globalConfiguration.cacheMode;
             conf.validateOutputLayerConfig = validateOutputConfig;
             conf.dataType = globalConfiguration.dataType;
-
+            conf.layerUsages = layerUsages;
             conf.defaultConfiguration = globalConfiguration.build();
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {
-                GraphVertex gv = vertices.get(entry.getKey());
+                for (VertexKey vk: layerUsages.get(entry.getKey())){
+                    GraphVertex gv = vertices.get(vk);
+
                 if (gv instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv;
                     lv.setPreProcessor(entry.getValue());
@@ -1141,10 +1165,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                             "Invalid configuration: InputPreProcessor defined for GraphVertex \""
                                     + entry.getKey() + "\", but this vertex is not a LayerVertex");
                 }
-
+                }
             }
 
-            for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
+            for (Map.Entry<VertexKey, GraphVertex> gv : vertices.entrySet()) {
                 if (gv.getValue() instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv.getValue();
                     Layer l = lv.getLayerConf().getLayer();
@@ -1173,22 +1197,22 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             if(validateOutputConfig) {
                 //Validate output layer configurations...
-                for (Map.Entry<String, GraphVertex> e : conf.getVertices().entrySet()) {
+                for (Map.Entry<VertexKey, GraphVertex> e : conf.getVertices().entrySet()) {
                     if (e.getValue() instanceof LayerVertex) {
                         Layer l = ((LayerVertex) e.getValue()).getLayerConf().getLayer();
-                        OutputLayerUtil.validateOutputLayer(e.getKey(), l); //No-op for non output/loss layers
+                        OutputLayerUtil.validateOutputLayer(e.getKey().getLayerName(), l); //No-op for non output/loss layers
                     }
                 }
             }
 
             if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
-                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
+                for(Map.Entry<VertexKey,GraphVertex> e : vertices.entrySet()){
                     GraphVertex gv = e.getValue();
                     Layer l = (gv instanceof LayerVertex ? ((LayerVertex)gv).getLayerConf().getLayer() : null);
                     if(gv instanceof LastTimeStepVertex || (l != null && (l instanceof LastTimeStep || l instanceof GlobalPoolingLayer))){
                         String s = (l == null ? gv.getClass().getName() : l.getClass().getName());
-                        String n = e.getKey();
+                        String n = e.getKey().getLayerName();
                         throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
                                 " cannot be used with layer \"" + n + "\" of type " + s + ": TBPTT is incompatible with this layer type (which is designed " +
                                 "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +

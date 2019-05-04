@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.graph.util;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.deeplearning4j.nn.graph.vertex.impl.VertexKey;
 
 import java.util.Map;
 
@@ -32,6 +33,6 @@ import java.util.Map;
 @Builder
 public class GraphIndices {
     private int[] topologicalSortOrder;
-    private Map<String,Integer> nameToIdx;
-    private Map<Integer,String> idxToName;
+    private Map<VertexKey,Integer> nameToIdx;
+    private Map<Integer,VertexKey> idxToName;
 }

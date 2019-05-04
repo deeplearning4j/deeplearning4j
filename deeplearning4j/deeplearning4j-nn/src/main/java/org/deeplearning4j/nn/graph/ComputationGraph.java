@@ -44,6 +44,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.FrozenVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.VertexKey;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
@@ -481,23 +482,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         topologicalOrder = indices.getTopologicalSortOrder();
 
         //Initialization: create the GraphVertex objects, based on configuration structure
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
+        Map<VertexKey, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
 
         //Names of all of the (data) inputs to the ComputationGraph
-        List<String> networkInputNames = configuration.getNetworkInputs();
+        List<VertexKey> networkInputNames = configuration.getNetworkInputs();
 
         //Inputs for each layer and GraphNode:
-        Map<String, List<String>> vertexInputs = configuration.getVertexInputs();
+        Map<VertexKey, List<VertexKey>> vertexInputs = configuration.getVertexInputs();
         this.vertices = new GraphVertex[networkInputNames.size() + configuration.getVertices().size()];
 
         //All names: inputs, layers and graph nodes (index to name map)
-        Map<String, Integer> allNamesReverse = new HashMap<>();
+        Map<VertexKey, Integer> allNamesReverse = new HashMap<>();
 
         //Create network input vertices:
         int vertexNumber = 0;
-        for (String name : networkInputNames) {
-            GraphVertex gv = new InputVertex(this, name, vertexNumber, null, netDtype); //Output vertices: set later
-            allNamesReverse.put(name, vertexNumber);
+        for (VertexKey vk : networkInputNames) {
+            GraphVertex gv = new InputVertex(this, vk.getLayerName(), vertexNumber, null, netDtype); //Output vertices: set later
+            allNamesReverse.put(vk, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
 
@@ -509,7 +510,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             numParamsForVertex[i] = 0; //No parameters for input vertices
         }
         for(; i<topologicalOrder.length; i++ ){
-            String name = indices.getIdxToName().get(i);
+            VertexKey name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
@@ -564,10 +565,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<String> variables = defaultConfiguration.variables(false);
         i = configuration.getNetworkInputs().size();
         for(; i<topologicalOrder.length; i++ ){
-            String name = indices.getIdxToName().get(i);
+            VertexKey name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
 
-            GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
+            GraphVertex gv = n.instantiate(this, name.toString(), vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams, netDtype);
 
             if(gv == null){
@@ -604,14 +605,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
         for (GraphVertex gv : vertices) {
             String vertexName = gv.getVertexName();
-            List<String> vertexInputNames;
+            List<VertexKey> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
             if (vertexInputNames == null)
                 continue;
 
             //Build reverse network structure:
-            for (String s : vertexInputNames) {
+            for (VertexKey s : vertexInputNames) {
                 List<String> list = verticesOutputTo.get(s);
                 if (list == null) {
                     list = new ArrayList<>();
@@ -625,7 +626,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (GraphVertex gv : vertices) {
             String vertexName = gv.getVertexName();
             int vertexIndex = gv.getVertexIndex();
-            List<String> vertexInputNames;
+            List<VertexKey> vertexInputNames;
             vertexInputNames = vertexInputs.get(vertexName);
 
             if (vertexInputNames == null)
@@ -633,7 +634,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             VertexIndices[] inputIndices = new VertexIndices[vertexInputNames.size()];
             for (int j = 0; j < vertexInputNames.size(); j++) {
-                String inName = vertexInputNames.get(j);
+                VertexKey inName = vertexInputNames.get(j);
                 int inputVertexIndex = allNamesReverse.get(inName);
 
                 //Here: we have x -> gv connection
@@ -664,7 +665,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (String s : new HashSet<>(thisVertexOutputsTo)) {
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
-                List<String> nextVertexInputNames = vertexInputs.get(s);
+                List<VertexKey> nextVertexInputNames = vertexInputs.get(s);
 
                 for (int k = 0; k < nextVertexInputNames.size(); k++) {
                     if(vertexName.equals(nextVertexInputNames.get(k))){
@@ -677,7 +678,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         //Mark any output vertices as outputs:
-        for (String s : configuration.getNetworkOutputs()) {
+        for (VertexKey s : configuration.getNetworkOutputs()) {
             GraphVertex gv = verticesMap.get(s);
             gv.setOutputVertex(true);
         }
@@ -1202,9 +1203,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Get cached topological sort order from config, if present
         if(configuration.getTopologicalOrder() != null && configuration.getTopologicalOrderStr() != null){
             int[] t = configuration.getTopologicalOrder();
-            List<String> s = configuration.getTopologicalOrderStr();
-            Map<String,Integer> m1 = new HashMap<>();
-            Map<Integer,String> m2 = new HashMap<>();
+            List<VertexKey> s = configuration.getTopologicalOrderStr();
+            Map<VertexKey,Integer> m1 = new HashMap<>();
+            Map<Integer,VertexKey> m2 = new HashMap<>();
             for( int i=0; i<t.length; i++ ){
                 m1.put(s.get(i), t[i]);
                 m2.put(t[i], s.get(i));
@@ -1220,41 +1221,39 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
-        List<String> networkInputNames = configuration.getNetworkInputs();
+        Map<VertexKey, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
+        List<VertexKey> networkInputNames = configuration.getNetworkInputs();
         int numVertices = networkInputNames.size() + configuration.getVertices().size();
         int[] out = new int[numVertices];
         int outCounter = 0;
 
         //First: represent the graph more usefully as a Map<Integer,Set<Integer>>, where map represents edges i -> j
         // key represents j, set is set of i (inputs) for vertices j
-        Map<Integer, String> vertexNamesMap = new HashMap<>();
-        Map<String, Integer> vertexNamesMap2 = new HashMap<>();
+        Map<Integer, VertexKey> vertexNamesMap = new HashMap<>();
+        Map<VertexKey, Integer> vertexNamesMap2 = new HashMap<>();
         int i = 0;
-        for (String inputName : configuration.getNetworkInputs()) {
+        for (VertexKey inputName : configuration.getNetworkInputs()) {
             vertexNamesMap.put(i, inputName);
             vertexNamesMap2.put(inputName, i);
             i++;
         }
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
-            String name = entry.getKey();
-            vertexNamesMap.put(i, name);
-            vertexNamesMap2.put(name, i);
+        for (Map.Entry<VertexKey, org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
+            vertexNamesMap.put(i, entry.getKey());
+            vertexNamesMap2.put(entry.getKey(), i);
             i++;
         }
 
         Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
         Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
 
-        for (String s : configuration.getNetworkInputs()) {
+        for (VertexKey s : configuration.getNetworkInputs()) {
             int idx = vertexNamesMap2.get(s);
             inputEdges.put(idx, null);
         }
 
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
-            String thisVertexName = entry.getKey();
-            int idx = vertexNamesMap2.get(thisVertexName);
-            List<String> inputsToThisVertex = configuration.getVertexInputs().get(thisVertexName);
+        for (Map.Entry<VertexKey, org.deeplearning4j.nn.conf.graph.GraphVertex> entry : nodeMap.entrySet()) {
+            int idx = vertexNamesMap2.get(entry.getKey());
+            List<VertexKey> inputsToThisVertex = configuration.getVertexInputs().get(entry.getKey());
 
             if (inputsToThisVertex == null || inputsToThisVertex.isEmpty()) {
                 inputEdges.put(idx, null);
@@ -1262,8 +1261,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             Set<Integer> inputSet = new HashSet<>();
-            for (String s : inputsToThisVertex) {
-                Integer inputIdx = vertexNamesMap2.get(s);
+            for (VertexKey vk : inputsToThisVertex) {
+                Integer inputIdx = vertexNamesMap2.get(vk);
                 inputSet.add(inputIdx);
                 Set<Integer> outputSetForInputIdx = outputEdges.get(inputIdx);
                 if (outputSetForInputIdx == null) {
@@ -1318,7 +1317,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Store: the topological sort order in the configuraation... this is to ensure that when the config is
         // deserialized, it has exactly the same topological sort order on all platforms
-        List<String> s = new ArrayList<>(out.length);
+        List<VertexKey> s = new ArrayList<>(out.length);
         for( int idx : out){
             s.add(vertexNamesMap.get(idx));
         }
