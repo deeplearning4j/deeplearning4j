@@ -113,7 +113,7 @@ public class SubsetVertex extends GraphVertex {
                                     + "] inclusive from CNN activations with " + " [channels,width,height] = [" + depth
                                     + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
-                return InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
+                return InputType.convolutional(conv.getHeight(), conv.getWidth(), to - from + 1);
             case CNNFlat:
                 //TODO work out how to do this - could be difficult...
                 throw new UnsupportedOperationException(
