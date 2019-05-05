@@ -899,22 +899,22 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD Nd4jLong* createShapeInfo(Nd4jLong *shape, Nd4jLong *stride, int rank, Nd4jLong *buffer);
 
-    // Convert a linear index to the corresponding coordinates
-    // for example if shape is {2, 4}, then index 5 corresponds to following coordinates
-    // -> [1, 1] in case of c order
-    // -> [1, 2] in case of f order
+    /**
+    * Convert a linear index to the corresponding coordinates
+    * for example if shape is {2, 4}, then index 5 corresponds to following coordinates
+    * -> [1, 1] in case of c order
+    * -> [1, 2] in case of f order
+    */
     ND4J_EXPORT _CUDA_HD void index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong arrLen, Nd4jLong *coords, const char order = 'c');
     ND4J_EXPORT _CUDA_HD void index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong *coords, const char order = 'c');
 
     /**
-  * Convert the given index (such as 1,1)
-  * to a linear index
-  * @param shape the shape of the indexes to convert
-  * @param indices the index to convert
-  * @return the linear index given the shape
-  * and indices
-  */
-    ND4J_EXPORT _CUDA_HD Nd4jLong sub2Ind(const int rank, const Nd4jLong *shape, const Nd4jLong *indices);
+    * Convert coordinates to the corresponding linear index (sequence number in other words)
+    * for example if shape is {2, 4}, then:
+    * in case of c order and coordinates [1, 1] index 5 is returned
+    * in case of f order and coordinates [1, 2] index 5 is returned
+    */
+    ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *coords, const char order = 'c');
 
    /**
    * increment n-dimensional array by one iteration by changing coord appropriately  
@@ -1019,7 +1019,7 @@ namespace shape {
     * arguments:
     * wholeShapeInfo - original shapeInfo of whole array
     * numOfSubArrs - number of sub-arrays, size of subArrOffsets is equal to numOfSubArrs
-    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array and copy of wholeShapeInfo will be returned and one zero offset
+    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array, copy of wholeShapeInfo and one zero offset will be returned 
     * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
     * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
     * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
@@ -1795,22 +1795,26 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
     }
 
-/**
-* Convert the given index (such as 1,1)
-* to a linear index
-* @param shape the shape of the indexes to convert
-* @param indices the index to convert
-* @return the linear index given the shape
-* and indices
-*/
-    INLINEDEF _CUDA_HD Nd4jLong sub2Ind(const int rank, const Nd4jLong *shape, const Nd4jLong *indices) {
 
-        Nd4jLong index = indices[rank-1];
-        Nd4jLong shift = 1;
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *indices, const char order) {
 
-        for(int i = rank-2; i >= 0; --i) {
-            shift *= shape[i+1];
-            index += shift * indices[i];
+        Nd4jLong index, shift = 1;;
+
+        if(order == 'c') {
+
+            index = indices[rank - 1];
+            for(int i = rank - 2; i >= 0; --i) {
+                shift *= shape[i + 1];
+                index += shift * indices[i];
+            }
+        }
+        else {
+            index = indices[0];
+            for(int i = 1; i < rank; ++i) {
+                shift *= shape[i - 1];
+                index += shift * indices[i];
+            }
         }
 
         return index;
@@ -4228,7 +4232,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         Nd4jLong minIdxs[MAX_RANK];
         maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
-        return sub2Ind(shape::rank(minShapeInfo), minShapeInfo + 1, minIdxs);
+        return coords2index(shape::rank(minShapeInfo), minShapeInfo + 1, minIdxs);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -4370,7 +4374,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         maxI = rankMax-1;
         N = 0;
         int step;
-        maxIdxs[N++] = sub2Ind(rankMax, maxShapeInfo + 1, indices);
+        maxIdxs[N++] = coords2index(rankMax, maxShapeInfo + 1, indices);
 
         // nested loops - producing of absolute indices for max array
         while(maxI >= 0) {
@@ -4383,7 +4387,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
                     step = -1;
                 }
                 else {
-                    maxIdxs[N++] = sub2Ind(rankMax, maxShapeInfo + 1, indices);
+                    maxIdxs[N++] = coords2index(rankMax, maxShapeInfo + 1, indices);
                     step =  rankMax - 1 - maxI;
                 }
             }
