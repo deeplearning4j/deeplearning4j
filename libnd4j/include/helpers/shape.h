@@ -4747,9 +4747,8 @@ INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4j
     }
 }
 
-
 //////////////////////////////////////////////////////////////////////
-static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char* order) {
+INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char order) {
 
     // we assume all array have same length
     const Nd4jLong len = shape::length(xShapeInfo);
@@ -4889,9 +4888,8 @@ static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const N
     }
 }
 
-
 //////////////////////////////////////////////////////////////////////
-static void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const char* order) {
+INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const char order) {
 
     // we assume all array have same length
     const Nd4jLong len = shape::length(xShapeInfo);
