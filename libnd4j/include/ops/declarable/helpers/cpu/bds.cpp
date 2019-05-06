@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     Nd4jStatus bdsFunctor(graph::LaunchContext* context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
-        int e = 0, x = 0, y = 0;
+
 
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
             auto lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
@@ -37,18 +37,21 @@ namespace helpers {
             output->p(greater->lengthOf() - 1, lesser->e(0L));
         }
         else {
-            for (; e < output->lengthOf(); e++) {
+            //int e = 0, x = 0, y = 0;
+            Nd4jLong xLen = x_shape->lengthOf();
+            Nd4jLong yLen = y_shape->lengthOf();
+            Nd4jLong zLen = output->lengthOf();
+            Nd4jLong borderLen = nd4j::math::nd4j_min(xLen, yLen);
+            for (Nd4jLong e = 0; e < zLen; e++) {
                 Nd4jLong val;
-                if (x < x_shape->lengthOf() && y < y_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x++), y_shape->e<Nd4jLong>(y++));
-                } else if (x < x_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x++), y_shape->e<Nd4jLong>(y - 1));
-                } else if (y < y_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(x - 1), y_shape->e<Nd4jLong>(y++));
+                if (e < borderLen) {
+                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(e), y_shape->e<Nd4jLong>(e));
+                } else if (e < xLen) {
+                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(e), y_shape->e<Nd4jLong>(yLen - 1));
                 } else {
-                    //REQUIRE_TRUE(e < 0, 0, "broadcast_dynamic_shape: Wrong value in a shape vector");
-                    return ND4J_STATUS_OK;
+                    val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(xLen - 1), y_shape->e<Nd4jLong>(e));
                 }
+
 //                if (e)
 //                    if (val != output->e<Nd4jLong>(e - 1)) {
 //                        nd4j_printf(
