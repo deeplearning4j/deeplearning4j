@@ -752,7 +752,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             *this = std::move(temp);
         }
 
-        //RELEASE(shapeInfoNew, _context->getWorkspace());
+        RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
 
