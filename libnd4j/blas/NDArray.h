@@ -669,6 +669,9 @@ namespace nd4j {
 #ifdef __CUDABLAS__
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
+
+        template <typename Lambda>
+        FORCEINLINE void applyPairwiseLambda(const NDArray* other, Lambda func, NDArray* target = nullptr);
 #else
         /**
         *  apply operation "func" to an array
@@ -678,12 +681,7 @@ namespace nd4j {
         template <typename T>
         void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
 
-#endif
-
-        template <typename T>
-        void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
-
-        /** 
+        /**
         *  apply pairwise operation "func" to an array
         *  other - input array
         *  func - what pairwise operation to apply
@@ -691,6 +689,10 @@ namespace nd4j {
         */
         template <typename T>
         void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
+#endif
+
+        template <typename T>
+        void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
 
         template <typename T>
         void applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target = nullptr);
