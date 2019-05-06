@@ -97,6 +97,14 @@ void testPairwise(NDArray &x, NDArray &y) {
     x.applyPairwiseLambda(&y, f, &x);
 }
 
+void testIndexed(NDArray &x) {
+    auto f = ILAMBDA_D(x) {
+        return _idx + 1.;
+    };
+
+    x.applyIndexedLambda(f, &x);
+}
+
 TEST_F(LambdaTests, test_basic_2) {
     auto x = NDArrayFactory::create<double>('c', {5});
     auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
@@ -133,6 +141,16 @@ TEST_F(LambdaTests, test_basic_5) {
     auto e = NDArrayFactory::create<double>('c', {5}, {4., 4., 4., 4., 4.});
 
     testPairwise(x, y);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_6) {
+    auto x = NDArrayFactory::create<double>('c', {5});
+    auto e = NDArrayFactory::create<double>('c', {5}, {1., 2., 3., 4., 5.});
+
+    testIndexed(x);
 
     x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
