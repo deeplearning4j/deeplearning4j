@@ -32,6 +32,7 @@ namespace helpers {
         __shared__ T const* x;
         __shared__ T const* y;
         __shared__ T* z;
+        __shared__ bool speedWay;
         //__shared__ int indexX, indexY;
         __shared__ Nd4jLong xLen, yLen, outputLen;
         if (threadIdx.x == 0) {
@@ -41,6 +42,10 @@ namespace helpers {
             xLen = shape::length(inputXshape);
             yLen = shape::length(inputYshape);
             outputLen = shape::length(outputShape);
+            speedWay = speedWay && shape::elementWiseStride(inputXshape) == 1;
+            speedWay = speedWay && shape::elementWiseStride(inputYshape) == 1;
+            speedWay = speedWay && shape::elementWiseStride(outputShape) == 1;
+
         }
         __syncthreads();
 
@@ -48,15 +53,22 @@ namespace helpers {
         auto step = blockDim.x * gridDim.x;
         for (int e = tid; e < outputLen; e += step) {
             T val;
-            if (e < nd4j::math::nd4j_min(yLen, xLen)) {
-                val = nd4j::math::nd4j_max(x[e], y[e]);
+            if (speedWay) {
+                if (e < nd4j::math::nd4j_min(yLen, xLen)) {
+                    val = nd4j::math::nd4j_max(x[e], y[e]);
+                } else if (e < xLen) {
+                    val = nd4j::math::nd4j_max(x[e], y[yLen - 1]);
+                } else {
+                    val = nd4j::math::nd4j_max(x[xLen - 1], y[e]);
+                }
+                z[e] = val;
             }
-            else if (e < xLen) {
-                val = nd4j::math::nd4j_max(x[e], y[yLen - 1]);
-            } else {
-                val = nd4j::math::nd4j_max(x[xLen - 1], y[e]);
+            else {
+                auto xIndex = e < xLen?shape::getIndexOffset(e, inputXshape, xLen):shape::getIndexOffset(xLen, inputXshape, xLen);
+                auto yIndex = e < yLen?shape::getIndexOffset(e, inputYshape, yLen):shape::getIndexOffset(yLen - 1, inputYshape, yLen);
+                auto zIndex = shape::getIndexOffset(e, outputShape, outputLen);
+                z[zIndex] = nd4j::math::nd4j_max(x[xIndex], y[yIndex]);
             }
-            z[e] = val;
         }
     }
     template <typename T>
