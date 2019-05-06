@@ -73,7 +73,7 @@ namespace nd4j {
 
             shape::calcSubArrShapeAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
 
-            auto ssPtr = ConstantHelper::getInstance()->replicatePointer(sPtr, shape::shapeInfoLength(subArrRank));
+            auto ssPtr = ConstantHelper::getInstance()->replicatePointer(sPtr, shape::shapeInfoByteLength(subArrRank));
             Nd4jPointer soPtr;
             auto res = cudaMalloc(reinterpret_cast<void**>(&soPtr),  numOfSubArrs * sizeof(Nd4jLong));
             if (res != 0)

@@ -291,7 +291,7 @@ void NativeOpExecutioner::execReduceSame(nd4j::graph::LaunchContext *lc,
         throw datatype_exception::build("NativeOpExecutioner::execReduceSame requires both X & Z operands to have same type", xType, zType);
 
     auto numBlocks = shape::length(hZShapeInfo);
-    dim3 launchDims(numBlocks, 256, 32768);
+    dim3 launchDims(numBlocks, 256, 8192);
 
     BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 

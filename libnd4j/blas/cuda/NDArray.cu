@@ -1768,7 +1768,6 @@ NDArray::~NDArray() noexcept {
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
         auto result = new NDArray(newShape, true, _context);
-        RELEASE(newShape, _context->getWorkspace());
 
         NDArray::prepareSpecialUse({result}, {this});
 
@@ -1801,7 +1800,6 @@ NDArray::~NDArray() noexcept {
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
         NDArray result(newShape, true, _context);
-        RELEASE(newShape, _context->getWorkspace());
 
         NDArray::prepareSpecialUse({&result}, {this});
 
@@ -1928,7 +1926,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension FloatOps cuda: wrong target shape!");
-        RELEASE(newShape, _context->getWorkspace());
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -1969,7 +1966,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: wrong target shape!");
-        RELEASE(newShape, _context->getWorkspace());
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -2008,7 +2004,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: wrong target shape!");
-        RELEASE(newShape, _context->getWorkspace());
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -2047,7 +2042,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: wrong target shape!");
-        RELEASE(newShape, _context->getWorkspace());
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -2448,7 +2442,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             delete []newShapeInfo;
             throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
         }
-        RELEASE(newShapeInfo, _context->getWorkspace());
 
         // fill newBuff, loop through all elements of newBuff
         // looping through _buffer goes automatically by means of getSubArrayIndex applying

@@ -74,7 +74,6 @@ namespace functions {
 
         template <typename T>
         _CUDA_H void IndexReduce<T>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
             simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			 opNum,
 			 dx,
@@ -231,8 +230,6 @@ namespace functions {
                 if (resultLength == 1)
                     resultScalar = 1;
 
-                //	xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-
                 xLength = shape::length(xShapeInfo);
             }
 
@@ -246,7 +243,6 @@ namespace functions {
 
                 if (threadIdx.x == 0) {
                     tadLength = shape::length(tadOnlyShapeInfo);
-//                    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
                 }
