@@ -205,15 +205,15 @@ public class BarnesHutTsne implements Model {
      * Convert data to probability
      * co-occurrences (aka calculating the kernel)
      * @param d the data to convert
-     * @param u the perplexity of the model
+     * @param perplexity the perplexity of the model
      * @return the probabilities of co-occurrence
      */
-    public INDArray computeGaussianPerplexity(final INDArray d, double u) {
+    public INDArray computeGaussianPerplexity(final INDArray d, double perplexity) {
         N = d.rows();
 
-        final int k = (int) (3 * u);
-        if (u > k)
-            throw new IllegalStateException("Illegal k value " + k + "greater than " + u);
+        final int k = (int) (3 * perplexity);
+        if (N - 1 < 3 * perplexity)
+            throw new IllegalStateException("Perplexity " + perplexity + "is too large for number of samples " + N);
 
 
         rows = zeros(DataType.INT, 1, N + 1);
@@ -226,7 +226,7 @@ public class BarnesHutTsne implements Model {
 
         final INDArray beta = ones(N, 1);
 
-        final double logU = FastMath.log(u);
+        final double enthropy = FastMath.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
         MemoryWorkspace workspace =
@@ -255,7 +255,7 @@ public class BarnesHutTsne implements Model {
                 INDArray cArr = VPTree.buildFromData(results);
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
                 INDArray currP = pair.getFirst();
-                double hDiff = pair.getSecond() - logU;
+                double hDiff = pair.getSecond() - enthropy;
                 int tries = 0;
                 boolean found = false;
                 //binary search
@@ -279,7 +279,7 @@ public class BarnesHutTsne implements Model {
                         }
 
                         pair = computeGaussianKernel(cArr, betas, k);
-                        hDiff = pair.getSecond() - logU;
+                        hDiff = pair.getSecond() - enthropy;
                         tries++;
                     }
 
