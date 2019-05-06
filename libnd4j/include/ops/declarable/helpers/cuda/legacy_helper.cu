@@ -30,7 +30,7 @@ namespace helpers {
             return x > (T) 0.f ? y : T(0.f);
         };
 
-        theFirst->applyPairwiseLambda<T>(theSecond, functor, nullptr);
+        theFirst->applyPairwiseLambda(theSecond, functor, nullptr);
     }
     BUILD_SINGLE_TEMPLATE(template void reluDerivative__, (NDArray* input, NDArray* epsilon), FLOAT_TYPES);
 
@@ -44,7 +44,7 @@ namespace helpers {
             return x > (T)0.f ? y : T(0.f);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
     BUILD_SINGLE_TEMPLATE(template void reluDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
 
@@ -58,7 +58,7 @@ namespace helpers {
             return x > (T)0.f && x < (T)6.f? y : T(0.f);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void relu6Derivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -73,7 +73,7 @@ namespace helpers {
             return x >= (T)0.f? T(1.f) : T(0.f);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void leakyReluDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -88,7 +88,7 @@ namespace helpers {
             return y * nd4j::math::nd4j_eluderivative<T,T>(x);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void eluDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -103,7 +103,7 @@ namespace helpers {
             return y * simdOps::SELUDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void seluDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -118,7 +118,7 @@ namespace helpers {
             return y * (3 * x * x);
         };
         
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void cubeDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -134,7 +134,7 @@ namespace helpers {
             return x > T(0.f)? y : -y;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void reduceNorm1_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -150,7 +150,7 @@ namespace helpers {
             return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
         };
 
-        logits->applyPairwiseLambda<T>(labels, functor, output);
+        logits->applyPairwiseLambda(labels, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void sigmCrossEntropy_, (NDArray* logits, NDArray* labels, NDArray* output);, FLOAT_TYPES);
@@ -170,7 +170,7 @@ namespace helpers {
             return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);            
         };
 
-        logits->applyPairwiseLambda<T>(labels, functor, output);
+        logits->applyPairwiseLambda(labels, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void sigmCrossEntropyGrad_, (NDArray* logits, NDArray* labels, NDArray*output);, FLOAT_TYPES);
@@ -187,7 +187,7 @@ namespace helpers {
             return y * ((T)1.0f - (th * th));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void tanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -204,7 +204,7 @@ namespace helpers {
             return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void hardTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -219,7 +219,7 @@ namespace helpers {
             return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void rationalTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -234,7 +234,7 @@ namespace helpers {
             return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void rectifiedTanhDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -253,7 +253,7 @@ namespace helpers {
             return y * ((T) 1.0f  / (ss * ss));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void softSignDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -269,7 +269,7 @@ namespace helpers {
             return y * (p / (p + 1.));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void softPlusDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -288,7 +288,7 @@ namespace helpers {
             return y * (s * ((T) 1.0f - s));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void sigmoidDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
@@ -303,7 +303,7 @@ namespace helpers {
             return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda(epsilon, functor, output);
     }
 
     BUILD_SINGLE_TEMPLATE(template void hardSigmoidDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);

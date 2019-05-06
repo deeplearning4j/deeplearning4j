@@ -89,6 +89,14 @@ void test2(NDArray &x) {
     x.applyLambda(f, &x);
 }
 
+void testPairwise(NDArray &x, NDArray &y) {
+    auto f = LAMBDA_DD(x, y) {
+        return x + y +1.;
+    };
+
+    x.applyPairwiseLambda(&y, f, &x);
+}
+
 TEST_F(LambdaTests, test_basic_2) {
     auto x = NDArrayFactory::create<double>('c', {5});
     auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
@@ -101,7 +109,7 @@ TEST_F(LambdaTests, test_basic_2) {
 
 TEST_F(LambdaTests, test_basic_3) {
     auto x = NDArrayFactory::create<float>('c', {5});
-    auto e = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
 
     test(x);
 
@@ -111,9 +119,20 @@ TEST_F(LambdaTests, test_basic_3) {
 
 TEST_F(LambdaTests, test_basic_4) {
     auto x = NDArrayFactory::create<float>('c', {5});
-    auto e = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
 
     test2<float>(x);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_5) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
+    auto y = NDArrayFactory::create<double>('c', {5}, {2., 2., 2., 2., 2.});
+    auto e = NDArrayFactory::create<double>('c', {5}, {4., 4., 4., 4., 4.});
+
+    testPairwise(x, y);
 
     x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
