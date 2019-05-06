@@ -527,7 +527,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 		auto routine = LAMBDA_T(_x, threshold) {
 			return _x > (T)threshold ? _x: (T)0.f;
 		};
-		const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
+		const_cast<NDArray&>(input).applyLambda(routine, &output);
 	}
 
 	void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {

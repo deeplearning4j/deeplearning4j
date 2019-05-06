@@ -66,9 +66,9 @@ namespace helpers {
         auto scaleTensor(*input); // = NDArrayFactory::create(input->ordering(), input->getShapeAsVector(), input->getWorkspace());
         auto clamped(*input); // = NDArrayFactory::create(input->ordering(), input->getShapeAsVector(), input->getWorkspace());
         scaleTensor.assign(scale);
-        input->applyLambda<T>(wiseMin, &clamped);
+        input->applyLambda(wiseMin, &clamped);
 //        const auto clamped = inputs.cwiseMin(nudged_max).cwiseMax(nudged_min);
-        clamped.applyLambda<T>(wiseMax, output);
+        clamped.applyLambda(wiseMax, output);
 //        const auto clamped_shifted = clamped - nudged_min;
         *output -= nudged_min;
        // auto nudgedScale = scale;

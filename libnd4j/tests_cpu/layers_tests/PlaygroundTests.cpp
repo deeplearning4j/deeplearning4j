@@ -611,6 +611,8 @@ TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
 }
 */
 
+#ifndef __CUDABLAS__
+
 TEST_F(PlaygroundTests, LambdaTest_1) {
     auto array = NDArrayFactory::create<float>('c', {8192, 1024});
     array.linspace(1);
@@ -658,6 +660,8 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
 
     // nd4j_printf("Broadcast time %lld us\n", outerTime / numIterations);
 }
+
+
 
 
 TEST_F(PlaygroundTests, NoCacheTest_1) {
@@ -727,6 +731,8 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
     for (auto v: pool2)
         delete v;
 }
+
+#endif
 
 
 TEST_F(PlaygroundTests, ReductionTest_1) {

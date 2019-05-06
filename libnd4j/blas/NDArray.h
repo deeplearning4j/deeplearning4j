@@ -666,7 +666,10 @@ namespace nd4j {
 
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
-
+#ifdef __CUDABLAS__
+        template <typename Lambda>
+        FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
+#else
         /**
         *  apply operation "func" to an array
         *  func - what operation to apply
@@ -674,6 +677,8 @@ namespace nd4j {
         */
         template <typename T>
         void applyLambda(const std::function<T(T)>& func, NDArray* target = nullptr);
+
+#endif
 
         template <typename T>
         void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
@@ -2089,6 +2094,10 @@ bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 void NDArray::makeBothBuffersActual() const  { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
+#ifdef __CUDABLAS__
+// for CUDA we need stil stuff inline
+#include "cuda/NDArrayLambda.hpp"
+#endif
 
 }
 

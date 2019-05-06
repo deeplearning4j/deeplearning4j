@@ -1373,6 +1373,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
 
 }
 
+#ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyLambda_test1) {
             
@@ -1589,6 +1590,8 @@ TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
     x8.applyTriplewiseLambda<bool>(&x9, &x10, func4);
     ASSERT_EQ(x8, exp);    
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {

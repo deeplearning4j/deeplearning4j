@@ -44,16 +44,23 @@ __global__ void runLambda(double *input, double *output, Nd4jLong length, Lambda
 }
 
 void launcher(cudaStream_t *stream, double *input, double *output, Nd4jLong length) {
-    auto f = [] __device__ (double x) -> double {
-            return x + 1.;
+    //auto f = [] __host__ __device__ (double x) -> double {
+    //        return x + 1.;
+    //};
+    auto f = LAMBDA_D(x) {
+        return x+1.;
     };
+
 
     runLambda<<<128, 128, 128, *stream>>>(input, output, length, f);
 }
 
+
 TEST_F(LambdaTests, test_basic_1) {
     auto x = NDArrayFactory::create<double>('c', {5});
     auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
+
+
 
     //x.applyLambda<double>(f, nullptr);
     launcher(LaunchContext::defaultContext()->getCudaStream(), (double *)x.specialBuffer(), (double *)x.specialBuffer(), x.lengthOf());

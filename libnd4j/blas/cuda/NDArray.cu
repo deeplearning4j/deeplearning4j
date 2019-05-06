@@ -1323,58 +1323,6 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
-        if (target == nullptr)
-            target = this;
-
-        if(_dataType != DataTypeUtils::fromT<T>())
-            throw std::runtime_error("NDArray::applyLambda<T> method: wrong template parameter T, its type should be the same as type of this array!");
-        if(_dataType != target->_dataType)
-            throw std::runtime_error("NDArray::applyLambda<T> method: types of this and target array should match !");
-
-        auto f = this->bufferAsT<T>();
-        auto z = target->bufferAsT<T>();
-
-        if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
-#pragma omp parallel for simd schedule(guided)
-            for (int e = 0; e < this->lengthOf(); e++)
-                z[e] = func(f[e]);
-        } else {
-            if (f == z) {
-
-#pragma omp parallel for schedule(guided)
-                for (int e = 0; e < this->lengthOf(); e++) {
-
-                    auto xOffset = this->getOffset(e);
-
-                    f[xOffset] = func(f[xOffset]);
-                }
-            } else {
-
-#pragma omp parallel for schedule(guided)
-                for (int e = 0; e < this->lengthOf(); e++) {
-
-                    auto xOffset = this->getOffset(e);
-                    auto zOffset = target->getOffset(e);
-
-                    z[zOffset] = func(f[xOffset]);
-                }
-            }
-        }
-        target->tickWriteDevice();
-    }
-    template void NDArray::applyLambda(const std::function<double(double)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<float(float)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<float16(float16)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<bfloat16(bfloat16)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<Nd4jLong(Nd4jLong)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<int16_t(int16_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<int32_t(int32_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<uint8_t(uint8_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<int8_t(int8_t)>& func, NDArray* target);
-    template void NDArray::applyLambda(const std::function<bool(bool)>& func, NDArray* target);
-
-    template<typename T>
     void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target) {
         if (target == nullptr)
             target = this;

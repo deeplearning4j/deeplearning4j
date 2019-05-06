@@ -2352,6 +2352,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7)
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
+#ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_Lambda_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
@@ -2395,6 +2396,8 @@ TEST_F(NDArrayTest, Test_Lambda_3) {
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_swapUnsafe_1) {
