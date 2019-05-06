@@ -2094,7 +2094,7 @@ bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 void NDArray::makeBothBuffersActual() const  { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
-#ifdef __CUDABLAS__
+#ifdef __CUDACC__
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif
