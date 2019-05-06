@@ -220,6 +220,7 @@ public class BarnesHutTsne implements Model {
         cols = zeros(DataType.INT, 1, N * k);
         vals = zeros(1, N * k);
 
+        rows.putScalar(0, 0);
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
@@ -404,6 +405,7 @@ public class BarnesHutTsne implements Model {
             INDArray symColP = Nd4j.create(numElements);
             INDArray symValP = Nd4j.create(numElements);
 
+            symRowP.putScalar(0, 0);
             for (int n = 0; n < N; n++)
                 symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
 
@@ -414,7 +416,7 @@ public class BarnesHutTsne implements Model {
                     for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
                         if (colP.getInt(m) == n) {
                             present = true;
-                            if (n < colP.getInt(i)) {
+                            if (n <= colP.getInt(i)) {
                                 // make sure we do not add elements twice
                                 symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
                                 symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
@@ -439,7 +441,7 @@ public class BarnesHutTsne implements Model {
                     }
 
                     // Update offsets
-                    if (!present || (present && n < colP.getInt(i))) {
+                    if (!present || (present && n <= colP.getInt(i))) {
                         offset.putScalar(n, offset.getInt(n) + 1);
                         int colPI = colP.getInt(i);
                         if (colPI != n)
