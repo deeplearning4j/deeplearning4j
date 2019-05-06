@@ -71,3 +71,21 @@ TEST_F(LambdaTests, test_basic_1) {
 
     x.printIndexedBuffer("x");
 }
+
+void test(NDArray &x) {
+    auto f = LAMBDA_D(x) {
+        return x+1.;
+    };
+
+    x.applyLambda(f, &x);
+}
+
+TEST_F(LambdaTests, test_basic_2) {
+    auto x = NDArrayFactory::create<double>('c', {5});
+    auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
+
+    test(x);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
