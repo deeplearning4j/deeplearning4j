@@ -63,6 +63,38 @@ _CUDA_G void lambdaIndexedKernel(void* vx, Nd4jLong *xShapeInfo, void *vz, Nd4jL
     }
 }
 
+template <typename T, typename Lambda>
+_CUDA_G void lambdaIndexedPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
+    auto x = reinterpret_cast<T*>(vx);
+    auto y = reinterpret_cast<T*>(vy);
+    auto z = reinterpret_cast<T*>(vz);
+
+    auto xEws = shape::elementWiseStride(xShapeInfo);
+    auto yEws = shape::elementWiseStride(yShapeInfo);
+    auto zEws = shape::elementWiseStride(zShapeInfo);
+
+    auto xOrder = shape::order(xShapeInfo);
+    auto yOrder = shape::order(yShapeInfo);
+    auto zOrder = shape::order(zShapeInfo);
+
+    auto zLength = shape::length(zShapeInfo);
+
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
+        for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x)
+            z[e * zEws] = lambda(e, x[e * xEws], y[e * yEws]);
+    } else {
+        for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+            auto xOffset = shape::getIndexOffset(e, xShapeInfo, zLength);
+            auto yOffset = shape::getIndexOffset(e, yShapeInfo, zLength);
+            auto zOffset = shape::getIndexOffset(e, zShapeInfo, zLength);
+
+            z[zOffset] = lambda(e, x[xOffset], y[yOffset]);
+        }
+    }
+}
+
 
 template <typename T, typename Lambda>
 _CUDA_G void lambdaPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
@@ -161,6 +193,14 @@ public:
     }
 
     template <typename Lambda>
+    FORCEINLINE static void lambdaIndexedPairwiseLauncher(cudaStream_t *stream, void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
+        lambdaIndexedPairwiseKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
+        auto err = cudaStreamSynchronize(*stream);
+        if (err != 0)
+            throw std::runtime_error("NDArray::applyIndexedPairwiseLambda execution failed");
+    }
+
+    template <typename Lambda>
     FORCEINLINE static void lambdaTriplewiseLauncher(cudaStream_t *stream, void* vw, Nd4jLong *wShapeInfo, void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
         lambdaTriplewiseKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vw, wShapeInfo, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
         auto err = cudaStreamSynchronize(*stream);
@@ -192,11 +232,10 @@ void NDArray::applyPairwiseLambda(const NDArray* other, Lambda func, NDArray* ta
     auto dtype = this->dataType();
 
     if (dtype != result->dataType() || dtype != other->dataType())
-        throw std::runtime_error("NDArray::applyLambda X/Y/Z data types must be the same");
+        throw std::runtime_error("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
     //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, result->dataType());
 
     BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-
 
     result->tickWriteDevice();
 }
@@ -219,6 +258,10 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, Lambda func, NDArray* t
     auto dtype = this->dataType();
     if (dtype != result->dataType() || dtype != other->dataType())
         throw std::runtime_error("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
+
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
+
+    result->tickWriteDevice();
 }
 
 template <typename Lambda>
