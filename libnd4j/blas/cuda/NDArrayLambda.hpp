@@ -82,7 +82,7 @@ _CUDA_G void lambdaPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4j
 
     auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder) {
+    if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x)
             z[e * zEws] = lambda(x[e * xEws], y[e * yEws]);
     } else {
@@ -92,6 +92,42 @@ _CUDA_G void lambdaPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4j
             auto zOffset = shape::getIndexOffset(e, zShapeInfo, zLength);
 
             z[zOffset] = lambda(x[xOffset], y[yOffset]);
+        }
+    }
+}
+
+template <typename T, typename Lambda>
+_CUDA_G void lambdaTriplewiseKernel(void* vw, Nd4jLong *wShapeInfo, void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
+    auto w = reinterpret_cast<T*>(vw);
+    auto x = reinterpret_cast<T*>(vx);
+    auto y = reinterpret_cast<T*>(vy);
+    auto z = reinterpret_cast<T*>(vz);
+
+    auto wEws = shape::elementWiseStride(wShapeInfo);
+    auto xEws = shape::elementWiseStride(xShapeInfo);
+    auto yEws = shape::elementWiseStride(yShapeInfo);
+    auto zEws = shape::elementWiseStride(zShapeInfo);
+
+    auto wOrder = shape::order(wShapeInfo);
+    auto xOrder = shape::order(xShapeInfo);
+    auto yOrder = shape::order(yShapeInfo);
+    auto zOrder = shape::order(zShapeInfo);
+
+    auto zLength = shape::length(zShapeInfo);
+
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (wEws > 1 && xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder && wOrder == xOrder) {
+        for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x)
+            z[e * zEws] = lambda(w[e * wEws], x[e * xEws], y[e * yEws]);
+    } else {
+        for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+            auto wOffset = shape::getIndexOffset(e, wShapeInfo, zLength);
+            auto xOffset = shape::getIndexOffset(e, xShapeInfo, zLength);
+            auto yOffset = shape::getIndexOffset(e, yShapeInfo, zLength);
+            auto zOffset = shape::getIndexOffset(e, zShapeInfo, zLength);
+
+            z[zOffset] = lambda(w[wOffset], x[xOffset], y[yOffset]);
         }
     }
 }
@@ -122,6 +158,14 @@ public:
         auto err = cudaStreamSynchronize(*stream);
         if (err != 0)
             throw std::runtime_error("NDArray::applyPairwiseLambda execution failed");
+    }
+
+    template <typename Lambda>
+    FORCEINLINE static void lambdaTriplewiseLauncher(cudaStream_t *stream, void* vw, Nd4jLong *wShapeInfo, void* vx, Nd4jLong *xShapeInfo, void* vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, Lambda lambda) {
+        lambdaTriplewiseKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vw, wShapeInfo, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
+        auto err = cudaStreamSynchronize(*stream);
+        if (err != 0)
+            throw std::runtime_error("NDArray::applyTriplewiseLambda execution failed");
     }
 };
 
@@ -162,7 +206,7 @@ void NDArray::applyIndexedLambda(Lambda func, NDArray* target) {
     auto result = target == nullptr ? this : target;
     auto dtype = this->dataType();
     if (dtype != result->dataType())
-        throw std::runtime_error("NDArray::applyLambda X/Z data types must be the same");
+        throw std::runtime_error("NDArray::applyIndexedLambda X/Z data types must be the same");
 
     BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
 
@@ -174,11 +218,18 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, Lambda func, NDArray* t
     auto result = target == nullptr ? this : target;
     auto dtype = this->dataType();
     if (dtype != result->dataType() || dtype != other->dataType())
-        throw std::runtime_error("NDArray::applyLambda X/Y/Z data types must be the same");
+        throw std::runtime_error("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
 }
 
 template <typename Lambda>
 void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, Lambda func, NDArray* target) {
     auto result = target == nullptr ? this : target;
     auto dtype = this->dataType();
+
+    if (dtype != result->dataType() || dtype != second->dataType() || dtype != third->dataType())
+        throw std::runtime_error("NDArray::applyTriplewiseLambda X/Y/Z data types must be the same");
+
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaTriplewiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), second->specialBuffer(), second->specialShapeInfo(), third->specialBuffer(), third->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
+
+    result->tickWriteDevice();
 }
