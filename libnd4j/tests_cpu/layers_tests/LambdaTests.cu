@@ -97,6 +97,22 @@ void testPairwise(NDArray &x, NDArray &y) {
     x.applyPairwiseLambda(&y, f, &x);
 }
 
+void testTriplewise(NDArray &i, NDArray &j, NDArray &k) {
+    auto f = LAMBDA_DDD(i, j, k) {
+        return i + j + k + 2.;
+    };
+
+    i.applyTriplewiseLambda(&j, &k, f, &i);
+}
+
+void testIndexed(NDArray &x) {
+    auto f = ILAMBDA_D(x) {
+        return _idx + 1.;
+    };
+
+    x.applyIndexedLambda(f, &x);
+}
+
 TEST_F(LambdaTests, test_basic_2) {
     auto x = NDArrayFactory::create<double>('c', {5});
     auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
@@ -136,4 +152,26 @@ TEST_F(LambdaTests, test_basic_5) {
 
     x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_6) {
+    auto x = NDArrayFactory::create<double>('c', {5});
+    auto e = NDArrayFactory::create<double>('c', {5}, {1., 2., 3., 4., 5.});
+
+    testIndexed(x);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_7) {
+    auto w = NDArrayFactory::create<double>('c', {5}, {0., 0., 0., 0., 0.});
+    auto x = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
+    auto y = NDArrayFactory::create<double>('c', {5}, {2., 2., 2., 2., 2.});
+    auto e = NDArrayFactory::create<double>('c', {5}, {5., 5., 5., 5., 5.});
+
+    testTriplewise(w, x, y);
+
+    w.printIndexedBuffer("w");
+    ASSERT_EQ(e, w);
 }

@@ -405,6 +405,8 @@ TEST_F(NDArrayTest2, tileToShape_test4) {
     ASSERT_TRUE(result.equalsTo(&exp));
 }
 
+#ifndef __CUDABLAS__
+
 TEST_F(NDArrayTest2, Test_TriplewiseLambda_1) {
     auto t = NDArrayFactory::create<float>('c', {3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
     auto u = NDArrayFactory::create<float>('c', {3, 3}, {2, 2, 2, 2, 2, 2, 2, 2, 2});
@@ -439,6 +441,22 @@ TEST_F(NDArrayTest2, Test_TriplewiseLambda_2) {
 
     ASSERT_TRUE(t.equalsTo(&exp));
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, Test_Indexed_Lambda) {
+    auto x = NDArrayFactory::create<float>('c', {2, 2});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0, 1, 2, 3});
+
+    auto lambda = ILAMBDA_F(_x) {
+        return (float) _idx;
+    };
+
+    x.applyIndexedLambda<float>(lambda);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
+#endif
 
 TEST_F(NDArrayTest2, Test_PermuteEquality_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 60});
@@ -589,20 +607,6 @@ TEST_F(NDArrayTest2, setValueInDiagMatrix_test4) {
     x.setValueInDiagMatrix(0., 0, 'l');
 
     ASSERT_TRUE(exp.isSameShape(&x));
-    ASSERT_TRUE(exp.equalsTo(&x));
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, Test_Indexed_Lambda) {
-    auto x = NDArrayFactory::create<float>('c', {2, 2});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0, 1, 2, 3});
-
-    auto lambda = ILAMBDA_F(_x) {
-        return (float) _idx;
-    };
-
-    x.applyIndexedLambda<float>(lambda);
-
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 

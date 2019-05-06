@@ -672,6 +672,15 @@ namespace nd4j {
 
         template <typename Lambda>
         FORCEINLINE void applyPairwiseLambda(const NDArray* other, Lambda func, NDArray* target = nullptr);
+
+        template <typename Lambda>
+        FORCEINLINE void applyIndexedLambda(Lambda func, NDArray* target = nullptr);
+
+        template <typename Lambda>
+        FORCEINLINE void applyIndexedPairwiseLambda(NDArray* other, Lambda func, NDArray* target = nullptr);
+
+        template <typename Lambda>
+        FORCEINLINE void applyTriplewiseLambda(NDArray* second, NDArray *third, Lambda func, NDArray* target = nullptr);
 #else
         /**
         *  apply operation "func" to an array
@@ -689,7 +698,6 @@ namespace nd4j {
         */
         template <typename T>
         void applyPairwiseLambda(const NDArray* other, const std::function<T(T, T)>& func, NDArray* target = nullptr);
-#endif
 
         template <typename T>
         void applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDArray* target = nullptr);
@@ -699,7 +707,7 @@ namespace nd4j {
 
         template <typename T>
         void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
-
+#endif
 
         /**
         *  reduces dimensions in this array relying on index operation OpName
