@@ -2036,6 +2036,7 @@ void NDArray::operator+=(const NDArray& other) {
     if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType() && (this->dataType() != DataType::BOOL || other.dataType() != BOOL)) {
         throw nd4j::datatype_exception::build("NDArray operator+=: Cannot add different types", this->dataType(), other.dataType());
     }
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Add, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
     }

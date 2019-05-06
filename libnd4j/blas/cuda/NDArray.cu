@@ -358,10 +358,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
             if(_dataType != other->_dataType)
                 throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
-
-            // if workspace is not null - do not call delete.
-            if (_context->getWorkspace() == nullptr)
-                delete[] newShapeInfo;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
@@ -449,10 +445,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
-
-            // if workspace is not null - do not call delete.
-            if (_context->getWorkspace() == nullptr)
-                delete[] newShapeInfo;
         }
 
         NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
@@ -467,8 +459,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             }
             max->tile(repeatMax, *pTarget);
         }
-        else
+        else {
             pTarget->assign(max);
+        }
 
         // check whether min array has to be tiled
         std::vector<Nd4jLong> repeatMin(min->rankOf());
@@ -1499,10 +1492,6 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, _context->getWorkspace()))          // the rank of new array = max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         NDArray result(newShapeInfo, true, this->_context);
-
-        // if workspace is not null - do not call delete.
-        if (_context->getWorkspace() == nullptr)
-            delete[] newShapeInfo;
 
         this->applyTrueBroadcast(op, &other, &result, false, extraArgs);
 

@@ -636,11 +636,10 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
 
     std::vector<Nd4jLong> shp(shape);
     ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
-    auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
+    result.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     result.setBuffer(reinterpret_cast<int8_t*>(buffer));
     result.setShapeInfo(descriptor);//reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
-    result.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     result.triggerAllocationFlag(false);
 
     int8_t* specialBuffer = nullptr;

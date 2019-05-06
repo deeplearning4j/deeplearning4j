@@ -1925,6 +1925,11 @@ TEST_F(NDArrayTest, Operator_Plus_Test_1)
     auto y = NDArrayFactory::create<double>('c',    {2, 1});
     auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
 
+    //x.printShapeInfo("x shape");
+    //y.printShapeInfo("y shape");
+    //expected.printShapeInfo("e shape");
+    //expected.printIndexedBuffer("e");
+
     x.linspace(1);
     y.linspace(1);
 
