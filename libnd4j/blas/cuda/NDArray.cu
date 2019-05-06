@@ -729,16 +729,20 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Bad shape!");
         }
 
-        Nd4jLong *shapeInfoNew;
-        ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+       Nd4jLong *shapeInfoNew;
+       ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
 
-        throw std::runtime_error("FIXME");
-
+       // throw std::runtime_error("FIXME");
+       bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
         // we can do this only if there was no permute applied, or there are no weird strides
-        /*
-        if (shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew)) {            
-            setShapeInfo(shapeInfoNew);
+
+        if (canReshape) {
+            if(ordering() == 'c' && order == 'f')
+                throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
+
+            shape::setEws(shapeInfoNew, arrLength);
+            setShapeInfo(ShapeDescriptor(shapeInfoNew, dataType()));
         } 
         else {
         
@@ -748,10 +752,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             *this = std::move(temp);
         }
 
-        RELEASE(shapeInfoNew, _context->getWorkspace());
+        //RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
-        */
+
     }
 
     ////////////////////////////////////////////////////////////////////////
