@@ -72,7 +72,7 @@ TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
 
 TEST_F(DeclarableOpsTests10, Test_ArgMax_2) {
     auto x = NDArrayFactory::create<double>('c', {3, 3});
-    auto y = NDArrayFactory::create<double>('c', {1}, {1.0});
+    auto y = NDArrayFactory::create<int>('c', {1}, {1});
     auto e = NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 2, 2});
 
     x.linspace(1.0);
