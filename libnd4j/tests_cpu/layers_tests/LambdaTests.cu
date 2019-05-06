@@ -80,11 +80,40 @@ void test(NDArray &x) {
     x.applyLambda(f, &x);
 }
 
+template <typename T>
+void test2(NDArray &x) {
+    auto f = LAMBDA_T(x) {
+        return x+1.;
+    };
+
+    x.applyLambda(f, &x);
+}
+
 TEST_F(LambdaTests, test_basic_2) {
     auto x = NDArrayFactory::create<double>('c', {5});
     auto e = NDArrayFactory::create<double>('c', {5}, {1., 1., 1., 1., 1.});
 
     test(x);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_3) {
+    auto x = NDArrayFactory::create<float>('c', {5});
+    auto e = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+
+    test(x);
+
+    x.printIndexedBuffer("x");
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(LambdaTests, test_basic_4) {
+    auto x = NDArrayFactory::create<float>('c', {5});
+    auto e = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
+
+    test2<float>(x);
 
     x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);

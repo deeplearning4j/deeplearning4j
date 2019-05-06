@@ -52,6 +52,13 @@ public:
 
 template<typename Lambda>
 void NDArray::applyLambda(Lambda func, NDArray* target) {
-    LambdaHelper<double>::template lambdaLauncher<Lambda>(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), target->specialBuffer(), target->specialShapeInfo(), func);
+    auto result = target == nullptr ? this : target;
+    auto dtype = this->dataType();
+
+    if (dtype != result->dataType())
+        throw std::runtime_error("NDArray::applyLambda X/Z data types must be the same");
+        //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, result->dataType());
+
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
 }
 
