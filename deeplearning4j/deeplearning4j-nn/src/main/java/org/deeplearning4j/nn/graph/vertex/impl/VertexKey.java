@@ -18,6 +18,8 @@ public class VertexKey implements Serializable {
     }
 
     public String toString(){
+        if (streamIndex == 0)
+            return layerName;
         return layerName + ":" + streamIndex;
     }
 
