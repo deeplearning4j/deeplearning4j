@@ -10,7 +10,7 @@
     padding-top: 10px;
     padding-right: 20px;
     padding-bottom: 10px;
-    padding-left: 20px;
+    padding-left: 60px;
     margin-left: -20px;
     font-size: 20px;
     font-weight: 200;
@@ -159,4 +159,63 @@
     -webkit-border-radius: 0px !important;
     -moz-border-radius: 0px !important;
     border-radius: 0px !important;
+}
+
+
+
+
+
+/* Tabs
+=================================================================== */
+
+.tab-menu.nav-tabs {
+    *zoom: 1;
+    margin-top: -46px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.tab-menu.nav-tabs > li {
+    float: right;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.tab-menu.nav-tabs {
+    border-bottom: none;
+}
+
+.tab-menu.nav-tabs > li {
+    margin-bottom: -1px;
+}
+
+.tab-menu.nav-tabs > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    line-height: 16px;
+    margin-left: 0px;
+    border: none;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+}
+
+.tab-menu.nav-tabs > li > a:hover {
+    border: none;
+
+}
+
+.tab-menu.nav-tabs > .active > a  {
+    color: #555555;
+    cursor: default;
+    background-color: #fff;
+    border: none;
+}
+
+.tab-menu.nav-tabs > .active > a:hover {
+    background-color: #fafafa;
 }
