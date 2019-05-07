@@ -391,7 +391,7 @@ public class TrainModule implements UIModule {
      * Display, for each session: session ID, start time, number of workers, last update
      * @return info for each session as JSON
      */
-    private Result sessionInfo() {
+    private synchronized Result sessionInfo() {
 
         Map<String, Object> dataEachSession = new HashMap<>();
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
