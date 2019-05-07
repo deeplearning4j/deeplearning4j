@@ -33,54 +33,47 @@
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/coreui__coreui/2.1.9/dist/js/coreui.min.js"></script>
 
+        <!-- Icons -->
+        <link rel="stylesheet" href="/assets/webjars/coreui__icons/0.3.0/css/coreui-icons.min.css"></script>
+
+
         <link rel="shortcut icon" href="/assets/img/favicon.ico">
     </head>
 
     <body class="app sidebar-show aside-menu-show">
         <header class="app-header navbar">
-            <div class="navbar">
-                <div class="navbar-inner">
-                    <div class="container-fluid">
-                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".top-nav.nav-collapse,.sidebar-nav.nav-collapse">
-                            <span class="icon-bar"></span>
-                            <span class="icon-bar"></span>
-                            <span class="icon-bar"></span>
-                        </a>
-                        <a class="brand" href="#"><span>@i18n.getMessage("train.pagetitle")</span></a>
-                        <div id="sessionSelectDiv" style="display:none; float:right">
-                            @i18n.getMessage("train.session.label")
-                            <select id="sessionSelect" onchange='selectNewSession()'>
-                                <option>(Session ID)</option>
-                            </select>
-                        </div>
-                        <div id="workerSelectDiv" style="display:none; float:right;">
-                            @i18n.getMessage("train.session.worker.label")
-                            <select id="workerSelect" onchange='selectNewWorker()'>
-                                <option>(Worker ID)</option>
-                            </select>
-                        </div>
-                    </div>
+                <a class="header-text" href="#"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                <div id="sessionSelectDiv" style="display:none; float:right; margin-left:15px">
+                        @i18n.getMessage("train.session.label")
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                        <option>(Session ID)</option>
+                </select>
                 </div>
-            </div>
+                <div id="workerSelectDiv" style="display:none; float:right">
+                        <span style="color:white">@i18n.getMessage("train.session.worker.label")</span>
+                        <select id="workerSelect" onchange='selectNewWorker()'>
+                        <option>(Worker ID)</option>
+                </select>
+                </div>
         </header>
         <div class="app-body">
             <div class="sidebar">
                 <nav class="sidebar-nav">
                     <ul class="nav">
                         <li class="nav-item"><a class="nav-link" href="javascript:void(0);"><i class="cui-chart"></i>@i18n.getMessage("train.nav.overview")</a></li>
-                        <li class="nav-item"><a class="nav-link" href="model"><i class="icon-tasks"></i>@i18n.getMessage("train.nav.model")</a></li>
-                        <li class="nav-item"><a class="nav-link" href="system"><i class="icon-dashboard"></i>@i18n.getMessage("train.nav.system")</a></li>
+                        <li class="nav-item"><a class="nav-link" href="model"><i class="cui-graph"></i>@i18n.getMessage("train.nav.model")</a></li>
+                        <li class="nav-item"><a class="nav-link" href="system"><i class="cui-speedometer"></i>@i18n.getMessage("train.nav.system")</a></li>
                         <li class="nav-item nav-dropdown">
                             <a class="nav-link nav-dropdown-toggle" href="#">
-                                <i class="nav-icon cui-puzzle"></i> @i18n.getMessage("train.nav.language")
+                                <i class="nav-icon cui-globe"></i> @i18n.getMessage("train.nav.language")
                             </a>
                             <ul class="nav-dropdown-items">
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'overview')"><i class="icon-file-alt"></i>English</a></li>
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('de', 'overview')"><i class="icon-file-alt"></i>Deutsch</a></li>
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'overview')"><i class="icon-file-alt"></i>日本語</a></li>
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'overview')"><i class="icon-file-alt"></i>中文</a></li>
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'overview')"><i class="icon-file-alt"></i>한글</a></li>
-                                <li class="nav-item"><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'overview')"><i class="icon-file-alt"></i>русский</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('en', 'overview')"><i class="icon-file-alt"></i>English</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('de', 'overview')"><i class="icon-file-alt"></i>Deutsch</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ja', 'overview')"><i class="icon-file-alt"></i>日本語</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('zh', 'overview')"><i class="icon-file-alt"></i>中文</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ko', 'overview')"><i class="icon-file-alt"></i>한글</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ru', 'overview')"><i class="icon-file-alt"></i>русский</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -90,8 +83,8 @@
             <main id="content" class="main">
                 <div class="row">
 
-                    <div class="col-8">
-                        <div>
+                    <div class="col-8 chart-box">
+                        <div class="chart-header">
                             <h2><b>@i18n.getMessage("train.overview.chart.scoreTitle")</b></h2>
                         </div>
                         <div>
@@ -104,8 +97,8 @@
                     </div>
                         <!-- End Score Chart-->
                         <!-- Start Model Table-->
-                    <div class="col-4">
-                        <div>
+                    <div class="col-4 chart-box">
+                        <div class="chart-header">
                             <h2><b>@i18n.getMessage("train.overview.perftable.title")</b></h2>
                         </div>
                         <div>
@@ -155,8 +148,8 @@
 
                 <div class="row">
                         <!--Start Ratio Table -->
-                    <div class="col">
-                        <div class="box-header">
+                    <div class="col chart-box">
+                        <div class="chart-header">
                             <h2><b>@i18n.getMessage("train.overview.chart.updateRatioTitle"): log<sub>10</sub></b></h2>
                         </div>
                         <div class="box-content">
@@ -168,11 +161,12 @@
                                 , <b>@i18n.getMessage("train.overview.charts.iteration"):</b> <span id="xRatio">
                                     0</span></p>
                         </div>
+
                     </div>
                         <!--End Ratio Table -->
                         <!--Start Variance Table -->
-                    <div class="col">
-                        <div class="box-header">
+                    <div class="col chart-box">
+                        <div class="chart-header">
                             <h2><b>@i18n.getMessage("train.overview.chart.stdevTitle"): log<sub>10</sub></b></h2>
                             <ul class="nav tab-menu nav-tabs" style="position:absolute; margin-top: -11px; right: 22px;">
                                 <li class="active" id="stdevActivations"><a href="javascript:void(0);" onclick="selectStdevChart('stdevActivations')">@i18n.getMessage("train.overview.chart.stdevBtn.activations")</a></li>
