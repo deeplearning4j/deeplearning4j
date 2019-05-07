@@ -2087,8 +2087,11 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (i >= _length)
             throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
 
-        if (!scalar.isActualOnDeviceSide())
+        if (!scalar.isActualOnHostSide())
             scalar.syncToHost();
+
+        if (!isActualOnHostSide())
+            syncToHost();
 
         auto rp = getOffset(i);        
         BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);

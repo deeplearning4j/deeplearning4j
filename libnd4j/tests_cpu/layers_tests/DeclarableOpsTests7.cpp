@@ -5537,7 +5537,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_3) {
     x.linspace(1);
     x.p(2,2, -1.f);
     exp.p(2,2, 0.5f);
-    // x.printIndexedBuffer("Input is");
+    //x.printIndexedBuffer("Input is");
     // exp.printIndexedBuffer("Expected ");
     nd4j::ops::reduce_min_bp op;
     auto result = op.execute({&x, &eps}, {1.f}, {});
