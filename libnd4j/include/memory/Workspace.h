@@ -31,14 +31,10 @@
 #include <pointercast.h>
 #include <types/float16.h>
 #include <memory/ExternalWorkspace.h>
+#include <memory/MemoryType.h>
 
 namespace nd4j {
     namespace memory {
-
-        enum MemoryType {
-            HOST,
-            DEVICE,
-        };
 
         class ND4J_EXPORT Workspace {
         protected:

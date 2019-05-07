@@ -21,6 +21,7 @@
 #ifndef LIBND4J_TESTLAYERS_H
 #define LIBND4J_TESTLAYERS_H
 
+#include <memory/MemoryTracker.h>
 #include <op_boilerplate.h>
 #include <pointercast.h>
 #include <NativeOps.h>
@@ -35,9 +36,5 @@
 #include <GraphExecutioner.h>
 #include <gtest/gtest.h>
 #include <NDArrayFactory.h>
-
-// meh
-//#include <../blas/cpu/NDArray.cpp>
-//#include <../blas/cpu/GraphExecutioner.cpp>
 
 #endif //LIBND4J_TESTLAYERS_H

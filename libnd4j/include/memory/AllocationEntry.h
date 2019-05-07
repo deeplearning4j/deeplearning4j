@@ -18,35 +18,32 @@
 // Created by raver119 on 07.05.19.
 //
 
-#ifndef DEV_TESTS_MEMORYTRACKER_H
-#define DEV_TESTS_MEMORYTRACKER_H
+#ifndef DEV_TESTS_ALLOCATIONENTRY_H
+#define DEV_TESTS_ALLOCATIONENTRY_H
 
-#include <map>
-#include <string>
 #include <pointercast.h>
-#include "AllocationEntry.h"
+#include <string>
+#include <memory/MemoryType.h>
 
 namespace nd4j {
     namespace memory {
-        class MemoryTracker {
+        class AllocationEntry {
         private:
-            static MemoryTracker* _INSTANCE;
-            std::map<Nd4jLong, AllocationEntry> _allocations;
-            std::map<Nd4jLong, AllocationEntry> _released;
-
-            MemoryTracker();
-            ~MemoryTracker() = default;
+            MemoryType _memoryType;
+            Nd4jLong _pointer;
+            Nd4jLong _numBytes;
+            std::string _stack;
         public:
-            static MemoryTracker* getInstance();
+            AllocationEntry() = default;
+            AllocationEntry(MemoryType type, Nd4jLong ptr, Nd4jLong numBytes, std::string &stack);
+            ~AllocationEntry() = default;
 
-            void countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes);
-            void countOut(Nd4jPointer ptr);
 
-            void summarize();
-            void reset();
+            Nd4jLong numBytes();
+            std::string stackTrace();
         };
     }
 }
 
 
-#endif //DEV_TESTS_MEMORYTRACKER_H
+#endif //DEV_TESTS_ALLOCATIONENTRY_H

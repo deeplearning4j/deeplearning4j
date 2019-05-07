@@ -55,7 +55,11 @@ public:
     const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
 
     DeclarableOpsTests1() {
-        printf("\n");
+        nd4j::memory::MemoryTracker::getInstance()->reset();
+    }
+
+    ~DeclarableOpsTests1() {
+        nd4j::memory::MemoryTracker::getInstance()->summarize();
     }
 };
 
@@ -4723,4 +4727,8 @@ TEST_F(DeclarableOpsTests1, Test_Expose_2) {
 
 }
 
+TEST_F(DeclarableOpsTests1, Test_Release) {
+    auto x = NDArrayFactory::create<float>('c', {8, 8});
+    x.printShapeInfo("x shape");
+}
 
