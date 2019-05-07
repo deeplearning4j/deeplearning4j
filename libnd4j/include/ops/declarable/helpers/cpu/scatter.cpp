@@ -65,6 +65,7 @@ namespace nd4j {
                 }
             }
 
+///////////////////////////////////////////////////////////////////
             void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
                 const Nd4jLong indLen = indices.lengthOf();

@@ -1805,40 +1805,6 @@ TEST_F(DeclarableOpsTests1, Reshape7){
 
 }
 
-TEST_F(DeclarableOpsTests1, TestScatterUpdate1) {
-    auto matrix  = NDArrayFactory::create_<float>('c', {3, 2});
-    auto updates = NDArrayFactory::create_<float>('c', {2, 2});
-    updates->assign(1.0);
-
-    //updates.printBuffer("Updates");
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, matrix);
-    variableSpace->putVariable(-2, updates);
-    variableSpace->putVariable(1, new Variable(&matrix));
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-
-    std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(0);
-    arguments->push_back(1);
-    arguments->push_back(1);
-    arguments->push_back(2);
-    arguments->push_back(1);
-    arguments->push_back(2);
-
-    nd4j::ops::scatter_update op;
-
-
-    Nd4jStatus result = op.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-
-    delete block;
-    delete variableSpace;
-}
-
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Repeat1) {
     

@@ -707,44 +707,6 @@ TEST_F(DeclarableOpsTests12, relu_1) {
     ASSERT_TRUE(expected.equalsTo(z));
 }
 
-////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, scatterND_5) {
-
-    NDArray indices('c', {4, 1}, {1, 1, 1, 1}, nd4j::DataType::INT32);
-    auto updates = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
-    auto shape = NDArrayFactory::create<int>('c', {1}, {8});
-    auto exp = NDArrayFactory::create<float>('c', {8}, {0.f, 10.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f});
-
-    nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, scatter_add_8) {
-
-    NDArray input('c', {8}, {1,1,1,1,1,1,1,1}, nd4j::DataType::FLOAT32);
-    NDArray indices('c', {4}, {1, 1, 1, 1}, nd4j::DataType::INT32);
-    NDArray updates('c', {4}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray expected('c', {8}, {1.f, 11.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f}, nd4j::DataType::FLOAT32);
-
-    NDArray z('c', {8}, nd4j::DataType::FLOAT32);
-
-    nd4j::ops::scatter_add op;
-    Nd4jStatus status = op.execute({&input, &indices, &updates}, {&z}, {}, {}, {true});
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
-    ASSERT_TRUE(expected.equalsTo(z));
-}
-
 #include "ops/declarable/helpers/multiUnique.h"
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, multiUnique_1) {
