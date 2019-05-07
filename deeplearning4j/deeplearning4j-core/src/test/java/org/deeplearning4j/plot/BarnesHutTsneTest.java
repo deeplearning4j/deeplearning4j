@@ -30,6 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,10 +44,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     @Before
     public void setUp() {
         //   CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
-
     }
-
-
 
     @Test
     public void testTsne() throws Exception {
@@ -59,8 +57,6 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         File f = resource.getTempFileFromArchive();
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
                         NDArrayIndex.interval(0, 784));
-
-
 
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
@@ -157,24 +153,18 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         assertEquals(ret1, ret2);
     }
 
-    @Ignore
     @Test
-    public void testAgainstSklearnTSNE() {
-        Nd4j.getRandom().setSeed(1);
-        INDArray input = Nd4j.createFromArray(new double[]{ 0.4681,    0.2971,
-                0.2938,    0.3655,
-                0.3968,    0.0990,
-                0.0796,    0.9245}).reshape(4,2);
+    public void testCorrectness() throws IOException {
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(20.0).numDimension(55).learningRate(500)
+                .useAdaGrad(false).build();
 
-        BarnesHutTsne b = new BarnesHutTsne.Builder().build();
-        b.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
+        ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
+        File f = resource.getTempFileFromArchive();
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ");
 
-        b.fit(input);
-
-        INDArray expected = Nd4j.createFromArray(
-                new double[]{-274.30356, -330.32452, 426.03946, 19.620352, 250.9052, -505.65094,-99.169014,194.9484})
-                .reshape(4,2);
-
-        assertEquals(expected, b.getData());
+        b.fit(data);
+        System.out.println(b.getData());
     }
 }
