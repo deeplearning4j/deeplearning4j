@@ -947,12 +947,16 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
     NativeOps op;
-    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
-                         z.buffer(), z.getShapeInfo(), nullptr, nullptr,
+//    Nd4jPointer nativeStart[2];
+#ifndef __CUDABLAS__
+//         nativeStart[1] = *(x.getContext()->getCudaStream());
+
+    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
+                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                          4, indexes,
                          xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
                          zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
-
+#endif
     ASSERT_TRUE(z.equalsTo(exp));
 }
 
@@ -974,12 +978,13 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
     NativeOps op;
+#ifndef __CUDABLAS__
     op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
                          z.buffer(), z.getShapeInfo(), nullptr, nullptr,
                          4, indexes,
                          xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
                          zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
-
+#endif
     ASSERT_TRUE(z.equalsTo(exp));
 
     delete y;
@@ -1203,7 +1208,7 @@ TEST_F(DeclarableOpsTests12, lrn_bp_7) {
     nd4j::ops::lrn opFF;
     nd4j::ops::lrn_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1220,7 +1225,7 @@ TEST_F(DeclarableOpsTests12, lrn_bp_8) {
     nd4j::ops::lrn opFF;
     nd4j::ops::lrn_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
