@@ -259,6 +259,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
         auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
 
+        if (output.rankOf() == 1)
         padFillValues<T><<<launchDim.x, launchDim.y, launchDim.z, *stream>>>(output.specialBuffer(),
                 output.specialShapeInfo(), outIdx, input.getSpecialBuffer(), input.getSpecialShapeInfo(),
                 packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), mode, padValue.getSpecialBuffer());

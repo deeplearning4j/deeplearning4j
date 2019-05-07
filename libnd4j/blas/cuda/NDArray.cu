@@ -1025,10 +1025,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 
-        ShapeDescriptor descriptor(_dataType, order, getShapeAsVector());
-        auto outShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+        //ShapeDescriptor descriptor(_dataType, order, getShapeAsVector());
+        //auto outShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
 
-        auto result = new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context);
+        auto result = new NDArray(order, getShapeInfoAsVector(), _dataType, _context);//new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context);
         result->assign(*this);
 
 
