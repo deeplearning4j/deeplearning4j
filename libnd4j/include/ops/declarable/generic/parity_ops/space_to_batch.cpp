@@ -242,7 +242,7 @@ namespace ops {
             // just return input shape here
             Nd4jLong *newShape;
             COPY_SHAPE(in, newShape);
-            return SHAPELIST(newShape);   
+            return SHAPELIST(CONSTANT(newShape));
         }
 
         // go full route otherwise

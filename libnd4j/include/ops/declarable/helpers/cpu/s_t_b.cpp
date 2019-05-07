@@ -64,6 +64,33 @@ namespace helpers {
         SpaceToBatchHelper<NUM_BLOCK_DIMS, B2S>::run(ptrSpace, space_shape, space_strides, block_shape, pad_start, block_offsets, ptrBatch, batch_shape, batch_strides);
     };
 
+    Nd4jStatus _spaceToBatch(graph::LaunchContext* context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *paddings) {
+        auto in = input->reshape('c', internal_input_shape);
+        auto out = output->reshape('c', internal_output_shape);
+        switch (internal_block_dims) {
+            case 1:
+                _prepare<1, false>(context, in, out, block_shape, paddings);
+                break;
+            case 2:
+                _prepare<2, false>(context, in, out, block_shape, paddings);
+                break;
+            case 3:
+                _prepare<3, false>(context, in, out, block_shape, paddings);
+                break;
+            case 4:
+                _prepare<4, false>(context, in, out, block_shape, paddings);
+                break;
+            default: {
+                return Status::THROW("SpaceToBatch: Wrong number of internal_block_dims");
+            }
+        }
+
+        delete in;
+        delete out;
+
+        return Status::OK();
+    }
+
 #define STB_DIM (0, 1),\
                 (1, 2),\
                 (2, 3),\
