@@ -220,7 +220,6 @@ public class BarnesHutTsne implements Model {
         cols = zeros(DataType.INT, 1, N * k);
         vals = zeros(1, N * k);
 
-        rows.putScalar(0, 0);
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
@@ -244,7 +243,9 @@ public class BarnesHutTsne implements Model {
                 double betaMin = -Double.MAX_VALUE;
                 double betaMax = Double.MAX_VALUE;
                 List<DataPoint> results = new ArrayList<>();
-                tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
+                List<Double> distances = new ArrayList<Double>();
+                tree.search(d.slice(i), k + 1, results, distances);
+                System.out.println("After tree.search input = " + d.slice(i) + " results = " + distances);
                 double betas = beta.getDouble(i);
 
                 if(results.size() == 0){
@@ -294,6 +295,7 @@ public class BarnesHutTsne implements Model {
                         break;
                     indices.putScalar(j, results.get(j).getIndex());
                 }
+                System.out.println("Indices = " + indices);
 
                 for (int l = 0; l < k; l++) {
                     cols.putScalar(rows.getInt(i) + l, indices.getDouble(l + 1));
@@ -368,6 +370,7 @@ public class BarnesHutTsne implements Model {
      * @return
      */
     public INDArray symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
+        System.out.println("N = " + N);
         INDArray rowCounts = Nd4j.create(N);
 
         MemoryWorkspace workspace =
@@ -401,11 +404,10 @@ public class BarnesHutTsne implements Model {
 
             int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
             INDArray offset = Nd4j.create(N);
-            INDArray symRowP = Nd4j.create(N + 1);
+            INDArray symRowP = Nd4j.zeros(N + 1);
             INDArray symColP = Nd4j.create(numElements);
             INDArray symValP = Nd4j.create(numElements);
 
-            symRowP.putScalar(0, 0);
             for (int n = 0; n < N; n++)
                 symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
 
@@ -550,7 +552,8 @@ public class BarnesHutTsne implements Model {
         } else {
             //output
             if (Y == null) {
-                Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+                //Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+                Y = x;
             }
 
             MemoryWorkspace workspace =
@@ -564,13 +567,17 @@ public class BarnesHutTsne implements Model {
 
                 computeGaussianPerplexity(x, perplexity);
                 //TODO: uncomment when C++ implementation is available
-                /*BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
-                Nd4j.getExecutioner().exec(op);
-                INDArray output = op.getResult();
-                vals = output.divi(vals.sum(Integer.MAX_VALUE));*/
+                System.out.println("rows = " + rows);
+                System.out.println("cols = " + cols);
+                System.out.println("vals = " + vals);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
+                //Nd4j.getExecutioner().exec(op);
+                //INDArray output = op.getResult();
+                //vals = output.divi(vals.sum(Integer.MAX_VALUE));
                 vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
+                System.out.println("Symmetrized = " + vals);
 
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
