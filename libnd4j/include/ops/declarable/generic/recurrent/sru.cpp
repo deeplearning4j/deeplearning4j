@@ -26,13 +26,13 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sru.h>
 #include <MmulHelper.h>
+#include <helpers/PointersManager.h>
 
 namespace nd4j {
 namespace ops  {
 
 // return 2d array evaluated though last dimension interval t1-t2
 static NDArray* timestep(const NDArray* arr, const int t1, const int t2) {
-
         NDArray* result = new NDArray((*arr)({0,0, 0,0, t1,t2}, true));
         result->reshapei(result->ordering(), {arr->shapeOf()[0], arr->shapeOf()[1]} );
 
@@ -40,9 +40,8 @@ static NDArray* timestep(const NDArray* arr, const int t1, const int t2) {
 }
 
 static NDArray sigmoid_(const NDArray& arr) {
-    NDArray result(arr.getShapeInfo(), arr.getContext());
+    NDArray result(arr.getShapeInfo(), false, arr.getContext());
     (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, &result);
-
     return result;
 }
 
@@ -73,20 +72,19 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     const auto bF = (*bias)({0,0,  0,  K});                       // biases for forget gate [1 x K]
     const auto bR = (*bias)({0,0,  K,2*K});                       // biases for reset  gate [1 x K]
 
-    NDArray xt(input->dataType(), block.getVariableSpace()->launchContext());
-    NDArray zt(input->dataType(), block.getVariableSpace()->launchContext());
-    NDArray ft(input->dataType(), block.getVariableSpace()->launchContext());
-    NDArray rt(input->dataType(), block.getVariableSpace()->launchContext());
-    NDArray ht(input->dataType(), block.getVariableSpace()->launchContext());
+    NDArray xt(input->dataType(), block.launchContext());
+    NDArray zt(input->dataType(), block.launchContext());
+    NDArray ft(input->dataType(), block.launchContext());
+    NDArray rt(input->dataType(), block.launchContext());
+    NDArray ht(input->dataType(), block.launchContext());
     NDArray ct = *init;
-    NDArray gct(state->ordering(), {bS, K}, input->dataType(), block.getVariableSpace()->launchContext());
+    NDArray gct(state->ordering(), {bS, K}, input->dataType(), block.launchContext());
     NDArray xmt = *input;
     //  input = input * mask
     if(applyMask)
         xmt.applyBroadcast(broadcast::Multiply, {0, 1}, mask, &xmt, nullptr);
-    
+
     for (int t = 0; t < N; ++t) {
-  
         xt = xmt({0,0, 0,0,     t,t+1}); xt.reshapei(xt.ordering(), {bS, K});       // [bS x  K x N] -> [bS x K x 1] -> [bS x K]
         zt =  wi({0,0, 0,    K, t,t+1}); zt.reshapei(zt.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
         ft =  wi({0,0, K,  2*K, t,t+1}); ft.reshapei(ft.ordering(), {bS, K});       // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
@@ -94,6 +92,7 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
 
         ft = sigmoid_(ft + bF);
         rt = sigmoid_(rt + bR);
+
         ct = ft * (ct - zt) + zt;                
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct.applyTransform(transform::Tanh, &gct);
@@ -102,8 +101,8 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
         // save results
         (*output)({0,0, 0,0, t,t+1}, true).assign(ht);
         (*state)({0,0, 0,0, t,t+1}, true).assign(ct);
-    }    
-    
+    }
+
     return Status::OK();
 }
 
@@ -131,8 +130,7 @@ DECLARE_SHAPE_FN(sru_logic) {
     newShapeInfo1[3] = N;
     
     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
-    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShapeInfo1));
-    RELEASE(newShapeInfo1, block.getWorkspace());
+    auto result = CONSTANT(newShapeInfo1);
     return SHAPELIST(result, result);
 }   
 

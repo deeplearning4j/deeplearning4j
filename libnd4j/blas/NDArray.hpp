@@ -432,15 +432,17 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
 NDArray& NDArray::operator=(NDArray&& other) noexcept {
-
-    if (this == &other) 
+    if (this == &other)
         return *this;
 
     if(_context->getWorkspace() == nullptr) {
-            
-        if(_isBuffAlloc) delete []_buffer;
+        if(_isBuffAlloc)
+            RELEASE(_buffer, nullptr)
 
-        if(_isBuffDAlloc)  RELEASE_SPECIAL(_bufferD, nullptr);
+        if(_isBuffDAlloc) {
+            RELEASE_SPECIAL(_bufferD, nullptr);
+        }
+
     }
 
     _isView       = other._isView;
@@ -450,6 +452,7 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     _bufferD      = other._bufferD;
     _shapeInfoD   = other._shapeInfoD;
     _isBuffAlloc  = other._isBuffAlloc;
+    _isBuffDAlloc  = other._isBuffDAlloc;
     _dataType     = other._dataType;
     _length       = other._length;
     _writeDevice = other._writeDevice;
