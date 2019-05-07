@@ -2875,7 +2875,7 @@ public class ArrayUtil {
 
     public static long[] buildInterleavedVector(Random rng, long length) {
         // FIXME: int cast
-        long[] result = new long[(int) length];
+        val result = new long[(int) length];
 
         List<Integer> indexes = new ArrayList<>();
         List<Integer> odds = new ArrayList<>();

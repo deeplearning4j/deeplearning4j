@@ -297,7 +297,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             val randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                             .divi(configuration.getLayersSize());
 
-                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
                             realElement.setInit(true);
                         }
                     }
@@ -313,7 +313,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             INDArray randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                             .divi(configuration.getLayersSize());
 
-                            lookupTable.getWeights().getRow(realElement.getIndex()).assign(randArray);
+                            lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
                             realElement.setInit(true);
                         }
                     }

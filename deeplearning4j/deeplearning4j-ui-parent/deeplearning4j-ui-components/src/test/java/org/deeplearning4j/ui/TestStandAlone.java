@@ -54,7 +54,7 @@ public class TestStandAlone {
                                         .width(640, LengthUnit.Px).height(480, LengthUnit.Px).build()).addBin(0, 1, 1)
                                                         .addBin(1, 2, 2).addBin(2, 3, 1).build();
 
-        System.out.println(StaticPageUtil.renderHTML(ct, cl, ch));
+        String s = StaticPageUtil.renderHTML(ct, cl, ch);
     }
 
 }

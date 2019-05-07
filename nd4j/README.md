@@ -29,26 +29,6 @@ Specifics
 - The API mimics the semantics of Numpy, Matlab and scikit-learn.
 
 ---
-## Modules
-Several of these modules are different backend options for ND4J (including GPUs).
-
-- api = core
-- instrumentation
-- jdbc = Java Database Connectivity
-- jocl-parent = Java bindings for OpenCL
-- scala-api = API for Scala users
-- scala-notebook = Integration with Scala Notebook
-
----
-
-## Building Specific Modules
-
-It is possible to build the project without the native bindings. This can be done
-by specic targeting of the project to build.
-
-```
-mvn clean package test -pl :nd4j-api
-```
 
 ## Documentation
 

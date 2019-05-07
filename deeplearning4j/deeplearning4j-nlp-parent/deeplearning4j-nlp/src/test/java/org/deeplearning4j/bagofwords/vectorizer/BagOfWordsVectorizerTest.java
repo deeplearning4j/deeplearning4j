@@ -62,7 +62,7 @@ public class BagOfWordsVectorizerTest {
     @Test(timeout = 60000L)
     public void testBagOfWordsVectorizer() throws Exception {
         val rootDir = testDir.newFolder();
-        ClassPathResource resource = new ClassPathResource("rootdir");
+        ClassPathResource resource = new ClassPathResource("rootdir/");
         resource.copyDirectory(rootDir);
 
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);

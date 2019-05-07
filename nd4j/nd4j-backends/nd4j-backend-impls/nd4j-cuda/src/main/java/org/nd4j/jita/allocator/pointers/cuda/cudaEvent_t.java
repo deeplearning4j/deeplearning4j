@@ -24,14 +24,12 @@ import org.nd4j.linalg.exception.ND4JException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * @author raver119@gmail.com
  */
 public class cudaEvent_t extends CudaPointer {
 
-    private AtomicBoolean destroyed = new AtomicBoolean(false);
+    private boolean destroyed = false;
 
     @Getter
     @Setter
@@ -49,18 +47,18 @@ public class cudaEvent_t extends CudaPointer {
         super(pointer);
     }
 
-    public boolean isDestroyed() {
-        return destroyed.get();
+    public synchronized boolean isDestroyed() {
+        return destroyed;
     }
 
-    public void markDestoryed() {
-        destroyed.set(true);
+    public synchronized void markDestroyed() {
+        destroyed = true;
     }
 
     public void destroy() {
         if (!isDestroyed()) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().destroyEvent(this);
-            markDestoryed();
+            markDestroyed();
         }
     }
 

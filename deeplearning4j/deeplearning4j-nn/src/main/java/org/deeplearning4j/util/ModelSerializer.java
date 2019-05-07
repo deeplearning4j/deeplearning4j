@@ -312,6 +312,10 @@ public class ModelSerializer {
                     throw e;
                 }
             }
+
+            //Handle legacy config - no network DataType in config, in beta3 or earlier
+            if(params != null)
+                confFromJson.setDataType(params.dataType());
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
             network.init(params, false);
 
@@ -640,6 +644,11 @@ public class ModelSerializer {
                 throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model appears to be " +
                         "a MultiLayerNetwork - use ModelSerializer.restoreMultiLayerNetwork instead");
             }
+
+            //Handle legacy config - no network DataType in config, in beta3 or earlier
+            if(params != null)
+                confFromJson.setDataType(params.dataType());
+
             ComputationGraph cg = new ComputationGraph(confFromJson);
             cg.init(params, false);
 

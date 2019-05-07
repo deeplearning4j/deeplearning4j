@@ -733,8 +733,6 @@ void NativeOps::execTransformFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformFloat(
             opNum,
@@ -743,8 +741,8 @@ void NativeOps::execTransformFloat(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformSame(
@@ -755,8 +753,6 @@ void NativeOps::execTransformSame(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformSame(
             opNum,
@@ -765,8 +761,8 @@ void NativeOps::execTransformSame(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformBool(
@@ -777,8 +773,6 @@ void NativeOps::execTransformBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformBool(
             opNum,
@@ -787,8 +781,8 @@ void NativeOps::execTransformBool(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execTransformAny(
@@ -819,8 +813,6 @@ void NativeOps::execTransformStrict(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     NativeOpExcutioner::execTransformStrict(
             opNum,
@@ -829,8 +821,8 @@ void NativeOps::execTransformStrict(
             hZ,
             hZShapeInfo,
             extraParams,
-            tadShapeInfo,
-            tadOffsets);
+            nullptr,
+            nullptr);
 }
 
 void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
@@ -1088,7 +1080,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
     // not supported
     return 0L;
 }
@@ -1111,7 +1103,7 @@ int NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, int deviceId) {
     // not supported
     return 0L;
 }
@@ -1151,11 +1143,11 @@ Nd4jPointer NativeOps::createEvent() {
     return 0L;
 }
 
-int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
+int NativeOps::getDeviceMajor(int deviceId ) {
     return 0;
 }
 
-int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
+int NativeOps::getDeviceMinor(int deviceId) {
     return 0;
 }
 
@@ -1163,15 +1155,19 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
     return 0L;
 }
 
-int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
+int NativeOps::setDevice(int deviceId) {
     return 0L;
 }
 
-Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jLong NativeOps::getDeviceFreeMemory(int deviceId) {
     return 0L;
 }
 
-Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
+Nd4jLong NativeOps::getDeviceFreeMemory() {
+    return 0L;
+}
+
+Nd4jLong NativeOps::getDeviceTotalMemory(int deviceId) {
     return 0L;
 }
 
@@ -1430,11 +1426,12 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(N > 1)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(N)
     for (int f = 0; f < N; f++) {
         auto hX = reinterpret_cast<T *>(dX[f]);
         //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
+        auto xShapeInfo = hXShapeInfo[f];
         auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
 
@@ -1446,38 +1443,39 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
         auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        // TODO: omp *probably* has no sense here, since 99% of uses for this method will be inside DataSet. but worth a check
+        if (shape::rank(xShapeInfo) == 1) {
+            auto xLength = shape::length(xShapeInfo);
+            auto ews = shape::elementWiseStride(xShapeInfo);
+            for (Nd4jLong r = 0; r < xLength; r++) {
+                auto swapIdx = shuffleMap[r];
+                if (swapIdx < 0)
+                    continue;
 
-        for (Nd4jLong r = 0; r < numTads; r++) {
-            if (shuffleMap[r] < 0)
-                continue;
-
-            auto oldOffset = tadOffset[r];
-            auto newOffset = tadOffset[shuffleMap[r]];
-
-            auto rX = hX + oldOffset;
-            auto rY = hX + newOffset;
-
-            if (tadEWS == 1) {
-
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < tadLength; i++) {
-                    nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
-                }
-
-            } 
-            else {
-
-                PRAGMA_OMP_PARALLEL_FOR_IF(N == 1 && tadLength > 512)
-                for (Nd4jLong i = 0; i < tadLength; i++) {                    
-                    auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);                    
-                    nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
-                }
-
+                nd4j::math::nd4j_swap<T>(hX[r*ews], hX[swapIdx*ews]);
             }
+        } else {
+            for (Nd4jLong r = 0; r < numTads; r++) {
+                if (shuffleMap[r] < 0)
+                    continue;
 
+                auto oldOffset = tadOffset[r];
+                auto newOffset = tadOffset[shuffleMap[r]];
+
+                auto rX = hX + oldOffset;
+                auto rY = hX + newOffset;
+
+                if (tadEWS == 1) {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                    }
+                } else {
+                    for (Nd4jLong i = 0; i < tadLength; i++) {
+                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                        nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                    }
+                }
+            }
         }
-
     }
 }
 
@@ -1603,7 +1601,7 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
             tadOffsetsZ);
 }
 
-const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
+const char * NativeOps::getDeviceName(int deviceId) {
     if (!nameSet) {
         name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
 
@@ -2558,6 +2556,13 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
     NDArray array(buffer, shapeInfo, nullptr);
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+}
+
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+    auto buf = reinterpret_cast<int8_t*>(p);
+    int cnt = 0;
+    for (int i = 0; i < len; i++)
+        cnt += buf[cnt];
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);

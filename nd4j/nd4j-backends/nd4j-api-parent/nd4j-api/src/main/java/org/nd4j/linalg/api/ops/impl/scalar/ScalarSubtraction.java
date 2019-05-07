@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
@@ -68,7 +69,7 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     @Override
     public String onnxName() {
-        return "Sub";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

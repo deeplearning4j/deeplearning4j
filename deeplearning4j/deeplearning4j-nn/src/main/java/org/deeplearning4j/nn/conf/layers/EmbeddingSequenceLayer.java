@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
 import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
 import org.deeplearning4j.nn.weights.embeddings.WeightInitEmbedding;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -66,9 +68,9 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -80,9 +82,9 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.RNN)) {
             throw new IllegalStateException("Invalid input for Embedding layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect FFN input type. Got: " + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect FF/RNN input type. Got: " + inputType);
         }
         return InputType.recurrent(nOut, inputLength);
     }
@@ -108,6 +110,32 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     public boolean hasBias() {
         return hasBias;
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException(
+                    "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+        }
+
+        if(inputType.getType() == InputType.Type.RNN){
+            return null;
+        }
+        return super.getPreProcessorForInputType(inputType);
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if(inputType.getType() == InputType.Type.RNN){
+            if (nIn <= 0 || override) {
+                InputType.InputTypeRecurrent f = (InputType.InputTypeRecurrent) inputType;
+                this.nIn = f.getSize();
+            }
+        } else {
+            super.setNIn(inputType, override);
+        }
+
     }
 
     @NoArgsConstructor

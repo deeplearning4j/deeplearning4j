@@ -13,6 +13,8 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.List;
 
+import static org.nd4j.autodiff.samediff.ops.SDValidation.*;
+
 /**
  * SameDiff math operations<br>
  * Accessible via {@link SameDiff#math()}
@@ -42,6 +44,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable abs(String name, SDVariable x) {
+        validateNumerical("abs", x);
         SDVariable result = f().abs(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -64,6 +67,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable acos(String name, SDVariable x) {
+        validateNumerical("acos", x);
         SDVariable result = f().acos(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -86,6 +90,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable acosh(String name, SDVariable x) {
+        validateNumerical("acosh", x);
         SDVariable result = f().acosh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -110,6 +115,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable amax(String name, SDVariable in, int... dimensions) {
+        validateNumerical("amax", in);
         SDVariable ret = f().amax(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -122,6 +128,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable amean(SDVariable in, int... dimensions) {
+        validateNumerical("amean", in);
         return amean(null, in, dimensions);
     }
 
@@ -134,6 +141,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable amean(String name, SDVariable in, int... dimensions) {
+        validateNumerical("amean", in);
         SDVariable ret = f().amean(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -158,6 +166,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable amin(String name, SDVariable in, int... dimensions) {
+        validateNumerical("amin", in);
         SDVariable ret = f().amin(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -188,6 +197,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable and(String name, SDVariable x, SDVariable y) {
+        validateBool("boolean and", x, y);
         SDVariable result = f().and(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -210,6 +220,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable asin(String name, SDVariable x) {
+        validateNumerical("asin", x);
         SDVariable result = f().asin(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -232,6 +243,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable asinh(String name, SDVariable x) {
+        validateNumerical("asinh", x);
         SDVariable result = f().asinh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -256,6 +268,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable asum(String name, SDVariable in, int... dimensions) {
+        validateNumerical("asum", in);
         SDVariable ret = f().asum(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -278,6 +291,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable atan(String name, SDVariable x) {
+        validateNumerical("atan", x);
         SDVariable result = f().atan(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -304,6 +318,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable atan2(String name, SDVariable y, SDVariable x) {
+        validateNumerical("atan2", y, x);
         SDVariable ret = f().atan2(y, x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -326,6 +341,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable atanh(String name, SDVariable x) {
+        validateNumerical("atanh", x);
         SDVariable result = f().atanh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -350,6 +366,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable ceil(String name, SDVariable x) {
+        validateFloatingPoint("ceil", x);
         SDVariable ret = f().ceil(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -378,6 +395,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable clipByNorm(String name, SDVariable x, double clipValue) {
+        validateFloatingPoint("clip by norm", x);
         SDVariable ret = f().clipByNorm(x, clipValue);
         return updateVariableNameAndReference(ret, name);
     }
@@ -410,6 +428,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable clipByNorm(String name, SDVariable x, double clipValue, int... dimensions) {
+        validateFloatingPoint("clip by norm", x);
         SDVariable ret = f().clipByNorm(x, clipValue, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -442,6 +461,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable clipByValue(String name, SDVariable x, double clipValueMin, double clipValueMax) {
+        validateNumerical("clip by value", x);
         SDVariable ret = f().clipByValue(x, clipValueMin, clipValueMax);
         return updateVariableNameAndReference(ret, name);
     }
@@ -471,6 +491,8 @@ public class SDMath extends SDOps {
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
     public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, DataType dataType) {
+        validateInteger("confusionMatrix", "labels", labels);
+        validateInteger("confusionMatrix", "prediction", pred);
         SDVariable result = f().confusionMatrix(labels, pred, dataType);
         return updateVariableNameAndReference(result, name);
     }
@@ -498,6 +520,8 @@ public class SDMath extends SDOps {
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
     public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses) {
+        validateInteger("confusionMatrix", "labels", labels);
+        validateInteger("confusionMatrix", "prediction", pred);
         SDVariable result = f().confusionMatrix(labels, pred, numClasses);
         return updateVariableNameAndReference(result, name);
     }
@@ -525,6 +549,9 @@ public class SDMath extends SDOps {
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
     public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, SDVariable weights) {
+        validateInteger("confusionMatrix", "labels", labels);
+        validateInteger("confusionMatrix", "prediction", pred);
+        validateNumerical("confusionMatrix", "weights", weights);
         SDVariable result = f().confusionMatrix(labels, pred, weights);
         return updateVariableNameAndReference(result, name);
     }
@@ -553,6 +580,9 @@ public class SDMath extends SDOps {
      * @return Output variable (2D, shape [numClasses, numClasses})
      */
     public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
+        validateInteger("confusionMatrix", "labels", labels);
+        validateInteger("confusionMatrix", "prediction", pred);
+        validateNumerical("confusionMatrix", "weights", weights);
         SDVariable result = f().confusionMatrix(labels, pred, numClasses, weights);
         return updateVariableNameAndReference(result, name);
     }
@@ -575,6 +605,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable cos(String name, SDVariable x) {
+        validateNumerical("cos", x);
         SDVariable result = f().cos(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -597,6 +628,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable cosh(String name, SDVariable x) {
+        validateNumerical("cosh", x);
         SDVariable result = f().cosh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -621,6 +653,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable cosineDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("cosine distance", x, y);
         SDVariable result = f().cosineDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -643,6 +676,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable cosineSimilarity(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("cosine similarity", x, y);
         SDVariable cosim = f().cosineSimilarity(x, y, dimensions);
         return updateVariableNameAndReference(cosim, name);
     }
@@ -667,6 +701,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable countNonZero(String name, SDVariable input, int... dimensions) {
+        validateNumerical("countNonZero", input);
         SDVariable res = f().countNonZero(input, dimensions);
         return updateVariableNameAndReference(res, name);
     }
@@ -691,6 +726,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable countZero(String name, SDVariable input, int... dimensions) {
+        validateNumerical("countNonZero", input);
         SDVariable res = f().countZero(input, dimensions);
         return updateVariableNameAndReference(res, name);
     }
@@ -711,6 +747,7 @@ public class SDMath extends SDOps {
      * @return Element-wise cross product
      */
     public SDVariable cross(String name, SDVariable a, SDVariable b) {
+        validateNumerical("cross", a, b);
         SDVariable ret = f().cross(a, b);
         return updateVariableNameAndReference(ret, name);
     }
@@ -733,6 +770,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable cube(String name, SDVariable x) {
+        validateNumerical("cube", x);
         SDVariable result = f().cube(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -808,6 +846,7 @@ public class SDMath extends SDOps {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable entropy(String name, SDVariable in, int... dimensions) {
+        validateNumerical("entropy reduction", in);
         SDVariable ret = f().entropy(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -830,6 +869,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable erf(String name, SDVariable x) {
+        validateNumerical("erf (error function)", x);
         SDVariable ret = f().erf(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -852,6 +892,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable erfc(String name, SDVariable x) {
+        validateNumerical("erfc", x);
         SDVariable ret = f().erfc(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -874,6 +915,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable euclideanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("euclidean distance", x, y);
         SDVariable result = f().euclideanDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -896,6 +938,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable exp(String name, SDVariable x) {
+        validateNumerical("exp", x);
         SDVariable result = f().exp(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -918,6 +961,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable expm1(String name, SDVariable x) {
+        validateNumerical("expm1", x);
         SDVariable result = f().expm1(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1122,6 +1166,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable floor(String name, SDVariable x) {
+        validateFloatingPoint("floor", x);
         SDVariable result = f().floor(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1145,6 +1190,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable hammingDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("hamming distance reduction", x, y);
         SDVariable result = f().hammingDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1173,6 +1219,7 @@ public class SDMath extends SDOps {
      * @see SameDiff#argmax(String, SDVariable, boolean, int...)
      */
     public SDVariable iamax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        validateNumerical("iamax", in);
         SDVariable ret = f().iamax(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1210,6 +1257,7 @@ public class SDMath extends SDOps {
      * @see SameDiff#argmin(String, SDVariable, boolean, int...)
      */
     public SDVariable iamin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        validateNumerical("iamin", in);
         SDVariable ret = f().iamin(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1245,6 +1293,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isFinite(String name, SDVariable x) {
+        validateFloatingPoint("isFinite", x);
         SDVariable result = f().isFinite(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1271,6 +1320,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isInfinite(String name, SDVariable x) {
+        validateFloatingPoint("isInfinite", x);
         SDVariable result = f().isInfinite(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1297,6 +1347,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isMax(String name, SDVariable x) {
+        validateNumerical("isMax", x);
         SDVariable ret = f().isMax(x);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1323,6 +1374,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable isNaN(String name, SDVariable x) {
+        validateFloatingPoint("isNaN", x);
         SDVariable result = f().isNaN(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1349,6 +1401,7 @@ public class SDMath extends SDOps {
      * @return Scalar variable with value 1 if non-decreasing, or 0 otherwise
      */
     public SDVariable isNonDecreasing(String name, SDVariable x) {
+        validateNumerical("isNonDecreasing", x);
         SDVariable result = f().isNonDecreasing(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1376,6 +1429,7 @@ public class SDMath extends SDOps {
      * @return Scalar variable with value 1 if strictly increasing, or 0 otherwise
      */
     public SDVariable isStrictlyIncreasing(String name, SDVariable x) {
+        validateNumerical("isStrictlyIncreasing", x);
         SDVariable result = f().isStrictlyIncreasing(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1404,6 +1458,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable jaccardDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("Jaccard distance reduction", x, y);
         SDVariable result = f().jaccardDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1477,6 +1532,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable log(String name, SDVariable x) {
+        validateNumerical("log", x);
         SDVariable result = f().log(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1501,6 +1557,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable log(String name, SDVariable in, double base) {
+        validateNumerical("log", in);
         SDVariable ret = f().log(in, base);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1523,6 +1580,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable log1p(String name, SDVariable x) {
+        validateNumerical("log1p", x);
         SDVariable result = f().log1p(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1547,6 +1605,7 @@ public class SDMath extends SDOps {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
+        validateNumerical("logEntropy reduction", in);
         SDVariable ret = f().logEntropy(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1573,6 +1632,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable logSumExp(String name, SDVariable input, int... dimensions) {
+        validateNumerical("logSumExp reduction", input);
         SDVariable ret = f().logSumExp(input, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1596,6 +1656,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable manhattanDistance(String name, SDVariable x, SDVariable y, int... dimensions) {
+        validateNumerical("manhattan distance", x, y);
         SDVariable result = f().manhattanDistance(x, y, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -1617,6 +1678,7 @@ public class SDMath extends SDOps {
      * @return Matrix determinant variable
      */
     public SDVariable matrixDeterminant(String name, SDVariable in) {
+        validateNumerical("matrix determinant", in);
         SDVariable ret = f().matrixDeterminant(in);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1638,6 +1700,7 @@ public class SDMath extends SDOps {
      * @return Matrix inverse variable
      */
     public SDVariable matrixInverse(String name, SDVariable in) {
+        validateFloatingPoint("matrix inverse", in);
         SDVariable ret = f().matrixInverse(in);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1662,6 +1725,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable mergeAdd(String name, SDVariable... inputs) {
+        validateSameType("mergeAdd", true, inputs);
         SDVariable ret = f().mergeAdd(inputs);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1686,6 +1750,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable mergeAvg(String name, SDVariable... inputs) {
+        validateSameType("mergeAvg", true, inputs);
         SDVariable ret = f().mergeAvg(inputs);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1709,6 +1774,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable mergeMax(String name, SDVariable... inputs) {
+        validateSameType("mergeMax", true, inputs);
         SDVariable ret = f().mergeMax(inputs);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1754,6 +1820,7 @@ public class SDMath extends SDOps {
     public SDVariable[] meshgrid(List<String> names, boolean cartesian, SDVariable... inputs) {
         Preconditions.checkState(names == null || names.size() == inputs.length,
                 "Got %s names but %s inputs", (names == null ? 0 : names.size()), inputs.length);
+        validateSameType("meshgrid", false, inputs);
         SDVariable[] ret = f().meshgrid(cartesian, inputs);
         for (int i = 0; i < ret.length; i++) {
             ret[i] = updateVariableNameAndReference(ret[i], names == null ? null : names.get(i));
@@ -1777,6 +1844,7 @@ public class SDMath extends SDOps {
      * @return Mean and variance variables
      */
     public SDVariable[] moments(String[] name, SDVariable input, int... axes) {
+        validateNumerical("moments", input);
         SDVariable[] res = f().moments(input, axes);
         return sd.updateVariableNamesAndReferences(res, name);
     }
@@ -1799,6 +1867,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable neg(String name, SDVariable x) {
+        validateNumerical("neg", x);
         SDVariable result = f().neg(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1852,6 +1921,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable or(String name, SDVariable x, SDVariable y) {
+        validateBool("or", x, y);
         SDVariable result = f().or(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -1876,6 +1946,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable pow(String name, SDVariable x, double value) {
+        validateNumerical("pow", x);
         SDVariable result = f().pow(x, value);
         return updateVariableNameAndReference(result, name);
     }
@@ -1900,6 +1971,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable pow(String name, SDVariable x, SDVariable y) {
+        validateNumerical("pow", x, y);
         SDVariable result = f().pow(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -1922,6 +1994,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable reciprocal(String name, SDVariable a) {
+        validateNumerical("reciprocal", a);
         SDVariable ret = f().reciprocal(a);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1946,6 +2019,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable round(String name, SDVariable x) {
+        validateFloatingPoint("round", x);
         SDVariable result = f().round(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -1968,6 +2042,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable rsqrt(String name, SDVariable x) {
+        validateNumerical("rsqrt", x);
         SDVariable result = f().rsqrt(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2020,6 +2095,7 @@ public class SDMath extends SDOps {
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable shannonEntropy(String name, SDVariable in, int... dimensions) {
+        validateNumerical("shannon entropy reduction", in);
         SDVariable ret = f().shannonEntropy(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2048,6 +2124,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable sign(String name, SDVariable x) {
+        validateNumerical("sign", x);
         SDVariable result = f().sign(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2070,6 +2147,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable sin(String name, SDVariable x) {
+        validateNumerical("sin", x);
         SDVariable result = f().sin(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2092,6 +2170,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable sinh(String name, SDVariable x) {
+        validateNumerical("sinh", x);
         SDVariable result = f().sinh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2114,6 +2193,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable sqrt(String name, SDVariable x) {
+        validateNumerical("sqrt", x);
         SDVariable result = f().sqrt(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2136,6 +2216,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable square(String name, SDVariable x) {
+        validateNumerical("square", x);
         SDVariable result = f().square(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2164,6 +2245,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable step(String name, SDVariable in, double cutoff) {
+        validateNumerical("step", in);
         SDVariable ret = f().step(in, cutoff);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2200,6 +2282,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable standardize(String name, SDVariable x, int... dimensions) {
+        validateNumerical("standardize", x);
         SDVariable result = f().standardize(x, dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -2222,6 +2305,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable tan(String name, SDVariable x) {
+        validateNumerical("tan", x);
         SDVariable result = f().tan(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2244,6 +2328,7 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable tanh(String name, SDVariable x) {
+        validateNumerical("tanh", x);
         SDVariable result = f().tanh(x);
         return updateVariableNameAndReference(result, name);
     }
@@ -2265,6 +2350,7 @@ public class SDMath extends SDOps {
      * @return Trace
      */
     public SDVariable trace(String name, SDVariable in) {
+        validateNumerical("trace", in);
         SDVariable ret = f().trace(in);
         return updateVariableNameAndReference(ret, name);
     }
@@ -2295,6 +2381,7 @@ public class SDMath extends SDOps {
      * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
     public SDVariable xor(String name, SDVariable x, SDVariable y) {
+        validateBool("xor", x, y);
         SDVariable result = f().xor(x, y);
         return updateVariableNameAndReference(result, name);
     }
@@ -2317,6 +2404,7 @@ public class SDMath extends SDOps {
      * @return Reduced array of rank 0 (scalar)
      */
     public SDVariable zeroFraction(String name, SDVariable input) {
+        validateNumerical("zeroFraction", input);
         SDVariable res = f().zeroFraction(input);
         return updateVariableNameAndReference(res, name);
     }

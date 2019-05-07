@@ -166,7 +166,7 @@ namespace simdOps {
             }
             __syncthreads();
 
-			int tid = blockIdx.x * gridDim.x + threadIdx.x;
+			int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 				const int pw = index % outW;
@@ -1364,89 +1364,159 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		}
 #endif
 
-		static void execSpecial(
-			void *vx,
-			Nd4jLong *xShapeBuffer,
-			void *vresult,
-			Nd4jLong *zShapeBuffer,
-			void *vextraParams,
-			Nd4jLong *tadShapeInfo,
-			Nd4jLong *tadOffsets) {
+		      static void execSpecial(
+            void *vx,
+            Nd4jLong *xShapeInfo,
+            void *vz,
+            Nd4jLong *zShapeInfo,
+            void *vextraParams,
+            Nd4jLong *tadShapeInfo,
+            Nd4jLong *tadOffsets) {
 
-		    auto dx = reinterpret_cast<X *>(vx);
-		    auto result = reinterpret_cast<X *>(vresult);
-		    auto extraParams = reinterpret_cast<X *>(vextraParams);
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<X *>(vz);
+            auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-			if (shape::isMatrix(xShapeBuffer)) {
-				auto shape = shape::shapeOf(xShapeBuffer);
-				//iterate along rows
-				int dimension[1] = { 0 };
-				int maxDimension[1] = { 1 };
-				//compute the row wise maxes
-				auto maxResult = new X[shape[0]];
-				for (int i = 0; i < shape[0]; i++)
-					maxResult[i] = 0.0;
-				Nd4jLong maxShape[2] = { shape[0], 1 };
-                auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
-				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, dx, xShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
+            if (shape::isMatrix(xShapeInfo)) {
 
-				//subtract max of each row
-				functions::broadcast::Broadcast<X, X, X>::exec(nd4j::broadcast::Subtract, dx, xShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+                if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
+                    if (tadShapeInfo == nullptr) {
+                        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, 1);
+                        tadShapeInfo = tadPack.primaryShapeInfo();
+                        tadOffsets = tadPack.primaryOffsets();
+                    }
+                    
+                    const uint tadLen    = shape::length(tadShapeInfo);
+                    const uint numOfTads = shape::length(xShapeInfo) / tadLen;
+        
+                    if(shape::elementWiseStride(tadShapeInfo) == 1) {
 
-				//after subtracting the row wise maxes take the exp
-				functions::transform::TransformStrict<X>::exec(nd4j::transform::Exp, result, zShapeBuffer, result, zShapeBuffer, extraParams, tadShapeInfo, tadOffsets);
+                        PRAGMA_OMP_PARALLEL_FOR_SIMD
+                        for (uint i = 0; i < numOfTads; ++i) {
 
-				//take the sum for the exponential
-				functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, result, zShapeBuffer, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+                            X* inBuff  = x + tadOffsets[i];
+                            X* outBuff = z + tadOffsets[i];
 
-				//divide by the sum
-				functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, result, zShapeBuffer, maxResult, maxResultShapeBuffer, result, zShapeBuffer, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+                            X max = -nd4j::DataTypeUtils::max<X>();
+                            X sum = 0;
+                        
+                            for(uint j = 0; j < tadLen; ++j)
+                                max = nd4j::math::nd4j_max<X>(max, inBuff[j]);            
+            
+                            for (uint j = 0; j < tadLen; ++j) {
+                                X temp = nd4j::math::nd4j_exp<X,X>(inBuff[j] - max);
+                                outBuff[j] = temp;
+                                sum += temp;
+                            }
+            
+                            for (uint j = 0; j < tadLen; ++j)
+                            outBuff[j] /= sum;            
+                        }
+                    }
+                    else {
 
-				delete[] maxResultShapeBuffer;
-				delete[] maxResult;
-			}
-			else if (shape::isVector(xShapeBuffer)) {
-				auto max = -nd4j::DataTypeUtils::max<X>();
-				X sum = 0;
-				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-				int resultElementWiseStride = shape::elementWiseStride(zShapeBuffer);
-				int length = shape::length(xShapeBuffer);
-				if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
-					if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+                        uint xShapeInfoCast[MAX_RANK];
+                        bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, xShapeInfoCast);
 
-						for (int i = 0; i < length; i++) {
-							max = nd4j::math::nd4j_max<X>(max, dx[i]);
-						}
+                        auto offsets = new Nd4jLong[tadLen];
+                        shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
 
-						for (int i = 0; i < length; i++) {
-                            result[i] = nd4j::math::nd4j_exp<X,X>(dx[i] - max);
-							sum += result[i];
-						}
+                        PRAGMA_OMP_PARALLEL_FOR_SIMD
+                        for (uint i = 0; i < numOfTads; ++i) {                        
+
+                            X* inBuff  = x  + tadOffsets[i];
+                            X* outBuff = z + tadOffsets[i];
+
+                            X max = -nd4j::DataTypeUtils::max<X>();
+                            X sum = 0.f;                                
+
+                            for(uint j = 0; j < tadLen; ++j)                                 
+                                max = nd4j::math::nd4j_max<X>(max, inBuff[offsets[j]]);                            
+            
+                            for (uint j = 0; j < tadLen; ++j) {
+                                X temp = nd4j::math::nd4j_exp<X,X>(inBuff[offsets[j]] - max);
+                                outBuff[offsets[j]] = temp;
+                                sum += temp;
+                            }
+
+                            for (uint j = 0; j < tadLen; ++j)
+                                outBuff[offsets[j]] /= sum;
+                        }
+                        delete []offsets;
+                    }
+                }
+                else {
+
+                    auto shape = shape::shapeOf(xShapeInfo);
+                    //iterate along rows
+                    int dimension[1] = { 0 };
+                    int maxDimension[1] = { 1 };
+                    //compute the row wise maxes
+                    auto maxResult = new X[shape[0]];
+                    for (int i = 0; i < shape[0]; i++)
+                        maxResult[i] = 0.0;
+                    Nd4jLong maxShape[2] = { shape[0], 1 };
+                    auto maxResultShapeBuffer = shape::shapeBuffer(2, nd4j::DataTypeUtils::fromT<X>(), maxShape);
+                    functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Max, x, xShapeInfo, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1,  nullptr, nullptr);
+
+                    //subtract max of each row
+                    functions::broadcast::Broadcast<X, X, X>::exec(nd4j::broadcast::Subtract, x, xShapeInfo, maxResult, maxResultShapeBuffer, z, zShapeInfo, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+
+                    //after subtracting the row wise maxes take the exp
+                    functions::transform::TransformStrict<X>::exec(nd4j::transform::Exp, z, zShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+
+                    //take the sum for the exponential
+                    functions::reduce::ReduceSameFunction<X>::exec(nd4j::reduce::Sum, z, zShapeInfo, extraParams, maxResult, maxResultShapeBuffer, maxDimension, 1, nullptr, nullptr);
+
+                    //divide by the sum
+                    functions::broadcast::Broadcast<X,X,X>::exec(nd4j::broadcast::Divide, z, zShapeInfo, maxResult, maxResultShapeBuffer, z, zShapeInfo, dimension, 1, nullptr, nullptr, nullptr, nullptr);
+
+                    delete[] maxResultShapeBuffer;
+                    delete[] maxResult;
+                }                
+            }
+            else if (shape::isVector(xShapeInfo)) {
+                auto max = -nd4j::DataTypeUtils::max<X>();
+                X sum = 0;
+                int elementWiseStride = shape::elementWiseStride(xShapeInfo);
+                int resultElementWiseStride = shape::elementWiseStride(zShapeInfo);
+                int length = shape::length(xShapeInfo);
+                if (elementWiseStride >= 1 && resultElementWiseStride >= 1) {
+                    if (elementWiseStride == 1 && resultElementWiseStride == 1) {
+
+                        for (int i = 0; i < length; i++) {
+                            max = nd4j::math::nd4j_max<X>(max, x[i]);
+                        }
+
+                        for (int i = 0; i < length; i++) {
+                            z[i] = nd4j::math::nd4j_exp<X,X>(x[i] - max);
+                            sum += z[i];
+                        }
 
                         PRAGMA_OMP_SIMD
-						for (int i = 0; i < length; i++) {
-							result[i] /= sum;
-						}
-					}
-					else {
+                        for (int i = 0; i < length; i++) {
+                            z[i] /= sum;
+                        }
+                    }
+                    else {
 
-						for (int i = 0; i < length; i++) {
-							max = nd4j::math::nd4j_max<X>(max, dx[i * elementWiseStride]);
-						}
+                        for (int i = 0; i < length; i++) {
+                            max = nd4j::math::nd4j_max<X>(max, x[i * elementWiseStride]);
+                        }
 
-						for (int i = 0; i < length; i++) {
-                            auto r = nd4j::math::nd4j_exp<X, X>(dx[i * elementWiseStride] - max);
-                            result[i * resultElementWiseStride] = r;
-							sum += r;
-						}
+                        for (int i = 0; i < length; i++) {
+                            auto r = nd4j::math::nd4j_exp<X, X>(x[i * elementWiseStride] - max);
+                            z[i * resultElementWiseStride] = r;
+                            sum += r;
+                        }
 
-						for (int i = 0; i < length; i++) {
-							result[i * resultElementWiseStride] /= sum;
-						}
-					}
-				}
-			}
-		}
+                        for (int i = 0; i < length; i++) {
+                            z[i * resultElementWiseStride] /= sum;
+                        }
+                    }
+                }
+            }
+        }
 
 		op_def static X op(X d1, X *params) {
 			return d1;

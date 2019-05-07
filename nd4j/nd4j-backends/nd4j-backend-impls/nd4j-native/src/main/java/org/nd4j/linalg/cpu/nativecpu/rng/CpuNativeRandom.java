@@ -80,4 +80,9 @@ public class CpuNativeRandom extends NativeRandom {
     public long nodeState() {
         return ((Nd4jCpu.RandomGenerator) statePointer).nodeState();
     }
+
+    @Override
+    public void setStates(long rootState, long nodeState) {
+        ((Nd4jCpu.RandomGenerator) statePointer).setStates(rootState, nodeState);
+    }
 }

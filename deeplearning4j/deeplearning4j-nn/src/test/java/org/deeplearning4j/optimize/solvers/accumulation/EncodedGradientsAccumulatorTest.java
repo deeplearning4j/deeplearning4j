@@ -73,8 +73,8 @@ public class EncodedGradientsAccumulatorTest {
     public void testEncodingLimits1() throws Exception {
         int numParams = 100000;
 
+        EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
         for (int e = 10; e < numParams / 5; e++) {
-            EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
 
             INDArray encoded = handler.encodeUpdates(0, 0, getGradients(numParams, e, 2e-3));
 

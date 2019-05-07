@@ -20,13 +20,17 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.*;
+import org.nd4j.linalg.api.ops.custom.Flatten;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -335,8 +339,8 @@ public class CustomOpsTests {
         int[] dims = new int[]{1};
         int[] indices = new int[]{1, 3};
 
-        val exp0 = Nd4j.create(1, 5).assign(0);
-        val exp1 = Nd4j.create(1, 5).assign(1);
+        val exp0 = Nd4j.create(5).assign(0);
+        val exp1 = Nd4j.create(5).assign(1);
 
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
@@ -486,6 +490,24 @@ public class CustomOpsTests {
     }
 
     @Test
+    public void testMatmulBp() {
+        val a = Nd4j.create(DataType.DOUBLE, 1,3);
+        val b = Nd4j.create(DataType.DOUBLE, 1,4);
+        val gI = Nd4j.create(DataType.DOUBLE, 3,4);
+
+        val gA = Nd4j.create(DataType.DOUBLE, 1,3);
+        val gB = Nd4j.create(DataType.DOUBLE, 1,4);
+
+        val mt = MMulTranspose.builder()
+                .transposeA(true)
+                .transposeB(false)
+                .transposeResult(false).build();
+
+        val op = new MmulBp(a, b, gI, gA, gB, mt);
+        Nd4j.exec(op);
+    }
+
+    @Test
     public void testStridedSliceEdgeCase(){
         INDArray in = Nd4j.scalar(10.0).reshape(1);   //Int [1]
         INDArray begin = Nd4j.ones(DataType.INT, 1);
@@ -511,51 +533,27 @@ public class CustomOpsTests {
     }
 
     @Test
-    public void testBarnesHutGains() {
+    public void testDepthwise(){
+        INDArray input = Nd4j.create(DataType.DOUBLE, 1,3,8,8);
+        INDArray depthwiseWeight = Nd4j.create(DataType.DOUBLE, 1,1,3,2);
+        INDArray bias = Nd4j.create(DataType.DOUBLE, 1, 6);
 
-        INDArray x = Nd4j.createFromArray(new double[]{1,2,3, 4, 5, 6});
-        INDArray y = Nd4j.createFromArray(new double[]{1,-2,3, -4, 5, -6});
-        INDArray eps = Nd4j.createFromArray(new double[]{-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-        INDArray exp = Nd4j.createFromArray(new double[]{2,2,2,2,2,2});
+        INDArray[] inputs = new INDArray[]{input, depthwiseWeight, bias};
 
-        BarnesHutGains gainsOp = new BarnesHutGains(x,y, exp, eps);
-        Nd4j.exec(gainsOp);
+        int[] args = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
-        // TODO: Verify values
-        INDArray expected = Nd4j.createFromArray(new double[]{1.0, -2.0, 3.0, -4.0, 5.0, -6.0});
-        assertEquals(expected, y);
-    }
+        INDArray output = Nd4j.create(DataType.DOUBLE, 1, 6, 8, 8);
 
-    @Test
-    public void testBarnesHutEdgeForces() {
-        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
-        INDArray data = Nd4j.linspace(1,20,20).reshape(5,4);
-        INDArray rows = Nd4j.createFromArray(new int[]{2,3});
-        INDArray cols = Nd4j.createFromArray(new int[]{0, 2, 1, 4, 3});
-        INDArray vals = Nd4j.createFromArray(new double[]{10, 20, 30, 40, 50});
-        INDArray buf = Nd4j.createFromArray(new double[]{1,2,3,4});
+        CustomOp op = DynamicCustomOp.builder("depthwise_conv2d")
+                .addInputs(inputs)
+                .addIntegerArguments(args)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
 
-        INDArray output = Nd4j.createUninitialized(5,4);
-
-        BarnesEdgeForces op = new BarnesEdgeForces(rows, cols, vals, data,1, output, buf);
-        Nd4j.exec(op);
-
-        INDArray expected = Nd4j.createFromArray(new double[]{-1.8750,   -1.8750,   -1.8750,   -1.8750});
-        assertEquals(expected, output.getRow(0));
-    }
-
-    @Test
-    public void testBarnesHutSymmetrize() {
-        INDArray rows = Nd4j.createFromArray(new int[]{0, 1});
-        INDArray cols = Nd4j.createFromArray(new int[]{0, 1, 1, 0});
-        INDArray vals = Nd4j.createFromArray(new double[]{20., 30., 40., 50.});
-
-        INDArray expected = Nd4j.createFromArray(new double[] {0.000000, 0.000000});
-        INDArray result = Nd4j.createUninitialized(2);
-
-        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, result);
-        Nd4j.exec(op);
-
-
+        for( int i=0; i<1000; i++ ) {
+            System.out.println(i);
+            Nd4j.getExecutioner().exec(op);
+        }
     }
 }

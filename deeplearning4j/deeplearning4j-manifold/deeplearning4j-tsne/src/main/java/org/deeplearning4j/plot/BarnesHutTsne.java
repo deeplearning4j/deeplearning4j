@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
+import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -204,28 +205,29 @@ public class BarnesHutTsne implements Model {
      * Convert data to probability
      * co-occurrences (aka calculating the kernel)
      * @param d the data to convert
-     * @param u the perplexity of the model
+     * @param perplexity the perplexity of the model
      * @return the probabilities of co-occurrence
      */
-    public INDArray computeGaussianPerplexity(final INDArray d, double u) {
+    public INDArray computeGaussianPerplexity(final INDArray d, double perplexity) {
         N = d.rows();
 
-        final int k = (int) (3 * u);
-        if (u > k)
-            throw new IllegalStateException("Illegal k value " + k + "greater than " + u);
+        final int k = (int) (3 * perplexity);
+        if (N - 1 < 3 * perplexity)
+            throw new IllegalStateException("Perplexity " + perplexity + "is too large for number of samples " + N);
 
 
         rows = zeros(DataType.INT, 1, N + 1);
         cols = zeros(DataType.INT, 1, N * k);
         vals = zeros(1, N * k);
 
+        rows.putScalar(0, 0);
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
 
         final INDArray beta = ones(N, 1);
 
-        final double logU = FastMath.log(u);
+        final double enthropy = FastMath.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
         MemoryWorkspace workspace =
@@ -254,7 +256,7 @@ public class BarnesHutTsne implements Model {
                 INDArray cArr = VPTree.buildFromData(results);
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
                 INDArray currP = pair.getFirst();
-                double hDiff = pair.getSecond() - logU;
+                double hDiff = pair.getSecond() - enthropy;
                 int tries = 0;
                 boolean found = false;
                 //binary search
@@ -278,7 +280,7 @@ public class BarnesHutTsne implements Model {
                         }
 
                         pair = computeGaussianKernel(cArr, betas, k);
-                        hDiff = pair.getSecond() - logU;
+                        hDiff = pair.getSecond() - enthropy;
                         tries++;
                     }
 
@@ -403,6 +405,7 @@ public class BarnesHutTsne implements Model {
             INDArray symColP = Nd4j.create(numElements);
             INDArray symValP = Nd4j.create(numElements);
 
+            symRowP.putScalar(0, 0);
             for (int n = 0; n < N; n++)
                 symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
 
@@ -413,7 +416,7 @@ public class BarnesHutTsne implements Model {
                     for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
                         if (colP.getInt(m) == n) {
                             present = true;
-                            if (n < colP.getInt(i)) {
+                            if (n <= colP.getInt(i)) {
                                 // make sure we do not add elements twice
                                 symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
                                 symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
@@ -438,7 +441,7 @@ public class BarnesHutTsne implements Model {
                     }
 
                     // Update offsets
-                    if (!present || (present && n < colP.getInt(i))) {
+                    if (!present || (present && n <= colP.getInt(i))) {
                         offset.putScalar(n, offset.getInt(n) + 1);
                         int colPI = colP.getInt(i);
                         if (colPI != n)
@@ -509,6 +512,33 @@ public class BarnesHutTsne implements Model {
 
     }
 
+    private int calculateOutputLength() {
+        int ret = 0;
+
+        INDArray rowCounts = Nd4j.create(N);
+        for (int n = 0; n < N; n++) {
+            int begin = rows.getInt(n);
+            int end = rows.getInt(n + 1);
+            for (int i = begin; i < end; i++) {
+                boolean present = false;
+                for (int m = rows.getInt(cols.getInt(i)); m < rows.getInt(cols.getInt(i) + 1); m++) {
+                    if (cols.getInt(m) == n) {
+                        present = true;
+                    }
+                }
+                if (present)
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+
+                else {
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                    rowCounts.putScalar(cols.getInt(i), rowCounts.getDouble(cols.getInt(i)) + 1);
+                }
+            }
+        }
+        ret = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+        return ret;
+    }
+
     @Override
     public void fit() {
         if (theta == 0.0) {
@@ -533,6 +563,11 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
+                //TODO: uncomment when C++ implementation is available
+                /*BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
+                Nd4j.getExecutioner().exec(op);
+                INDArray output = op.getResult();
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));*/
                 vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
@@ -582,10 +617,8 @@ public class BarnesHutTsne implements Model {
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-
             INDArray yGrads = gradient;
             Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
-            //System.out.println("Gains: " + gains);
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
                     .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));*/
 

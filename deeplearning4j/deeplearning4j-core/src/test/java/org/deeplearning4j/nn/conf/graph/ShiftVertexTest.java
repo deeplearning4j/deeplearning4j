@@ -32,6 +32,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -138,6 +139,7 @@ public class ShiftVertexTest extends BaseDL4JTest {
                         {0.55, 0.60, 0.65, 0.70, 0.75}, {0.80, 0.85, 0.90, 0.95, 0.99}});
 
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .dataType(DataType.DOUBLE)
                         .updater(new Sgd(0.01))
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder()
                         .addInputs("input")
@@ -176,7 +178,7 @@ public class ShiftVertexTest extends BaseDL4JTest {
         // First things first, let's calculate the score.
         // FIXME: int cast
         int batchsz = (int) input.shape()[0];
-        INDArray z = input.mmul(W).add(b.repmat(batchsz, 1));
+        INDArray z = input.castTo(W.dataType()).mmul(W).add(b.repmat(batchsz, 1));
         INDArray a = a1.getActivation(z.dup(), true).add(sf); // activation modifies it's input!!
         INDArray q = a.mmul(V).add(c.repmat(batchsz, 1));
         INDArray o = nullsafe(a2.getActivation(q.dup(), true));
@@ -196,8 +198,8 @@ public class ShiftVertexTest extends BaseDL4JTest {
          * dq1/dv11 = a1 dq2/dV12 = a1 dq3/dV13 = a1 ...
          * dq1/dv21 = a2 dq2...
          */
-        INDArray dEdo = Nd4j.zeros(target.shape());
-        dEdo.addi(o).subi(target).muli(2); // This should be of size batchsz x outputsz
+        INDArray dEdo = target.like();  //Nd4j.zeros(target.shape());
+        dEdo.addi(o.castTo(dEdo.dataType())).subi(target).muli(2); // This should be of size batchsz x outputsz
         dEdo.divi(target.shape()[1]); // Why? Because the LossFunction divides by the _element size_ of the output.
 
         Pair<INDArray, INDArray> derivs2 = a2.backprop(q, dEdo);
@@ -246,7 +248,7 @@ public class ShiftVertexTest extends BaseDL4JTest {
     }
 
     private static double sum_errors(INDArray a, INDArray b) {
-        INDArray o = a.sub(b);
+        INDArray o = a.sub(b.castTo(a.dataType()));
         return o.mul(o).sumNumber().doubleValue();
     }
 

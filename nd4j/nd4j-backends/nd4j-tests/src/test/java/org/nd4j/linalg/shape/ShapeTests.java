@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 /**
  * @author Adam Gibson
@@ -103,7 +104,6 @@ public class ShapeTests extends BaseNd4jTest {
             INDArray arr = baseArr.tensorAlongDimension(i, 2);
             assertEquals("Failed at index " + i, assertions[i], arr);
         }
-
     }
 
 
@@ -111,11 +111,11 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {1, 2});
+        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
-        assertEquals(zeroOne, Nd4j.create(new float[] {1, 5, 9}));
+        assertEquals(Nd4j.create(new float[] {1, 5, 9}), zeroOne);
 
         INDArray testColumn2Assertion = Nd4j.create(new float[] {13, 17, 21});
         INDArray testColumn2 = arr.vectorAlongDimension(1, 1);
@@ -184,7 +184,7 @@ public class ShapeTests extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray tensor = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 7}, {4, 10}}).reshape(1, 2, 2);
-        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), NDArrayIndex.all());
+        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), all(), all());
         assertEquals(assertion, tensorGet);
 
     }

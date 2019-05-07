@@ -42,4 +42,9 @@ public class DeallocatableThread implements Deallocatable {
     public Deallocator deallocator() {
         return new ContextDeallocator(context);
     }
+
+    @Override
+    public int targetDevice() {
+        return context.getDeviceId();
+    }
 }

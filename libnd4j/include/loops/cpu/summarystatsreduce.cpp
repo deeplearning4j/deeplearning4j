@@ -150,32 +150,33 @@ namespace functions {
             PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < resultLength; r++) {
                         
-            auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
-            auto tx = x + tadOffsetForBlock;
-            SummaryStatsData<X> comp;
-            comp.initWithValue(tx[0]);
+                auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
+                auto tx = x + tadOffsetForBlock;
+                SummaryStatsData<X> comp;
+                comp.initWithValue(tx[0]);
 
-            if (tadEWS == 1 && tadOrder == 'c') {
-                for (int i = 1; i < tadLength; i ++) {
-                    SummaryStatsData <X> indexVal2;
-                    indexVal2.initWithValue(tx[i]);
+                if (tadEWS == 1 && tadOrder == 'c') {
+                    for (int i = 1; i < tadLength; i ++) {
+                        SummaryStatsData <X> indexVal2;
+                        indexVal2.initWithValue(tx[i]);
 
-                    comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                        comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                    }
+                } 
+                else {
+                    for (int i = 1; i < tadLength; i ++) {
+                        auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
+
+                        SummaryStatsData <X> indexVal2;
+                        indexVal2.initWithValue(tx[xOffset]);
+
+                        comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                    }
                 }
-            } else {
-                for (int i = 1; i < tadLength; i ++) {
-                    auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
 
-                    SummaryStatsData <X> indexVal2;
-                    indexVal2.initWithValue(tx[xOffset]);
-
-                    comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
-                }
-            }
-
-            z[r] = OpType::getValue(biasCorrected, comp);
-        }            
-    }
+                z[r] = OpType::getValue(biasCorrected, comp);
+            }     
+        }
 
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);

@@ -127,7 +127,7 @@ public class ScoringModel extends AdapterModel {
    * Uses the {@link NetworkUtils#output(Model, INDArray)} method.
    */
   public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
-    final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
+    final INDArray input = Nd4j.create(new float[][]{ modelFeatureValuesNormalized });
     final INDArray output = NetworkUtils.output(model, input);
     return output.getFloat(0);
   }

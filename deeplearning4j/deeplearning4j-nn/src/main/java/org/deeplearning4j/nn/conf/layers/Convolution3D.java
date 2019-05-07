@@ -29,7 +29,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -95,10 +95,10 @@ public class Convolution3D extends ConvolutionLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Convolution3DLayer ret = new Convolution3DLayer(conf);
+        Convolution3DLayer ret = new Convolution3DLayer(conf, networkDataType);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);

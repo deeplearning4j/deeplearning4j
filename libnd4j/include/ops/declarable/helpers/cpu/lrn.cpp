@@ -15,11 +15,13 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/helpers/lrn.h>
 #include <Status.h>
+#include <ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -74,14 +76,9 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 }
 #endif
 
-    template <typename T>
-    static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
+template <typename T>
+static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
 
-        int totalLength = input->lengthOf();
-        int lastDim = input->sizeAt(-1);
-        int chunkCount = totalLength / lastDim;
-        T* inputBuffer = reinterpret_cast<T*>(input->buffer());
-        T* outputBuffer = reinterpret_cast<T*>(output->buffer());
 #ifdef HAVE_MKLDNN
     if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output})) {
         std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
@@ -129,306 +126,295 @@ static void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, 
 
         streams[0].submitAndWait();
         return ND4J_STATUS_OK;
-    }
+    }    
 #endif
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
-        const T tbias = static_cast<T>(bias);
-        const T tbeta = static_cast<T>(beta);
+    const int rank = input->rankOf();
 
-        if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+    TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {rank - 1});
+    TadPack outTadPack;
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int c = 0; c < chunkCount; c++) {
-                const int shift = c * lastDim;
-                auto iX = inputBuffer + shift;
-                T quadSum = 0.f;
+    if(shape::haveSameOffsets(input->getShapeInfo(), output->getShapeInfo()))
+        outTadPack = inTadPack;
+    else
+        outTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {rank - 1});
 
-                for (int e = 0; e < lastDim; e++) {
-                    const int begin = nd4j::math::nd4j_max<int>(0, e - depth);
-                    const int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
-
-                    if (begin == 0) {
-                        // at the beginning of rolling window we always read everything
-                        quadSum = 0;
-                        for (int pos = begin; pos < end; ++pos) {
-                            T val = iX[pos];
-                            quadSum += val * val;
-                        }
-                   } else if (end == lastDim) {
-                        // at the end of the window we do the same
-                        quadSum = 0;
-                        for (int pos = begin; pos < end; ++pos) {
-                            T val = iX[pos];
-                            quadSum += val * val;
-                        }
-                    } else {
-                        // at any other window we add last value and subtract previous last value
-                        T prev = iX[begin - 1];
-                        T val = iX[end];
-                        quadSum += val * val;
-                        quadSum -= prev * prev;
-                    }
-
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * quadSum, tbeta);
-                    outputBuffer[shift + e] = iX[e] / dividor;
-                }
-            }
-        } else {
-
-            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-            for (int c = 0; c < chunkCount; c++) {
-                for (int e = 0; e < lastDim; e++) {
-                    int begin = nd4j::math::nd4j_max(0, e - depth);
-                    int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                    T quadSum = 0;
-                    int shift = c * lastDim;
-
-                    PRAGMA_OMP_SIMD_SUM(quadSum)
-                    for (int pos = begin; pos < end; ++pos) {
-                        T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), input->lengthOf())];
-                        quadSum += val * val;
-                    }
-
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
-                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), output->lengthOf())] = inputBuffer[shape::getIndexOffset(shift + e, input->getShapeInfo(), input->lengthOf())] / dividor;
-
-                }
-            }
-        }
-
-        return Status::OK();
-    }
-
-    template <typename T>
-    static int lrnFunctorEx_(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, float bias, float alpha, float beta) {
-
-        int totalLength = input->lengthOf();
-        int lastDim = input->sizeAt(-1);
-        int chunkCount = totalLength / lastDim;
-        T* inputBuffer = reinterpret_cast<T*>(input->buffer());
-        T* outputBuffer = reinterpret_cast<T*>(output->buffer());
-#ifdef HAVE_MKLDNN
-            if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output})) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("lrn"));
-        }
-
-        if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
-
-            getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
-
-            auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
-
-            auto engine = streams[0].getEngine();
-            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
-
-            auto lrn_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc(lrn_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc());
-                streams[0].addMemory(lrn_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, lrn_src_memory));
-            }
-
-            auto lrn_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(lrn_dst_memory);
-            }
-
-            streams[0].addOperation(lrn_forward(lrn_prim_desc, lrn_src_memory, lrn_dst_memory));
-
-            if (mkldnn::memory::primitive_desc(lrn_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(lrn_dst_memory, user_dst_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return ND4J_STATUS_OK;
-    }
-#endif
-        nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
-        T* scaleBuffer = reinterpret_cast<T*>(scale->buffer());
-
-        T tbias = static_cast<T>(bias);
-        T tbeta = static_cast<T>(beta);
-        T one(1.f);
-
-        if (output->ews() == 1 && input->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
-
-            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-            for (int c = 0; c < chunkCount; c++) {
-                for (int e = 0; e < lastDim; e++) {
-                    int begin = nd4j::math::nd4j_max<int>(0, e - depth);
-                    int end = nd4j::math::nd4j_min<int>(depth + e + 1, lastDim);
-                    T quadSum = 0.f;
-                    int shift = c * lastDim;
-                    auto iX = inputBuffer + shift;
-
-                    for (int pos = begin; pos < end; ++pos) {
-                        T val = iX[pos]; //listInput->at(c)->t<T>(pos);
-                        quadSum += val * val;
-                    }
-                    T aSum = alpha * quadSum;
-                    T tXe = iX[e];
-                    //scaleBuffer[shift + e] = (2. * alpha * tbeta) * tXe * tXe / math::nd4j_pow<T,T,T>(tbias + aSum, 1 + beta);
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(tbias + aSum, tbeta);
-                    outputBuffer[shift + e] = tXe / dividor;
-                    scaleBuffer[shift + e] = outputBuffer[shift + e] * outputBuffer[shift + e] * (2. * alpha * tbeta) *  math::nd4j_pow<T,T,T>(tbias + aSum, tbeta - 1);
-                }
-            }
-        } else {
-            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-            for (int c = 0; c < chunkCount; c++) {
-                for (int e = 0; e < lastDim; e++) {
-                    int begin = nd4j::math::nd4j_max(0, e - depth);
-                    int end = nd4j::math::nd4j_min(depth + e + 1, lastDim);
-                    T quadSum = 0;
-                    int shift = c * lastDim;
-
-                    PRAGMA_OMP_SIMD_SUM(quadSum)
-                    for (int pos = begin; pos < end; ++pos) {
-                        T val = inputBuffer[shape::getIndexOffset(shift + pos, input->getShapeInfo(), totalLength)]; //listInput->at(c)->t<T>(pos);
-                        quadSum += val * val;
-                    }
-
-                    auto p = shape::getIndexOffset(shift + e, input->getShapeInfo(), totalLength);
-                    T dividor = nd4j::math::nd4j_pow<T, T, T>(bias + alpha * quadSum, beta);
-                    scaleBuffer[shift + e] = one - (alpha * inputBuffer[p] * inputBuffer[p] * 2 * beta) / dividor;
-                    outputBuffer[shape::getIndexOffset(shift + e, output->shapeInfo(), totalLength)] = inputBuffer[p] / dividor;
-                }
-            }
-        }
-
-        return Status::OK();
-    }
-
-    BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), FLOAT_TYPES);
-
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctor_, (block, input, output, depth, bias, alpha, beta), FLOAT_TYPES);
-    }
-
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, double bias, double alpha, double beta) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctorEx_, (block, input, output, scale, depth, bias, alpha, beta), FLOAT_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template int lrnFunctorEx_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* scale, int depth, float bias, float alpha, float beta);, FLOAT_TYPES);
-
-    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta) {
+    const Nd4jLong numOfTads = inTadPack.numberOfTads();
+    const Nd4jLong tadLen    = input->sizeAt(-1); 
     
-        depth = nd4j::math::nd4j_min<Nd4jLong>(depth, input->sizeAt(1));
+    const Nd4jLong* inTadOffsets    = inTadPack.primaryOffsets();        
+    const Nd4jLong* outTadOffsets = outTadPack.primaryOffsets();
 
-        int halfDepth = depth / 2;
-        halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
-        const int channel =  input->sizeAt(1);
+    const Nd4jLong inTadEws    = shape::elementWiseStride(inTadPack.primaryShapeInfo());
+    const Nd4jLong outTadEws = shape::elementWiseStride(outTadPack.primaryShapeInfo());
+    
+    const T* inBuff  = reinterpret_cast<T*>(input->getBuffer());
+          T* outBuff = reinterpret_cast<T*>(output->getBuffer());
 
-#ifdef HAVE_MKLDNN
-    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, scale, output})) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("lrn_bp"));
+    const T tbias  = static_cast<T>(bias);
+    const T tbeta  = static_cast<T>(beta);
+    const T talpha = static_cast<T>(alpha);    
+
+    if(inTadEws == 1 && outTadEws == 1) {
+        
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const T* x = inBuff    + inTadOffsets[i];
+                  T* y = outBuff + outTadOffsets[i];
+
+            T prev = 0;
+
+            // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s)
+                        prev = prev + x[s] * x[s];
+                    y[j] = prev;
+                }
+                else if (begin == 0 && last <= tadLen)
+                    y[j] = prev + x[end - 1] * x[end - 1];
+                else if (begin > 0 && last <= tadLen)
+                    y[j] = prev + x[end - 1] * x[end - 1] - x[begin - 1] * x[begin - 1];
+                else if (begin > 0 && last > tadLen)
+                    y[j] = prev - x[begin - 1] * x[begin - 1];
+                else
+                    y[j] = prev;
+
+                  if(j != 0)
+                    prev = y[j];
+                
+                y[j] = x[j] / nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta); 
+            }          
         }
-
-        if (streams[0].checkAndReset({input, scale}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc lrn_src_md(empty), lrn_diff_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-
-            getMKLDNNMemoryDescLrn(input, scale, output, &lrn_src_md, &lrn_diff_src_md, &lrn_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md, 1);
-
-            auto lrn_desc = lrn_forward::desc(prop_kind::forward, lrn_across_channels, lrn_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
-            auto lrn_back_desc = lrn_backward::desc(lrn_across_channels, lrn_src_md, lrn_diff_src_md, (2 * halfDepth + 1), alpha * (2 * halfDepth + 1), beta, bias);
-
-            auto engine = streams[0].getEngine();
-            auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
-            auto lrn_back_prim_desc = lrn_backward::primitive_desc(lrn_back_desc, engine, lrn_prim_desc);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_diff_src_md, engine}, scale->buffer());
-            auto user_diff_src_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
-
-            auto lrn_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc(lrn_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_primitive_desc());
-                streams[0].addMemory(lrn_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, lrn_src_memory));
-            }
-
-            auto lrn_diff_src_memory = user_diff_src_memory;
-            streams[0].addMemory(user_diff_src_memory);
-            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_src_primitive_desc())
-                    != user_diff_src_memory.get_primitive_desc()) {
-                lrn_diff_src_memory = mkldnn::memory(lrn_back_prim_desc.diff_src_primitive_desc());
-                streams[0].addMemory(lrn_diff_src_memory);
-            }
-
-            auto lrn_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                lrn_dst_memory = mkldnn::memory(lrn_back_prim_desc.diff_dst_primitive_desc());
-                streams[0].addMemory(lrn_dst_memory);
-                streams[0].addOperation(reorder(user_dst_memory, lrn_dst_memory));
-            }
-
-            streams[0].addOperation(lrn_backward(lrn_back_prim_desc, lrn_src_memory, lrn_dst_memory, lrn_diff_src_memory));
-
-            if (mkldnn::memory::primitive_desc(lrn_back_prim_desc.diff_src_primitive_desc())
-                    != user_diff_src_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(lrn_diff_src_memory, user_diff_src_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return ND4J_STATUS_OK;
     }
-#endif
-    nd4j_debug("MKL-DNN is not used for lrn_bp!\n", 0);
+    else {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const T* x = inBuff    + inTadOffsets[i];
+                  T* y = outBuff + outTadOffsets[i];
 
-        std::unique_ptr<NDArray> activitySqr(input->dup('c'));//NDArrayFactory<T>::createUninitialized(input));
-        std::unique_ptr<NDArray> sumPart(activitySqr->dup('c'));
+            T prev = 0;
 
-        input->applyPairwiseTransform(pairwise::Multiply, input, activitySqr.get(), nullptr);
+            // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s)
+                        prev = prev + x[s*inTadEws] * x[s*inTadEws];
+                    y[j*outTadEws] = prev;
+                }
+                else if (begin == 0 && last <= tadLen)
+                    y[j*outTadEws] = prev + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws];
+                else if (begin > 0 && last <= tadLen)
+                    y[j*outTadEws] = prev + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws] - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else if (begin > 0 && last > tadLen)
+                    y[j*outTadEws] = prev - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else
+                    y[j*outTadEws] = prev;
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(halfDepth + 1 > Environment::getInstance()->tadThreshold())
-        for (int i = 1; i < halfDepth + 1; i++) {
-            std::vector<Nd4jLong> indA = {0,0, i,channel, 0,0, 0,0};
-            std::vector<Nd4jLong> indB = {0,0, 0,channel-i, 0,0, 0,0};
-
-            NDArray tmp = (*sumPart)(indA, true);
-            NDArray addVal = (*activitySqr)(indB, true);
-
-            tmp.applyPairwiseTransform(pairwise::Add, addVal, nullptr);
-
-
-            NDArray tmp2 = (*sumPart)(indB, true);
-            NDArray addVal2 = (*activitySqr)(indA, true);
-
-            tmp2.applyPairwiseTransform(pairwise::Add, addVal2, nullptr);
+                  if(j != 0)
+                    prev = y[j*outTadEws];
+                
+                y[j*outTadEws] = x[j*inTadEws] / nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta); 
+            }          
         }
+    }    
+    return Status::OK();
+}
+    
+BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), FLOAT_TYPES);
 
-        if (unitScale != nullptr && scale != nullptr) {
-            sumPart->applyScalar(scalar::Multiply, alpha, unitScale, nullptr);
-            unitScale->applyScalar(scalar::Add, bias);
+int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctor_, (block, input, output, depth, bias, alpha, beta), FLOAT_TYPES);
+}
 
-            float p = static_cast<float>(-beta);
-            unitScale->applyScalar(scalar::Pow, p, scale, nullptr);
-            input->applyPairwiseTransform(pairwise::Multiply, scale, output, nullptr);
+//////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    
+    const int rank = input.rankOf();
+
+    TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
+    TadPack gradITadPack;
+
+    if(shape::haveSameOffsets(input.getShapeInfo(), gradI.getShapeInfo()))
+        gradITadPack = inTadPack;
+    else
+        gradITadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
+
+    const Nd4jLong numOfTads = inTadPack.numberOfTads();
+    const Nd4jLong tadLen    = input.sizeAt(-1); 
+    
+    const Nd4jLong* inTadOffsets    = inTadPack.primaryOffsets();        
+    const Nd4jLong* gradITadOffsets = gradITadPack.primaryOffsets();
+
+    const Nd4jLong inTadEws    = shape::elementWiseStride(inTadPack.primaryShapeInfo());
+    const Nd4jLong gradITadEws = shape::elementWiseStride(gradITadPack.primaryShapeInfo());
+    
+    const X* inBuff    = reinterpret_cast<X*>(input.getBuffer());
+          Y* gradIBuff = reinterpret_cast<Y*>(gradI.getBuffer());    
+
+    const Y tbias  = static_cast<Y>(bias);
+    const Y tbeta  = static_cast<Y>(beta);
+    const Y talpha = static_cast<Y>(alpha);
+    const Y coeff  = talpha * tbeta; 
+
+    if(inTadEws == 1 && gradITadEws == 1) {
+        
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const X* x = inBuff    + inTadOffsets[i];
+                  Y* y = gradIBuff + gradITadOffsets[i];
+
+            // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {
+                    y[0] = 0;
+                    for (uint s = begin; s < end; ++s)
+                        y[0] = y[0] + x[s] * x[s];
+                }
+                else if (begin == 0 && last <= tadLen)
+                    y[j] = y[j - 1] + x[end - 1] * x[end - 1];
+                else if (begin > 0 && last <= tadLen)
+                    y[j] = y[j - 1] + x[end - 1] * x[end - 1] - x[begin - 1] * x[begin - 1];
+                else if (begin > 0 && last > tadLen)
+                    y[j] = y[j - 1] - x[begin - 1] * x[begin - 1];
+                else
+                    y[j] = y[j - 1];                
+            }
+
+            Y* factor = new Y[tadLen];
+
+            Y prev = 0;
+            // second loop calculates derivatives using information gained in first loop above
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+
+                Y init = tbias + talpha * y[j];
+
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s) {
+                        factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
+                        prev = prev + x[s] * factor[s];
+                    }
+                    y[0] = prev;
+                }
+                else if(begin == 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                    y[j] = prev + x[end - 1] * factor[end - 1];
+                }
+                else if (begin > 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                    y[j] = prev + x[end - 1] * factor[end - 1] - x[begin - 1] * factor[begin - 1];
+                }
+                else if (begin > 0 && last > tadLen)
+                    y[j] = prev - x[begin - 1] * factor[begin - 1];
+                else 
+                    y[j] = prev;
+                
+                if(j != 0)
+                    prev = y[j];
+
+                y[j] = factor[j] * init - 2 * x[j] * coeff * prev;                
+            }
+            
+            delete []factor;
         }
-
-        return Status::OK();
     }
+    else {
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (uint i = 0; i < numOfTads; ++i) {
+            const X* x = inBuff    + inTadOffsets[i];
+                  Y* y = gradIBuff + gradITadOffsets[i];
+
+            // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+            // we store each squared sum in corresponding element of y array
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;           
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+                
+                if (j == 0) {
+                    y[0] = 0;
+                    for (uint s = begin; s < end; ++s)
+                        y[0] = y[0] + x[s*inTadEws] * x[s*inTadEws];
+                }
+                else if (begin == 0 && last <= tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws];
+                else if (begin > 0 && last <= tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] + x[(end - 1)*inTadEws] * x[(end - 1)*inTadEws] - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else if (begin > 0 && last > tadLen)
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws] - x[(begin - 1)*inTadEws] * x[(begin - 1)*inTadEws];
+                else
+                    y[j*gradITadEws] = y[(j - 1)*gradITadEws];              
+            }
+
+            Y* factor = new Y[tadLen];
+
+            Y prev = 0;
+            // second loop calculates derivatives using information gained in first loop above
+            for (uint j = 0; j < tadLen; ++j) {
+                const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                const uint last  = depth + j + 1;
+                const uint end   = nd4j::math::nd4j_min<int>(last, tadLen);
+
+                Y init = tbias + talpha * y[j*gradITadEws];
+
+                if (j == 0) {                    
+                    for (uint s = begin; s < end; ++s) {
+                        factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s*gradITadEws], -tbeta - 1);
+                        prev = prev + x[s*inTadEws] * factor[s];
+                    }
+                    y[0] = prev;
+                }
+                else if(begin == 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1)*gradITadEws], -tbeta - 1);
+                    y[j*gradITadEws] = prev + x[(end - 1)*inTadEws] * factor[end - 1];
+                }
+                else if (begin > 0 && last <= tadLen) {
+                    factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1)*gradITadEws], -tbeta - 1);
+                    y[j*gradITadEws] = prev + x[(end - 1)*inTadEws] * factor[end - 1] - x[(begin - 1)*inTadEws] * factor[begin - 1];
+                }
+                else if (begin > 0 && last > tadLen)
+                    y[j*gradITadEws] = prev - x[(begin - 1)*inTadEws] * factor[begin - 1];
+                else 
+                    y[j*gradITadEws] = prev;
+                
+                if(j != 0)
+                    prev = y[j*gradITadEws];
+
+                y[j*gradITadEws] = factor[j] * init - 2 * x[j*inTadEws] * coeff * prev;                
+            }
+            
+            delete []factor;
+        }
+    }    
+    gradI *= gradO;
+}
+
+BUILD_DOUBLE_TEMPLATE(template void lrnBP_, (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta), LIBND4J_TYPES, FLOAT_TYPES);
+
+void lrnBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES);
+}
 
 }
 }

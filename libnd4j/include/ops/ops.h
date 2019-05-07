@@ -3479,7 +3479,7 @@ namespace simdOps {
             return (d1 == d2) ? static_cast<Y>(0.0f) :  static_cast<Y>(1.0f);
         }
 
-        op_def static void aggregateExtraParams(X *extraParamsTotal, X *extraParamsLocal) {
+        op_def static void aggregateExtraParams(Y *extraParamsTotal, Y *extraParamsLocal) {
 
         }
 
@@ -4135,7 +4135,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 			X length = params[1];
-            X tid = gridDim.x * blockDim.x + threadIdx.x;
+            X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -4157,7 +4157,7 @@ namespace simdOps {
 			Y prob = d2;
 #ifdef __CUDACC__
 			X length = params[1];
-			X tid = gridDim.x * blockDim.x + threadIdx.x;
+			X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);

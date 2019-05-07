@@ -29,23 +29,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_softmax)
         DECLARE_CONFIGURABLE_OP(softmax, 1, 1, true, 0, 0);
         DECLARE_CONFIGURABLE_OP(softmax_bp, 2, 1, true, 0, 0);
-        #endif
-
-        /**
-         * Local response normalization implementation.
-         * Reference: http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks
-         * Expected arguments:
-         * input: 4D array
-         * 
-         * T args:
-         * 0: alpha
-         * 1: beta
-         * 2: bias
-         * 3: depth
-         */
-        #if NOT_EXCLUDED(OP_lrn_old)
-        DECLARE_CUSTOM_OP(lrn_old, 1, 3, true, 4, 0);
-        #endif
+        #endif       
 
         /**
          * Local response normalization implementation as TF.
@@ -202,6 +186,76 @@ namespace nd4j {
                 DECLARE_CUSTOM_OP(layer_norm_bp, 4, 1, false, 0, -2);
         #endif
 
+        /**
+         * This operation performs dot product attention on the given timeseries input with the given queries
+         * out = sum(similarity(k_i, q) * v_i)
+         *
+         * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+         *
+         * Optionally with normalization step:
+         * similarity(k, q) = softmax(k * q / sqrt(size(q))
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+         *
+         * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+         * be 3D but can have queryCount = 1
+         *
+         * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+         * both.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]
+         */
+        #if NOT_EXCLUDED(OP_dot_product_attention)
+                DECLARE_CUSTOM_OP(dot_product_attention, 3, -1, false, 0, 2);
+                DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
+        #endif
+
+
+        /**
+         * This performs multi-headed dot product attention on the given timeseries input
+         * out = concat(head_1, head_2, ..., head_n) * Wo
+         * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)
+         *
+         * Optionally with normalization when calculating the attention for each head.
+         *
+         * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
+         *
+         * This makes use of dot_product_attention OP support for rank 4 inputs.
+         *
+         * Expected arguments:
+         * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
+         * k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
+         * v: input 3D array "values" of shape [batchSize, featureValues, timesteps]
+         * Wq: input query projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wk: input key projection weights of shape [numHeads, projectedKeys, featureKeys]
+         * Wv: input value projection weights of shape [numHeads, projectedValues, featureValues]
+         * Wo: output projection weights of shape [numHeads * projectedValues, outSize]
+         * mask: OPTIONAL; array that defines which values should be skipped of shape [batchSize, timesteps]
+         *
+         * integer input arguments:
+         * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+         * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+         *
+         * Output Arrays:
+         * 0: Attention result arrays of shape [batchSize, outSize, queryCount]
+         * 1: OPTIONAL; Attention weights of shape [batchSize, numHeads, timesteps, queryCount]
+         */
+        #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
+                DECLARE_CUSTOM_OP(multi_head_dot_product_attention, 7, -1, false, 0, 2);
+                DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
+        #endif
     }
 }
 

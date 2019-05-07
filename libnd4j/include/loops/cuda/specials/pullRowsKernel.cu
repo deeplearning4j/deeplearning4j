@@ -83,8 +83,8 @@ namespace nd4j {
                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                         Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
 
-        execPullRowsKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
-                                                                             (vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+        execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
+        nd4j::DebugHelper::checkErrorCode(stream, "pullRows(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT pullRowsKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, void * vz, Nd4jLong len, Nd4jLong * indexes, Nd4jLong * tadShapeInfo, Nd4jLong * tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong * zTadOffsets), LIBND4J_TYPES);

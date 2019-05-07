@@ -55,7 +55,7 @@ public class SparkDl4jNetworkTest {
     private JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
     private SQLContext sqlContext = new SQLContext(sparkContext);
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNetwork() {
         DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/dl4jnetwork"));
         Pipeline p = new Pipeline().setStages(new PipelineStage[] {getAssembler(new String[] {"x", "y"}, "features")});
@@ -78,7 +78,7 @@ public class SparkDl4jNetworkTest {
         Assert.assertNotNull(rows);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNetworkLoader() throws Exception {
         DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/dl4jnetwork"));
         Pipeline p = new Pipeline().setStages(new PipelineStage[] {getAssembler(new String[] {"x", "y"}, "features")});

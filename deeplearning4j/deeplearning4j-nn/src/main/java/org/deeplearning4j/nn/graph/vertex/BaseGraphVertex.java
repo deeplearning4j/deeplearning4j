@@ -22,6 +22,7 @@ import lombok.Setter;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -61,13 +62,16 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Setter @Getter
     protected boolean outputVertex;
 
+    protected DataType dataType;
+
     protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices) {
+                    VertexIndices[] outputVertices, DataType dataType) {
         this.graph = graph;
         this.vertexName = name;
         this.vertexIndex = vertexIndex;
         this.inputVertices = inputVertices;
         this.outputVertices = outputVertices;
+        this.dataType = dataType;
 
         this.inputs = new INDArray[(inputVertices != null ? inputVertices.length : 0)];
     }

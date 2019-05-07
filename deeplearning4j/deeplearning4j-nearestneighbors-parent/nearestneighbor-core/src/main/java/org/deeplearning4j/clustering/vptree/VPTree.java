@@ -250,7 +250,7 @@ public class VPTree implements Serializable {
         if (scalars == null)
             scalars = new ThreadLocal<>();
 
-        if (scalars.get() == null)
+        if (Nd4j.scalar(0.0f).equals(scalars.get()))
             scalars.set(Nd4j.scalar(0.0));
 
         switch (similarityFunction) {
@@ -361,17 +361,25 @@ public class VPTree implements Serializable {
         workspace.notifyScopeLeft();
         //log.info("Thread: {}; Workspace size: {} MB; ConstantCache: {}; ShapeCache: {}; TADCache: {}", Thread.currentThread().getId(), (int) (workspace.getCurrentSize() / 1024 / 1024 ), Nd4j.getConstantHandler().getCachedBytes(), Nd4j.getShapeInfoProvider().getCachedBytes(), Nd4j.getExecutioner().getTADManager().getCachedBytes());
 
-        if (!leftPoints.isEmpty())
-            ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
+        if (workers > 1) {
+            if (!leftPoints.isEmpty())
+                ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
 
-        if (!rightPoints.isEmpty())
-            ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
+            if (!rightPoints.isEmpty())
+                ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
+        } else {
+            if (!leftPoints.isEmpty())
+                ret.left = buildFromPoints(leftPoints, leftIndices);
+
+            if (!rightPoints.isEmpty())
+                ret.right = buildFromPoints(rightPoints, rightIndices);
+        }
 
         return ret;
     }
 
     private Node buildFromPoints(INDArray items) {
-        if (executorService == null && items == this.items) {
+        if (executorService == null && items == this.items && workers > 1) {
 
             executorService = Executors.newFixedThreadPool(workers, new ThreadFactory() {
                 @Override
@@ -388,9 +396,6 @@ public class VPTree implements Serializable {
                     return t;
                 }
             });
-
-
-            //executorService = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(32));
         }
 
 
@@ -407,7 +412,7 @@ public class VPTree implements Serializable {
                 Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
 
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
-        INDArray basePoint = items.getRow(randomPoint);
+        INDArray basePoint = items.getRow(randomPoint, true);
         INDArray distancesArr = Nd4j.create(items.rows(), 1);
         ret.point = basePoint;
         ret.index = randomPoint;
@@ -428,10 +433,10 @@ public class VPTree implements Serializable {
                 continue;
 
             if (distancesArr.getDouble(i) < medianDistance) {
-                leftPoints.add(items.getRow(i));
+                leftPoints.add(items.getRow(i, true));
                 leftIndices.add(i);
             } else {
-                rightPoints.add(items.getRow(i));
+                rightPoints.add(items.getRow(i, true));
                 rightIndices.add(i);
             }
         }
@@ -461,6 +466,9 @@ public class VPTree implements Serializable {
         return ret;
     }
 
+    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances) {
+        search(target, k, results, distances, true);
+    }
 
 
     /**
@@ -470,7 +478,7 @@ public class VPTree implements Serializable {
      * @param results
      * @param distances
      */
-    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances) {
+    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances, boolean filterEqual) {
         if (items != null)
             if (!target.isVectorOrScalar() || target.columns() != items.columns() || target.rows() > 1)
                 throw new ND4JIllegalStateException("Target for search should have shape of [" + 1 + ", "
@@ -481,10 +489,7 @@ public class VPTree implements Serializable {
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>(items.rows(), new HeapObjectComparator());
-        search(root, target, k + 1, pq, Double.MAX_VALUE);
-
-        if (pq.size() > k)
-            pq.poll();
+        search(root, target, k + (filterEqual ? 2 : 1), pq, Double.MAX_VALUE);
 
         while (!pq.isEmpty()) {
             HeapObject ho = pq.peek();
@@ -495,6 +500,16 @@ public class VPTree implements Serializable {
 
         Collections.reverse(results);
         Collections.reverse(distances);
+
+        if (results.size() > k) {
+            if (filterEqual && distances.get(0) == 0.0) {
+                results.remove(0);
+                distances.remove(0);
+            }
+
+            results.remove(results.size() - 1);
+            distances.remove(distances.size() - 1);
+        }
     }
 
     /**
@@ -514,13 +529,13 @@ public class VPTree implements Serializable {
         INDArray get = node.getPoint(); //items.getRow(node.getIndex());
         double distance = distance(get, target);
         if (distance < tau) {
-            if (pq.size() == k)
-                pq.poll();
+           if (pq.size() == k)
+              pq.poll();
 
             pq.add(new HeapObject(node.getIndex(), node.getPoint(), distance));
             if (pq.size() == k)
-                tau = pq.peek().getDistance();
-        }
+               tau = pq.peek().getDistance();
+         }
 
         Node left = node.getLeft();
         Node right = node.getRight();
@@ -578,16 +593,16 @@ public class VPTree implements Serializable {
         public void fetchFutures() {
             try {
                 if (futureLeft != null) {
-                    while (!futureLeft.isDone())
-                        Thread.sleep(100);
+                    /*while (!futureLeft.isDone())
+                        Thread.sleep(100);*/
 
 
                     left = futureLeft.get();
                 }
 
                 if (futureRight != null) {
-                    while (!futureRight.isDone())
-                        Thread.sleep(100);
+                    /*while (!futureRight.isDone())
+                        Thread.sleep(100);*/
 
                     right = futureRight.get();
                 }

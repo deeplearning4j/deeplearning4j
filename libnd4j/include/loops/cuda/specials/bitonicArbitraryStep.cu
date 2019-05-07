@@ -112,5 +112,6 @@ template<typename T>
 __host__ void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
 
     execBitonicArbitraryStepKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, window, length, reverse, descending);
+    nd4j::DebugHelper::checkErrorCode(stream, "bitonicArbitrary(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES);

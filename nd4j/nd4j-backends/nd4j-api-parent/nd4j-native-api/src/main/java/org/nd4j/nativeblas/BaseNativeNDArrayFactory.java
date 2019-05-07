@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.ByteIndexer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
@@ -67,7 +68,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public Pointer convertToNumpy(INDArray array) {
-        LongPointer size = new LongPointer(1);
+        val size = new LongPointer(1);
         Pointer header = NativeOpsHolder
                 .getInstance().getDeviceNativeOps()
                 .numpyHeaderForNd4j(
@@ -75,20 +76,20 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                         array.shapeInfoDataBuffer().pointer(),
                         array.data().getElementSize()
                         ,size);
-        header.capacity(size.get());
+
+        val headerSize = size.get() - 1;
+        header.capacity(headerSize);
         header.position(0);
 
-        char[] magic = {'\\','x','9','3','N','U','M','P','Y','1','0'};
 
-        BytePointer magicPointer = new BytePointer(new String(magic).getBytes());
-        BytePointer bytePointer = new BytePointer(magicPointer.capacity() + (int) (size.get() + (array.data().getElementSize() * array.data().length())));
+
+        BytePointer bytePointer = new BytePointer((int) (headerSize + (array.data().getElementSize() * array.data().length())));
         BytePointer headerCast = new BytePointer(header);
+        val indexer = ByteIndexer.create(headerCast);
         int pos = 0;
-        Pointer.memcpy(bytePointer,magicPointer,magicPointer.capacity());
-        pos += (magicPointer.capacity() - 1);
         bytePointer.position(pos);
-        Pointer.memcpy(bytePointer,headerCast,headerCast.capacity());
-        pos += (headerCast.capacity() - 1);
+        Pointer.memcpy(bytePointer, headerCast,headerCast.capacity());
+        pos += (headerCast.capacity());
         bytePointer.position(pos);
 
         // make sure data is copied to the host memory

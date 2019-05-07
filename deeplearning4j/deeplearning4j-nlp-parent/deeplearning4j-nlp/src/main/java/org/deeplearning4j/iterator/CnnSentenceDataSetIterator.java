@@ -382,7 +382,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
                     for (int i = 0; i < currMinibatchSize; i++) {
                         int sentenceLength = tokenizedSentences.get(i).getFirst().size();
                         if (sentenceLength >= maxLength) {
-                            featuresMask.getRow(i).assign(1.0);
+                            featuresMask.slice(i).assign(1.0);
                         } else {
                             featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.interval(0, sentenceLength), NDArrayIndex.point(0)).assign(1.0);
                         }
@@ -392,7 +392,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
                     for (int i = 0; i < currMinibatchSize; i++) {
                         int sentenceLength = tokenizedSentences.get(i).getFirst().size();
                         if (sentenceLength >= maxLength) {
-                            featuresMask.getRow(i).assign(1.0);
+                            featuresMask.slice(i).assign(1.0);
                         } else {
                             featuresMask.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.interval(0, sentenceLength)).assign(1.0);
                         }

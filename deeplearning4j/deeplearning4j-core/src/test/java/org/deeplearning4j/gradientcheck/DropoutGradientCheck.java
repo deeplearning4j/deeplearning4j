@@ -91,7 +91,7 @@ public class DropoutGradientCheck extends BaseDL4JTest {
                 }
 
                 NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
-
+                        .dataType(DataType.DOUBLE)
                         .dist(new NormalDistribution(0,1))
                         .convolutionMode(ConvolutionMode.Same)
                         .dropOut(dropout)
@@ -148,7 +148,7 @@ public class DropoutGradientCheck extends BaseDL4JTest {
         int mb = 3;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-
+                .dataType(DataType.DOUBLE)
                 .dist(new NormalDistribution(0,1))
                 .convolutionMode(ConvolutionMode.Same)
                 .dropOut(new GaussianDropout(0.1))  //0.33 stdev. Gaussian dropout: out = in * N(1,stdev)

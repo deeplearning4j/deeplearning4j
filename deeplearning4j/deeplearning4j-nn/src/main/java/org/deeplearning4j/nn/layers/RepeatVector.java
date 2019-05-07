@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -45,12 +46,8 @@ import java.util.Arrays;
  */
 public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layers.misc.RepeatVector> {
 
-    public RepeatVector(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public RepeatVector(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public RepeatVector(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override

@@ -55,12 +55,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>
-            <classifier>${javacpp.platform.macosx-x86_64}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>${nd4j.backend}</artifactId>
-            <version>${project.version}</version>
             <classifier>${javacpp.platform.windows-x86_64}</classifier>
         </dependency>
         <dependency>

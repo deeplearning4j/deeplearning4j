@@ -21,6 +21,7 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
+import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,14 +50,38 @@ public class NearestNeighborTest {
 
     @Test
     public void testNearestNeighbor() {
-        INDArray arr = Nd4j.create(new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}});
+        double[][] data = new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}};
+        INDArray arr = Nd4j.create(data);
 
         VPTree vpTree = new VPTree(arr, false);
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setK(2);
         request.setInputIndex(0);
         NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
-        assertEquals(1, nearestNeighbor.search().get(0).getIndex());
+        List<NearestNeighborsResult> results = nearestNeighbor.search();
+        assertEquals(1, results.get(0).getIndex());
+        assertEquals(2, results.size());
+
+        assertEquals(1.0, results.get(0).getDistance(), 1e-4);
+        assertEquals(4.0, results.get(1).getDistance(), 1e-4);
+    }
+
+    @Test
+    public void testNearestNeighborInverted() {
+        double[][] data = new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}};
+        INDArray arr = Nd4j.create(data);
+
+        VPTree vpTree = new VPTree(arr, true);
+        NearestNeighborRequest request = new NearestNeighborRequest();
+        request.setK(2);
+        request.setInputIndex(0);
+        NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
+        List<NearestNeighborsResult> results = nearestNeighbor.search();
+        assertEquals(2, results.get(0).getIndex());
+        assertEquals(2, results.size());
+
+        assertEquals(-4.0, results.get(0).getDistance(), 1e-4);
+        assertEquals(-1.0, results.get(1).getDistance(), 1e-4);
     }
 
     @Test

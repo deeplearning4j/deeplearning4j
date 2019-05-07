@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -45,8 +46,8 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
     private static final int[] DIM_1 = new int[]{1};
 
-    public EmbeddingLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public EmbeddingLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -57,7 +58,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+            delta.muliColumnVector(maskArray.castTo(dataType));
         }
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
@@ -113,7 +114,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), weights.size(1));
+        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(), input.size(0), weights.size(1));
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
         if(hasBias()){
             rows.addiRowVector(bias);
@@ -128,7 +129,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+            ret.muliColumnVector(maskArray.castTo(dataType));
         }
         return ret;
     }

@@ -91,8 +91,8 @@ public class TensorflowConversionTest {
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr.length(), fromTensor.length());
         for (int i = 0; i < arr.length(); i++) {
-            assertEquals(strings[i], fromTensor.getStringUnsafe(i));
-            assertEquals(arr.getStringUnsafe(i), fromTensor.getStringUnsafe(i));
+            assertEquals(strings[i], fromTensor.getString(i));
+            assertEquals(arr.getString(i), fromTensor.getString(i));
         }
     }
 
