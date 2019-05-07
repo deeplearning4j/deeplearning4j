@@ -98,7 +98,7 @@ public class TestPlayUI {
     }
 
     @Test
-//    @Ignore
+    @Ignore
     public void testUI_VAE() throws Exception {
         //Variational autoencoder - for unsupervised layerwise pretraining
 
@@ -142,7 +142,7 @@ public class TestPlayUI {
 
 
     @Test
-//    @Ignore
+    @Ignore
     public void testUIMultipleSessions() throws Exception {
 
         for (int session = 0; session < 3; session++) {
