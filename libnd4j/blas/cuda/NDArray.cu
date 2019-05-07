@@ -1900,6 +1900,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps cuda: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
+    if (copy.size())
     shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
@@ -1940,6 +1941,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: requires target array to be present and have same dtype as input");
 
     std::vector<int> copy(dimensions);
+    if (copy.size())
     shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
