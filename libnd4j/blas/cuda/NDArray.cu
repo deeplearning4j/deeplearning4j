@@ -73,7 +73,6 @@ void NDArray::operator delete(void* p) {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
-    
     _context = other._context;
 
     setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
@@ -130,7 +129,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, cons
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
 NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context) {
-    
+
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
 
@@ -143,12 +142,9 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
     else
         setShapeInfo(ShapeDescriptor(dtype, shape::order(shapeInfo), shape::shapeOf(shapeInfo), shape::rank(shapeInfo)));
 
-//    auto shapeInfoTemp = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, copyStrides, _context->getWorkspace());
-//    setShapeInfo(shapeInfoTemp);
-
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, 0, _length * sizeOfT());
-    _isBuffDAlloc = true;        
+    _isBuffDAlloc = true;
    
     tickWriteDevice();
 }
@@ -206,7 +202,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
-
     _context = context;
     
     if (copyStrides)
@@ -248,7 +243,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
-
+    nd4j_printf("Assignment operator...\n","");
     if (this == &other)
         return *this;    
 
@@ -1256,7 +1251,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
             throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
         NDArray::registerSpecialUse({target}, {this});
-        if(!isActualOnDeviceSide()) syncToDevice();
+        if(!isActualOnDeviceSide())
+            syncToDevice();
+
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
@@ -1729,13 +1726,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 // default destructor
 NDArray::~NDArray() noexcept {
     if (isS()) {
-        if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
-            for (int e = 0; e < lengthOf(); e++) {
-                auto t = reinterpret_cast<utf8string**>(_buffer);
-                delete t[e];
-            };
-            delete[] _buffer;
-        }
+        delete[] _buffer;
     }
     else
     if (_isBuffAlloc)

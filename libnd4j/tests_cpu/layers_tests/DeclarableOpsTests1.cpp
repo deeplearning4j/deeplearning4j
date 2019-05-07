@@ -30,6 +30,7 @@
 #include <array/NDArrayList.h>
 #include <NativeOps.h>
 #include <ops/gemm.h>
+#include <helpers/PointersManager.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -218,6 +219,9 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
     auto x = NDArrayFactory::create_<float>('f', {2, 3, 4});
     auto y = NDArrayFactory::create_<float>('f', {2, 3, 4});
 
+    x->lazyAllocateBuffer();
+    y->lazyAllocateBuffer();
+
     for (int i = 0; i < x->lengthOf(); i++) {
         // x->p(i, i + 1);
         // y->p(i, i + 1);
@@ -262,13 +266,17 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
     auto x = NDArrayFactory::create_<float>('c', {2, 3, 4});
     auto y = NDArrayFactory::create_<float>('f', {2, 3, 4});
 
+    y->lazyAllocateBuffer();
+
     for (int i = 0; i < x->lengthOf(); i++) {
         x->p(i, i + 1);
         // y->p(i, i + 1);
         reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
     }
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});   
+    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
+    exp->lazyAllocateBuffer();
+
     reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
     reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
     reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
@@ -306,6 +314,8 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     auto x =  NDArrayFactory::create_<float>('f', {2, 3, 4});
     auto y =  NDArrayFactory::create_<float>('c', {2, 3, 4});
 
+    x->lazyAllocateBuffer();
+
     for (int i = 0; i < x->lengthOf(); i++) {
         // x->p(i, i + 1);
         reinterpret_cast<float*>(x->getBuffer())[i] = i + 1;
@@ -313,6 +323,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     }
 
     auto exp = NDArrayFactory::create_<float>('f', {2, 2});
+    exp->lazyAllocateBuffer();
     // exp->p(0, 1090.0);
     // exp->p(1, 1168.0);
     // exp->p(2, 2818.0);
@@ -1626,6 +1637,7 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
     delete[] outputShapes;
 }
 
+#ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
@@ -1644,15 +1656,16 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
     auto exp = new NDArray(expBuffer, z->getShapeInfo());
 
-    nd4j::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
+     nd4j::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
 
     //z->printBuffer();
 
     ASSERT_TRUE(z->equalsTo(exp));
 
     delete []xBuffer; delete []xShape; delete x; delete []yBuffer; delete []yShape; delete y; delete z; delete []expBuffer; delete exp;
-
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshape1) {
@@ -2929,7 +2942,6 @@ TEST_F(DeclarableOpsTests1, sru_test1) {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_logic_test1) {
-
     const int bS = 2;
     const int K = 3;    
     const int N = 4;
@@ -2950,10 +2962,11 @@ TEST_F(DeclarableOpsTests1, sru_logic_test1) {
     init.assign(1.);
     mask.assign(1.);
     expState.setBuffer(expStateBuff);
-    expOut.setBuffer(expOutputBuff);    
+    expOut.setBuffer(expOutputBuff);
 
     nd4j::ops::sru_logic op;
     auto results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
+
     ASSERT_TRUE(results->size() == 2);    
 
     auto output = results->at(0);
