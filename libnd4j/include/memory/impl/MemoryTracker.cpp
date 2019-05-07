@@ -65,7 +65,7 @@ namespace nd4j {
             Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
 
             if (_released.count(lptr) > 0) {
-                throw std::runtime_error("Double free!");
+                //throw std::runtime_error("Double free!");
             }
 
             if (_allocations.count(lptr) > 0) {
