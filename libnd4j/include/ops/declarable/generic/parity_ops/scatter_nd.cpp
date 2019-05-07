@@ -34,6 +34,8 @@ namespace ops {
 
         auto output = OUTPUT_VARIABLE(0);
 
+        const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+
         const int indRank   = indices->rankOf();
         const int updRank   = updates->rankOf();
         const int shapeRank = shape->rankOf();
@@ -54,7 +56,7 @@ namespace ops {
         // initial zeroing of output
         *output = 0;
 
-        helpers::scatterND(block.launchContext(), pairwise::Add, *indices, *updates, *output, false);
+        helpers::scatterND(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
 
         return Status::OK();
     }

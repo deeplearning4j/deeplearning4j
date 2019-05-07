@@ -70,7 +70,7 @@ OP_IMPL(scatter_min, 3, 1, true) {
     if (!block.isInplace())
             output->assign(input);
 
-        helpers::scatter(block.launchContext(), pairwise::MinPairwise, *indices, *updates, *output, lock);
+    helpers::scatter(block.launchContext(), pairwise::MinPairwise, *indices, *updates, *output, lock);
 
     return Status::OK();
 }

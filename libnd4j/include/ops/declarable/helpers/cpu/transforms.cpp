@@ -700,7 +700,7 @@ void scatterUpdate(graph::LaunchContext* context, NDArray& input, NDArray& updat
 
     PRAGMA_OMP_PARALLEL_FOR
     for (Nd4jLong i = 0; i < indices.size(); ++i) {
-                
+
         auto inSubArr  = input(indices[i], dimsToExclude, true);
         auto updSubArr = updates(i,        dimsToExclude, true);
 
