@@ -598,8 +598,8 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
                        nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
-                       tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(),
-                       tadPackY.primaryShapeInfo(), tadPackY.primaryOffsets());
+                       tadPackX.platformShapeInfo(), tadPackX.platformOffsets(),
+                       tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
 }
 
 TEST_F(LegacyOpsTests, Softmax_119_1) {
@@ -615,4 +615,56 @@ TEST_F(LegacyOpsTests, Softmax_119_2) {
     x.linspace(1.0);
 
     x.applyTransform(transform::StrictOps::SoftMax, &z);
+}
+
+TEST_F(LegacyOpsTests, test_inverse_broadcast_1) {
+    auto x = NDArrayFactory::create<float>('c', {4}, {2.0f, 2.0f, 2.0f, 2.0f});
+    auto y = NDArrayFactory::create<float>('c', {3, 4});
+    auto e = NDArrayFactory::create<float>('c', {3, 4});
+    e.assign(2.0f);
+
+    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
+
+    y.tickWriteDevice();
+
+    NativeOpExecutioner::execInverseBroadcast(LaunchContext::defaultContext(), broadcast::Add,
+            x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+            y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+            y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+            nullptr, 0,
+            tadPackY.platformShapeInfo(), tadPackY.platformOffsets(),
+            tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+
+    ASSERT_EQ(e, y);
+}
+
+TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
+    auto x = NDArrayFactory::create<float>('c', {4}, {2.0f, 2.0f, 2.0f, 2.0f});
+    auto y = NDArrayFactory::create<float>('c', {3, 4});
+    auto z = NDArrayFactory::create<bool>('c', {3, 4});
+    auto e = NDArrayFactory::create<bool>('c', {3, 4});
+    e.assign(false);
+
+    auto row = y.tensorAlongDimension(1, {1});
+    row->assign(2.0f);
+
+    auto erow = e.tensorAlongDimension(1, {1});
+    erow->assign(true);
+
+    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
+
+    y.tickWriteDevice();
+
+    NativeOpExecutioner::execInverseBroadcastBool(LaunchContext::defaultContext(), broadcast::BoolOps::EqualTo,
+        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+        nullptr, 0,
+        tadPackY.platformShapeInfo(), tadPackY.platformOffsets(),
+        tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+
+    ASSERT_EQ(e, z);
+
+    delete row;
+    delete erow;
 }

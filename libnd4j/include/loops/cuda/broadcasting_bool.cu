@@ -190,7 +190,7 @@ namespace functions {
 
    	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = shape::length(xShapeInfo) / tadLength;
+                numTads = shape::length(yShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
       

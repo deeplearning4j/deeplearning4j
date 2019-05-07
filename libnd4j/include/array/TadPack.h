@@ -41,6 +41,13 @@ namespace nd4j {
         Nd4jLong* specialOffsets();
 
         Nd4jLong numberOfTads();
+
+        /**
+         * These methods return either primary or special pointers depending on platform binaries were compiled for
+         * @return
+         */
+        Nd4jLong *platformShapeInfo();
+        Nd4jLong *platformOffsets();
     };
 }
 
