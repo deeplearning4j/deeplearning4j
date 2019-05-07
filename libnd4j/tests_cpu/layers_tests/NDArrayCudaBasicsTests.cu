@@ -31,7 +31,6 @@
 #include <ops/declarable/CustomOperations.h>
 
 #include <cuda.h>
-#include <cuda_launch_config.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;

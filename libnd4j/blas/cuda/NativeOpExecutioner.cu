@@ -16,7 +16,6 @@
 
 #include "../NativeOpExecutioner.h"
 #include <cuda.h>
-#include <cuda_launch_config.h>
 #include <op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 #include <DataTypeUtils.h>
