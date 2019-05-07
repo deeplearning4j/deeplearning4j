@@ -50,7 +50,7 @@ Seq[Any](format.raw/*1.4*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
 
         <link href="/assets/css/samediff/samediff.css" rel="stylesheet">
 	<![endif]-->
@@ -60,7 +60,7 @@ Seq[Any](format.raw/*1.4*/("""
             <!-- Start JavaScript-->
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
-        <script src="/assets/webjars/bootstrap/4.2.1/dist/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/bootstrap/4.3.1/dist/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
 
@@ -214,9 +214,9 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Tue May 07 19:50:21 AEST 2019
+                  DATE: Tue May 07 21:39:40 AEST 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 4038ea3af4996531fa4e8003e8842ef40f12022b
+                  HASH: d80f43e3f37ebbfb22768edb52560e2d6d6fcb2a
                   MATRIX: 561->1|657->3|685->5|4621->3938|4658->3948|6437->5729|6483->5747|6664->5959|6715->5981|7384->6685|7435->6707|8217->7526|8268->7548|10114->9365|10144->9366|10195->9388|10264->9428|10294->9429
                   LINES: 20->1|25->1|26->2|95->71|96->72|122->98|123->99|124->100|125->101|138->114|139->115|158->134|159->135|191->167|191->167|192->168|193->169|193->169
                   -- GENERATED --
