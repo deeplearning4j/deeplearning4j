@@ -101,7 +101,7 @@ namespace helpers {
                 // If (colP[i], n) is not present, there is no addition involved
                 if (!present) {
                     int colPI = pCols[i];
-                    if (n < colPI) {
+                    if (n <= colPI) {
                         pOutput[symRowP[n] + offset[n]] = T(colPI);
                         pOutput[symRowP[pCols[i]] + offset[colPI]] = T(n);
                         pOutput[symRowP[n] + offset[n]] = pVals[i];
@@ -110,7 +110,7 @@ namespace helpers {
 
                 }
                 // Update offsets
-                if (!present || (present && n < pCols[i])) {
+                if (!present || (present && n <= pCols[i])) {
                     ++offset[n];
                     int colPI = pCols[i];
                     if (colPI != n)
