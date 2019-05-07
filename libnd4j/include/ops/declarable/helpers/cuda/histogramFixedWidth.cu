@@ -53,6 +53,7 @@ namespace helpers {
             z = reinterpret_cast<Nd4jLong*>(outputBuffer);
             x = reinterpret_cast<T const*>(inputBuffer);
         }
+        __syncthreads();
         auto tid = blockIdx.x * gridDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
 
@@ -95,10 +96,11 @@ namespace helpers {
         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
+        //cudaSyncStream(*stream);
         err = cudaFree(outputBuffer);
         if (err != 0)
             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot deallocate memory for output buffer", err);
-
+        output.tickWriteDevice();
 //#pragma omp parallel for schedule(guided)
 //        for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
 //
