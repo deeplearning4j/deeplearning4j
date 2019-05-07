@@ -1,0 +1,31 @@
+
+.app-header {
+    background: #080808;
+}
+
+.navbar-inner {
+    margin-bottom: 0px;
+    min-height: 40px;
+    padding-right: 20px;
+    padding-left: 20px;
+    background: #080808;
+    filter: none;
+    text-shadow: 1px 1px 1px #0a0c0e;
+    border: none;
+    color: #fff;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    *zoom: 1;
+    border-bottom: 1px solid #38383D; /* rgba(0, 0, 0, 0.05); */
+
+}
+
+
+#content {
+    background: #ffffff;
+    filter: none;
+    min-height: 100vh;
+    padding: 20px 20px;
+    position: relative;
+}
