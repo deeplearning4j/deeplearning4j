@@ -17,7 +17,6 @@
 
 #include "../NativeOps.h"
 #include <cuda.h>
-#include <cuda_launch_config.h>
 
 #include <buffer.h>
 #include <helpers/shape.h>
@@ -157,40 +156,6 @@ void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data)
 // this method just does type conversion in fancy way
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jLong)ptrToDeviceId;
-}
-
-
-template <typename T>
-dim3 getOptimalDimensions(Nd4jLong n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
-
-	// we can combine the two to compute a block size
-	int num_threads = block_size_with_maximum_potential_occupancy(attributes, properties);
-
-	// no real sense launching more threads, then number of elements we have
-	if (num_threads > n) num_threads = n;
-
-	if (maxThreads > 0 && num_threads > maxThreads) num_threads = maxThreads;
-
-	// compute the number of blocks of size num_threads to launch
-	int num_blocks = n / num_threads;
-
-	// check for partial block at the end
-
-	if (num_blocks > blockLimit) num_blocks = blockLimit;
-
-	if (num_blocks < 4 && n > 128) {
-		num_blocks = 4;
-		num_threads = n / num_blocks;
-	}
-
-	if (num_threads >= 768) {
-		num_blocks = num_blocks * 2;
-		num_threads = num_threads / 2;
-	}
-
-	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
-    //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
-	return dim3(num_blocks,num_threads, 3000);
 }
 
 int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
@@ -463,29 +428,6 @@ dim3 getReduceLaunchParams(int deviceId, Nd4jLong *dXShapeInfo, Nd4jLong *tadSha
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose()) { //|| launchDims.dX == 1
 		printf("Reduce LaunchParams: xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.dX: [%i], launchDims.dY: [%i], launchDims.dZ: [%i]\n", shape::length(dXShapeInfo), numTads, tadLength, launchDims.x, launchDims.y, launchDims.z);
 	}
-
-	return launchDims;
-}
-
-/**
- * Returns optimal launch parameters
- * given the extra pointers passed in.
- * The extra pointer should be
- * the host pointer for the shape information
- * associated with the data.
- * From there it is used to obtain the length
- * from which we can derive the optimal launch parameters.
- *
- */
-template <typename T>
-dim3 getOptimalLaunchParameters(const Nd4jLong *hXShapeInfo, cudaFuncAttributes attributes, cudaDeviceProp properties) {
-	
-	auto n = shape::length(hXShapeInfo);
-
-	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
 
 	return launchDims;
 }
