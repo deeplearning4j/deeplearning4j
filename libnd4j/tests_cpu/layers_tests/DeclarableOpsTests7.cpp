@@ -5388,12 +5388,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_3) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_03) {
-
+    int ax = 0;
     auto input = NDArrayFactory::create<double>('c', {3, 4},   {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f});
     auto eps = NDArrayFactory::create<double>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
     //************************************//
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {45.f, 120.f, 231.f, 384.f, 9.f, 40.f, 99.f, 192.f, 5.f, 24.f, 63.f, 128.f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    auto axis = NDArrayFactory::create<int>('c', {1}, {ax});
     nd4j::ops::reduce_prod_bp op;
     //nd4j::ops::reduce_prod op_exp;
     auto result = op.execute({&input, &eps, &axis}, {}, {}, {true});
