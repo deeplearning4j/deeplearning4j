@@ -404,7 +404,7 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test2) {
 
     auto x = NDArrayFactory::create<double>('c', {3,4});
     auto gradO1 = NDArrayFactory::create<double>('c', {1,4}, {1.f,2.f,3.f,4.f});
-    auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
+    auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.,2.,3.,4.});
     auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-2.666667f, -5.333333f, -8.000000f,  -10.666667f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 2.666667f, 5.333333f,  8.000000f, 10.666667f});
     auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
 
@@ -450,7 +450,7 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test02) {
     auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
     auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-2.666667f, -5.333333f, -8.000000f,  -10.666667f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 2.666667f, 5.333333f,  8.000000f, 10.666667f});
     auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
-    auto axes = NDArrayFactory::create<int>('c', {1}, 0);
+    auto axes = NDArrayFactory::create<int>({(int)0,});
     x.linspace(1);
 
     nd4j::ops::reduce_variance_bp op;
@@ -624,7 +624,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test02) {
     auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
     auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-0.4082483f, -0.8164966f, -1.2247449f, -1.6329932f, 0.0, 0.0, 0.0, 0.0, 0.4082483f, 0.8164966f, 1.2247449f, 1.6329932f});
     auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-0.5f, -1.0f, -1.5f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
     x.linspace(1);
 
     nd4j::ops::reduce_stdev_bp op;
@@ -2128,7 +2128,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_BP_04) {
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {1.f, 2.f, 3.f, 4.f,
                                                             1.f, 2.f, 3.f, 4.f,
                                                             1.f, 2.f, 3.f, 4.f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
     //************************************//
 
     nd4j::ops::reduce_sum_bp op;
@@ -2390,7 +2390,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test02) {
     auto gradO1 = NDArrayFactory::create<double>('c', {4},  {1.f, 2.f, 3.f, 4.f});
     auto gradO2 = NDArrayFactory::create<double>('c', {1,4}, {1.f, 2.f, 3.f, 4.f});
     auto exp = NDArrayFactory::create<double>('c', {3,4}, {1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
     x.linspace(1);
 
     nd4j::ops::reduce_mean_bp op;
