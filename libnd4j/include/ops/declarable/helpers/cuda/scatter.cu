@@ -522,7 +522,7 @@ __global__ static void scatterNDLockCuda(const int opCode,
         else {
             const auto yTad = y + yOffsets[i];
             const auto zTad = z + zOffsets[zTadIndex];
-
+            
             for (Nd4jLong j = threadIdx.x; j < yTadLen; j += blockDim.x) {
                 
                 const auto yOffset = shape::getIndexOffset(j, yTadShapeInfo, yTadLen);
@@ -548,13 +548,13 @@ __global__ static void scatterNDLockCuda(const int opCode,
                         zTad[zOffset] = yTad[yOffset] / zTad[zOffset];
                         break;
                     case pairwise::CopyPws:
-                        z[zOffset] = y[yOffset];
+                        zTad[zOffset] = yTad[yOffset];
                         break;           
                     case pairwise::MaxPairwise: 
-                        if(z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
+                        if(zTad[zOffset] < yTad[yOffset]) zTad[zOffset] = yTad[yOffset];
                         break;
                     case pairwise::MinPairwise:
-                        if(z[zOffset] > y[yOffset]) z[zOffset] = y[yOffset];
+                        if(zTad[zOffset] > yTad[yOffset]) zTad[zOffset] = yTad[yOffset];
                         break;
                     default:
                         continue;
