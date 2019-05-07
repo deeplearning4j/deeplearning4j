@@ -67,6 +67,8 @@ LaunchContext::~LaunchContext() {
         cudaFree(_reductionPointer);
         cudaFree(_allocationPointer);
         cudaFree(_scalarPointer);
+
+        cublas::destroyHandle(_cublasHandle);
     }
 #endif
 }
@@ -78,6 +80,7 @@ LaunchContext::LaunchContext() {
     _deviceID = 0;
 
 #ifdef __CUDABLAS__
+    _isAllocated = true;
     _cudaStream  = new cudaStream_t();
     _cudaSpecialStream = new cudaStream_t();
     if (nullptr == _cudaStream || nullptr == _cudaSpecialStream)

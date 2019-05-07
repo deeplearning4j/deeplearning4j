@@ -22,6 +22,7 @@
 #include <cublas_v2.h>
 #include "../cublasHelper.h"
 #include <exceptions/cuda_exception.h>
+#include <helpers/logger.h>
 
 namespace nd4j {
     void* cublas::handle() {
@@ -31,5 +32,14 @@ namespace nd4j {
             throw cuda_exception::build("cuBLAS handle creation failed !", status);
 
         return reinterpret_cast<void *>(_handle);
+    }
+
+    void cublas::destroyHandle(void* handle) {
+        auto ch = reinterpret_cast<cublasHandle_t *>(handle);
+        auto status = cublasDestroy_v2(*ch);
+        if (status != CUBLAS_STATUS_SUCCESS)
+            throw cuda_exception::build("cuBLAS handle destruction failed !", status);
+
+        delete ch;
     }
 }

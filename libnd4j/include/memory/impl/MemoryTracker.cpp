@@ -15,18 +15,32 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// Created by raver119 on 07.05.19.
 //
 
-#ifndef DEV_TESTS_CUBLASHELPER_H
-#define DEV_TESTS_CUBLASHELPER_H
+#include "../MemoryTracker.h"
 
 namespace nd4j {
-    namespace cublas {
-        void* handle();
+    namespace memory {
 
-        void destroyHandle(void* handle);
+        MemoryTracker::MemoryTracker() {
+            //
+        }
+
+        MemoryTracker* MemoryTracker::getInstance() {
+            return _INSTANCE;
+        }
+
+        void MemoryTracker::countIn(Nd4jPointer ptr, Nd4jLong numBytes) {
+
+        }
+
+        void MemoryTracker::countOut(Nd4jPointer ptr) {
+
+        }
+
+        void MemoryTracker::summarize() {
+
+        }
     }
 }
-
-#endif //DEV_TESTS_CUBLASHELPER_H

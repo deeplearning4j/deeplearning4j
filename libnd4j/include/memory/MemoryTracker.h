@@ -15,18 +15,35 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// Created by raver119 on 07.05.19.
 //
 
-#ifndef DEV_TESTS_CUBLASHELPER_H
-#define DEV_TESTS_CUBLASHELPER_H
+#ifndef DEV_TESTS_MEMORYTRACKER_H
+#define DEV_TESTS_MEMORYTRACKER_H
+
+#include <map>
+#include <string>
+#include <pointercast.h>
 
 namespace nd4j {
-    namespace cublas {
-        void* handle();
+    namespace memory {
+        class MemoryTracker {
+        private:
+            static MemoryTracker* _INSTANCE;
+            std::map<Nd4jLong, std::string> _allocations;
 
-        void destroyHandle(void* handle);
+            MemoryTracker();
+            ~MemoryTracker() = default;
+        public:
+            static MemoryTracker* getInstance();
+
+            void countIn(Nd4jPointer ptr, Nd4jLong numBytes);
+            void countOut(Nd4jPointer ptr);
+
+            void summarize();
+        };
     }
 }
 
-#endif //DEV_TESTS_CUBLASHELPER_H
+
+#endif //DEV_TESTS_MEMORYTRACKER_H
