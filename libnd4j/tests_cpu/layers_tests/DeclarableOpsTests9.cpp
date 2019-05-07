@@ -204,20 +204,25 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
+   // Nd4jPointer extra[2];
+#ifndef __CUDABLAS__
     NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+#endif
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+
+
+
     delete[] buffer;
 }
 
@@ -1540,7 +1545,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1562,7 +1567,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test2) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1585,7 +1590,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2103,7 +2108,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test1) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2121,7 +2126,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test2) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2141,7 +2146,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test3) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2161,7 +2166,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test4) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2180,7 +2185,7 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_bp_test1) {
     nd4j::ops::thresholdedrelu opFF;
     nd4j::ops::thresholdedrelu_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
