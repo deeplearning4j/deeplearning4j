@@ -183,9 +183,9 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
         throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");	
 	
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F3 opNum:[%i]\n", opNum);
+		printf("F3B opNum:[%i]\n", opNum);
 
-	dim3 launchDims(256, 256, 16384);
+	dim3 launchDims(256, 256, 1024);
 
 	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
@@ -203,7 +203,26 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::graph::LaunchContext *l
                                                    int *dimension, int dimensionLength,
                                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                                    Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+    auto stream = lc->getCudaStream();
 
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isB(zType))
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
+
+    if (yType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
+
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("F3BI opNum:[%i]\n", opNum);
+
+    dim3 launchDims(256, 256, 1024);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
+
+    DEBUG_KERNEL(stream, opNum);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -240,7 +259,7 @@ void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F3 opNum:[%i]\n", opNum);
 
-	dim3 launchDims(256, 256, 16384);
+	dim3 launchDims(256, 256, 1024);
 
 #ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -263,7 +282,24 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::graph::LaunchContext *lc,
                                                Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                                Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
 
+    auto stream = lc->getCudaStream();
 
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("F3I opNum:[%i]\n", opNum);
+
+    dim3 launchDims(256, 256, 1024);
+
+#ifdef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+#endif
+
+    DEBUG_KERNEL(stream, opNum);
 }
 
 ////////////////////////////////////////////////////////////////////////
