@@ -337,6 +337,16 @@
             <artifactId>coreui__icons</artifactId>
             <version>0.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>popper.js</artifactId>
+            <version>1.12.9</version>
+        </dependency>
 
 
         <dependency>
