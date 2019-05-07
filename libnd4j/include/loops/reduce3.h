@@ -27,8 +27,6 @@
 #define EXTRA_PARAMS_LENGTH 10
 
 #include <templatemath.h>
-#include <helper_cuda.h>
-#include <helpers/sharedmem.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif

@@ -27,7 +27,6 @@
 #include <omp.h>
 #endif
 #include <templatemath.h>
-#include <helper_cuda.h>
 #include <helpers/shape.h>
 #include <pairwise_util.h>
 #include <dll.h>

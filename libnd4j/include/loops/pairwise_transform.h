@@ -27,7 +27,6 @@
 #include <omp.h>
 #endif
 
-#include <helper_cuda.h>
 #include <dll.h>
 #include <stdio.h>
 #include <ops/ops.h>

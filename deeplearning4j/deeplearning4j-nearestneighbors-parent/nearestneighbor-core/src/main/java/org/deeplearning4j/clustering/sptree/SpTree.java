@@ -96,7 +96,7 @@ public class SpTree implements Serializable {
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
-        INDArray width = Nd4j.create(meanY.shape());
+        INDArray width = Nd4j.create(data.dataType(), meanY.shape());
         for (int i = 0; i < width.length(); i++) {
             width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
                     meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
@@ -153,8 +153,8 @@ public class SpTree implements Serializable {
         boundary = new Cell(D);
         boundary.setCorner(corner.dup());
         boundary.setWidth(width.dup());
-        centerOfMass = Nd4j.create(D);
-        buf = Nd4j.create(D);
+        centerOfMass = Nd4j.create(data.dataType(), D);
+        buf = Nd4j.create(data.dataType(), D);
     }
 
 
@@ -220,8 +220,8 @@ public class SpTree implements Serializable {
                         workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-            INDArray newCorner = Nd4j.create(D);
-            INDArray newWidth = Nd4j.create(D);
+            INDArray newCorner = Nd4j.create(data.dataType(), D);
+            INDArray newWidth = Nd4j.create(data.dataType(), D);
             for (int i = 0; i < numChildren; i++) {
                 int div = 1;
                 for (int d = 0; d < D; d++) {

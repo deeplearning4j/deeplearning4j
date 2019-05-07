@@ -19,7 +19,9 @@ package org.datavec.nlp.reader;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.StreamInputSplit;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
@@ -29,8 +31,8 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
+import java.net.URI;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -52,7 +54,19 @@ public class TfidfRecordReaderTest {
         TfidfRecordReader reader = new TfidfRecordReader();
         File f = testDir.newFolder();
         new ClassPathResource("datavec-data-nlp/labeled/").copyDirectory(f);
-        reader.initialize(conf, new FileSplit(f));
+        List<URI> u = new ArrayList<>();
+        for(File f2 : f.listFiles()){
+            if(f2.isDirectory()){
+                for(File f3 : f2.listFiles()){
+                    u.add(f3.toURI());
+                }
+            } else {
+                u.add(f2.toURI());
+            }
+        }
+        Collections.sort(u);
+        CollectionInputSplit c = new CollectionInputSplit(u);
+        reader.initialize(conf, c);
         int count = 0;
         int[] labelAssertions = new int[3];
         while (reader.hasNext()) {

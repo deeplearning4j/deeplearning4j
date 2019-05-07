@@ -43,7 +43,6 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <helpers/sharedmem.h>
 #endif
 
 
@@ -151,9 +150,6 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *output);
 
 #ifdef __CUDACC__
-    template <typename T>
-    __device__ ND4J_EXPORT Nd4jLong *cuMalloc(Nd4jLong *buffer, long size, UnifiedSharedMemory *manager);
-
 
     __device__ ND4J_EXPORT Nd4jLong *cuMalloc(Nd4jLong *buffer, long size);
 #endif
@@ -1037,26 +1033,6 @@ namespace shape {
     //BEGIN IMPLEMENTATIONS
 
 
-#ifdef __CUDACC__
-    template <typename T>
-__device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size, UnifiedSharedMemory *manager) {
-    // if we go for 3 dimensions coord space or below - just use shared memory for that
-    if (size <= MAX_COORD * 4) {
-        Nd4jLong *ptr = new Nd4jLong[size / 4];//manager->getSharedCoordBuffer() + (threadIdx.x * MAX_COORD);
-        return ptr;
-    } else {
-        // otherwise go to preallocated global memory :(
-        int tid = blockIdx.x * blockDim.x + threadIdx.x;
-        if (tid * size > PREALLOC_SIZE - size) {
-            return (Nd4jLong *) malloc(size);
-        } else {
-            Nd4jLong *ret = buffer;
-            ret += (tid * size);
-            return ret;
-        }
-    }
-}
-#endif
 
 #ifdef __CUDACC__
     /**

@@ -30,7 +30,6 @@
 #include <Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <cuda_launch_config.h>
 #include <helpers/DebugHelper.h>
 #include <specials_cuda.h>
 
