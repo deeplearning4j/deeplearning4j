@@ -98,7 +98,7 @@ public class TestPlayUI {
     }
 
     @Test
-    @Ignore
+//    @Ignore
     public void testUI_VAE() throws Exception {
         //Variational autoencoder - for unsupervised layerwise pretraining
 

@@ -316,6 +316,25 @@
 
         <!-- WebJars Dependencies -->
         <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>babel__polyfill</artifactId>
+            <version>7.4.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>coreui__coreui</artifactId>
+            <version>2.1.9</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.webjars.npm</groupId>
+                    <artifactId>coreui__coreui-plugin-npm-postinstall</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
             <version>2.3.2</version>
