@@ -1019,7 +1019,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         }
         else if (this->isS()) {
             for (Nd4jLong e = 0; e < limit; e++) {
-                printf("\"%s\"", this->e<utf8string>(e)._buffer);
+                printf("\"%s\"", this->e<std::string>(e).c_str());
                 if (e < limit - 1)
                     printf(", ");
             }

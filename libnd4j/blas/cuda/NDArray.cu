@@ -1020,14 +1020,19 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 
-        //ShapeDescriptor descriptor(_dataType, order, getShapeAsVector());
-        //auto outShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
+        if (this->dataType() == DataType::UTF8) {
+            std::vector<std::string> strings(_length);
+            for (int e = 0; e < _length; e++)
+                strings[e] = this->e<std::string>(e);
 
-        auto result = new NDArray(order, getShapeAsVector(), _dataType, _context);//new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context);
-        result->assign(*this);
+            auto result = NDArrayFactory::string_(order, this->getShapeAsVector(), strings, _context);
+            return result;
+        } else {
+            auto result = new NDArray(order, getShapeAsVector(), _dataType, _context);//new NDArray(reinterpret_cast<Nd4jLong *>(outShapeInfo.primary()), true, _context);
+            result->assign(*this);
 
-
-        return result;
+            return result;
+        }
     }
 
     void NDArray::synchronize() const {
@@ -1036,23 +1041,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Synchronization failed");
     }
 
-//////////////////////////////////////////////////////////////////////////
-    template <>
-    utf8string NDArray::e(const Nd4jLong i) const {
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        if (!isS())
-            throw std::runtime_error("This method is available for String arrays only");
-
-        if(!isActualOnHostSide()) 
-            syncToHost();
-
-        tickReadHost();
-        auto rp = getOffset(i);
-        
-        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
-    }
 
 //////////////////////////////////////////////////////////////////////////
     template <>
@@ -1061,10 +1049,18 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if(!isActualOnHostSide())
             syncToHost();
 
-        auto u = e<utf8string>(i);
-        std::string r(u._buffer);
-        tickReadHost();
-        
+        if (!isS())
+            throw std::runtime_error("Can't get std::string out of non-string array");
+
+        // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
+        auto offset = getOffset(i);
+        auto offsets = reinterpret_cast<Nd4jLong *>(_buffer);
+        auto offsetsLength = ShapeUtils::stringBufferHeaderRequirements(this->lengthOf());
+        auto start = offsets[offset];
+        auto end = offsets[offset + 1];
+        auto data = _buffer + offsetsLength + start;
+
+        std::string r(reinterpret_cast<const char *>(data), (end - start));
         return r;
     }
 
@@ -2121,7 +2117,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
-    // template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const utf8string value);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k

@@ -22,6 +22,7 @@
 #include <exceptions/cuda_exception.h>
 #include <ConstantHelper.h>
 #include <ConstantShapeHelper.h>
+#include <ShapeUtils.h>
 
 namespace nd4j {
 
@@ -38,56 +39,39 @@ namespace nd4j {
     NDArray NDArrayFactory::string(const std::string &str, nd4j::graph::LaunchContext* context) {
         NDArray res;
 
-        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
-        int8_t* specialBuffer = nullptr;//res.specialBuffer();
+        int8_t *specialBuffer = nullptr;
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+        ALLOCATE(buffer, context->getWorkspace(), headerLength + str.length(), int8_t);
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
+        auto data = buffer + headerLength;
+
+        offsets[0] = 0;
+        offsets[1] = str.length();
+
+        memcpy(data, str.c_str(), str.length());
+
+        res.setBuffer(buffer);
+        res.setContext(context);
+        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
 
         ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
-        Nd4jLong* specialShape = nullptr;
-        //int8_t* specialBuffer = nullptr;
-        res.setBuffer(buffer);
-        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
-        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res.shapeInfo()), Nd4jLong);
 
-        //cudaMemcpy(specialShape, res.shapeInfo(), shape::shapeInfoByteLength(res.shapeInfo()), cudaMemcpyHostToDevice);
-        cudaMemcpy(specialBuffer, res.buffer(), sizeof(utf8string*), cudaMemcpyHostToDevice);
-        res.setSpecialBuffer(specialBuffer);//, specialShape);
-        res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+        cudaMemcpy(specialBuffer, res.buffer(), headerLength + str.length(), cudaMemcpyHostToDevice);
+        res.setSpecialBuffer(specialBuffer);
 
         res.triggerAllocationFlag(true);
         res.triggerSpecialAllocationFlag(true);
+
+        res.tickWriteDevice();
+        res.tickReadHost();
 
         return res;
     }
 
     NDArray* NDArrayFactory::string_(const std::string &str, nd4j::graph::LaunchContext* context) {
         auto res = new NDArray();
-
-        utf8string **us = nullptr;
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
-
-        res->setBuffer(buffer);
-        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(nd4j::DataType::UTF8));
-        //Nd4jLong* specialShape = nullptr;
-        int8_t* specialBuffer = nullptr;
-
-        //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
-        ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
-
-        //cudaMemcpy(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
-        cudaMemcpy(specialBuffer, res->buffer(), sizeof(utf8string*), cudaMemcpyHostToDevice);
-        res->setSpecialBuffer(specialBuffer);//, specialShape);
-        res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-
-        res->triggerAllocationFlag(true);
-        res->triggerSpecialAllocationFlag(true);
-
+        *res = NDArrayFactory::string(str, context);
         return res;
     }
 
@@ -718,46 +702,57 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         NDArray res;
 
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res.setAttached(context->getWorkspace() != nullptr);
         res.setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*) * res.lengthOf(), int8_t);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+        std::vector<Nd4jLong> offsets(string.size() + 1);
+        Nd4jLong dataLength = 0;
+        for (int e = 0; e < string.size(); e++) {
+            offsets[e] = dataLength;
+            dataLength += string[e].length();
+        }
+        offsets[string.size()] = dataLength;
 
-        auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res.lengthOf(); e++)
-            us[e] = new utf8string(string[e]);
+        int8_t *buffer = nullptr;
+        int8_t *bufferD = nullptr;
+        ALLOCATE(buffer, context->getWorkspace(), headerLength + dataLength, int8_t);
+
+        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+        auto data = buffer + headerLength;
+        int resLen = res.lengthOf();
+        for (int e = 0; e < resLen; e++) {
+            auto length = offsets[e+1] - offsets[e];
+            auto cdata = data + offsets[e];
+            memcpy(cdata, string[e].c_str(), string[e].length());
+        }
+
 
         res.setBuffer(buffer);
-        res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+        res.setContext(context);
 
         res.triggerAllocationFlag(true);
+
+        ALLOCATE_SPECIAL(bufferD, context->getWorkspace(), headerLength + dataLength, int8_t);
+        res.setSpecialBuffer(bufferD);
+        res.triggerSpecialAllocationFlag(true);
+
+        res.tickWriteDevice();
+        res.tickReadHost();
 
         return res;
     }
 
     NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         auto res = new NDArray();
-
-        res->setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
-
-        if (res->lengthOf() != string.size())
-            throw std::invalid_argument("Number of strings should match length of array");
-
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*) * res->lengthOf(), int8_t);
-
-        auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res->lengthOf(); e++)
-            us[e] = new utf8string(string[e]);
-
-        res->setBuffer(buffer);
-        res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
-
-        res->triggerAllocationFlag(true);
-
+        *res = NDArrayFactory::string(order, shape, string, context);
         return res;
     }
 
