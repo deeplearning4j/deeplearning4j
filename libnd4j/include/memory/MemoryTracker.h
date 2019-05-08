@@ -24,6 +24,7 @@
 #include <map>
 #include <string>
 #include <pointercast.h>
+#include <mutex>
 #include "AllocationEntry.h"
 
 namespace nd4j {
@@ -33,6 +34,7 @@ namespace nd4j {
             static MemoryTracker* _INSTANCE;
             std::map<Nd4jLong, AllocationEntry> _allocations;
             std::map<Nd4jLong, AllocationEntry> _released;
+            std::mutex _locker;
 
             MemoryTracker();
             ~MemoryTracker() = default;

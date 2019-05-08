@@ -89,6 +89,8 @@ namespace nd4j {
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
             Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
 
+            _locker.lock();
+
             void *array[50];
             size_t size;
             char **messages;
@@ -102,16 +104,21 @@ namespace nd4j {
 
             free(messages);
 
-            if (stack.find("ConstantTad") != std::string::npos || stack.find("ConstantShape") != std::string::npos)
+            if (stack.find("ConstantTad") != std::string::npos || stack.find("ConstantShape") != std::string::npos) {
+                _locker.unlock();
                 return;
+            }
 
             std::pair<Nd4jLong, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
             _allocations.insert(pair);
+
+            _locker.unlock();
         }
 
         void MemoryTracker::countOut(Nd4jPointer ptr) {
             Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
 
+            _locker.lock();
             if (_released.count(lptr) > 0) {
                 //throw std::runtime_error("Double free!");
             }
@@ -126,6 +133,7 @@ namespace nd4j {
                 _allocations.erase(lptr);
             }
 
+            _locker.unlock();
         }
 
         void MemoryTracker::summarize() {
