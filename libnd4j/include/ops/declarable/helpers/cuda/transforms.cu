@@ -160,7 +160,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
                 outTadCount = outputLen / shape::length(outputTadShape);
                 inTadCount = inputLen / shape::length(inputTadShape);
-                printf("%lld, %lld\n", inTadCount, outTadCount);
+                //printf("%lld, %lld\n", inTadCount, outTadCount);
             }
             __syncthreads();
 
@@ -264,6 +264,10 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
                 output.specialShapeInfo(), outIdx, input.getSpecialBuffer(), input.getSpecialShapeInfo(),
                 packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), mode, padValue.getSpecialBuffer());
 
+        err = cudaFree(outIdx);
+        if (0 != err) {
+            throw cuda_exception::build("Cannot deallocate memory for pad indices", err);
+        }
 //        err = cudaFree(outIdx);
 //        if (0 != err) {
 //            throw cuda_exception::build("Cannot release memory for pad indices", err);

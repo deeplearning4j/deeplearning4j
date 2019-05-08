@@ -1545,7 +1545,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1567,7 +1567,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test2) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1590,7 +1590,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
     nd4j::ops::clipbynorm opFF;
     nd4j::ops::clipbynorm_bp opBP;
 
-    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2108,7 +2108,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test1) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2126,7 +2126,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test2) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2146,7 +2146,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test3) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2166,7 +2166,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test4) {
     nd4j::ops::prelu opFF;
     nd4j::ops::prelu_bp opBP;
 
-    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -2185,7 +2185,7 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_bp_test1) {
     nd4j::ops::thresholdedrelu opFF;
     nd4j::ops::thresholdedrelu_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }

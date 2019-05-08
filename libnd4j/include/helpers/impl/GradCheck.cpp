@@ -85,9 +85,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			double scorePlus = 0.;			
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
 				if(loss == SUM)
-					NativeOpExecutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
+					NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
 				else
-					NativeOpExecutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
+					NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
 				scorePlus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
@@ -99,9 +99,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
 				if(loss == SUM)
-					NativeOpExecutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), nullptr, nullptr);
+					NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
 				else
-					NativeOpExecutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), nullptr, nullptr);
+					NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), outArrsFF->at(k)->getSpecialBuffer(), outArrsFF->at(k)->getSpecialShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo(), tmpScalar.specialBuffer(), tmpScalar.specialShapeInfo());
 				scoreMinus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
