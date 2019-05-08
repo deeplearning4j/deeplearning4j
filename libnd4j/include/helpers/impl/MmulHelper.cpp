@@ -87,7 +87,7 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
 
     if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
         cPR = cP->reshape(cP->ordering(), {aPR->sizeAt(0), bPR->sizeAt(1)});
-            
+
     mmul(aPR, bPR, cPR, 1.0, 0.0);
     if(cPR->getBuffer() != cP->getBuffer())          // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
         cP->assign(cPR);

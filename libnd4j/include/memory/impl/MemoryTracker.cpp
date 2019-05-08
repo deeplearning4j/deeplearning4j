@@ -138,7 +138,7 @@ namespace nd4j {
 
         void MemoryTracker::summarize() {
             if (!_allocations.empty()) {
-                nd4j_printf("%i leaked allocations\n", (int) _allocations.size());
+                nd4j_printf("\n%i leaked allocations\n", (int) _allocations.size());
 
                 for (auto &v: _allocations) {
                     nd4j_printf("Leak of %i [%s] bytes\n%s\n\n", (int) v.second.numBytes(), v.second.memoryType() == MemoryType::HOST ? "HOST" : "DEVICE", v.second.stackTrace().c_str());
