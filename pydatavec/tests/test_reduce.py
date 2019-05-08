@@ -86,3 +86,7 @@ def test_reduce_6():
             tp.reduce('col1', {'col2': red1, 'col3': red2})
 
             tp.to_java()
+
+
+if __name__ == '__main__':
+        pytest.main([__file__])
