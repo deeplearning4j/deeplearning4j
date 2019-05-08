@@ -25,6 +25,7 @@
 #include <ops/ops.h>
 #include <GradCheck.h>
 #include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
 
 using namespace nd4j;
 
@@ -902,6 +903,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     NDArray exp('c', {4, 1}, {0,2,3,4});
 
     Nd4jLong indexes[] = {0,2,3,4};
+    PointersManager pm(LaunchContext::defaultContext(), "pullRows");
+    auto pidx = reinterpret_cast<Nd4jLong *>(pm.replicatePointer(indexes, 4 * sizeof(Nd4jLong)));
 
     std::vector<int> dims = {1};
 
@@ -909,17 +912,20 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
     NativeOps op;
-//    Nd4jPointer nativeStart[2];
-#ifndef __CUDABLAS__
-//         nativeStart[1] = *(x.getContext()->getCudaStream());
+    Nd4jPointer nativeStart[2];
 
-    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
-                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                         4, indexes,
-                         xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
-                         zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
+#ifdef __CUDABLAS__
+    nativeStart[1] = *(x.getContext()->getCudaStream());
 #endif
+
+    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
+                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                         4, pidx,
+                         xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
+                         zTadPack.platformShapeInfo(), zTadPack.platformOffsets());
+
     ASSERT_TRUE(z.equalsTo(exp));
+    pm.synchronize();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -933,6 +939,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
     NDArray exp('c', {4, 1}, {0,2,3,4});
 
     Nd4jLong indexes[] = {0,2,3,4};
+    PointersManager pm(LaunchContext::defaultContext(), "pullRows");
+    auto pidx = reinterpret_cast<Nd4jLong *>(pm.replicatePointer(indexes, 4 * sizeof(Nd4jLong)));
 
     std::vector<int> dims = {1};
 
@@ -940,15 +948,18 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
     NativeOps op;
-#ifndef __CUDABLAS__
-    op.pullRows(nullptr, x.buffer(), x.getShapeInfo(), nullptr, nullptr,
-                         z.buffer(), z.getShapeInfo(), nullptr, nullptr,
-                         4, indexes,
-                         xTadPack.primaryShapeInfo(), xTadPack.primaryOffsets(),
-                         zTadPack.primaryShapeInfo(), zTadPack.primaryOffsets());
+    Nd4jPointer nativeStart[2];
+#ifdef __CUDABLAS__
+    nativeStart[1] = *(x.getContext()->getCudaStream());
 #endif
-    ASSERT_TRUE(z.equalsTo(exp));
+    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                         4, pidx,
+                         xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
+                         zTadPack.platformShapeInfo(), zTadPack.platformOffsets());
 
+    ASSERT_TRUE(z.equalsTo(exp));
+    pm.synchronize();
     delete y;
 }
 
