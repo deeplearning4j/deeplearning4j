@@ -1229,7 +1229,7 @@ namespace nd4j {
         *  set _isBuffAlloc and _isShapeAlloc
         */
         FORCEINLINE void triggerAllocationFlag(bool bufferAllocated);
-        FORCEINLINE void triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated);
+        FORCEINLINE void triggerSpecialAllocationFlag(bool bufferAllocated);
 
         /**
         *  returns the value of "dim" dimension 
@@ -1590,7 +1590,7 @@ namespace nd4j {
         _isBuffAlloc = bufferAllocated;
     }
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
+    void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated) {
         _isBuffDAlloc = bufferAllocated;
     }
 
