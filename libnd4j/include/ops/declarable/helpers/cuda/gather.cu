@@ -26,8 +26,39 @@
 
 namespace nd4j    {
 namespace ops     {
-namespace helpers {         
+namespace helpers {
 
+    template<typename X, typename Y, typename Z>
+    __global__ static void gatherCudaLinearKernel(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo,
+    void* vz, const Nd4jLong* zShapeInfo) {
+
+
+    __shared__ const X* x;
+    __shared__ const Y* y;
+    __shared__ Z* z;
+    __shared__ Nd4jLong xLen, yLen, zLen;
+
+    if (threadIdx.x == 0) {
+        x = reinterpret_cast<const X*>(vx);
+        z = reinterpret_cast<Z*>(vz);
+        y = reinterpret_cast<const Y *>(vy);
+        xLen = shape::length(xShapeInfo);
+        yLen = shape::length(yShapeInfo);
+        zLen = shape::length(zShapeInfo);
+    }
+    __syncthreads();
+    //const Nd4jLong zLen = shape::length(zShapeInfo);
+    auto start = blockIdx.x * blockDim.x + threadIdx.x;
+    auto step = blockDim.x * gridDim.x;
+
+    for (int j = start; j < zLen; j += step) {
+        auto zIndex = shape::getIndexOffset(j, zShapeInfo, zLen);
+        auto yIndex = shape::getIndexOffset(j, yShapeInfo, yLen);
+        auto xIndex = shape::getIndexOffset(y[yIndex], xShapeInfo, xLen);
+        //printf("%lld , %lld\n", zIndex, xIndex);
+        z[zIndex] = x[xIndex];
+    }
+}
 
 //////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
@@ -41,7 +72,7 @@ __global__ static void gatherCuda(const int numOfSubArrs,
     __shared__ Z* z;
     
     const Nd4jLong len = shape::length(xShapeInfo);
-
+    //const Nd4jLong zLen = shape::length(zShapeInfo);
     for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
         
         if (threadIdx.x == 0) {
@@ -51,20 +82,28 @@ __global__ static void gatherCuda(const int numOfSubArrs,
         }
         __syncthreads();
 
-        for (int j = threadIdx.x; j < len; j += blockDim.x) 
-            z[shape::getIndexOffset(j, zShapeInfo, len)] = x[shape::getIndexOffset(j, xShapeInfo, len)];
-
+        for (int j = threadIdx.x; j < len; j += blockDim.x) {
+            auto zIndex = shape::getIndexOffset(j, zShapeInfo, len);
+            auto xIndex = shape::getIndexOffset(j, xShapeInfo, len);
+            //printf("%lld , %lld\n", zIndex, xIndex);
+            z[zIndex] = x[xIndex];
+        }
         __syncthreads();
     }
 }
 
+template<typename X, typename Y, typename Z>
+__host__ static void gatherCudaLinear(const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo,
+                                            void* vz, const Nd4jLong* zShapeInfo) {
+    gatherCudaLinearKernel<X,Y,Z><<<128, 256, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+}
+
 //////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-__host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int numOfSubArrs, 
+__host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int numOfSubArrs,
                                     const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets,
                                     const void* vy, const Nd4jLong* yShapeInfo,
                                           void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets) {
-
     gatherCuda<X,Y,Z><<<numOfSubArrs, MAX_NUM_THREADS, 1024, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, vz, zShapeInfo, zOffsets);
 }
 
@@ -107,18 +146,38 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
         Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);        
         input-> getSubArrShapeAndOffsets({axis},  inSubArrShapeInfo,  inSubArrOffsets);
         output->getSubArrShapeAndOffsets(dimsOut, outSubArrShapeInfo, outSubArrOffsets);
+        if (output->rankOf() > 1) {
+            PointersManager manager(context, "gather");
+            auto xShapeInfo = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(inSubArrShapeInfo,
+                                                                                    shape::shapeInfoByteLength(
+                                                                                            inSubArrShapeInfo)));
+            auto zShapeInfo = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(outSubArrShapeInfo,
+                                                                                    shape::shapeInfoByteLength(
+                                                                                            outSubArrShapeInfo)));
+            auto xOffsets = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(inSubArrOffsets, (input->lengthOf() /
+                                                                                                    shape::length(
+                                                                                                            inSubArrShapeInfo)) *
+                                                                                                   sizeof(Nd4jLong)));
+            auto zOffsets = reinterpret_cast<Nd4jLong *>(manager.replicatePointer(outSubArrOffsets,
+                                                                                  (output->lengthOf() /
+                                                                                   shape::length(outSubArrShapeInfo)) *
+                                                                                  sizeof(Nd4jLong)));
 
-        PointersManager manager(context, "gather");
-        auto xShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrShapeInfo,  shape::shapeInfoByteLength(inSubArrShapeInfo)));
-        auto zShapeInfo = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrShapeInfo, shape::shapeInfoByteLength(outSubArrShapeInfo)));
-        auto xOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(inSubArrOffsets,    (input->lengthOf()  / shape::length(inSubArrShapeInfo))  * sizeof(Nd4jLong)));
-        auto zOffsets   = reinterpret_cast<Nd4jLong*>(manager.replicatePointer(outSubArrOffsets,   (output->lengthOf() / shape::length(outSubArrShapeInfo)) * sizeof(Nd4jLong)));
-                
-        NDArray::prepareSpecialUse({output}, {input, pIndices});
-        BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets ), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
-        NDArray::registerSpecialUse({output}, {input, pIndices});
+            NDArray::prepareSpecialUse({output}, {input, pIndices});
+            BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher,
+                                  (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets),
+                                  NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+            NDArray::registerSpecialUse({output}, {input, pIndices});
+            manager.synchronize();
+        }
+        else {
+            NDArray::prepareSpecialUse({output}, {input, pIndices});
+            BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLinear,
+                                  (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()),
+                                  NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+            NDArray::registerSpecialUse({output}, {input, pIndices});
 
-        manager.synchronize();
+        }
 
         if(indices == nullptr)
             delete pIndices;
@@ -127,6 +186,7 @@ void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* 
 
 
 BUILD_TRIPLE_TEMPLATE(template void gatherCudaLauncher, (const cudaStream_t *stream, const int numOfSubArrs, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void gatherCudaLinear, (const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
 
 
 
