@@ -178,45 +178,33 @@ TEST_F(DeclarableOpsTests1, SynonymInitialization2) {
 
 
 TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
-    auto x = NDArrayFactory::create_<float>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create_<float>('c', {2, 3, 4});
+    
+    NDArray x('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
 
-    for (int i = 0; i < x->lengthOf(); i++) {
-        x->p(i, i + 1);
-        y->p(i, i + 1);
-    }
+    x.linspace(1);
+    y.linspace(1);
+    
+    NDArray exp('c', {2, 2}, {650.0, 1586.0, 1586.0, 4250.0});     
 
-    auto exp = NDArrayFactory::create<float>('c', {2, 2});
-    exp.p(0, 650.0);
-    exp.p(1, 1586.0);
-    exp.p(2, 1586.0);
-    exp.p(3, 4250.0);
+    nd4j::ops::tensormmul op;
+    auto results = op.execute({&x, &y}, {}, {2,1,2,  2,1,2});
 
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2}); 
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    nd4j::ops::tensormmul tm;
+    auto *result = results->at(0);
+    // exp.printShapeInfo();
+    // result->printShapeInfo();
+    // result->printBuffer();
 
-    tm.execute(block);
+    // PointersManager manager(x.getContext(), "scatter");
+    // manager.printDevContentOnHost<float>(result->getSpecialBuffer(), result->lengthOf());
+    // manager.synchronize();
+    
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
 
-    auto z = variableSpace->getVariable(1)->getNDArray();
-
-    //z->printBuffer("Result: ");
-
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete block;
-    delete variableSpace;
+    delete results;
 }
 
 TEST_F(DeclarableOpsTests1, TestTensorDot2) {

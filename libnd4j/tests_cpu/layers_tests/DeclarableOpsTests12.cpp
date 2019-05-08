@@ -755,9 +755,9 @@ TEST_F(DeclarableOpsTests12, tensormmul_6) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);
-    exp.printShapeInfo();
-    result->printShapeInfo();
-    result->printIndexedBuffer();
+    // exp.printShapeInfo();
+    // result->printShapeInfo();
+    // result->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
