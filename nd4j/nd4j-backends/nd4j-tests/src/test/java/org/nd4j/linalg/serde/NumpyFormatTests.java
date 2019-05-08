@@ -17,7 +17,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
@@ -32,8 +34,6 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
     @Test
     public void testToNpyFormat() throws Exception {
-
-        //File dir = new File("C:\\develop\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays");
 
         val dir = testDir.newFolder();
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
@@ -75,6 +75,46 @@ public class NumpyFormatTests extends BaseNd4jTest {
 */
 
             assertArrayEquals("Failed with file [" + f.getName() + "]", expected, bytes);
+            cnt++;
+        }
+
+        assertTrue(cnt > 0);
+    }
+
+    @Test
+    public void testNpzReading() throws Exception {
+
+        val dir = testDir.newFolder();
+        new ClassPathResource("numpy_arrays/npz/").copyDirectory(dir);
+
+        File[] files = dir.listFiles();
+        int cnt = 0;
+
+        for(File f : files){
+            if(!f.getPath().endsWith(".npz")){
+                log.warn("Skipping: {}", f);
+                continue;
+            }
+
+            String path = f.getAbsolutePath();
+            int lastDot = path.lastIndexOf('.');
+            int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+            String dtype = path.substring(lastSlash+1, lastDot);
+            System.out.println(path + " : " + dtype);
+
+            DataType dt = DataType.fromNumpy(dtype);
+            //System.out.println(dt);
+
+            INDArray arr = Nd4j.arange(12).castTo(dt).reshape(3,4);
+            INDArray arr2 = Nd4j.linspace(DataType.FLOAT, 0, 3, 10);
+
+            Map<String,INDArray> m = Nd4j.createFromNpzFile(f);
+            assertEquals(2, m.size());
+            assertTrue(m.containsKey("firstArr"));
+            assertTrue(m.containsKey("secondArr"));
+
+            assertEquals(arr, m.get("firstArr"));
+            assertEquals(arr2, m.get("secondArr"));
             cnt++;
         }
 
