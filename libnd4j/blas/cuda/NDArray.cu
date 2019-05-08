@@ -1734,8 +1734,6 @@ NDArray::~NDArray() noexcept {
 
     if (_isBuffDAlloc) {
         RELEASE_SPECIAL(_bufferD, _context->getWorkspace());
-    } else {
-        nd4j_printf("skipping release\n", "");
     }
 }
 
