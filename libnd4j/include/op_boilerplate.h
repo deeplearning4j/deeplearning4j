@@ -68,9 +68,9 @@
 #include <openmp_pragmas.h>
 #include <type_boilerplate.h>
 #include <exceptions/allocation_exception.h>
+#include <memory/MemoryTracker.h>
 
 #ifdef __CUDACC__
-#include <memory/MemoryTracker.h>
 
 #define meta_def inline __device__
 #define op_def inline __device__ __host__
@@ -1441,15 +1441,37 @@
 
 
 #ifdef __CUDABLAS__
+
+#ifdef _RELEASE
+
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
+
+#else
+
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { nd4j::memory::MemoryTracker::getInstance()->countIn(nd4j::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
 #define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
-#else
-#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = nullptr;
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
+
 #endif
 
+#else
+
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = nullptr;
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
+
+#endif
+
+#ifdef _RELEASE
+
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
-#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
+#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { delete[] VARIABLE;};
+
+#else
+
+#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; nd4j::memory::MemoryTracker::getInstance()->countIn(nd4j::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
+#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); delete[] VARIABLE;};
+
+#endif
 
 #define CONSTANT(SHAPE) ConstantShapeHelper::getInstance()->createFromExisting(SHAPE, block.workspace())
 

@@ -26,6 +26,7 @@
 #include <execinfo.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <cxxabi.h>
 
 namespace nd4j {
     namespace memory {
@@ -41,6 +42,50 @@ namespace nd4j {
             return _INSTANCE;
         }
 
+        std::string demangle(char *message) {
+            char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
+
+            // find parantheses and +address offset surrounding mangled name
+            for (char *p = message; *p; ++p)
+            {
+                if (*p == '(')
+                {
+                    mangled_name = p;
+                }
+                else if (*p == '+')
+                {
+                    offset_begin = p;
+                }
+                else if (*p == ')')
+                {
+                    offset_end = p;
+                    break;
+                }
+            }
+
+            // if the line could be processed, attempt to demangle the symbol
+            if (mangled_name && offset_begin && offset_end && mangled_name < offset_begin) {
+                *mangled_name++ = '\0';
+                *offset_begin++ = '\0';
+                *offset_end++ = '\0';
+
+                int status;
+                char * real_name = abi::__cxa_demangle(mangled_name, 0, 0, &status);
+
+                // if demangling is successful, output the demangled function name
+                if (status == 0) {
+                    std::string result(real_name);
+                    free(real_name);
+                    return result;
+                } else {
+                    // otherwise, output the mangled function name
+                    std::string result (message);
+                    free(real_name);
+                    return result;
+                }
+            }
+        }
+
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
             Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
 
@@ -52,7 +97,7 @@ namespace nd4j {
             std::string stack("");
             messages = backtrace_symbols(array, size);
             for (int i = 1; i < size && messages != NULL; ++i) {
-                stack += std::string(messages[i]) + "\n";
+                stack += demangle(messages[i]) + "\n";
             }
 
             free(messages);
@@ -85,7 +130,7 @@ namespace nd4j {
                 nd4j_printf("%i leaked allocations\n", (int) _allocations.size());
 
                 for (auto &v: _allocations) {
-                    nd4j_printf("Leak of %i bytes\n%s\n\n", (int) v.second.numBytes(), v.second.stackTrace().c_str());
+                    nd4j_printf("Leak of %i [%s] bytes\n%s\n\n", (int) v.second.numBytes(), v.second.memoryType() == MemoryType::HOST ? "HOST" : "DEVICE", v.second.stackTrace().c_str());
                 }
 
                 throw std::runtime_error("Non-released allocations found");

@@ -196,6 +196,8 @@ if(CUDA_BLAS)
             endif()
 
         else()
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic -rdynamic")
+            SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --export-dynamic")
 			if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 9
 				message("CUDA 10 Debug build")
                 if ("${COMPUTE}" STREQUAL "all")
@@ -334,6 +336,9 @@ elseif(CPU_BLAS)
             set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
         endif()
     endif()
+
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 
     #install(TARGETS mySharedLib DESTINATION /some/full/path)
     install(TARGETS ${LIBND4J_NAME} DESTINATION  .)

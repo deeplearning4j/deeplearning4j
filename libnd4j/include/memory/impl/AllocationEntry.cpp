@@ -36,5 +36,9 @@ namespace nd4j {
         Nd4jLong AllocationEntry::numBytes() {
             return _numBytes;
         }
+
+        MemoryType AllocationEntry::memoryType() {
+            return _memoryType;
+        }
     }
 }

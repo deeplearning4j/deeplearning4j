@@ -41,6 +41,7 @@ namespace nd4j {
 
             Nd4jLong numBytes();
             std::string stackTrace();
+            MemoryType memoryType();
         };
     }
 }

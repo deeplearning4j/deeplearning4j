@@ -86,6 +86,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
 endif()
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/include")
