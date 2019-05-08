@@ -1577,8 +1577,8 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setBuffer(void* buffer) {
-        if(_isBuffAlloc && _context->getWorkspace() == nullptr)
-            delete []_buffer;
+        if(_isBuffAlloc)
+            RELEASE(_buffer, _context->getWorkspace());
  
         _buffer = reinterpret_cast<int8_t *>(buffer);
         _isBuffAlloc = false;

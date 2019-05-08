@@ -414,10 +414,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
         context = nd4j::graph::LaunchContext::defaultContext();
 
     res.setAttached(context->getWorkspace() != nullptr);
-    ShapeDescriptor descriptor(dtype, order, shape);
-    auto constantBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-    res.setShapeInfo(constantBuffer.primaryAsT<Nd4jLong>());
+    res.setShapeInfo(ShapeDescriptor(dtype, order, shape));
     
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);

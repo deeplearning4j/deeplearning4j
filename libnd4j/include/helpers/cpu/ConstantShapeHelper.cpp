@@ -120,7 +120,7 @@ namespace nd4j {
         auto result = createShapeInfo(descriptor);
 
         if (destroyOriginal)
-            delete[] shapeInfo;
+            RELEASE(shapeInfo, nullptr)
 
         return result;
     }
@@ -129,8 +129,7 @@ namespace nd4j {
         ShapeDescriptor descriptor(shapeInfo);
         auto result = createShapeInfo(descriptor);
 
-        if (workspace == nullptr)
-            delete[] shapeInfo;
+        RELEASE(shapeInfo, workspace);
 
         return result;
     }

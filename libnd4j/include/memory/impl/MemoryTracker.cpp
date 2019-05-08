@@ -117,10 +117,10 @@ namespace nd4j {
             }
 
             if (_allocations.count(lptr) > 0) {
-                auto entry = _allocations[lptr];
-                std::string stack("new stack");
-                std::pair<Nd4jLong, AllocationEntry> pair(lptr, entry);
-                _released.insert(pair);
+                //auto entry = _allocations[lptr];
+                //std::string stack("new stack");
+                //std::pair<Nd4jLong, AllocationEntry> pair(lptr, entry);
+                //_released.insert(pair);
 
 
                 _allocations.erase(lptr);
