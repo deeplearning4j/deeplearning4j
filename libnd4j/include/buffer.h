@@ -29,8 +29,6 @@
 #endif
 #include <dll.h>
 
-#include <helper_string.h>
-#include <helper_cuda.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>

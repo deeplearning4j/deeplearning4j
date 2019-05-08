@@ -66,6 +66,12 @@
             <artifactId>geoip2</artifactId>
             <version>${geoip2.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

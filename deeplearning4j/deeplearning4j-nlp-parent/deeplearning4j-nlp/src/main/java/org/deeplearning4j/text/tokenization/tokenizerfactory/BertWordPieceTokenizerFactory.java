@@ -16,12 +16,14 @@
 
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
+import lombok.NonNull;
 import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -41,12 +43,12 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
         this.vocab = vocab;
     }
 
-    public BertWordPieceTokenizerFactory(File pathToVocab) throws IOException {
-        this(loadVocab(pathToVocab));
+    public BertWordPieceTokenizerFactory(File pathToVocab, @NonNull Charset charset) throws IOException {
+        this(loadVocab(pathToVocab, charset));
     }
 
-    public BertWordPieceTokenizerFactory(InputStream vocabInputStream) throws IOException {
-        this(loadVocab(vocabInputStream));
+    public BertWordPieceTokenizerFactory(InputStream vocabInputStream, @NonNull Charset charset) throws IOException {
+        this(loadVocab(vocabInputStream, charset));
     }
 
     @Override
@@ -105,10 +107,10 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
      * @param is InputStream
      * @return A vocab map with the popper sort order for fast traversal
      */
-    public static NavigableMap<String, Integer> loadVocab(InputStream is) throws IOException {
+    public static NavigableMap<String, Integer> loadVocab(InputStream is, Charset charset) throws IOException {
         final TreeMap<String, Integer> map = new TreeMap<>(Collections.reverseOrder());
 
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset))) {
             String token;
             int i = 0;
             while ((token = reader.readLine()) != null) {
@@ -119,8 +121,8 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
         return map;
     }
 
-    public static NavigableMap<String, Integer> loadVocab(File vocabFile) throws IOException {
-        return loadVocab(new FileInputStream(vocabFile));
+    public static NavigableMap<String, Integer> loadVocab(File vocabFile, Charset charset) throws IOException {
+        return loadVocab(new FileInputStream(vocabFile), charset);
     }
 
 }

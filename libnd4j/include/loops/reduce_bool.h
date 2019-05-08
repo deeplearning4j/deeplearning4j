@@ -19,14 +19,12 @@
 #define REDUCE_BOOL_H
 #include <dll.h>
 //#include <string>
-#include <helpers/sharedmem.h>
 #include <stdio.h>
 #include <helpers/shape.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 #include <templatemath.h>
-#include <helper_cuda.h>
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
