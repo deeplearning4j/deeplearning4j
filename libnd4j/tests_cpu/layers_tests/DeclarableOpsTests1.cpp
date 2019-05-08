@@ -185,7 +185,7 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
     x.linspace(1);
     y.linspace(1);
     
-    NDArray exp('c', {2, 2}, {650.0, 1586.0, 1586.0, 4250.0});     
+    NDArray exp('c', {2, 2}, {650.0, 1586.0, 1586.0, 4250.0}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::tensormmul op;
     auto results = op.execute({&x, &y}, {}, {2,1,2,  2,1,2});
@@ -195,11 +195,12 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
     auto *result = results->at(0);
     // exp.printShapeInfo();
     // result->printShapeInfo();
+    // exp.printBuffer();
     // result->printBuffer();
 
     // PointersManager manager(x.getContext(), "scatter");
     // manager.printDevContentOnHost<float>(result->getSpecialBuffer(), result->lengthOf());
-    // manager.synchronize();
+    // manager.printDevContentOnHost<float>(exp.getSpecialBuffer(), exp.lengthOf());
     
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));

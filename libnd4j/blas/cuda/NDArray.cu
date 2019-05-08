@@ -717,14 +717,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Bad shape!");
         }
 
-       Nd4jLong *shapeInfoNew;
-       ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-
-       // throw std::runtime_error("FIXME");
-       bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+        Nd4jLong *shapeInfoNew;
+        ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+       
+        bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+        
         // we can do this only if there was no permute applied, or there are no weird strides
-
         if (canReshape) {
             if(ordering() == 'c' && order == 'f')
                 throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
@@ -958,6 +956,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
+//////////////////////////////////////////////////////////////////////////
     // This method assigns values of given NDArray to this one
     void NDArray::assign(const NDArray& other) {
 
@@ -989,7 +988,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 tickWriteHost();
             }
             else {
-                if (!other.isActualOnDeviceSide()) other.syncToDevice();
+                if (!other.isActualOnDeviceSide()) 
+                    other.syncToDevice();
                 NativeOpExecutioner::execScalar(_context, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
                 tickWriteDevice();
             }
@@ -1003,13 +1003,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Lengths of arrays are mismatched");
         }
 
-        if (!other.isActualOnDeviceSide()) other.syncToDevice();        
+        if (!other.isActualOnDeviceSide()) 
+            other.syncToDevice();
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1) 
             cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
         else 
-            NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);        
+            NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
 
         tickWriteDevice();
     }
