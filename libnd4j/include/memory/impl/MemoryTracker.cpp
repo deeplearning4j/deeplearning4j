@@ -102,6 +102,9 @@ namespace nd4j {
 
             free(messages);
 
+            if (stack.find("ConstantTad") != std::string::npos || stack.find("ConstantShape") != std::string::npos)
+                return;
+
             std::pair<Nd4jLong, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
             _allocations.insert(pair);
         }

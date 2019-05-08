@@ -585,7 +585,7 @@ NDArray& NDArray::operator=(const NDArray& other) {
     // default destructor
     NDArray::~NDArray() noexcept {
         if (_isBuffAlloc && !_isAttached && _buffer != nullptr) {
-                delete[] _buffer;
+                RELEASE(_buffer, _context->getWorkspace());
         }
     }
 
