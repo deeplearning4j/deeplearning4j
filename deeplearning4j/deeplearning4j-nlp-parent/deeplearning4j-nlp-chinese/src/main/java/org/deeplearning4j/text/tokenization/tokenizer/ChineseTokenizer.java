@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -25,15 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-
-/**
- * The ansj_seg of the open source segmentation algorithm comes form github,the link: <a href="https://github.com/NLPchina/ansj_seg">https://github.com/NLPchina/ansj_seg</a>
- * When the open source code that obeyed the Apache 2.0 license is reused, its latest commit ID is dedc45fdf85dfd2d4c691fb1f147d7cbf9a5d7fb
- * and  its copyright 2011-2016
-
- * @author: wangfeng
- * @since : June 2,2017
- */
 
 public class ChineseTokenizer implements Tokenizer {
 
