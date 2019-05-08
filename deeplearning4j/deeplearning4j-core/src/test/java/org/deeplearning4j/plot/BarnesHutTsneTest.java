@@ -19,18 +19,26 @@ package org.deeplearning4j.plot;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;
+import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -217,12 +225,37 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.6202,    0.7604,    0.0788,    0.0865,    0.7445,
                 0.6548,    0.3385,    0.0582,    0.6249,    0.7432};
         INDArray ndinput = Nd4j.createFromArray(input).reshape(11,5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).theta(0.5)
                 .useAdaGrad(false).build();
         b.computeGaussianPerplexity(ndinput, 3.0);
 
         System.out.println(b.getRows());
         System.out.println(b.getCols());
         System.out.println(b.getVals());
+    }
+
+    @Test
+    public void testVPTree() {
+        MemoryWorkspace workspace = new DummyWorkspace();
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            double[] d = new double[]{0.3000, 0.2625, 0.2674, 0.8604, 0.4803,
+                    0.1096, 0.7950, 0.5918, 0.2738, 0.9520,
+                    0.9690, 0.8586, 0.8088, 0.5338, 0.5961,
+                    0.7187, 0.4630, 0.0867, 0.7748, 0.4802,
+                    0.2493, 0.3227, 0.3064, 0.6980, 0.7977,
+                    0.7674, 0.1680, 0.3107, 0.0217, 0.1380,
+                    0.8619, 0.8413, 0.5285, 0.9703, 0.6774,
+                    0.2624, 0.4374, 0.1569, 0.1107, 0.0601,
+                    0.4094, 0.9564, 0.5994, 0.8279, 0.3859,
+                    0.6202, 0.7604, 0.0788, 0.0865, 0.7445,
+                    0.6548, 0.3385, 0.0582, 0.6249, 0.7432};
+            VPTree tree = new VPTree(Nd4j.createFromArray(d).reshape(11,5), "euclidean", 1, false);
+            INDArray target = Nd4j.createFromArray(new double[]{0.3000, 0.2625, 0.2674, 0.8604, 0.4803});
+            List<DataPoint> results = new ArrayList<>();
+            List<Double> distances = new ArrayList<>();
+            tree.search(target, 11, results, distances);
+            System.out.println("Results:" + results);
+            System.out.println("Distances:" + distances);
+        }
     }
 }
