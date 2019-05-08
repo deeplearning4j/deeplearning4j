@@ -1170,7 +1170,7 @@ TEST_F(DeclarableOpsTests12, lrn_bp_7) {
     nd4j::ops::lrn opFF;
     nd4j::ops::lrn_bp opBP;
 
-    const bool isGradCorrect = false; //GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
@@ -1187,7 +1187,7 @@ TEST_F(DeclarableOpsTests12, lrn_bp_8) {
     nd4j::ops::lrn opFF;
     nd4j::ops::lrn_bp opBP;
 
-    const bool isGradCorrect = false;//GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
