@@ -22,7 +22,7 @@
 #include <cublas_v2.h>
 #include "../MmulHelper.h"
 #include <specials_cuda.h>
-
+#include <helpers/PointersManager.h>
 
 namespace nd4j { 
 
@@ -143,7 +143,7 @@ __host__ static void usualDot(const dim3 &blocksPerGrid, const dim3 &threadsPerB
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta, const char outOrder) {
+NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta, const char outOrder) {    
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
@@ -172,6 +172,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
     if(A->ews() != 1) {
         pA = pA->dup('f');
+        pA->printBuffer();
         toDelete.push_back(pA);
     }
     if(B->ews() != 1) {
@@ -183,7 +184,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
         toDelete.push_back(pC);
     }
 
-     if(pC->ordering() != 'f') {
+    if(pC->ordering() != 'f') {
         auto temp = pA;
         pA = pB  ->permute({1,0});
         pB = temp->permute({1,0});
@@ -225,10 +226,16 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
+
+    NDArray::prepareSpecialUse({pC}, {pA, pB});    
+
+    // PointersManager manager(A->getContext(), "aaa");
+    // manager.printDevContentOnHost<float>(pA->getSpecialBuffer(), pA->lengthOf());
+    // manager.printDevContentOnHost<float>(pB->getSpecialBuffer(), pB->lengthOf());
+
     // choose appropriate cuda gemm api depending on data types    
     if(ABC && aType == DataType::DOUBLE) {        
-        status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)pB->getSpecialBuffer(), ldb, &beta, (double*)pC->getSpecialBuffer(), ldc);
-    }
+        status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)pB->getSpecialBuffer(), ldb, &beta, (double*)pC->getSpecialBuffer(), ldc);    }
     else if(ABC && aType == DataType::FLOAT32) {        
         float alphaF(alpha), betaF(beta);        
         status = cublasSgemm(*handle, transAblas, transBblas, M, N, K, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)pB->getSpecialBuffer(), ldb, &betaF, (float*)pC->getSpecialBuffer(), ldc);
@@ -261,10 +268,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+    
 
-    pA->tickReadDevice();
-    pB->tickReadDevice();
-    pC->tickWriteDevice();
+    NDArray::registerSpecialUse({pC}, {pA, pB});
 
     if(C->ews() != 1)
         C->assign(pC);
@@ -318,12 +324,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     const auto aType = pA->dataType();
     const auto xType = X->dataType();
     const auto yType = Y->dataType();
-
-    if(!pA->isActualOnDeviceSide()) pA->syncToDevice();
-    if(!X->isActualOnDeviceSide())  X->syncToDevice();
-    if(!Y->isActualOnDeviceSide())  Y->syncToDevice();
-
-
+    
     auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
     auto stream = A->getContext()->getCudaStream();
 
@@ -331,6 +332,8 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
     const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
+
+    NDArray::prepareSpecialUse({Y}, {pA, X});
     
     // choose appropriate cuda gemm api depending on data types    
     if(AXY && aType == DataType::DOUBLE) {
@@ -355,9 +358,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
 
-    pA->tickReadDevice();
-    X->tickReadDevice();
-    Y->tickWriteDevice();
+    NDArray::registerSpecialUse({Y}, {pA, X});
 
     if(pA != A)
         delete pA;
@@ -404,14 +405,14 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, c
     if (length > 512)        
         threadsPerBlock.x = math::nd4j_ceil<double, int>(static_cast<double>(length) / 512);
 
+    NDArray::prepareSpecialUse({Z}, {X, Y});
+
     BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (blocksPerGrid, threadsPerBlock, stream, length, alpha, X->getSpecialBuffer(), incx, Y->getSpecialBuffer(), incy, beta, Z->getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
         
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::dot cuda failed !", cudaResult);       
 
-    X->tickReadDevice();
-    Y->tickReadDevice();
-    Z->tickWriteDevice();
+    NDArray::registerSpecialUse({Z}, {X, Y});
     
     return Z;
 }
