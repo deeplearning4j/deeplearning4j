@@ -194,7 +194,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     public void testCorrectness1() throws IOException {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).theta(0.5).invertDistanceMetric(false)
                 .useAdaGrad(false).build();
 
         double[] aData = new double[]{
@@ -225,13 +225,23 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.6202,    0.7604,    0.0788,    0.0865,    0.7445,
                 0.6548,    0.3385,    0.0582,    0.6249,    0.7432};
         INDArray ndinput = Nd4j.createFromArray(input).reshape(11,5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
                 .useAdaGrad(false).build();
         b.computeGaussianPerplexity(ndinput, 3.0);
-
-        System.out.println(b.getRows());
-        System.out.println(b.getCols());
-        System.out.println(b.getVals());
+        INDArray expectedRows = Nd4j.createFromArray(new int[]{0,9,18,27,36,45,54,63,72,81,90,99});
+        INDArray expectedValues = Nd4j.createFromArray(new double[]{0.6200,    0.1964,    0.1382,    0.0195,    0.0089,
+                0.0084,    0.0033,    0.0026,    0.0026,    0.5877,    0.2825,    0.0810,    0.0149,    0.0122,    0.0115,
+                0.0042,    0.0035,    0.0025,    0.6777,    0.1832,    0.0402,    0.0294,    0.0216,    0.0199,    0.0117,
+                0.0084,    0.0078,    0.6771,    0.1662,    0.0604,    0.0465,    0.0169,    0.0146,    0.0064,    0.0061,
+                0.0059,    0.6278,    0.2351,    0.0702,    0.0309,    0.0123,    0.0092,    0.0082,    0.0043,    0.0019,
+                0.7123,    0.0786,    0.0706,    0.0672,    0.0290,    0.0178,    0.0148,    0.0055,    0.0042,    0.5267,
+                0.3304,    0.1093,    0.0185,    0.0070,    0.0064,    0.0011,    0.0007, 3.1246e-5,    0.7176,    0.0874,
+                0.0593,    0.0466,    0.0329,    0.0299,    0.0134,    0.0106,    0.0023,    0.6892,    0.1398,    0.0544,
+                0.0544,    0.0287,    0.0210,    0.0072,    0.0033,    0.0021,    0.6824,    0.1345,    0.0871,    0.0429,
+                0.0254,    0.0169,    0.0072,    0.0019,    0.0016,    0.6426,    0.1847,    0.1090,    0.0347,    0.0133,
+                0.0051,    0.0038,    0.0038,    0.0030});
+        assertArrayEquals(expectedRows.toIntVector(), b.getRows().toIntVector());
+        assertArrayEquals(expectedValues.toDoubleVector(), b.getVals().toDoubleVector(), 1e-4);
     }
 
     @Test

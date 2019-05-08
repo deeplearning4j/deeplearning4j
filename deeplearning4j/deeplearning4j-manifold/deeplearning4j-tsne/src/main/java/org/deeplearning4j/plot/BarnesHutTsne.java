@@ -20,6 +20,7 @@ package org.deeplearning4j.plot;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
@@ -243,9 +244,8 @@ public class BarnesHutTsne implements Model {
                 double betaMin = -Double.MAX_VALUE;
                 double betaMax = Double.MAX_VALUE;
                 List<DataPoint> results = new ArrayList<>();
-                List<Double> distances = new ArrayList<Double>();
-                tree.search(d.slice(i), k + 1, results, distances);
-                System.out.println("After tree.search input = " + d.slice(i) + " results = " + distances);
+                List<Double> distances = new ArrayList<>();
+                tree.search(d.getRow(i), k + 1, results, distances);
                 double betas = beta.getDouble(i);
 
                 if(results.size() == 0){
@@ -254,7 +254,10 @@ public class BarnesHutTsne implements Model {
                             " all zeros with cosine similarity)");
                 }
 
-                INDArray cArr = VPTree.buildFromData(results);
+                Double[] dists = new Double[distances.size()];
+                distances.toArray(dists);
+                INDArray cArr = Nd4j.createFromArray(dists); //VPTree.buildFromData(results);
+
                 Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
                 INDArray currP = pair.getFirst();
                 double hDiff = pair.getSecond() - enthropy;
@@ -281,13 +284,12 @@ public class BarnesHutTsne implements Model {
                         }
 
                         pair = computeGaussianKernel(cArr, betas, k);
+                        currP = pair.getFirst();
                         hDiff = pair.getSecond() - enthropy;
                         tries++;
                     }
 
                 }
-
-
                 currP.divi(currP.sum(Integer.MAX_VALUE));
                 INDArray indices = Nd4j.create(1, k + 1);
                 for (int j = 0; j < indices.length(); j++) {
@@ -295,7 +297,6 @@ public class BarnesHutTsne implements Model {
                         break;
                     indices.putScalar(j, results.get(j).getIndex());
                 }
-                System.out.println("Indices = " + indices);
 
                 for (int l = 0; l < k; l++) {
                     cols.putScalar(rows.getInt(i) + l, indices.getDouble(l + 1));
@@ -370,7 +371,6 @@ public class BarnesHutTsne implements Model {
      * @return
      */
     public INDArray symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
-        System.out.println("N = " + N);
         INDArray rowCounts = Nd4j.create(N);
 
         MemoryWorkspace workspace =
@@ -472,8 +472,9 @@ public class BarnesHutTsne implements Model {
     public Pair<INDArray, Double> computeGaussianKernel(INDArray distances, double beta, int k) {
         // Compute Gaussian kernel row
         INDArray currP = Nd4j.create(k);
-        for (int m = 0; m < k; m++)
+        for (int m = 0; m < k; m++) {
             currP.putScalar(m, FastMath.exp(-beta * distances.getDouble(m + 1)));
+        }
 
         double sum = currP.sum(Integer.MAX_VALUE).getDouble(0);
         double h = 0.0;
@@ -567,9 +568,6 @@ public class BarnesHutTsne implements Model {
 
                 computeGaussianPerplexity(x, perplexity);
                 //TODO: uncomment when C++ implementation is available
-                System.out.println("rows = " + rows);
-                System.out.println("cols = " + cols);
-                System.out.println("vals = " + vals);
                 BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
                 //Nd4j.getExecutioner().exec(op);
                 //INDArray output = op.getResult();
@@ -577,7 +575,6 @@ public class BarnesHutTsne implements Model {
                 vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
-                System.out.println("Symmetrized = " + vals);
 
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
