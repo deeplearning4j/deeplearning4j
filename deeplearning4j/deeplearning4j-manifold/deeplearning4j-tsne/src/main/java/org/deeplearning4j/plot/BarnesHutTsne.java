@@ -401,7 +401,6 @@ public class BarnesHutTsne implements Model {
                 }
             }
 
-
             int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
             INDArray offset = Nd4j.create(N);
             INDArray symRowP = Nd4j.zeros(N + 1);
@@ -411,11 +410,10 @@ public class BarnesHutTsne implements Model {
             for (int n = 0; n < N; n++)
                 symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
 
-
             for (int n = 0; n < N; n++) {
                 for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
                     boolean present = false;
-                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
+                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)+1); m++) {
                         if (colP.getInt(m) == n) {
                             present = true;
                             if (n <= colP.getInt(i)) {
@@ -433,13 +431,10 @@ public class BarnesHutTsne implements Model {
                     // If (colP[i], n) is not present, there is no addition involved
                     if (!present) {
                         int colPI = colP.getInt(i);
-                        if (n < colPI) {
-                            symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
-                            symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
-                            symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
-                            symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
-                        }
-
+                        symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
+                        symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
+                        symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
+                        symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
                     }
 
                     // Update offsets
@@ -575,7 +570,6 @@ public class BarnesHutTsne implements Model {
                 vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
-
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
 
@@ -880,6 +874,11 @@ public class BarnesHutTsne implements Model {
 
     public void setData(INDArray data) {
         this.Y = data;
+    }
+
+    // TODO: find better solution for test
+    public void setN(int N) {
+        this.N = N;
     }
 
     public static class Builder {
