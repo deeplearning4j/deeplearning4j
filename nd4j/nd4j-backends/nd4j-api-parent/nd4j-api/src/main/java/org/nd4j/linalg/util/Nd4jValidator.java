@@ -11,6 +11,7 @@ import org.nd4j.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 
 public class Nd4jValidator {
 
@@ -134,4 +135,37 @@ public class Nd4jValidator {
                 .build();
     }
 
+    public static ValidationResult validateNpzFile(@NonNull File f){
+        ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "Numpy .npz File", false);
+        if(vr != null && !vr.isValid())
+            return vr;
+
+        Map<String,INDArray> m = null;
+        try{
+            m = Nd4j.createFromNpzFile(f);
+        } catch (Throwable t){
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType("Numpy .npz File")
+                    .path(Nd4jCommonValidator.getPath(f))
+                    .issues(Collections.singletonList("File may be corrupt or is not a Numpy .npz file"))
+                    .exception(t)
+                    .build();
+        } finally {
+            //Deallocate immediately
+            if(m != null){
+                for(INDArray arr : m.values()){
+                    if(arr != null){
+                        arr.close();
+                    }
+                }
+            }
+        }
+
+        return ValidationResult.builder()
+                .valid(true)
+                .formatType("Numpy .npz File")
+                .path(Nd4jCommonValidator.getPath(f))
+                .build();
+    }
 }

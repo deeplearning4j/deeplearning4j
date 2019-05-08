@@ -185,9 +185,76 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
         System.out.println(vr4.toString());
-
     }
 
+    @Test
+    public void testNpzValidation() throws Exception {
+
+        File f = testDir.newFolder();
+
+        //Test not existent file:
+        File fNonExistent = new File("doesntExist.npz");
+        ValidationResult vr0 = Nd4jValidator.validateNpzFile(fNonExistent);
+        assertFalse(vr0.isValid());
+        assertEquals("Numpy .npz File", vr0.getFormatType());
+        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        System.out.println(vr0.toString());
+
+        //Test empty file:
+        File fEmpty = new File(f, "empty.npz");
+        fEmpty.createNewFile();
+        assertTrue(fEmpty.exists());
+        ValidationResult vr1 = Nd4jValidator.validateNpzFile(fEmpty);
+        assertEquals("Numpy .npz File", vr1.getFormatType());
+        assertFalse(vr1.isValid());
+        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        System.out.println(vr1.toString());
+
+        //Test directory (not zip file)
+        File directory = new File(f, "dir");
+        boolean created = directory.mkdir();
+        assertTrue(created);
+        ValidationResult vr2 = Nd4jValidator.validateNpzFile(directory);
+        assertEquals("Numpy .npz File", vr2.getFormatType());
+        assertFalse(vr2.isValid());
+        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        System.out.println(vr2.toString());
+
+        //Test non-numpy format:
+        File fText = new File(f, "text.txt");
+        FileUtils.writeStringToFile(fText, "Not a numpy .npz file", StandardCharsets.UTF_8);
+        ValidationResult vr3 = Nd4jValidator.validateNpzFile(fText);
+        assertEquals("Numpy .npz File", vr3.getFormatType());
+        assertFalse(vr3.isValid());
+        String s = vr3.getIssues().get(0);
+        assertTrue(s, s.contains("npz") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
+        System.out.println(vr3.toString());
+
+        //Test corrupted npz format:
+        File fValid = new ClassPathResource("numpy_arrays/npz/float32.npz").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=0; i<30; i++ ){
+            numpyBytes[i] = 0;
+        }
+        File fCorrupt = new File(f, "corrupt.npz");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        ValidationResult vr4 = Nd4jValidator.validateNpzFile(fCorrupt);
+        assertEquals("Numpy .npz File", vr4.getFormatType());
+        assertFalse(vr4.isValid());
+        s = vr4.getIssues().get(0);
+        assertTrue(s, s.contains("npz") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
+        System.out.println(vr4.toString());
+
+
+        //Test valid npz format:
+        ValidationResult vr5 = Nd4jValidator.validateNpzFile(fValid);
+        assertEquals("Numpy .npz File", vr5.getFormatType());
+        assertTrue(vr5.isValid());
+        assertNull(vr5.getIssues());
+        assertNull(vr5.getException());
+        System.out.println(vr4.toString());
+    }
 
     @Override
     public char ordering() {
