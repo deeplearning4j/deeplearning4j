@@ -170,19 +170,18 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
     std::vector<NDArray*> toDelete;
 
-    if(A->ews() != 1) {
+    if(A->ews() != 1) {        
         pA = pA->dup('f');
-        pA->printBuffer();
         toDelete.push_back(pA);
     }
-    if(B->ews() != 1) {
+    if(B->ews() != 1) {        
         pB = pB->dup('f');
         toDelete.push_back(pB);
     }
     if(C->ews() != 1) {
         pC = pC->dup('f');    
         toDelete.push_back(pC);
-    }
+    }    
 
     if(pC->ordering() != 'f') {
         auto temp = pA;
@@ -213,11 +212,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     const auto aType = pA->dataType();
     const auto bType = pB->dataType();
     const auto cType = pC->dataType();
-
-    if(!pA->isActualOnDeviceSide()) pA->syncToDevice();
-    if(!pB->isActualOnDeviceSide()) pB->syncToDevice();
-    if(!pC->isActualOnDeviceSide()) pC->syncToDevice();
-
+  
     auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
     auto stream = A->getContext()->getCudaStream();
 
@@ -226,12 +221,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
-
-    NDArray::prepareSpecialUse({pC}, {pA, pB});    
-
-    // PointersManager manager(A->getContext(), "aaa");
-    // manager.printDevContentOnHost<float>(pA->getSpecialBuffer(), pA->lengthOf());
-    // manager.printDevContentOnHost<float>(pB->getSpecialBuffer(), pB->lengthOf());
+    NDArray::prepareSpecialUse({pC}, {pA, pB});
 
     // choose appropriate cuda gemm api depending on data types    
     if(ABC && aType == DataType::DOUBLE) {        
@@ -267,8 +257,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
     auto cudaResult = cudaStreamSynchronize(*stream);
-    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
-    
+    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);    
 
     NDArray::registerSpecialUse({pC}, {pA, pB});
 

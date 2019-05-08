@@ -101,6 +101,9 @@ namespace nd4j {
 */
         template <typename T>
         void* templatedPointerShift(const Nd4jLong offset) const;
+        
+        FORCEINLINE void copyBufferStatus(const NDArray& other) const;
+
     protected:
 
        /**
@@ -2096,6 +2099,15 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
+void NDArray::copyBufferStatus(const NDArray& other) const { 
+    
+    if (other.isActualOnHostSide()) 
+        tickWriteHost();
+    else
+        tickWriteDevice();
+}
+
+////////////////////////////////////////////////////////////////////////
 void NDArray::tickWriteHost() const          { _writeHost   = ++_opCounter; }
 void NDArray::tickWriteDevice() const        {  _writeDevice = ++_opCounter; }
 void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
@@ -2103,6 +2115,8 @@ void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
 bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 void NDArray::makeBothBuffersActual() const  { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
+
+
 
 #ifdef __CUDACC__
 // for CUDA we need stil stuff inline

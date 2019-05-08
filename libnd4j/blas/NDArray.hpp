@@ -365,6 +365,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         for (Nd4jLong e = 0; e < numElements; e++) {
             this->p(e, start + (step * e));
         }
+
+        // #ifdef __CUDABLAS__
+        // syncToDevice();
+        // #endif        
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1347,6 +1351,7 @@ NDArray NDArray::transp() const {
         // create array to be returned        
         auto ret = new NDArray(_buffer, _bufferD, shapeInfoPermuted, _context, false, false);
 	    ret->_isView = true;
+        ret->copyBufferStatus(*this);
         return ret;
     }
 
@@ -2468,13 +2473,6 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     if (i >= _length)
         throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");    
-
-    if(ordering() == 'c') {
-        if(ews() == 1)
-            return i;
-        if(ews() > 1)
-            return i * ews();
-    }
 
     return shape::getIndexOffset(i, _shapeInfo, _length);
 }
