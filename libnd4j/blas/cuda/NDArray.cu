@@ -273,48 +273,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     return *this;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// perform array transformation
-    // void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::AnyOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::SameOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::BoolOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::StrictOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // perform array transformation
-
-/*
-    template<typename T>
-    template<typename OpName>
-    void NDArray<T>::applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y, NDArray<T>* z, T* extraArgs) {
-        Nd4jPointer state = (Nd4jPointer) buffer;
-        if (y == nullptr && z == nullptr) {
-            // we're executing indexed z here
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), extraArgs);
-        } else if (y == nullptr && z != nullptr) {
-            // XZ case
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
-        } else if (y != nullptr && z != nullptr) {
-            // XYZ case
-            functions::random::RandomFunction<T>::template execTransform<OpName>(state, this->buffer(), this->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), extraArgs);
-        }
-    }
-    */
-
     //////////////////////////////////////////////////////////////////////////
     void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
         if (isS())
@@ -607,6 +565,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 	    return true;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     std::vector<T> NDArray::asVectorT() {
         std::vector<T> result(this->lengthOf());
@@ -741,7 +700,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         RELEASE(shapeInfoNew, _context->getWorkspace());
 
         return true;
-
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -755,14 +713,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         this->assign(1.);
 
         setValueInDiagMatrix(0.f, 1, 'u');
-        setValueInDiagMatrix(0.f, -1, 'l');
-
-        //setValueInDiagMatrix(0.f, 1, 'l');
-//#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-//        for(int i = 0; i < minDim; ++i)
-//            templatedSet<float>(_buffer, i*offset, this->dataType(), &v);
+        setValueInDiagMatrix(0.f, -1, 'l');        
     }
 
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet< , T>(buffer, xOfsset, value), LIBND4J_TYPES);
@@ -770,7 +724,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     BUILD_SINGLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value), LIBND4J_TYPES);
 
 
-
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
         auto x = reinterpret_cast<T *>(xBuffer);
@@ -804,6 +758,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (this->_bufferD, this->_shapeInfoD, other.specialBuffer(), other.specialShapeInfo(), _context->getCudaStream()), LIBND4J_TYPES);
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::streamline(char o) {
         char order = o == 'a' ? this->ordering() : o;
         if (!isActualOnDeviceSide())
@@ -865,6 +820,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         tickWriteDevice();
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
         if (isS())
             throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
@@ -947,6 +903,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         cudaMemcpy(_shapeInfoD, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo), cudaMemcpyHostToDevice);
     }
 
+    ////////////////////////////////////////////////////////////////////////
     template <typename X, typename Y>
     void NDArray::templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
         auto x = reinterpret_cast<X *>(xBuffer);
@@ -1192,6 +1149,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         target->tickWriteDevice();
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
 
         if (isS())
@@ -1206,6 +1164,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         target->tickWriteDevice();
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
         //nd4j_printf("Same op %i transform:\n", (int)op);
         if (isS())
@@ -1222,6 +1181,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 //        target->tickWriteDevice();
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {
         if (isS())
             throw std::runtime_error("NDArray::applyTransform BoolOps: you can't use this method on String array!");
@@ -1237,6 +1197,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         NativeOpExecutioner::execTransformBool(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(this->dataType()) : nullptr, nullptr, nullptr);
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, ExtraArguments *extraParams) {
         if (isS())
             throw std::runtime_error("NDArray::applyTransform StrictOps: you can't use this method on String array!");
@@ -1254,29 +1215,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
-//////////////////////////////////////////////////////////////////////////
-// perform array transformation
-    // void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::AnyOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::SameOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::BoolOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
-    // void NDArray::applyTransform(nd4j::transform::StrictOps op, void *extraParams) {
-    //     applyTransform(op, this, extraParams);
-    // }
-
     // perform array transformation
+    ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
         if (isS())
             throw std::runtime_error("NDArray::transform FloatOps: you can't use this method on String array!");
@@ -1286,6 +1226,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const {
         if (isS())
             throw std::runtime_error("NDArray::transform SameOps: you can't use this method on String array!");
@@ -1295,6 +1236,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) const {
         if (!this->isR())
             throw std::runtime_error("Source array must have one of FLOAT types");
@@ -1304,6 +1246,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const {
         if (isS())
             throw std::runtime_error("NDArray::transform BoolOps: you can't use this method on String array!");
@@ -1319,6 +1262,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         applyPairwiseTransform(op, &other, this, extraParams);
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams) const{
         if (isS())
             throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
@@ -1352,7 +1296,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
         NativeOpExecutioner::execScalarBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
         target->tickWriteDevice();
     }
-
+    
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray *target, ExtraArguments *extraParams) const {
 
@@ -1393,6 +1338,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         target->tickWriteDevice();
     }
 
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray *target, ExtraArguments *extraParams) {
 
@@ -1683,6 +1629,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
         
         for (auto a : writeList) {
@@ -1702,6 +1649,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
         // no-op
         for (auto p:writeList) {
@@ -1798,6 +1746,7 @@ NDArray::~NDArray() noexcept {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
         if (isS())
             throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
@@ -1864,10 +1813,6 @@ NDArray::~NDArray() noexcept {
 
         ShapeDescriptor descriptor(shapeInfo, dataType());
         setShapeInfo(descriptor);
-//        auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-//        _shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
-//        _shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
-//        RELEASE(shapeInfo, _context->getWorkspace());
 
         return true;
     }
@@ -1879,11 +1824,6 @@ NDArray::~NDArray() noexcept {
 
         auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
         ShapeDescriptor descriptor(shapeInfo, dataType());
-
-        //auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-        //_shapeInfo = reinterpret_cast<Nd4jLong *>(buffer.primary());
-        //_shapeInfoD = reinterpret_cast<Nd4jLong *>(buffer.special());
-        //RELEASE(shapeInfo, _context->getWorkspace());/
 
         return true;
     }
@@ -2071,6 +2011,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     template void NDArray::p(const Nd4jLong i, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const bool value);
 
+    ////////////////////////////////////////////////////////////////////////
     void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
         
         if(!scalar.isScalar())
@@ -2192,8 +2133,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        auto array = new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]), packX.primaryShapeInfo(), _context);
+        auto array = new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]), packX.primaryShapeInfo(), _context);        
         array->_isView = true;
+        array->copyBufferStatus(*this);
 
         return array;
     }
@@ -2361,8 +2303,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         NDArray::registerSpecialUse({this}, {column});
     }
     
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         int dim = reps.size();
@@ -2394,8 +2335,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         ALLOCATE(newBuff, _context->getWorkspace(), shape::length(newShapeInfo) * sizeOfT(), int8_t);
         // assign new shape and new buffer to resulting array
         NDArray result(newBuff, newShapeInfo, _context, true);
-//        if (!isActualOnHostSide())
-//            syncToHost();
+
         // fill newBuff, loop through all elements of newBuff
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto resultLen = result.lengthOf();
@@ -2405,7 +2345,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         result.tickWriteDevice();
         return result;
     }
-//                *(reinterpret_cast<double*>(newBuff) + i) = *(reinterpret_cast<double*>(_buffer) + yOffset);
+
+    //////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
         if (xBuffer != nullptr && yBuffer != nullptr)
@@ -2449,9 +2390,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (_bufferD, _shapeInfoD, target._bufferD, target._shapeInfoD, targetLen, ews, *stream), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // create new  array by repeating it the number of times given by reps
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    // create new  array by repeating it the number of times given by reps    
     NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
         auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
 
@@ -2478,9 +2418,12 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto stream = _context->getCudaStream();
         BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), ret->lengthOf(), packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), *stream), LIBND4J_TYPES);
 
+        NDArray::registerSpecialUse({ret}, {this});
+
         return ret;
     }
 
+    //////////////////////////////////////////////////////////////////////////
     void NDArray::nullify() {
         if (isEmpty())
             return;
