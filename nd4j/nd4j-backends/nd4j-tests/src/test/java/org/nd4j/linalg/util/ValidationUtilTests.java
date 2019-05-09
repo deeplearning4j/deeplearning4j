@@ -4,6 +4,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -250,6 +252,150 @@ public class ValidationUtilTests extends BaseNd4jTest {
         //Test valid npz format:
         ValidationResult vr5 = Nd4jValidator.validateNpzFile(fValid);
         assertEquals("Numpy .npz File", vr5.getFormatType());
+        assertTrue(vr5.isValid());
+        assertNull(vr5.getIssues());
+        assertNull(vr5.getException());
+        System.out.println(vr4.toString());
+    }
+
+    @Test
+    public void testNumpyTxtValidation() throws Exception {
+        File f = testDir.newFolder();
+
+        //Test not existent file:
+        File fNonExistent = new File("doesntExist.txt");
+        ValidationResult vr0 = Nd4jValidator.validateNumpyTxtFile(fNonExistent, " ", StandardCharsets.UTF_8);
+        assertFalse(vr0.isValid());
+        assertEquals("Numpy text file", vr0.getFormatType());
+        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        System.out.println(vr0.toString());
+
+        //Test empty file:
+        File fEmpty = new File(f, "empty.txt");
+        fEmpty.createNewFile();
+        assertTrue(fEmpty.exists());
+        ValidationResult vr1 = Nd4jValidator.validateNumpyTxtFile(fEmpty, " ", StandardCharsets.UTF_8);
+        assertEquals("Numpy text file", vr1.getFormatType());
+        assertFalse(vr1.isValid());
+        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        System.out.println(vr1.toString());
+
+        //Test directory (not zip file)
+        File directory = new File(f, "dir");
+        boolean created = directory.mkdir();
+        assertTrue(created);
+        ValidationResult vr2 = Nd4jValidator.validateNumpyTxtFile(directory, " ", StandardCharsets.UTF_8);
+        assertEquals("Numpy text file", vr2.getFormatType());
+        assertFalse(vr2.isValid());
+        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        System.out.println(vr2.toString());
+
+        //Test non-numpy format:
+        File fText = new File(f, "text.txt");
+        FileUtils.writeStringToFile(fText, "Not a numpy .text file", StandardCharsets.UTF_8);
+        ValidationResult vr3 = Nd4jValidator.validateNumpyTxtFile(fText, " ", StandardCharsets.UTF_8);
+        assertEquals("Numpy text file", vr3.getFormatType());
+        assertFalse(vr3.isValid());
+        String s = vr3.getIssues().get(0);
+        assertTrue(s, s.contains("text") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
+        System.out.println(vr3.toString());
+
+        //Test corrupted txt format:
+        File fValid = new ClassPathResource("numpy_arrays/txt/arange_3,4_float32.txt").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=0; i<30; i++ ){
+            numpyBytes[i] = (byte)('a' + i);
+        }
+        File fCorrupt = new File(f, "corrupt.txt");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        ValidationResult vr4 = Nd4jValidator.validateNumpyTxtFile(fCorrupt, " ", StandardCharsets.UTF_8);
+        assertEquals("Numpy text file", vr4.getFormatType());
+        assertFalse(vr4.isValid());
+        s = vr4.getIssues().get(0);
+        assertTrue(s, s.contains("text") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
+        System.out.println(vr4.toString());
+
+
+        //Test valid npz format:
+        ValidationResult vr5 = Nd4jValidator.validateNumpyTxtFile(fValid, " ", StandardCharsets.UTF_8);
+        assertEquals("Numpy text file", vr5.getFormatType());
+        assertTrue(vr5.isValid());
+        assertNull(vr5.getIssues());
+        assertNull(vr5.getException());
+        System.out.println(vr4.toString());
+    }
+
+    @Test
+    public void testValidateSameDiff() throws Exception {
+        Nd4j.setDataType(DataType.FLOAT);
+
+        File f = testDir.newFolder();
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.placeHolder("x", DataType.FLOAT, 3,4);
+        SDVariable loss = v.std(true);
+
+        File fOrig = new File(f, "sd_fb.fb");
+        sd.asFlatFile(fOrig);;
+
+
+        //Test not existent file:
+        File fNonExistent = new File("doesntExist.fb");
+        ValidationResult vr0 = Nd4jValidator.validateSameDiffFlatBuffers(fNonExistent);
+        assertFalse(vr0.isValid());
+        assertEquals("SameDiff FlatBuffers file", vr0.getFormatType());
+        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        System.out.println(vr0.toString());
+
+        //Test empty file:
+        File fEmpty = new File(f, "empty.fb");
+        fEmpty.createNewFile();
+        assertTrue(fEmpty.exists());
+        ValidationResult vr1 = Nd4jValidator.validateSameDiffFlatBuffers(fEmpty);
+        assertEquals("SameDiff FlatBuffers file", vr1.getFormatType());
+        assertFalse(vr1.isValid());
+        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        System.out.println(vr1.toString());
+
+        //Test directory (not zip file)
+        File directory = new File(f, "dir");
+        boolean created = directory.mkdir();
+        assertTrue(created);
+        ValidationResult vr2 = Nd4jValidator.validateSameDiffFlatBuffers(directory);
+        assertEquals("SameDiff FlatBuffers file", vr2.getFormatType());
+        assertFalse(vr2.isValid());
+        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        System.out.println(vr2.toString());
+
+        //Test non-flatbuffers
+        File fText = new File(f, "text.fb");
+        FileUtils.writeStringToFile(fText, "Not a flatbuffers file :)", StandardCharsets.UTF_8);
+        ValidationResult vr3 = Nd4jValidator.validateSameDiffFlatBuffers(fText);
+        assertEquals("SameDiff FlatBuffers file", vr3.getFormatType());
+        assertFalse(vr3.isValid());
+        String s = vr3.getIssues().get(0);
+        assertTrue(s, s.contains("FlatBuffers") && s.contains("SameDiff") && s.contains("corrupt"));
+        System.out.println(vr3.toString());
+
+        //Test corrupted flatbuffers format:
+        byte[] fbBytes = FileUtils.readFileToByteArray(fOrig);
+        for( int i=0; i<30; i++ ){
+            fbBytes[i] = (byte)('a' + i);
+        }
+        File fCorrupt = new File(f, "corrupt.fb");
+        FileUtils.writeByteArrayToFile(fCorrupt, fbBytes);
+
+        ValidationResult vr4 = Nd4jValidator.validateSameDiffFlatBuffers(fCorrupt);
+        assertEquals("SameDiff FlatBuffers file", vr4.getFormatType());
+        assertFalse(vr4.isValid());
+        s = vr4.getIssues().get(0);
+        assertTrue(s, s.contains("FlatBuffers") && s.contains("SameDiff") && s.contains("corrupt"));
+        System.out.println(vr4.toString());
+
+
+        //Test valid npz format:
+        ValidationResult vr5 = Nd4jValidator.validateSameDiffFlatBuffers(fOrig);
+        assertEquals("SameDiff FlatBuffers file", vr5.getFormatType());
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());

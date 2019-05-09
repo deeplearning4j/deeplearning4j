@@ -1,15 +1,19 @@
 package org.nd4j.linalg.util;
 
 import lombok.NonNull;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.graph.FlatGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.validation.Nd4jCommonValidator;
 import org.nd4j.validation.ValidationResult;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 
@@ -165,6 +169,96 @@ public class Nd4jValidator {
         return ValidationResult.builder()
                 .valid(true)
                 .formatType("Numpy .npz File")
+                .path(Nd4jCommonValidator.getPath(f))
+                .build();
+    }
+
+    public static ValidationResult validateNumpyTxtFile(@NonNull File f, @NonNull String delimiter, @NonNull Charset charset){
+        ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "Numpy text file", false);
+        if(vr != null && !vr.isValid())
+            return vr;
+
+        String s;
+        try{
+            s = FileUtils.readFileToString(f, charset);
+        } catch (Throwable t){
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType("Numpy text file")
+                    .path(Nd4jCommonValidator.getPath(f))
+                    .issues(Collections.singletonList("File may be corrupt or is not a Numpy text file"))
+                    .exception(t)
+                    .build();
+        }
+
+        String[] lines = s.split("\n");
+        int countPerLine = 0;
+        for(int i=0; i<lines.length; i++ ){
+            String[] lineSplit = lines[i].split(delimiter);
+            if(i == 0 ){
+                countPerLine = lineSplit.length;
+            } else if(!lines[i].isEmpty()){
+                if(countPerLine != lineSplit.length){
+                    return ValidationResult.builder()
+                            .valid(false)
+                            .formatType("Numpy text file")
+                            .path(Nd4jCommonValidator.getPath(f))
+                            .issues(Collections.singletonList("Number of values in each line is not the same for all lines: File may be corrupt, is not a Numpy text file, or delimiter \"" + delimiter + "\" is incorrect"))
+                            .build();
+                }
+            }
+
+            for( int j=0; j<lineSplit.length; j++ ){
+                try{
+                    Double.parseDouble(lineSplit[j]);
+                } catch (NumberFormatException e){
+                    return ValidationResult.builder()
+                            .valid(false)
+                            .formatType("Numpy text file")
+                            .path(Nd4jCommonValidator.getPath(f))
+                            .issues(Collections.singletonList("File may be corrupt, is not a Numpy text file, or delimiter \"" + delimiter + "\" is incorrect"))
+                            .exception(e)
+                            .build();
+                }
+            }
+        }
+        return ValidationResult.builder()
+                .valid(true)
+                .formatType("Numpy text file")
+                .path(Nd4jCommonValidator.getPath(f))
+                .build();
+    }
+
+
+    public static ValidationResult validateSameDiffFlatBuffers(@NonNull File f){
+        ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "SameDiff FlatBuffers file", false);
+        if(vr != null && !vr.isValid())
+            return vr;
+
+        try{
+            byte[] bytes;
+            try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
+                bytes = IOUtils.toByteArray(is);
+            }
+
+            ByteBuffer bbIn = ByteBuffer.wrap(bytes);
+            FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
+            int vl = fg.variablesLength();
+            int ol = fg.nodesLength();
+            System.out.println();
+        } catch (Throwable t){
+            return ValidationResult.builder()
+                    .valid(false)
+                    .formatType("SameDiff FlatBuffers file")
+                    .path(Nd4jCommonValidator.getPath(f))
+                    .issues(Collections.singletonList("File may be corrupt or is not a SameDiff file in FlatBuffers format"))
+                    .exception(t)
+                    .build();
+        }
+
+        return ValidationResult.builder()
+                .valid(true)
+                .formatType("SameDiff FlatBuffers file")
                 .path(Nd4jCommonValidator.getPath(f))
                 .build();
     }
