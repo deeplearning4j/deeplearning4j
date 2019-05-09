@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void chooseFunctorArray(graph::LaunchContext* context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults);
-    void chooseFunctorScalar(graph::LaunchContext* context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults);
+    void chooseFunctorArray(nd4j::LaunchContext * context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults);
+    void chooseFunctorScalar(nd4j::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults);
 
 }
 }

@@ -69,7 +69,7 @@ static void clipping(NDArray* arr, T limit) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(graph::LaunchContext* context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 }
 
@@ -95,7 +95,7 @@ static NDArray* timeSubset(const NDArray* arr, const int t, const int dataFormat
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                   NDArray* h, NDArray* c, const std::vector<double>& params) {
 
 }

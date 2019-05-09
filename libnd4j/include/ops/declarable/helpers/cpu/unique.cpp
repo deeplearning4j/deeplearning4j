@@ -41,7 +41,7 @@ namespace helpers {
         return count;
     }
 
-    Nd4jLong uniqueCount(graph::LaunchContext* context, NDArray* input) {
+    Nd4jLong uniqueCount(nd4j::LaunchContext * context, NDArray* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), LIBND4J_TYPES);
     }
 
@@ -83,7 +83,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    Nd4jStatus uniqueFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+    Nd4jStatus uniqueFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
     }
 

@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output, bool reverse);
+    void nthElementFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* n, NDArray* output, bool reverse);
 
 }
 }

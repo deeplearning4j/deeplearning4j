@@ -80,7 +80,7 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
 
 ///////////////////////////////////////////////////////////////////
     template <typename T>
-    void static _softMaxDerivForVector(graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+    void static _softMaxDerivForVector(nd4j::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
 
         const T* inBuff  = reinterpret_cast<const T *>(input);
         T* outBuff = reinterpret_cast<T *>(output);
@@ -110,7 +110,7 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
     }
 
 ///////////////////////////////////////////////////////////////////
-    void softmaxDerivative(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+    void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
         const int rank = input.rankOf();
         int temp;
@@ -129,7 +129,7 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
     }
 
     ///////////////////////////////////////////////////////////////////
-void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
+void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     if(!input.isVector() || !output.isVector())
         throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
@@ -188,7 +188,7 @@ void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArr
     }
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
+    void logSoftMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
@@ -199,7 +199,7 @@ void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void softmax_(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
     const int rank = input.rankOf();
 
@@ -287,14 +287,14 @@ static void softmax_(graph::LaunchContext* context, const NDArray& input, NDArra
 
 
 ///////////////////////////////////////////////////////////////////
-void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
     BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (context, input, output, dimension), FLOAT_TYPES);
 }
 
 
     //////////////////////////////////////////////////////////////////////////
-    void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+    void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
         const Nd4jLong inputLen = input.lengthOf();
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
@@ -312,7 +312,7 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+    void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
         const Nd4jLong inputLen = input.lengthOf();
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
@@ -349,24 +349,24 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
         const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
     }
 
-    void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
+    void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
 
     template <typename T>
-    static void thresholdReluDerivative_(graph::LaunchContext* context, NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+    static void thresholdReluDerivative_(nd4j::LaunchContext * context, NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
         auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
         input->applyPairwiseLambda<T>(dLdO, derivative, output);
 
     }
 
-    void thresholdReluDerivative(graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+    void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output), FLOAT_TYPES);
     }
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+    void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
         const int rank = input.rankOf();
 
@@ -388,10 +388,10 @@ void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& outpu
         }
     }
 
-BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void softmax_, (graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void softmax_, (nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (graph::LaunchContext* context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (nd4j::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
 
 }
 }

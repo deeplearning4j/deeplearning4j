@@ -62,7 +62,7 @@ static void zetaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
     zetaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vq, qShapeInfo, vz, zShapeInfo);
 }
 
-void zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z) {
+void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
 
     if(!x.isActualOnDeviceSide()) x.syncToDevice();
     if(!q.isActualOnDeviceSide()) q.syncToDevice();

@@ -53,7 +53,7 @@ static FORCEINLINE void tanhInplace(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(graph::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
+void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
              const NDArray* bru, const NDArray* bc,
              NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
 
@@ -117,7 +117,7 @@ void gruCell(graph::LaunchContext* context, const NDArray* x, const NDArray* hLa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
 // x   input [time, bS, iS]
 // h0  initial cell output (at time step = 0) [bS, nU]
@@ -143,7 +143,7 @@ for (int t = 0; t < time; ++t) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBP(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
+void gruCellBP(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
            const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
 
 // x                        input [bS, iS]

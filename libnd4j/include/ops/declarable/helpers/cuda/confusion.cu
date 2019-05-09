@@ -68,7 +68,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void _confusionFunctor(graph::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    void _confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
 //        std::unique_ptr<ResultSet> arrs(output->allTensorsAlongDimension({1}));
 //
 //#pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
@@ -125,13 +125,13 @@ namespace helpers {
         manager.synchronize();
     }
 
-    void confusionFunctor(graph::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    void confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = output->dataType(); // weights can be null
 
         BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (context, labels, predictions, weights, output), NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _confusionFunctor, (graph::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _confusionFunctor, (nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);, NUMERIC_TYPES);
 
 }
 }

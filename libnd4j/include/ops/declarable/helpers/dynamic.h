@@ -27,13 +27,13 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
 
-            void dynamicPartitionFunctor(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
+            void dynamicPartitionFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
 
-            int dynamicStitchFunctor(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
+            int dynamicStitchFunctor(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
 
-            void dynamicPartitionFunctorBP(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& gradientInputList, std::vector<NDArray*>& outputList);
+            void dynamicPartitionFunctorBP(nd4j::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& gradientInputList, std::vector<NDArray*>& outputList);
 
-            int dynamicStitchFunctorBP(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradientInput, std::vector<NDArray*>& outputList);
+            int dynamicStitchFunctorBP(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradientInput, std::vector<NDArray*>& outputList);
         }
     }
 }

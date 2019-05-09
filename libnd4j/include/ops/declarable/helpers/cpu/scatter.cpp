@@ -25,7 +25,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+            void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
                 const int outRank = output.rankOf();
                 const int indRank = indices.rankOf();
@@ -66,7 +66,7 @@ namespace nd4j {
             }
 
 ///////////////////////////////////////////////////////////////////
-            void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+            void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
                 const Nd4jLong indLen = indices.lengthOf();
                 const int outRank = output.rankOf();
@@ -113,7 +113,7 @@ namespace nd4j {
 
 
 
-            void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+            void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
                 // requirements for arrays
                 // shapes of updates and output must be the same
                 // shape of indices should be the same as updates shape with last dimension excluded

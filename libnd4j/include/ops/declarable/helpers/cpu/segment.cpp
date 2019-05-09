@@ -310,27 +310,27 @@ namespace helpers {
 //    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& anOutput) {
 //      }
 
-    void segmentMaxFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentMinFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMinFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentMeanFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMeanFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentSumFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentSumFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentProdFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentProdFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentProdFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    bool segmentIndicesValidate(graph::LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output) {
+    bool segmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, NDArray& expected, NDArray& output) {
         auto val = indices->e(0);
         for (int e = 1; e < indices->lengthOf(); e++) {
             output = indices->e(e);
@@ -352,7 +352,7 @@ namespace helpers {
     // Unsorted segment ops
     // -------------------------------------------------------------------------------------------------------------- //
 
-    bool unsortedSegmentIndicesValidate(graph::LaunchContext* context, NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
+    bool unsortedSegmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         Nd4jLong val = indices->e<Nd4jLong>(0);
 
         Nd4jLong maxInd = indices->argMax();
@@ -416,7 +416,7 @@ namespace helpers {
             }
         }
     }
-    void unsortedSegmentMaxFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMaxFunctor_, (input, indices, numOfClasses, output), NUMERIC_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMaxFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
@@ -472,14 +472,14 @@ namespace helpers {
         }
 
     }
-    void unsortedSegmentMinFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMinFunctor_, (input, indices, numOfClasses, output),
                               NUMERIC_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    void unsortedSegmentMeanFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -522,7 +522,7 @@ namespace helpers {
         }
     }
 
-    void unsortedSegmentSumFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -602,12 +602,12 @@ namespace helpers {
         }
     }
 
-    void unsortedSegmentProdFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentProdFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentProdFunctor_, (input, indices, numOfClasses, output), NUMERIC_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentProdFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    void unsortedSegmentSqrtNFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSqrtNFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -653,7 +653,7 @@ namespace helpers {
     //
     // segment max
     template <typename T>
-    int segmentMaxFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMaxFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         //int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
@@ -700,13 +700,13 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMaxFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), return segmentMaxFunctorBP_, (context, input, indices, gradOut, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
 
     // segmen min
-    int segmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMinFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         std::unique_ptr<NDArray> tempRes(gradOut->dup());
         segmentMinFunctor(context, input, indices, tempRes.get());
         if (input->isVector()) {
@@ -749,7 +749,7 @@ namespace helpers {
     }
 
     // segmen mean
-    int segmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         int numClasses = output->sizeAt(0);
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
@@ -797,7 +797,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentSumFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentSumFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
 //        int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         Nd4jLong idx = indices->e<Nd4jLong>(0);
@@ -829,7 +829,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto tempRes = gradOut->dup();
         segmentProdFunctor(context, input, indices, tempRes);
         if (input->isVector()) {
@@ -872,7 +872,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int unsortedSegmentMaxFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMaxFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 //        int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
@@ -910,13 +910,13 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentMaxFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     template <typename T>
-    static int unsortedSegmentMinFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMinFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
         unsortedSegmentMinFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
@@ -959,12 +959,12 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentMinFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    int unsortedSegmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
@@ -1003,7 +1003,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentSumFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSumFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
         // if input is a vector: (as if in doc sample)
         Nd4jLong idx = indices->e<Nd4jLong>(0);
@@ -1036,7 +1036,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
 
         unsortedSegmentProdFunctor(context, input, indices, numOfClasses, tempRes);
@@ -1074,7 +1074,7 @@ namespace helpers {
     }
 
 //    template <typename T>
-    int unsortedSegmentSqrtNFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSqrtNFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {

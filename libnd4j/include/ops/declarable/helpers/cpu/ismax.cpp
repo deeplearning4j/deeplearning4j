@@ -225,7 +225,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 }
 
 
-void ismax(graph::LaunchContext* context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+void ismax(nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (input, output, dimensions), LIBND4J_TYPES);
 }
 

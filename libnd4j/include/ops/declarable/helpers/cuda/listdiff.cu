@@ -31,7 +31,7 @@ namespace helpers {
         return saved;
     }
 
-    Nd4jLong listDiffCount(graph::LaunchContext* context, NDArray* values, NDArray* keep) {
+    Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), LIBND4J_TYPES);
@@ -44,7 +44,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int listDiffFunctor(graph::LaunchContext* context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
+    int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
         if (DataTypeUtils::isR(xType)) {

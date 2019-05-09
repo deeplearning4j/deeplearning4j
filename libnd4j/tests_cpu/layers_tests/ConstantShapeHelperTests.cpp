@@ -85,7 +85,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
 #ifdef __CUDABLAS__
     ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
-    PointersManager manager(graph::LaunchContext::defaultContext(), "test");
+    PointersManager manager(nd4j::LaunchContext ::defaultContext(), "test");
     // manager.printDevContentOnDev<Nd4jLong>(dup->specialShapeInfo(), shape::shapeInfoLength(2), 0);
 #endif
 

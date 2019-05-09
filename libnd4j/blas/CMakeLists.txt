@@ -236,6 +236,7 @@ if(CUDA_BLAS)
 
 
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
+        file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/*.cu ../include/execution/*.h)
         file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
         file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
         file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/impl/*.cpp ../include/memory/cuda/*.cu ../include/memory/*.h)
@@ -254,11 +255,11 @@ if(CUDA_BLAS)
 
 		if (NOT BUILD_TESTS)
 			CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ${LOOPS_SOURCES_CUDA}
-                ${CUSTOMOPS_HELPERS_SOURCES}
+                ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
                 cpu/GraphExecutioner.cpp cuda/NativeOpExecutioner.cu cuda/NDArray.cu cuda/NDArrayFactory.cu
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
-                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
+                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES})
 		else()
 			CUDA_ADD_LIBRARY(${LIBND4J_NAME} STATIC cuda/NativeOps.cu ${LOOPS_SOURCES_CUDA}
                 ${CUSTOMOPS_HELPERS_SOURCES}
@@ -290,6 +291,7 @@ elseif(CPU_BLAS)
     endif()
 
     file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
+    file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/*.cpp ../include/execution/*.h)
     file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
     file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/*.cpp ../include/array/*.h)
     file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/*.cpp ../include/memory/*.h)
@@ -306,8 +308,8 @@ elseif(CPU_BLAS)
     add_library(nd4jobj OBJECT cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExecutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
+            Environment.cpp Environment.h ${LOOPS_SOURCES} ${HELPERS_SOURCES}  ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
             ${OPS_SOURCES})
     if(IOS)
         add_library(${LIBND4J_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)

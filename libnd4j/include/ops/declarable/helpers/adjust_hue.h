@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename T>
-    static FORCEINLINE void rgb_to_hv(graph::LaunchContext* context, T r, T g, T b, T* h, T* v_min, T* v_max) {
+    static FORCEINLINE void rgb_to_hv(nd4j::LaunchContext * context, T r, T g, T b, T* h, T* v_min, T* v_max) {
         T v_mid;
         int h_category;
         // According to the figures in:
@@ -84,7 +84,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static FORCEINLINE void hv_to_rgb(graph::LaunchContext* context, T h, T v_min, T v_max, T* r, T* g, T* b) {
+    static FORCEINLINE void hv_to_rgb(nd4j::LaunchContext * context, T h, T v_min, T v_max, T* r, T* g, T* b) {
         int h_category = static_cast<int>(h);
         T ratio = h - (T)h_category;
         bool increase = ((h_category & 0x1) == 0);
@@ -128,7 +128,7 @@ namespace helpers {
         }
     }
 
-    void _adjust_hue(graph::LaunchContext* context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
+    void _adjust_hue(nd4j::LaunchContext * context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
 }
 }
 }

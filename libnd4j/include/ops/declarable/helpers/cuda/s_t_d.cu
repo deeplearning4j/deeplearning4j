@@ -29,7 +29,7 @@ namespace helpers {
 
     }
 
-    void _spaceTodepth(graph::LaunchContext* context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+    void _spaceTodepth(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
     }
 

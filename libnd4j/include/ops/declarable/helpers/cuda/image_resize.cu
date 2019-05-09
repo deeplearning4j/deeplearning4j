@@ -107,18 +107,18 @@ namespace helpers {
                      std::vector<BilinearInterpolationData> const& ys,
                      NDArray* output), LIBND4J_TYPES);
 
-    int resizeBilinearFunctor(graph::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
+    int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
-    int resizeNeighborFunctor(graph::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
+    int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
     ///////
-    void cropAndResizeFunctor(graph::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
+    void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
         //
     }
 }

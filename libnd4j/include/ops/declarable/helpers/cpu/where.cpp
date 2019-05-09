@@ -49,7 +49,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
 
-            void _where(graph::LaunchContext* context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
+            void _where(nd4j::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
                 BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), LIBND4J_TYPES);
             }
         }

@@ -29,7 +29,7 @@
 namespace nd4j {
 
     nd4j::NDArray *
-    AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::graph::LaunchContext* context) {
+    AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
@@ -56,7 +56,7 @@ namespace nd4j {
     void
     AttentionHelper::multiHeadProjectBp(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix,
                                         const nd4j::NDArray *eps, nd4j::NDArray *dLdInput,
-                                        nd4j::NDArray *dLdProjectionMatrix, nd4j::graph::LaunchContext* context) {
+                                        nd4j::NDArray *dLdProjectionMatrix, nd4j::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);

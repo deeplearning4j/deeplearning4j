@@ -27,16 +27,16 @@
 namespace nd4j {
 
 
-    NDArray NDArrayFactory::string(const char *str, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(const char *str, nd4j::LaunchContext * context) {
         std::string s(str);
         return string(s, context);
     }
 
-    NDArray* NDArrayFactory::string_(const char *str, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(const char *str, nd4j::LaunchContext * context) {
         return string_(std::string(str), context);
     }
 
-    NDArray NDArrayFactory::string(const std::string &str, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(const std::string &str, nd4j::LaunchContext * context) {
         NDArray res;
 
         int8_t *buffer = nullptr;
@@ -69,7 +69,7 @@ namespace nd4j {
         return res;
     }
 
-    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::LaunchContext * context) {
         auto res = new NDArray();
         *res = NDArrayFactory::string(str, context);
         return res;
@@ -77,10 +77,10 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context) {
+NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context) {
     return create_(order, shape, DataTypeUtils::fromT<T>(), context);
 }
-BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -108,42 +108,42 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 #ifndef __JAVACPP_HACK__
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const T value, const char order, nd4j::LaunchContext * context) {
         return valueOf(std::vector<Nd4jLong>(shape), value, order);
     }
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const double value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const float value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const float16 value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const bfloat16 value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const Nd4jLong value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const uint8_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int8_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int16_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const bool value, const char order, nd4j::graph::LaunchContext* context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const double value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const float value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const float16 value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const bfloat16 value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const Nd4jLong value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const uint8_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int8_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const int16_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::initializer_list<Nd4jLong>& shape, const bool value, const char order, nd4j::LaunchContext * context);
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::LaunchContext * context) {
         std::vector<T> vec(data);
         return create<T>(order, shape, vec, context);
     }
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<double>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<float>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<float16>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<bfloat16>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<Nd4jLong>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int16_t>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int8_t>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<uint8_t>& data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<bool>& data, nd4j::graph::LaunchContext* context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<double>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<float>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<float16>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<bfloat16>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<Nd4jLong>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int16_t>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<int8_t>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<uint8_t>& data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<bool>& data, nd4j::LaunchContext * context);
 
 #endif
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::create_(const T scalar, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::create_(const T scalar, nd4j::LaunchContext * context) {
         
         auto res = new NDArray();        
 
@@ -153,7 +153,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>())); //ShapeBuilders::createScalarShapeInfo(, context->getWorkspace()));
         res->setBuffer(buffer);
         res->triggerAllocationFlag(true);
-        res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+        res->setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
         int8_t* specialBuffer = nullptr;
         //Nd4jLong* specialShape = nullptr;
         //ALLOCATE_SPECIAL(specialShape, context->getWorkspace(), shape::shapeInfoLength(res->shapeInfo()), Nd4jLong);
@@ -172,19 +172,19 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         return res;
     }
-    template NDArray* NDArrayFactory::create_(const double scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const float scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const float16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const bfloat16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const Nd4jLong scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const int scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const bool scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const int8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const uint8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::create_(const int16_t scalar, nd4j::graph::LaunchContext* context);
+    template NDArray* NDArrayFactory::create_(const double scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const float scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const float16 scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const bfloat16 scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const Nd4jLong scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const int scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const bool scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const int8_t scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const uint8_t scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const int16_t scalar, nd4j::LaunchContext * context);
 
     template <typename T>
-    NDArray NDArrayFactory::create(nd4j::DataType type, const T scalar, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(nd4j::DataType type, const T scalar, nd4j::LaunchContext * context) {
         if (type == DataTypeUtils::fromT<T>())
             return NDArrayFactory::create(scalar,  context);
         NDArray res(type, context);
@@ -203,20 +203,20 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         return res;
     }
-//    BUILD_DOUBLE_TEMPLATE(template NDArray NDArrayFactory::create, (DataType type, const T scalar, nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
-    template NDArray NDArrayFactory::create(DataType type, const double scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const float scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const float16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const bfloat16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const Nd4jLong scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const int scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const int8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const uint8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const int16_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(DataType type, const bool scalar, nd4j::graph::LaunchContext* context);
+//    BUILD_DOUBLE_TEMPLATE(template NDArray NDArrayFactory::create, (DataType type, const T scalar, nd4j::LaunchContext * context), LIBND4J_TYPES);
+    template NDArray NDArrayFactory::create(DataType type, const double scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const float scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const float16 scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const bfloat16 scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const Nd4jLong scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const int scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const int8_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const uint8_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const int16_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const bool scalar, nd4j::LaunchContext * context);
 
     template <typename T>
-    NDArray NDArrayFactory::create(const T scalar, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(const T scalar, nd4j::LaunchContext * context) {
 
         NDArray res;
 
@@ -228,7 +228,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true);
-        res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+        res.setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
         int8_t* specialBuffer = nullptr;
         Nd4jLong* specialShape = nullptr;
 
@@ -247,21 +247,21 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         return res;
     }
-    template NDArray NDArrayFactory::create(const double scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const float scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const float16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const bfloat16 scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const Nd4jLong scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const int scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const int8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const uint8_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const int16_t scalar, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const bool scalar, nd4j::graph::LaunchContext* context);
+    template NDArray NDArrayFactory::create(const double scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const float scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const float16 scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const bfloat16 scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const Nd4jLong scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const int scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const int8_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const uint8_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const int16_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const bool scalar, nd4j::LaunchContext * context);
 
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context) {
+NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
         
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
@@ -279,7 +279,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
     int8_t* buffer(nullptr);
     ALLOCATE(buffer, context->getWorkspace(), bufferSize, int8_t);
     result->setBuffer(buffer);
-    result->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    result->setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
     result->triggerAllocationFlag(true);
     memcpyFromVector(result->getBuffer(), data);        // old memcpy_
 
@@ -298,49 +298,49 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
 
     return result;
 }
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float16> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bfloat16> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::graph::LaunchContext* context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::graph::LaunchContext* context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float16> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bfloat16> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::LaunchContext * context);
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
 
 
     ////////////////////////////////////////////////////////////////////////
     template <>
-    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray* value, const char order, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray* value, const char order, nd4j::LaunchContext * context) {
         auto result = create_(order, shape, value->dataType(), context);
         result->assign(*value);
         return result;
     }
 
     template <>
-    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray& value, const char order, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, NDArray& value, const char order, nd4j::LaunchContext * context) {
         auto result = create_(order, shape, value.dataType(), context);
         result->assign(value);
         return result;
     }
 
     template <typename T>
-    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const T value, const char order, nd4j::LaunchContext * context) {
         auto result = create_(order, shape, DataTypeUtils::fromT<T>());
         result->assign(value);
         return result;
     }
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const double value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const float value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const float16 value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const bfloat16 value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const Nd4jLong value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int16_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int8_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const uint8_t value, const char order, nd4j::graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const bool value, const char order, nd4j::graph::LaunchContext* context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const double value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const float value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const float16 value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const bfloat16 value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const Nd4jLong value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int16_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const int8_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const uint8_t value, const char order, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const bool value, const char order, nd4j::LaunchContext * context);
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -370,7 +370,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::vector(Nd4jLong length, const T startingValue, graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::vector(Nd4jLong length, const T startingValue, nd4j::LaunchContext * context) {
 
         auto res = new NDArray(context);
 
@@ -387,7 +387,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         //cudaMemcpy(specialShapeInfo, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
         res->setBuffer(buffer);
-        res->setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+        res->setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
         res->setSpecialBuffer(specialBuffer);
         res->triggerAllocationFlag(true);
         res->triggerSpecialAllocationFlag(true);
@@ -404,34 +404,34 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
         }
         return res;
     }
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const float startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const float16 startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const bfloat16 startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const Nd4jLong startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint8_t startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int8_t startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int16_t startingValue, graph::LaunchContext* context);
-    template NDArray* NDArrayFactory::vector(Nd4jLong length, const bool startingValue, graph::LaunchContext* context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const float startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const float16 startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const bfloat16 startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const Nd4jLong startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint8_t startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int8_t startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const int16_t startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const bool startingValue, nd4j::LaunchContext * context);
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray NDArrayFactory::create(const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context) {
         std::vector<Nd4jLong> vec(shape);
         return create<T>(order, vec, context);
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::create, (const char, const std::initializer_list<Nd4jLong>&, nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::create, (const char, const std::initializer_list<Nd4jLong>&, nd4j::LaunchContext * context), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context) {
         return create(order, shape, DataTypeUtils::fromT<T>(), context);
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::create, (const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::create, (const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::LaunchContext * context) {
   
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
@@ -460,7 +460,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * context) {
     
     NDArray res;
     
@@ -469,7 +469,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
     size_t bufferSize = DataTypeUtils::sizeOfElement(dtype);
     memset(buffer, 0, bufferSize);
     res.setBuffer(buffer);
-    res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    res.setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
     res.setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
     res.triggerAllocationFlag(true);
     int8_t* specialBuffer = nullptr;
@@ -490,7 +490,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::LaunchContext* context) {
+NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext * context) {
         
     NDArray res;        
 
@@ -521,20 +521,20 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
     res.tickReadHost();
     return res;
 }
-template NDArray NDArrayFactory::create(const std::vector<double> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<float> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<float16> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<bfloat16> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<Nd4jLong> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<int> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<int16_t> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<int8_t> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<uint8_t> &values, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::graph::LaunchContext* context);
+template NDArray NDArrayFactory::create(const std::vector<double> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<float> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<float16> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<bfloat16> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<Nd4jLong> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<int> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<int16_t> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<int8_t> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<uint8_t> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::LaunchContext * context);
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::empty_(nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::empty_(nd4j::LaunchContext * context) {
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         auto result = new NDArray(nullptr, shapeInfo, context);
@@ -542,11 +542,11 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 
         return result;
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty_, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty_, (nd4j::LaunchContext * context), LIBND4J_TYPES);
 
-    NDArray* NDArrayFactory::empty_(nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::empty_(nd4j::DataType dataType, nd4j::LaunchContext * context) {
         if (context == nullptr)
-            context = nd4j::graph::LaunchContext::defaultContext();
+            context = nd4j::LaunchContext ::defaultContext();
 
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
@@ -557,12 +557,12 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray NDArrayFactory::empty(nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::empty(nd4j::LaunchContext * context) {
         return empty(DataTypeUtils::fromT<T>(), context);
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::empty, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::empty, (nd4j::LaunchContext * context), LIBND4J_TYPES);
 
-    NDArray NDArrayFactory::empty(nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::empty(nd4j::DataType dataType, nd4j::LaunchContext * context) {
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         NDArray result(nullptr, shapeInfo, context);
@@ -572,21 +572,21 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
     }
 
 ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::LaunchContext * context) {
         auto res = NDArrayFactory::create_(order, shape, value.dataType(), context);
         res->assign(const_cast<NDArray&>(value));
         return res;
     }
 
 ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::LaunchContext * context) {
         
         return new NDArray(order, shape, dataType, context);
     }
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
         auto res = create<T>(order, shape, context);
         int8_t* buffer = nullptr;
         size_t allocationSize = res.lengthOf() * res.sizeOfT();
@@ -605,21 +605,21 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         res.triggerAllocationFlag(true);
         return res;
     }
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float16> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bfloat16> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::graph::LaunchContext* context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::graph::LaunchContext* context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float16> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bfloat16> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
 
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context) {
+NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context) {
 
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
@@ -629,7 +629,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     std::vector<Nd4jLong> shp(shape);
     ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
 
-    result.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    result.setContext(context == nullptr ? nd4j::LaunchContext ::defaultContext() : context);
     result.setBuffer(reinterpret_cast<int8_t*>(buffer));
     result.setShapeInfo(descriptor);//reinterpret_cast<Nd4jLong *>(shapeBuffer.primary()));
     result.triggerAllocationFlag(false);
@@ -647,24 +647,24 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     return result;
 }
 
-template NDArray NDArrayFactory::create(double* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(float* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(float16* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(bfloat16* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(Nd4jLong * buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(int* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(bool* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(uint8_t * buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(int8_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
-template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context);
+template NDArray NDArrayFactory::create(double* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(float* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(float16* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(bfloat16* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(Nd4jLong * buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(int* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(bool* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(uint8_t * buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(int8_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
 
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::LaunchContext * context) {
         std::vector<const char*> vec(strings);
         return NDArrayFactory::string(order, shape, vec, context);
     }
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::LaunchContext * context) {
         std::vector<std::string> vec(strings.size());
         int cnt = 0;
         for (auto s:strings)
@@ -674,17 +674,17 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     }
 
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::LaunchContext * context) {
         std::vector<std::string> vec(string);
         return NDArrayFactory::string(order, shape, vec, context);
     }
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::LaunchContext * context) {
         std::vector<const char*> vec(strings);
         return NDArrayFactory::string_(order, shape, vec, context);
     }
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::LaunchContext * context) {
         std::vector<std::string> vec(strings.size());
         int cnt = 0;
         for (auto s:strings)
@@ -694,16 +694,16 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     }
 
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::LaunchContext * context) {
         std::vector<std::string> vec(string);
         return NDArrayFactory::string_(order, shape, vec, context);
     }
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
+    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
         NDArray res;
 
         if (context == nullptr)
-            context = nd4j::graph::LaunchContext::defaultContext();
+            context = nd4j::LaunchContext ::defaultContext();
 
         res.setAttached(context->getWorkspace() != nullptr);
         res.setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
@@ -750,7 +750,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         return res;
     }
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
         auto res = new NDArray();
         *res = NDArrayFactory::string(order, shape, string, context);
         return res;

@@ -73,7 +73,7 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z) {
+void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
 
     if(!n.isActualOnDeviceSide()) n.syncToDevice();
     if(!x.isActualOnDeviceSide()) x.syncToDevice();    

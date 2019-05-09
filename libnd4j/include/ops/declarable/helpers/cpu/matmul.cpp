@@ -54,7 +54,7 @@ namespace nd4j {
             }
 
 
-            void _matmul(graph::LaunchContext* context, NDArray *vA, NDArray *vB, NDArray *vC, int transA, int transB, double alpha, double beta) {
+            void _matmul(nd4j::LaunchContext * context, NDArray *vA, NDArray *vB, NDArray *vC, int transA, int transB, double alpha, double beta) {
                 BUILD_TRIPLE_SELECTOR(vA->dataType(), vB->dataType(), vC->dataType(), __matmul, (vA, vB, vC, transA, transB, alpha, beta), LIBND4J_TYPES, LIBND4J_TYPES, LIBND4J_TYPES);
             }
 

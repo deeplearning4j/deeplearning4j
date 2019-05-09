@@ -68,7 +68,7 @@ static void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();        
 	
@@ -173,7 +173,7 @@ static void softMaxForVectorCudaLauncher(const cudaStream_t* stream, const void 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -291,7 +291,7 @@ static void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const vo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -411,7 +411,7 @@ static void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const 
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -498,7 +498,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 
 
 	//////////////////////////////////////////////////////////////////////////
-	void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+	void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
 		if(!input.isActualOnDeviceSide()) input.syncToDevice();
 		if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();
@@ -530,7 +530,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 		const_cast<NDArray&>(input).applyLambda(routine, &output);
 	}
 
-	void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
+	void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
 	}
 
@@ -539,7 +539,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 
 	}
 
-	void thresholdReluDerivative(graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
 		BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
 	}
 

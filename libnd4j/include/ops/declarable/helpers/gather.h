@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
             
-	void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
+	void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
 
 }
 }

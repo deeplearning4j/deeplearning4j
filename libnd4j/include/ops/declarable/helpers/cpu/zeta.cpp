@@ -57,7 +57,7 @@ static FORCEINLINE T zetaScalarSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static void zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray &z) {
+static void zeta_(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray &z) {
 
 	//auto result = NDArray(&x, false, context);
 	int xLen = x.lengthOf();
@@ -67,11 +67,11 @@ static void zeta_(graph::LaunchContext* context, const NDArray& x, const NDArray
 		  z.p(i, zetaScalar<T>(x.e<T>(i), q.e<T>(i)));
 }
 
-void zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z) {
+void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
     BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (context, x, q, z), FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void zeta_, (graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void zeta_, (nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
 
 }
 }

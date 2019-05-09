@@ -27,7 +27,7 @@
 #include <loops/aggregates.h>
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>
-#include <graph/LaunchContext.h>
+#include <execution/LaunchContext.h>
 
 /**
  * Native op executioner:
@@ -45,7 +45,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static void execIndexReduceScalar(nd4j::graph::LaunchContext *lc, 
+    static void execIndexReduceScalar(nd4j::LaunchContext  *lc,
                                     int opNum, 
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -66,7 +66,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static void execReduce3Scalar(nd4j::graph::LaunchContext *lc,
+    static void execReduce3Scalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -88,7 +88,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static void execReduce3(nd4j::graph::LaunchContext *lc,
+    static void execReduce3(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -111,7 +111,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static void execReduce3(nd4j::graph::LaunchContext *lc,
+    static void execReduce3(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -124,7 +124,7 @@ public:
                             Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
                             Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
 
-    static void execReduce3All(nd4j::graph::LaunchContext *lc,
+    static void execReduce3All(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -148,7 +148,7 @@ public:
      * @param dimension
      * @param dimensionLength
      */
-    static void execIndexReduce(nd4j::graph::LaunchContext *lc,
+    static void execIndexReduce(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -169,7 +169,7 @@ public:
      * @param extraParams
      * @param n
      */
-    static void execScalar(nd4j::graph::LaunchContext *lc,
+    static void execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -179,7 +179,7 @@ public:
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
                             void *extraParams);
 
-static void execScalarBool(nd4j::graph::LaunchContext *lc,
+static void execScalarBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -189,7 +189,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
                             void *extraParams);
 
- static void execScalar(nd4j::graph::LaunchContext *lc,
+ static void execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -202,7 +202,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
- static void execScalarBool(nd4j::graph::LaunchContext *lc,
+ static void execScalarBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -227,7 +227,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
      * @param dimension
      * @param dimensionLength
      */
-    static void execBroadcast(nd4j::graph::LaunchContext *lc,
+    static void execBroadcast(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -239,7 +239,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
-    static void execInverseBroadcast(nd4j::graph::LaunchContext *lc,
+    static void execInverseBroadcast(nd4j::LaunchContext  *lc,
                                      int opNum,
                                      void *x, Nd4jLong *xShapeInfo,
                                      void *dX, Nd4jLong *dXShapeInfo,
@@ -252,7 +252,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                      Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
 
-    static void execBroadcastBool(nd4j::graph::LaunchContext *lc,
+    static void execBroadcastBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -264,7 +264,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
-    static void execInverseBroadcastBool(nd4j::graph::LaunchContext *lc,
+    static void execInverseBroadcastBool(nd4j::LaunchContext  *lc,
                                      int opNum,
                                      void *x, Nd4jLong *xShapeInfo,
                                      void *dX, Nd4jLong *dXShapeInfo,
@@ -288,7 +288,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
   * @param extraParams
   * @param n
   */
-    static void execPairwiseTransform(nd4j::graph::LaunchContext *lc,
+    static void execPairwiseTransform(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -298,7 +298,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams);
 
-    static void execPairwiseBoolTransform(nd4j::graph::LaunchContext *lc,
+    static void execPairwiseBoolTransform(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -318,7 +318,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
  * @param extraParams
  * @param n
  */
-    static void execTransformFloat(nd4j::graph::LaunchContext *lc,
+    static void execTransformFloat(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -327,7 +327,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-static void execTransformAny(nd4j::graph::LaunchContext *lc,
+static void execTransformAny(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -336,7 +336,7 @@ static void execTransformAny(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-static void execTransformStrict(nd4j::graph::LaunchContext *lc,
+static void execTransformStrict(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -345,7 +345,7 @@ static void execTransformStrict(nd4j::graph::LaunchContext *lc,
                                     void *extraParams,
                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-static void execTransformSame(nd4j::graph::LaunchContext *lc,
+static void execTransformSame(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -354,7 +354,7 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-static void execTransformBool(nd4j::graph::LaunchContext *lc,
+static void execTransformBool(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -371,7 +371,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
      * @param result
      * @param resultShapeInfo
      */
-    static void execReduceFloat(nd4j::graph::LaunchContext *lc,
+    static void execReduceFloat(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -381,7 +381,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-    static void execReduceSame(nd4j::graph::LaunchContext *lc,
+    static void execReduceSame(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -391,7 +391,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-    static void execReduceBool(nd4j::graph::LaunchContext *lc,
+    static void execReduceBool(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -401,7 +401,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-    static void execReduceLong(nd4j::graph::LaunchContext *lc,
+    static void execReduceLong(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -419,7 +419,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
      * @param extraParams
      * @return
      */
-    static void execReduceFloatScalar(nd4j::graph::LaunchContext *lc,
+    static void execReduceFloatScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -427,7 +427,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);
 
-    static void execReduceBoolScalar(nd4j::graph::LaunchContext *lc,
+    static void execReduceBoolScalar(nd4j::LaunchContext  *lc,
                                         int opNum,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
@@ -435,7 +435,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo);
 
-    static void execReduceSameScalar(nd4j::graph::LaunchContext *lc,
+    static void execReduceSameScalar(nd4j::LaunchContext  *lc,
                                         int opNum,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
@@ -443,7 +443,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo);
 
-    static void execReduceLongScalar(nd4j::graph::LaunchContext *lc,
+    static void execReduceLongScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -451,7 +451,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);    
 
-    static void execReduce3TAD(nd4j::graph::LaunchContext *lc,
+    static void execReduce3TAD(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -474,7 +474,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
      * @param dimension
      * @param dimensionLength
      */
-    static void execSummaryStats(nd4j::graph::LaunchContext *lc,
+    static void execSummaryStats(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -494,7 +494,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
      * @param result
      * @param resultShapeInfo
      */
-    static void execSummaryStats(nd4j::graph::LaunchContext *lc,
+    static void execSummaryStats(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -512,7 +512,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
     * @param result
     * @param resultShapeInfo
     */
-    static void execSummaryStatsScalar(nd4j::graph::LaunchContext *lc,
+    static void execSummaryStatsScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -522,14 +522,14 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                     bool biasCorrected);   
 
 
-    static void execRandom(nd4j::graph::LaunchContext *lc,
+    static void execRandom(nd4j::LaunchContext  *lc,
                             int opNum,
                             Nd4jPointer state,
                             void *hZ, Nd4jLong *hZShapeBuffer,
                             void *dZ, Nd4jLong *dZShapeBuffer,
                             void *extraArguments);
 
-    static void execRandom(nd4j::graph::LaunchContext *lc,
+    static void execRandom(nd4j::LaunchContext  *lc,
                             int opNum,
                             Nd4jPointer state,
                             void *hX, Nd4jLong *hXShapeBuffer,
@@ -538,7 +538,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                             void *dZ, Nd4jLong *dZShapeBuffer,
                             void *extraArguments);
 
-    static void execRandom(nd4j::graph::LaunchContext *lc,
+    static void execRandom(nd4j::LaunchContext  *lc,
                           int opNum,
                           Nd4jPointer state,
                           void *hX, Nd4jLong *hXShapeBuffer,
@@ -552,7 +552,7 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
 
 
     template <typename X>
-    static FORCEINLINE void execAggregate(nd4j::graph::LaunchContext *lc,
+    static FORCEINLINE void execAggregate(nd4j::LaunchContext  *lc,
                               int opNum,
                               void **varguments,
                               int numArguments,

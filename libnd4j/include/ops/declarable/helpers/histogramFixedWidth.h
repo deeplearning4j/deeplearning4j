@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-void histogramFixedWidth(graph::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output);
+void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output);
 
 
 }

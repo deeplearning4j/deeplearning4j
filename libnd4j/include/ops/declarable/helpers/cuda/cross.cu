@@ -34,7 +34,7 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
 
 }
 
-void weightedCrossEntropyWithLogitsFunctor(graph::LaunchContext* context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
     BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void weightedCrossEntropyWithLogitsFunctor_, (NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output), FLOAT_TYPES);

@@ -140,7 +140,7 @@ namespace helpers {
 // ----------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int inTopKFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
+    static int inTopKFunctor_(nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k) {
 
             std::vector<Nd4jLong> shapeI(input->rankOf());
             for (int i = 0; i < input->rankOf() - 1; i++)
@@ -169,16 +169,16 @@ namespace helpers {
 
     }
 
-        int topKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+        int topKFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
             BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), NUMERIC_TYPES);
         }
 
-        int inTopKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
+        int inTopKFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k) {
             BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k), NUMERIC_TYPES);
         }
 
         BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
 }
 }
 }

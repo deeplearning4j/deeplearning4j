@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int matrixDiag(graph::LaunchContext* context, NDArray const* input, NDArray* output);
+    int matrixDiag(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
 
 }
 }

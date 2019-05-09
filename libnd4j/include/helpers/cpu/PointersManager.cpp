@@ -26,7 +26,7 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName)  {
+PointersManager::PointersManager(nd4j::LaunchContext  *context, const std::string& funcName)  {
     _context  = context;
     _funcName = funcName;
 }

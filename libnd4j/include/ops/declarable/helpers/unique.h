@@ -27,9 +27,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    Nd4jLong uniqueCount(graph::LaunchContext* context, NDArray* input);
+    Nd4jLong uniqueCount(nd4j::LaunchContext * context, NDArray* input);
 
-    Nd4jStatus uniqueFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
+    Nd4jStatus uniqueFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
 
 }
 }

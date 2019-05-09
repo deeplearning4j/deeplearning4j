@@ -37,11 +37,11 @@
 
 
 namespace nd4j  {
-namespace graph {
 
 class ND4J_EXPORT LaunchContext {
 
 	private:
+
 #ifdef __CUDABLAS__
 
 #ifndef __JAVACPP_HACK__
@@ -63,6 +63,7 @@ class ND4J_EXPORT LaunchContext {
 #ifdef __CUDABLAS__
 
 #ifndef __JAVACPP_HACK__
+
 		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 
@@ -100,13 +101,10 @@ class ND4J_EXPORT LaunchContext {
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 
-public:
-	static LaunchContext* defaultContext();
-private:
-	static LaunchContext* sDefaultContext;
+	    static LaunchContext* defaultContext();
+
 };
 
-}
 }
 
 

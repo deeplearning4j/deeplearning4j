@@ -184,7 +184,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 
@@ -209,7 +209,7 @@ template <typename T>
 
     BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int log_abs_determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
     }
 
@@ -266,12 +266,12 @@ template <typename T>
         return Status::OK();
     }
 
-    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
     template <typename T>
-    static bool checkCholeskyInput_(graph::LaunchContext* context, NDArray const* input) {
+    static bool checkCholeskyInput_(nd4j::LaunchContext * context, NDArray const* input) {
         //std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType())); //, block.getWorkspace());
         std::unique_ptr<ResultSet> lastMatrixList(input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf()-1}));
         for (size_t i = 0; i < lastMatrixList->size(); i++) {
@@ -294,9 +294,9 @@ template <typename T>
 
         return true;
     }
-    BUILD_SINGLE_TEMPLATE(template bool checkCholeskyInput_, (graph::LaunchContext* context, NDArray const* input), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template bool checkCholeskyInput_, (nd4j::LaunchContext * context, NDArray const* input), FLOAT_TYPES);
 
-    bool checkCholeskyInput(graph::LaunchContext* context, NDArray const* input) {
+    bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return checkCholeskyInput_, (context, input), FLOAT_TYPES);
     }
 
@@ -343,7 +343,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace) {
+    int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }    
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
@@ -370,7 +370,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (input, output), FLOAT_TYPES);
     }
 

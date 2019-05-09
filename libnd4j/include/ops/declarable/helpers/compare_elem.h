@@ -25,7 +25,7 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
 
-            void compare_elem(graph::LaunchContext* context, NDArray* input, bool isStrictlyIncreasing, bool& output);
+            void compare_elem(nd4j::LaunchContext * context, NDArray* input, bool isStrictlyIncreasing, bool& output);
         }
     }
 }

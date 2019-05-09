@@ -53,7 +53,7 @@ static void stack_(const std::vector<NDArray*>& inArrs, NDArray* outArr, const i
 	}
 }
 
-	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	void stack(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 

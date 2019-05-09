@@ -989,7 +989,7 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
     }
 }
 
-    void svd(graph::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+    void svd(nd4j::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
         BUILD_SINGLE_SELECTOR(x->dataType(), svd_, (x, outArrs, fullUV, calcUV, switchNum), FLOAT_TYPES);
     }
 

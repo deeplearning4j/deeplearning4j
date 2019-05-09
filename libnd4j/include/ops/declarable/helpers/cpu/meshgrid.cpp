@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 
-void meshgrid(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
+void meshgrid(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
 
     const int rank = inArrs.size();
     int inIndices[MAX_RANK];

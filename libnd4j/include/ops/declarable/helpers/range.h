@@ -28,7 +28,7 @@ namespace ops     {
 namespace helpers {
 
 	// be careful: outVector must have c-order and ews = 1 !!!
-	void range(graph::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector);
+	void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector);
 
 }
 }

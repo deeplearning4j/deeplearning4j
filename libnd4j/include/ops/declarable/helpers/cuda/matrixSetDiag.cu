@@ -48,7 +48,7 @@ namespace helpers {
     // Returns a batched matrix tensor with new batched diagonal values.
     // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
     template <typename T>
-    static void _matrixSetDiag(graph::LaunchContext* context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
+    static void _matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
         *output = *input;
 
         const int lastDimSize = input->sizeAt(-1);
@@ -66,11 +66,11 @@ namespace helpers {
 
     }
 
-    void matrixSetDiag(graph::LaunchContext* context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
+    void matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _matrixSetDiag, (context, input, diagonal, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _matrixSetDiag, (graph::LaunchContext* context, const NDArray* input, const NDArray* diagonal, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _matrixSetDiag, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output), LIBND4J_TYPES);
 
 }
 }

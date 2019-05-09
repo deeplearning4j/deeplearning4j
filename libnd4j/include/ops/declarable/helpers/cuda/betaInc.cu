@@ -54,7 +54,7 @@ const double weights[18] = {0.0055657196642445571,
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-NDArray betaInc(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x) {
+NDArray betaInc(nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto xType = a.dataType();
 	//BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
 	return a;

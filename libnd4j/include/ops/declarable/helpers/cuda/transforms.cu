@@ -71,46 +71,46 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 }
 
     //////////////////////////////////////////////////////////////////////////
-    void triu(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int diagonal) {
+    void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
 
     }
 
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void triuBP_(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+    static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     }
 
-    void triuBP(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+    void triuBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
         BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void triuBP_, (graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void triuBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void trace_(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
+    static void trace_(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     }
 
-    void trace(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
+    void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (context, input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void trace_, (graph::LaunchContext* context, const NDArray& input, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void trace_, (nd4j::LaunchContext * context, const NDArray& input, NDArray& output), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    void randomShuffle_(graph::LaunchContext* context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+    void randomShuffle_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
 
     }
 
-    void randomShuffle(graph::LaunchContext* context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (context, input, output, rng, isInplace), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (graph::LaunchContext* context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     // Pad kernels
@@ -226,7 +226,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template<typename T>
-    void pad_(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+    void pad_(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
         const int rank = output.rankOf();
         const int rankBorder = rank - 1;
         std::vector<int> dimsToExclude({rankBorder});
@@ -305,38 +305,38 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 //        }
     }
 
-    void pad(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+    void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
         BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (context, mode, input, paddings, output, padValue), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void pad_, (graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void pad_, (nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue), LIBND4J_TYPES);
 
     ////////////////////////////////////////////////////////////////////////
-    void invertPermutation(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
+    void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     }
 
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void gatherND_(graph::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output) {
+    static void gatherND_(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
 
     }
 
-    void gatherND(graph::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output) {
+    void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), gatherND_, (context, input, indices, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void gatherND_, (graph::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void gatherND_, (nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES);
 
 
 
     //////////////////////////////////////////////////////////////////////////
-    void eye(graph::LaunchContext* context, NDArray& output) {
+    void eye(nd4j::LaunchContext * context, NDArray& output) {
 
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void scatterUpdate(graph::LaunchContext* context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs) {
+    void scatterUpdate(nd4j::LaunchContext * context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs) {
 
     }
 
@@ -366,7 +366,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template <typename T, typename Z>
-    static void mergeMaxIndex_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    static void mergeMaxIndex_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         std::vector<void *> inBuffers(inArrs.size());
         std::vector<void *> inShapes(inArrs.size());
 
@@ -386,11 +386,11 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         manager.synchronize();
     }
 
-    void mergeMaxIndex(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (context, inArrs, output), LIBND4J_TYPES, INTEGER_TYPES);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void mergeMaxIndex_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES, INTEGER_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void mergeMaxIndex_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES, INTEGER_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -417,7 +417,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template<typename T>
-    static void mergeMax_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    static void mergeMax_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         std::vector<void *> inBuffers(inArrs.size());
         std::vector<void *> inShapes(inArrs.size());
 
@@ -436,9 +436,9 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
         manager.synchronize();
     }
-    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
-    void mergeMax(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
@@ -465,7 +465,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template<typename T>
-    static void mergeAvg_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    static void mergeAvg_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         std::vector<void *> inBuffers(inArrs.size());
         std::vector<void *> inShapes(inArrs.size());
 
@@ -484,9 +484,9 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
         manager.synchronize();
     }
-    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
-    void mergeAvg(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
@@ -513,7 +513,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template<typename T>
-    static void mergeAdd_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    static void mergeAdd_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         std::vector<void *> inBuffers(inArrs.size());
         std::vector<void *> inShapes(inArrs.size());
 
@@ -532,51 +532,51 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
         manager.synchronize();
     }
-    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
-    void mergeAdd(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByNorm_(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    static void clipByNorm_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
 
     }
 
-    void clipByNorm(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (context, input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
     template <typename T>
-    static void clipByGlobalNorm_(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    static void clipByGlobalNorm_(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
 
     }
 
-    void clipByGlobalNorm(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    void clipByGlobalNorm(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (context, inputs, clipNorm, workspace, outputs, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (graph::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByNormBP_(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+    static void clipByNormBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
 
     }
 
-    void clipByNormBP(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+    void clipByNormBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
         BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBP_, (context, input, gradO, gradI, dimensions, clipNorm), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByNormBP_, (graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByNormBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm), FLOAT_TYPES);
 
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByAveraged_(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    static void clipByAveraged_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         auto cn = clipNorm.e<T>(0);
         if (dimensions.size() == 0) {
             // all-reduce
@@ -613,11 +613,11 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         }
     }
 
-    void clipByAveraged(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    void clipByAveraged(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByAveraged_, (context, input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
 /*
     if (d1 > params[1])
@@ -659,7 +659,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     template <typename T>
-    static void clipByValue_(graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    static void clipByValue_(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         auto stream = context->getCudaStream();
         if (!input.isActualOnDeviceSide())
             input.syncToDevice();
@@ -668,26 +668,26 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         NDArray::registerSpecialUse({&output}, {&input});
     }
 
-    void clipByValue(graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    void clipByValue(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (context, input, leftBound, rightBound, output), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void mirrorPad_(graph::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+    static void mirrorPad_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
 
     }
 
-    void mirrorPad(graph::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+    void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
         BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (context, input, paddings, output, mode), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (graph::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 
     const int numOfArrs = inArrs.size();
     for(int i = 0; i < numOfArrs; ++i)
@@ -745,16 +745,16 @@ void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void tileBP_(graph::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+    static void tileBP_(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
 
     }
 
-    void tileBP(graph::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+    void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
         BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (context, gradO, gradI, reps), FLOAT_TYPES);
     }
 
 
-    BUILD_SINGLE_TEMPLATE(template void tileBP_, (graph::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void tileBP_, (nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
 
     void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 

@@ -26,7 +26,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void _where(graph::LaunchContext* context, NDArray &condition, NDArray& output, memory::Workspace *workspace);
+            void _where(nd4j::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
-void gather(nd4j::graph::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
     int axis = intArgs.size() > 0 ? intArgs[0] : 0;
     const int inputRank = input->rankOf();

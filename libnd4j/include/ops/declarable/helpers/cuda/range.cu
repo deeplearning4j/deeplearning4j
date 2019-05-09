@@ -38,15 +38,15 @@ namespace helpers {
     //////////////////////////////////////////////////////////////////////////
     // be careful: outVector must have c-order and ews = 1 !!!
     template <typename T>
-    static void _range(graph::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    static void _range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         global_range<T><<<512, 512, 2048, *context->getCudaStream()>>>(outVector.getSpecialBuffer(), outVector.lengthOf(), start.e<T>(0), delta.e<T>(0));
     }
 
-    void range(graph::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (context, start, delta, outVector), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _range, (graph::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _range, (nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
 }
 }
 }

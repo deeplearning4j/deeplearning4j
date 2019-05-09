@@ -27,9 +27,9 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-	void reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim);
+	void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim);
 
-	void reverse(graph::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp);
+	void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp);
 
     
 

@@ -84,7 +84,7 @@ namespace helpers {
         }
     }
 
-    void _depthToSpace(graph::LaunchContext* context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+    void _depthToSpace(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, __depthToSpace, (input, output, block_size, isNHWC), LIBND4J_TYPES);

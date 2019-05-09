@@ -72,7 +72,7 @@ namespace helpers {
 
 
     template <typename T>
-    void histogramFixedWidth_(graph::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+    void histogramFixedWidth_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
         const int nbins = output.lengthOf();
         auto stream = context->getCudaStream();
         // firstly initialize output with zeros
@@ -120,10 +120,10 @@ namespace helpers {
 //        }
     }
 
-    void histogramFixedWidth(graph::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+    void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (context, input, range, output), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (graph::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
 
 }
 }

@@ -24,7 +24,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void _bgemm(graph::LaunchContext* context, std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
+            void _bgemm(nd4j::LaunchContext * context, std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
         }
     }
 }

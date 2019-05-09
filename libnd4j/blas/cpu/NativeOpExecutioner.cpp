@@ -60,7 +60,7 @@
 * @param hZ
 * @param hZShapeInfo
 */
-void NativeOpExecutioner::execIndexReduceScalar(nd4j::graph::LaunchContext *lc, int opNum, 
+void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc, int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
@@ -86,7 +86,7 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::graph::LaunchContext *lc, 
  * @param dimensionLength
  */
 
-void NativeOpExecutioner::execIndexReduce(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -117,7 +117,7 @@ void NativeOpExecutioner::execIndexReduce(nd4j::graph::LaunchContext *lc,
  * @param dimensionLength
  */
 
-void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -140,7 +140,7 @@ void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 #endif
 }
 
-void NativeOpExecutioner::execInverseBroadcast(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
                                                int opNum,
                                                void *hX, Nd4jLong *hXShapeInfo,
                                                void *dX, Nd4jLong *dXShapeInfo,
@@ -169,7 +169,7 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::graph::LaunchContext *lc,
 
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -188,7 +188,7 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
 
-void NativeOpExecutioner::execInverseBroadcastBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
                                                   int opNum,
                                                   void *hX, Nd4jLong *hXShapeInfo,
                                                   void *dX, Nd4jLong *dXShapeInfo,
@@ -223,7 +223,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::graph::LaunchContext *l
 * @param extraParams
 * @param n
 */
-void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execPairwiseTransform(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -245,7 +245,7 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -272,7 +272,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::graph::LaunchContext *
 * @param hZ
 * @param hZShapeInfo
 */
-void NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -289,7 +289,7 @@ void NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceSame(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceSame(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -306,7 +306,7 @@ void NativeOpExecutioner::execReduceSame(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceBool(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -323,7 +323,7 @@ void NativeOpExecutioner::execReduceBool(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceLong(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceLong(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -348,7 +348,7 @@ void NativeOpExecutioner::execReduceLong(nd4j::graph::LaunchContext *lc,
  * @param extraParams
  * @return
  */
-void NativeOpExecutioner::execReduceFloatScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceFloatScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -363,7 +363,7 @@ void NativeOpExecutioner::execReduceFloatScalar(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceSameScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceSameScalar(nd4j::LaunchContext  *lc,
                                         int opNum,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
@@ -377,7 +377,7 @@ void NativeOpExecutioner::execReduceSameScalar(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceBoolScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceBoolScalar(nd4j::LaunchContext  *lc,
                                         int opNum,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
@@ -392,7 +392,7 @@ void NativeOpExecutioner::execReduceBoolScalar(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduceLongScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduceLongScalar(nd4j::LaunchContext  *lc,
                                         int opNum,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
@@ -421,7 +421,7 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::graph::LaunchContext *lc,
  * @param dimension
  * @param dimensionLength
  */
-void NativeOpExecutioner::execReduce3Scalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3Scalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -450,7 +450,7 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::graph::LaunchContext *lc,
 * @param hZ
 * @param hZShapeInfo
 */
-void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -468,7 +468,7 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -489,7 +489,7 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
 
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduce3All(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3All(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -510,7 +510,7 @@ void NativeOpExecutioner::execReduce3All(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduce3TAD(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -542,7 +542,7 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::graph::LaunchContext *lc,
 * @param extraParams
 * @param n
 */
-void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -567,7 +567,7 @@ void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -595,7 +595,7 @@ void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -619,7 +619,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -655,7 +655,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
 * @param hZ
 * @param hZShapeInfo
 */
-void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -680,7 +680,7 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
 * @param hZ
 * @param hZShapeInfo
 */
-void NativeOpExecutioner::execSummaryStatsScalar(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execSummaryStatsScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
@@ -707,7 +707,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(nd4j::graph::LaunchContext *lc,
 * @param dimension
 * @param dimensionLength
 */
-void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -736,7 +736,7 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
 * @param extraParams
 * @param n
 */
-void NativeOpExecutioner::execTransformFloat(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -752,7 +752,7 @@ void NativeOpExecutioner::execTransformFloat(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execTransformBool(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -768,7 +768,7 @@ void NativeOpExecutioner::execTransformBool(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execTransformAny(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -784,7 +784,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execTransformSame(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -800,7 +800,7 @@ void NativeOpExecutioner::execTransformSame(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execTransformStrict(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
                                 void *dX, Nd4jLong *dXShapeInfo,
@@ -816,7 +816,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                             int opNum,
                             Nd4jPointer state,
                             void *hZ, Nd4jLong *hZShapeInfo,
@@ -829,7 +829,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                             int opNum,
                             Nd4jPointer state,
                             void *hX, Nd4jLong *hXShapeInfo,
@@ -844,7 +844,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                           int opNum,
                           Nd4jPointer state,
                           void *hX, Nd4jLong *hXShapeInfo,

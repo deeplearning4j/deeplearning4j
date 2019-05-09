@@ -84,7 +84,7 @@ set(gtest_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/googletest-src)
 add_definitions(-D__STANDALONE_BUILD__=true)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/exceptions ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/execution ../../include/exceptions ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
@@ -194,6 +194,7 @@ if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../../include/exceptions/*.cpp ../../include/exceptions/*.h)
+file(GLOB_RECURSE EXEC_SOURCES false ../../include/execution/*.cpp ../../include/execution/*.h)
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
@@ -229,8 +230,8 @@ endforeach(TMP_PATH)
 add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
         ../../blas/cpu/NativeOpExecutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-    ../../blas/Environment.cpp ../../blas/Environment.h  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
+    ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
 target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})

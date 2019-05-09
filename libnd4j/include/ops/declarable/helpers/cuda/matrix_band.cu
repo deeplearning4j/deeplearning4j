@@ -72,7 +72,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void matrixBandPart_(graph::LaunchContext* context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart_(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         dim3 launchDims(256, 512, 8192);
         auto stream = context->getCudaStream();
 
@@ -95,10 +95,10 @@ namespace helpers {
                 lowerBand, upperBand, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), numTads, input->lengthOf());
     }
 
-    void matrixBandPart(graph::LaunchContext* context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (graph::LaunchContext* context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
 }
 }

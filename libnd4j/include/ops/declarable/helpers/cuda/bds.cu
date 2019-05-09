@@ -77,7 +77,7 @@ namespace helpers {
 
     }
 
-    Nd4jStatus bdsFunctor(graph::LaunchContext* context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
+    Nd4jStatus bdsFunctor(nd4j::LaunchContext * context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
         //int e = 0, x = 0, y = 0;
 
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case

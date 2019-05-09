@@ -669,8 +669,8 @@ TEST_F(NDArrayTest2, permute_test4) {
     auto arr1Buffer = new float[786432];
     auto arr2Buffer = new float[786432];
 
-    NDArray arr1(arr1Buffer, arr1ShapeInfo, graph::LaunchContext::defaultContext());
-    NDArray arr2(arr2Buffer, arr2ShapeInfo, graph::LaunchContext::defaultContext());
+    NDArray arr1(arr1Buffer, arr1ShapeInfo, nd4j::LaunchContext ::defaultContext());
+    NDArray arr2(arr2Buffer, arr2ShapeInfo, nd4j::LaunchContext ::defaultContext());
 
     const std::vector<int> perm = {0, 4, 5, 1, 2, 3};    
     auto arr1P = arr1.permute(perm);

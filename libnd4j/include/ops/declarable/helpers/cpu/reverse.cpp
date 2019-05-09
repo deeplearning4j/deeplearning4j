@@ -37,7 +37,7 @@ inline void swap(T* arr, Nd4jLong from, Nd4jLong to) {
 // this legacy op is written by raver119@gmail.com
 
 template<typename T>
-static void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
+static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
             auto inArr = reinterpret_cast<T *>(vinArr);
             auto outArr = reinterpret_cast<T *>(voutArr);
 
@@ -140,7 +140,7 @@ static void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void _reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
 
     int posOfNonUnityDim = -1;
     if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim)) {
@@ -183,12 +183,12 @@ static void _reverseSequence(graph::LaunchContext* context, const NDArray* input
 
 }
 
-    void reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
+    void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(graph::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
+void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
 
     // we need to reverse axis only if that's new op
     std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
@@ -208,8 +208,8 @@ void reverse(graph::LaunchContext* context, const NDArray* input, NDArray* outpu
     delete listIn;
 }
 
-BUILD_SINGLE_TEMPLATE(template void _reverseSequence, (graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void reverseArray, (graph::LaunchContext* context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _reverseSequence, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseArray, (nd4j::LaunchContext * context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
 
 
 }

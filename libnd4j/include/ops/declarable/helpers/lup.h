@@ -27,16 +27,16 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    T lup(graph::LaunchContext* context, NDArray* input, NDArray* compound, NDArray* permutation);
+    T lup(nd4j::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation);
 
-    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output);
-    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output);
+    int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
+    int log_abs_determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 
-    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output);
+    int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 
-    bool checkCholeskyInput(graph::LaunchContext* context, NDArray const* input);
-    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
-    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output);
+    bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input);
+    int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace = false);
+    int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 }
 }
 }

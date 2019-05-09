@@ -174,7 +174,7 @@ namespace nd4j {
         return _name;
     }
 
-    nd4j::graph::LaunchContext* NDArrayList::context() {
+    nd4j::LaunchContext * NDArrayList::context() {
         return _context;
     }
 

@@ -66,7 +66,7 @@ namespace helpers {
         }
     };
 
-    void dilation2d(graph::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
+    void dilation2d(nd4j::LaunchContext * context, NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), dilation2d_, (input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left), LIBND4J_TYPES, FLOAT_TYPES);
     }
 

@@ -986,7 +986,7 @@ TEST_F(RNGTests, test_choice_1) {
     auto z = NDArrayFactory::create<double>('c', {1000});
 
     RandomGenerator rng(119, 256);
-    NativeOpExecutioner::execRandom(graph::LaunchContext::defaultContext(), random::Choice, &rng, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), prob->buffer(), prob->shapeInfo(), prob->specialBuffer(), prob->specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
+    NativeOpExecutioner::execRandom(nd4j::LaunchContext ::defaultContext(), random::Choice, &rng, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), prob->buffer(), prob->shapeInfo(), prob->specialBuffer(), prob->specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
 
     // z.printIndexedBuffer("z");
 

@@ -24,9 +24,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void dilation2d(graph::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
+    void dilation2d(nd4j::LaunchContext * context, NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
 
-    FORCEINLINE Nd4jStatus _outputSize(graph::LaunchContext* context, int input_size, int filter_size, int dilation_rate, int stride, bool isSameMode, int *output_size, int *padding_before, int *padding_after) {
+    FORCEINLINE Nd4jStatus _outputSize(nd4j::LaunchContext * context, int input_size, int filter_size, int dilation_rate, int stride, bool isSameMode, int *output_size, int *padding_before, int *padding_after) {
         if (stride <= 0)
             return Status::THROW("Dilation2D: Stride must be > 0");
     
@@ -52,7 +52,7 @@ namespace helpers {
     }
 
 
-    FORCEINLINE Nd4jStatus _dilation_hw(graph::LaunchContext* context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *stride_rows, int *stride_cols, int *rate_rows, int *rate_cols, int *pad_top, int *pad_left, int *out_rows, int *out_cols) {
+    FORCEINLINE Nd4jStatus _dilation_hw(nd4j::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *stride_rows, int *stride_cols, int *rate_rows, int *rate_cols, int *pad_top, int *pad_left, int *out_rows, int *out_cols) {
         const int input_rows = shape::sizeAt(in, 1);
         const int input_cols = shape::sizeAt(in, 2);
         const int depth = shape::sizeAt(in, 3);

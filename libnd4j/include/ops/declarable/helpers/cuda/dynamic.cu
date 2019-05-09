@@ -38,7 +38,7 @@ namespace nd4j {
 
             }
 
-            void dynamicPartitionFunctor(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
+            void dynamicPartitionFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctor, (input, indices, outputList), LIBND4J_TYPES);
@@ -49,19 +49,19 @@ namespace nd4j {
                 throw std::runtime_error("Not umplemented yet");
             }
 
-            int dynamicStitchFunctor(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
+            int dynamicStitchFunctor(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
                 auto xType = inputs.at(0)->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctor, (inputs, indices, output), LIBND4J_TYPES);
             }
 
-            int dynamicStitchFunctorBP(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList) {
+            int dynamicStitchFunctorBP(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList) {
                 auto xType = inputs.at(0)->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctorBP, (inputs, indices, gradInput, outputList), LIBND4J_TYPES);
             }
 
-            void dynamicPartitionFunctorBP(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
+            void dynamicPartitionFunctorBP(nd4j::LaunchContext * context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctorBP, (input, indices, inputGradientList, outputList), LIBND4J_TYPES);

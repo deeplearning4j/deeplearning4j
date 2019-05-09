@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 // svd operation, this function is not method of SVD class, it is standalone function
-void svd(graph::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+void svd(nd4j::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
 
 }

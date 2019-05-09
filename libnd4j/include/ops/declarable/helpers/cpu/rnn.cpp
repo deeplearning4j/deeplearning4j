@@ -37,7 +37,7 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void rnnCell(graph::LaunchContext* context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* ht_1, NDArray* ht) {
+void rnnCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* ht_1, NDArray* ht) {
 
     // xt   input [bS x inSize]
     // Wx   input-to-hidden weights, [inSize  x numUnits]
@@ -53,7 +53,7 @@ void rnnCell(graph::LaunchContext* context, const NDArray* xt, const NDArray* Wx
 
 
 //////////////////////////////////////////////////////////////////////////
-void rnnTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
+void rnnTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
 
     // x   input [time x bS x inSize]
 	// Wx  input-to-hidden  weights, [inSize  x numUnits]

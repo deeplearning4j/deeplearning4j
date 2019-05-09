@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    Nd4jStatus bdsFunctor(graph::LaunchContext* context, NDArray* x_shape, NDArray* y_shape, NDArray* output);
+    Nd4jStatus bdsFunctor(nd4j::LaunchContext * context, NDArray* x_shape, NDArray* y_shape, NDArray* output);
 }
 }
 }

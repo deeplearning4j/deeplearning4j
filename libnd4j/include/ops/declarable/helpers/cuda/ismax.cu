@@ -33,7 +33,7 @@ namespace ops 	  {
 namespace helpers {
 
 template <typename T>
-static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
+static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
     void* extraParams = nullptr;
     bool scalarCheat = false;
     if (extraParams == nullptr) {
@@ -102,11 +102,11 @@ static void ismax_(graph::LaunchContext* context, const NDArray* input, NDArray*
 }
 
 
-void ismax(graph::LaunchContext* context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+void ismax(nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), LIBND4J_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void ismax_, (graph::LaunchContext* context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ismax_, (nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
 
 }
 }

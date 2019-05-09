@@ -85,7 +85,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
-    include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy include/exceptions)
+    include_directories(blas/ include/ include/helpers include/loops include/graph include/execution include/ops include/types include/array include/cnpy include/exceptions)
     add_subdirectory(blas)
     if(BUILD_TESTS)
         # tests are always compiled with all ops included

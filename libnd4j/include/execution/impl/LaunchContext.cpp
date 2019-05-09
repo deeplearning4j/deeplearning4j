@@ -18,15 +18,12 @@
 // Created by raver119 on 30.11.17.
 //
 
-#include <graph/LaunchContext.h>
+#include <execution/LaunchContext.h>
 #include <logger.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/cublasHelper.h>
 
 namespace nd4j {
-namespace graph {
-
-LaunchContext* LaunchContext::sDefaultContext = nullptr;
 
 #ifdef __CUDABLAS__
 
@@ -117,11 +114,11 @@ LaunchContext::LaunchContext() {
 }
 
 LaunchContext* LaunchContext::defaultContext() {
-    if (!LaunchContext::sDefaultContext) {
-        LaunchContext::sDefaultContext = new LaunchContext;
-    }
-    return LaunchContext::sDefaultContext;
+    //if (!LaunchContext::sDefaultContext) {
+    //    LaunchContext::sDefaultContext = new LaunchContext;
+    //}
+    //return LaunchContext::sDefaultContext;
+    return nullptr;
 }
 
-}
 }

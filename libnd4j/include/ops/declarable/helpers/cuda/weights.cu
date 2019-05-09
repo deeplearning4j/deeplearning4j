@@ -95,7 +95,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void adjustWeights_(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    static void adjustWeights_(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
 //        for (int e = 0; e < input->lengthOf(); e++) {
 //            int val = input->e<int>(e);
 //            if (val < maxLength) {
@@ -112,11 +112,11 @@ namespace helpers {
                 output->specialBuffer(), output->specialShapeInfo(), minLength, maxLength);
     }
 
-    void adjustWeights(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    void adjustWeights(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), GENERIC_NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
 }
 }
 }

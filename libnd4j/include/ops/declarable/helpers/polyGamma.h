@@ -30,7 +30,7 @@ namespace helpers {
 
 
 	// calculate the polygamma function
-    void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output);
+    void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output);
     
 
 }

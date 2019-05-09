@@ -108,7 +108,7 @@ __host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int nu
 }
 
 //////////////////////////////////////////////////////////////////////
-void gather(graph::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
     const int inputRank = input->rankOf();
     int axis = intArgs.size() > 0 ? intArgs[0] : 0;    

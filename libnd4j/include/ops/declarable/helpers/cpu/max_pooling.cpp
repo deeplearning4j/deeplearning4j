@@ -72,7 +72,7 @@ namespace helpers {
 
     }
 
-    void maxPoolingFunctor(graph::LaunchContext* context, nd4j::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
+    void maxPoolingFunctor(nd4j::LaunchContext * context, nd4j::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
         BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (block, input, values, params, indices), FLOAT_TYPES);
     }
 

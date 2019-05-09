@@ -26,11 +26,11 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+            void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
 
-            void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
+            void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
 
-            void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad);
+            void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad);
         }
     }
 }

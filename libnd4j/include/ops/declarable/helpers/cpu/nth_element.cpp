@@ -62,7 +62,7 @@ namespace helpers {
         }
     }
 
-    void nthElementFunctor(graph::LaunchContext *launchContext, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    void nthElementFunctor(nd4j::LaunchContext  *launchContext, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }

@@ -30,7 +30,7 @@ namespace helpers {
 
 
 	// calculate the Hurwitz zeta function for arrays
-    void zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& output);
+    void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& output);
 
     	
 	

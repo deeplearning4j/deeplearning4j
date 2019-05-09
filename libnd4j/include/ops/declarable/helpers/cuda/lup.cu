@@ -75,7 +75,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 
@@ -86,7 +86,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int log_abs_determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
     }
 
@@ -95,11 +95,11 @@ namespace helpers {
         return Status::OK();
     }
 
-    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
-    bool checkCholeskyInput(graph::LaunchContext* context, NDArray const* input) {
+    bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input) {
         return false;
     }
 
@@ -108,14 +108,14 @@ namespace helpers {
         return Status::OK();
     }
 
-    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace) {
+    int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }    
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
 
-    int logdetFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
+    int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         return 119;
     }
 }

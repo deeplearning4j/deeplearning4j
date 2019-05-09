@@ -34,7 +34,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
 
-            void __toggle_bits(graph::LaunchContext* context, NDArray& in, NDArray& out) {
+            void __toggle_bits(nd4j::LaunchContext * context, NDArray& in, NDArray& out) {
                 BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
             }
         }

@@ -22,7 +22,7 @@
 #include <TAD.h>
 #include <ConstantHelper.h>
 #include <exceptions/cuda_exception.h>
-#include <graph/LaunchContext.h>
+#include <execution/LaunchContext.h>
 #include <ShapeUtils.h>
 
 namespace nd4j {
@@ -79,8 +79,8 @@ namespace nd4j {
             if (res != 0)
                 throw cuda_exception::build("Memory allocation for tadOffsets failed", res);
 
-            cudaMemcpyAsync(soPtr, oPtr, numOfSubArrs * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *graph::LaunchContext::defaultContext()->getCudaSpecialStream());
-            res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            cudaMemcpyAsync(soPtr, oPtr, numOfSubArrs * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
+            res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("tadOffsets copy failed", res);
 

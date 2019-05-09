@@ -28,7 +28,7 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName)  {
+PointersManager::PointersManager(nd4j::LaunchContext  *context, const std::string& funcName)  {
         _context  = context;
         _funcName = funcName;
 }
@@ -84,8 +84,8 @@ static __global__ void printDevContentOnDev_(const void* pDev, const Nd4jLong le
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 void PointersManager::printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid) {
-    printDevContentOnDev_<T><<<512, 512, 1024, *graph::LaunchContext::defaultContext()->getCudaStream()>>>(pDev, len, tid);
-    auto res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaStream());
+    printDevContentOnDev_<T><<<512, 512, 1024, *nd4j::LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
+    auto res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaStream());
     if (res != 0)
         throw std::runtime_error("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
 }

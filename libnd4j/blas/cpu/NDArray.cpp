@@ -93,7 +93,7 @@ void NDArray::lazyAllocateBuffer() const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::LaunchContext * context) {
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -109,7 +109,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
     if (shape.empty())
         throw std::runtime_error("NDArray constructor: input shape is empty !");
@@ -137,7 +137,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::LaunchContext * context) {
 
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;
@@ -156,7 +156,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
     if (shape.empty())
         throw std::runtime_error("NDArray constructor: input shape is empty !");
@@ -175,7 +175,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::LaunchContext * context) {
 
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -199,7 +199,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context, const bool isScalar) {
+NDArray::NDArray(nd4j::DataType dtype, nd4j::LaunchContext * context, const bool isScalar) {
 
     _context = context;
     _isAttached = _context->getWorkspace() != nullptr;

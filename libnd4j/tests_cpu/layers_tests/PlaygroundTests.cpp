@@ -184,7 +184,7 @@ TEST_F(PlaygroundTests, test_small_reductions) {
 
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext::defaultContext(), reduce::Mean, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+        NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext ::defaultContext(), reduce::Mean, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -2207,7 +2207,7 @@ TEST_F(PlaygroundTests, im2col_1) {
     NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
     NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);
 
-    nd4j::graph::LaunchContext* context = image.getContext();
+    nd4j::LaunchContext * context = image.getContext();
     NDArray padValue (nd4j::DataType::FLOAT32, context); // scalar =0
 
     image.linspace(1, 1);
@@ -2243,7 +2243,7 @@ TEST_F(PlaygroundTests, im2col_2) {
     NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
     NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);
 
-    nd4j::graph::LaunchContext* context = image.getContext();
+    nd4j::LaunchContext * context = image.getContext();
 
     image.linspace(1, 1);
     ExtraArguments extras(std::vector<double>({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, 0., 0.}));

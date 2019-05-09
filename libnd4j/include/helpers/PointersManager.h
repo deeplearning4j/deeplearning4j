@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <string>
-#include <LaunchContext.h>
+#include <execution/LaunchContext.h>
 
 #include <types.h>
 
@@ -34,13 +34,13 @@ class PointersManager {
     
     private:
 
-        nd4j::graph::LaunchContext *_context;
+        nd4j::LaunchContext  *_context;
         std::vector<void*> _pOnGlobMem;
         std::string _funcName;
         
     public:
         
-        PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName = "");
+        PointersManager(nd4j::LaunchContext  *context, const std::string& funcName = "");
         
         ~PointersManager();
         

@@ -29,11 +29,11 @@ namespace helpers {
 
     }
 
-    void rollFunctorFull(graph::LaunchContext* context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
+    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
 
     }
 
-    void rollFunctorLinear(graph::LaunchContext* context, NDArray* input, NDArray* output, int shift, bool inplace){
+    void rollFunctorLinear(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
         BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), LIBND4J_TYPES);
     }
 

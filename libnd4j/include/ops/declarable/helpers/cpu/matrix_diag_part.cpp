@@ -54,7 +54,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     return Status::OK();
 }
 
-    int matrixDiagPart(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
+    int matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), LIBND4J_TYPES);
     }
 

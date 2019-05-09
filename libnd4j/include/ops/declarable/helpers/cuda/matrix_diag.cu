@@ -53,7 +53,7 @@ namespace helpers {
     // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 
     template <typename T>
-    static int _matrixDiag(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
+    static int _matrixDiag(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         cudaStream_t* stream = context->getCudaStream();
         //auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 2, output->rankOf() - 1});
         //auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 1});
@@ -84,11 +84,11 @@ namespace helpers {
         return Status::OK();
     }
 
-    int matrixDiag(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
+    int matrixDiag(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiag, (context, input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _matrixDiag, (graph::LaunchContext* context, const NDArray* input, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int _matrixDiag, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output), LIBND4J_TYPES);
 
 }
 }

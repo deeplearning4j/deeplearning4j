@@ -27,7 +27,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void onehot(graph::LaunchContext* context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off);
+            void onehot(nd4j::LaunchContext * context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off);
         }
     }
 }

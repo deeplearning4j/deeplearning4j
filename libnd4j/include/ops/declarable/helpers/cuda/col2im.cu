@@ -111,12 +111,12 @@ __global__ static void col2imCuda(const void *in, void *out, const Nd4jLong *inS
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void col2imCudaLauncher(nd4j::graph::LaunchContext &context, const void *x, void *z, const Nd4jLong *xShapeInfo, const Nd4jLong *zShapeInfo, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2imCudaLauncher(nd4j::LaunchContext  &context, const void *x, void *z, const Nd4jLong *xShapeInfo, const Nd4jLong *zShapeInfo, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
     col2imCuda<T><<<512, 512, 1024, *context.getCudaStream()>>>(x, z, xShapeInfo, zShapeInfo, sH, sW, pH, pW, iH, iW, dH, dW);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(graph::LaunchContext& context, const NDArray& input, NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im(nd4j::LaunchContext & context, const NDArray& input, NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
     
     if(!input.isActualOnDeviceSide()) input.syncToDevice();
 
@@ -128,7 +128,7 @@ void col2im(graph::LaunchContext& context, const NDArray& input, NDArray& output
 
 
 
-BUILD_SINGLE_TEMPLATE(template void col2imCudaLauncher, (nd4j::graph::LaunchContext &context, const void *x, void *z, const Nd4jLong *xShapeInfo, const Nd4jLong *zShapeInfo, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void col2imCudaLauncher, (nd4j::LaunchContext  &context, const void *x, void *z, const Nd4jLong *xShapeInfo, const Nd4jLong *zShapeInfo, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW), FLOAT_TYPES);
 
 }
 }

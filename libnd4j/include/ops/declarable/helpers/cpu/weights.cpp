@@ -37,7 +37,7 @@ namespace helpers {
             }
     }
 
-    void adjustWeights(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    void adjustWeights(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (input, weights, output, minLength, maxLength), LIBND4J_TYPES);
     }
 

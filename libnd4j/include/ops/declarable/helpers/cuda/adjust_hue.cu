@@ -29,7 +29,7 @@ namespace helpers {
 
     }
 
-    void _adjust_hue(graph::LaunchContext* context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+    void _adjust_hue(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
 
         float d = delta->e<float>(0);

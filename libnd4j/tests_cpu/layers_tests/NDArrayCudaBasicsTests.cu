@@ -25,7 +25,7 @@
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <graph/LaunchContext.h>
+#include <execution/LaunchContext.h>
 #include <specials_cuda.h>
 #include <TAD.h>
 #include <ops/declarable/CustomOperations.h>
@@ -2475,7 +2475,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_8) {
 
     NativeOps native;
     auto z = NDArrayFactory::create<float>('c', {totalCount, width});
-    auto stream = graph::LaunchContext::defaultContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    auto stream = nd4j::LaunchContext ::defaultContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
     std::vector<void*> buffers(totalCount);
     std::vector<Nd4jLong*> shapes(totalCount);
     std::vector<Nd4jLong*> hostShapes(totalCount);

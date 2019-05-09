@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void diagFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output);
-    void diagPartFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output);
+    void diagFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
+    void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
 
 }
 }

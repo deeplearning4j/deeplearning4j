@@ -20,7 +20,7 @@
 
 #include <exceptions/cuda_exception.h>
 #include <ConstantHelper.h>
-#include <graph/LaunchContext.h>
+#include <execution/LaunchContext.h>
 #include <logger.h>
 #include <cuda_runtime.h>
 #include <cuda.h>
@@ -86,11 +86,11 @@ namespace nd4j {
         if (constantOffset + numBytes >= CONSTANT_LIMIT) {
             int8_t *ptr = nullptr;
             ALLOCATE_SPECIAL(ptr, workspace, numBytes, int8_t);
-            auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, *graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, *nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("cudaMemcpyToSymbolAsync failed", res);
 
-            res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("cudaStreamSynchronize failed", res);
 
@@ -104,11 +104,11 @@ namespace nd4j {
 
             _deviceOffsets[deviceId] += numBytes;
 
-            auto res = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), originalBytes, constantOffset, cudaMemcpyHostToDevice, *graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            auto res = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), originalBytes, constantOffset, cudaMemcpyHostToDevice, *nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("cudaMemcpyToSymbolAsync failed", res);
 
-            res = cudaStreamSynchronize(*graph::LaunchContext::defaultContext()->getCudaSpecialStream());
+            res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("cudaStreamSynchronize failed", res);
 

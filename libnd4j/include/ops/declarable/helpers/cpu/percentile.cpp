@@ -78,7 +78,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     delete listOfSubArrs;
 }
 
-    void percentile(graph::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
+    void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
         BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (input, output, axises, q, interpolation), LIBND4J_TYPES);
     }
 

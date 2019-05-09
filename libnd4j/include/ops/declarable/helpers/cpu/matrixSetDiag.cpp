@@ -47,7 +47,7 @@ static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArra
 
 }
 
-    void matrixSetDiag(graph::LaunchContext* context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
+    void matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _matrixSetDiag, (input, diagonal, output), LIBND4J_TYPES);
     }
 

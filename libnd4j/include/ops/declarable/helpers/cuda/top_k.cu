@@ -27,26 +27,26 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static int topKFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+    static int topKFunctor_(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
         return Status::OK();
     }
 // ----------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int inTopKFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
+    static int inTopKFunctor_(nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k) {
         return Status::OK();
     }
 
-    int topKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+    int topKFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (context, input, values, indeces, k, needSort), NUMERIC_TYPES);
     }
 
-    int inTopKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
+    int inTopKFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k), NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
-    BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (nd4j::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
 }
 }
 }

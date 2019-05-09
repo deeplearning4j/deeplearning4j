@@ -72,7 +72,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
     template <typename T>
-    static void _diagFunctor(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
+    static void _diagFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto stream = context->getCudaStream();
         auto inputLength = input->lengthOf();
         dim3 launchDims(256, 512, 8192);
@@ -81,16 +81,16 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), inputLength);
     }
 
-    void diagFunctor(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
+    void diagFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (context, input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (graph::LaunchContext* context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
     template <typename T>
-    void _diagPartFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output) {
+    void _diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
         const int outLen = output->lengthOf();
         const int inLen = input->lengthOf();
         auto stream = context->getCudaStream();
@@ -108,9 +108,9 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _diagPartFunctor, (graph::LaunchContext* context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _diagPartFunctor, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
-    void diagPartFunctor(graph::LaunchContext* context, NDArray const* input, NDArray* output) {
+    void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
         auto zType = output->dataType();
         BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), LIBND4J_TYPES);
 

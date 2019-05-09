@@ -1438,7 +1438,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
 //
-//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
@@ -1452,7 +1452,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
 //
 //
-//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
 //
 //    ASSERT_TRUE(inArr.equalsTo(&exp));
 //    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
@@ -1466,7 +1466,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
-//    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
@@ -1493,7 +1493,7 @@ TEST_F(HelpersTests1, rnnCell_test1) {
 
     NDArray expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
-    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1522,7 +1522,7 @@ TEST_F(HelpersTests1, rnnCell_test2) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
 
-    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1550,7 +1550,7 @@ TEST_F(HelpersTests1, rnnCell_test3) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
 
-    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1579,7 +1579,7 @@ TEST_F(HelpersTests1, rnnCell_test4) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
 
-    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
     
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -2049,7 +2049,7 @@ TEST_F(HelpersTests1, softMaxForVector_test1) {
     auto expOutput = NDArrayFactory::create<double>('c', {1,5});
     expOutput = 1;
 
-    ops::helpers::softmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2061,7 +2061,7 @@ TEST_F(HelpersTests1, softMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2073,7 +2073,7 @@ TEST_F(HelpersTests1, softMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2106,7 +2106,7 @@ TEST_F(HelpersTests1, softMaxForVector_test4) {
 0.005916, 0.005975, 0.006035, 0.006096, 0.006157, 0.006219, 0.006281, 0.006345, 0.006408, 0.006473, 0.006538, 0.006603, 0.006670, 0.006737, 0.006805, 0.006873, 0.006942, 0.007012, 0.007082, 0.007153, 0.007225, 0.007298, 0.007371, 0.007445, 0.007520, 0.007596, 0.007672, 0.007749,0.007827, 0.007906, 0.007985, 0.008065, 0.008147, 0.008228, 0.008311, 0.008395, 0.008479, 0.008564, 0.008650, 0.008737, 0.008825, 0.008914, 0.009003, 0.009094, 0.009185, 0.009277, 0.009371, 0.009465, 0.009560, 0.009656, 0.009753, 0.009851, 0.009950}, nd4j::DataType::DOUBLE);
     input.linspace(0.01, 0.01);
 
-    ops::helpers::softmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2119,7 +2119,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
     auto expOutput = NDArrayFactory::create<double>('c', {1,5});
     expOutput = 0;
 
-    ops::helpers::logSoftmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
     
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2131,7 +2131,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2143,7 +2143,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2170,7 +2170,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
 -6.714773, -6.713773, -6.712773, -6.711773, -6.710773, -6.709773, -6.708773, -6.707773, -6.706773, -6.705773, -6.704773, -6.703773, -6.702773, -6.701773, -6.700773, -6.699773, -6.698773, -6.697773, -6.696773, -6.695773, -6.694773, -6.693773, -6.692773, -6.691773, -6.690773, -6.689773, -6.688773, -6.687773, -6.686773, -6.685773, -6.684773, -6.683773, -6.682773, -6.681773, -6.680773, -6.679773, -6.678773, -6.677773, -6.676773, -6.675773, -6.674773, -6.673773, -6.672773, -6.671773, -6.670773, -6.669773, -6.668773, -6.667773, -6.666773, -6.665773, -6.664773, -6.663773, -6.662773, -6.661773, -6.660773, -6.659773, -6.658773, -6.657773, -6.656773, -6.655773}, nd4j::DataType::DOUBLE);
     input.linspace(0.01, 0.001);
 
-    ops::helpers::logSoftmax(graph::LaunchContext::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
     
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }

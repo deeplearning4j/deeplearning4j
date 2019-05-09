@@ -81,7 +81,7 @@ NDArray::NDArray(NDArray&& other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
 //constructor, create empty array at given workspace
-NDArray::NDArray(nd4j::graph::LaunchContext* context) {
+NDArray::NDArray(nd4j::LaunchContext * context) {
     _buffer    = nullptr;
     _bufferD   = nullptr;
     _shapeInfo = nullptr;
@@ -99,13 +99,13 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context): 
+NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::LaunchContext * context):
                 NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {
 }   
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc) {
+NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::LaunchContext * context, const bool isBuffAlloc) {
     
     if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
         throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
@@ -141,7 +141,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 // we suppose the content of both (device and host) buffers is identical 
-NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isBuffDAlloc) {
+NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, nd4j::LaunchContext * context, const bool isBuffAlloc, const bool isBuffDAlloc) {
 
     if (buffer == nullptr && bufferD == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized with both nullptr buffers !");
@@ -603,7 +603,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->triggerAllocationFlag(true);
-        result->setContext(nd4j::graph::LaunchContext::defaultContext());
+        result->setContext(nd4j::LaunchContext ::defaultContext());
 
 //        auto d1 = this->dataType();
   //      auto d2 = result->dataType();
@@ -709,11 +709,11 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong offset, const void *value), LIBND4J_TYPES, LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::setContext(nd4j::graph::LaunchContext *context) {
+    void NDArray::setContext(nd4j::LaunchContext  *context) {
 
         this->_context= context;
         if (_context == nullptr)
-            _context = nd4j::graph::LaunchContext::defaultContext(); // empty context for default cases
+            _context = nd4j::LaunchContext ::defaultContext(); // empty context for default cases
     }
 
     //////////////////////////////////////////////////////////////////////////

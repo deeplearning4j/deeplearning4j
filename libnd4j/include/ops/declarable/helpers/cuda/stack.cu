@@ -56,7 +56,7 @@ namespace helpers {
 	}
 	///////////////////////////////////////////////////////////////////
 	template <typename T>
-	static void stack_(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	static void stack_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		if(inArrs[0]->isScalar()) {
             outArr->lazyAllocateBuffer();
 
@@ -97,11 +97,11 @@ namespace helpers {
 		}
 	}
 
-	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	void stack(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (context, inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template void stack_ , (graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

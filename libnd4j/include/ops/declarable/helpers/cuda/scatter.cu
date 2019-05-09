@@ -135,7 +135,7 @@ namespace helpers {
 
 
             // template <typename T>
-            // void scatter_(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+            // void scatter_(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
             //     std::vector<int> dims = {0};
             //     auto inverted = ShapeUtils::evalDimsToExclude(output.rankOf(), dims);
 
@@ -389,7 +389,7 @@ static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
 
 ///////////////////////////////////////////////////////////////////
-void scatter(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {        
+void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     PointersManager manager(context, "scatterND");
 
@@ -682,7 +682,7 @@ static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int xRank = indices.rankOf();
     const int yRank = updates.rankOf();
@@ -734,7 +734,7 @@ void scatterND(graph::LaunchContext *context, pairwise::Ops op, const NDArray& i
 
 
 
-void scatterForLoss(graph::LaunchContext *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
 
 }
 
