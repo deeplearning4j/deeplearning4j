@@ -192,67 +192,52 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);
+    auto *out = results->at(0);
     // exp.printShapeInfo();
-    // result->printShapeInfo();
+    // out->printShapeInfo();
     // exp.printBuffer();
-    // result->printBuffer();
+    // out->printBuffer();
 
     // PointersManager manager(x.getContext(), "scatter");
-    // manager.printDevContentOnHost<float>(result->getSpecialBuffer(), result->lengthOf());
+    // manager.printDevContentOnHost<float>(out->getSpecialBuffer(), out->lengthOf());
     // manager.printDevContentOnHost<float>(exp.getSpecialBuffer(), exp.lengthOf());
     
-    ASSERT_TRUE(exp.isSameShape(result));
-    ASSERT_TRUE(exp.equalsTo(result));
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
 
     delete results;
 }
 
 TEST_F(DeclarableOpsTests1, TestTensorDot2) {
-    auto x = NDArrayFactory::create_<float>('f', {2, 3, 4});
-    auto y = NDArrayFactory::create_<float>('f', {2, 3, 4});
 
-    x->lazyAllocateBuffer();
-    y->lazyAllocateBuffer();
+    NDArray x('f', {2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray y('f', {2, 3, 4}, nd4j::DataType::FLOAT32);
 
-    for (int i = 0; i < x->lengthOf(); i++) {
-        // x->p(i, i + 1);
-        // y->p(i, i + 1);
-        reinterpret_cast<float*>(x->getBuffer())[i] = i + 1;
-        reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
-    }
+    NDArray exp('c', {2, 2}, {2300.0, 2444.0, 2444.0, 2600.0}, nd4j::DataType::FLOAT32);
 
-    NDArray exp('c', {2, 2}, nd4j::DataType::FLOAT32);
-    exp.p(0, 2300.0);
-    exp.p(1, 2444.0);
-    exp.p(2, 2444.0);
-    exp.p(3, 2600.0);
+    x.lazyAllocateBuffer();
+    y.lazyAllocateBuffer();
 
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
+    for (int i = 0; i < x.lengthOf(); i++) {        
+        reinterpret_cast<float*>(x.buffer())[i] = i + 1;
+        reinterpret_cast<float*>(y.buffer())[i] = i + 1;
+    }            
+    x.tickWriteHost();
+    y.tickWriteHost();
 
-    nd4j::ops::tensormmul tm;
+    nd4j::ops::tensormmul op;
+    auto results = op.execute({&x, &y}, {}, {2,1,2,  2,1,2});
 
-    tm.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto z = variableSpace->getVariable(1)->getNDArray();
+    auto *out = results->at(0);
+    // out->printBuffer();
+    // out->printShapeInfo();
+    
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
 
-    //z->printBuffer("Result: ");
-
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete block;
-    delete variableSpace;
+    delete results;
 }
 
 TEST_F(DeclarableOpsTests1, TestTensorDot3) {
