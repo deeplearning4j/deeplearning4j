@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,8 +50,10 @@ public class Nd4jValidator {
     public static ValidationResult validateINDArrayFile(@NonNull File f, DataType... allowableDataTypes) {
 
         ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "INDArray File", false);
-        if (vr != null && !vr.isValid())
+        if (vr != null && !vr.isValid()) {
+            vr.setFormatClass(INDArray.class);
             return vr;
+        }
 
         //TODO let's do this without reading the whole thing into memory - check header + length...
         try (INDArray arr = Nd4j.readBinary(f)) {   //Using the fact that INDArray.close() exists -> deallocate memory as soon as reading is done
@@ -61,6 +64,7 @@ public class Nd4jValidator {
             return ValidationResult.builder()
                     .valid(false)
                     .formatType("INDArray File")
+                    .formatClass(INDArray.class)
                     .path(Nd4jCommonValidator.getPath(f))
                     .issues(Collections.singletonList("Unable to read file (IOException)"))
                     .exception(e)
@@ -71,6 +75,7 @@ public class Nd4jValidator {
                 return ValidationResult.builder()
                         .valid(true)
                         .formatType("INDArray File")
+                        .formatClass(INDArray.class)
                         .path(Nd4jCommonValidator.getPath(f))
                         .build();
             }
@@ -78,6 +83,7 @@ public class Nd4jValidator {
             return ValidationResult.builder()
                     .valid(false)
                     .formatType("INDArray File")
+                    .formatClass(INDArray.class)
                     .path(Nd4jCommonValidator.getPath(f))
                     .issues(Collections.singletonList("File may be corrupt or is not a binary INDArray file"))
                     .exception(t)
@@ -87,6 +93,7 @@ public class Nd4jValidator {
         return ValidationResult.builder()
                 .valid(true)
                 .formatType("INDArray File")
+                .formatClass(INDArray.class)
                 .path(Nd4jCommonValidator.getPath(f))
                 .build();
     }
@@ -101,8 +108,10 @@ public class Nd4jValidator {
     public static ValidationResult validateINDArrayTextFile(@NonNull File f) {
 
         ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "INDArray Text File", false);
-        if (vr != null && !vr.isValid())
+        if (vr != null && !vr.isValid()) {
+            vr.setFormatClass(INDArray.class);
             return vr;
+        }
 
         //TODO let's do this without reading the whole thing into memory - check header + length...
         try (INDArray arr = Nd4j.readTxt(f.getPath())) {   //Using the fact that INDArray.close() exists -> deallocate memory as soon as reading is done
@@ -113,6 +122,7 @@ public class Nd4jValidator {
                 return ValidationResult.builder()
                         .valid(true)
                         .formatType("INDArray Text File")
+                        .formatClass(INDArray.class)
                         .path(Nd4jCommonValidator.getPath(f))
                         .build();
             }
@@ -120,6 +130,7 @@ public class Nd4jValidator {
             return ValidationResult.builder()
                     .valid(false)
                     .formatType("INDArray Text File")
+                    .formatClass(INDArray.class)
                     .path(Nd4jCommonValidator.getPath(f))
                     .issues(Collections.singletonList("File may be corrupt or is not a text INDArray file"))
                     .exception(t)
@@ -129,6 +140,7 @@ public class Nd4jValidator {
         return ValidationResult.builder()
                 .valid(true)
                 .formatType("INDArray Text File")
+                .formatClass(INDArray.class)
                 .path(Nd4jCommonValidator.getPath(f))
                 .build();
     }
@@ -304,6 +316,7 @@ public class Nd4jValidator {
             return ValidationResult.builder()
                     .valid(false)
                     .formatType("SameDiff FlatBuffers file")
+                    .formatClass(SameDiff.class)
                     .path(Nd4jCommonValidator.getPath(f))
                     .issues(Collections.singletonList("File may be corrupt or is not a SameDiff file in FlatBuffers format"))
                     .exception(t)
@@ -313,6 +326,7 @@ public class Nd4jValidator {
         return ValidationResult.builder()
                 .valid(true)
                 .formatType("SameDiff FlatBuffers file")
+                .formatClass(SameDiff.class)
                 .path(Nd4jCommonValidator.getPath(f))
                 .build();
     }
