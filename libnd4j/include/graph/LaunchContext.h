@@ -43,6 +43,9 @@ class ND4J_EXPORT LaunchContext {
 
 	private:
 #ifdef __CUDABLAS__
+
+#ifndef __JAVACPP_HACK__
+
 		void* _reductionPointer;
 		void* _scalarPointer;
 		int* _allocationPointer;
@@ -50,13 +53,16 @@ class ND4J_EXPORT LaunchContext {
 		cudaStream_t *_cudaSpecialStream = nullptr;
 		void *_cublasHandle = nullptr;
 
+#endif // JCPP
+
 		bool _isAllocated = false;
-#endif
+#endif // CUDA
 	nd4j::memory::Workspace* _workspace = nullptr;
     int _deviceID = 0;
 	public:
 #ifdef __CUDABLAS__
 
+#ifndef __JAVACPP_HACK__
 		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 
@@ -79,7 +85,10 @@ class ND4J_EXPORT LaunchContext {
 		FORCEINLINE void setCudaStream(cudaStream_t* cudaStream)  {_cudaStream = cudaStream;};
 		FORCEINLINE void setCudaSpecialStream(cudaStream_t* cudaStream)  {_cudaSpecialStream = cudaStream;};
 
-#endif
+
+#endif // JCPP
+
+#endif // CUDA
 
     	LaunchContext();
     	~LaunchContext();

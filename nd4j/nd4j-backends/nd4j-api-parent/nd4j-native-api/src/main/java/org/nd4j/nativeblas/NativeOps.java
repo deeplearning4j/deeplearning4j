@@ -361,9 +361,7 @@ public abstract class NativeOps extends Pointer {
                                      Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo,
                                      Pointer dy, @Cast("Nd4jLong *") LongPointer dyShapeInfo,
                                      Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                     @Cast("Nd4jLong *") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
-                                     @Cast("Nd4jLong *") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer yTadOffsets);
+                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo);
 
     /**
      * @param opNum

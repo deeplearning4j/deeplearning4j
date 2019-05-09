@@ -264,6 +264,62 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 
 // #endif
 
+// Parsed from array/DataBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef DEV_TESTS_DATABUFFER_H
+// #define DEV_TESTS_DATABUFFER_H
+
+// #include <dll.h>
+// #include <pointercast.h>
+    @Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
+        static { Loader.load(); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public DataBuffer position(long position) {
+            return (DataBuffer)super.position(position);
+        }
+    
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/) { super((Pointer)null); allocate(primary, special); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/);
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary) { super((Pointer)null); allocate(primary); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary);
+        public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef DataBuffer other);
+        public DataBuffer() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native @Cast("Nd4jPointer") Pointer primary();
+        public native @Cast("Nd4jPointer") Pointer special();
+
+        public native @ByRef @Name("operator =") DataBuffer put(@Const @ByRef DataBuffer other);
+    }
+
+
+
+// #endif //DEV_TESTS_DATABUFFER_H
+
+
 // Parsed from Environment.h
 
 /*******************************************************************************
@@ -22412,7 +22468,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #ifdef __CUDABLAS__
 
-// #endif
+// #endif // CUDA
 
     	public LaunchContext() { super((Pointer)null); allocate(); }
     	private native void allocate();
