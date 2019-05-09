@@ -320,11 +320,11 @@ public class SpTree implements Serializable {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
-        Nd4j.exec(computeEdgeForces);
+        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
+        //Nd4j.exec(computeEdgeForces);
 
         // Loop over all edges in the graph
-        /*double D;
+        double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
@@ -332,14 +332,14 @@ public class SpTree implements Serializable {
                 // Compute pairwise distance and Q-value
                 buf.assign(slice).subi(data.slice(colP.getInt(i)));
 
-                D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
+                D = 1.0 + Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
                 posF.slice(n).addi(buf.muli(D));
 
             }
-        }*/
+        }
     }
 
 
