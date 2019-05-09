@@ -26,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -47,7 +45,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
 
         //Test non-existent file
         File f0 = new File(f, "doesntExist.bin");
-        ValidationResult vr0 = DL4JModelValidator.isValidMultiLayerNetwork(f0);
+        ValidationResult vr0 = DL4JModelValidator.validateMultiLayerNetwork(f0);
         assertFalse(vr0.isValid());
         assertTrue(vr0.getIssues().get(0).contains("exist"));
         assertEquals("MultiLayerNetwork", vr0.getFormatType());
@@ -59,7 +57,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         File f1 = new File(f, "empty.bin");
         f1.createNewFile();
         assertTrue(f1.exists());
-        ValidationResult vr1 = DL4JModelValidator.isValidMultiLayerNetwork(f1);
+        ValidationResult vr1 = DL4JModelValidator.validateMultiLayerNetwork(f1);
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0).contains("empty"));
         assertEquals("MultiLayerNetwork", vr1.getFormatType());
@@ -70,7 +68,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         //Test invalid zip file
         File f2 = new File(f, "notReallyZip.zip");
         FileUtils.writeStringToFile(f2, "This isn't actually a zip file", StandardCharsets.UTF_8);
-        ValidationResult vr2 = DL4JModelValidator.isValidMultiLayerNetwork(f2);
+        ValidationResult vr2 = DL4JModelValidator.validateMultiLayerNetwork(f2);
         assertFalse(vr2.isValid());
         String s = vr2.getIssues().get(0);
         assertTrue(s, s.contains("zip") && s.contains("corrupt"));
@@ -86,7 +84,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
             Path p = zipfs.getPath(ModelSerializer.CONFIGURATION_JSON);
             Files.delete(p);
         }
-        ValidationResult vr3 = DL4JModelValidator.isValidMultiLayerNetwork(f3);
+        ValidationResult vr3 = DL4JModelValidator.validateMultiLayerNetwork(f3);
         assertFalse(vr3.isValid());
         s = vr3.getIssues().get(0);
         assertEquals(1, vr3.getIssues().size());
@@ -104,7 +102,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
             Path p = zipfs.getPath(ModelSerializer.COEFFICIENTS_BIN);
             Files.delete(p);
         }
-        ValidationResult vr4 = DL4JModelValidator.isValidMultiLayerNetwork(f4);
+        ValidationResult vr4 = DL4JModelValidator.validateMultiLayerNetwork(f4);
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertEquals(1, vr4.getIssues().size());
@@ -118,7 +116,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         //Test valid model
         File f5 = new File(f, "modelValid.zip");
         getSimpleNet().save(f5);
-        ValidationResult vr5 = DL4JModelValidator.isValidMultiLayerNetwork(f5);
+        ValidationResult vr5 = DL4JModelValidator.validateMultiLayerNetwork(f5);
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertEquals("MultiLayerNetwork", vr5.getFormatType());
@@ -147,7 +145,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
                 }
             }
         }
-        ValidationResult vr6 = DL4JModelValidator.isValidMultiLayerNetwork(f6);
+        ValidationResult vr6 = DL4JModelValidator.validateMultiLayerNetwork(f6);
         assertFalse(vr6.isValid());
         s = vr6.getIssues().get(0);
         assertEquals(1, vr6.getIssues().size());
@@ -165,7 +163,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
 
         //Test non-existent file
         File f0 = new File(f, "doesntExist.bin");
-        ValidationResult vr0 = DL4JModelValidator.isValidComputationGraph(f0);
+        ValidationResult vr0 = DL4JModelValidator.validateComputationGraph(f0);
         assertFalse(vr0.isValid());
         assertTrue(vr0.getIssues().get(0).contains("exist"));
         assertEquals("ComputationGraph", vr0.getFormatType());
@@ -177,7 +175,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         File f1 = new File(f, "empty.bin");
         f1.createNewFile();
         assertTrue(f1.exists());
-        ValidationResult vr1 = DL4JModelValidator.isValidComputationGraph(f1);
+        ValidationResult vr1 = DL4JModelValidator.validateComputationGraph(f1);
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0).contains("empty"));
         assertEquals("ComputationGraph", vr1.getFormatType());
@@ -188,7 +186,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         //Test invalid zip file
         File f2 = new File(f, "notReallyZip.zip");
         FileUtils.writeStringToFile(f2, "This isn't actually a zip file", StandardCharsets.UTF_8);
-        ValidationResult vr2 = DL4JModelValidator.isValidComputationGraph(f2);
+        ValidationResult vr2 = DL4JModelValidator.validateComputationGraph(f2);
         assertFalse(vr2.isValid());
         String s = vr2.getIssues().get(0);
         assertTrue(s, s.contains("zip") && s.contains("corrupt"));
@@ -204,7 +202,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
             Path p = zipfs.getPath(ModelSerializer.CONFIGURATION_JSON);
             Files.delete(p);
         }
-        ValidationResult vr3 = DL4JModelValidator.isValidComputationGraph(f3);
+        ValidationResult vr3 = DL4JModelValidator.validateComputationGraph(f3);
         assertFalse(vr3.isValid());
         s = vr3.getIssues().get(0);
         assertEquals(1, vr3.getIssues().size());
@@ -222,7 +220,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
             Path p = zipfs.getPath(ModelSerializer.COEFFICIENTS_BIN);
             Files.delete(p);
         }
-        ValidationResult vr4 = DL4JModelValidator.isValidComputationGraph(f4);
+        ValidationResult vr4 = DL4JModelValidator.validateComputationGraph(f4);
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertEquals(1, vr4.getIssues().size());
@@ -236,7 +234,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         //Test valid model
         File f5 = new File(f, "modelValid.zip");
         getSimpleNet().save(f5);
-        ValidationResult vr5 = DL4JModelValidator.isValidComputationGraph(f5);
+        ValidationResult vr5 = DL4JModelValidator.validateComputationGraph(f5);
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertEquals("ComputationGraph", vr5.getFormatType());
@@ -265,7 +263,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
                 }
             }
         }
-        ValidationResult vr6 = DL4JModelValidator.isValidComputationGraph(f6);
+        ValidationResult vr6 = DL4JModelValidator.validateComputationGraph(f6);
         assertFalse(vr6.isValid());
         s = vr6.getIssues().get(0);
         assertEquals(1, vr6.getIssues().size());

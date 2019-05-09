@@ -2,6 +2,7 @@ package org.deeplearning4j.util;
 
 import lombok.NonNull;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -19,13 +20,25 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+/**
+ * A utility for validating Deeplearning4j Serialized model file formats
+ *
+ * @author Alex Black
+ */
 public class DL4JModelValidator {
 
     private DL4JModelValidator(){ }
 
-    public static ValidationResult isValidMultiLayerNetwork(@NonNull File f){
+    /**
+     * Validate whether the file represents a valid MultiLayerNetwork saved previously with {@link MultiLayerNetwork#save(File)}
+     * or {@link ModelSerializer#writeModel(Model, File, boolean)}, to be read with {@link MultiLayerNetwork#load(File, boolean)}
+     *
+     * @param f File that should represent an saved MultiLayerNetwork
+     * @return Result of validation
+     */
+    public static ValidationResult validateMultiLayerNetwork(@NonNull File f){
 
-        List<String> requiredEntries = Arrays.asList(ModelSerializer.CONFIGURATION_JSON, ModelSerializer.COEFFICIENTS_BIN);     //TODO no-params models... might be OK to have no params
+        List<String> requiredEntries = Arrays.asList(ModelSerializer.CONFIGURATION_JSON, ModelSerializer.COEFFICIENTS_BIN);     //TODO no-params models... might be OK to have no params, but basically useless in practice
 
         ValidationResult vr = Nd4jCommonValidator.isValidZipFile(f, false, requiredEntries);
         if(vr != null && !vr.isValid()) {
@@ -73,9 +86,16 @@ public class DL4JModelValidator {
                 .build();
     }
 
-    public static ValidationResult isValidComputationGraph(@NonNull File f){
+    /**
+     * Validate whether the file represents a valid ComputationGraph saved previously with {@link ComputationGraph#save(File)}
+     * or {@link ModelSerializer#writeModel(Model, File, boolean)}, to be read with {@link ComputationGraph#load(File, boolean)}
+     *
+     * @param f File that should represent an saved MultiLayerNetwork
+     * @return Result of validation
+     */
+    public static ValidationResult validateComputationGraph(@NonNull File f){
 
-        List<String> requiredEntries = Arrays.asList(ModelSerializer.CONFIGURATION_JSON, ModelSerializer.COEFFICIENTS_BIN);     //TODO no-params models... might be OK to have no params
+        List<String> requiredEntries = Arrays.asList(ModelSerializer.CONFIGURATION_JSON, ModelSerializer.COEFFICIENTS_BIN);     //TODO no-params models... might be OK to have no params, but basically useless in practice
 
         ValidationResult vr = Nd4jCommonValidator.isValidZipFile(f, false, requiredEntries);
         if(vr != null && !vr.isValid()) {
@@ -122,7 +142,4 @@ public class DL4JModelValidator {
                 .path(Nd4jCommonValidator.getPath(f))
                 .build();
     }
-
-    //TODO also check if updater is valid?
-
 }
