@@ -1128,7 +1128,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(inIdx, outIdx))
         for(int i = 0; i < outLen; ++i) {
 
-            shape::ind2subC(rank, output.shapeOf(), i, outIdx.data());
+            shape::index2coords(rank, output.shapeOf(), i, outIdx.data());
 
             for(int j = 0; j < rank; ++j) {
             

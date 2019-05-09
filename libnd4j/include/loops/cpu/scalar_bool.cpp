@@ -163,7 +163,7 @@ namespace functions {
 
             nd4j::OmpLaunchHelper info(len);
                                
-            if(shape::haveSameOffsets(xShapeInfo, zShapeInfo)) {
+            if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
                 PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
                 {

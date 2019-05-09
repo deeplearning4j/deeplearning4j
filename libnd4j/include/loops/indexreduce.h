@@ -33,7 +33,6 @@
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
-#include <helper_cuda.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif

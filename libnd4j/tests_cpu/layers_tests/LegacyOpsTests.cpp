@@ -30,6 +30,7 @@
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -574,6 +575,24 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
     z.printIndexedBuffer("z");
 
     ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
+    auto x = NDArrayFactory::create<float>('c', {1000, 100});
+    auto y = NDArrayFactory::create<float>('c', {1, 100});
+    auto z = NDArrayFactory::create<float>('c', {1000, 1});
+    auto dim = NDArrayFactory::create<int>('c', {1}, {-1});
+
+    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), -1);
+    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), -1);
+
+    NativeOps ops;
+    ops.execReduce3All(nullptr, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                       nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                       z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                       dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                       tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(),
+                       tadPackY.primaryShapeInfo(), tadPackY.primaryOffsets());
 }
 
 TEST_F(LegacyOpsTests, Softmax_119_1) {
