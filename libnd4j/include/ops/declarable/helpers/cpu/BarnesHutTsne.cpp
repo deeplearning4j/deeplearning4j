@@ -147,7 +147,7 @@ namespace helpers {
 
             for (int i = start; i < end; i++) {
                 T const* thisSlice = dataP + colP->e<int>(i) * colCount;
-                T res = 1.e-12;
+                T res = 1;
                 for (int k = 0; k < colCount; k++) {
                     currentSlice[k] -= thisSlice[k];
                     res += currentSlice[k] * currentSlice[k];
