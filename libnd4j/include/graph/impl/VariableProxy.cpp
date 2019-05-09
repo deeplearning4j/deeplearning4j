@@ -47,17 +47,6 @@ namespace nd4j {
             return _backed->getPlaceholders();
         }
 
-        
-        nd4j::random::RandomBuffer* VariableProxy::getRNG() {
-            return _current->getRNG();
-        }
-
-        
-        void VariableProxy::setRNG(nd4j::random::RandomBuffer* rng) {
-            _current->setRNG(rng);
-        }
-        
-        
         bool VariableProxy::hasExternalVariable(int it) {
             return _backed->hasExternalVariable(it);
         }
@@ -288,7 +277,7 @@ namespace nd4j {
 
         
         nd4j::memory::Workspace * nd4j::graph::VariableProxy::workspace() {
-            return this->_context.getWorkspace();
+            return _workspace;
         }
     }
 }

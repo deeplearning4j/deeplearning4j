@@ -84,9 +84,6 @@ namespace nd4j {
             this->_executionTime.first = 0;
             this->_executionTime.second = 0;
 
-            if (variableSpace != nullptr)
-                this->_rng = variableSpace->getRNG();
-
             if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
                 this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
@@ -119,9 +116,6 @@ namespace nd4j {
 
         void Context::setVariableSpace(VariableSpace *variableSpace) {
             this->_variableSpace = variableSpace;
-
-            if (variableSpace != nullptr)
-                this->_rng = variableSpace->getRNG();
         }
 
         void Context::forgetWorkspace() {
