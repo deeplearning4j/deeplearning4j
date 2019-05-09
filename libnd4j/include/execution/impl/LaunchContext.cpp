@@ -70,6 +70,8 @@ LaunchContext::~LaunchContext() {
 #endif
 }
 
+    std::vector<LaunchContext*> LaunchContext::_contexts = std::vector<LaunchContext*>();
+
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
@@ -114,11 +116,11 @@ LaunchContext::LaunchContext() {
 }
 
 LaunchContext* LaunchContext::defaultContext() {
-    //if (!LaunchContext::sDefaultContext) {
-    //    LaunchContext::sDefaultContext = new LaunchContext;
-    //}
-    //return LaunchContext::sDefaultContext;
-    return nullptr;
+    // TODO: we need it to be device-aware
+    if (LaunchContext::_contexts.empty()) {
+           LaunchContext::_contexts.emplace_back(new LaunchContext());
+    }
+    return LaunchContext::_contexts[0];
 }
 
 }
