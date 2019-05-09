@@ -470,7 +470,10 @@ public class VPTree implements Serializable {
         search(target, k, results, distances, true);
     }
 
-
+    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances,
+                       boolean filterEqual) {
+        search(target, k, results, distances, filterEqual, false);
+    }
     /**
      *
      * @param target
@@ -478,7 +481,8 @@ public class VPTree implements Serializable {
      * @param results
      * @param distances
      */
-    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances, boolean filterEqual) {
+    public void search(@NonNull INDArray target, int k, List<DataPoint> results, List<Double> distances,
+                       boolean filterEqual, boolean dropEdge) {
         if (items != null)
             if (!target.isVectorOrScalar() || target.columns() != items.columns() || target.rows() > 1)
                 throw new ND4JIllegalStateException("Target for search should have shape of [" + 1 + ", "
@@ -489,6 +493,7 @@ public class VPTree implements Serializable {
         distances.clear();
 
         PriorityQueue<HeapObject> pq = new PriorityQueue<>(items.rows(), new HeapObjectComparator());
+
         search(root, target, k + (filterEqual ? 2 : 1), pq, Double.MAX_VALUE);
 
         while (!pq.isEmpty()) {
@@ -501,7 +506,7 @@ public class VPTree implements Serializable {
         Collections.reverse(results);
         Collections.reverse(distances);
 
-        if (results.size() > k) {
+        if (dropEdge && results.size() > k) {
             if (filterEqual && distances.get(0) == 0.0) {
                 results.remove(0);
                 distances.remove(0);
