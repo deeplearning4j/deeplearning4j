@@ -2578,6 +2578,11 @@ public class Nd4j {
         } finally {
             LineIterator.closeQuietly(it);
         }
+
+        if(newArr == null){
+            throw new IllegalStateException("Cannot parse file: file does not appear to represent a text serialized INDArray file");
+        }
+
         return newArr;
     }
 

@@ -17,14 +17,33 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * A utility for validating multiple file formats that ND4J and SameDiff can read
+ * @author Alex Black
+ */
 public class Nd4jValidator {
 
     private Nd4jValidator(){ }
 
+    /**
+     * Validate whether the file represents a valid INDArray (of any data type) saved previously with {@link Nd4j#saveBinary(INDArray, File)}
+     * to be read with {@link Nd4j#readBinary(File)}
+     *
+     * @param f File that should represent an INDArray saved with Nd4j.saveBinary
+     * @return Result of validation
+     */
     public static ValidationResult validateINDArrayFile(@NonNull File f) {
         return validateINDArrayFile(f, (DataType[])null);
     }
 
+    /**
+     * Validate whether the file represents a valid INDArray (of one of the allowed/specified data types) saved previously
+     * with {@link Nd4j#saveBinary(INDArray, File)} to be read with {@link Nd4j#readBinary(File)}
+     *
+     * @param f File that should represent an INDArray saved with Nd4j.saveBinary
+     * @param allowableDataTypes May be null. If non-null, the file must represent one of the specified data types
+     * @return Result of validation
+     */
     public static ValidationResult validateINDArrayFile(@NonNull File f, DataType... allowableDataTypes){
 
         ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "INDArray File", false);
@@ -70,6 +89,14 @@ public class Nd4jValidator {
                 .build();
     }
 
+    /**
+     * Validate whether the file represents a valid INDArray text file (of any data type) saved previously with
+     * {@link Nd4j#writeTxt(INDArray, String)}
+     * to be read with {@link Nd4j#readBinary(File)}
+     *
+     * @param f File that should represent an INDArray saved with Nd4j.saveBinary
+     * @return Result of validation
+     */
     public static ValidationResult validateINDArrayTextFile(@NonNull File f){
 
         ValidationResult vr = Nd4jCommonValidator.isValidFile(f, "INDArray Text File", false);
@@ -78,6 +105,7 @@ public class Nd4jValidator {
 
         //TODO let's do this without reading the whole thing into memory - check header + length...
         try (INDArray arr = Nd4j.readTxt(f.getPath())) {   //Using the fact that INDArray.close() exists -> deallocate memory as soon as reading is done
+            System.out.println();
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError || t.getMessage().toLowerCase().contains("failed to allocate")) {
                 //This is a memory exception during reading... result is indeterminant (might be valid, might not be, can't tell here)
@@ -92,7 +120,7 @@ public class Nd4jValidator {
                     .valid(false)
                     .formatType("INDArray Text File")
                     .path(Nd4jCommonValidator.getPath(f))
-                    .issues(Collections.singletonList("File may be corrupt or is not a binary INDArray file"))
+                    .issues(Collections.singletonList("File may be corrupt or is not a text INDArray file"))
                     .exception(t)
                     .build();
         }

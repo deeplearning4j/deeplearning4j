@@ -121,6 +121,77 @@ public class ValidationUtilTests extends BaseNd4jTest {
 
 
     @Test
+    public void testINDArrayTextValidation() throws Exception {
+        File f = testDir.newFolder();
+
+        //Test not existent file:
+        File fNonExistent = new File("doesntExist.txt");
+        ValidationResult vr0 = Nd4jValidator.validateINDArrayTextFile(fNonExistent);
+        assertFalse(vr0.isValid());
+        assertEquals("INDArray Text File", vr0.getFormatType());
+        assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
+        System.out.println(vr0.toString());
+
+        //Test empty file:
+        File fEmpty = new File(f, "empty.txt");
+        fEmpty.createNewFile();
+        assertTrue(fEmpty.exists());
+        ValidationResult vr1 = Nd4jValidator.validateINDArrayTextFile(fEmpty);
+        assertEquals("INDArray Text File", vr1.getFormatType());
+        assertFalse(vr1.isValid());
+        assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
+        System.out.println(vr1.toString());
+
+        //Test directory (not zip file)
+        File directory = new File(f, "dir");
+        boolean created = directory.mkdir();
+        assertTrue(created);
+        ValidationResult vr2 = Nd4jValidator.validateINDArrayTextFile(directory);
+        assertEquals("INDArray Text File", vr2.getFormatType());
+        assertFalse(vr2.isValid());
+        assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
+        System.out.println(vr2.toString());
+
+        //Test non-INDArray format:
+        File fText = new File(f, "text.txt");
+        FileUtils.writeStringToFile(fText, "Not a INDArray .text file", StandardCharsets.UTF_8);
+        ValidationResult vr3 = Nd4jValidator.validateINDArrayTextFile(fText);
+        assertEquals("INDArray Text File", vr3.getFormatType());
+        assertFalse(vr3.isValid());
+        String s = vr3.getIssues().get(0);
+        assertTrue(s, s.contains("text") && s.contains("INDArray") && s.contains("corrupt"));
+        System.out.println(vr3.toString());
+
+        //Test corrupted txt format:
+        File fValid = new File(f, "valid.txt");
+        INDArray arr = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+        Nd4j.writeTxt(arr, fValid.getPath());
+        byte[] indarrayTxtBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=0; i<30; i++ ){
+            indarrayTxtBytes[i] = (byte)('a' + i);
+        }
+        File fCorrupt = new File(f, "corrupt.txt");
+        FileUtils.writeByteArrayToFile(fCorrupt, indarrayTxtBytes);
+
+        ValidationResult vr4 = Nd4jValidator.validateINDArrayTextFile(fCorrupt);
+        assertEquals("INDArray Text File", vr4.getFormatType());
+        assertFalse(vr4.isValid());
+        s = vr4.getIssues().get(0);
+        assertTrue(s, s.contains("text") && s.contains("INDArray") && s.contains("corrupt"));
+        System.out.println(vr4.toString());
+
+
+        //Test valid npz format:
+        ValidationResult vr5 = Nd4jValidator.validateINDArrayTextFile(fValid);
+        assertEquals("INDArray Text File", vr5.getFormatType());
+        assertTrue(vr5.isValid());
+        assertNull(vr5.getIssues());
+        assertNull(vr5.getException());
+        System.out.println(vr4.toString());
+    }
+
+
+    @Test
     public void testNpyValidation() throws Exception {
 
         File f = testDir.newFolder();
