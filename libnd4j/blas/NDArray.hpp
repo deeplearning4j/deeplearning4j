@@ -96,11 +96,6 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
     _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
 }
 
-std::pair<bool, bool> NDArray::isShapeOwner() {
-    std::pair<bool, bool> result(false, false);
-    return result;
-}
-
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
 NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context): 

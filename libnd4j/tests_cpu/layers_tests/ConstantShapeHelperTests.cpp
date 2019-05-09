@@ -63,20 +63,8 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     delete []ptr;
 }
 
-TEST_F(ConstantShapeHelperTests, basic_test_2) {
-    auto array = NDArrayFactory::create<float>('c', {128});
-
-    auto p = array.isShapeOwner();
-    ASSERT_FALSE(p.first);
-    ASSERT_FALSE(p.second);
-}
-
 TEST_F(ConstantShapeHelperTests, basic_test_3) {
     auto array = NDArrayFactory::create_<float>('c', {128});
-
-    auto p = array->isShapeOwner();
-    ASSERT_FALSE(p.first);
-    ASSERT_FALSE(p.second);
 
     ASSERT_TRUE(array->shapeInfo() != nullptr);
 
@@ -92,10 +80,6 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
     auto array = NDArrayFactory::create_<float>('c', {128, 256});
 
     auto dup = array->dup('f');
-
-    auto p = dup->isShapeOwner();
-    ASSERT_FALSE(p.first);
-    ASSERT_FALSE(p.second);
 
     ASSERT_TRUE(dup->shapeInfo() != nullptr);
 

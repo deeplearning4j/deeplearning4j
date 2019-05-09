@@ -33,6 +33,7 @@ import java.util.Scanner;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                                              "memory/MemoryType.h",
                                               "array/DataType.h",
                                               "Environment.h",
                                               "types/utf8string.h",
@@ -96,6 +97,9 @@ import java.util.Scanner;
                                               "ops/declarable/headers/bitwise.h",
                                               "ops/declarable/headers/loss.h",
                                               "ops/declarable/headers/datatypes.h",
+                                              "graph/LaunchContext.h",
+                                              "array/ShapeDescriptor.h",
+                                              "array/TadDescriptor.h",
                                               "helpers/DebugInfo.h",
                                               "ops/declarable/headers/third_party.h"},
                                    exclude = {"ops/declarable/headers/activations.h",
@@ -163,7 +167,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                                         "short[]"));
 
-        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
+        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__CUDABLAS__").define(false))
                .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable", "nd4j::NDArray::subarray").skip())

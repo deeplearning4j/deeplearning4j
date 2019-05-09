@@ -191,10 +191,6 @@ public class DifferentialFunctionFactory {
         return new Cast(sameDiff(), toCast, toType).outputVariable();
     }
 
-    public SDVariable cast(SDVariable toCast, DataType toType){
-        return new Cast(sameDiff(), toCast, toType).outputVariable();
-    }
-
     public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs) {
         return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
     }
