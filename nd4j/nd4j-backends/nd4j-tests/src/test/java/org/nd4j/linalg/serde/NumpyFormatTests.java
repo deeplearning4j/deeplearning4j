@@ -16,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -119,6 +121,24 @@ public class NumpyFormatTests extends BaseNd4jTest {
         }
 
         assertTrue(cnt > 0);
+    }
+
+    @Test
+    public void testTxtReading() throws Exception {
+        File f = new ClassPathResource("numpy_arrays/txt/arange_3,4_float32.txt").getFile();
+        INDArray arr = Nd4j.readNumpy(DataType.FLOAT, f.getPath());
+
+        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+        assertEquals(exp, arr);
+
+        arr = Nd4j.readNumpy(DataType.DOUBLE, f.getPath());
+
+        assertEquals(exp.castTo(DataType.DOUBLE), arr);
+
+        f = new ClassPathResource("numpy_arrays/txt_tab/arange_3,4_float32.txt").getFile();
+        arr = Nd4j.readNumpy(DataType.FLOAT, f.getPath(), "\t");
+
+        assertEquals(exp, arr);
     }
 
     @Override
