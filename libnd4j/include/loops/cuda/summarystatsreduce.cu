@@ -194,7 +194,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                 }
                 __syncthreads();
 
-                if (dimensionLength > 1) {                    
+                if (tadEWS == 0) {
 
                     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
                         auto tadOffsetForBlock = tadOffsets[r];
@@ -203,8 +203,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         val.n = 0;
                         sPartials[threadIdx.x] = val;
 
-                        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {                            
-
+                        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
                             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
                             SummaryStatsData<X> indexVal2;
                             indexVal2.initWithValue(dx[xOffset]);
@@ -223,7 +222,6 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                 }
                 else {
 
-
                     for (int i = blockIdx.x; i < numTads; i += gridDim.x) {
                         auto tadOffsetForBlock = tadOffsets[i];
 
@@ -231,15 +229,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         val.n = 0;
                         sPartials[threadIdx.x] = val;
 
-                        auto indexX = tadOffsetForBlock + (xElementWiseStride * threadIdx.x);
-
-                        if (threadIdx.x < tadLength) {
-                            SummaryStatsData<X> indexVal;
-                            indexVal.initWithValue(dx[indexX]);
-                            sPartials[threadIdx.x] = OpType::op(indexVal, extraParams);
-                        }
-
-                        for (int x = threadIdx.x + blockDim.x; x < tadLength; x += blockDim.x) {
+                        for (int x = threadIdx.x; x < tadLength; x += blockDim.x) {
                             indexX = tadOffsetForBlock + x * tadEWS;
                             SummaryStatsData<X> indexVal2;
                             indexVal2.initWithValue(dx[indexX]);

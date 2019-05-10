@@ -197,8 +197,10 @@ if(CUDA_BLAS)
 
         else()
             # debug only
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic -rdynamic")
-            SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --export-dynamic")
+            if (LINUX)
+                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic -rdynamic")
+                SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --export-dynamic")
+            endif()
 
 			if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 9
 				message("CUDA 10 Debug build")
