@@ -191,10 +191,15 @@ public class NativeImageLoader extends BaseImageLoader {
 
     static Mat convert(PIX pix) {
         PIX tempPix = null;
+        int dtype = -1;
+        int height = pix.h();
+        int width = pix.w();
+        Mat mat2;
         if (pix.colormap() != null) {
             PIX pix2 = pixRemoveColormap(pix, REMOVE_CMAP_TO_FULL_COLOR);
             tempPix = pix = pix2;
-        } else if (pix.d() < 8) {
+            dtype = CV_8UC4;
+        } else if (pix.d() <= 8 || pix.d() == 24) {
             PIX pix2 = null;
             switch (pix.d()) {
                 case 1:
@@ -206,21 +211,31 @@ public class NativeImageLoader extends BaseImageLoader {
                 case 4:
                     pix2 = pixConvert4To8(pix, 0);
                     break;
+                case 8:
+                    pix2 = pix;
+                    break;
+                case 24:
+                    pix2 = pix;
+                    break;
                 default:
                     assert false;
             }
             tempPix = pix = pix2;
+            int channels = pix.d() / 8;
+            dtype = CV_8UC(channels);
+            Mat mat = new Mat(height, width, dtype, pix.data(), 4 * pix.wpl());
+            mat2 = new Mat(height, width, CV_8UC(channels));
+            // swap bytes if needed
+            int[] swap = {0, channels - 1, 1, channels - 2, 2, channels - 3, 3, channels - 4},
+                    copy = {0, 0, 1, 1, 2, 2, 3, 3},
+                    fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN) ? swap : copy;
+            mixChannels(mat, 1, mat2, 1, fromTo, Math.min(channels, fromTo.length / 2));
+        } else if (pix.d() == 16){
+            dtype = CV_16UC(pix.d() / 16);
+        } else if (pix.d() == 32) {
+            dtype = CV_32FC(pix.d() / 32);
         }
-        int height = pix.h();
-        int width = pix.w();
-        int channels = pix.d() / 8;
-        Mat mat = new Mat(height, width, CV_8UC(channels), pix.data(), 4 * pix.wpl());
-        Mat mat2 = new Mat(height, width, CV_8UC(channels));
-        // swap bytes if needed
-        int[] swap = {0, channels - 1, 1, channels - 2, 2, channels - 3, 3, channels - 4},
-                        copy = {0, 0, 1, 1, 2, 2, 3, 3},
-                        fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN) ? swap : copy;
-        mixChannels(mat, 1, mat2, 1, fromTo, Math.min(channels, fromTo.length / 2));
+        mat2 = new Mat(height, width, dtype, pix.data());
         if (tempPix != null) {
             pixDestroy(tempPix);
         }
@@ -560,7 +575,6 @@ public class NativeImageLoader extends BaseImageLoader {
             image = converter.convert(writable.getFrame());
         }
         Mat image2 = null, image3 = null, image4 = null;
-
         if (channels > 0 && image.channels() != channels) {
             int code = -1;
             switch (image.channels()) {
@@ -824,18 +838,20 @@ public class NativeImageLoader extends BaseImageLoader {
         INDArrayIndex[] index = null;
         switch (this.multiPageMode) {
             case MINIBATCH:
-                data = Nd4j.create(pixa.n(), 1, pixa.pix(0).h(), pixa.pix(0).w());
+                data = Nd4j.create(pixa.n(), 1, 1, pixa.pix(0).h(), pixa.pix(0).w());
                 break;
             case CHANNELS:
-                data = Nd4j.create(1, pixa.n(), pixa.pix(0).h(), pixa.pix(0).w());
+                data = Nd4j.create(1, pixa.n(), 1, pixa.pix(0).h(), pixa.pix(0).w());
                 break;
             case FIRST:
-                data = Nd4j.create(1, 1, pixa.pix(0).h(), pixa.pix(0).w());
+                data = Nd4j.create(1, 1, 1, pixa.pix(0).h(), pixa.pix(0).w());
                 PIX pix = pixa.pix(0);
                 currentD = asMatrix(convert(pix));
                 pixDestroy(pix);
-                index = new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(0),NDArrayIndex.all(),NDArrayIndex.all()};
-                data.put(index , currentD.get(NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()));
+                index = new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
+                        NDArrayIndex.all(), NDArrayIndex.all()};
+                data.put(index , currentD.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all()));
                 return data;
             default: throw new UnsupportedOperationException("Unsupported MultiPageMode: " + multiPageMode);
         }
@@ -846,14 +862,14 @@ public class NativeImageLoader extends BaseImageLoader {
             //TODO to change when 16-bit image is supported
             switch (this.multiPageMode) {
                 case MINIBATCH:
-                    index = new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all()};
+                    index = new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all()};
                     break;
                 case CHANNELS:
-                    index = new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(i),NDArrayIndex.all(),NDArrayIndex.all()};
+                    index = new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()};
                     break;
                 default: throw new UnsupportedOperationException("Unsupported MultiPageMode: " + multiPageMode);
             }
-            data.put(index , currentD.get(NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()));
+            data.put(index , currentD.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()));
         }
 
         return data;
