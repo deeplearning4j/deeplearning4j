@@ -256,7 +256,7 @@ public class BERTGraphTest {
         assertEquals(exp3, softmax.getRow(3));
     }
 
-    @Test @Ignore   //AB ignored 08/04/2019 until fixed
+    @Test //@Ignore   //AB ignored 08/04/2019 until fixed
     public void testBertTraining() throws Exception {
         String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
@@ -307,10 +307,22 @@ public class BERTGraphTest {
 
         SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
 
+        /*
+        Set<String> floatConstants = new HashSet<>(Arrays.asList(
+                "bert/embeddings/one_hot/on_value",
+                "bert/embeddings/one_hot/off_value",
+                "bert/embeddings/LayerNorm/batchnorm/add/y",    //Scalar - Eps Constant?
+                "bert/embeddings/dropout/keep_prob",
+                "bert/encoder/ones",
+                "bert/embeddings/dropout/random_uniform/min",   //Dropout scalar values
+                "bert/embeddings/dropout/random_uniform/max"
+
+        ));*/
+
         //For training, convert weights and biases from constants to variables:
         for(SDVariable v : sd.variables()){
-            if(v.isConstant() && v.dataType().isFPType()){
-                log.info("Converting to variable: {} - shape {}", v.getVarName(), v.shape());
+            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar()){    //Skip scalars - trainable params
+                log.info("Converting to variable: {} - dtype: {} - shape: {}", v.getVarName(), v.dataType(), Arrays.toString(v.getArr().shape()));
                 v.convertToVariable();
             }
         }
