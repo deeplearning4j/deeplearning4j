@@ -1994,7 +1994,7 @@ TEST_F(DeclarableOpsTests12, pad_tests27) {
 
     nd4j::ops::pad op;
     Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
-    z.printIndexedBuffer();
+    // z.printIndexedBuffer();
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(exp.isSameShapeStrict(&z));
@@ -2033,7 +2033,7 @@ TEST_F(DeclarableOpsTests12, Pad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0});
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("PAD_SGO");
+    // res->at(0)->printIndexedBuffer("PAD_SGO");
     // exp.printIndexedBuffer("PAD_EXP");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;

@@ -219,8 +219,6 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 template<typename T>
 void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
 
-    const T padVal = padValue.e<T>(0);
-
     const T* x = input.bufferAsT<T>();
           T* z = output.bufferAsT<T>();
 
@@ -237,6 +235,8 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
     std::vector<Nd4jLong> coords(rank);  // we use the same coordinates storage both for input and output since their ranks are the same
     
     if(mode == 0) { // CONSTANT case
+
+        const T padVal = padValue.e<T>(0);
 
         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
         for(uint i = 0; i < zLen; ++i) {    
