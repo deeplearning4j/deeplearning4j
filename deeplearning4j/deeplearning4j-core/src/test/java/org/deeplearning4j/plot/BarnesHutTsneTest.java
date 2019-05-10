@@ -191,11 +191,9 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCorrectness1() throws IOException {
+    public void testCorrectness1() {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).theta(0.5).invertDistanceMetric(false)
-                .useAdaGrad(false).build();
 
         double[] aData = new double[]{
                 0.2999816948164936, 0.26252049735806526, 0.2673853427498767, 0.8604464129156685, 0.4802652829902563, 0.10959096539488711, 0.7950242948008909, 0.5917848948003486,
@@ -207,8 +205,25 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.08651136699915507, 0.7445210640026082, 0.6547649514127559, 0.3384719042666908, 0.05816723105860,0.6248951423054205, 0.7431868493349041};
         INDArray data = Nd4j.createFromArray(aData).reshape(11,5);
 
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).perplexity(3.0).theta(0.5).invertDistanceMetric(false)
+                .useAdaGrad(false).staticInit(data).build();
+
         b.fit(data);
-        System.out.println(b.getData());
+
+        double[] expectedData = new double[]{ 0.5451,    0.6205,    0.2395,    0.2763,    0.5539,
+                                                0.5796,    0.6043,    0.2989,    0.3991,    0.5495,
+                                                0.6208,    0.5962,    0.3347,    0.3880,    0.5504,
+                                                0.4863,    0.6128,    0.3025,    0.5347,    0.5721,
+                                                0.5271,    0.5858,    0.3098,    0.5463,    0.5679,
+                                                0.5276,    0.6152,    0.2826,    0.3994,    0.5945,
+                                                0.5429,    0.5873,    0.2973,    0.3980,    0.5465,
+                                                0.5489,    0.6035,    0.2789,    0.3568,    0.5781,
+                                                0.5045,    0.6420,    0.2908,    0.4194,    0.5568,
+                                                0.5449,    0.5985,    0.2805,    0.3793,    0.5555,
+                                                0.5845,    0.5949,    0.3355,    0.4766,    0.5480};
+        INDArray expectedArray = Nd4j.createFromArray(expectedData).reshape(11,5);
+        for (int i = 0; i < expectedArray.rows(); ++i)
+            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-3);
     }
 
     @Test

@@ -76,7 +76,6 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 public class BarnesHutTsne implements Model {
 
 
-
     public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
 
@@ -114,6 +113,8 @@ public class BarnesHutTsne implements Model {
     private int vpTreeWorkers;
     protected transient TrainingListener trainingListener;
     protected WorkspaceMode workspaceMode;
+    private Initializer initializer;
+
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
             .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
@@ -137,14 +138,14 @@ public class BarnesHutTsne implements Model {
                          double minGain,int vpTreeWorkers) {
         this(numDimensions, simiarlityFunction, theta, invert, maxIter, realMin, initialMomentum, finalMomentum,
                 momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance, learningRate,
-                useAdaGrad, perplexity, TrainingListener, minGain, vpTreeWorkers, WorkspaceMode.NONE);
+                useAdaGrad, perplexity, TrainingListener, minGain, vpTreeWorkers, WorkspaceMode.NONE, null);
     }
 
     public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
                          double realMin, double initialMomentum, double finalMomentum, double momentum,
                          int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
                          double learningRate, boolean useAdaGrad, double perplexity, TrainingListener TrainingListener,
-                         double minGain,int vpTreeWorkers, WorkspaceMode workspaceMode) {
+                         double minGain,int vpTreeWorkers, WorkspaceMode workspaceMode, INDArray staticInput) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -167,6 +168,7 @@ public class BarnesHutTsne implements Model {
         this.workspaceMode = workspaceMode;
         if(this.workspaceMode == null)
             this.workspaceMode = WorkspaceMode.NONE;
+        initializer = (staticInput != null) ? new Initializer(staticInput) : new Initializer();
     }
 
 
@@ -305,7 +307,6 @@ public class BarnesHutTsne implements Model {
             }
         }
         return vals;
-
     }
 
     @Override
@@ -537,6 +538,23 @@ public class BarnesHutTsne implements Model {
         return ret;
     }
 
+    public class Initializer {
+
+        private INDArray staticData;
+
+        public Initializer() {}
+
+        public Initializer(INDArray input) {
+            this.staticData = input;
+        }
+
+        public INDArray initData() {
+            if (staticData != null)
+                return staticData;
+            return randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+        }
+    }
+
     @Override
     public void fit() {
         if (theta == 0.0) {
@@ -548,7 +566,7 @@ public class BarnesHutTsne implements Model {
         } else {
             //output
             if (Y == null) {
-                Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+                Y = initializer.initData();
             }
 
             MemoryWorkspace workspace =
@@ -571,7 +589,6 @@ public class BarnesHutTsne implements Model {
                 vals.muli(12);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
@@ -610,7 +627,7 @@ public class BarnesHutTsne implements Model {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        
+
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray yGrads = gradient;
@@ -900,8 +917,15 @@ public class BarnesHutTsne implements Model {
         private int vpTreeWorkers = 1;
         protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
+        private INDArray staticInput;
+
         public Builder vpTreeWorkers(int vpTreeWorkers) {
             this.vpTreeWorkers = vpTreeWorkers;
+            return this;
+        }
+
+        public Builder staticInit(INDArray staticInput) {
+            this.staticInput = staticInput;
             return this;
         }
 
@@ -1000,7 +1024,7 @@ public class BarnesHutTsne implements Model {
         public BarnesHutTsne build() {
             return new BarnesHutTsne(numDim, similarityFunction, theta, invert, maxIter, realMin, initialMomentum,
                     finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
-                    learningRate, useAdaGrad, perplexity, null, minGain, vpTreeWorkers, workspaceMode);
+                    learningRate, useAdaGrad, perplexity, null, minGain, vpTreeWorkers, workspaceMode, staticInput);
         }
 
     }
