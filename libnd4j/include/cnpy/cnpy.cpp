@@ -629,15 +629,19 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata,
     dict += mapType<T>();
     dict += tostring(wordSize);
     dict += "', 'fortran_order': False, 'shape': (";
-    dict += tostring(shape[0]);
-    for(int i = 1; i < ndims;i++) {
-        dict += ", ";
-        dict += tostring(shape[i]);
-    }
+    if (ndims > 0) {
+        dict += tostring(shape[0]);
+        for (int i = 1; i < ndims; i++) {
+            dict += ", ";
+            dict += tostring(shape[i]);
+        }
 
-    if(ndims == 1)
-        dict += ",";
+        if (ndims == 1)
+            dict += ",";
+    }
+    // 0D case still requires close
     dict += "), }";
+
     //pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10 bytes. dict needs to end with \n
     int remainder = 64 - (10 + dict.size()) % 64;
     dict.insert(dict.end(),remainder,' ');
