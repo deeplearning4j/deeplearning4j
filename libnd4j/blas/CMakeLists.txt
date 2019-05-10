@@ -196,8 +196,10 @@ if(CUDA_BLAS)
             endif()
 
         else()
+            # debug only
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--export-dynamic -rdynamic")
             SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --export-dynamic")
+
 			if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 9
 				message("CUDA 10 Debug build")
                 if ("${COMPUTE}" STREQUAL "all")
@@ -339,8 +341,10 @@ elseif(CPU_BLAS)
         endif()
     endif()
 
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
+    endif()
 
     #install(TARGETS mySharedLib DESTINATION /some/full/path)
     install(TARGETS ${LIBND4J_NAME} DESTINATION  .)
