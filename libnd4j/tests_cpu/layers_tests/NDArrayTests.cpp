@@ -1687,6 +1687,39 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestVarianceAlongDimension2) {
+    float xBuff[] =   {1, 2, 3, 4, 5, 6};
+    float expBuff[] = {0.666667, 0.666667};
+    Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
+    Nd4jLong expShapeInfo[] = {1, 2, 1, 8192, 1, 99};
+
+
+    NDArray x(xBuff, xShapeInfo);
+    NDArray exp(expBuff, expShapeInfo);
+
+    auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
+    result->printIndexedBuffer("VARIANCE");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete result;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestVarianceAlongDimension3) {
+
+
+    NDArray x = NDArrayFactory::create<double>('c', {10, 10});//(xBuff, xShapeInfo);
+    NDArray exp = NDArrayFactory::create<double>('c', {10});//(expBuff, expShapeInfo);
+    x.linspace(1); // 1, 2, 3, ..., 100
+    auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
+    result->printIndexedBuffer("VARIANCE");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSubRowVector1) {    
     float xBuff[] = {6, 7, 8, 9};
     float yBuff[] = {1, 2};
