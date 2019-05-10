@@ -13,6 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
