@@ -538,10 +538,109 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (context, inArrs, output), LIBND4J_TYPES);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void clipByNormInplaceKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong* shape, Nd4jLong* inputOffsets, T* norm2Buf, Nd4jLong* norm2shape, T clipNorm) {
+        for (int arr = blockIdx.x; arr < numOfSubArrs; arr += gridDim.x) {
+            __shared__ T* z;
+            __shared__ Nd4jLong len;
+            if (threadIdx.x == 0) {
+                len = shape::length(shape);
+                z = inputBuffer + inputOffsets[arr];
+            }
+            __syncthreads();
+            for (int j = threadIdx.x; j < len; j+= blockDim.x) {
+                auto xIndex = shape::getIndexOffset(j, shape, len);
+
+                if(norm2Buf[arr] > clipNorm)
+                z[xIndex] *= clipNorm / norm2Buf[arr]; // case with ews = 1 and ordering is 'c'
+            }
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void clipByNormKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong* shape, Nd4jLong* inputOffsets, T* outputBuffer, Nd4jLong* outputShape, Nd4jLong* outputOffsets, T* norm2Buf, Nd4jLong* norm2shape, T clipNorm) {
+        for (Nd4jLong arr = blockIdx.x; arr < numOfSubArrs; arr += gridDim.x) {
+            __shared__ T* x, *z;
+            __shared__ Nd4jLong lenX, lenZ;
+            __shared__ T norm2;
+
+            if (threadIdx.x == 0) {
+                lenX = shape::length(shape);
+                x = inputBuffer + inputOffsets[arr];
+                z = outputBuffer + outputOffsets[arr];
+                lenZ = shape::length(outputShape);
+                norm2 = norm2Buf[shape::getIndexOffset(arr, norm2shape, numOfSubArrs)];
+                //printf("%d: %lf (vs %lf) %lld %lld\n", arr, norm2, clipNorm, lenX, lenZ);
+            }
+            __syncthreads();
+            for (Nd4jLong j = threadIdx.x; j < lenZ; j+= blockDim.x) {
+                auto xIndex = shape::getIndexOffset(j, shape, lenX);
+                auto zIndex = shape::getIndexOffset(j, outputShape, lenZ);
+                if(norm2 > clipNorm) {
+                    z[zIndex] = x[xIndex] * clipNorm / norm2; // case with ews = 1 and ordering is 'c'
+                } else {
+                    z[zIndex] = x[xIndex];
+                }
+                //printf("%lld: %lf %lf\n", j, z[zIndex], x[xIndex]);
+            }
+            __syncthreads();
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByNorm_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    static void clipByNorm_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, NDArray const& clipNormA, const bool isInplace) {
+        const int rank = input.rankOf();
+        auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+        clipNormA.syncToHost();
+        //norm2.printBuffer("Norm2");
+        T const clipNorm = clipNormA.e<T>(0);
+        //clipNormA.printBuffer("ClipNorm");
+        auto stream = context->getCudaStream();
+        if (isInplace) {
+            if(norm2.lengthOf() == 1) {
+                norm2.syncToHost();
+                T norm2Val = norm2.e<T>(0);
+                if(norm2Val > clipNorm)
+                    input *= clipNorm / norm2Val;
+            }
+            else {
 
+                std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
+                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
+                //auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
+                T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
+                T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
+
+                clipByNormInplaceKernel<T><<<256, 512, 1024, *stream>>>(numOfSubArrs, inputBuffer, packX.specialShapeInfo(), packX.specialOffsets(), norm2buf, norm2.specialShapeInfo(), clipNorm);
+            }
+        }
+        else {
+
+            if(norm2.lengthOf() == 1) {
+                norm2.syncToHost();
+                T norm2Val = norm2.e<T>(0);
+
+                if(norm2Val > clipNorm)
+                    output.assign( input * (clipNorm / norm2Val));
+                else
+                    output.assign( input );
+            }
+            else {
+
+                std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
+                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
+                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimensions);
+                T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
+                T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
+                T* outputBuffer = reinterpret_cast<T*>(output.specialBuffer());
+
+                clipByNormKernel<T><<<256, 512, 1024, *stream>>>(numOfSubArrs, inputBuffer, packX.specialShapeInfo(), packX.specialOffsets(), outputBuffer, packZ.specialShapeInfo(), packZ.specialOffsets(), norm2buf, norm2.specialShapeInfo(), clipNorm);
+            }
+        }
     }
 
     void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
