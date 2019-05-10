@@ -548,8 +548,7 @@ public class BarnesHutTsne implements Model {
         } else {
             //output
             if (Y == null) {
-                //Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
-                Y = x;
+                Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
             }
 
             MemoryWorkspace workspace =
@@ -611,8 +610,7 @@ public class BarnesHutTsne implements Model {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-
-
+        
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray yGrads = gradient;
