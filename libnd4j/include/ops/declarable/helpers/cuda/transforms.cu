@@ -70,6 +70,126 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 
+///////////////////////////////////////////////////////////////////
+// x - input, y - paddings, z - output
+template<typename X, typename Y>
+__global__ static void padCuda(const int mode,
+                               const void *vx, const Nd4jLong *xShapeInfo,
+                               const void *vy, const Nd4jLong *yShapeInfo,
+                                     void *vz, const Nd4jLong *zShapeInfo,
+                               const void *vPadVal) {
+
+    const X padVal = *reinterpret_cast<const X*>(vPadVal);
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Y*>(vy);
+          auto z = reinterpret_cast<X*>(vz);
+
+    __shared__ int rank, rankMinusOne;
+    __shared__ Nd4jLong zLen, yLen, totalThreads, *coord, *xShape, *zShape, *xStride, *zStride, shift1, shift2, yStride0;
+    
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        coord    = reinterpret_cast<Nd4jLong*>(shmem);
+        zLen     = shape::length(zShapeInfo);
+        xShape   = shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo));
+        zShape   = shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo));
+        xStride  = shape::stride(const_cast<Nd4jLong*>(xShapeInfo));
+        zStride  = shape::stride(const_cast<Nd4jLong*>(zShapeInfo));
+        yStride0 = shape::stride(const_cast<Nd4jLong*>(yShapeInfo))[0];
+        rank     = shape::rank(xShapeInfo);
+        zLen     = shape::length(zShapeInfo);
+        yLen     = 2 * rank;
+        rankMinusOne = rank - 1;
+        totalThreads = gridDim.x * blockDim.x;
+        shift1 = mode == 1 ? 0 : 1;         // REFLECT : SYMMETRIC
+        shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC        
+    }
+
+    __syncthreads();
+
+    auto xzCoord = coord + threadIdx.x * rank;       // we use xzCoord storage both for x and z arrays    
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(mode == 0) { // CONSTANT case
+        
+        for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+        
+            shape::index2coords(rank, zShape, i, zLen, xzCoord);            
+            const auto zOffset = shape::getOffset(0, zShape, zStride, xzCoord, rank);
+    
+            bool within = true;
+            for(int j = rankMinusOne; j >= 0; --j) {
+                if(xShape[j] == zShape[j]) continue;
+                const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];
+                if(xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {within = false; break;}
+                else                                                    {xzCoord[j] = xzCoord[j] - left;}
+            }                            
+
+            if(within)
+                z[zOffset] = x[shape::getOffset(0, xShape, xStride, xzCoord, rank)];
+            else 
+                z[zOffset] = padVal;
+        }
+    }
+    else {  // REFLECT and SYMMETRIC cases
+                        
+        for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+            shape::index2coords(rank, zShape, i, zLen, xzCoord);
+            const auto zOffset = shape::getOffset(0, zShape, zStride, xzCoord, rank);
+
+            for(int j = rankMinusOne; j >= 0; --j) {
+
+                if(xShape[j] == zShape[j]) continue;
+                xzCoord[j] = xzCoord[j] - y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];    // are ready to fill middle (within input dimension range)
+                if(xzCoord[j] < 0)               xzCoord[j] = -xzCoord[j] - shift1;                // means fill from left                    
+                else if(xzCoord[j] >= xShape[j]) xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2; // means fill from right
+            }
+    
+            const auto xOffset = shape::getOffset(0, xShape, xStride, xzCoord, rank);
+            z[zOffset] = x[xOffset];
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+                                const int mode,
+                                const void *vx, const Nd4jLong *xShapeInfo, 
+                                const void *vy, const Nd4jLong *yShapeInfo, 
+                                      void *vz, const Nd4jLong *zShapeInfo,
+                                const void* padVal) {
+        
+    padCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(mode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, padVal);
+}
+
+///////////////////////////////////////////////////////////////////
+void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
+
+    PointersManager manager(context, "pad");
+
+    NDArray::prepareSpecialUse({&output}, {&input, &paddings, &padValue});
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = 8 * threadsPerBlock * output.rankOf() + 128;
+
+    const auto xType = input.dataType();
+    const auto yType = paddings.dataType();
+
+    BUILD_DOUBLE_SELECTOR(xType, yType, padCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), mode, input.getSpecialBuffer(), input.getSpecialShapeInfo(), paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), padValue.getSpecialBuffer()), LIBND4J_TYPES, INTEGER_TYPES);
+
+    NDArray::registerSpecialUse({&output}, {&input, &paddings, &padValue});    
+    manager.synchronize();      
+}
+
+
+
+
     //////////////////////////////////////////////////////////////////////////
     void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
 
@@ -111,205 +231,6 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
     }
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
-
-    //////////////////////////////////////////////////////////////////////////
-    // Pad kernels
-    //
-    static __global__ void padFillIndicesKernel(Nd4jLong* outIndices, void* paddingBuffer, Nd4jLong* paddingShape, Nd4jLong* inputShape, bool shortType, int rankBorder) {
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-        const auto step = gridDim.x * blockDim.x;
-//        if (threadIdx.x == 0) {
-//            outIndices[2 * rankBorder + 1] = shortType?reinterpret_cast<int*>(paddingBuffer)[rankBorder]:reinterpret_cast<Nd4jLong*>(paddingBuffer)[pos];
-//            outIndices[2 * rankBorder] = rightBorder;
-//        }
-        __syncthreads();
-
-        for(int i = tid; i < rankBorder + 1; i += step) {
-            Nd4jLong coords[2] = {i, 0};
-            auto pos = shape::getOffset(0, shape::shapeOf(paddingShape), shape::stride(paddingShape), coords, rankBorder + 1);
-            outIndices[2 * i] = shortType?reinterpret_cast<int*>(paddingBuffer)[pos]:reinterpret_cast<Nd4jLong*>(paddingBuffer)[pos];
-            outIndices[2 * i + 1] = outIndices[2 * i] + shape::sizeAt(inputShape, i);
-        }
-    }
-
-    template <typename T>
-    static __global__ void padFillValues(void* outputBuffer, Nd4jLong* outputShape, Nd4jLong* paddingBound,
-            void* inputBuffer, Nd4jLong* inputShape,
-            Nd4jLong* inputTadShape, Nd4jLong* inputTadOffsets, Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets, const int mode, void* value) {
-
-            __shared__ T* z;
-            __shared__ T* x;
-            __shared__ T* val;
-            __shared__ Nd4jLong inputLen;
-            __shared__ Nd4jLong outputLen;
-            __shared__ Nd4jLong rank;
-            __shared__ Nd4jLong lastInDimSize;
-            __shared__ Nd4jLong outTadCount;
-            __shared__ Nd4jLong inTadCount;
-            if (threadIdx.x == 0) {
-                z = reinterpret_cast<T*>(outputBuffer);
-                x = reinterpret_cast<T*>(inputBuffer);
-                inputLen = shape::length(inputShape);
-                outputLen = shape::length(outputShape);
-                if (value && mode == 0) // only for CONSTANT mode
-                    val = reinterpret_cast<T*>(value);
-                else
-                    val = nullptr;
-                rank = shape::rank(outputShape);
-                Nd4jLong lastInDimSize  = shape::sizeAt(inputShape, rank - 1);
-
-                outTadCount = outputLen / shape::length(outputTadShape);
-                inTadCount = inputLen / shape::length(inputTadShape);
-                //printf("%lld, %lld\n", inTadCount, outTadCount);
-            }
-            __syncthreads();
-
-            const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-            const auto step = gridDim.x * blockDim.x;
-            const auto stepY = gridDim.y * blockDim.y;
-            Nd4jLong k = rank - 1;
-            //for (Nd4jLong k = blockIdx.y * gridDim.y + threadIdx.y; k < rank; k += stepY) {
-                for (Nd4jLong i = tid; i < outputLen; i += step) {
-                    if (i >= paddingBound[2 * k] && i < paddingBound[2 * k + 1]) {
-                        if (k == rank - 1)
-                            z[i] = x[i - paddingBound[2 * k]];
-                    }
-                    else if (val)
-                        z[i] = val[0];
-                    else if (mode != 0){
-                        Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
-                        Nd4jLong startR = mode == 1 ? lastInDimSize - 2 : lastInDimSize - 1;        // REFLECT or SYMMETRIC
-                        if (i < paddingBound[2 * k]) {
-                            z[i] = x[paddingBound[2 * k] - i - startL];
-                        }
-                        else {
-                            z[i] = x[i - startR - paddingBound[2 * k + 1] + paddingBound[2 * k] + 1];
-                        }
-                    }
-                }
-            //}
-    }
-
-    template <typename T>
-    static __global__ void setOriginalPadKernel(void* output, Nd4jLong* outputShape, void* input, Nd4jLong* inputShape, Nd4jLong numOfSubArrs, Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets, Nd4jLong* inputTadShape, Nd4jLong inputTadOffsets) {
-
-////#pra/gma omp parallel for schedule(guided)
-//        for(Nd4jLong j = tid; j < numOfSubArrs; j+= step) {
-//
-//            NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
-//            NDArray inSubArr     = input(j, dimsToExclude);
-//            NDArray outSubArrMid = outSubArr1(outIdx[1]);
-//
-//            outSubArrMid.assign(inSubArr);      // assign middle
-//
-//            if(mode == 0)  { // CONSTANT
-//                if(numLeft != 0) {
-//                    NDArray temp = outSubArr1(outIdx[2]);
-//                    temp.assign(padValue);                        // assign left
-//                }
-//                if(numRight != 0) {
-//                    NDArray temp = outSubArr1(outIdx[3]);
-//                    temp.assign(padValue);                        // assign right
-//                }
-//            }
-//            else {                                                              // REFLECT or SYMMETRIC
-//
-//#pragma omp parallel for schedule(guided)
-//                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-//
-//#pragma omp parallel for schedule(guided)
-//                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-//            }
-//        }
-    }
-
-    template<typename T>
-    void pad_(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
-        const int rank = output.rankOf();
-        const int rankBorder = rank - 1;
-        std::vector<int> dimsToExclude({rankBorder});
-        std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
-        //dimsToExclude.pop_back();
-
-//        Nd4jLong numLeft    = paddings.e<Nd4jLong>(rankBorder, 0);
-//        Nd4jLong numRight   = paddings.e<Nd4jLong>(rankBorder, 1);
-        Nd4jLong inDimSize  = input.sizeAt(rankBorder);
-        Nd4jLong outDimSize = output.sizeAt(rankBorder);
-        Nd4jLong* outIdx = nullptr;
-        cudaError_t err = cudaMalloc(&outIdx, 2 * rank * sizeof(Nd4jLong));
-        if (0 != err) {
-            throw cuda_exception::build("Cannot allocate memory for pad indices", err);
-        }
-        err = cudaMemset(outIdx, 0, 2 * rank * sizeof(Nd4jLong));
-        if (0 != err) {
-            throw cuda_exception::build("Cannot initialize memory for pad indices", err);
-        }
-
-       // dim3 launcDim(16, 32, 512);
-        auto stream = context->getCudaStream();
-        bool shortedType = (paddings.dataType() == DataType::INT32);
-        padFillIndicesKernel<<<16, 32, 512, *stream>>>(outIdx, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), input.getSpecialShapeInfo(), shortedType, rankBorder);
-
-        Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-
-        //NDArray outSubArr0 = output(outIdx, true);
-        dim3 launchDim(128, 256, 2048);
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
-
-        if (output.rankOf() == 1)
-        padFillValues<T><<<launchDim.x, launchDim.y, launchDim.z, *stream>>>(output.specialBuffer(),
-                output.specialShapeInfo(), outIdx, input.getSpecialBuffer(), input.getSpecialShapeInfo(),
-                packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), mode, padValue.getSpecialBuffer());
-
-        err = cudaFree(outIdx);
-        if (0 != err) {
-            throw cuda_exception::build("Cannot deallocate memory for pad indices", err);
-        }
-//        err = cudaFree(outIdx);
-//        if (0 != err) {
-//            throw cuda_exception::build("Cannot release memory for pad indices", err);
-//        }
-
-//#pragma omp parallel for schedule(guided)
-//        for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
-//
-//            NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
-//            NDArray inSubArr     = input(j, dimsToExclude);
-//            NDArray outSubArrMid = outSubArr1(outIdx[1]);
-//
-//            outSubArrMid.assign(inSubArr);      // assign middle
-//
-//            if(mode == 0)  { // CONSTANT
-//                if(numLeft != 0) {
-//                    NDArray temp = outSubArr1(outIdx[2]);
-//                    temp.assign(padValue);                        // assign left
-//                }
-//                if(numRight != 0) {
-//                    NDArray temp = outSubArr1(outIdx[3]);
-//                    temp.assign(padValue);                        // assign right
-//                }
-//            }
-//            else {                                                              // REFLECT or SYMMETRIC
-//
-//#pragma omp parallel for schedule(guided)
-//                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-//
-//#pragma omp parallel for schedule(guided)
-//                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-//                    outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-//            }
-//        }
-    }
-
-    void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (context, mode, input, paddings, output, padValue), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void pad_, (nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue), LIBND4J_TYPES);
 
     ////////////////////////////////////////////////////////////////////////
     void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
@@ -860,8 +781,8 @@ void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, 
     }
 
 
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
-
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher,  (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void padCudaLauncher,     (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const int mode, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo, const void* vPadVal), LIBND4J_TYPES, INTEGER_TYPES);
 
 }
 }
