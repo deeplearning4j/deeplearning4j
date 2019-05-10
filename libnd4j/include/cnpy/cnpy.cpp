@@ -638,11 +638,10 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata,
 
         if (ndims == 1)
             dict += ",";
-        dict += "), }";
-    } else {
-        // 0D case
-        dict += "), }";
     }
+    // 0D case still requires close
+    dict += "), }";
+
     //pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10 bytes. dict needs to end with \n
     int remainder = 64 - (10 + dict.size()) % 64;
     dict.insert(dict.end(),remainder,' ');
