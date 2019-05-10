@@ -22,11 +22,16 @@
 #include <stdexcept>
 #include <helpers/logger.h>
 
-// FIXME: linux only!!!
-#include <execinfo.h>
+
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifdef __GNUC__
+
+#include <execinfo.h>
 #include <cxxabi.h>
+
+#endif
 
 namespace nd4j {
     namespace memory {
@@ -42,6 +47,7 @@ namespace nd4j {
             return _INSTANCE;
         }
 
+#ifdef __GNUC__
         std::string demangle(char *message) {
             char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
 
@@ -86,54 +92,65 @@ namespace nd4j {
             }
         }
 
+#endif
+
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
-            Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
+#ifdef __GNUC__
+            if (Environment::getInstance()->isDetectingLeaks()) {
+                auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
-            _locker.lock();
+                _locker.lock();
 
-            void *array[50];
-            size_t size;
-            char **messages;
-            size = backtrace(array, 50);
+                void *array[50];
+                size_t size;
+                char **messages;
+                size = backtrace(array, 50);
 
-            std::string stack("");
-            messages = backtrace_symbols(array, size);
-            for (int i = 1; i < size && messages != NULL; ++i) {
-                stack += demangle(messages[i]) + "\n";
-            }
+                std::string stack("");
+                messages = backtrace_symbols(array, size);
+                for (int i = 1; i < size && messages != NULL; ++i) {
+                    stack += demangle(messages[i]) + "\n";
+                }
 
-            free(messages);
+                free(messages);
 
-            if (stack.find("ConstantTad") != std::string::npos || stack.find("ConstantShape") != std::string::npos) {
+                if (stack.find("ConstantTad") != std::string::npos ||
+                    stack.find("ConstantShape") != std::string::npos) {
+                    _locker.unlock();
+                    return;
+                }
+
+                std::pair<Nd4jLong, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
+                _allocations.insert(pair);
+
                 _locker.unlock();
-                return;
             }
-
-            std::pair<Nd4jLong, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
-            _allocations.insert(pair);
-
-            _locker.unlock();
+#endif
         }
 
         void MemoryTracker::countOut(Nd4jPointer ptr) {
-            Nd4jLong lptr = reinterpret_cast<Nd4jLong>(ptr);
+#ifdef __GNUC__
+            if (Environment::getInstance()->isDetectingLeaks()) {
+                auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
-            _locker.lock();
-            if (_released.count(lptr) > 0) {
-                //throw std::runtime_error("Double free!");
+                _locker.lock();
+                if (_released.count(lptr) > 0) {
+                    //throw std::runtime_error("Double free!");
+                }
+
+                if (_allocations.count(lptr) > 0) {
+                    //auto entry = _allocations[lptr];
+                    //std::string stack("new stack");
+                    //std::pair<Nd4jLong, AllocationEntry> pair(lptr, entry);
+                    //_released.insert(pair);
+
+
+                    _allocations.erase(lptr);
+                }
+
+                _locker.unlock();
             }
-
-            if (_allocations.count(lptr) > 0) {
-                //auto entry = _allocations[lptr];
-                //std::string stack("new stack");
-                //std::pair<Nd4jLong, AllocationEntry> pair(lptr, entry);
-                //_released.insert(pair);
-
-
-                _allocations.erase(lptr);
-            }
-
-            _locker.unlock();
+#endif
         }
 
         void MemoryTracker::summarize() {

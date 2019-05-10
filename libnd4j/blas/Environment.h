@@ -35,6 +35,7 @@ namespace nd4j{
         std::atomic<int> _elementThreshold;
         std::atomic<bool> _verbose;
         std::atomic<bool> _debug;
+        std::atomic<bool> _leaks;
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
         std::atomic<nd4j::DataType> _dataType;
@@ -61,9 +62,11 @@ namespace nd4j{
         void setVerbose(bool reallyVerbose);
         bool isDebug();
         bool isProfiling();
+        bool isDetectingLeaks();
         bool isDebugAndVerbose();
         void setDebug(bool reallyDebug);
         void setProfiling(bool reallyProfile);
+        void setLeaksDetector(bool reallyDetect);
         
         int tadThreshold();
         void setTadThreshold(int threshold);

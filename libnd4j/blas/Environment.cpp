@@ -41,6 +41,7 @@ namespace nd4j {
         _debug.store(false);
         _profile.store(false);
         _precBoost.store(false);
+        _leaks.store(false);
         _dataType.store(nd4j::DataType::FLOAT32);
 
 #ifndef ANDROID
@@ -123,6 +124,14 @@ namespace nd4j {
 
     bool Environment::isProfiling() {
         return _profile.load();
+    }
+
+    bool Environment::isDetectingLeaks() {
+        return _leaks.load();
+    }
+
+    void Environment::setLeaksDetector(bool reallyDetect) {
+        _leaks.store(reallyDetect);
     }
 
     void Environment::setProfiling(bool reallyProfile) {

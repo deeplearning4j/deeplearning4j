@@ -663,7 +663,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
             setShapeInfo(shapeInfoNew);
         }
         else {
-            printf("ssssssssssss\n");
             NDArray temp(order, shape, dataType(), _context);
             this->applyTransform(transform::Assign, &temp, nullptr);
             *this = std::move(temp);
