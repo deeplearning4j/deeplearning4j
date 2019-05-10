@@ -17,6 +17,7 @@
 package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -173,8 +174,11 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getTempFileFromArchive();
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ");
-
+        StopWatch watch = new StopWatch();
+        watch.start();
         b.fit(data);
+        watch.stop();
+        System.out.println("Fit done in " + watch);
         assertEquals(2500, b.getData().size(0));
 
         INDArray expectedRow0 = Nd4j.createFromArray(new double[]{   42.3586,   -3.2896,   24.2033,  -26.8413,    1.5113,   26.0389,    0.5837,   -3.8597,   12.3350,   10.3633,    1.1458,   20.1349,   16.3618,    5.6676,   15.3672,    2.3500,   -7.9997,    4.1572,   13.7659,  -17.2263,    5.8056,  -19.1045,    5.1821,   30.1253,    4.9556,  -12.8043,   -0.2874,   -4.9177,    3.2284,   -2.5196,  -10.4413,  -12.4002,   -4.5725,    5.0985,   16.8147,   33.2440,    9.9996,   -8.2500,    2.8619,   19.9243,   30.7432,   -1.6374,   -7.6915,    1.0639,   -0.0596,  -12.5669,   19.8835,    1.3108,   24.5337,  -15.5811,  -21.2687,   -7.5473,    9.2393,    2.5907,  -14.5563});
