@@ -3016,7 +3016,7 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     data.linspace(1);
     
     auto means = data.reduceAlongDimension(reduce::Sum, {0});
-    auto deviance = data.varianceAlongDimension(variance::SummaryStatsVariance, false, {0}); // = NDArrayFactory::create<double>('c', {10, 10});
+    auto deviance = NDArrayFactory::create<double>('c', {10}, {825., 825. , 825., 825., 825., 825., 825., 825., 825., 825. }); // data.varianceAlongDimension(variance::SummaryStatsVariance, false, {0}); // = NDArrayFactory::create<double>('c', {10, 10});
 
     auto counts = NDArrayFactory::create<double>(10.0);
 
@@ -3026,10 +3026,11 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     auto squared = NDArrayFactory::create<double>('c', {10, 10});
     data.applyTransform(transform::Square, &squared, nullptr);
     auto ssSquared = squared.reduceAlongDimension(reduce::Sum, {0});
+//    ssSquared->printBuffer("Sum squared");
+//    squared.printBuffer("Squared");
     nd4j::ops::normalize_moments op;
     auto results = op.execute({&counts, means, ssSquared}, {0.0}, {0});
     (*means) /= counts;
-
 //    nd4j::ops::normalize_moments op;
 //    auto results = op.execute({&counts, means, deviance}, {0.0}, {});
 
@@ -3041,14 +3042,14 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
 
 //    outputMeans->printIndexedBuffer("Means");
 //    outputDeviance->printIndexedBuffer("Variance");
-//    deviance->printIndexedBuffer("Expected");
+//    deviance.printIndexedBuffer("Expected");
 //    means->printIndexedBuffer("Expected means");
     ASSERT_TRUE(means->isSameShape(outputMeans));
     ASSERT_TRUE(means->equalsTo(outputMeans));    
-    ASSERT_TRUE(deviance->isSameShape(outputDeviance));
-    ASSERT_TRUE(deviance->equalsTo(outputDeviance));    
+    ASSERT_TRUE(deviance.isSameShape(outputDeviance));
+    ASSERT_TRUE(deviance.equalsTo(outputDeviance));
     delete means;
-    delete deviance;
+    //delete deviance;
     delete ssSquared;
 //    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
 //    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    

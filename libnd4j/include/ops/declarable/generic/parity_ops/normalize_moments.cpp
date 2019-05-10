@@ -34,10 +34,10 @@ namespace nd4j {
             auto resVariances = OUTPUT_VARIABLE(1);
 
             // FIXME: double?
-            double shift(0);
+            NDArray shift = NDArrayFactory::create<double>(0.);
             
             if (block.getTArguments()->size() > 0) {
-                shift = T_ARG(0);
+                shift.assign(T_ARG(0));
             }
 
             means->applyScalarArr(scalar::Divide, counts, resMeans, nullptr);
@@ -50,8 +50,8 @@ namespace nd4j {
 //            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans.get(), resVariances, nullptr);
 
-            if (shift != 0) {
-                resMeans->applyScalar(scalar::Add, shift, resMeans, nullptr);
+            if (shift.e<double>(0) != 0) {
+                resMeans->applyScalarArr(scalar::Add, &shift, resMeans, nullptr);
             }
 
             return Status::OK();
