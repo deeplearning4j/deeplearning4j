@@ -1719,6 +1719,21 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension3) {
 
     delete result;
 }
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest, TestVarianceAlongDimension4) {
+
+
+    NDArray x = NDArrayFactory::create<double>('c', {12, 1, 12});//(xBuff, xShapeInfo);
+    NDArray exp = NDArrayFactory::create<double>('c', {1,12});//(expBuff, expShapeInfo);
+    x.linspace(1); // 1, 2, 3, ..., 100
+    exp.assign(1716.);
+    auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
+    result->printIndexedBuffer("VARIANCE4");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete result;
+}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSubRowVector1) {    
