@@ -22,11 +22,16 @@
 #include <stdexcept>
 #include <helpers/logger.h>
 
-// FIXME: linux only!!!
-#include <execinfo.h>
+
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifdef __GNUC__
+
+#include <execinfo.h>
 #include <cxxabi.h>
+
+#endif
 
 namespace nd4j {
     namespace memory {
@@ -42,6 +47,7 @@ namespace nd4j {
             return _INSTANCE;
         }
 
+#ifdef __GNUC__
         std::string demangle(char *message) {
             char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
 
@@ -86,7 +92,10 @@ namespace nd4j {
             }
         }
 
+#endif
+
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
+#ifdef __GNUC__
             if (Environment::getInstance()->isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
@@ -116,9 +125,11 @@ namespace nd4j {
 
                 _locker.unlock();
             }
+#endif
         }
 
         void MemoryTracker::countOut(Nd4jPointer ptr) {
+#ifdef __GNUC__
             if (Environment::getInstance()->isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
@@ -139,6 +150,7 @@ namespace nd4j {
 
                 _locker.unlock();
             }
+#endif
         }
 
         void MemoryTracker::summarize() {
