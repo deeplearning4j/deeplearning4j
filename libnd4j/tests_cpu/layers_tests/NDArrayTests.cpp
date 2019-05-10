@@ -1698,7 +1698,7 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension2) {
     NDArray exp(expBuff, expShapeInfo);
 
     auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
-    result->printIndexedBuffer("VARIANCE");
+    result->printIndexedBuffer("VARIANCE2");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -1712,8 +1712,8 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension3) {
     NDArray exp = NDArrayFactory::create<double>('c', {10});//(expBuff, expShapeInfo);
     x.linspace(1); // 1, 2, 3, ..., 100
     exp.assign(825.f);
-    auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
-    result->printIndexedBuffer("VARIANCE");
+    auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
+    result->printIndexedBuffer("VARIANCE3");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
