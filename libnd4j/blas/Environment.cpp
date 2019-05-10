@@ -125,6 +125,14 @@ namespace nd4j {
         return _profile.load();
     }
 
+    bool Environment::isDetectingLeaks() {
+        return _leaks.load();
+    }
+
+    void Environment::setLeaksDetector(bool reallyDetect) {
+        _leaks.store(reallyDetect);
+    }
+
     void Environment::setProfiling(bool reallyProfile) {
         _profile.store(reallyProfile);
     }
