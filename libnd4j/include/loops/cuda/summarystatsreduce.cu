@@ -230,7 +230,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         sPartials[threadIdx.x] = val;
 
                         for (int x = threadIdx.x; x < tadLength; x += blockDim.x) {
-                            indexX = tadOffsetForBlock + x * tadEWS;
+                            auto indexX = tadOffsetForBlock + x * tadEWS;
                             SummaryStatsData<X> indexVal2;
                             indexVal2.initWithValue(dx[indexX]);
                             sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
