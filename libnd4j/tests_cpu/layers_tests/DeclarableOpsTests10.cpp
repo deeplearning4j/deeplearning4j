@@ -2477,6 +2477,24 @@ TEST_F(DeclarableOpsTests10, pad_tests26) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, pad_tests27) {
+    
+    NDArray input('c', {2,3}, nd4j::DataType::FLOAT32);
+    NDArray paddings('c', {2,2}, {0,0,0,1}, nd4j::DataType::INT32);
+    NDArray exp('c', {2,4}, {1,1,1,0,1,1,1,0}, nd4j::DataType::FLOAT32);   
+    NDArray z('c', {2,4}, nd4j::DataType::FLOAT32);    
+    z = -1.;
+
+    nd4j::ops::pad op;    
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
+    z.printIndexedBuffer();
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(exp.isSameShapeStrict(&z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
 
     NDArray boxes    = NDArrayFactory::create<float>('c', {3,4});
