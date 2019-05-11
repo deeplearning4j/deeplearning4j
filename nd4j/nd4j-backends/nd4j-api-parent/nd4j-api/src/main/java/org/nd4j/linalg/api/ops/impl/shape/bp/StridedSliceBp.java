@@ -74,7 +74,7 @@ public class StridedSliceBp extends DynamicCustomOp {
 
     public StridedSliceBp(SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable grad, @NonNull SDVariable begin, @NonNull SDVariable end,
                           @NonNull SDVariable strides, int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
-        super(null, sameDiff, new SDVariable[]{in, begin, end, strides, grad});
+        super(null, sameDiff, new SDVariable[]{in, grad, begin, end, strides});
         this.beginMask = beginMask;
         this.endMask = endMask;
         this.ellipsisMask = ellipsisMask;
