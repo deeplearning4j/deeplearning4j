@@ -303,9 +303,13 @@ public class BERTGraphTest {
 
         ));*/
 
+        Set<String> floatConstants = new HashSet<>(Arrays.asList(
+                "bert/encoder/ones"
+        ));
+
         //For training, convert weights and biases from constants to variables:
         for(SDVariable v : sd.variables()){
-            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar()){    //Skip scalars - trainable params
+            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar() && !floatConstants.contains(v.getVarName())){    //Skip scalars - trainable params
                 log.info("Converting to variable: {} - dtype: {} - shape: {}", v.getVarName(), v.dataType(), Arrays.toString(v.getArr().shape()));
                 v.convertToVariable();
             }
@@ -366,7 +370,7 @@ public class BERTGraphTest {
         INDArray lossArr = sd.exec(placeholderValues, "loss").get("loss");
         assertTrue(lossArr.isScalar());
         double scoreBefore = lossArr.getDouble(0);
-        for( int i=0; i<100; i++ ){
+        for( int i=0; i<5; i++ ){
             sd.fit(mds);
         }
 
@@ -374,8 +378,8 @@ public class BERTGraphTest {
         assertTrue(lossArr.isScalar());
         double scoreAfter = lossArr.getDouble(0);
 
-        System.out.println("Score Before: " + scoreBefore);
-        System.out.println("Score After: " + scoreAfter);
+        String s = "Before: " + scoreBefore + "; after: " + scoreAfter;
+        assertTrue(s, scoreAfter < scoreBefore);
     }
 
     @Test @Ignore
