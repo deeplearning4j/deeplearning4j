@@ -83,6 +83,8 @@
 #define NATIVE_HALFS
 #endif
 
+#define linkage
+
 #elif __JAVACPP_HACK__
 #define meta_def
 #define op_def
@@ -93,11 +95,14 @@
 #define op_def  __forceinline
 #define meta_def  __forceinline
 #define op_def_special  __forceinline
+#define linkage
 #elif __clang__
 #define op_def inline
 #define op_def_special inline
 #define meta_def inline
+#define linkage static
 #elif __GNUC__
+#define linkage static
 #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 #define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))

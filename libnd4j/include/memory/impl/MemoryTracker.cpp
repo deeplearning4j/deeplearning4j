@@ -24,10 +24,10 @@
 
 
 #include <stdlib.h>
-#include <unistd.h>
 
 #ifdef __GNUC__
 
+#include <unistd.h>
 #include <execinfo.h>
 #include <cxxabi.h>
 

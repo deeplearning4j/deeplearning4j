@@ -20,12 +20,13 @@
 
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <NDArrayFactory.h>
+#include <op_boilerplate.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename T>
-    static void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
+    linkage void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
         auto functor = LAMBDA_TT(x, y){
             return x > (T) 0.f ? y : T(0.f);
         };
@@ -39,7 +40,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return x > (T)0.f ? y : T(0.f);
         };
@@ -53,7 +54,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return x > (T)0.f && x < (T)6.f? y : T(0.f);
         };
@@ -68,7 +69,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return x >= (T)0.f? T(1.f) : T(0.f);
         };
@@ -83,7 +84,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return y * nd4j::math::nd4j_eluderivative<T,T>(x);
         };
@@ -98,7 +99,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return y * simdOps::SELUDerivative<T>::op(x, nullptr);
         };
@@ -113,7 +114,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return y * (3 * x * x);
         };
@@ -129,7 +130,7 @@ namespace helpers {
 
     //return (x >= X(0.f) ? y: -y);
     template <typename T>
-    static void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return x > T(0.f)? y : -y;
         };
@@ -145,7 +146,7 @@ namespace helpers {
     
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
+    linkage void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
         };
@@ -161,7 +162,7 @@ namespace helpers {
 
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
+    linkage void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
         // 1 - labels - 1 / (1 + exp(logits))
         auto functor = LAMBDA_TT(x, y) {            
             if(x <= 0)
@@ -181,7 +182,7 @@ namespace helpers {
     
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             T th = nd4j::math::nd4j_tanh<T,T>(x);
             return y * ((T)1.0f - (th * th));
@@ -198,7 +199,7 @@ namespace helpers {
 
     // return static_cast<X>(d2) * simdOps::HardTanhDerivative<X>::op(d1, nullptr);
     template <typename T>
-    static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             T th = nd4j::math::nd4j_tanh<T,T>(x);
             return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
@@ -214,7 +215,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr);
         };
@@ -229,7 +230,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
         };
@@ -247,7 +248,7 @@ namespace helpers {
     //            return (X) d2 * ((X) 1.0f / (f * f));
 
     template <typename T>
-    static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             T ss = (T)1.f + nd4j::math::nd4j_abs<T>(x);
             return y * ((T) 1.0f  / (ss * ss));
@@ -263,7 +264,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             T p = nd4j::math::nd4j_pow<T, T, T>(static_cast<T>(M_E), x);
             return y * (p / (p + 1.));
@@ -282,7 +283,7 @@ namespace helpers {
 /// \param theSecond
 /// \param theOutput
     template <typename T>
-    static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             T s = nd4j::math::nd4j_sigmoid<T,T>(x);
             return y * (s * ((T) 1.0f - s));
@@ -298,7 +299,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    linkage void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr);
         };
@@ -313,7 +314,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
+    linkage void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
         // reduce along axis with
         std::unique_ptr<NDArray> tempInput(input->dup());
         input->applyTransform(transform::Exp, tempInput.get());
@@ -328,7 +329,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
+    linkage void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         // reduce along axis with
         std::unique_ptr<NDArray> tempInput(input->dup());
         input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get());

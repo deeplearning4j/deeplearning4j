@@ -19,6 +19,7 @@
 // @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ShapeUtils.h>
 #include <numeric>
@@ -30,7 +31,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-__global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
+__global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 								 const void *vy, const Nd4jLong *yShapeInfo,
 									   void *vz) {
 
@@ -62,7 +63,7 @@ __global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
+linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
 
 	preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
 }
@@ -86,7 +87,7 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void softMaxForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+__global__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	// logic of this kernel is based on assumption gridDim = 1
 
@@ -167,7 +168,7 @@ __global__ static void softMaxForVectorCuda(const void *vx, const Nd4jLong *xzSh
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void softMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+linkage void softMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	softMaxForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
 }
@@ -204,7 +205,7 @@ void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& outpu
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+__global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	// logic of this kernel is based on assumption gridDim = 1
 
@@ -285,7 +286,7 @@ __global__ static void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *x
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+linkage void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	logSoftMaxForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
 }
@@ -323,7 +324,7 @@ void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& ou
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+__global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	// logic of this kernel is based on assumption gridDim = 1
 
@@ -405,7 +406,7 @@ __global__ static void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
+linkage void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
 	softMaxDerivForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
 }
@@ -440,7 +441,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-__global__ static void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
+__global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
 								   const void *vAlpha, const Nd4jLong *alphaShapeInfo,
 								   const void *vdLdO,  const Nd4jLong *dLdOShapeInfo,
 										 void *vdLdI,  const Nd4jLong *dLdIShapeInfo,
@@ -491,7 +492,7 @@ __global__ static void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeIn
 
 
 template<typename X, typename Y, typename Z>
-__host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
+__host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
 
 	preluBPCuda<X, Y, Z><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
 }    
@@ -523,7 +524,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 
 
 	template <typename T>
-	static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
+	linkage void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
 		auto routine = LAMBDA_T(_x, threshold) {
 			return _x > (T)threshold ? _x: (T)0.f;
 		};
@@ -535,7 +536,7 @@ __host__ static void preluBPCudaLauncher(const int blocksPerGrid, const int thre
 	}
 
 	template <typename T>
-	static void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+	linkage void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
 
 	}
 

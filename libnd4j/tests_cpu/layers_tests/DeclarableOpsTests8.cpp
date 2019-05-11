@@ -60,7 +60,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -78,7 +78,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test2) {
     auto result = op.execute({&x}, {1.}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -96,7 +96,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test3) {
     auto result = op.execute({&x}, {}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -114,7 +114,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test4) {
     auto result = op.execute({&x}, {1.}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -132,7 +132,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test5) {
     auto result = op.execute({&x}, {}, {});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -150,7 +150,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test6) {
     auto result = op.execute({&x}, {}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -168,7 +168,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test7) {
     auto result = op.execute({&x}, {1.}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -186,7 +186,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test8) {
     auto result = op.execute({&x, &axes}, {}, {}, {true});
     auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -204,7 +204,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -222,7 +222,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test2) {
     auto result = op.execute({&x}, {1.}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -240,7 +240,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test3) {
     auto result = op.execute({&x}, {}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -258,7 +258,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test4) {
     auto result = op.execute({&x}, {1.}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -276,7 +276,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test5) {
     auto result = op.execute({&x}, {}, {});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -294,7 +294,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test6) {
     auto result = op.execute({&x}, {}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -312,7 +312,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test7) {
     auto result = op.execute({&x}, {1.f}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -330,7 +330,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test8) {
     auto result = op.execute({&x}, {0.f,1.f}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     // output->printBuffer("Reduced STDDEV");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -348,7 +348,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test08) {
     auto result = op.execute({&x, &axes}, {}, {}, {false, true});
     auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     // output->printBuffer("Reduced STDDEV08");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -370,28 +370,28 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test1) {
     nd4j::ops::reduce_variance_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0,1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;    
 
     result = op.execute({&x, &gradO2}, {0,0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;    
 
     result = op.execute({&x, &gradO1}, {1,0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -413,28 +413,28 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test2) {
     nd4j::ops::reduce_variance_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0,0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);    
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);        
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output)); 
     delete result;    
 
     result = op.execute({&x, &gradO2}, {0,1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;    
 
     result = op.execute({&x, &gradO1}, {1,1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -456,28 +456,28 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test02) {
     nd4j::ops::reduce_variance_bp op;
 
     auto result = op.execute({&x, &gradO2, &axes}, {}, {}, {false, false});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     auto output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1, &axes}, {}, {}, {true, false});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2, &axes}, {}, {}, {false, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1, &axes}, {}, {}, {true, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -503,28 +503,28 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test3) {
     nd4j::ops::reduce_variance_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0, 0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     auto output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1, 0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {0, 1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1, 1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -545,7 +545,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test1) {
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0,1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);
     // output->printIndexedBuffer();
     ASSERT_TRUE(exp12.isSameShape(output));
@@ -553,21 +553,21 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test1) {
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {0,0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -588,28 +588,28 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test2) {
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0,0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);        
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);        
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output)); 
     delete result;    
 
     result = op.execute({&x, &gradO2}, {0,1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;    
 
     result = op.execute({&x, &gradO1}, {1,1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -619,39 +619,40 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceStDevBP_test02) {
 
+    int ax = 0;
     auto x = NDArrayFactory::create<double>('c', {3,4});
     auto gradO1 = NDArrayFactory::create<double>('c', {1,4}, {1.f,2.f,3.f,4.f});
     auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
     auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-0.4082483f, -0.8164966f, -1.2247449f, -1.6329932f, 0.0, 0.0, 0.0, 0.0, 0.4082483f, 0.8164966f, 1.2247449f, 1.6329932f});
     auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-0.5f, -1.0f, -1.5f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {ax});
     x.linspace(1);
 
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, false});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     auto output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1, &axis}, {}, {}, {true, false});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1, &axis}, {}, {}, {true, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -672,28 +673,28 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test3) {
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO2}, {0,0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);    
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO1}, {1,0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);        
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output)); 
     delete result;    
 
     result = op.execute({&x, &gradO2}, {0,1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
     delete result;    
 
     result = op.execute({&x, &gradO1}, {1,1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
@@ -799,7 +800,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_01) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -819,7 +820,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_02) {
     auto output = result->at(0);    
    // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -839,7 +840,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_3) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -859,7 +860,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_4) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -879,7 +880,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -899,7 +900,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -919,7 +920,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -938,7 +939,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_01) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -958,7 +959,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_02) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -978,7 +979,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_3) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -998,7 +999,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_4) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1019,7 +1020,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_04) {
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1039,7 +1040,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1059,7 +1060,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1079,7 +1080,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1098,7 +1099,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_1) {
     auto result = op.execute({&x}, {}, {0, 1});
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1118,7 +1119,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_2) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1138,7 +1139,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_3) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1158,7 +1159,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_4) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1179,7 +1180,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_04) {
     auto output = result->at(0);
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1199,7 +1200,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1219,7 +1220,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1239,7 +1240,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1259,7 +1260,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_1) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
     // output->printShapeInfo("Output shape");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1279,7 +1280,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_2) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1299,7 +1300,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_3) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1319,7 +1320,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_4) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1340,7 +1341,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_04) {
     auto output = result->at(0);
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1360,7 +1361,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_5) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1380,7 +1381,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_6) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1400,7 +1401,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_7) {
     auto output = result->at(0);    
     // output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1418,7 +1419,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1438,7 +1439,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_2) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1458,7 +1459,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_3) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1478,7 +1479,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_4) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1499,7 +1500,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_04) {
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1519,7 +1520,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1539,7 +1540,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1559,7 +1560,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1577,7 +1578,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1597,7 +1598,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_2) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1617,7 +1618,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_3) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1637,7 +1638,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_4) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1658,7 +1659,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_04) {
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1678,7 +1679,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1698,7 +1699,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1718,7 +1719,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1737,7 +1738,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1756,7 +1757,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_2) {
     auto result = op.execute({&x}, {1.f}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1775,7 +1776,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_3) {
     auto result = op.execute({&x}, {}, {0,2});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1794,7 +1795,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_4) {
     auto result = op.execute({&x}, {1.f}, {0,2});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1814,7 +1815,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_04) {
     auto result = op.execute({&x, &axes}, {}, {}, {true});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1834,7 +1835,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1854,7 +1855,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1874,7 +1875,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1893,7 +1894,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1912,7 +1913,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_2) {
     auto result = op.execute({&x}, {1.f}, {0,1});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1931,7 +1932,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_3) {
     auto result = op.execute({&x}, {}, {0,2});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1950,7 +1951,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_4) {
     auto result = op.execute({&x}, {1.f}, {0,2});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1970,7 +1971,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_04) {
     auto result = op.execute({&x, &axes}, {}, {}, {true});
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1990,7 +1991,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_5) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2010,7 +2011,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_6) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2030,7 +2031,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_7) {
     auto output = result->at(0);    
 //    output->printIndexedBuffer("Result is");
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2123,12 +2124,13 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_BP_4) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_BP_04) {
 
+    int ax = 0;
     auto input = NDArrayFactory::create<double>('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
     auto eps = NDArrayFactory::create<double>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {1.f, 2.f, 3.f, 4.f,
                                                             1.f, 2.f, 3.f, 4.f,
                                                             1.f, 2.f, 3.f, 4.f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {ax});
     //************************************//
 
     nd4j::ops::reduce_sum_bp op;
@@ -2179,7 +2181,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2199,7 +2201,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test2) {
     auto result = op.execute({&x}, {1.}, {0,1});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2219,7 +2221,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test3) {
     auto result = op.execute({&x}, {}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2239,7 +2241,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test4) {
     auto result = op.execute({&x}, {1.f}, {0,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2259,7 +2261,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test5) {
     auto result = op.execute({&x}, {}, {});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2278,7 +2280,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test6) {
     auto result = op.execute({&x}, {}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2297,7 +2299,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test7) {
     auto result = op.execute({&x}, {1.}, {0,1,2});
     auto output = result->at(0);    
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2317,7 +2319,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test8) {
     auto result = op.execute({&x, &axes}, {}, {}, {true});
     auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2338,7 +2340,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
     nd4j::ops::reduce_mean_bp op;
 
     auto result = op.execute({&x, &gradO1}, {0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);
 
     // output->printShapeInfo("o");
@@ -2348,7 +2350,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2369,14 +2371,14 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
     nd4j::ops::reduce_mean_bp op;
 
     auto result = op.execute({&x, &gradO1}, {0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2386,24 +2388,25 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test02) {
 
+    int ax = 0;
     auto x = NDArrayFactory::create<double>('c', {3,4});
     auto gradO1 = NDArrayFactory::create<double>('c', {4},  {1.f, 2.f, 3.f, 4.f});
     auto gradO2 = NDArrayFactory::create<double>('c', {1,4}, {1.f, 2.f, 3.f, 4.f});
     auto exp = NDArrayFactory::create<double>('c', {3,4}, {1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f});
-    auto axis = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {ax});
     x.linspace(1);
 
     nd4j::ops::reduce_mean_bp op;
 
     auto result = op.execute({&x, &gradO1, &axis}, {}, {}, {false});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2, &axis}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2423,14 +2426,14 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
     nd4j::ops::reduce_mean_bp op;
 
     auto result = op.execute({&x, &gradO1}, {0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output)); 
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2447,7 +2450,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test4) {
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO}, {0,1}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());        
+    ASSERT_EQ(Status::OK(), result->status());        
     auto output = result->at(0);        
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -2504,7 +2507,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test1) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto *output = results->at(0);    
 
@@ -2526,7 +2529,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test2) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto *output = results->at(0);    
 
@@ -2548,7 +2551,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test3) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto *output = results->at(0);    
 
@@ -2570,7 +2573,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test4) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2592,7 +2595,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test5) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2614,7 +2617,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test6) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2636,7 +2639,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test7) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2658,7 +2661,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test8) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto *output = results->at(0);    
 
@@ -2678,7 +2681,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test9) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2700,7 +2703,7 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
     nd4j::ops::softmax_cross_entropy_loss_with_logits op;
     auto results = op.execute({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
 
@@ -2873,14 +2876,14 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
     nd4j::ops::reduce_mean_bp op;
 
     auto result = op.execute({&x, &gradO1}, {0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);    
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2899,14 +2902,14 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
     nd4j::ops::reduce_mean_bp op;
     
     auto result = op.execute({&x, &gradO1}, {0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);    
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2925,14 +2928,14 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
     nd4j::ops::reduce_stdev_bp op;
 
     auto result = op.execute({&x, &gradO1}, {0}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     auto output = result->at(0);        
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
     output = result->at(0);    
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2949,7 +2952,7 @@ TEST_F(DeclarableOpsTests8, zeros_as_test1) {
     nd4j::ops::zeros_as op;
 
     Nd4jStatus status = op.execute({&x}, {&y}, {}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    ASSERT_EQ(Status::OK(), status);    
     
     ASSERT_TRUE(y.isSameShape(exp));
     ASSERT_TRUE(y.equalsTo(exp));
@@ -2966,7 +2969,7 @@ TEST_F(DeclarableOpsTests8, zeros_as_test2) {
     nd4j::ops::zeros_as op;
 
     auto result = op.execute({&x}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(Status::OK(), result->status());
     auto y = result->at(0);
 
     ASSERT_TRUE(y->isSameShape(exp));
@@ -2984,7 +2987,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test1) {
     nd4j::ops::ones_as op;
 
     Nd4jStatus status = op.execute({&x}, {&y}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
-    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    ASSERT_EQ(Status::OK(), status);    
     
     ASSERT_TRUE(y.isSameShape(exp));
     ASSERT_TRUE(y.equalsTo(exp));
@@ -3001,7 +3004,7 @@ TEST_F(DeclarableOpsTests8, ones_as_test2) {
     nd4j::ops::ones_as op;
 
     auto results = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(Status::OK(), results->status());
     auto y = results->at(0);
     ASSERT_TRUE(y->isSameShape(exp));
     ASSERT_TRUE(y->equalsTo(exp));
@@ -3070,7 +3073,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_1) {
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {}, {0, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
@@ -3100,7 +3103,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_2) {
 
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {1.}, {0, 1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
@@ -3129,7 +3132,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_3) {
 
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {}, {0, 2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
@@ -3158,7 +3161,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_4) {
 
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {1.}, {0, 2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
@@ -3187,7 +3190,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_6) {
            
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {}, {0,1,2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
@@ -3216,7 +3219,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_7) {
     // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::moments op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(Status::OK(), result->status());    
 
     auto outputMeans = result->at(0);    
     auto outputVariance = result->at(1);    
