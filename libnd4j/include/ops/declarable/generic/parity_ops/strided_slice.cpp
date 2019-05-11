@@ -555,8 +555,8 @@ namespace nd4j {
             } else if (block.width() >= 3) {
                 isLive = true;
 
-                auto v_begin = INPUT_VARIABLE(1);
-                auto v_end = INPUT_VARIABLE(2);
+                auto v_begin = INPUT_VARIABLE(2);
+                auto v_end = INPUT_VARIABLE(3);
 
                 elements = v_begin->lengthOf();
 
@@ -569,7 +569,7 @@ namespace nd4j {
                     end.emplace_back(v_end->e<int>(e));
 
                 if (block.width() >= 4) {
-                    auto v_stride = INPUT_VARIABLE(3);
+                    auto v_stride = INPUT_VARIABLE(4);
 
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSliceBP: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 

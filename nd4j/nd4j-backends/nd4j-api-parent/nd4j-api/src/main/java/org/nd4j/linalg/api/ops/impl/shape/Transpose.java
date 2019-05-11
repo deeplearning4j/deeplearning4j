@@ -49,6 +49,12 @@ public class Transpose extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{i_v});
     }
 
+    public Transpose(SameDiff sameDiff, SDVariable in, int[] permuteDims){
+        super(null, sameDiff, new SDVariable[]{in});
+        this.permuteDims = permuteDims;
+
+    }
+
     public Transpose(INDArray input, INDArray result){
         super(null, new INDArray[]{input}, result == null ? null : new INDArray[]{result}, null, (List<Integer>) null);
     }
@@ -184,8 +190,14 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = sameDiff.transpose(i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable ret;
+        if(permuteDims == null) {
+            ret = sameDiff.transpose(i_v.get(0));
+        } else {
+            int[] reverse = ArrayUtil.invertPermutation(permuteDims);
+            ret = sameDiff.permute(i_v.get(0), reverse);
+        }
+        return Collections.singletonList(ret);
     }
 
     @Override
