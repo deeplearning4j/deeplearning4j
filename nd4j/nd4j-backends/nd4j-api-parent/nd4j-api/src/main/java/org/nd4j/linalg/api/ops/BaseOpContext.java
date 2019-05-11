@@ -43,6 +43,11 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public List<Long> getIArguments(){
+        return fastpath_i;
+    }
+
+    @Override
     public void setTArguments(double... arguments) {
         fastpath_d.clear();
         for (val v:arguments)
@@ -50,10 +55,20 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public List<Double> getTArguments(){
+        return fastpath_d;
+    }
+
+    @Override
     public void setBArguments(boolean... arguments) {
         fastpath_b.clear();
         for (val v:arguments)
             fastpath_b.add(v);
+    }
+
+    @Override
+    public List<Boolean> getBArguments(){
+        return fastpath_b;
     }
 
     @Override
