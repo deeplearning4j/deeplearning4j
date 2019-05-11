@@ -25,7 +25,7 @@
 
 #include <stdlib.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__MINGW64__)
 
 #include <unistd.h>
 #include <execinfo.h>
@@ -47,7 +47,7 @@ namespace nd4j {
             return _INSTANCE;
         }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__MINGW64__)
         std::string demangle(char *message) {
             char *mangled_name = 0, *offset_begin = 0, *offset_end = 0;
 
@@ -95,7 +95,7 @@ namespace nd4j {
 #endif
 
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__MINGW64__)
             if (Environment::getInstance()->isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
@@ -129,7 +129,7 @@ namespace nd4j {
         }
 
         void MemoryTracker::countOut(Nd4jPointer ptr) {
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__MINGW64__)
             if (Environment::getInstance()->isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
