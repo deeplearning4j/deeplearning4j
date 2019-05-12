@@ -6250,12 +6250,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public Context(Pointer p) { super(p); }
         
-            // TODO: maybe override new here as well?
-
-            // CUDA-specific fields
-// #ifdef __CUDACC__
-// #endif
-
             public Context(ContextPrototype prototype, VariableSpace variableSpace) { super((Pointer)null); allocate(prototype, variableSpace); }
             private native void allocate(ContextPrototype prototype, VariableSpace variableSpace);
 
@@ -6396,6 +6390,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setIArguments(@Cast("Nd4jLong*") long[] arguments, int numberOfArguments);
             public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
             public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
+
+            public native void setCudaStream(@Cast("Nd4jPointer") Pointer cudaStream);
         }
     
 
@@ -9610,8 +9606,6 @@ public static final int PREALLOC_SIZE = 33554432;
 
 @Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }
-    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public LaunchContext(Pointer p) { super(p); }
     /** Native array allocator. Access with {@link Pointer#position(long)}. */
     public LaunchContext(long size) { super((Pointer)null); allocateArray(size); }
     private native void allocateArray(long size);
@@ -9627,7 +9621,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif // JCPP
 
 // #endif // CUDA
-
+        public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream) { super((Pointer)null); allocate(cudaStream); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream);
     	public LaunchContext() { super((Pointer)null); allocate(); }
     	private native void allocate();
     	public native Workspace getWorkspace();

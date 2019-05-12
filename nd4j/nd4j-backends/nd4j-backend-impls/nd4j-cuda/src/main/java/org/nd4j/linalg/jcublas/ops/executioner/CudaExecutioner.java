@@ -2377,9 +2377,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         Nd4j.getExecutioner().commit();
+        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-        val context = buildContext();
+        val context = (CudaOpContext) buildContext();
 
+        context.setCudaStream(ctx.getOldStream());
         context.markInplace(op.isInplaceCall());
 
         // transferring rng state
