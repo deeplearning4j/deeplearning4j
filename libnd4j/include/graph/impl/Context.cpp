@@ -104,6 +104,9 @@ namespace nd4j {
 
             for (auto v:_handles)
                 delete v;
+
+            if (_context != nullptr)
+                delete _context;
         }
 
         bool Context::hasWorkspaceProvided() {
@@ -367,7 +370,14 @@ namespace nd4j {
 
         LaunchContext* Context::launchContext() {
             //FIXME: we need proper context to be shared here
-            return LaunchContext::defaultContext();
+            if (_cudaStream == nullptr) {
+                return LaunchContext::defaultContext();
+            } else {
+                if (_context == nullptr)
+                    _context = new LaunchContext(_cudaStream);
+
+                return _context;
+            }
         }
 
         unsigned long Context::width() {
@@ -387,7 +397,7 @@ namespace nd4j {
         }
 
         void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
-            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
             array->triggerAllocationFlag(false);
 
             if (_fastpath_in.size() < index + 1)
@@ -411,7 +421,7 @@ namespace nd4j {
             if (_fastpath_out.size() < index + 1)
                 _fastpath_out.resize(index+1);
 
-            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
+            auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
             array->triggerAllocationFlag(false);
 
             _fastpath_out[index] = array;
@@ -437,6 +447,12 @@ namespace nd4j {
             _bArgs.reserve(numberOfArguments);
             for (int e = 0; e < numberOfArguments; e++)
                 _bArgs.push_back(arguments[e]);
+        }
+
+        void Context::setCudaStream(Nd4jPointer cudaStream) {
+#ifdef __CUDABLAS__
+            _cudaStream = cudaStream;
+#endif
         }
     }
 }

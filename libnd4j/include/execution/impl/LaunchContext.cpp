@@ -115,6 +115,14 @@ LaunchContext::LaunchContext() {
 #endif
 }
 
+    LaunchContext::LaunchContext(Nd4jPointer cudaStream) {
+#ifdef __CUDABLAS__
+        _cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+#else
+        // no-op
+#endif
+    }
+
 LaunchContext* LaunchContext::defaultContext() {
     // TODO: we need it to be device-aware
     if (LaunchContext::_contexts.empty()) {

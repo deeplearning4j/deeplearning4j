@@ -57,22 +57,22 @@ namespace nd4j {
             // branch for divergent_op
             int _branch = 0;
 
+            Nd4jPointer _cudaStream;
+
+            // temporary context for standalone ops execution
+            LaunchContext* _context = nullptr;
+
             std::vector<nd4j::DataType> _dataTypes;
 #ifdef HAVE_MKLDNN
             std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
+#else
+            std::vector<Nd4jLong> _mkldnnStreams;
 #endif
 
             std::vector<NDArray*> _fastpath_in;
             std::vector<NDArray*> _fastpath_out;
             std::vector<NDArray*> _handles;
         public:
-            // TODO: maybe override new here as well?
-
-            // CUDA-specific fields
-#ifdef __CUDACC__
-            cudaStream_t* _stream;
-#endif
-
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
             explicit Context(int nodeId, VariableSpace *variableSpace = nullptr);
@@ -200,6 +200,8 @@ namespace nd4j {
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
             void setBArguments(bool *arguments, int numberOfArguments);
+
+            void setCudaStream(Nd4jPointer cudaStream);
         };
     }
 }

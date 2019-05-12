@@ -49,6 +49,9 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
     auto z = result->at(0);
 
+    exp.printIndexedBuffer("E");
+    z->printIndexedBuffer("Z");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 

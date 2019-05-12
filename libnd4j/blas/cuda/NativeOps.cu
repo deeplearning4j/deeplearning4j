@@ -1749,7 +1749,8 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo) {
 
-	NativeOpExecutioner::execReduce3Scalar(nullptr, opNum,hX,hXShapeInfo,dX, dXShapeInfo,extraParams,hY,hYShapeInfo,dY,dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    LaunchContext lc(&extraPointers[1]);
+	NativeOpExecutioner::execReduce3Scalar(&lc, opNum,hX,hXShapeInfo,dX, dXShapeInfo,extraParams,hY,hYShapeInfo,dY,dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1762,8 +1763,9 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 							void *hScalar, Nd4jLong *hScalarShapeInfo,
 							void *dScalar, Nd4jLong *dScalarShapeInfo,
 							void *extraParams) {
-	
-	NativeOpExecutioner::execScalarBool(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
+
+    LaunchContext lc(&extraPointers[1]);
+	NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1795,8 +1797,9 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 						void *hScalar, Nd4jLong *hScalarShapeInfo,
 						void *dScalar, Nd4jLong *dScalarShapeInfo,
 						void *extraParams) {
-	
-	NativeOpExecutioner::execScalar(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
+
+    LaunchContext lc(&extraPointers[1]);
+	NativeOpExecutioner::execScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
 }
 
 ////////////////////////////////////////////////////////////////////////
