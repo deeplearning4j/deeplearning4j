@@ -2410,8 +2410,9 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 	for (int e = 0; e < numInputs; e++) {
 		auto shape = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 		void *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+        void *bufferD = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
 
-		inputs[e] = new nd4j::NDArray(buffer, shape);
+		inputs[e] = new nd4j::NDArray(buffer, bufferD, shape);
 	}
 
 	// if not inplace - transferring output arrays
@@ -2421,6 +2422,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 			// we want to keep original output shape intact
 			auto shape = shape::copyShape(reinterpret_cast<Nd4jLong *>(outputShapes[e]));
 			void *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
+            void *bufferD = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
 
 			// FIXME: revisit this.
 			bool canNullify = true;
@@ -2435,7 +2437,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 			if (canNullify)
 				memset((uint8_t *) buffer, '\0', shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
-			auto array = new nd4j::NDArray(buffer, shape);
+			auto array = new nd4j::NDArray(buffer, bufferD, shape);
 			outputs[e] = array;
 
 			// and we want to release shape copy once we're done
@@ -2467,34 +2469,6 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 			if (outputs[e]->ordering() != shape::order(reinterpret_cast<Nd4jLong *>(outputShapes[e])))
 				outputs[e]->streamline(shape::order(reinterpret_cast<Nd4jLong *>(outputShapes[e])));
 		}
-
-/*
-    if (!isInplace) {
-        if (dZ->size() != numOutputs) {
-            return ND4J_STATUS_BAD_OUTPUT;
-        }
-
-        for (int e = 0; e < numOutputs; e++) {
-            auto buffer = (T *) outputBuffers[e];
-            auto shape = (int *) outputShapes[e];
-            nd4j::NDArray<T> tmp(buffer, shape);
-
-            if (tmp.lengthOf() != dZ->at(e)->lengthOf()) {
-                nd4j_printf("Provided output array for [%s] has length of %i, but actual dZ has length of %i\n", op->getOpName()->c_str(), tmp.lengthOf(), dZ->at(e)->lengthOf());
-                return ND4J_STATUS_BAD_OUTPUT;
-            }
-
-            tmp.assign(dZ->at(e));
-        }
-    } else {
-        // if op is inplace, our ResultSet holds pointers
-        dZ->purge();
-    }
-
-
-    delete dZ;
-
-*/
 
 	for (auto v: inputs)
 		delete v;
