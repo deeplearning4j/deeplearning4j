@@ -74,7 +74,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/declarable/BooleanOp.h",
                         "ops/declarable/LogicOp.h",
                         "ops/declarable/OpRegistrator.h",
-                        "graph/LaunchContext.h",
+                        "execution/LaunchContext.h",
                         "array/ShapeDescriptor.h",
                         "array/TadDescriptor.h",
                         "array/TadPack.h",

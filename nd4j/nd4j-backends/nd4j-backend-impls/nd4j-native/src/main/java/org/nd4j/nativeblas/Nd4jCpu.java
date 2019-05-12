@@ -362,9 +362,11 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public native void setVerbose(@Cast("bool") boolean reallyVerbose);
         public native @Cast("bool") boolean isDebug();
         public native @Cast("bool") boolean isProfiling();
+        public native @Cast("bool") boolean isDetectingLeaks();
         public native @Cast("bool") boolean isDebugAndVerbose();
         public native void setDebug(@Cast("bool") boolean reallyDebug);
         public native void setProfiling(@Cast("bool") boolean reallyProfile);
+        public native void setLeaksDetector(@Cast("bool") boolean reallyDetect);
         
         public native int tadThreshold();
         public native void setTadThreshold(int threshold);
@@ -3320,16 +3322,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -3337,16 +3339,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
         public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
         private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
         public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
         private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
         public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
         private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -3370,16 +3372,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
+		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
 		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
+		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
 		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
+		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
 		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -3387,78 +3389,78 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
+        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("nd4j::DataType") int dtype/*=nd4j::DOUBLE*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype);
 
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(other, copyStrides, context); }
-        private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=graph::LaunchContext::defaultContext()*/);
+        public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(other, copyStrides, context); }
+        private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        public NDArray(@Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/) { super((Pointer)null); allocate(dtype, context, isScalar); }
-        private native void allocate(@Cast("nd4j::DataType") int dtype, LaunchContext context/*=graph::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/);
+        public NDArray(@Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/) { super((Pointer)null); allocate(dtype, context, isScalar); }
+        private native void allocate(@Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/);
         public NDArray(@Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
         private native void allocate(@Cast("nd4j::DataType") int dtype);
 
@@ -5705,10 +5707,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable**") @StdVector PointerPointer getPlaceholders();
-            public native RandomBuffer getRNG();
-            public native void setRNG(RandomBuffer rng);
             public native void setWorkspace(Workspace workspace);
-            
+
             public native LaunchContext launchContext();
 
             public native @Cast("bool") boolean hasExternalVariable(int it);
@@ -9574,6 +9574,7 @@ public static final int ALL_FLOATS =DOUBLE;
 // #define op_def inline
 // #define op_def_special inline
 // #define meta_def inline
+public static final int linkage = static;
 // #elif __GNUC__
 // #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 // #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
@@ -22421,7 +22422,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #endif
 
-// Parsed from graph/LaunchContext.h
+// Parsed from execution/LaunchContext.h
 
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
@@ -22454,8 +22455,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <dll.h>
 // #include <op_boilerplate.h>
 // #include <memory/Workspace.h>
+// #include <vector>
 
-@Namespace("nd4j::graph") @NoOffset public static class LaunchContext extends Pointer {
+@Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public LaunchContext(Pointer p) { super(p); }
@@ -22477,9 +22479,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
-	public static native LaunchContext defaultContext();
-}
 
+	    public static native LaunchContext defaultContext();
+
+}
 
 
 
