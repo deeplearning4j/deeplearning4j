@@ -1171,7 +1171,7 @@ namespace nd4j {
 
         ResultSet* allTensorsAlongDimension(const std::vector<int>& dimensions) const;
 
-        ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
+        //ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
 
         ResultSet* allExamples()const ;
 

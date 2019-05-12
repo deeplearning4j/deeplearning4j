@@ -480,16 +480,16 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
         this->assign(scalar);
         return *this;
     }
-    template NDArray& NDArray::operator=(const double scalar);
-    template NDArray& NDArray::operator=(const float scalar);
-    template NDArray& NDArray::operator=(const float16 scalar);
-    template NDArray& NDArray::operator=(const bfloat16 scalar);
-    template NDArray& NDArray::operator=(const Nd4jLong scalar);
-    template NDArray& NDArray::operator=(const int scalar);
-    template NDArray& NDArray::operator=(const int8_t scalar);
-    template NDArray& NDArray::operator=(const uint8_t scalar);
-    template NDArray& NDArray::operator=(const int16_t scalar);
-    template NDArray& NDArray::operator=(const bool scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const double scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const float scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const float16 scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const bfloat16 scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const Nd4jLong scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const int scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const int8_t scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const uint8_t scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const int16_t scalar);
+    template ND4J_EXPORT NDArray& NDArray::operator=(const bool scalar);
 
 
 //////////////////////////////////////////////////////////////////////////

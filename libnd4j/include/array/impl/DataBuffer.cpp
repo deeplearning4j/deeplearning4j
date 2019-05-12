@@ -43,17 +43,18 @@ namespace nd4j {
     T* DataBuffer::primaryAsT() {
         return reinterpret_cast<T*>(_primaryBuffer);
     }
-    template float* DataBuffer::primaryAsT();
-    template double* DataBuffer::primaryAsT();
-    template int* DataBuffer::primaryAsT();
-    template Nd4jLong* DataBuffer::primaryAsT();
+    template ND4J_EXPORT float* DataBuffer::primaryAsT<float>();
+    template ND4J_EXPORT double* DataBuffer::primaryAsT<double>();
+    template ND4J_EXPORT int* DataBuffer::primaryAsT<int>();
+    template ND4J_EXPORT Nd4jLong* DataBuffer::primaryAsT<Nd4jLong>();
 
     template <typename T>
     T* DataBuffer::specialAsT() {
         return reinterpret_cast<T*>(_specialBuffer);
     }
-    template float* DataBuffer::specialAsT();
-    template double* DataBuffer::specialAsT();
-    template int* DataBuffer::specialAsT();
-    template Nd4jLong* DataBuffer::specialAsT();
+    template ND4J_EXPORT float* DataBuffer::specialAsT<float>();
+    template ND4J_EXPORT double* DataBuffer::specialAsT<double>();
+    template ND4J_EXPORT int* DataBuffer::specialAsT<int>();
+    template ND4J_EXPORT Nd4jLong* DataBuffer::specialAsT<Nd4jLong>();
+
 }

@@ -26,10 +26,11 @@
 #include <pointercast.h>
 #include <mutex>
 #include "AllocationEntry.h"
+#include <dll.h>
 
 namespace nd4j {
     namespace memory {
-        class MemoryTracker {
+        class ND4J_EXPORT MemoryTracker {
         private:
             static MemoryTracker* _INSTANCE;
             std::map<Nd4jLong, AllocationEntry> _allocations;

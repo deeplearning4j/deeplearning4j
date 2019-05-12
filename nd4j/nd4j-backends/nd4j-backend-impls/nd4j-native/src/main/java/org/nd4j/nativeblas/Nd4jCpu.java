@@ -4173,9 +4173,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
         public native ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        public native @ByVal ResultSet allTensorsAlongDims(@StdVector IntPointer dimensions);
-        public native @ByVal ResultSet allTensorsAlongDims(@StdVector IntBuffer dimensions);
-        public native @ByVal ResultSet allTensorsAlongDims(@StdVector int[] dimensions);
+        //ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
 
         public native ResultSet allExamples();
 
@@ -9566,19 +9564,28 @@ public static final int ALL_FLOATS =DOUBLE;
 // #ifdef __CUDACC__
 
 // #elif __JAVACPP_HACK__
+
 // #define meta_def
 // #define op_def
 // #define op_def_special
+// #define linkage
+
 // #elif _MSC_VER
+
 // #elif __clang__
+
 // #define op_def inline
 // #define op_def_special inline
 // #define meta_def inline
-public static final int linkage = static;
+// #define linkage
+
 // #elif __GNUC__
+
+// #define linkage
 // #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 // #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 // #define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))
+
 // #endif
 
 
@@ -22654,6 +22661,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define DEV_TESTS_TADDESCRIPTOR_H
 
 // #include "ShapeDescriptor.h"
+// #include <dll.h>
     @Namespace("nd4j") @NoOffset public static class TadDescriptor extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
