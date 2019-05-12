@@ -38,7 +38,8 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
     auto y = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
     auto e = NDArrayFactory::create<float>('c', {3, 5});
-    e.assign(1.f);
+    x.assign(1.f);
+    e.assign(2.f);
 
     nd4j::ops::add op;
     NativeOps nativeOps;
