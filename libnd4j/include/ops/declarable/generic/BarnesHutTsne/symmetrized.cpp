@@ -63,7 +63,7 @@ namespace ops  {
             if (block.getIArguments()->size() > 0)
                 N = INT_ARG(0);
 
-            NDArray* rowCounts = NDArrayFactory::create_<Nd4jLong>('c', {1, N}); //rowP->dup();
+            NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}); //rowP->dup();
             //srowCounts->assign(0);
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
             //rowCounts->printBuffer("Row Counts");

@@ -244,7 +244,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
     auto cols = NDArrayFactory::create<int>('c', {5}, {0, 2, 1, 4, 3});
     auto vals = NDArrayFactory::create<double>('c', {5}, {10., 20., 30., 40., 50.});
     //auto buf = NDArrayFactory::create<double>('c', {4});
-    auto exp1 = NDArrayFactory::create<double>('c', {5,4}, {-1.875000, -1.875000, -1.875000, -1.875000, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
+    auto exp1 = NDArrayFactory::create<double>('c', {5,4}, {-1.846154, -1.846154, -1.846154, -1.846154, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
     //auto exp2 = NDArrayFactory::create<double>({-4., -4., -4., -4.
     //std::vector<NDArray*> exp({&exp1, &exp2});
     data.linspace(1);
@@ -257,6 +257,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
 
 
     ASSERT_EQ(result->status(), Status::OK());
+    result->at(0)->printBuffer("Output");
     ASSERT_TRUE(exp1.equalsTo(result->at(0)));
     delete result;
 }
@@ -267,7 +268,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
     auto cols = NDArrayFactory::create<int>('c', {5}, {1, 2, 0, 4, 3});
     auto vals = NDArrayFactory::create<double>('c', {5}, {10., 20., 30., 40., 50.});
     //auto buf = NDArrayFactory::create<double>('c', {4});
-    auto exp = NDArrayFactory::create<double>('c', {5,4}, {-0.625000, -0.625000, -0.625000, -0.625000, 1.875000, 1.875000, 1.875000, 1.875000, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
+    auto exp = NDArrayFactory::create<double>('c', {5,4}, {-0.622568, -0.622568, -0.622568, -0.622568, 1.846154, 1.846154, 1.846154, 1.846154, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
     //auto exp2 = NDArrayFactory::create<double>({-4., -4., -4., -4.
     //std::vector<NDArray*> exp({&exp1, &exp2});
     data.linspace(1);
@@ -280,7 +281,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
 
 
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Output");
+    //result->at(0)->printBuffer("Output");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
 }
@@ -290,7 +291,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
     auto rows = NDArrayFactory::create<int>('c', {2}, {0, 1});
     auto cols = NDArrayFactory::create<int>('c', {4}, {0, 1, 1, 0});
     auto vals = NDArrayFactory::create<double>('c', {4}, {20., 30., 40., 50.});
-    auto exp = NDArrayFactory::create<double>('c', {1,1}, {0.});
+    auto exp = NDArrayFactory::create<double>('c', {1,1}, {20.});
 //    data.linspace(1);
 
 //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
@@ -309,7 +310,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
     auto rows = NDArrayFactory::create<int>('c', {4}, {0, 2, 2, 3});
     auto cols = NDArrayFactory::create<int>('c', {8}, {0, 1, 1, 0, 0, 1, 1, 1});
     auto vals = NDArrayFactory::create<double>('c', {8}, {20., 30., 40., 50., 120., 130., 140., 150.});
-    auto exp = NDArrayFactory::create<double>('c', {1,5}, {15., 0., 15., 0., 0.});
+    auto exp = NDArrayFactory::create<double>('c', {1,5}, {20., 15., 15., 0., 0.});
 //    data.linspace(1);
 
 //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
@@ -318,7 +319,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {3});
     ASSERT_EQ(result->status(), Status::OK());
-    //result->at(0)->printBuffer("Symmetrized2");
+    result->at(0)->printBuffer("Symmetrized2");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
@@ -341,5 +342,34 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     //ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
+    auto rows = NDArrayFactory::create<int>({0,         9,        18,        27,        36,        45,        54,        63,        72,        81,        90,        99});
+    auto cols = NDArrayFactory::create<int>({4,         3,        10,         8,         6,         7,         1,         5,         9,         4,         9,         8,        10,         2,         0,         6,         7,         3,         6,         8,         3,         9,        10,         1,         4,         0,         5,        10,         0,         4,         6,         8,         9,         2,         5,         7,         0,        10,         3,         1,         8,         9,         6,         7,         2,         7,         9,         3,        10,         0,         4,         2,         8,         1,         2,         8,         3,        10,         0,         4,         9,         1,         5,         5,         9,         0,         3,        10,         4,         8,         1,         2,         6,         2,         0,         3,         4,         1,        10,         9,         7,        10,         1,         3,         7,         4,         5,         2,         8,         6,         3,         4,         0,         9,         6,         5,         8,         7,         1});
+    auto vals = NDArrayFactory::create<double>( {0.6200,    0.1964,    0.1382,    0.0195,    0.0089,    0.0084,    0.0033,    0.0026,    0.0026,    0.5877,    0.2825,    0.0810,    0.0149,    0.0122,    0.0115,    0.0042,    0.0035,    0.0025,    0.6777,    0.1832,    0.0402,    0.0294,    0.0216,    0.0199,    0.0117,    0.0084,    0.0078,    0.6771,    0.1662,    0.0604,    0.0465,    0.0169,    0.0146,    0.0064,    0.0061,    0.0059,    0.6278,    0.2351,    0.0702,    0.0309,    0.0123,    0.0092,    0.0082,    0.0043,    0.0019,    0.7123,    0.0786,    0.0706,    0.0672,    0.0290,    0.0178,    0.0148,    0.0055,    0.0042,    0.5267,    0.3304,    0.1093,    0.0185,    0.0070,    0.0064,    0.0011,    0.0007, 3.1246e-5,    0.7176,    0.0874,    0.0593,    0.0466,    0.0329,    0.0299,    0.0134,    0.0106,    0.0023,    0.6892,    0.1398,    0.0544,    0.0544,    0.0287,    0.0210,    0.0072,    0.0033,    0.0021,    0.6824,    0.1345,    0.0871,    0.0429,    0.0254,    0.0169,    0.0072,    0.0019,    0.0016,    0.6426,    0.1847,    0.1090,    0.0347,    0.0133,    0.0051,    0.0038,    0.0038,    0.0030});
+    //auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000, 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+//    data.linspace(1);
+    auto exp4 = NDArrayFactory::create<double>('c', {1, 108}, {0.6239, 0.1813, 0.1236, 0.03695, 0.00795, 0.03385, 0.0074, 0.0158, 0.0013, 0.0042, 0.0074, 0.3093, 0.2085, 0.051, 0.00895, 0.01605, 0.00245, 0.00705, 0.00125, 0.0021, 0.01605, 0.6022, 0.1615, 0.0233,
+                                                0.0183, 0.0108, 0.0068, 0.0042, 0.0113, 0.00115, 0.1813, 0.00125, 0.0233, 0.65985, 0.0653, 0.0779, 0.03565, 0.05085, 0.03835, 0.02625, 0.6239, 0.3093, 0.0068, 0.0653, 0.2099, 0.0205, 0.0173, 0.0073,
+                                                0.0171, 0.0089, 0.0158, 0.0113, 0.03835, 0.71495, 0.04775, 0.03615, 0.0089, 0.00275, 0.0021, 1.5623E-5, 0.00795, 0.00245, 0.6022, 0.0779, 0.0073, 0.5098, 0.0159, 0.00135, 1.5623E-5, 0.03385, 0.00705,
+                                                0.02625, 0.0171, 0.71495, 0.06515, 0.01835, 0.00775, 0.00115, 0.03695, 0.051, 0.1615, 0.03565, 0.0205, 0.00275, 0.5098, 0.00775, 0.0055, 0.0026, 0.0013, 0.2085, 0.0183, 0.05085, 0.0173, 0.04775,
+                                                0.00135, 0.06515, 0.0026, 0.35855, 0.1236, 0.00895, 0.0108, 0.65985, 0.2099, 0.03615, 0.0159, 0.01835, 0.0055, 0.35855});
+//    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
+//    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+//    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+    nd4j::ops::barnes_symmetrized op;
+    auto result = op.execute({&rows, &cols, &vals}, {}, {11});
+    ASSERT_EQ(result->status(), Status::OK());
+    auto res = result->at(0);
+    res->printBuffer("Symmetrized4");
+    exp4.printBuffer("Expected sym");
+    nd4j_printf("Total res is {1, %lld}\n", res->lengthOf());
+    nd4j_printf("Expected is {1, %lld}\n", exp4.lengthOf());
+
+    //exp.printBuffer("EXPect symm3");
+    //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
+    ASSERT_TRUE(exp4.equalsTo(res));
     delete result;
 }

@@ -26,7 +26,7 @@ namespace helpers {
 
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
-        Nd4jLong* pRowCounts = reinterpret_cast<Nd4jLong*>(rowCounts.buffer());
+        int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
         for (int n = 0; n < N; n++) {
@@ -68,7 +68,8 @@ namespace helpers {
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
         symRowP.insert(symRowP.begin(),0);
         //symRowP(1, {0}) = *rowCounts;
-//        for (int n = 0; n < N; n++)
+        for (int n = 0; n < N; n++)
+            symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
 //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
@@ -84,35 +85,38 @@ namespace helpers {
 
             for (int i = begin; i < bound; i++) {
                 bool present = false;
-                int start = pRows[pCols[i]];
-                int end = pRows[pCols[i]] + 1;
+                int colPI = pCols[i];
+                int start = pRows[colPI];
+                int end = pRows[colPI + 1];
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
+                //PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
                 for (int m = start; m < end; m++) {
                     if (pCols[m] == n) {
                         present = true;
-                        if (n < pCols[i]) {
+                        if (n <= pCols[i]) {
+                            //pOutput[sym_row_P[n]        + offset[n]]        = col_P[i];
+                            //pOutput[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
                             pOutput[symRowP[n] + offset[n]] = pVals[i] + pVals[m];
-                            pOutput[symRowP[pCols[i]] + offset[pCols[i]]] = pVals[i] + pVals[m];
+                            pOutput[symRowP[colPI] + offset[colPI]] = pVals[i] + pVals[m];
                         }
                     }
                 }
 
                 // If (colP[i], n) is not present, there is no addition involved
                 if (!present) {
-                    int colPI = pCols[i];
+                    //int colPI = pCols[i];
                     if (n <= colPI) {
-                        pOutput[symRowP[n] + offset[n]] = T(colPI);
-                        pOutput[symRowP[pCols[i]] + offset[colPI]] = T(n);
+                        //pOutput[symRowP[n] + offset[n]] = T(colPI);
+                        //pOutput[symRowP[pCols[i]] + offset[colPI]] = T(n);
                         pOutput[symRowP[n] + offset[n]] = pVals[i];
                         pOutput[symRowP[colPI] + offset[colPI]] = pVals[i];
                     }
 
                 }
                 // Update offsets
-                if (!present || (present && n <= pCols[i])) {
+                if (!present || (present && n <= colPI)) {
                     ++offset[n];
-                    int colPI = pCols[i];
+
                     if (colPI != n)
                         ++offset[colPI];
                 }
