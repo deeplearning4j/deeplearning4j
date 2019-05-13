@@ -41,6 +41,9 @@
         (nd4j::DataType::BOOL, bool), \
         (nd4j::DataType::INT8, int8_t), \
         (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::UINT16, uint16_t), \
+        (nd4j::DataType::UINT32, uint32_t), \
+        (nd4j::DataType::UINT64, uint64_t), \
         (nd4j::DataType::INT16, int16_t), \
         (nd4j::DataType::INT32, int32_t), \
         (nd4j::DataType::INT64, Nd4jLong)
@@ -64,7 +67,8 @@
         (nd4j::DataType::BOOL, bool)
 
 #define LONG_TYPES \
-        (nd4j::DataType::INT64, Nd4jLong)
+        (nd4j::DataType::INT64, Nd4jLong),\
+        (nd4j::DataType::UINT64, uint64_t)
 
 #define FLOAT_TYPES \
         (nd4j::DataType::BFLOAT16, bfloat16) ,\
@@ -104,13 +108,16 @@
         (nd4j::DataType::UINT8, uint8_t)
 
 #define LIBND4J_TYPES_6 \
-        (nd4j::DataType::INT16, int16_t)
+        (nd4j::DataType::INT16, int16_t),\
+        (nd4j::DataType::UINT16, uint16_t)
 
 #define LIBND4J_TYPES_7 \
-        (nd4j::DataType::INT32, int32_t)
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::UINT32, uint32_t)
 
 #define LIBND4J_TYPES_8 \
-        (nd4j::DataType::INT64, Nd4jLong)
+        (nd4j::DataType::INT64, Nd4jLong),\
+        (nd4j::DataType::UINT64, uint64_t)
 
 #define LIBND4J_TYPES_9 \
         (nd4j::DataType::BFLOAT16, bfloat16)
@@ -118,6 +125,9 @@
 #define INTEGER_TYPES \
         (nd4j::DataType::INT8, int8_t), \
         (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::UINT16, uint16_t), \
+        (nd4j::DataType::UINT32, uint32_t), \
+        (nd4j::DataType::UINT64, uint64_t), \
         (nd4j::DataType::INT16, int16_t), \
         (nd4j::DataType::INT32, int32_t), \
         (nd4j::DataType::INT64, Nd4jLong)
@@ -129,6 +139,9 @@
         (nd4j::DataType::DOUBLE, double), \
         (nd4j::DataType::INT8, int8_t), \
         (nd4j::DataType::UINT8, uint8_t), \
+        (nd4j::DataType::UINT16, uint16_t), \
+        (nd4j::DataType::UINT32, uint32_t), \
+        (nd4j::DataType::UINT64, uint64_t), \
         (nd4j::DataType::INT16, int16_t), \
         (nd4j::DataType::INT32, int32_t), \
         (nd4j::DataType::INT64, Nd4jLong), \
@@ -371,7 +384,9 @@
 
 #define PAIRWISE_TYPES_4 \
 (int16_t, int16_t, int16_t) , \
-(int16_t, bool, int16_t)
+(int16_t, bool, int16_t),\
+(uint16_t, uint16_t, uint16_t) ,\
+(uint16_t, bool, uint16_t)
 
 #define PAIRWISE_TYPES_5 \
 (uint8_t, uint8_t, uint8_t) , \
@@ -379,14 +394,18 @@
 
 #define PAIRWISE_TYPES_6 \
 (int, int, int) ,\
-(int, bool, int)
+(int, bool, int) ,\
+(uint32_t, uint32_t, uint32_t) ,\
+(uint32_t, bool, uint32_t)
 
 #define PAIRWISE_TYPES_7 \
 (bool, bool, bool)
 
 #define PAIRWISE_TYPES_8 \
 (Nd4jLong, Nd4jLong, Nd4jLong) ,\
-(Nd4jLong, bool, Nd4jLong)
+(Nd4jLong, bool, Nd4jLong) ,\
+(uint64_t, uint64_t, uint64_t) ,\
+(uint64_t, bool, uint64_t)
 
 #define PAIRWISE_TYPES_9 \
 (bfloat16, bfloat16, bfloat16) , \

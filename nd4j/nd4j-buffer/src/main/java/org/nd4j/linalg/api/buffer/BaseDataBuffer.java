@@ -663,7 +663,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             if (initialize)
                 fillPointerWithZero();
+        } else if (dataType() == DataType.BFLOAT16) {
+            pointer = new ShortPointer(length());
+            setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
 
+            if (initialize)
+                fillPointerWithZero();
         } else if (dataType() == DataType.INT) {
             pointer = new IntPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -690,6 +695,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == DataType.UBYTE) {
             pointer = new BytePointer(length());
             setIndexer(UByteIndexer.create((BytePointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == DataType.UINT16) {
+            pointer = new ShortPointer(length());
+            setIndexer(UShortIndexer.create((ShortPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == DataType.UINT32) {
+            pointer = new IntPointer(length());
+            // FIXME: we need unsigned indexer here
+            setIndexer(IntIndexer.create((IntPointer) pointer));
+
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == DataType.UINT64) {
+            pointer = new LongPointer(length());
+            // FIXME: we need unsigned indexer here
+            setIndexer(LongIndexer.create((LongPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
@@ -744,12 +769,34 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new FloatPointer(length());
             setIndexer(HalfIndexer.create((ShortPointer) pointer));
 
+        } else if (dataType() == DataType.BFLOAT16) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new FloatPointer(length());
+            setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
         } else if (dataType() == DataType.INT) {
             attached = true;
             parentWorkspace = workspace;
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
+
+        } else if (dataType() == DataType.UINT32) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            // FIXME: need unsigned indexer here
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
+            setIndexer(IntIndexer.create((IntPointer) pointer));
+
+        } else if (dataType() == DataType.UINT64) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            // FIXME: need unsigned indexer here
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new IntPointer(length());
+            setIndexer(LongIndexer.create((LongPointer) pointer));
 
         } else if (dataType() == DataType.LONG) {
             attached = true;
@@ -769,6 +816,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer(); //new LongPointer(length());
             setIndexer(UByteIndexer.create((BytePointer) pointer));
+        } else if (dataType() == DataType.UINT16) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new IntPointer(length());
+            setIndexer(UShortIndexer.create((ShortPointer) pointer));
+
         } else if (dataType() == DataType.SHORT) {
             attached = true;
             parentWorkspace = workspace;
@@ -1244,12 +1298,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
         switch (dataType()) {
             case FLOAT:
                 return ((FloatIndexer) indexer).get(offset() + i);
+            case UINT32:
             case INT:
                 return ((IntIndexer) indexer).get(offset() + i);
+            case BFLOAT16:
+                return ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
                 return ((HalfIndexer) indexer).get(offset() + i);
+            case UINT16:
             case SHORT:
                 return ((ShortIndexer) indexer).get(offset() + i);
+            case UINT64:
             case LONG:
                 return ((LongIndexer) indexer).get(offset() + i);
             case BOOL:
@@ -1272,12 +1331,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (long) ((FloatIndexer) indexer).get(offset() + i);
             case DOUBLE:
                 return (long) ((DoubleIndexer) indexer).get(offset() + i);
+            case BFLOAT16:
+                return (long) ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
                 return (long) ((HalfIndexer) indexer).get(offset() + i);
+            case UINT64:
             case LONG:
                 return ((LongIndexer) indexer).get(offset() + i);
+            case UINT32:
             case INT:
                 return (long) ((IntIndexer) indexer).get(offset() + i);
+            case UINT16:
             case SHORT:
                 return (long) ((ShortIndexer) indexer).get(offset() + i);
             case BYTE:
@@ -1300,16 +1364,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
         switch (dataType()) {
             case DOUBLE:
                 return (short) ((DoubleIndexer) indexer).get(offset() + i);
+            case BFLOAT16:
+                return (short) ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
                 return (short) ((HalfIndexer) indexer).get(offset() + i);
             case BOOL:
                 return (short) (((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0);
+            case UINT32:
             case INT:
                 return (short) ((IntIndexer) indexer).get(offset() + i);
+            case UINT16:
             case SHORT:
                 return ((ShortIndexer) indexer).get(offset() + i);
             case BYTE:
                 return  (short) ((ByteIndexer) indexer).get(offset() + i);
+            case UINT64:
             case LONG:
                 return (short) ((LongIndexer) indexer).get(offset() + i);
             case FLOAT:
@@ -1335,16 +1404,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) ((DoubleIndexer) indexer).get(offset() + i);
             case BOOL:
                 return ((BooleanIndexer) indexer).get(offset() + i) ? 1.f : 0.f;
+            case UINT32:
             case INT:
                 return (float) ((IntIndexer) indexer).get(offset() + i);
+            case UINT16:
             case SHORT:
                 return (float) ((ShortIndexer) indexer).get(offset() + i);
+            case BFLOAT16:
+                return (float) ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
                 return (float) ((HalfIndexer) indexer).get(offset() + i);
             case UBYTE:
                 return (float) ((UByteIndexer) indexer).get(offset() + i);
             case BYTE:
                 return (float) ((ByteIndexer) indexer).get(offset() + i);
+            case UINT64:
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(offset() + i);
             case FLOAT:
@@ -1361,16 +1435,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (int) ((DoubleIndexer) indexer).get(offset() + i);
             case BOOL:
                 return ((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0;
+            case UINT32:
             case INT:
                 return ((IntIndexer) indexer).get(offset() + i);
+            case BFLOAT16:
+                return (int) ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
                 return (int) ((HalfIndexer) indexer).get(offset() + i);
+            case UINT16:
             case SHORT:
                 return ((ShortIndexer) indexer).get(offset() + i);
             case UBYTE:
                 return ((UByteIndexer) indexer).get(offset() + i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(offset() + i);
+            case UINT64:
             case LONG:
                 return (int) ((LongIndexer) indexer).get(offset() + i);
             case FLOAT:
@@ -1423,13 +1502,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public void putByDestinationType(long i, Number element, DataType globalType) {
-        if (globalType == DataType.INT || type == DataType.INT) {
+        if (globalType == DataType.INT || type == DataType.INT || globalType == DataType.UINT16 || globalType == DataType.UBYTE) {
             int anElement = element.intValue();
             put(i, anElement);
-        } else if (globalType == DataType.LONG || type == DataType.LONG) {
+        } else if (globalType == DataType.LONG || type == DataType.LONG || globalType == DataType.UINT32 || globalType == DataType.UINT64) {
             long anElement = element.longValue();
             put(i, anElement);
-        } else if (globalType == DataType.FLOAT || globalType == DataType.HALF) {
+        } else if (globalType == DataType.FLOAT || globalType == DataType.HALF || globalType == DataType.BFLOAT16) {
             float anElement = element.floatValue();
             put(i, anElement);
         } else if (globalType == DataType.DOUBLE) {
@@ -1452,14 +1531,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 ((UByteIndexer) indexer).put(offset() + i,  (int) element);
                 break;
+            case UINT16:
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
                 break;
+            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, (int) element);
                 break;
+            case UINT64:
             case LONG:
                 ((LongIndexer) indexer).put(offset() + i, (long) element);
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(offset() + i,  element);
                 break;
             case HALF:
                 ((HalfIndexer) indexer).put(offset() + i,  element);
@@ -1491,14 +1576,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 ((UByteIndexer) indexer).put(offset() + i, (short) element);
                 break;
+            case UINT16:
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
                 break;
+            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, (int) element);
                 break;
+            case UINT64:
             case LONG:
                 ((LongIndexer) indexer).put(offset() + i, (long) element);
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(offset() + i, (float) element);
                 break;
             case HALF:
                 ((HalfIndexer) indexer).put(offset() + i, (float) element);
@@ -1530,14 +1621,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 ((UByteIndexer) indexer).put(offset() + i,  element);
                 break;
+            case UINT16:
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
                 break;
+            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, element);
                 break;
+            case UINT64:
             case LONG:
                 ((LongIndexer) indexer).put(offset() + i, element);
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(offset() + i, element);
                 break;
             case HALF:
                 ((HalfIndexer) indexer).put(offset() + i, element);
@@ -1569,14 +1666,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 ((UByteIndexer) indexer).put(offset() + i, element ? (byte)1 : (byte) 0);
                 break;
+            case UINT16:
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i, element ? (short) 1 : (short) 0);
                 break;
+            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, element ? 1 : 0);
                 break;
+            case UINT64:
             case LONG:
                 ((LongIndexer) indexer).put(offset() + i, element ? 1 : 0);
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(offset() + i, element ? 1.0f : 0.0f);
                 break;
             case HALF:
                 ((HalfIndexer) indexer).put(offset() + i, element ? 1.0f : 0.0f);
@@ -1608,14 +1711,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 ((UByteIndexer) indexer).put(offset() + i, (short) element);
                 break;
+            case UINT16:
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i, (short) element);
                 break;
+            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, (int) element);
                 break;
+            case UINT64:
             case LONG:
                 ((LongIndexer) indexer).put(offset() + i, element);
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(offset() + i, (float) element);
                 break;
             case HALF:
                 ((HalfIndexer) indexer).put(offset() + i, (float) element);
@@ -1891,16 +2000,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     readContent(s, currentType, currentType);
             } else if (allocationMode.equals(AllocationMode.MIXED_DATA_TYPES)) {
                 switch (type) {
+                    case UINT64:
                     case LONG:
                     case DOUBLE:
                         elementSize = 8;
                         break;
+                    case UINT32:
                     case FLOAT:
                     case INT:
                         elementSize = 4;
                         break;
+                    case UINT16:
                     case SHORT:
                     case HALF:
+                    case BFLOAT16:
                         elementSize = 2;
                         break;
                     case BOOL:
@@ -1989,14 +2102,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 for (long i = 0; i < length(); i++)
                     out.writeDouble(getDouble(i));
                 break;
+            case UINT64:
             case LONG:
                 for (long i = 0; i < length(); i++)
                     out.writeLong(getLong(i));
                 break;
+            case UINT32:
             case INT:
                 for (long i = 0; i < length(); i++)
                     out.writeInt(getInt(i));
                 break;
+            case UINT16:
             case SHORT:
                 for (long i = 0; i < length(); i++)
                     out.writeShort((short) getInt(i));
@@ -2010,6 +2126,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 for (long i = 0; i < length(); i++)
                     out.writeByte(getInt(i) == 0 ? (byte) 0 : (byte) 1);
                 break;
+            case BFLOAT16:
             case HALF:
                 for (long i = 0; i < length(); i++)
                     out.writeShort((short) HalfIndexer.fromFloat(getFloat(i)));

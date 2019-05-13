@@ -480,4 +480,40 @@ public class MixedDataTypesTests {
 
         assertEquals(source.getDouble(0), restored.getDouble(0), 1e-5);
     }
+
+    @Test
+    public void testBfloat16_1() {
+        val x = Nd4j.create(DataType.BFLOAT16, 5);
+        val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.BFLOAT16);
+
+        x.addi(y);
+        assertEquals(x, y);
+    }
+
+    @Test
+    public void testUint16_1() {
+        val x = Nd4j.create(DataType.UINT16, 5);
+        val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT16);
+
+        x.addi(y);
+        assertEquals(x, y);
+    }
+
+    @Test
+    public void testUint32_1() {
+        val x = Nd4j.create(DataType.UINT32, 5);
+        val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT32);
+
+        x.addi(y);
+        assertEquals(x, y);
+    }
+
+    @Test
+    public void testUint64_1() {
+        val x = Nd4j.create(DataType.UINT64, 5);
+        val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT64);
+
+        x.addi(y);
+        assertEquals(x, y);
+    }
 }

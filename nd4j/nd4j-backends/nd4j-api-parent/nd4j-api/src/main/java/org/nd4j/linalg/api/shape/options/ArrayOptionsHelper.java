@@ -29,6 +29,7 @@ public class ArrayOptionsHelper {
     public static final long ATYPE_EMPTY_BIT = 8;
 
     public static final long DTYPE_COMPRESSED_BIT = 4;
+    public static final long DTYPE_BFLOAT16_BIT = 2048;
     public static final long DTYPE_HALF_BIT = 4096;
     public static final long DTYPE_FLOAT_BIT = 8192;
     public static final long DTYPE_DOUBLE_BIT = 16384;
@@ -73,20 +74,22 @@ public class ArrayOptionsHelper {
             return DataType.COMPRESSED;
         else if (hasBitSet(opt, DTYPE_HALF_BIT))
             return DataType.HALF;
+        else if (hasBitSet(opt, DTYPE_BFLOAT16_BIT))
+            return DataType.BFLOAT16;
         else if (hasBitSet(opt, DTYPE_FLOAT_BIT))
             return DataType.FLOAT;
         else if (hasBitSet(opt, DTYPE_DOUBLE_BIT))
             return DataType.DOUBLE;
         else if (hasBitSet(opt, DTYPE_INT_BIT))
-            return DataType.INT;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT32 : DataType.INT;
         else if (hasBitSet(opt, DTYPE_LONG_BIT))
-            return DataType.LONG;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT64 : DataType.LONG;
         else if (hasBitSet(opt, DTYPE_BOOL_BIT))
             return DataType.BOOL;
         else if (hasBitSet(opt, DTYPE_BYTE_BIT)) {
             return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UBYTE : DataType.BYTE;     //Byte bit set for both UBYTE and BYTE
         } else if (hasBitSet(opt, DTYPE_SHORT_BIT))
-            return DataType.SHORT;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT16 : DataType.SHORT;
         else if (hasBitSet(opt, DTYPE_UTF8_BIT))
             return DataType.UTF8;
         else
@@ -104,15 +107,22 @@ public class ArrayOptionsHelper {
             case HALF:
                 bit = DTYPE_HALF_BIT;
                 break;
+            case BFLOAT16:
+                bit = DTYPE_BFLOAT16_BIT;
+                break;
             case FLOAT:
                 bit = DTYPE_FLOAT_BIT;
                 break;
             case DOUBLE:
                 bit = DTYPE_DOUBLE_BIT;
                 break;
+            case UINT32:
+                storage |= DTYPE_UNSIGNED_BIT;
             case INT:
                 bit = DTYPE_INT_BIT;
                 break;
+            case UINT64:
+                storage |= DTYPE_UNSIGNED_BIT;
             case LONG:
                 bit = DTYPE_LONG_BIT;
                 break;
@@ -125,6 +135,8 @@ public class ArrayOptionsHelper {
             case BYTE:
                 bit = DTYPE_BYTE_BIT;
                 break;
+            case UINT16:
+                storage |= DTYPE_UNSIGNED_BIT;
             case SHORT:
                 bit = DTYPE_SHORT_BIT;
                 break;
@@ -166,8 +178,16 @@ public class ArrayOptionsHelper {
 
     public static DataType convertToDataType(org.tensorflow.framework.DataType dataType) {
         switch (dataType) {
+            case DT_UINT16:
+                return DataType.UINT16;
+            case DT_UINT32:
+                return DataType.UINT32;
+            case DT_UINT64:
+                return DataType.UINT64;
             case DT_BOOL:
                 return DataType.BOOL;
+            case DT_BFLOAT16:
+                return DataType.BFLOAT16;
             case DT_FLOAT:
                 return DataType.FLOAT;
             case DT_INT32:
@@ -193,6 +213,12 @@ public class ArrayOptionsHelper {
 
     public static DataType dataType(@NonNull String dataType) {
         switch (dataType) {
+            case "uint64":
+                return DataType.UINT64;
+            case "uint32":
+                return DataType.UINT32;
+            case "uint16":
+                return DataType.UINT16;
             case "int64":
                 return DataType.LONG;
             case "int32":
@@ -214,6 +240,10 @@ public class ArrayOptionsHelper {
             case "uint8":
             case "ubyte":
                 return DataType.UBYTE;
+            case "bfloat16":
+                return DataType.BFLOAT16;
+            case "float16":
+                return DataType.HALF;
             default:
                 throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }
