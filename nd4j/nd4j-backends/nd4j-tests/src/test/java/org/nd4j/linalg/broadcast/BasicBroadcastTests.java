@@ -51,9 +51,18 @@ public class BasicBroadcastTests extends BaseNd4jTest {
 
         Nd4j.exec(op);
 
-        Nd4j.getExecutioner().commit();
-
         assertEquals(e, x);
+    }
+
+    @Test
+    public void basicBroadcastTest_2() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2);
+        val y = Nd4j.createFromArray(new float[]{1.f, 1.f, 1.f, 1.f}).reshape(2, 2);
+        val e = Nd4j.create(DataType.FLOAT, 3, 2, 2).assign(1.f);
+
+        val z = x.add(y);
+
+        assertEquals(e, z);
     }
 
     @Override

@@ -3488,7 +3488,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray add(INDArray other) {
         validateNumericalArray("add", false);
-        return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        }
     }
 
     /**
@@ -3501,7 +3505,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray add(INDArray other, INDArray result) {
         validateNumericalArray("add", false);
-        return dup().addi(other, result);
+        return addi(other, result);
     }
 
 
@@ -3806,17 +3810,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.addi(getDouble(0), result);
         }
 
-        if(!Shape.shapeEquals(this.shape(),other.shape())) {
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
+
+            Nd4j.exec(new AddOp(new INDArray[]{this, other}, new INDArray[]{result}));
+
+            return result;
+        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
             result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
             Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions));
             return result;
+        } else {
+
+            LinAlgExceptions.assertSameShape(this, other, result);
+
+            Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
+            return result;
         }
-
-        LinAlgExceptions.assertSameShape(this, other, result);
-
-        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
-        return result;
     }
 
     /**

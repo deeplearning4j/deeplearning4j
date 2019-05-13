@@ -164,6 +164,15 @@ public class Shape {
         return Ints.toArray(dims);
     }
 
+    public static long sizeAt(long[] shape, int index) {
+        if (index < 0)
+            index += shape.length;
+
+        return shape[index];
+    }
+
+
+
     public static int[] getBroadcastDimensions(long[] left, long[] right) {
         if(Arrays.equals(left,right))
             return null;
@@ -3536,15 +3545,14 @@ public class Shape {
         return true;
     }
 
-    public static boolean areShapesBroadcastable(@NonNull long[] x, @NonNull long[] y){
+    public static boolean areShapesBroadcastable(@NonNull long[] left, @NonNull long[] right){
         //Ported from: https://github.com/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
 
-        int minRank = Math.min(x.length, y.length);
-        for( int i=-1; i>= -minRank; i--){
-            if(x[x.length + i] != y[y.length + i] && x[x.length + i] != 1 && y[y.length + i] != 1){
+        int minRank = Math.min(left.length, right.length);
+
+        for (int i = -1; i >= -minRank; --i)
+            if (sizeAt(left, i) != sizeAt(right, i) && sizeAt(left, i) != 1 && sizeAt(right, i) != 1)
                 return false;
-            }
-        }
 
         return true;
     }
