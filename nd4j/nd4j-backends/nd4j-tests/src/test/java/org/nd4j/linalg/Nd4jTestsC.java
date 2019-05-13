@@ -7624,6 +7624,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(scalarRank2, scalarRank2.dup());
     }
 
+    @Test
+    public void testType1() throws IOException {
+        for (int i = 0; i < 10; ++i) {
+            INDArray in1 = Nd4j.rand(DataType.UINT16, 100, 100);
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test.bin"));
+            oos.writeObject(in1);
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.bin"));
+            INDArray in2 = null;
+            try {
+                in2 = (INDArray) ois.readObject();
+            } catch(ClassNotFoundException e) {
+
+            }
+
+            assertEquals(in1, in2);
+        }
+
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
