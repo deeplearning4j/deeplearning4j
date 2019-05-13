@@ -200,7 +200,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_1) {
     auto x = NDArrayFactory::create<double>('c', {2,3}, {1,2,3, 4, 5, 6});
     auto y = NDArrayFactory::create<double>('c', {2,3}, {1,-2,3, -4, 5, -6});
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-    auto exp = NDArrayFactory::create<double>('c', {2,3}, {2,2,2,2,2,2});
+    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1.2,2.2,3.2,4.2,5.2,6.2});
     nd4j::ops::barnes_gains op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
@@ -214,12 +214,13 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_2) {
     auto x = NDArrayFactory::create<double>('c', {2,3}, {1, -2, 3, -4, 5, -6});
     auto y = NDArrayFactory::create<double>('c', {2,3}, {1, -2, 3, -4, 5, -6});
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-    auto exp = NDArrayFactory::create<double>('c', {2,3}, {2, 2, 2, 2, 2, 2});
+    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1.2, 0.01, 3.2, 0.01, 5.2, 0.01});
     nd4j::ops::barnes_gains op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
-//    result->at(0)->printBuffer("Gains out");
+
     //ASSERT_EQ(e, z);
     delete result;
 }
@@ -228,11 +229,11 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
     auto x = NDArrayFactory::create<double>('c', {2,3}, {-1, 2, -3, 4, -5, 6});
     auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+    auto exp = NDArrayFactory::create<double>('c', {2,3}, {0.01, 2.2, 0.01, 4.2, 0.01, 6.2});
     nd4j::ops::barnes_gains op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Gains out");
+    //result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
 }
