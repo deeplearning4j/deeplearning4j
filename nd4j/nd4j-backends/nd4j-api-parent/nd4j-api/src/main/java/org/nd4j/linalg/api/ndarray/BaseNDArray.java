@@ -3414,7 +3414,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray div(INDArray other) {
-        return divi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return divi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            return divi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        }
     }
 
     /**
@@ -3439,8 +3443,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mul(INDArray other) {
         validateNumericalArray("mul", false);
-        val z = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering());
-        return muli(other, z);
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return muli(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            val z = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering());
+            return muli(other, z);
+        }
     }
 
     /**
@@ -3464,7 +3472,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sub(INDArray other) {
         validateNumericalArray("sub", false);
-        return subi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return subi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            return subi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+        }
     }
 
     /**
@@ -3682,8 +3694,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.rdivi(getDouble(0), result);
         }
 
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
 
-        if(!Shape.shapeEquals(this.shape(),other.shape())) {
+            Nd4j.exec(new DivOp(new INDArray[]{this, other}, new INDArray[]{result}));
+
+            return result;
+        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
             Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions));
             return result;
@@ -3724,9 +3742,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.muli(getDouble(0), result);
         }
 
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
 
+            Nd4j.exec(new MulOp(new INDArray[]{this, other}, new INDArray[]{result}));
 
-        if(!Shape.shapeEquals(this.shape(),other.shape())) {
+            return result;
+        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
             Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions));
             return result;
@@ -3766,8 +3789,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.rsubi(getDouble(0), result);
         }
 
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
 
-        if(!Shape.shapeEquals(this.shape(),other.shape())) {
+            Nd4j.exec(new SubOp(new INDArray[]{this, other}, new INDArray[]{result}));
+
+            return result;
+        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
             Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions));
             return result;
@@ -3852,7 +3881,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rdiv(INDArray other) {
         validateNumericalArray("rdiv", false);
-        return dup().rdivi(other);
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return rdivi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            return rdivi(other, this.ulike());
+        }
     }
 
     /**
@@ -3902,7 +3935,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsub(INDArray other, INDArray result) {
         validateNumericalArray("rsub", false);
-        return dup().rsubi(other, result);
+        return rsubi(other, result);
     }
 
     /**
@@ -3912,7 +3945,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsub(INDArray other) {
         validateNumericalArray("rsub", false);
-        return dup().rsubi(other);
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return rsubi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+        } else {
+            return rsubi(other, this.ulike());
+        }
     }
 
     /**
