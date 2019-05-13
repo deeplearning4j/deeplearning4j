@@ -1138,6 +1138,24 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
     }
 
+    void NDArray::assign(const uint16_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint32_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint64_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
     void NDArray::assign(const int8_t value) {
         // just fire scalar
         auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
