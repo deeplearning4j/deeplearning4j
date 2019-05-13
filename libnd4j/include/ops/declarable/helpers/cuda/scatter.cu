@@ -750,7 +750,7 @@ BUILD_DOUBLE_TEMPLATE(template void scatterNDLockCudaLauncher, (const int blocks
 }
 }
 
-
+        // PointersManager manager(&context, "NativeOps::concat");
         // PointersManager::printDevContentOnDev<int>(vx, 2);
         // PointersManager::printDevContentOnDev<Nd4jLong>(xShapeInfo, 8);
         // PointersManager::printDevContentOnDev<float>(vy, 8);
