@@ -14,6 +14,9 @@ public class DataTypeTest {
     @Test
     public void testDataTypes() throws IOException {
         for (DataType type : DataType.values()) {
+            if (DataType.UTF8.equals(type) || DataType.UNKNOWN.equals(type) || DataType.COMPRESSED.equals(type))
+                continue;
+
             INDArray in1 = Nd4j.ones(type);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
