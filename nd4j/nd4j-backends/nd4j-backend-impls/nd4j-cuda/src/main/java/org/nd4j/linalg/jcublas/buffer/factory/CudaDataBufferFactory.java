@@ -104,6 +104,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return createFloat(buffer.length(), init);
             case DOUBLE:
                 return createDouble(buffer.length(), init);
+            case BFLOAT16:
+                return createBfloat16(buffer.length(), init);
             case HALF:
                 return createHalf(buffer.length(), init);
             default:
@@ -127,6 +129,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return createFloat(buffer.length(), init, workspace);
             case DOUBLE:
                 return createDouble(buffer.length(), init, workspace);
+            case BFLOAT16:
+                return createBfloat16(buffer.length(), init, workspace);
             case HALF:
                 return createHalf(buffer.length(), init, workspace);
             default:
@@ -343,6 +347,12 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(DataType dataType, long length, boolean initialize) {
         switch (dataType) {
+            case UINT16:
+                return new CudaUInt16DataBuffer(length, initialize);
+            case UINT32:
+                return new CudaUInt32DataBuffer(length, initialize);
+            case UINT64:
+                return new CudaUInt64DataBuffer(length, initialize);
             case LONG:
                 return new CudaLongDataBuffer(length, initialize);
             case INT:
@@ -357,6 +367,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaDoubleDataBuffer(length, initialize);
             case FLOAT:
                 return new CudaFloatDataBuffer(length, initialize);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(length, initialize);
             case HALF:
                 return new CudaHalfDataBuffer(length, initialize);
             case BOOL:
@@ -372,6 +384,12 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             return create(dataType, length, initialize);
 
         switch (dataType) {
+            case UINT16:
+                return new CudaUInt16DataBuffer(length, initialize, workspace);
+            case UINT32:
+                return new CudaUInt32DataBuffer(length, initialize, workspace);
+            case UINT64:
+                return new CudaUInt64DataBuffer(length, initialize, workspace);
             case LONG:
                 return new CudaLongDataBuffer(length, initialize, workspace);
             case INT:
@@ -600,6 +618,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(long length, boolean initialize) {
         return new CudaHalfDataBuffer(length, initialize);
+    }
+
+    public DataBuffer createBfloat16(long length, boolean initialize) {
+        return new CudaBfloat16DataBuffer(length, initialize);
     }
 
     /**
@@ -845,6 +867,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
         return new CudaHalfDataBuffer(length, initialize, workspace);
+    }
+
+    public DataBuffer createBfloat16(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaBfloat16DataBuffer(length, initialize, workspace);
     }
 
     @Override
