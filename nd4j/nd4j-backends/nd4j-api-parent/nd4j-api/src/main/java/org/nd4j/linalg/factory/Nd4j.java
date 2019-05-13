@@ -6054,12 +6054,16 @@ public class Nd4j {
             case BOOL:
             case UBYTE:
                 return 1;
+            case UINT16:
             case SHORT:
+            case BFLOAT16:
             case HALF:
                 return 2;
+            case UINT32:
             case FLOAT:
             case INT:
                 return 4;
+            case UINT64:
             case LONG:
             case DOUBLE:
                 return 8;

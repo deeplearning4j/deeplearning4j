@@ -1293,12 +1293,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType, ws);
             case FLOAT:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case BFLOAT16:
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
             case HALF:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT32:
             case INT:
                 return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT64:
             case LONG:
                 return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT16:
             case SHORT:
                 return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
             case BYTE:

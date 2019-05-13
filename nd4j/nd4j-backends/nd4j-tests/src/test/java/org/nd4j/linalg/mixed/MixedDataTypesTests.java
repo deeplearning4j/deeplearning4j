@@ -482,6 +482,15 @@ public class MixedDataTypesTests {
     }
 
     @Test
+    public void testBfloat16_1() {
+        val x = Nd4j.create(DataType.BFLOAT16, 5);
+        val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.BFLOAT16);
+
+        x.addi(y);
+        assertEquals(x, y);
+    }
+
+    @Test
     public void testUint16_1() {
         val x = Nd4j.create(DataType.UINT16, 5);
         val y = Nd4j.createFromArray(new int[]{2, 2, 2, 2, 2}).castTo(DataType.UINT16);
