@@ -1619,27 +1619,27 @@ NDArray NDArray::e(const Nd4jLong i) const {
     ////////////////////////////////////////////////////////////////////////
     void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
+        for (const auto& a : readList) {
+            if (!a->isActualOnDeviceSide())
+                a->syncToDevice();
+            a->tickReadDevice();
+        }
+
         for (const auto& a : writeList) {
             if (synchronizeWritables && !a->isActualOnDeviceSide())
                 a->syncToDevice();
             a->tickWriteDevice();
         }
-
-        for (const auto& a : readList) {            
-            if (!a->isActualOnDeviceSide())
-                a->syncToDevice();            
-            a->tickReadDevice();
-        }
     }
 
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
-        
+    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {                
+
+		for (const auto& p : readList) 
+			p->tickReadDevice();
+
         for (const auto& p : writeList)
             p->tickWriteDevice();
-
-        for (const auto& p : readList) 
-            p->tickReadDevice();        
     }
 
 ////////////////////////////////////////////////////////////////////////

@@ -33,9 +33,10 @@ public:
 };
 
 TEST_F(BroadcastableOpsTests, Test_Add_1) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5});
-    auto y = NDArrayFactory::create<float>('c', {1, 5});
-    auto exp = NDArrayFactory::create<float>('c', {5, 5});
+
+    NDArray x('c', {5, 5}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {1, 5}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {5, 5}, nd4j::DataType::FLOAT32);
     x.linspace(1);
     y.linspace(1);
     exp.linspace(1);
@@ -49,8 +50,8 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
     auto z = result->at(0);
 
-    exp.printIndexedBuffer("E");
-    z->printIndexedBuffer("Z");
+    // exp.printIndexedBuffer("E");
+    // z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
