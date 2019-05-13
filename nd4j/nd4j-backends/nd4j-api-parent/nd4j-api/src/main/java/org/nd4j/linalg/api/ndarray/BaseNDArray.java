@@ -57,6 +57,9 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1640,7 +1643,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray lt(INDArray other) {
         validateNumericalArray("less than (lt)", false);
-        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        if (Shape.shapeEquals(this.shape(), other.shape())) {
+            return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return Nd4j.exec(new LessThan(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
+        } else
+            throw new IllegalArgumentException("Shapes must be broadcastable");
     }
 
     @Override
@@ -1658,13 +1666,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray eq(INDArray other) {
-        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        if (Shape.shapeEquals(this.shape(), other.shape())) {
+            return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return Nd4j.exec(new EqualTo(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
+        } else
+            throw new IllegalArgumentException("Shapes must be broadcastable");
     }
 
     @Override
     public INDArray gt(INDArray other) {
         validateNumericalArray("greater than (gt)", false);
-        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        if (Shape.shapeEquals(this.shape(), other.shape())) {
+            return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            return Nd4j.exec(new GreaterThan(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
+        } else
+            throw new IllegalArgumentException("Shapes must be broadcastable");
     }
 
     @Override
@@ -3989,6 +4007,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    @Override
+    public INDArray assign(boolean value) {
+        return assign(value ? 1 : 0);
+    }
+
+
     /**
      * Assign all elements from given ndarray that are matching given condition,
      * ndarray to this ndarray
@@ -5871,13 +5895,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainder(INDArray denominator) {
-        return remainder(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
+        if (Shape.areShapesBroadcastable(this.shape(), denominator.shape())) {
+            return remainder(denominator, Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(), denominator.shape())));
+        } else
+            return remainder(denominator, this.ulike());
     }
 
     @Override
     public INDArray remainder(INDArray denominator, INDArray result) {
         validateNumericalArray("remainder", false);
-        RemainderOp op = new RemainderOp(this, denominator, result);
+        Preconditions.checkArgument(Shape.areShapesBroadcastable(this.shape(), denominator.shape()),"Shapes must be broadcastable");
+
+        val op = new RemainderOp(this, denominator, result);
         Nd4j.getExecutioner().exec(op);
         return result;
     }
@@ -5890,6 +5919,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray remainder(Number denominator, INDArray result) {
         validateNumericalArray("remainder", false);
+
         ScalarRemainder op = new ScalarRemainder(this, null, result, denominator);
         Nd4j.getExecutioner().exec(op);
         return result;
@@ -5914,15 +5944,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray fmod(INDArray denominator) {
         validateNumericalArray("fmod", false);
-        return fmod(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
+        if (Shape.areShapesBroadcastable(this.shape(), denominator.shape())) {
+            return fmod(denominator, Nd4j.createUninitialized(Nd4j.defaultFloatingPointType(), Shape.broadcastOutputShape(this.shape(), denominator.shape())));
+        } else
+            return fmod(denominator, this.ulike());
     }
 
     @Override
     public INDArray fmod(INDArray denominator, INDArray result) {
         validateNumericalArray("fmod", false);
-        OldFModOp op = new OldFModOp(this, denominator, result);
-        Nd4j.getExecutioner().exec(op);
-        return result;
+        if (Shape.areShapesBroadcastable(this.shape(), denominator.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), denominator.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
+
+            Nd4j.exec(new FloorModOp(new INDArray[]{this, denominator}, new INDArray[]{result}));
+
+            return result;
+        } else {
+            OldFModOp op = new OldFModOp(this, denominator, result);
+            Nd4j.getExecutioner().exec(op);
+            return result;
+        }
     }
 
     @Override

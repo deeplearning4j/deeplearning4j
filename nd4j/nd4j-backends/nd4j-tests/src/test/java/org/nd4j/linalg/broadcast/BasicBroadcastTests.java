@@ -110,6 +110,50 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
+    @Test
+    public void basicBroadcastTest_7() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val e = Nd4j.create(DataType.BOOL, 3, 2, 2).assign(false);
+
+        val z = x.lt(y);
+
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void basicBroadcastTest_8() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val e = Nd4j.create(DataType.BOOL, 3, 2, 2).assign(true);
+
+        val z = x.gt(y);
+
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void basicBroadcastTest_9() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(2.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val e = Nd4j.create(DataType.BOOL, 3, 2, 2).assign(true);
+
+        val z = x.eq(y);
+
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void basicBroadcastTest_10() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(1.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val e = Nd4j.create(DataType.BOOL, 3, 2, 2).assign(false);
+
+        val z = x.eq(y);
+
+        assertEquals(e, z);
+    }
+
     @Override
     public char ordering() {
         return 'c';

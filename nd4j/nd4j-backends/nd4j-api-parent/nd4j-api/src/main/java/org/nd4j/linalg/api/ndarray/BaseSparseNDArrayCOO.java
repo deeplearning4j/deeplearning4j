@@ -591,6 +591,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
+    public INDArray assign(boolean value) {
+        return assign(value ? 1 : 0);
+    }
+
+    @Override
     public INDArray repeat(int dimension, long... repeats) {
         return null;
     }
