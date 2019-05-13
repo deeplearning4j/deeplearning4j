@@ -45,7 +45,7 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
     NativeOps nativeOps;
     Context context(1);
 
-    context.setCudaStream(LaunchContext::defaultContext()->getCudaStream());
+    context.setCudaContext(LaunchContext::defaultContext()->getCudaStream(), LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getAllocationPointer());
     context.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
     context.setInputArray(1, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo());
 
