@@ -183,7 +183,11 @@ namespace helpers {
         //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
         //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
         auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-            return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
+//            return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
+            //return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) == nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) == nd4j::math::nd4j_sign<T,T>(eps));
+            T res = nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
+            if(res < .01) res = .01;
+            return res;
         };
 
         input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
