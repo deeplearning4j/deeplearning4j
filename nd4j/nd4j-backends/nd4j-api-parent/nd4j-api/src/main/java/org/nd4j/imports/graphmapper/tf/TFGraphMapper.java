@@ -1054,7 +1054,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         arrayShape = ArrayUtil.toLongArray(Ints.toArray(dimensions));
 
-        if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8) {
+        if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8
+                || tfTensor.getDtype() == DataType.DT_UINT8 || tfTensor.getDtype() == DataType.DT_UINT16) {
             // valueOf
             if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
@@ -1068,7 +1069,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     return Nd4j.scalar( ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), val);
 
                 return Nd4j.valueArrayOf(arrayShape, val, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
-            } else if (tfTensor.getInt64ValCount() > 0) {
+            } else if (tfTensor.getIntValCount() > 0) {
                 val jArray = new int[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
                     jArray[e] = tfTensor.getIntVal(e);
@@ -1077,9 +1078,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 // TF arrays are always C
                 return Nd4j.create(Nd4j.createTypedBuffer(jArray, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
             } else {
-                // FIXME: INT bytebuffers should be converted to floating point
-                //throw new UnsupportedOperationException("To be implemented yet");
-                long length = ArrayUtil.prodLong(arrayShape);
                 // binary representation
                 val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
                 val fb = bb.order(ByteOrder.nativeOrder()).asIntBuffer();
@@ -1252,14 +1250,22 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
-                    return Nd4j.trueScalar(fa[0]);
+                    return Nd4j.scalar(fa[0]);
 
                 if (arrayShape.length == 1)
-                    return Nd4j.trueVector(fa);
+                    return Nd4j.createFromArray(fa);
 
                 val array = Nd4j.create(Nd4j.createTypedBuffer(fa, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),  0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             }
+        } else if (tfTensor.getDtype() == DataType.DT_UINT32) {
+            //TODO: not sure if tfTensor.getUInt32Val(int) does casting (unlikely) or just uses int (int32) as a storage mechanism
+            // i.e., the int32 bytes should be interpeted as uint32 bytes, NOT cast
+            throw new IllegalStateException("Not yet implemented: UINT32");
+        } else if (tfTensor.getDtype() == DataType.DT_UINT64) {
+            //TODO: not sure if tfTensor.getUInt64Val(int) does casting (unlikely) or just uses long (int64) as a storage mechanism
+            // i.e., the long bytes should be interpeted as uint64 bytes, NOT cast
+            throw new IllegalStateException("Not yet implemented: UINT64");
         } else if (tfTensor.getDtype() == DataType.DT_BOOL) {
             if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
