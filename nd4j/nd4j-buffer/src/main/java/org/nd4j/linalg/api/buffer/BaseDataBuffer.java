@@ -1621,6 +1621,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UByteIndexer) indexer).put(offset() + i, (short) element);
                 break;
             case UINT16:
+                ((UShortIndexer) indexer).put(offset() + i,  (int) element);
+                break;
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
                 break;
@@ -1666,7 +1668,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UByteIndexer) indexer).put(offset() + i,  element);
                 break;
             case UINT16:
-                ((UShortIndexer) indexer).put(offset() + i,  (short) element);
+                ((UShortIndexer) indexer).put(offset() + i,  element);
                 break;
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
@@ -1713,10 +1715,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UByteIndexer) indexer).put(offset() + i, element ? (byte)1 : (byte) 0);
                 break;
             case UINT16:
+                ((UShortIndexer) indexer).put(offset() + i,  element ? 1 : 0);
+                break;
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i, element ? (short) 1 : (short) 0);
                 break;
-            case UINT32:
             case INT:
                 ((IntIndexer) indexer).put(offset() + i, element ? 1 : 0);
                 break;
@@ -1758,6 +1761,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UByteIndexer) indexer).put(offset() + i, (short) element);
                 break;
             case UINT16:
+                ((UShortIndexer) indexer).put(offset() + i,  (int) element);
+                break;
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i, (short) element);
                 break;
