@@ -15,17 +15,17 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/helpers/scatter.h>
 #include <numeric>
 #include <helpers/ShapeUtils.h>
-#include <helpers/PointersManager.h>
 #include <TAD.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
-
+#include <helpers/PointersManager.h>
 
 namespace nd4j    {
 namespace ops     {

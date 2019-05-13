@@ -89,9 +89,10 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
         cPR = cP->reshape(cP->ordering(), {aPR->sizeAt(0), bPR->sizeAt(1)});
 
     mmul(aPR, bPR, cPR, 1.0, 0.0);
-    if(cPR->getBuffer() != cP->getBuffer())          // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
-        cP->assign(cPR);
-    
+
+    if(cPR->getBuffer() != cP->getBuffer() || cPR->getSpecialBuffer() != cP->getSpecialBuffer() )   // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()        
+        cP->assign(cPR);    
+
     if(cPR != c)
         delete cPR;
     if(cP != c)
@@ -137,7 +138,7 @@ void nd4j::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     // check whether new buffer allocation was happened for c array
     if(!whatToDoWithC.empty()) {
         for(int i = cArrs.size()-1; i > 0; --i) {
-            if(cArrs[i]->getBuffer() != cArrs[i-1]->getBuffer())
+            if(cArrs[i]->getBuffer() != cArrs[i-1]->getBuffer() || cArrs[i]->getSpecialBuffer() != cArrs[i-1]->getSpecialBuffer())
                 cArrs[i-1]->assign(cArrs[i]);
             delete cArrs[i];
         }
