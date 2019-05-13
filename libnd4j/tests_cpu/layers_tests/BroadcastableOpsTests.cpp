@@ -579,3 +579,25 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
     ASSERT_TRUE(z.isSameShape(zExp));
     ASSERT_TRUE(z.equalsTo(zExp));
 }
+
+TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 1, 2});
+    auto y = NDArrayFactory::create<float>('c', {2, 2});
+    auto z = NDArrayFactory::create<bool>('c', {3, 2, 2});
+    auto e = NDArrayFactory::create<bool>('c', {3, 2, 2});
+    x.assign(4.f);
+    y.assign(2.f);
+    e.assign(true);
+
+
+    nd4j::ops::greater op;
+
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    z.printIndexedBuffer("Z");
+
+    ASSERT_TRUE(z.isSameShape(e));
+    ASSERT_TRUE(z.equalsTo(e));
+}
