@@ -3671,7 +3671,8 @@ public class SameDiff extends SDBaseOps {
                 for(String s : minimalSubgraphVars){
                     if(lossVariables.contains(s))
                         continue;
-                    SDVariable g = variables.get(s).getVariable().gradient();
+                    SDVariable v = variables.get(s).getVariable();
+                    SDVariable g = v.gradient();
                     if(g == null){
                         throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s + "\" was calculated");
                     }

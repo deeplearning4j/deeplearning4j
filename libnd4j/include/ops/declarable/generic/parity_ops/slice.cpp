@@ -128,7 +128,7 @@ namespace nd4j {
         }
 
 
-        CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -1) {
+        CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto epsNext = block.width() == 4 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(1);
 
@@ -157,13 +157,16 @@ namespace nd4j {
 
             std::vector<Nd4jLong> indices(2 * x_rank);
             for (int e = 0; e < x_rank; e++) {
-                int stop = end[e];
+                int size = end[e];
                 int start = begin[e];
 
-                REQUIRE_TRUE(stop > 0, 0, "Slice: interval for dimension %i is less then 1", e);
+				if (size == -1){	//-1 means all remaining values
+                    size = input->sizeAt(e) - start;
+                }
+                REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1", e);
                 
                 indices[2*e]     = start;
-                indices[2*e + 1] = start + stop;
+                indices[2*e + 1] = start + size;
             }
             auto sub = (*output)(indices, true);
             sub.assign(epsNext);            
