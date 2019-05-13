@@ -28,6 +28,10 @@ public enum DataType {
     BOOL,
     UTF8,
     COMPRESSED,
+    BFLOAT16,
+    UINT16,
+    UINT32,
+    UINT64,
     UNKNOWN;
 
 
@@ -42,6 +46,10 @@ public enum DataType {
             case 9: return INT;
             case 10: return LONG;
             case 11: return UBYTE;
+            case 12: return UINT16;
+            case 13: return UINT32;
+            case 14: return UINT64;
+            case 17: return BFLOAT16;
             default: throw new UnsupportedOperationException("Unknown data type: [" + type + "]");
         }
     }
@@ -50,14 +58,14 @@ public enum DataType {
      * @return Returns true if the datatype is a floating point type (double, float or half precision)
      */
     public boolean isFPType(){
-        return this == FLOAT || this == DOUBLE || this == HALF;
+        return this == FLOAT || this == DOUBLE || this == HALF || this == BFLOAT16;
     }
 
     /**
      * @return Returns true if the datatype is an integer type (long, integer, short, ubyte or byte)
      */
     public boolean isIntType(){
-        return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE;
+        return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE || this == UINT16 || this == UINT32 || this == UINT64;
     }
 
     public static DataType fromNumpy(String numpyDtypeName){
@@ -72,9 +80,9 @@ public enum DataType {
             case "float16": return HALF;
             case "float32": return FLOAT;
             case "float64": return DOUBLE;
-            case "uint16":
-            case "uint32":
-            case "uint64":
+            case "uint16": return UINT16;
+            case "uint32": return UINT32;
+            case "uint64": return UINT64;
             case "complex64":
             case "complex128":
             case "complex_":
