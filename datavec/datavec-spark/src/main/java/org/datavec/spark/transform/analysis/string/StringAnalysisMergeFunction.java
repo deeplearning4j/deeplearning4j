@@ -17,6 +17,7 @@
 package org.datavec.spark.transform.analysis.string;
 
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.api.transform.analysis.counter.StringAnalysisCounter;
 
 /**
  * Created by Alex on 5/03/2016.
