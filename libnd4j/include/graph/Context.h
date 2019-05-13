@@ -57,8 +57,6 @@ namespace nd4j {
             // branch for divergent_op
             int _branch = 0;
 
-            Nd4jPointer _cudaStream;
-
             // temporary context for standalone ops execution
             LaunchContext* _context = nullptr;
 
@@ -201,7 +199,7 @@ namespace nd4j {
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
             void setBArguments(bool *arguments, int numberOfArguments);
 
-            void setCudaStream(Nd4jPointer cudaStream);
+            void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
         };
     }
 }

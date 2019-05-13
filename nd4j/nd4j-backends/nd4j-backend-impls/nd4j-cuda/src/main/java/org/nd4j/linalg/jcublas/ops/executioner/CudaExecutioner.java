@@ -2381,7 +2381,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val context = (CudaOpContext) buildContext();
 
-        context.setCudaStream(ctx.getOldStream());
+        context.setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
         context.markInplace(op.isInplaceCall());
 
         // transferring rng state

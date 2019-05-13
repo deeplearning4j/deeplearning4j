@@ -6391,7 +6391,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
             public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
 
-            public native void setCudaStream(@Cast("Nd4jPointer") Pointer cudaStream);
+            public native void setCudaContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer, @Cast("Nd4jPointer") Pointer allocationPointer);
         }
     
 
@@ -9621,8 +9621,10 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif // JCPP
 
 // #endif // CUDA
-        public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream) { super((Pointer)null); allocate(cudaStream); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream);
+		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/) { super((Pointer)null); allocate(cudaStream, reductionPointer, allocationPointer); }
+		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/);
+		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream) { super((Pointer)null); allocate(cudaStream); }
+		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream);
     	public LaunchContext() { super((Pointer)null); allocate(); }
     	private native void allocate();
     	public native Workspace getWorkspace();

@@ -101,8 +101,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     }
 
 
-    public void setCudaStream(cudaStream_t stream) {
-        context.setCudaStream(stream);
+    public void setCudaStream(cudaStream_t stream, Pointer reductionPointer, Pointer allocationPointer) {
+        context.setCudaContext(stream, reductionPointer, allocationPointer);
     }
 
     @Override

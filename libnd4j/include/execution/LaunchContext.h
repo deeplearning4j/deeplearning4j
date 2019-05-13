@@ -92,7 +92,7 @@ class ND4J_EXPORT LaunchContext {
 #endif // JCPP
 
 #endif // CUDA
-        explicit LaunchContext(Nd4jPointer cudaStream);
+		LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer = nullptr, Nd4jPointer allocationPointer = nullptr);
     	LaunchContext();
     	~LaunchContext();
     	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }

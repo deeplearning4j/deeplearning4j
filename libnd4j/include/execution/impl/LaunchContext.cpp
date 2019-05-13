@@ -115,9 +115,12 @@ LaunchContext::LaunchContext() {
 #endif
 }
 
-    LaunchContext::LaunchContext(Nd4jPointer cudaStream) {
+    LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer) {
 #ifdef __CUDABLAS__
+        _isAllocated = false;
         _cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+        _reductionPointer = reductionPointer;
+        _allocationPointer = reinterpret_cast<int *>(allocationPointer);
 #else
         // no-op
 #endif

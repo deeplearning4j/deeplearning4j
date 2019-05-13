@@ -370,12 +370,9 @@ namespace nd4j {
 
         LaunchContext* Context::launchContext() {
             //FIXME: we need proper context to be shared here
-            if (_cudaStream == nullptr) {
+            if (_context == nullptr) {
                 return LaunchContext::defaultContext();
             } else {
-                if (_context == nullptr)
-                    _context = new LaunchContext(_cudaStream);
-
                 return _context;
             }
         }
@@ -449,9 +446,9 @@ namespace nd4j {
                 _bArgs.push_back(arguments[e]);
         }
 
-        void Context::setCudaStream(Nd4jPointer cudaStream) {
+        void Context::setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer) {
 #ifdef __CUDABLAS__
-            _cudaStream = cudaStream;
+            _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 #endif
         }
     }
