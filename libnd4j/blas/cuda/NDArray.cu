@@ -337,7 +337,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if(product != 1 )
             pMin = new NDArray(min->tile(repeatMin));
 
-
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
         if(max == this) {
@@ -2456,6 +2455,40 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         NDArray::registerSpecialUse({&target}, {this});
     }
+
+    //////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray::printSpecialBuffer(const char* msg, const int precision) const {
+
+        if(_bufferD == nullptr || _length == 0)
+            { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
+        if(_length == 0)
+            { printf("NDArray::printSpecialBuffer: array length is zero !\n"); return; }
+
+        void* pHost = operator new(sizeof(T) * _length);
+
+        if (ews() != 1) {
+            for (uint i = 0; i < _length; i++)
+                cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *_context->getCudaStream());
+        }
+        else 
+            cudaMemcpyAsync(pHost, _bufferD, sizeOfT() * _length, cudaMemcpyDeviceToHost, *_context->getCudaStream());
+
+        cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if(cudaResult != 0)
+            throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");                
+
+        for (uint i = 0; i < _length; i++) 
+            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
+        printf("\n");        
+
+        operator delete(pHost);
+    }
+    template void NDArray::printSpecialBuffer<int>(const char* msg, const int precision) const;
+    template void NDArray::printSpecialBuffer<float>(const char* msg, const int precision) const;
+    template void NDArray::printSpecialBuffer<double>(const char* msg, const int precision) const;
+
+
 } // end namespace nd4j
 
 

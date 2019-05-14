@@ -453,6 +453,12 @@ namespace nd4j {
         void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1) const;
 
         /**
+        *  prints _bufferD as it is, that is in current state without checking buffer status
+        */
+        template<typename T>
+        void printSpecialBuffer(const char* msg = nullptr, const int precision = 0) const;
+
+        /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
         *  msg - message to print out 
         *  limit - number of array elements to print out
