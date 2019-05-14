@@ -27,86 +27,85 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 template<typename T>
-__global__ static void col2imCuda(const void *in, void *out, const Nd4jLong *inShapeInfo, const Nd4jLong *outShapeInfo, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+__global__ static void col2imCuda(const void *in, void *out, const Nd4jLong *inShapeInfo, const Nd4jLong *outShapeInfo, const int strideY, const int strideX, const int padHeight, const int padWidth, const int imgHeight, const int imgWidth, const int dY, const int dX) {
 
-    const auto x = reinterpret_cast<const T*>(in);
-          auto z = reinterpret_cast<T*>(out);
+          const auto dx = reinterpret_cast<const T*>(in);
+          auto result = reinterpret_cast<T*>(out);
 
-    __shared__ Nd4jLong *outShape, *inShape, *outStride, *inStride;
-    __shared__ int n, kHeff, kWeff, iC, oH, oW, kH, kW, stride0, stride1, stride2, stride3, stride4, stride5;
+          auto inShape = shape::shapeOf(const_cast<Nd4jLong *>(inShapeInfo));
+          auto inStride = shape::stride(const_cast<Nd4jLong *>(inShapeInfo));
 
-    if (threadIdx.x == 0) {
-        
-        outShape  = shape::shapeOf(const_cast<Nd4jLong*>(outShapeInfo));
-        inShape   = shape::shapeOf(const_cast<Nd4jLong*>(inShapeInfo));
-        outStride = shape::stride(const_cast<Nd4jLong*>(outShapeInfo));
-        inStride  = shape::stride(const_cast<Nd4jLong*>(inShapeInfo));
+          int strideex = inStride[0];
+          int stridech = inStride[1];
+          int stridekrow = inStride[2];
+          int stridekcol = inStride[3];
+          int striderow = inStride[4];
+          int stridecol = inStride[5];
 
-        iC = outShape[1];        
-        
-        kH = inShape[2];
-        kW = inShape[3];
-        oH = inShape[4];    //(iH + 2 * pH - kH) / sW + 1;
-        oW = inShape[5];    //(iW + 2 * pW - kW) / sH + 1;
+          int kernelHeight = inShape[2];
+          int kernelWidth = inShape[3];
 
-        stride0 = inStride[0];
-        stride1 = inStride[1];
-        stride2 = inStride[2];
-        stride3 = inStride[3];
-        stride4 = inStride[4];
-        stride5 = inStride[5];
+          auto outShape = shape::shapeOf(const_cast<Nd4jLong *>(outShapeInfo));
+          auto resultOrder = shape::order(const_cast<Nd4jLong *>(outShapeInfo));
+          auto outStride = shape::stride(const_cast<Nd4jLong *>(outShapeInfo));
 
-        n = outShape[0] * iC * oH * oW;        
-         
-        //Effective kernel size, accounting for dilation
-        kHeff = kH + (kH - 1) * (dH - 1);
-        kWeff = kW + (kW - 1) * (dW - 1);
-        
-    }
+          int samples = outShape[0];
+          int depth = outShape[1];
+          int imgH = outShape[2];
+          int imgW = outShape[3];
 
-    __syncthreads();
+          int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+          int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
-    for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-        
-        T val = 0.f;
-        const int outW = i % iW + pW;
-        const int outH = (i / iW) % iH + pH;
-        const int outC = i / (iW * iH);
-        const int outNum = outC / iC;
-        const int outDepth = outC % iC;
+          int n = samples * depth * imgHeight * imgWidth;
 
-        // compute the start and end of the output
-        // These are the indexes for dimensions ??? in the 6d col matrix
-        const int inHstart = (outH < kHeff) ? 0 : (outH - kHeff) / sH + 1;
-        const int inHend = nd4j::math::nd4j_min<int>(outH / sH + 1, oH);
-        const int inWstart = (outW < kWeff) ? 0 : (outW - kWeff) / sW + 1;
-        const int inWend = nd4j::math::nd4j_min<int>(outW / sW + 1, oW);
+          //Effective kernel size, accounting for dilation
+          int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
+          int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
 
-        //Iterate over col entries in the 6d array... these are added up
-        for (int inH = inHstart; inH < inHend; inH += 1) {
-            for (int inW = inWstart; inW < inWend; inW += 1) {
-                
-                int hK = (outH - inH * sH);
-                int wK = (outW - inW * sW);
+          for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+              T val = 0;
+              int w_im = i % imgWidth + padWidth;
+              int h_im = (i / imgWidth) % imgHeight + padHeight;
+              int c_im = i / (imgWidth * imgHeight);
 
-                if(hK % dH == 0 && wK % dW == 0) {
-                    hK /= dH;
-                    wK /= dW;
+              int num_im = c_im / depth;
+              int depth_im = c_im % depth;
 
-                    int inInd = outNum * stride0 + outDepth * stride1 + hK * stride2 + wK * stride3 + inH * stride4 + inW * stride5;
-                    val += x[inInd];
-                }
-            }
-        }
-        int outInd = 0;
-        int ic = i;
-        
-        for (int dim = 3; dim >= 0; dim--) {
-            outInd += (ic % outShape[dim])  * outStride[dim];
-            ic = ic / outShape[dim];
-        }
-        z[outInd] = val;
-    }
+              // compute the start and end of the output
+              // These are the indexes for dimensions ??? in the 6d col matrix
+              int w_col_start = (w_im < kEffectiveW) ? 0 : (w_im - kEffectiveW) / strideX + 1;
+              int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
+
+              int h_col_start = (h_im < kEffectiveH) ? 0 : (h_im - kEffectiveH) / strideY + 1;
+              int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
+
+
+              //Iterate over col entries in the 6d array... these are added up
+              for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
+                  for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
+                      int h_k = (h_im - h_col * strideY);
+                      int w_k = (w_im - w_col * strideX);
+
+                      if(h_k % dY == 0 && w_k % dX == 0){
+                          h_k /= dY;
+                          w_k /= dX;
+
+                          int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
+                          val += dx[data_col_index];
+                      }
+                  }
+              }
+
+              int i_f = 0;
+              int i_c = i;
+              for (int dim = 3; dim >= 0; dim--) {
+                  i_f += (i_c % outShape[dim])  * outStride[dim];
+                  i_c = i_c / outShape[dim];
+              }
+
+              result[i_f] = val;
+          }
 }
 
 //////////////////////////////////////////////////////////////////////////

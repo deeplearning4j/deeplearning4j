@@ -181,4 +181,9 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public void close() {
 
     }
+
+    @Override
+    public INDArray assign(boolean value) {
+        return assign(value ? 1 : 0);
+    }
 }

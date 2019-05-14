@@ -65,6 +65,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray assign(boolean value) {
+        return assign(value ? 1 : 0);
+    }
+
+    @Override
     public INDArray repeat(int dimension, long... repeats) {
         return null;
     }
