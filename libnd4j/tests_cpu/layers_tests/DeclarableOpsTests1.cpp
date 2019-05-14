@@ -1515,105 +1515,105 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
     // nd4j_printf("Ops: %s\n", res)
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
-    NativeOps nativeOps;
+// //////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
+//     NativeOps nativeOps;
 
-    auto x = NDArrayFactory::create_<float>('c', {10, 10});
-    x->assign(1.0f);
+//     auto x = NDArrayFactory::create_<float>('c', {10, 10});
+//     x->assign(1.0f);
 
-    auto y = NDArrayFactory::create_<float>('c', {10, 10});
-    y->assign(2.0f);
+//     auto y = NDArrayFactory::create_<float>('c', {10, 10});
+//     y->assign(2.0f);
 
-    auto z = NDArrayFactory::create_<float>('c', {10, 10});
+//     auto z = NDArrayFactory::create_<float>('c', {10, 10});
 
-    auto exp = NDArrayFactory::create_<float>('c', {10, 10});
-    exp->assign(3.0f);
-    z->assign(120.0f);
-    std::string opName("add");
+//     auto exp = NDArrayFactory::create_<float>('c', {10, 10});
+//     exp->assign(3.0f);
+//     z->assign(120.0f);
+//     std::string opName("add");
 
-    auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+//     auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
 
-    auto inputBuffers = new Nd4jPointer[2];
-    auto inputShapes = new Nd4jPointer[2];
+//     auto inputBuffers = new Nd4jPointer[2];
+//     auto inputShapes = new Nd4jPointer[2];
 
-    inputBuffers[0] = (Nd4jPointer) x->getBuffer();
-    inputBuffers[1] = (Nd4jPointer) y->getBuffer();
+//     inputBuffers[0] = (Nd4jPointer) x->getBuffer();
+//     inputBuffers[1] = (Nd4jPointer) y->getBuffer();
 
-    inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
-    inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
+//     inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
+//     inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
 
-    auto outputBuffers = new Nd4jPointer[1];
-    auto outputShapes = new Nd4jPointer[1];
+//     auto outputBuffers = new Nd4jPointer[1];
+//     auto outputShapes = new Nd4jPointer[1];
 
-    outputBuffers[0] = (Nd4jPointer) z->getBuffer();
-    outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
-
-
-    //auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
-    auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    // z->printIndexedBuffer("Output add");
-    ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
-    ASSERT_NEAR(1.0f, x->meanNumber().e<float>(0), 1e-5);
-    ASSERT_NEAR(3.0f, z->meanNumber().e<float>(0), 1e-5);
-
-    delete x;
-    delete y;
-    delete z;
-    delete exp;
-    delete[] inputBuffers;
-    delete[] inputShapes;
-    delete[] outputBuffers;
-    delete[] outputShapes;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
-    NativeOps nativeOps;
-
-    auto x = NDArrayFactory::create_<float>('c', {10, 10});
-    x->assign(1.0f);
-
-    auto y = NDArrayFactory::create_<float>('c', {10, 10});
-    y->assign(2.0f);
-
-    auto z = NDArrayFactory::create_<float>('c', {10, 10});
-
-    auto exp = NDArrayFactory::create_<float>('c', {10, 10});
-    exp->assign(3.0);
-
-    std::string opName("add");
-
-    auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
-
-    auto inputBuffers = new Nd4jPointer[2];
-    auto inputShapes = new Nd4jPointer[2];
-
-    inputBuffers[0] = (Nd4jPointer) x->getBuffer();
-    inputBuffers[1] = (Nd4jPointer) y->getBuffer();
-
-    inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
-    inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
-
-    auto outputBuffers = new Nd4jPointer[1];
-    auto outputShapes = new Nd4jPointer[1];
-
-    nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
-
-    ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
-    ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);
+//     outputBuffers[0] = (Nd4jPointer) z->getBuffer();
+//     outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
 
 
-    delete x;
-    delete y;
-    delete z;
-    delete exp;
-    delete[] inputBuffers;
-    delete[] inputShapes;
-    delete[] outputBuffers;
-    delete[] outputShapes;
-}
+//     //auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
+//     auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+//     ASSERT_EQ(ND4J_STATUS_OK, status);
+//     // z->printIndexedBuffer("Output add");
+//     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
+//     ASSERT_NEAR(1.0f, x->meanNumber().e<float>(0), 1e-5);
+//     ASSERT_NEAR(3.0f, z->meanNumber().e<float>(0), 1e-5);
+
+//     delete x;
+//     delete y;
+//     delete z;
+//     delete exp;
+//     delete[] inputBuffers;
+//     delete[] inputShapes;
+//     delete[] outputBuffers;
+//     delete[] outputShapes;
+// }
+
+// //////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
+//     NativeOps nativeOps;
+
+//     auto x = NDArrayFactory::create_<float>('c', {10, 10});
+//     x->assign(1.0f);
+
+//     auto y = NDArrayFactory::create_<float>('c', {10, 10});
+//     y->assign(2.0f);
+
+//     auto z = NDArrayFactory::create_<float>('c', {10, 10});
+
+//     auto exp = NDArrayFactory::create_<float>('c', {10, 10});
+//     exp->assign(3.0);
+
+//     std::string opName("add");
+
+//     auto hash = nd4j::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+
+//     auto inputBuffers = new Nd4jPointer[2];
+//     auto inputShapes = new Nd4jPointer[2];
+
+//     inputBuffers[0] = (Nd4jPointer) x->getBuffer();
+//     inputBuffers[1] = (Nd4jPointer) y->getBuffer();
+
+//     inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
+//     inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
+
+//     auto outputBuffers = new Nd4jPointer[1];
+//     auto outputShapes = new Nd4jPointer[1];
+
+//     nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
+
+//     ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
+//     ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);
+
+
+//     delete x;
+//     delete y;
+//     delete z;
+//     delete exp;
+//     delete[] inputBuffers;
+//     delete[] inputShapes;
+//     delete[] outputBuffers;
+//     delete[] outputShapes;
+// }
 
 #ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////
@@ -2826,40 +2826,40 @@ TEST_F(DeclarableOpsTests1, batchnorm_test4) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, sru_old_test1) {
+// TEST_F(DeclarableOpsTests1, sru_old_test1) {
 
-    const int bS = 2;
-    const int K = 3;    
-    const int N = 4;
+//     const int bS = 2;
+//     const int K = 3;    
+//     const int N = 4;
 
-    NDArray input('c', {bS,K,N}, nd4j::DataType::DOUBLE);
-    NDArray weights('c', {3*K,K}, nd4j::DataType::DOUBLE);
-    NDArray bias('c', {1,2*K}, nd4j::DataType::DOUBLE);
-    NDArray init('c', {bS,K}, nd4j::DataType::DOUBLE);
-    NDArray mask('c', {bS,K}, nd4j::DataType::DOUBLE);
-    NDArray expState('c', {bS,K,N}, {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715}, nd4j::DataType::DOUBLE);
-    NDArray expOut('c', {bS,K,N}, {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656}, nd4j::DataType::DOUBLE);
+//     NDArray input('c', {bS,K,N}, nd4j::DataType::DOUBLE);
+//     NDArray weights('c', {3*K,K}, nd4j::DataType::DOUBLE);
+//     NDArray bias('c', {1,2*K}, nd4j::DataType::DOUBLE);
+//     NDArray init('c', {bS,K}, nd4j::DataType::DOUBLE);
+//     NDArray mask('c', {bS,K}, nd4j::DataType::DOUBLE);
+//     NDArray expState('c', {bS,K,N}, {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715}, nd4j::DataType::DOUBLE);
+//     NDArray expOut('c', {bS,K,N}, {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656}, nd4j::DataType::DOUBLE);
    
-    input.assign(1.5);
-    weights.assign(0.5); 
-    bias.assign(0.3) ;
-    init.assign(1.);
-    mask.assign(1.);
+//     input.assign(1.5);
+//     weights.assign(0.5); 
+//     bias.assign(0.3) ;
+//     init.assign(1.);
+//     mask.assign(1.);
 
-    nd4j::ops::sru_old op;
-    auto  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
-    ASSERT_TRUE(results->size() == 2);    
+//     nd4j::ops::sru_old op;
+//     auto  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
+//     ASSERT_TRUE(results->size() == 2);    
 
-    auto state  = results->at(0);
-    auto output = results->at(1);
-    // state->printBuffer();
-    // expState.printIndexedBuffer("EXP STATE");
-    // state->printIndexedBuffer("OUT STATE");
-    ASSERT_TRUE(expState.equalsTo(state));
-    ASSERT_TRUE(expOut.equalsTo(output));
+//     auto state  = results->at(0);
+//     auto output = results->at(1);
+//     // state->printBuffer();
+//     // expState.printIndexedBuffer("EXP STATE");
+//     // state->printIndexedBuffer("OUT STATE");
+//     ASSERT_TRUE(expState.equalsTo(state));
+//     ASSERT_TRUE(expOut.equalsTo(output));
     
-    delete results;
-}
+//     delete results;
+// }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_test1) {
@@ -2895,43 +2895,43 @@ TEST_F(DeclarableOpsTests1, sru_test1) {
     delete results;
 }
 
-//////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, sru_logic_test1) {
-    const int bS = 2;
-    const int K = 3;    
-    const int N = 4;
-    double expOutputBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
-    double expStateBuff[]  = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
+// //////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests1, sru_logic_test1) {
+//     const int bS = 2;
+//     const int K = 3;    
+//     const int N = 4;
+//     double expOutputBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
+//     double expStateBuff[]  = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
 
-    auto input = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto weights = NDArrayFactory::create<double>('c', {3*K,K});
-    auto bias = NDArrayFactory::create<double>('c', {1,2*K});
-    auto init = NDArrayFactory::create<double>('c', {bS,K});
-    auto mask = NDArrayFactory::create<double>('c', {bS,K});
-    auto expState = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto expOut = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto input = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto weights = NDArrayFactory::create<double>('c', {3*K,K});
+//     auto bias = NDArrayFactory::create<double>('c', {1,2*K});
+//     auto init = NDArrayFactory::create<double>('c', {bS,K});
+//     auto mask = NDArrayFactory::create<double>('c', {bS,K});
+//     auto expState = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto expOut = NDArrayFactory::create<double>('c', {bS,K,N});
    
-    input.assign(1.5);
-    weights.assign(0.5); 
-    bias.assign(0.3) ;
-    init.assign(1.);
-    mask.assign(1.);
-    expState.setBuffer(expStateBuff);
-    expOut.setBuffer(expOutputBuff);
+//     input.assign(1.5);
+//     weights.assign(0.5); 
+//     bias.assign(0.3) ;
+//     init.assign(1.);
+//     mask.assign(1.);
+//     expState.setBuffer(expStateBuff);
+//     expOut.setBuffer(expOutputBuff);
 
-    nd4j::ops::sru_logic op;
-    auto results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
+//     nd4j::ops::sru_logic op;
+//     auto results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
 
-    ASSERT_TRUE(results->size() == 2);    
+//     ASSERT_TRUE(results->size() == 2);    
 
-    auto output = results->at(0);
-    auto state  = results->at(1);
+//     auto output = results->at(0);
+//     auto state  = results->at(1);
 
-    ASSERT_TRUE(expState.equalsTo(state));
-    ASSERT_TRUE(expOut.equalsTo(output));
+//     ASSERT_TRUE(expState.equalsTo(state));
+//     ASSERT_TRUE(expOut.equalsTo(output));
     
-    delete results;
-}
+//     delete results;
+// }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_bp) {
@@ -2980,8 +2980,8 @@ TEST_F(DeclarableOpsTests1, sru_bp) {
     auto gradW    = resultsBP->at(1);
     auto gradB    = resultsBP->at(2);
     auto gradInit = resultsBP->at(3);
-    // expGradX.printIndexedBuffer("Exp GRAD");
-    // gradX->printIndexedBuffer("Res GRAD");
+    // expGradX.printBuffer("Exp GRAD");
+    // gradX->printBuffer("Res GRAD");
     ASSERT_TRUE(expGradX.equalsTo(gradX,1e-4)); 
     ASSERT_TRUE(expGradW.equalsTo(gradW));
     ASSERT_TRUE(expGradB.equalsTo(gradB));
@@ -2991,60 +2991,60 @@ TEST_F(DeclarableOpsTests1, sru_bp) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, sru_bp_logic1) {
+// TEST_F(DeclarableOpsTests1, sru_bp_logic1) {
 
-    const int bS = 2;
-    const int K = 3;    
-    const int N = 4;
-    double expGradXBuff[] = {-0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165};    
-    double expGradWBuff[] = {0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215};
-    double expGradBBuff[] = {-0.7043748, -0.7043748, -0.7043748, -0.2128962, -0.2128962, -0.2128962};
-    double expGradInitBuff[] = {1.1421, 1.1421, 1.1421, 1.1421, 1.1421, 1.1421};
-    double stateBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};                       
+//     const int bS = 2;
+//     const int K = 3;    
+//     const int N = 4;
+//     double expGradXBuff[] = {-0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165, -0.0259303, -0.03869125, -0.0302272, -0.02299165};    
+//     double expGradWBuff[] = {0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, 0.42526005,0.42526005,0.42526005, -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.5282811 , -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215, -0.15967215};
+//     double expGradBBuff[] = {-0.7043748, -0.7043748, -0.7043748, -0.2128962, -0.2128962, -0.2128962};
+//     double expGradInitBuff[] = {1.1421, 1.1421, 1.1421, 1.1421, 1.1421, 1.1421};
+//     double stateBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};                       
 
-    auto input = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto weights = NDArrayFactory::create<double>('c', {3*K,K});
-    auto bias = NDArrayFactory::create<double>('c', {1,2*K});
-    auto init = NDArrayFactory::create<double>('c', {bS,K});
-    auto mask = NDArrayFactory::create<double>('c', {bS,K});
-    auto state = NDArrayFactory::create<double>('c', {bS,K,N});
-    auto inGradCt = NDArrayFactory::create<double>('c', {bS,K});
-    auto inGradH = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto input = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto weights = NDArrayFactory::create<double>('c', {3*K,K});
+//     auto bias = NDArrayFactory::create<double>('c', {1,2*K});
+//     auto init = NDArrayFactory::create<double>('c', {bS,K});
+//     auto mask = NDArrayFactory::create<double>('c', {bS,K});
+//     auto state = NDArrayFactory::create<double>('c', {bS,K,N});
+//     auto inGradCt = NDArrayFactory::create<double>('c', {bS,K});
+//     auto inGradH = NDArrayFactory::create<double>('c', {bS,K,N});
 
-    auto expGradX = NDArrayFactory::create<double>('c', {bS,K,N});
-    expGradX.setBuffer(expGradXBuff);
-    auto expGradW = NDArrayFactory::create<double>('c', {bS,3*K,K});
-    expGradW.setBuffer(expGradWBuff);
-    auto expGradB = NDArrayFactory::create<double>('c', {1,2*K});
-    expGradB.setBuffer(expGradBBuff);
-    auto expGradInit = NDArrayFactory::create<double>('c', {bS,K});
-    expGradInit.setBuffer(expGradInitBuff);
+//     auto expGradX = NDArrayFactory::create<double>('c', {bS,K,N});
+//     expGradX.setBuffer(expGradXBuff);
+//     auto expGradW = NDArrayFactory::create<double>('c', {bS,3*K,K});
+//     expGradW.setBuffer(expGradWBuff);
+//     auto expGradB = NDArrayFactory::create<double>('c', {1,2*K});
+//     expGradB.setBuffer(expGradBBuff);
+//     auto expGradInit = NDArrayFactory::create<double>('c', {bS,K});
+//     expGradInit.setBuffer(expGradInitBuff);
 
-    input.assign(1.5);
-    weights.assign(0.5); 
-    bias.assign(0.3) ;    
-    mask.assign(1.);
-    init.assign(1.);
-    state.setBuffer(stateBuff);
-    inGradCt.assign(0.5);
-    inGradH.assign(0.5);
+//     input.assign(1.5);
+//     weights.assign(0.5); 
+//     bias.assign(0.3) ;    
+//     mask.assign(1.);
+//     init.assign(1.);
+//     state.setBuffer(stateBuff);
+//     inGradCt.assign(0.5);
+//     inGradH.assign(0.5);
     
-    nd4j::ops::sru_bp_logic bp;
-    auto resultsBP = bp.execute({&input, &weights, &bias, &init, &state, &inGradCt, &inGradH, &mask}, {}, {});
-    ASSERT_TRUE(resultsBP->size() == 4);    
+//     nd4j::ops::sru_bp_logic bp;
+//     auto resultsBP = bp.execute({&input, &weights, &bias, &init, &state, &inGradCt, &inGradH, &mask}, {}, {});
+//     ASSERT_TRUE(resultsBP->size() == 4);    
 
-    auto gradX    = resultsBP->at(0);
-    auto gradW    = resultsBP->at(1);
-    auto gradB    = resultsBP->at(2);
-    auto gradInit = resultsBP->at(3);
+//     auto gradX    = resultsBP->at(0);
+//     auto gradW    = resultsBP->at(1);
+//     auto gradB    = resultsBP->at(2);
+//     auto gradInit = resultsBP->at(3);
 
-    ASSERT_TRUE(expGradX.equalsTo(gradX, 1e-4)); 
-    ASSERT_TRUE(expGradW.equalsTo(gradW));
-    ASSERT_TRUE(expGradB.equalsTo(gradB));
-    ASSERT_TRUE(expGradInit.equalsTo(gradInit));
+//     ASSERT_TRUE(expGradX.equalsTo(gradX, 1e-4)); 
+//     ASSERT_TRUE(expGradW.equalsTo(gradW));
+//     ASSERT_TRUE(expGradB.equalsTo(gradB));
+//     ASSERT_TRUE(expGradInit.equalsTo(gradInit));
     
-    delete resultsBP;
-}
+//     delete resultsBP;
+// }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_bi_1) {
