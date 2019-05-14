@@ -1056,8 +1056,50 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         arrayShape = ArrayUtil.toLongArray(Ints.toArray(dimensions));
 
-        if (tfTensor.getDtype() == DataType.DT_INT32 || tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_INT8
-                || tfTensor.getDtype() == DataType.DT_UINT8 || tfTensor.getDtype() == DataType.DT_UINT16) {
+        if (tfTensor.getDtype() == DataType.DT_INT16 || tfTensor.getDtype() == DataType.DT_UINT16) {
+            // valueOf
+            if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if (tfTensor.getIntValCount() < 1)
+                    return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), 0);
+
+                //should be scalar otherwise
+                int val = tfTensor.getIntVal(0);
+
+                if (arrayShape == null || arrayShape.length == 0)
+                    return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), val);
+
+                return Nd4j.valueArrayOf(arrayShape, val, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
+            } else if (tfTensor.getIntValCount() > 0) {
+                val jArray = new int[tfTensor.getIntValCount()];
+                for (int e = 0; e < tfTensor.getIntValCount(); e++) {
+                    jArray[e] = tfTensor.getIntVal(e);
+                }
+
+                // TF arrays are always C
+                return Nd4j.create(Nd4j.createTypedBuffer(jArray, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
+            } else {
+                // binary representation
+                val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
+                val fb = bb.order(ByteOrder.nativeOrder()).asShortBuffer();
+                val fa = new short[fb.capacity()];
+                for (int e = 0; e < fb.capacity(); e++)
+                    fa[e] = fb.get(e);
+
+                if (fa.length == 0)
+                    return Nd4j.empty(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
+                //throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+
+                if (fa.length == 1)
+                    return Nd4j.scalar(ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()), fa[0]);
+
+                if (arrayShape.length == 1)
+                    return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
+
+                val array = Nd4j.create(Nd4j.createTypedBuffer(fa, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
+                return array;
+            }
+        } else  if (tfTensor.getDtype() == DataType.DT_INT32) {
             // valueOf
             if (tfTensor.getIntValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
@@ -1098,8 +1140,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     return Nd4j.create(fa, new long[]{fa.length}, new long[]{1}, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
 
                 val array = Nd4j.create(Nd4j.createTypedBuffer(fa, ArrayOptionsHelper.convertToDataType(tfTensor.getDtype())), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', ArrayOptionsHelper.convertToDataType(tfTensor.getDtype()));
-                //log.debug("SUM1: {}", array.sumNumber());
-                //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
                 return array;
             }
         } else if (tfTensor.getDtype() == DataType.DT_FLOAT) {
