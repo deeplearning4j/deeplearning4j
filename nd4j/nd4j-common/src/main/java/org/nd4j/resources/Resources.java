@@ -1,6 +1,7 @@
 package org.nd4j.resources;
 
 import lombok.NonNull;
+import org.nd4j.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
 import java.io.InputStream;
@@ -17,6 +18,7 @@ public class Resources {
         Iterator<Resolver> iter = loader.iterator();
 
         resolvers = new ArrayList<>();
+        resolvers.add(new StrumpfResolver());
         while(iter.hasNext()){
             Resolver r = iter.next();
             resolvers.add(r);

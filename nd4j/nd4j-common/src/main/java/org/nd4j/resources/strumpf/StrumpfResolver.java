@@ -1,33 +1,55 @@
-package org.nd4j.resources.remote;
+package org.nd4j.resources.strumpf;
 
 import lombok.NonNull;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resolver;
-import org.nd4j.resources.strumpf.ResourceFile;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * TODO: Need some way of
+ * Resource resources based on Strumpf resource files, or standard files<br>
+ * https://github.com/deeplearning4j/strumpf
+ * <br>
+ * Note that resource files (those with path ending with {@link #REF}) point to remote files, that will be downloaded,
+ * decompressed and cached locally.<br>
+ * The default cache location is {@link #DEFAULT_CACHE_DIR}; this can be overridden by setting the {@link #TEST_CACHE_DIR_SYSTEM_PROPERTY}
+ * system property.<br>
+ * <br>
+ * <br>
+ * Two resolution methods are supported:<br>
+ * 1. Resolving from the classpath<br>
+ * 2. Resolving from one of any specified directories<br>
+ * <br>
+ * Resolving from specified directories: You can point this to one or more local directories (rather than relying on
+ * classpath) when resolving resources. This can be done by setting the {@link #LOCAL_DIRS_SYSTEM_PROPERTY}
  *
+ * @author Alex Black
  */
-public class RemoteResolver implements Resolver {
+public class StrumpfResolver implements Resolver {
+    public static final String TEST_CACHE_DIR_SYSTEM_PROPERTY = "ai.skymind.test.resources.dir";
     public static final String LOCAL_DIRS_SYSTEM_PROPERTY = "ai.skymind.strumpf.resource.dirs";
+    public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".skymind/test_resources").getAbsolutePath();
     public static final String REF = ".resource_reference";
 
     protected final List<String> localResourceDirs;
+    protected final File cacheDir;
 
-    public RemoteResolver(){
+    public StrumpfResolver(){
 
         String localDirs = System.getProperty(LOCAL_DIRS_SYSTEM_PROPERTY, null);
 
-        if(localDirs != null) {
+        if(localDirs != null && !localDirs.isEmpty()) {
             String[] split = localDirs.split(",");
             localResourceDirs = Arrays.asList(split);
         } else {
             localResourceDirs = null;
         }
+
+        String cd = System.getProperty(TEST_CACHE_DIR_SYSTEM_PROPERTY, DEFAULT_CACHE_DIR);
+        cacheDir = new File(cd);
+        cacheDir.mkdirs();
 
 
     }
@@ -57,8 +79,16 @@ public class RemoteResolver implements Resolver {
             }
         }
 
+        //Second: Check classpath
+        ClassPathResource cpr = new ClassPathResource(resourcePath + REF);
+        if(cpr.exists()){
+            return true;
+        }
 
-        //Second: Check classpath (TODO)
+        cpr = new ClassPathResource(resourcePath);
+        if(cpr.exists()){
+            return true;
+        }
 
         return false;
     }
@@ -87,9 +117,28 @@ public class RemoteResolver implements Resolver {
         }
 
 
-        //Second: Check classpath (TODO)
+        //Second: Check classpath for references (and actual file)
+        ClassPathResource cpr = new ClassPathResource(resourcePath + REF);
+        if(cpr.exists()){
+            ResourceFile rf;
+            try {
+                rf = ResourceFile.fromFile(cpr.getFile());
+            } catch (IOException e){
+                throw new RuntimeException(e);
+            }
+            return rf.localFile(cacheDir);
+        }
 
-        return null;
+        cpr = new ClassPathResource(resourcePath);
+        if(cpr.exists()){
+            try {
+                return cpr.getFile();
+            } catch (IOException e){
+                throw new RuntimeException(e);
+            }
+        }
+
+        throw new RuntimeException("Could not find resource file that should exist: " + resourcePath);
     }
 
     @Override
@@ -110,8 +159,7 @@ public class RemoteResolver implements Resolver {
 
     @Override
     public File localCacheRoot() {
-        //TODO
-        return null;
+        return cacheDir;
     }
 
 
