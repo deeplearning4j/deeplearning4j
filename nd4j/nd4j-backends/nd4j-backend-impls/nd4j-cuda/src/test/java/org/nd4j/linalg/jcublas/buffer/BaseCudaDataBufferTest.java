@@ -29,7 +29,7 @@ public class BaseCudaDataBufferTest {
         log.info("array shapeInfo: {}", x.shapeInfoJava());
         log.info("direct shapeInfo: {}", jvm);
 
-        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x);
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
         val pointM = AtomicAllocator.getInstance().getAllocationPoint(db);
 
         assertNotNull(pointX);
@@ -47,5 +47,7 @@ public class BaseCudaDataBufferTest {
 
         assertEquals(pointM.getHostPointer().address(), pointX.getHostPointer().address());
         assertEquals(pointM.getDevicePointer().address(), pointX.getDevicePointer().address());
+
+        assertArrayEquals(x.shapeInfoJava(), jvm);
     }
 }
