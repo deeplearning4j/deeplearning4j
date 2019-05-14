@@ -142,30 +142,61 @@ namespace helpers {
         int colCount = data->columns();
 
         std::vector<T> slice(colCount);
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(slice))
+//        //PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(slice))
+        auto shift = 0;
+        auto rowSize = sizeof(T) * colCount;
         for (int n = 0; n < N; n++) {
-            T* currentSlice = &slice[0];
-            memcpy(currentSlice, dataP + n * colCount, sizeof(T) * colCount);
+            //T* currentSlice = &slice[0];
+            memcpy(&slice[0], dataP + shift, rowSize);
+//                for (int k = 0; k < colCount; k++)
+//                    slice[k] = *(dataP + shift + k); //slice[k] * res);
             int start = rowP->e<int>(n);
             int end = rowP->e<int>(n+1);
 
             for (int i = start; i < end; i++) {
                 T const* thisSlice = dataP + colP->e<int>(i) * colCount;
                 T res = 1;
+                //auto localShift = colP->e<int>(i) * colCount;
                 for (int k = 0; k < colCount; k++) {
-                    currentSlice[k] -= thisSlice[k];
-                    res += currentSlice[k] * currentSlice[k];
+                    slice[k] = dataP[shift + k] - thisSlice[k];//thisSlice[k];
+                    res += slice[k] * slice[k];
                 }
-
+                res = vals[i] / res;
                 for (int k = 0; k < colCount; k++)
-                    outputP[n * colCount + k] += (currentSlice[k] * vals[i] / res);
+                    outputP[shift + k] += (slice[k] * res);
             }
+            shift += colCount;
         }
+        // Loop over all edges in the graph
+        //double [] buff = new double[dimension];
+//        int ind1 = 0;
+//        int ind2 = 0;
+//        double D;
+//        for(int n = 0; n < N; n++) {
+//            auto start = rowP->e<int>(n);
+//            auto end = rowP->e<int>(n + 1);
+//            for(int i = start; i < end; i++) {
+//
+//                // Compute pairwise distance and Q-value
+//                D = 1.0;
+//                ind2 = colP->e<int>(i) * colCount; //dimension;
+//                for(int d = 0; d < colCount; d++) {
+//                    buff[d] = dataP[ind1 + d] - dataP[ind2 + d];
+//                    D += buff[d] * buff[d];
+//                }
+//                D = vals[i] / D;
+//
+//                // Sum positive force
+//                for(int d = 0; d < colCount; d++)
+//                    outputP[ind1 + d] += D * buff[d];
+//            }
+//            ind1 += colCount;
+//        }
     }
 
     void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {
         // Loop over all edges in the graph
-        BUILD_SINGLE_SELECTOR(data.dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), FLOAT_TYPES);
 //       PRAGMA_OMP_PARALLEL_FOR
 //        for (int n = 0; n < N; n++) {
 //            NDArray slice = data(n, {0});
@@ -180,7 +211,7 @@ namespace helpers {
 //            }
 //        }
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
 
     template <typename T>
     static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
