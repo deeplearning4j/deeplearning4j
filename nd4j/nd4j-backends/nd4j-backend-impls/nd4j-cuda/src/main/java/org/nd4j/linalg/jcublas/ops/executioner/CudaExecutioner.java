@@ -60,6 +60,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -2692,6 +2693,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 .countPositive(debugInfo._positiveCount())
                 .countZero(debugInfo._zeroCount())
                 .build();
+    }
+
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+        val dbf = (Nd4jCuda.DataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, false);
+
+        return new CudaLongDataBuffer(dbf.primary(), dbf.special(), Shape.shapeInfoLength(shape.length));
     }
 }
 

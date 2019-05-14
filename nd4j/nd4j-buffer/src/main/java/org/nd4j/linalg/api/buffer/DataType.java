@@ -35,7 +35,7 @@ public enum DataType {
         switch (type) {
             case 1: return BOOL;
             case 3: return HALF;
-            case  5: return FLOAT;
+            case 5: return FLOAT;
             case 6: return DOUBLE;
             case 7: return BYTE;
             case 8: return SHORT;
@@ -43,6 +43,21 @@ public enum DataType {
             case 10: return LONG;
             case 11: return UBYTE;
             default: throw new UnsupportedOperationException("Unknown data type: [" + type + "]");
+        }
+    }
+
+    public int toInt() {
+        switch (this) {
+            case BOOL: return 1;
+            case HALF: return 3;
+            case FLOAT: return 5;
+            case DOUBLE: return 6;
+            case BYTE: return 7;
+            case SHORT: return 8;
+            case INT: return 9;
+            case LONG: return 10;
+            case UBYTE: return 11;
+            default: throw new UnsupportedOperationException("Non-covered data type: [" + this + "]");
         }
     }
 

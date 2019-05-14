@@ -92,9 +92,12 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
                     buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
 
+                    /*
+                    // constant space is allocated at cpp level
                     if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
                         Nd4j.getConstantHandler().moveToConstantSpace(buffer.getFirst());
                     }
+                     */
 
                     //deviceCache.get(deviceId).put(descriptor, buffer);
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
