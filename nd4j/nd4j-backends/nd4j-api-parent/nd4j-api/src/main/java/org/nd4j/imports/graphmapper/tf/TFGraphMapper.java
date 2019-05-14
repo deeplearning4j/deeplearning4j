@@ -21,6 +21,7 @@ import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -1184,10 +1185,45 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 val array = Nd4j.create(da, arrayShape, 0, 'c');
                 return array;
             }
+        } else if (tfTensor.getDtype() == DataType.DT_BFLOAT16) {
+            if (tfTensor.getHalfValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if(tfTensor.getHalfValCount() < 1)
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.BFLOAT16, 0.0);
+
+                int val = tfTensor.getHalfVal(0);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
+                INDArray array = Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.BFLOAT16, 0);
+                array.putScalar(0, Bfloat16Indexer.toFloat(val));
+                return array;
+            } else if (tfTensor.getHalfValCount() > 0) {
+                //TODO this won't work for huge arrays due to int indexing
+                int n = tfTensor.getHalfValCount();
+                INDArray arr = Nd4j.create(org.nd4j.linalg.api.buffer.DataType.BFLOAT16, n);
+                ByteBuffer bb = arr.data().pointer().asByteBuffer();
+
+                for (int e = 0; e < n; e++) {
+                    int val = tfTensor.getHalfVal(e);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
+                    arr.putScalar(e, Bfloat16Indexer.toFloat(val));
+                }
+
+                return arr.reshape('c', arrayShape);
+            } else if (tfTensor.getTensorContent().size() > 0) {
+                // binary representation
+                //DataBuffer buffer = Nd4j.createBuffer(tfTensor.getTensorContent().asReadOnlyByteBuffer(), DataType.FLOAT, (int) length);
+                //INDArray array = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(arrayShape, 'c'));
+
+                // binary representation
+                val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
+                INDArray arr = Nd4j.createUninitialized(org.nd4j.linalg.api.buffer.DataType.BFLOAT16, arrayShape, 'c');
+                ByteBuffer bb2 = arr.data().pointer().asByteBuffer();
+                bb2.put(bb);
+
+                return arr;
+            }
         } else if (tfTensor.getDtype() == DataType.DT_HALF) {
             if (tfTensor.getHalfValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if(tfTensor.getDoubleValCount() < 1)
+                if(tfTensor.getHalfValCount() < 1)
                     return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.HALF, 0.0);
 
                 int val = tfTensor.getHalfVal(0);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
