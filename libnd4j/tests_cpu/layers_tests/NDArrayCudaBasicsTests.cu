@@ -2530,8 +2530,8 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_1) {
     //ASSERT_EQ(10, result->size());
     auto e = result->size() - 1;
     //for (size_t e = 0; e < result->size(); e++) {
-        arrays[e].printIndexedBuffer("Input list at 40");
-        result->at(e)->printIndexedBuffer("OUtput TEAR at 40");
+//        arrays[e].printIndexedBuffer("Input list at 40");
+//        result->at(e)->printIndexedBuffer("OUtput TEAR at 40");
     //}
 //        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
 
@@ -2564,20 +2564,34 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
     }
     std::vector<int> dimsToExclude({1,2});
     native.concat(extra, 0, 10, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printBuffer("Pile OK");
-    z.printIndexedBuffer("Pile 10x10");
-    z.printIndexedBuffer("Pile 10x10");
+//    z.syncToHost();
+//    z.printBuffer("Pile OK");
+//    z.printIndexedBuffer("Pile 10x10");
+//    z.printIndexedBuffer("Pile 10x10");
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
-    std::vector<void*> arraysData(arrays.size());
-    for (size_t i = 0; i < arrays.size(); i++)
-        arraysData[i] = arrays[i].specialBuffer();
-    native.tear(extra, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), (Nd4jPointer*)(arraysData.data()), input.specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets());
+    //std::vector<void*> arraysData(arrays.size());
+    Nd4jPointer* arraysData;
+    cudaError_t err = cudaMalloc(&arraysData, arrays.size() * sizeof(void*));
+    if (err != 0) {
+        printf("Cannot allocate device memory for targets due error %d\n", err);
+        ASSERT_TRUE(false);
+    }
+    for (size_t i = 0; i < arrays.size(); i++) {
+        Nd4jPointer target = arrays[i].specialBuffer();
+        cudaMemcpy(&arraysData[i], &target, sizeof(Nd4jPointer), cudaMemcpyHostToDevice);
+    }
+    native.tear(extra, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), arraysData, input.specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets());
 //    auto result = op.execute({&z}, {}, {1, 2});
 //    nd4j_printf("Result count is %lu\n", result->size());
     //ASSERT_EQ(10, result->size());
+    err = cudaFree(arraysData);
+    if (err != 0) {
+        printf("Cannot deallocate device memory for targets due error %d\n", err);
+        ASSERT_TRUE(false);
+    }
 
-    for (size_t e = 0; e < arrays.size(); e++) {
+  for (size_t e = 0; e < arrays.size(); e++) {
+        arrays[e].syncToHost();
         arrays[e].printBuffer("Output list at");
         //result->at(e)->printBuffer("OUtput TEAR at");
     }
