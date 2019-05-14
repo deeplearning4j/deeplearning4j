@@ -18,6 +18,8 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -431,4 +433,16 @@ public interface OpExecutioner {
      * @param array
      */
     INDArrayStatistics inspectArray(INDArray array);
+
+
+    /**
+     * This method returns DataBuffer
+     * @param shape
+     * @param stride
+     * @param elementWiseStride
+     * @param order
+     * @param dtype
+     * @return
+     */
+    DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype);
 }

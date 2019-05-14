@@ -1146,4 +1146,6 @@ public abstract class NativeOps extends Pointer {
      * this method tries to read numBytes bytes from buffer to provoke crash in certain scenarios
      */
     public abstract void tryPointer(Pointer extras, Pointer buffer, int numBytesToRead);
+
+    public abstract Pointer shapeBuffer(int rank, @Cast("Nd4jLong *") LongPointer shape, @Cast("Nd4jLong *") LongPointer strides, int dtype, char order, long ews, boolean empty);
 }

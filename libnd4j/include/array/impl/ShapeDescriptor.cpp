@@ -106,6 +106,31 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd
     }
 }
 
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const Nd4jLong *strides, const int rank, Nd4jLong ews, const bool empty) {
+    _shape.resize(rank);
+    _strides.resize(rank);
+
+    _dataType = type;
+    _order = order;
+    _rank = rank;
+    _empty = empty;
+    _ews = ews;
+
+    for (int e = 0; e < rank; e++)
+        _shape[e] = shape[e];
+
+    for (int e = 0; e < rank; e++)
+        _strides[e] = strides[e];
+
+
+    for (auto v:_shape) {
+        if (v == 0) {
+            _empty = true;
+            break;
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
     _rank = ((shape.size() == 1 && shape[0] == 0)? 0: shape.size());

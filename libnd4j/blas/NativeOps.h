@@ -66,6 +66,7 @@ bool verbose = false;
 */
 
 #include <array/ShapeList.h>
+#include <array/DataBuffer.h>
 #include <graph/VariablesSet.h>
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
@@ -1657,6 +1658,9 @@ public:
                       int* hIindexes, int* dIindexes);
 
     void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
+
+
+    nd4j::DataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty);
 };
 
 

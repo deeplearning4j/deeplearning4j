@@ -885,4 +885,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArrayStatistics inspectArray(INDArray array) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+        throw new UnsupportedOperationException();
+    }
 }

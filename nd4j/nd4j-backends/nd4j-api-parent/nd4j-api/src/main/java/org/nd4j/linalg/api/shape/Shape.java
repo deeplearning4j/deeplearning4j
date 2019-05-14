@@ -3229,7 +3229,7 @@ public class Shape {
     }
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
-
+        /*
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
 
@@ -3251,6 +3251,10 @@ public class Shape {
         ret.setConstant(true);
 
         return ret;
+        */
+
+        val dtype = ArrayOptionsHelper.dataType(extras);
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype);
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
