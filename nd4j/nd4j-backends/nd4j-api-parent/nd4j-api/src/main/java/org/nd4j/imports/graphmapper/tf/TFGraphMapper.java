@@ -1251,7 +1251,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     int val = tfTensor.getHalfVal(e);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
                     //bb.put(2*e, (byte)((val >> 8) & 0xff));
                     //bb.put(2*e+1, (byte)(val & 0xff));
-                    arr.putScalar(e, HalfIndexer.fromFloat(val));
+                    arr.putScalar(e, HalfIndexer.toFloat(val));
                 }
 
                 return arr.reshape('c', arrayShape);
