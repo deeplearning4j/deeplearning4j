@@ -859,7 +859,6 @@ public class NativeImageLoader extends BaseImageLoader {
             PIX pix = pixa.pix(i);
             currentD = asMatrix(convert(pix));
             pixDestroy(pix);
-            //TODO to change when 16-bit image is supported
             switch (this.multiPageMode) {
                 case MINIBATCH:
                     index = new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all()};

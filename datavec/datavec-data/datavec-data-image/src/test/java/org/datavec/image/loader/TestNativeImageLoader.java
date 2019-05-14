@@ -160,11 +160,12 @@ public class TestNativeImageLoader {
         assertEquals(h4, array8.size(3));
         assertEquals(w4, array8.size(4));
 
-        int w5 = 256, h5 = 256, ch7 = 1, pages3 = 181;
+        int w5 = 256, h5 = 256, ch7 = 1, pages3 = 2;
+        String braintiff = "datavec-data-image/testimages2/3d.tiff";
         NativeImageLoader loader8 = new NativeImageLoader(h5, w5, ch7, NativeImageLoader.MultiPageMode.MINIBATCH);
         INDArray array9 = null;
         try {
-            array9 = loader8.asMatrix("/home/tongli/Documents/dl4j-test-resources/src/main/resources/datavec-data-image/testimages2/3d.tiff");
+            array9 = loader8.asMatrix(new ClassPathResource(braintiff).getFile().getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
             fail();
@@ -175,6 +176,22 @@ public class TestNativeImageLoader {
         assertEquals(depth1, array9.size(2));
         assertEquals(h5, array9.size(3));
         assertEquals(w5, array9.size(4));
+
+//        int ch8 = 5, pages4 = 1;
+//        NativeImageLoader loader9 = new NativeImageLoader(h5, w5, ch8, NativeImageLoader.MultiPageMode.CHANNELS);
+//        INDArray array10 = null;
+//        try {
+//            array10 = loader9.asMatrix(new ClassPathResource(braintiff).getFile().getAbsolutePath());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            fail();
+//        }
+//        assertEquals(5, array10.rank());
+//        assertEquals(pages4, array10.size(0));
+//        assertEquals(ch8, array10.size(1));
+//        assertEquals(depth1, array10.size(2));
+//        assertEquals(h5, array10.size(3));
+//        assertEquals(w5, array10.size(4));
     }
 
     @Test
