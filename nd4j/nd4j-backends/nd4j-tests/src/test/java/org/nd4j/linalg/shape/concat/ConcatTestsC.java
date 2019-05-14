@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.shape.concat;
 
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
+import javax.xml.crypto.Data;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,13 +66,10 @@ public class ConcatTestsC extends BaseNd4jTest {
         INDArray vstack = Nd4j.vstack(slice1, slice2);
         assertEquals(arr3, vstack);
 
-        INDArray col1 = arr2.getColumn(0);
-        INDArray col2 = arr2.getColumn(1);
+        INDArray col1 = arr2.getColumn(0).reshape(5, 1);
+        INDArray col2 = arr2.getColumn(1).reshape(5, 1);
         INDArray vstacked = Nd4j.vstack(col1, col2);
         assertEquals(Nd4j.create(10, 1), vstacked);
-
-
-
     }
 
 
@@ -135,7 +135,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1, 5, 5);
+        INDArray vector = Nd4j.linspace(1, 5, 5, Nd4j.dataType());
         vector.assign(1);
         assertEquals(Nd4j.ones(5), vector);
         INDArray twos = Nd4j.ones(2, 2);
@@ -167,9 +167,9 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat3d() {
-        INDArray first = Nd4j.linspace(1, 24, 24).reshape('c', 2, 3, 4);
-        INDArray second = Nd4j.linspace(24, 36, 12).reshape('c', 1, 3, 4);
-        INDArray third = Nd4j.linspace(36, 48, 12).reshape('c', 1, 3, 4);
+        INDArray first = Nd4j.linspace(1, 24, 24, Nd4j.dataType()).reshape('c', 2, 3, 4);
+        INDArray second = Nd4j.linspace(24, 36, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
+        INDArray third = Nd4j.linspace(36, 48, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
         INDArray exp = Nd4j.create(2 + 1 + 1, 3, 4);
@@ -182,7 +182,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat0);
 
         //ConcatV2, dim 1
-        second = Nd4j.linspace(24, 32, 8).reshape('c', 2, 1, 4);
+        second = Nd4j.linspace(24, 32, 8, Nd4j.dataType()).reshape('c', 2, 1, 4);
         for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
             INDArray secondTad = second.javaTensorAlongDimension(i, 1);
             System.out.println(second.tensorAlongDimension(i, 1));
@@ -299,6 +299,20 @@ public class ConcatTestsC extends BaseNd4jTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testLargeConcat() {
+        val list = new ArrayList<INDArray>();
+
+        for (int e = 0; e < 20000; e++)
+            list.add(Nd4j.create(DataType.INT, 1, 300).assign(e));
+
+        val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+
+        for (int e = 0; e < 20000; e++)
+            assertEquals((float) e, result.getRow(e).meanNumber().floatValue(), 1e-5f);
     }
 
 

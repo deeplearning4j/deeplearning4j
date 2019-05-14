@@ -1049,26 +1049,28 @@ TEST_F(DeclarableOpsTests3, gruCell_test1) {
     const int inSize    = 10;
     const int numUnits  = 4;
 
-    auto xt  = NDArrayFactory::create<float>('c', {batchSize, inSize});
-    auto ht_1= NDArrayFactory::create<float>('c', {batchSize, numUnits});
-    auto Wx  = NDArrayFactory::create<float>('c', {inSize, 3*numUnits});
-    auto Wh  = NDArrayFactory::create<float>('c', {numUnits, 3*numUnits});
-    auto b   = NDArrayFactory::create<float>('c', {3*numUnits});
+    auto xt    = NDArrayFactory::create<float>('c', {batchSize, inSize});
+    auto ht_1  = NDArrayFactory::create<float>('c', {batchSize, numUnits});
+    auto Wru   = NDArrayFactory::create<float>('c', {(inSize+numUnits), 2*numUnits});
+    auto Wc    = NDArrayFactory::create<float>('c', {(inSize+numUnits), numUnits});
+    auto bru   = NDArrayFactory::create<float>('c', {2*numUnits});
+    auto bc    = NDArrayFactory::create<float>('c', {numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
-    Wx.assign(0.5);
-    Wh.assign(0.5);
-    b.assign(0.7);
+    Wru.assign(0.5);
+    Wc.assign(0.5);
+    bru.assign(0.7);
+    bc.assign(0.7);
 
-    auto expHt= NDArrayFactory::create<float>('c', {batchSize, numUnits}, {1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872});
+    auto expHt = NDArrayFactory::create<float>('c', {batchSize, numUnits}, {1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872,1.99993872});
 
     nd4j::ops::gruCell op;
-    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    auto results = op.execute({&xt, &ht_1, &Wru, &Wc, &bru, &bc}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *ht = results->at(0);
+    auto *ht = results->at(3);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1083,26 +1085,28 @@ TEST_F(DeclarableOpsTests3, gruCell_test2) {
     const int inSize    = 10;
     const int numUnits  = 4;
 
-    auto xt  = NDArrayFactory::create<float>('c', {batchSize, inSize});
-    auto ht_1= NDArrayFactory::create<float>('c', {batchSize, numUnits});
-    auto Wx  = NDArrayFactory::create<float>('c', {inSize, 3*numUnits});
-    auto Wh  = NDArrayFactory::create<float>('c', {numUnits, 3*numUnits});
-    auto b   = NDArrayFactory::create<float>('c', {3*numUnits});
+    auto xt    = NDArrayFactory::create<float>('c', {batchSize, inSize});
+    auto ht_1  = NDArrayFactory::create<float>('c', {batchSize, numUnits});
+    auto Wru   = NDArrayFactory::create<float>('c', {(inSize+numUnits), 2*numUnits});
+    auto Wc    = NDArrayFactory::create<float>('c', {(inSize+numUnits), numUnits});
+    auto bru   = NDArrayFactory::create<float>('c', {2*numUnits});
+    auto bc    = NDArrayFactory::create<float>('c', {numUnits});
 
     xt.assign(1.);
     ht_1.assign(0.);
-    Wx.assign(1.5);
-    Wh.assign(1.5);
-    b.assign(-10);
+    Wru.assign(1.5);
+    Wc.assign(1.5);
+    bru.assign(-10);
+    bc.assign(-10);
 
     auto expHt= NDArrayFactory::create<float>('c', {batchSize, numUnits}, {0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224,0.00669224});
 
     nd4j::ops::gruCell op;
-    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    auto results = op.execute({&xt, &ht_1, &Wru, &Wc, &bru, &bc}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *ht = results->at(0);
+    auto *ht = results->at(3);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1119,24 +1123,26 @@ TEST_F(DeclarableOpsTests3, gruCell_test3) {
 
     auto xt  = NDArrayFactory::create<float>('c', {batchSize, inSize});
     auto ht_1= NDArrayFactory::create<float>('c', {batchSize, numUnits});
-    auto Wx  = NDArrayFactory::create<float>('c', {inSize, 3*numUnits});
-    auto Wh  = NDArrayFactory::create<float>('c', {numUnits, 3*numUnits});
-    auto b   = NDArrayFactory::create<float>('c', {3*numUnits});
+    auto Wru   = NDArrayFactory::create<float>('c', {(inSize+numUnits), 2*numUnits});
+    auto Wc    = NDArrayFactory::create<float>('c', {(inSize+numUnits), numUnits});
+    auto bru   = NDArrayFactory::create<float>('c', {2*numUnits});
+    auto bc    = NDArrayFactory::create<float>('c', {numUnits});
 
     xt.assign(1.);
     ht_1.assign(0.);
-    Wx.assign(0.1);
-    Wh.assign(0.1);
-    b.assign(1);
+    Wru.assign(0.1);
+    Wc.assign(0.1);
+    bru.assign(1);
+    bc.assign(1);
 
     auto expHt= NDArrayFactory::create<float>('c', {batchSize, numUnits}, {0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149,0.1149149});
 
     nd4j::ops::gruCell op;
-    auto results = op.execute({&xt, &ht_1, &Wx, &Wh, &b}, {}, {});
+    auto results = op.execute({&xt, &ht_1, &Wru, &Wc, &bru, &bc}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *ht = results->at(0);
+    auto *ht = results->at(3);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));

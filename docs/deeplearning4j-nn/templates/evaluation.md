@@ -63,7 +63,7 @@ By default the .stats() method displays the confusion matrix entries (one per li
 * False Positive/Negative Rate
 * True Positive/Negative
 * Class Counts
-* F-beta, G-measure, Matthews Correlation Coefficient and more, see [Evaluation JavaDoc](https://deeplearning4j.org/doc/org/deeplearning4j/eval/Evaluation.html)
+* F-beta, G-measure, Matthews Correlation Coefficient and more, see [Evaluation JavaDoc](https://deeplearning4j.org/api/latest/org/deeplearning4j/eval/Evaluation.html)
 
 Display the Confusion Matrix. 
 

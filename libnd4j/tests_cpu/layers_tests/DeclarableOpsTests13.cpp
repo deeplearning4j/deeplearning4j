@@ -92,6 +92,34 @@ TEST_F(DeclarableOpsTests13, test_empty_range_3) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests13, test_argmax_edge_1) {
+    auto ctx = new Context(1);
+    auto arr = NDArrayFactory::create_<float>('c', {1024,1});
+
+    ctx->setInputArray(0, arr, true);
+    ctx->setOutputArray(0, NDArrayFactory::create_<Nd4jLong >('c', {1}), true);
+    ctx->setInputArray(1, NDArrayFactory::create_<Nd4jLong >(0), true);   //Axis 0
+
+
+    nd4j::ops::argmax op;
+    auto result = op.execute(ctx);
+
+    nd4j_printf("Done\n","");
+    delete ctx;
+}
+
+TEST_F(DeclarableOpsTests13, test_add_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 768});
+    auto y = NDArrayFactory::create<float>('c', {768});
+    auto e = NDArrayFactory::create<float>('c', {1, 768});;
+    y. assign(1.0f);
+    e.assign(1.0f);
+
+    x += y;
+
+    ASSERT_EQ(e, x);
+}
+
 TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     auto x = NDArrayFactory::create<int>('c', {4}, {0, 1, 2, 3});
     auto y = NDArrayFactory::create<int>('c', {2}, {3, 1});
@@ -102,6 +130,34 @@ TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     nd4j::ops::listdiff op;
     auto result = op.execute({&x, &y}, {&od, &oi}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
+}
+
+TEST_F(DeclarableOpsTests13, test_greater_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 1});
+    auto y = NDArrayFactory::create<float>('c', {1, 4});
+
+    nd4j::ops::greater op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, test_eval_reduction_shape_1) {
+    Nd4jLong axis = 0L;
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {4, 2});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {1}, {axis});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 2});
+
+    nd4j::ops::evaluate_reduction_shape op;
+    auto result = op.execute({&x, &y}, {}, {}, {true});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
 }
 
 TEST_F(DeclarableOpsTests13, test_or_1) {

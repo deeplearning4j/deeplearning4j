@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -35,8 +36,8 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public class CustomLayerImpl extends BaseLayer<CustomLayer> { //Generic parameter here: the configuration class type
 
-    public CustomLayerImpl(NeuralNetConfiguration conf) {
-        super(conf);
+    public CustomLayerImpl(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
 

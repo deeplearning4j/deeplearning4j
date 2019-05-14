@@ -55,6 +55,10 @@ public class Slice extends DynamicCustomOp {
         addIArgument(size);
     }
 
+    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable end){
+        super(null, sameDiff, new SDVariable[]{input, begin, end});
+    }
+
 
     @Override
     public String opName() {
@@ -70,93 +74,6 @@ public class Slice extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Slice";
-    }
-
-
-    @Override
-    public void assertValidForExecution() {
-        if(numInputArguments() != 1 && numInputArguments() != 3 && numInputArguments() != 4) {
-            throw new ND4JIllegalStateException("Num input arguments must be 1 3 or 4.");
-        }
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-         /*
-            strided slice typically takes 4 tensor arguments:
-            0) input, it's shape determines number of elements in other arguments
-            1) begin indices
-            2) end indices
-            3) strides
-         */
-
-        val inputBegin = nodeDef.getInput(1);
-        val inputEnd = nodeDef.getInput(2);
-
-        NodeDef beginNode = null;
-        NodeDef endNode = null;
-
-        for(int i = 0; i < graph.getNodeCount(); i++) {
-            if(graph.getNode(i).getName().equals(inputBegin)) {
-                beginNode = graph.getNode(i);
-            }
-            if(graph.getNode(i).getName().equals(inputEnd)) {
-                endNode = graph.getNode(i);
-            }
-
-        }
-
-
-
-        val beginArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",beginNode,graph);
-        val endArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
-
-        if (beginArr != null && endArr != null) {
-
-            for (int e = 0; e < beginArr.length(); e++)
-                addIArgument(beginArr.getInt(e));
-
-            for (int e = 0; e <  endArr.length(); e++)
-                addIArgument(endArr.getInt(e));
-
-
-        } else {
-            // do nothing
-        }
-
-
-
-    }
-
-
-
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
-
-        val beginMapping = PropertyMapping.builder()
-                .tfInputPosition(1)
-                .propertyNames(new String[]{"begin"})
-                .build();
-
-        val size = PropertyMapping.builder()
-                .tfInputPosition(2)
-                .propertyNames(new String[]{"size"})
-                .build();
-
-
-
-
-
-        map.put("begin",beginMapping);
-        map.put("size",size);
-
-
-
-        ret.put(tensorflowName(),map);
-
-        return ret;
     }
 
     @Override

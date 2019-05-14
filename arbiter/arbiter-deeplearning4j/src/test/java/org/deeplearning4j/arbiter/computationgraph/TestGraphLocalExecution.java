@@ -58,13 +58,16 @@ import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationConditio
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Supplier;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -86,6 +89,11 @@ public class TestGraphLocalExecution {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void before(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
     @Test
     public void testLocalExecutionDataSources() throws Exception {
@@ -297,7 +305,7 @@ public class TestGraphLocalExecution {
     @Test
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(15))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(6))
                 .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();

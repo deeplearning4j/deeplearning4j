@@ -45,7 +45,7 @@ public class SkipGramRound extends DynamicCustomOp {
      * @param randomValue
      */
     public SkipGramRound(int target, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, int[] indices, byte[] codes, double alpha, long randomValue, INDArray inferenceVector) {
-        this(target, 0, syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), 0, indices, codes, alpha, randomValue, inferenceVector);
+        this(Nd4j.scalar(target), Nd4j.scalar(-1), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), 0, Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false, 1);
     }
 
     /**
@@ -59,37 +59,41 @@ public class SkipGramRound extends DynamicCustomOp {
      * @param negTable
      */
     public SkipGramRound(int target, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long randomValue, INDArray inferenceVector) {
-        this(target, ngStarter, syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, nsRounds, null, null, alpha, randomValue, inferenceVector);
+        this(Nd4j.scalar(target), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, nsRounds, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), Nd4j.scalar(alpha), Nd4j.scalar(randomValue), inferenceVector, false, 1);
     }
 
     /**
      * full constructor
      */
-    public SkipGramRound(int target, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, int[] indices, byte[] codes, double alpha, long randomValue, INDArray inferenceVector) {
-        if (indices != null)
-            Preconditions.checkArgument(indices.length == codes.length, "Indices length should be equal to codes length");
+    public SkipGramRound(@NonNull INDArray target, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, @NonNull INDArray indices, @NonNull INDArray codes, @NonNull INDArray alpha, @NonNull INDArray randomValue, INDArray inferenceVector, boolean preciseMode, int numWorkers) {
+//        if (indices != null)
+//            Preconditions.checkArgument(indices.length == codes.length, "Indices length should be equal to codes length");
 
-        val idx = indices == null ? Nd4j.empty(DataType.INT) : Nd4j.createFromArray(indices);
-        val code = codes == null ? Nd4j.empty(DataType.BYTE) : Nd4j.createFromArray(codes);
-        val lr = Nd4j.scalar(alpha);
-        val nr = Nd4j.scalar(randomValue);
+//        val idx = indices == null ? Nd4j.empty(DataType.INT) : Nd4j.createFromArray(indices);
+//        val code = codes == null ? Nd4j.empty(DataType.BYTE) : Nd4j.createFromArray(codes);
 
-        inputArguments.add(Nd4j.createFromArray(target));
-        inputArguments.add(Nd4j.createFromArray(ngStarter));
-        inputArguments.add(idx);
-        inputArguments.add(code);
+        inputArguments.add(target);
+        inputArguments.add(ngStarter);
+        inputArguments.add(indices);
+        inputArguments.add(codes);
         inputArguments.add(syn0);
         inputArguments.add(syn1);
         inputArguments.add(syn1Neg);
         inputArguments.add(expTable);
         inputArguments.add(negTable);
-        inputArguments.add(lr);
-        inputArguments.add(nr);
+        inputArguments.add(alpha);
+        inputArguments.add(randomValue);
         inputArguments.add(inferenceVector);
 
+        // temporary arrays for neu1e
+        //inputArguments.add(Nd4j.create(syn0.dataType(), new long[]{target.isVector() ? target.size(0) : 1, syn0.columns()}));
+
         // couple of options
+        iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
+
         bArguments.add(!inferenceVector.isEmpty());
+        bArguments.add(preciseMode);
 
         // this op is always inplace
         setInPlace(true);

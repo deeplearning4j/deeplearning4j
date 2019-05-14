@@ -374,6 +374,10 @@ public class JCublasNDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering, dataType);
     }
 
+    public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering, DataType dataType) {
+        super(buffer, shape, stride, offset, ews, ordering, dataType);
+    }
+
     public JCublasNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType dataType) {
         super(buffer, shape, stride, ordering, dataType);
     }
@@ -536,7 +540,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public LongShapeDescriptor shapeDescriptor() {
-        return null;
+        return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
     }
 
     /**

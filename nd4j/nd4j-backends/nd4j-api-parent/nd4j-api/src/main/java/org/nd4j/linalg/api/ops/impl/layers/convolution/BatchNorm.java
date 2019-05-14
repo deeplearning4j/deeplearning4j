@@ -166,9 +166,11 @@ public class BatchNorm extends DynamicCustomOp {
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         BatchNormDerivative batchNormDerivative = BatchNormDerivative.derivativeBuilder()
+                .sameDiff(sameDiff)
                 .applyGamma(applyGamma)
                 .applyBeta(applyBeta)
                 .epsilon(epsilon)
+                .axis(jaxis)
                 .build();
         ret.addAll(Arrays.asList(batchNormDerivative.outputVariables()));
         return ret;

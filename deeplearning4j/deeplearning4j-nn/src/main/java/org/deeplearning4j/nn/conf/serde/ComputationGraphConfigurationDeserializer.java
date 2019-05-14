@@ -73,10 +73,12 @@ public class ComputationGraphConfigurationDeserializer
         //Now, check if we need to manually handle IUpdater deserialization from legacy format
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
         boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
+        boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
+
         Long charOffsetEnd = null;
         JsonLocation endLocation = null;
         String jsonSubString = null;
-        if(attemptIUpdaterFromLegacy || requireLegacyRegularizationHandling) {
+        if(attemptIUpdaterFromLegacy || requireLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
             endLocation = jp.getCurrentLocation();
             charOffsetEnd = endLocation.getCharOffset();
             Object sourceRef = endLocation.getSourceRef();
@@ -99,6 +101,7 @@ public class ComputationGraphConfigurationDeserializer
             while(iter.hasNext()){
                 JsonNode next = iter.next();
                 ObjectNode confNode = null;
+                String cls = next.has("@class") ? next.get("@class").asText() : null;
                 if(next.has("LayerVertex")){
                     next = next.get("LayerVertex");
                     if(next.has("layerConf")){
@@ -116,6 +119,10 @@ public class ComputationGraphConfigurationDeserializer
                         handleL1L2BackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
                     }
 
+                    if(requiresLegacyWeightInitHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getWeightInitFn() == null){
+                        handleWeightInitBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
                     if(layers[layerIdx].getIDropout() == null){
                         //Check for legacy dropout
                         if(next.has("dropOut")){
@@ -131,7 +138,14 @@ public class ComputationGraphConfigurationDeserializer
                             }
                         }
                     }
-
+                    layerIdx++;
+                } else if("org.deeplearning4j.nn.conf.graph.LayerVertex".equals(cls)){
+                    if(requiresLegacyWeightInitHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getWeightInitFn() == null) {
+                        //Post JSON format change for subclasses, but before WeightInit was made a class
+                        confNode = (ObjectNode) next.get("layerConf");
+                        next = confNode.get("layer");
+                        handleWeightInitBackwardCompatibility((BaseLayer) layers[layerIdx], (ObjectNode) next);
+                    }
                     layerIdx++;
                 }
             }

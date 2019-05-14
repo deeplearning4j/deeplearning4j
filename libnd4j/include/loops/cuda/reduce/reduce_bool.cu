@@ -107,12 +107,14 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
     //  __shared__ shape::TAD *tad;
     __shared__ int tadLength;
     __shared__ int numTads;
+    __shared__ bool isPlainOutput;
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
         tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);        
-        numTads = shape::length(xShapeInfo) / tadLength;        
+        numTads = shape::length(xShapeInfo) / tadLength;
+        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
     }
     __syncthreads();
     
@@ -134,7 +136,7 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
           __syncthreads();
 
           if (threadIdx.x == 0)
-            z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 
@@ -229,6 +231,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, void *extraParams, void *z, Nd4jLong *zShape, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
         
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -237,6 +240,7 @@ template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolScalar(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

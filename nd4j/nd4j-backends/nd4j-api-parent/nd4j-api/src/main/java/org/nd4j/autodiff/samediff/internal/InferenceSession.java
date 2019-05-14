@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff.internal;
 
 import lombok.NonNull;
@@ -8,8 +24,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -18,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -25,8 +44,16 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
+/**
+ * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.
+ * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class InferenceSession extends AbstractSession<INDArray,DifferentialFunction> {
+    private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
+            "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
@@ -43,8 +70,28 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
-            DataType dt = sameDiff.getVariable(e.getKey()).dataType();
             INDArray arr = e.getValue();
+            //First: check workspaces
+            if(arr.isAttached()){
+                MemoryWorkspace ws = arr.data() == null ? null : arr.data().getParentWorkspace();
+                if (ws != null && ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
+                    if (!ws.isScopeActive()) {
+                        throw new ND4JIllegalStateException("Placeholder \"" + e.getKey() + "\" array uses leaked workspace pointer from workspace ["
+                                + ws.getId() + "]: Workspace the array was defined in is no longer open.\nAll open workspaces: " + DefaultOpExecutioner.allOpenWorkspaces()
+                                + "\n" + SCOPE_PANIC_MSG);
+                    }
+
+                    if (ws.getGenerationId() != arr.data().getGenerationId())
+                        throw new ND4JIllegalStateException("Placeholder \"" + e.getKey() + "\" array uses outdated workspace pointer from workspace ["
+                                + ws.getId() + "]: Workspace array was defined in has been closed and reopened at least once since array creation. Array WS iteration: " +
+                                arr.data().getGenerationId() + ". Workspace current iteration: " +
+                                ws.getGenerationId() + "\nAll open workspaces: " + DefaultOpExecutioner.allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                }
+            }
+
+
+            //Second: cast the input to the required type
+            DataType dt = sameDiff.getVariable(e.getKey()).dataType();
             if(arr.dataType() != dt){
                 arr = arr.castTo(dt);
             }
@@ -164,10 +211,13 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 tensorArrays.put(vid, new ArrayList<INDArray>());
 
                 // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
-                return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
+                }
             } else if (op instanceof TensorArrayRead) {
                 //Do lookup and return
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
                 //Input 1 is the index
                 SDVariable idxSDV = op.arg(1);
                 INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
@@ -175,10 +225,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 int i = idxArr.getInt(0);
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+
                 //Work out the frame/iteration:
                 VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
                 if(v == null && allIterInputs != null){
                     v = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                }
+
+                Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
+                    //TODO also TensorArrayWrite, scatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
                 }
 
                 List<INDArray> list = getTensorArrays().get(v);
@@ -197,7 +257,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
                 }
 
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
+                    //TODO also TensorArrayScatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
+                }
+
+                //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
                 //Input 1 is the index
                 //Input 2 is the value to write
 
@@ -222,7 +291,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 l.set(idx, arr);
 
                 //Return dummy array
-                return new INDArray[]{Nd4j.scalar(0.0f)};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    return new INDArray[]{Nd4j.scalar(0.0f)};
+                }
             } else if (op instanceof TensorArraySize) {
                 //Index 0 is the TensorArray (or dummy variable that represents it)
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -233,7 +305,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-                return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
+                }
             } else if (op instanceof TensorArrayConcat) {
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
@@ -242,8 +317,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
                 List<INDArray> l = tensorArrays.get(tArr);
                 //TODO - empty checks. But is size 0 OK?
-                INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
-                return new INDArray[]{concat};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
+                    return new INDArray[]{concat};
+                }
             } else if (op instanceof TensorArrayGather) {
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
@@ -274,8 +352,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                         newList.add(l.get(id));
                     }
                 }
-                INDArray out = Nd4j.pile(newList);
-                return new INDArray[]{out};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    INDArray out = Nd4j.pile(newList);
+                    return new INDArray[]{out};
+                }
             } else if (op instanceof TensorArrayScatter) {
                 //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
                 //Input 0: the TensorArray
@@ -316,11 +397,21 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     idx[0] = NDArrayIndex.point(i);
                     INDArray get = valuesArr.get(idx).dup();
                     int outIdx = idxs[i];
+                    if(valuesArr.rank() == 2 && get.rank() == 2){
+                        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
+                        get = get.reshape(get.length());
+                    }
+                    if(valuesArr.rank() == 1 && get.rank() > 0){
+                        get = get.reshape(new long[0]);
+                    }
                     l.set(outIdx, get);
                 }
 
                 //Return dummy array
-                return new INDArray[]{Nd4j.scalar(0.0f)};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    return new INDArray[]{Nd4j.scalar(0.0f)};
+                }
             } else if (op instanceof TensorArraySplit) {
                 //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
                 //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
@@ -360,7 +451,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     soFar += sizes[i];
                 }
                 //Return dummy array
-                return new INDArray[]{Nd4j.scalar(0.0f)};
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    return new INDArray[]{Nd4j.scalar(0.0f)};
+                }
             } else {
                 throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
             }
@@ -418,6 +512,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             SDVariable[] args = df.args();
             for(SDVariable v : args){
                 Variable var = sameDiff.getVariables().get(v.getVarName());
+                //Nested enter case:
                 DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
                 if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
                     anyConstEnterInputs = true;
@@ -427,6 +522,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
             }
 
+            int constEnterInputCount = 0;
             if(anyConstEnterInputs){
                 /*
                 2019/01/26: AB
@@ -463,14 +559,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     if(found)
                         continue;
 
-                    //Resolve missing constant
-                    if(constEnterInputs == null)
-                        constEnterInputs = new HashSet<>();
-                    constEnterInputs.add(s);
+                    constEnterInputCount++;
                 }
             }
-
-            int constEnterInputCount = anyConstEnterInputs ? constEnterInputs.size() : 0;
 
             if(numArgs > 1){
                 //Might be due to repeated inputs
@@ -559,8 +650,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     reqShape = reqShape.asDataType(dt);
                 }
 
-                if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || isLoop){
-                    INDArray out = Nd4j.create(reqShape, false);
+                //Validate shape
+                long[] shape = reqShape.getShape();
+                if(shape != null){
+                    for(long s : shape){
+                        Preconditions.checkState(s > 0, "Invalid shape for op %s: shape has invalid values <= 0: shape=%s", customOp.opName(), shape);
+                    }
+                }
+
+                if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
+                    INDArray out;
+                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        //TODO Proper workspace support will be added to SameDiff later
+                        out = Nd4j.create(reqShape, false);
+                    }
                     customOp.setOutputArgument(i, out);
                 }
             }
@@ -612,7 +715,12 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
                 }
-                z = Nd4j.create(outputShape.get(0), false);
+
+                LongShapeDescriptor lsd = outputShape.get(0);
+                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    //TODO Proper workspace support will be added to SameDiff later
+                    z = Nd4j.create(lsd, false);
+                }
                 op.setZ(z);
             }
             df.resolvePropertiesFromSameDiffBeforeExecution();

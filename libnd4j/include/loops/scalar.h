@@ -25,6 +25,7 @@
 #define SCALAR_H_
 #include <OmpLaunchHelper.h>
 #include <dll.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __JNI__
 #include <jni.h>
@@ -33,7 +34,6 @@
 #include <ops/ops.h>
 #include <op_boilerplate.h>
 #include "helpers/logger.h"
-#include <helper_cuda.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

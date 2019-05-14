@@ -27,9 +27,9 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Collection;
 import java.util.Map;
@@ -72,9 +72,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -133,8 +133,8 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
          * @param format Format of the input/output data. See {@link Convolution3D.DataFormat} for details
          */
         public Builder(@NonNull Convolution3D.DataFormat format) {
-            this.dataFormat = format;
-            this.activationFn = Activation.IDENTITY.getActivationFunction();
+            this.setDataFormat(format);
+            this.setActivationFn(Activation.IDENTITY.getActivationFunction());
         }
 
         @Override
@@ -149,6 +149,18 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException(
                             "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNIn(int nIn){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut){
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

@@ -171,7 +171,7 @@ public class Configuration implements Serializable {
     private int minimumBlockSize = 32;
 
     @Getter
-    private long maximumHostCache = 3 * 1024 * 1024 * 1024L;
+    private long maximumHostCache = 1024 * 1024 * 1024L;
 
     @Getter
     private long maximumDeviceCache = 512L * 1024L * 1024L;
@@ -238,6 +238,15 @@ public class Configuration implements Serializable {
                 setMaximumGridSize(var);
             } catch (Exception e) {
                 log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_GRID_SIZE));
+            }
+        }
+
+        if (System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS) != null) {
+            try {
+                int var = Integer.parseInt(System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS));
+                setPoolSize(var);
+            } catch (Exception e) {
+                log.error("Can't parse {}: [{}]", ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS, System.getenv(ND4JEnvironmentVars.ND4J_CUDA_MAX_CONTEXTS));
             }
         }
 

@@ -22,95 +22,73 @@
 
         <meta charset="utf-8">
         <title>@i18n.getMessage("train.pagetitle")</title>
-            <!-- Start Mobile Specific -->
         <meta name="viewport" content="width=device-width, initial-scale=1">
-            <!-- End Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
-        <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
-        <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" href="/assets/webjars/coreui__coreui/2.1.9/dist/css/coreui.min.css">
+        <link rel="stylesheet" href="/assets/css/style.css">
+
+
+        <script src="/assets/webjars/jquery/3.4.1/dist/jquery.min.js"></script>
+        <script src="/assets/webjars/popper.js/1.12.9/dist/umd/popper.min.js"></script>
+        <script src="/assets/webjars/bootstrap/4.3.1/dist/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/coreui__coreui/2.1.9/dist/js/coreui.min.js"></script>
+
+
+        <!-- Icons -->
+        <link rel="stylesheet" href="/assets/webjars/coreui__icons/0.3.0/css/coreui-icons.min.css"></script>
+
+
         <link rel="shortcut icon" href="/assets/img/favicon.ico">
-
-            <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
-            <!--[if lt IE 9]>
-	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
-	<![endif]-->
-
-            <!--[if IE 9]>
-		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
-	<![endif]-->
-
     </head>
 
-    <body>
-            <!-- Start Header -->
-        <div class="navbar">
-            <div class="navbar-inner">
-                <div class="container-fluid">
-                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".top-nav.nav-collapse,.sidebar-nav.nav-collapse">
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </a>
-                    <a class="brand" href="index.html"><span>@i18n.getMessage("train.pagetitle")</span></a>
-                    <div id="sessionSelectDiv" style="display:none; float:right">
-                        @i18n.getMessage("train.session.label")
+    <body class="app sidebar-show aside-menu-show">
+        <header class="app-header navbar">
+                <a class="header-text" href="#"><span>@i18n.getMessage("train.pagetitle")</span></a>
+                <div id="sessionSelectDiv" style="display:none; float:right;">
+                        <div style="color:white;">@i18n.getMessage("train.session.label")</div>
                         <select id="sessionSelect" onchange='selectNewSession()'>
-                            <option>(Session ID)</option>
-                        </select>
-                    </div>
+                        <option>(Session ID)</option>
+                </select>
                 </div>
+                <div id="workerSelectDiv" style="display:none; float:right">
+                        <div style="color:white;">@i18n.getMessage("train.session.worker.label")</div>
+                        <select id="workerSelect" onchange='selectNewWorker()'>
+                        <option>(Worker ID)</option>
+                </select>
+                </div>
+        </header>
+        <div class="app-body">
+            <div class="sidebar">
+                <nav class="sidebar-nav">
+                    <ul class="nav">
+                        <li class="nav-item"><a class="nav-link" href="overview"><i class="nav-icon cui-chart"></i>@i18n.getMessage("train.nav.overview")</a></li>
+                        <li class="nav-item"><a class="nav-link" href="model"><i class="nav-icon cui-graph"></i>@i18n.getMessage("train.nav.model")</a></li>
+                        <li class="nav-item"><a class="nav-link" href="system"><i class="nav-icon cui-speedometer"></i>@i18n.getMessage("train.nav.system")</a></li>
+                        <li class="nav-item nav-dropdown">
+                            <a class="nav-link nav-dropdown-toggle" href="#">
+                                <i class="nav-icon cui-globe"></i> @i18n.getMessage("train.nav.language")
+                            </a>
+                            <ul class="nav-dropdown-items">
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('en', 'overview')"><i class="icon-file-alt"></i>English</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('de', 'overview')"><i class="icon-file-alt"></i>Deutsch</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ja', 'overview')"><i class="icon-file-alt"></i>日本語</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('zh', 'overview')"><i class="icon-file-alt"></i>中文</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ko', 'overview')"><i class="icon-file-alt"></i>한글</a></li>
+                                <li class="nav-item"><a class="nav-link" href="javascript:void(0);" onclick="languageSelect('ru', 'overview')"><i class="icon-file-alt"></i>русский</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                </nav>
             </div>
-        </div>
-            <!-- End Header -->
-
-        <div class="container-fluid-full">
-            <div class="row-fluid">
-
-                    <!-- Start Main Menu -->
-                <div id="sidebar-left" class="span2">
-                    <div class="nav-collapse sidebar-nav">
-                        <ul class="nav nav-tabs nav-stacked main-menu">
-                            <li><a href="overview"><i class="icon-bar-chart"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.overview")</span></a></li>
-                            <li><a href="model"><i class="icon-tasks"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.model")</span></a></li>
-                            <li class="active"><a href="javascript:void(0);"><i class="icon-dashboard"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.system")</span></a></li>
-                            @*<li><a href="help"><i class="icon-star"></i><span class="hidden-tablet"> @i18n.getMessage("train.nav.userguide")</span></a></li>*@
-                            <li>
-                                <a class="dropmenu" href="javascript:void(0);"><i class="icon-folder-close-alt"></i><span class="hidden-tablet">
-                                    @i18n.getMessage("train.nav.language")</span></a>
-                                <ul>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('en', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> English</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('de', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> Deutsch</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ja', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 日本語</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('zh', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 中文</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ko', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> 한글</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('ru', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> русский</span></a></li>
-                                    <li><a class="submenu" href="javascript:void(0);" onclick="languageSelect('uk', 'system')"><i class="icon-file-alt"></i> <span class="hidden-tablet"> український</span></a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                    <!-- End Main Menu -->
-
-                <noscript>
-                    <div class="alert alert-block span10">
-                        <h4 class="alert-heading">Warning!</h4>
-                        <p>You need to have <a href="http://en.wikipedia.org/wiki/JavaScript" target="_blank">
-                            JavaScript</a> enabled to use this site.</p>
-                    </div>
-                </noscript>
 
                     <!-- Start Content -->
-                <div id="content" class="span10">
+                <main id="content" class="main">
 
                     <div class="row-fluid">
 
                         <div class="box span12">
-                            <div class="box-header">
+                            <div class="chart-header">
                                 <h2><b>@i18n.getMessage("train.system.title")</b></h2>
                                 <div class="btn-group" style="margin-top: -11px; position:absolute; right: 40px;">
                                 <button class="btn dropdown-toggle btn-primary" data-toggle="dropdown">@i18n.getMessage("train.system.selectMachine") <span class="caret"></span></button>
@@ -127,7 +105,7 @@
                                         <div class="row-fluid">
 
                                             <div class="box span12" id="systemMemoryChart">
-                                                <div class="box-header">
+                                                <div class="chart-header">
                                                     <h2><b>@i18n.getMessage("train.system.chart.systemMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
@@ -139,7 +117,7 @@
 
                                             <!-- GPU Memory Utlization Chart -->
                                             <div class="box span6" id="gpuMemoryChart">
-                                                <div class="box-header">
+                                                <div class="chart-header">
                                                     <h2><b>@i18n.getMessage("train.system.chart.gpuMemoryTitle") %</b></h2>
                                                 </div>
                                                 <div class="box-content">
@@ -156,7 +134,7 @@
 
                                                 <!-- Hardware Information -->
                                             <div class="box span12">
-                                                <div class="box-header">
+                                                <div class="chart-header">
                                                     <h2><b>@i18n.getMessage("train.system.hwTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
@@ -191,7 +169,7 @@
 
                                                 <!-- Software Information -->
                                             <div class="box span12">
-                                                <div class="box-header">
+                                                <div class="chart-header">
                                                     <h2><b>@i18n.getMessage("train.system.swTable.title")</b></h2>
                                                 </div>
                                                 <div class="box-content">
@@ -227,7 +205,7 @@
                                             @*<!-- GPU Information -->*@
                                         @*<div class="row-fluid" id="gpuTable">*@
                                             @*<div class="box span12">*@
-                                                @*<div class="box-header">*@
+                                                @*<div class="chart-header">*@
                                                     @*<h2><b>GPU Information</b></h2>*@
                                                 @*</div>*@
                                                 @*<div class="box-content">*@
@@ -253,7 +231,7 @@
                         </div>
                             <!-- End System Tab -->
                     </div><!-- End Row Fluid-->
-                </div><!-- End Content -->
+                </main><!-- End Content -->
             </div><!-- End Container-->
         </div><!-- End Row Fluid-->
 
@@ -261,13 +239,6 @@
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
         <script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
-        <script src="/assets/webjars/jquery-ui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
-        <script src="/assets/webjars/modernizr/2.8.3/modernizr.min.js"></script>
-        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
-        <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
-        <script src="/assets/webjars/fullcalendar/1.6.4/fullcalendar.min.js"></script>
-        <script src="/assets/webjars/datatables/1.9.4/media/js/jquery.dataTables.min.js"></script>
-        <script src="/assets/webjars/excanvas/3/excanvas.js"></script>
         <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
         <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
         <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>

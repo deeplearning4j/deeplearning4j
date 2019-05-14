@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -45,12 +46,8 @@ import java.util.Arrays;
  */
 public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layers.misc.RepeatVector> {
 
-    public RepeatVector(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public RepeatVector(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public RepeatVector(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -68,9 +65,13 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
+        if(epsilon.dataType() != dataType){
+            epsilon = epsilon.castTo(dataType);
+        }
+
         INDArray outEpsilon;
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
-            outEpsilon = Nd4j.sum(epsilon,2);
+            outEpsilon = epsilon.sum(2);
         }
 
         Gradient gradient = new DefaultGradient();
@@ -96,9 +97,9 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        long miniBatch = input.shape()[0];
-        long size = input.shape()[1];
-        INDArray output = input.reshape(miniBatch, size, 1);
+        long miniBatch = input.size(0);
+        long size = input.size(1);
+        INDArray output = input.reshape(miniBatch, size, 1).castTo(dataType);
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             return output.repeat(2, (long) getN());
         }

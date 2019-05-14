@@ -33,6 +33,8 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
     auto x = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
 
+    BROADCAST_CHECK_EMPTY(x,y,z);
+
     // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
     x->applyTrueBroadcast(nd4j::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), y, z, true);
     

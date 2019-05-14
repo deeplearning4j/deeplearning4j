@@ -289,6 +289,16 @@ public class OpValidation {
             Preconditions.checkState(vB.getControlDeps() == null || vB.getControlDeps().equals(vA.getControlDeps()), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
         }
 
+        //Check loss variables:
+        List<String> lossVarBefore = original.getLossVariables();
+        List<String> lossVarAfter = deserialized.getLossVariables();
+        if(lossVarBefore == null || lossVarBefore.isEmpty()){
+            Preconditions.checkState(lossVarAfter == null || lossVarAfter.isEmpty(), "Loss variables ");
+        } else {
+            Preconditions.checkState(lossVarBefore.equals(lossVarAfter), "Loss variables are not equal after deserialization: %s vs %s",
+                    lossVarBefore, lossVarAfter);
+        }
+
 
         //Finally: check execution/output
         Map<String,INDArray> outOrig = original.execAll(tc.placeholderValues());
@@ -359,7 +369,10 @@ public class OpValidation {
         for (int i = 0; i < outShapes.size(); i++) {
             val act = outShapes.get(i);
             val exp = testCase.expShapes().get(i);
-            if (!Objects.equals(exp, act)) {
+            if(!Objects.equals(exp.dataType(), act.dataType())){
+                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
+            }
+            if(!Arrays.equals(act.getShape(), exp.getShape())){
                 return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
         }

@@ -30,11 +30,11 @@ namespace nd4j {
 
 class OmpLaunchHelper {
 	
-	public:				
+    public:				
         
 		OmpLaunchHelper() = delete;
         
-        OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads = -1);        
+        OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads = -1);
 
         FORCEINLINE Nd4jLong getThreadOffset(const int threadNum);
         FORCEINLINE Nd4jLong getItersPerThread(const int threadNum);
@@ -45,9 +45,11 @@ class OmpLaunchHelper {
         static int betterThreads(Nd4jLong N);
         static int betterThreads(Nd4jLong N, int maxThreads);
 
+        static int tadThreads(Nd4jLong tadLength, Nd4jLong numTads);
+
         int _numThreads;
-		int _itersPerThread;
-		int _remainder;
+		unsigned int _itersPerThread;
+        unsigned int _remainder;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -30,8 +30,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator}
- * and {@link GridSearchCandidateGenerator}
+ * BaseCandidateGenerator: abstract class upon which {@link RandomSearchGenerator}, 
+ * {@link GridSearchCandidateGenerator} and {@link GeneticSearchCandidateGenerator}
  * are built.
  *
  * @param <T> Type of candidates to generate

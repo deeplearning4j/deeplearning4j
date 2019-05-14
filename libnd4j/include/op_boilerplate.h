@@ -65,6 +65,7 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <openmp_pragmas.h>
 #include <type_boilerplate.h>
 
 #ifdef __CUDACC__
@@ -1311,12 +1312,7 @@
                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                     auto shapeList = SHAPELIST(); \
                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                        Nd4jLong* newshape; \
-                                                        ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong); \
-                                                        if (shape::order(inputShape->at(e)) == 'c') \
-                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
-                                                        else \
-                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
                                                         shapeList->push_back(newshape); \
                                                     } \
                                                     return shapeList; \
@@ -1376,12 +1372,7 @@
                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                                                     auto shapeList = SHAPELIST(); \
                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                                                        Nd4jLong* newshape; \
-                                                                                        ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), Nd4jLong); \
-                                                                                        if (shape::order(inputShape->at(e)) == 'c') \
-                                                                                            shape::shapeBuffer(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
-                                                                                        else \
-                                                                                            shape::shapeBufferFortran(shape::rank(inputShape->at(e)), ArrayOptions::dataType(inputShape->at(e)),  shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \
@@ -1440,13 +1431,6 @@
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
-#define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')\
-                                        shape::shapeBuffer(shape::rank(SRC), nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
-                                    else \
-                                        shape::shapeBufferFortran(shape::rank(SRC),  nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
-
-
-
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
@@ -1458,12 +1442,13 @@
 #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
 #define STORE_5_RESULTS(A, B, C, D, E)      this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D); this->storeResult(block, 4, E)
+#define BROADCAST_CHECK_EMPTY(X,Y,Z)     if(X->isEmpty() || Y->isEmpty()){ if(!Z->isEmpty()){ throw std::invalid_argument("Broadcast op validation failed: if x or y are empty, z must be empty");} return Status::OK();}
 
 #define STASH(NAME, ARRAY)  block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
 #define CHECK_STASH(NAME)   block.getStash()->checkStash(block.getNodeId(), NAME);
 #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
-#define INPUT_VARIABLE(INDEX)     reinterpret_cast<nd4j::NDArray *>(block.getVariable(INDEX)->getNDArray())
+#define INPUT_VARIABLE(INDEX)     block.array(INDEX)
 #define OUTPUT_VARIABLE(INDEX)    reinterpret_cast<nd4j::NDArray *>(this->getZ(block, INDEX))
 
 #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
@@ -1473,15 +1458,13 @@
 #define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
 
 
-#define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), Nd4jLong);\
-                                REPLICATE_SHAPE(SRC, TGT);
+#define COPY_SHAPE(SRC, TGT)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 
-#define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), Nd4jLong);\
-                                REPLICATE_SHAPE(SRC, TGT);
-
+#define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    TGT = ShapeBuilders::copyShapeInfo(SRC, true, WORKSPACE)
 
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
+#define INLINE_LOOPS
 #define FORCEINLINE inline 
 #elif _MSC_VER
 #define FORCEINLINE __forceinline
@@ -1535,5 +1518,14 @@
 
 #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
 #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+
+// stuff for benchmarks
+#define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)
+#define GENERATE_XZ() [&] (ResultSet &x, ResultSet &z)
+
+#define PARAMETRIC_XYZ() [&] (Parameters &p, ResultSet &x, ResultSet &y, ResultSet &z)
+#define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
+
+#define PARAMETRIC_D() [&] (Parameters &p) -> Context*
 
 #endif

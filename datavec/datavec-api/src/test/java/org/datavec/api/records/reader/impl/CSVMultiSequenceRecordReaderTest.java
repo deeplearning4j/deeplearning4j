@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
@@ -12,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +67,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b,c\n1,2,3,4\nx,y\n" + seqSep + "\nA,B,C";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.CONCAT);
             seqRR.initialize(new FileSplit(f));
@@ -104,7 +121,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b\n1,2\nx,y\n" + seqSep + "\nA\nB\nC";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.EQUAL_LENGTH);
             seqRR.initialize(new FileSplit(f));
@@ -154,7 +171,7 @@ public class CSVMultiSequenceRecordReaderTest {
 
             String str = "a,b\n1\nx\n" + seqSep + "\nA\nB\nC";
             File f = testDir.newFile();
-            FileUtils.writeStringToFile(f, str);
+            FileUtils.writeStringToFile(f, str, StandardCharsets.UTF_8);
 
             SequenceRecordReader seqRR = new CSVMultiSequenceRecordReader(seqSepRegex, CSVMultiSequenceRecordReader.Mode.PAD, new Text("PAD"));
             seqRR.initialize(new FileSplit(f));

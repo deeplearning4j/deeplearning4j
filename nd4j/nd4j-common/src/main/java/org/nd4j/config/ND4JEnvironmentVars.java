@@ -91,6 +91,13 @@ public class ND4JEnvironmentVars {
      * Description:
      */
     public static final String ND4J_CUDA_MAX_GRID_SIZE = "ND4J_CUDA_MAX_GRID_SIZE";
+
+    /**
+     * Applicability: nd4j-cuda-xx<br>
+     * Description: This variable defines how many concurrent threads will be able to use same device. Keep in mind, this doesn't affect natural CUDA limitations
+     */
+    public static final String ND4J_CUDA_MAX_CONTEXTS = "ND4J_CUDA_MAX_CONTEXTS";
+
     /**
      * Applicability: nd4j-cuda-xx used on multi-GPU systems<br>
      * Description: If set, only a single GPU will be used by ND4J, even if multiple GPUs are available in the system
@@ -116,6 +123,11 @@ public class ND4JEnvironmentVars {
      * Description:
      */
     public static final String ND4J_CUDA_MAX_DEVICE_ALLOCATION = "ND4J_CUDA_MAX_DEVICE_ALLOCATION";
+
+    /**
+     * Applicability: nd4j-native
+     */
+    public static final String ND4J_MKL_FALLBACK = "ND4J_MKL_FALLBACK";
 
     private ND4JEnvironmentVars() {
     }

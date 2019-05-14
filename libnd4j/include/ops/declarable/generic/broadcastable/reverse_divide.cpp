@@ -31,6 +31,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            BROADCAST_CHECK_EMPTY(x,y,z);
+
             REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
             x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);            
 

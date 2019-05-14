@@ -71,8 +71,9 @@ namespace nd4j {
 
             /**
              * Utility method, returns number of milliseconds since 1970
+             * Leave this static if possible to avoid problems in constructor
              */
-            FORCEINLINE Nd4jLong currentMilliseconds();
+            static FORCEINLINE Nd4jLong currentMilliseconds();
 
 
             FORCEINLINE _CUDA_HD uint32_t xoroshiro32(Nd4jLong index);
@@ -138,7 +139,15 @@ namespace nd4j {
 
 
         FORCEINLINE RandomGenerator::RandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
-            this->setStates(rootSeed, nodeSeed);
+            // this seed is used graph-level state
+            if (rootSeed == 0)
+                rootSeed = currentMilliseconds();
+
+            // graph-level state is just first seed
+            _rootState._long = rootSeed;
+
+            // used to build second, node state
+            _nodeState._long = (nodeSeed != 0 ? nodeSeed: 1298567341LL);
         }
 
         FORCEINLINE void RandomGenerator::setStates(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
@@ -152,7 +161,6 @@ namespace nd4j {
             // used to build second, node state
             _nodeState._long = (nodeSeed != 0 ? nodeSeed: 1298567341LL);
         }
-
 
         FORCEINLINE Nd4jLong RandomGenerator::currentMilliseconds() {
             auto s = std::chrono::system_clock::now().time_since_epoch();

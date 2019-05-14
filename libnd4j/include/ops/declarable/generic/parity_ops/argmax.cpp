@@ -23,12 +23,14 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
+#include <helpers/ConstantTadHelper.h>
+
 namespace nd4j {
     namespace ops {
         DECLARE_TYPES(argmax) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
 
         CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
@@ -75,11 +77,10 @@ namespace nd4j {
                 return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
             }
 
-            shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
-            tad.createTadOnlyShapeInfo();
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShape->at(0), dims);
 
-            Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
-            Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
+            auto tadLength = shape::length(tadPack.primaryShapeInfo());
+            auto numTads = tadPack.numberOfTads();
 
             auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
             ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);

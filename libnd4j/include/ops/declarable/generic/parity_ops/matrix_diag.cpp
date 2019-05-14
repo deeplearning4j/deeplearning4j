@@ -29,6 +29,8 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(!input->isScalar(), 0, "CUSTOM_OP matrix_diag: input array must be at list a vector, but scalar was given!");
+
+            output->nullify();
             return helpers::matrixDiag(input, output);
         }
 

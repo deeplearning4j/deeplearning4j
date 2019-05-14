@@ -70,7 +70,7 @@ public class EncodingHandler implements MessageHandler {
     protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
     protected ThreadLocal<AtomicBoolean> lastIterWasDense = new ThreadLocal<>();    //Same as bitmapMode but lagging by 1 iter
 
-    protected AtomicLong lastThresholdLogTime = new AtomicLong();
+    protected final AtomicLong lastThresholdLogTime = new AtomicLong();
 
     public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
                            Double boundary, boolean encodingDebugMode){
@@ -192,8 +192,11 @@ public class EncodingHandler implements MessageHandler {
             long values = Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 
             if (values < (updates.lengthLong() / 16 + 5) / 2) {
+                boolean current = bitmapMode.get().get();
                 bitmapMode.get().set(false);
-                log.debug("Switched to threshold encoding: iteration {}, epoch {}, threshold {}, number of values {}", iteration, epoch, currThreshold, values);
+                if(!current) {
+                    log.debug("Switched to threshold encoding: iteration {}, epoch {}, threshold {}, number of values {}", iteration, epoch, currThreshold, values);
+                }
             }
 
             lastSparsityRatio.set(null);
@@ -264,7 +267,7 @@ public class EncodingHandler implements MessageHandler {
                         lastSparsityStr = "-";
                     else
                         lastSparsityStr = format(d.get());
-                    log.info("Threshold at iter {}, epoch {}: {}, SPARSE updates, last sparsity ratio: {}", iter, epoch,
+                    log.info("Threshold at iter {}, epoch {}: {}, SPARSE updates, last threshold: {}, last sparsity ratio: {}", iter, epoch,
                             Thread.currentThread().getId(), lastThresholdStr, lastSparsityStr);
                 }
             }

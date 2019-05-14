@@ -18,6 +18,7 @@ package org.deeplearning4j.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -25,17 +26,21 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.schedule.ISchedule;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class NetworkUtils {
@@ -55,6 +60,7 @@ public class NetworkUtils {
         // for the updater state...
 
         ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
+                .dataType(net.getLayerWiseConfigurations().getDataType())
                 .graphBuilder();
 
         MultiLayerConfiguration origConf = net.getLayerWiseConfigurations().clone();
@@ -137,9 +143,11 @@ public class NetworkUtils {
 
     private static void refreshUpdater(MultiLayerNetwork net) {
         INDArray origUpdaterState = net.getUpdater().getStateViewArray();
+        MultiLayerUpdater origUpdater = (MultiLayerUpdater) net.getUpdater();
         net.setUpdater(null);
-        MultiLayerUpdater u = (MultiLayerUpdater) net.getUpdater();
-        u.setStateViewArray(origUpdaterState);
+        MultiLayerUpdater newUpdater = (MultiLayerUpdater) net.getUpdater();
+        INDArray newUpdaterState = rebuildUpdaterStateArray(origUpdaterState, origUpdater.getUpdaterBlocks(), newUpdater.getUpdaterBlocks());
+        newUpdater.setStateViewArray(newUpdaterState);
     }
 
     /**
@@ -257,9 +265,11 @@ public class NetworkUtils {
 
     private static void refreshUpdater(ComputationGraph net) {
         INDArray origUpdaterState = net.getUpdater().getStateViewArray();
+        ComputationGraphUpdater uOrig = net.getUpdater();
         net.setUpdater(null);
-        ComputationGraphUpdater u = net.getUpdater();
-        u.setStateViewArray(origUpdaterState);
+        ComputationGraphUpdater uNew = net.getUpdater();
+        INDArray newUpdaterState = rebuildUpdaterStateArray(origUpdaterState, uOrig.getUpdaterBlocks(), uNew.getUpdaterBlocks());
+        uNew.setStateViewArray(newUpdaterState);
     }
 
     /**
@@ -388,6 +398,113 @@ public class NetworkUtils {
                 }
                 iter.remove();
             }
+        }
+    }
+
+
+    /**
+     * Rebuild the updater state after a learning rate change.
+     * With updaters like Adam, they have 2 components... m and v array, for a total updater state size of 2*numParams.
+     * Because we combine across parameters and layers where possible (smaller number of larger operations -> more efficient)
+     * we can sometimes need to rearrange the updater state array.
+     * For example, if the original updater state for Adam is organized like [mParam1, mParam2, vParam1, vParam2] in one block
+     * and we change the learning rate for one of the layers, param 1 and param2 now belong to different updater blocks.
+     * Consequently, we need to rearrange the updater state to be like [mParam1][vParam1] in block 1, [mParam2][vParam2] in block 2
+     *
+     * @param origUpdaterState Original updater state view array
+     * @param orig             Original updater blocks
+     * @param newUpdater       New updater blocks
+     * @return New state view array
+     */
+    protected static INDArray rebuildUpdaterStateArray(INDArray origUpdaterState, List<UpdaterBlock> orig, List<UpdaterBlock> newUpdater){
+        if(origUpdaterState == null)
+            return origUpdaterState;
+
+        //First: check if there has been any change in the updater blocks to warrant rearranging the updater state view array
+        if(orig.size() == newUpdater.size()){
+            boolean allEq = true;
+            for( int i=0; i<orig.size(); i++ ){
+                UpdaterBlock ub1 = orig.get(i);
+                UpdaterBlock ub2 = newUpdater.get(i);
+                if(!ub1.getLayersAndVariablesInBlock().equals(ub2.getLayersAndVariablesInBlock())){
+                    allEq = false;
+                    break;
+                }
+            }
+            if(allEq){
+                return origUpdaterState;
+            }
+        }
+
+        Map<String,List<INDArray>> stateViewsPerParam = new HashMap<>();
+        for(UpdaterBlock ub : orig){
+            List<UpdaterBlock.ParamState> params = ub.getLayersAndVariablesInBlock();
+            int blockPStart = ub.getParamOffsetStart();
+            int blockPEnd = ub.getParamOffsetEnd();
+
+            int blockUStart = ub.getUpdaterViewOffsetStart();
+            int blockUEnd = ub.getUpdaterViewOffsetEnd();
+
+            int paramsMultiplier = (blockUEnd-blockUStart)/(blockPEnd-blockPStart);     //Updater state length should be exactly 0, 1, 2 or 3x number of params
+
+            INDArray updaterView = ub.getUpdaterView();
+            long nParamsInBlock = blockPEnd - blockPStart;
+
+            long soFar = 0;
+            for( int sub=0; sub<paramsMultiplier; sub++) {
+                //subsetUpdaterView: [m0, m1, m2] etc
+                INDArray subsetUpdaterView = updaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + nParamsInBlock));
+
+                long offsetWithinSub = 0;
+                for (UpdaterBlock.ParamState ps : params) {
+                    int idx = getId(ps.getLayer());
+                    String paramName = idx + "_" + ps.getParamName();
+                    INDArray pv = ps.getParamView();
+                    long nParamsThisParam = pv.length();
+
+                    INDArray currSplit = subsetUpdaterView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(offsetWithinSub, offsetWithinSub + nParamsThisParam));
+                    if(!stateViewsPerParam.containsKey(paramName))
+                        stateViewsPerParam.put(paramName, new ArrayList<INDArray>());
+                    stateViewsPerParam.get(paramName).add(currSplit);
+                    offsetWithinSub += nParamsThisParam;
+                }
+
+                soFar += nParamsInBlock;
+            }
+        }
+
+        //Now that we've got updater state per param, we need to reconstruct it in an order suitable for the new updater blocks...
+        List<INDArray> toConcat = new ArrayList<>();
+        for(UpdaterBlock ub : newUpdater){
+            List<UpdaterBlock.ParamState> ps = ub.getLayersAndVariablesInBlock();
+            int idx = getId(ps.get(0).getLayer());
+            String firstParam = idx + "_" + ps.get(0).getParamName();
+            int size = stateViewsPerParam.get(firstParam).size();
+            //For multiple params in the one block, we want to order like [a0, b0, c0][a1,b1,c1]
+            for( int i=0; i<size; i++ ){
+                for(UpdaterBlock.ParamState p : ps) {
+                    idx = getId(p.getLayer());
+                    String paramName = idx + "_" + p.getParamName();
+                    INDArray arr = stateViewsPerParam.get(paramName).get(i);
+                    toConcat.add(arr);
+                }
+            }
+        }
+        INDArray newUpdaterState = Nd4j.hstack(toConcat);
+        Preconditions.checkState(newUpdaterState.rank() == 2, "Expected rank 2");
+        Preconditions.checkState(origUpdaterState.length() == newUpdaterState.length(), "Updater state array lengths should be equal: got %s s. %s",
+                origUpdaterState.length(), newUpdaterState.length());
+        return newUpdaterState;
+    }
+
+
+    private static int getId(Trainable trainable){
+        if(trainable instanceof GraphVertex){
+            GraphVertex gv = (GraphVertex)trainable;
+            return gv.getVertexIndex();
+        } else {
+            org.deeplearning4j.nn.api.Layer l = (org.deeplearning4j.nn.api.Layer)trainable;
+            return l.getIndex();
         }
     }
 

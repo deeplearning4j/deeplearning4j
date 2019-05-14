@@ -31,6 +31,7 @@ import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
+import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -99,7 +100,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean released = false;
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
-    protected transient Collection<BaseDataBuffer> references = new ArrayList<>();
+    //protected transient Collection<WeakReference<BaseDataBuffer>> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 
@@ -151,6 +152,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.indexer = indexer;
     }
 
+    protected void pickReferent(BaseDataBuffer referent) {
+        referenced.compareAndSet(false, true);
+        //references.add(new WeakReference<BaseDataBuffer>(this));
+    }
+
     /**
      *
      * Meant for creating another view of a buffer
@@ -174,8 +180,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
-        ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
-        ((BaseDataBuffer) underlyingBuffer).references.add(this);
+
+        // we're not referencing constant buffers
+        if (!underlyingBuffer.isConstant())
+            ((BaseDataBuffer) underlyingBuffer).pickReferent(this);
+
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
@@ -565,8 +574,18 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer pointer() {
-        return underlyingDataBuffer() != null && underlyingDataBuffer() != this ? underlyingDataBuffer().pointer()
-                        : pointer;
+        if (underlyingDataBuffer() != null && underlyingDataBuffer() != this)
+            return underlyingDataBuffer().pointer();
+        else {
+            if (underlyingDataBuffer() != null)
+                if (((BaseDataBuffer) underlyingDataBuffer()).released)
+                    throw new IllegalStateException("Underlying buffer was released via close() call");
+
+            if (released)
+                throw new IllegalStateException("This buffer was already released via close() call");
+
+            return pointer;
+        }
     }
 
     @Override
@@ -681,8 +700,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UTF8) {
-            pointer = new LongPointer(length());
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            pointer = new BytePointer(length());
+            setIndexer(ByteIndexer.create((BytePointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
@@ -1242,7 +1261,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 return ((UByteIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get double value from buffer of type " + dataType());
         }
     }
 
@@ -1268,7 +1287,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 return  ((BooleanIndexer) indexer).get(offset() + i) ? 1L : 0L;
             default:
-                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+                throw new UnsupportedOperationException("Cannot get long value from buffer of type " + dataType());
         }
     }
 
@@ -1281,6 +1300,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         switch (dataType()) {
             case DOUBLE:
                 return (short) ((DoubleIndexer) indexer).get(offset() + i);
+            case HALF:
+                return (short) ((HalfIndexer) indexer).get(offset() + i);
             case BOOL:
                 return (short) (((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0);
             case INT:
@@ -1294,7 +1315,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return (short) ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get short value from buffer of type " + dataType());
         }
     }
 
@@ -1329,7 +1350,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get float value from buffer of type " + dataType());
         }
     }
 
@@ -1355,7 +1376,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return (int) ((FloatIndexer) indexer).get(offset() + i);
             default:
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Cannot get integer value from buffer of type " + dataType());
         }
     }
 
@@ -1857,19 +1878,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 if (currentType == DataType.LONG)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE && currentType != DataType.INT)
+                else if (currentType == DataType.DOUBLE && currentType != DataType.INT)
                     elementSize = 8;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.FLOAT || currentType == DataType.INT)
+                else if (currentType == DataType.FLOAT || currentType == DataType.INT)
                     elementSize = 4;
-                else if (DataTypeUtil.getDtypeFromContext() == DataType.HALF && currentType != DataType.INT)
+                else if (currentType == DataType.HALF && currentType != DataType.INT)
                     elementSize = 2;
 
-                if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != DataType.HALF && currentType != DataType.INT
-                        && currentType != DataType.LONG && !(DataTypeUtil.getDtypeFromContext() == DataType.DOUBLE)) {
-                    log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
-                    if (DataTypeUtil.getDtypeFromContext() == DataType.INT)
-                        log.warn("Int to float/double widening UNSUPPORTED!!!");
-                }
                 pointerIndexerByCurrentType(currentType);
 
                 if (currentType != DataType.COMPRESSED)
@@ -1941,7 +1956,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 AtomicInteger aInt = new AtomicInteger();
                 for (long i = 0; i < length(); i++) {
                     aInt.set(s.readShort());
-                    putByDestinationType(i, aInt, thisType);
+                    putByDestinationType(i, HalfIndexer.toFloat(aInt.get()), thisType);
                 }
             } else if (sourceType == DataType.LONG) {
                 AtomicLong aLong = new AtomicLong();
@@ -1961,6 +1976,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
     }
 
     @Override
@@ -1996,7 +2012,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case HALF:
                 for (long i = 0; i < length(); i++)
-                    out.writeShort(getShort(i));
+                    out.writeShort((short) HalfIndexer.fromFloat(getFloat(i)));
                 break;
             case FLOAT:
                 for (long i = 0; i < length(); i++)
@@ -2268,9 +2284,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void markReleased() {
         this.released = true;
+/*
+        for (val r:references) {
+            val b = r.get();
 
-        for (val r:references)
-            r.markReleased();
+            if (b != null)
+                b.markReleased();
+        }
+        */
     }
 
     @Override
@@ -2279,13 +2300,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalStateException("Can't release this data buffer");
 
         // notifying other databuffers that their underlying
-        for (val r:references)
-            r.markReleased();
+        /*
+        for (val r:references) {
+
+            val b = r.get();
+
+            if (b != null)
+                b.markReleased();
+        }
+         */
 
         release();
     }
 
     protected void release() {
+        this.released = true;
         this.pointer.deallocate();
         this.indexer = null;
         this.pointer = null;

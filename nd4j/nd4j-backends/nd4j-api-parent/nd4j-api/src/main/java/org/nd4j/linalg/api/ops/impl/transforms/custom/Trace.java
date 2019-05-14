@@ -48,7 +48,7 @@ public class Trace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradAtOutput){
         SDVariable rows = f().reshape(f().sizeAt(arg(), -2), new long[]{1});
         SDVariable cols = f().reshape(f().sizeAt(arg(), -1), new long[]{1});
-        SDVariable eye = sameDiff.eye(f().shape(gradAtOutput.get(0)), rows, cols);
+        SDVariable eye = sameDiff.math().eye(f().shape(gradAtOutput.get(0)), rows, cols);
         //Reshape gradient from [x,y,z] to [x,y,z,1,1]
         SDVariable reshapedGrad = f().expandDims(gradAtOutput.get(0), -1);
         reshapedGrad = f().expandDims(reshapedGrad, -1);

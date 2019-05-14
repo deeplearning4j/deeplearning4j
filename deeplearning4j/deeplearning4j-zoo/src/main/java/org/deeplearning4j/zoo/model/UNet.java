@@ -106,7 +106,6 @@ public class UNet extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
                 .weightInit(weightInit)
-                .dist(new TruncatedNormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)

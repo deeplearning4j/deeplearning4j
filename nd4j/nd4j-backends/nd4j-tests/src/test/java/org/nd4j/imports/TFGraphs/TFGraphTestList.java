@@ -43,13 +43,13 @@ import java.util.Map;
  * <p>
  */
 @RunWith(Parameterized.class)
-@Ignore
+//@Ignore
 public class TFGraphTestList {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "simplewhile_nested"
+            "cond/cond_true"
     };
 
     @After

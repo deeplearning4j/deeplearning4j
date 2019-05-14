@@ -42,8 +42,9 @@ namespace nd4j {
 
         std::vector<Nd4jLong> toLongVector(std::vector<int> vec) {
             std::vector<Nd4jLong> result(vec.size());
+            Nd4jLong vecSize = vec.size();
 
-            for (Nd4jLong e = 0; e < vec.size(); e++)
+            for (Nd4jLong e = 0; e < vecSize; e++)
                 result[e] = vec[e];
 
             return result;

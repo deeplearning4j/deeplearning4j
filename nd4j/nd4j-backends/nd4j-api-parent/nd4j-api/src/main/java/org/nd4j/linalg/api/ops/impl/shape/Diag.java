@@ -56,7 +56,7 @@ public class Diag extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable grad = i_v.get(0);
-        SDVariable ret = sameDiff.diagPart(grad);
+        SDVariable ret = sameDiff.math().diagPart(grad);
         return Collections.singletonList(ret);
     }
 

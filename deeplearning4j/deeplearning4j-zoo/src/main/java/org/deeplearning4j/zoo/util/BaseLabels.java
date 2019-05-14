@@ -83,6 +83,10 @@ public abstract class BaseLabels implements Labels {
 
     @Override
     public List<List<ClassPrediction>> decodePredictions(INDArray predictions, int n) {
+        if(predictions.rank() == 1){
+            //Reshape 1d edge case to [1, nClasses] 2d
+            predictions = predictions.reshape(1, predictions.length());
+        }
         Preconditions.checkState(predictions.size(1) == labels.size(), "Invalid input array:" +
                 " expected array with size(1) equal to numLabels (%s), got array with shape %s", labels.size(), predictions.shape());
 

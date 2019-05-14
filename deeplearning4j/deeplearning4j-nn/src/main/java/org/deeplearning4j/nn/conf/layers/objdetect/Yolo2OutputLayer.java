@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -81,7 +82,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     private INDArray boundingBoxes;
 
     private Yolo2OutputLayer() {
-        //No-arg costructor for Jackson JSON
+        //No-arg constructor for Jackson JSON
     }
 
     private Yolo2OutputLayer(Builder builder) {
@@ -95,9 +96,9 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret =
-                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -217,7 +218,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * @param lambdaCoord Lambda value for size/scale component of loss function
          */
         public Builder lambdaCoord(double lambdaCoord) {
-            this.lambdaCoord = lambdaCoord;
+            this.setLambdaCoord(lambdaCoord);
             return this;
         }
 
@@ -227,8 +228,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          *
          * @param lambdaNoObj Lambda value for no-object (confidence) component of the loss function
          */
-        public Builder lambbaNoObj(double lambdaNoObj) {
-            this.lambdaNoObj = lambdaNoObj;
+        public Builder lambdaNoObj(double lambdaNoObj) {
+            this.setLambdaNoObj(lambdaNoObj);
             return this;
         }
 
@@ -238,7 +239,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * @param lossPositionScale Loss function for position/scale
          */
         public Builder lossPositionScale(ILossFunction lossPositionScale) {
-            this.lossPositionScale = lossPositionScale;
+            this.setLossPositionScale(lossPositionScale);
             return this;
         }
 
@@ -249,7 +250,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * @param lossClassPredictions Loss function for the class prediction error component of the YOLO loss function
          */
         public Builder lossClassPredictions(ILossFunction lossClassPredictions) {
-            this.lossClassPredictions = lossClassPredictions;
+            this.setLossClassPredictions(lossClassPredictions);
             return this;
         }
 
@@ -262,7 +263,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * @param boundingBoxes Bounding box prior dimensions (width, height)
          */
         public Builder boundingBoxPriors(INDArray boundingBoxes) {
-            this.boundingBoxes = boundingBoxes;
+            this.setBoundingBoxes(boundingBoxes);
             return this;
         }
 

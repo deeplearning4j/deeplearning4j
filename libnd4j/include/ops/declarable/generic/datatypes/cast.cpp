@@ -37,6 +37,11 @@ namespace nd4j {
 
             input->cast(output, newType);
             */
+			
+            if(input->isEmpty()){
+                REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
+                return Status::OK();
+			}
 
             if (!block.isInplace())
                 output->assign(input);
@@ -55,6 +60,10 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
             ArrayOptions::setDataType(newShape, newType);
+			
+            if(INPUT_VARIABLE(0)->isEmpty()){
+                ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+            }
 
             return SHAPELIST(newShape);
         }

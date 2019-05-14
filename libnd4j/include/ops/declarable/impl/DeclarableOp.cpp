@@ -89,31 +89,42 @@ namespace nd4j {
         nd4j::NDArray* nd4j::ops::DeclarableOp::getZ(Context& ctx, int inputId) {
             NDArray* z = nullptr;
 
-            std::pair<int, int> pair(ctx.nodeId(), inputId);
-
-            if (ctx.isInplace()) {
-                z = ctx.variable(inputId)->getNDArray();
-
-                // hypothetically it's possible to have no variable. chances are low, but who knows. let's just create it for now
-                if (!ctx.getVariableSpace()->hasVariable(pair)) {
-                    auto var = new Variable();
-                    ctx.getVariableSpace()->putVariable(pair, var);
-                }
-
-                // now we're saving input array as output array
-                auto var = ctx.getVariableSpace()->getVariable(pair);
-                var->markRemovable(false);
-                var->setNDArray(z);
-            } else if (!ctx.isInplace()) {
-                auto var = ctx.variable(pair);
-                if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
-                    z = var->getNDArray();
+            if (ctx.isFastPath()) {
+                if (ctx.fastpath_out().size() <= inputId) {
+                    if (ctx.isInplace()) {
+                        z = ctx.fastpath_in()[inputId];
+                    } else
+                        throw std::runtime_error("fastpath_out: unresolved output array");
                 } else {
-                    nd4j_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+                    z = ctx.fastpath_out()[inputId];
                 }
             } else {
-                nd4j_printf("BOOM!\n","");
-                throw std::runtime_error("Boom!");
+                std::pair<int, int> pair(ctx.nodeId(), inputId);
+
+                if (ctx.isInplace()) {
+                    z = ctx.variable(inputId)->getNDArray();
+
+                    // hypothetically it's possible to have no variable. chances are low, but who knows. let's just create it for now
+                    if (!ctx.getVariableSpace()->hasVariable(pair)) {
+                        auto var = new Variable();
+                        ctx.getVariableSpace()->putVariable(pair, var);
+                    }
+
+                    // now we're saving input array as output array
+                    auto var = ctx.getVariableSpace()->getVariable(pair);
+                    var->markRemovable(false);
+                    var->setNDArray(z);
+                } else if (!ctx.isInplace()) {
+                    auto var = ctx.variable(pair);
+                    if (var->getNDArray() != nullptr && var->getNDArray()->nonNull()) {
+                        z = var->getNDArray();
+                    } else {
+                        nd4j_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
+                    }
+                } else {
+                    nd4j_printf("BOOM!\n", "");
+                    throw std::runtime_error("Boom!");
+                }
             }
 
             return z;
@@ -146,17 +157,22 @@ namespace nd4j {
 
                 int cntIn = 0;
                 // we build list of input shapes
-                for (auto p: *ctx.inputs()) {
-                    auto var = ctx.variable(p);
-                    if (var->variableType() == VariableType::NDARRAY) {
-                        NDArray *array = var->getNDArray();
-                        if (array == nullptr)
-                            throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
-
-                        inSha.push_back(array->getShapeInfo());
-
+                if (ctx.isFastPath()) {
+                    for (const auto p:ctx.fastpath_in()) {
+                        inSha.push_back(p->getShapeInfo());
                     }
-                    cntIn++;
+                } else {
+                    for (auto p: *ctx.inputs()) {
+                        auto var = ctx.variable(p);
+                        if (var->variableType() == VariableType::NDARRAY) {
+                            NDArray *array = var->getNDArray();
+                            if (array == nullptr)
+                                throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
+
+                            inSha.push_back(array->getShapeInfo());
+                        }
+                        cntIn++;
+                    }
                 }
 
                 // optionally saving input time
@@ -171,6 +187,30 @@ namespace nd4j {
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
                 results = outSha->size();
 
+                // we must "validate" our output shapes
+                for (int e = 0; e < results; e++) {
+                    auto ptr = outSha->at(e);
+
+                    // checking for the same pointer used twice
+                    for (int i = 0; i < results; i++){
+                        if (i == e)
+                            continue;
+
+                        auto com = outSha->at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned same shape instance twice [" + *_descriptor->getOpName() + "]");
+                    }
+
+                    // checking for input pointer returned back
+                    for (int i = 0; i < inSha.size(); i++){
+                        auto com = inSha.at(i);
+
+                        if (ptr == com)
+                            throw std::runtime_error("ShapeFunction returned input shape instance as output [" + *_descriptor->getOpName() + "]");
+                    }
+                }
+
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
                     shapeEnd = std::chrono::system_clock::now();
@@ -182,30 +222,52 @@ namespace nd4j {
 
                 int cnt = 0;
                 for (auto out: *outSha->asVector()) {
-                    // we need to check, if Z is really needed
-                    std::pair<int, int> pair(ctx.nodeId(), cnt++);
+                    if (!ctx.isFastPath()) {
+                        // we need to check, if Z is really needed
+                        std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
-                    if (!ctx.isValueAvailable(pair.second)) {
-                        if (Environment::getInstance()->isDebugAndVerbose())
-                            shape::printShapeInfoLinear("Going to create variable with shape", out);
-                        
-                        auto outArr = new NDArray(out, true, workspace);
+                        if (!ctx.isValueAvailable(pair.second)) {
+                            if (Environment::getInstance()->isDebugAndVerbose())
+                                shape::printShapeInfoLinear("Going to create variable with shape", out);
 
-                        ctx.pushNDArrayToVariableSpace(pair, outArr);
+                            auto outArr = new NDArray(out, true, workspace);
+
+                            ctx.pushNDArrayToVariableSpace(pair, outArr);
+                        } else {
+                            // validate/compare shapes here. existent vs provided in outSha
+                            auto var = ctx.variable(pair);
+                            auto shape = var->getNDArray()->shapeInfo();
+
+                            if (!shape::equalsSoft(out, shape)) {
+                                auto eShape = ShapeUtils::shapeAsString(out);
+                                auto aShape = ShapeUtils::shapeAsString(shape);
+
+                                outSha->destroy();
+                                delete outSha;
+
+                                nd4j_printf("Expected vs provided shapes mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
+                                throw std::runtime_error("Expected vs provided shapes mismatch");
+                            }
+                        }
                     } else {
-                        // validate/compare shapes here. existent vs provided in outSha
-                        auto var = ctx.variable(pair);
-                        auto shape = var->getNDArray()->shapeInfo();
+                        auto fout = ctx.fastpath_out();
+                        auto idx = cnt++;
+                        if (fout.size() <= idx) {
+                            // array doesnt exist
+                            auto outArr = new NDArray(out, true, workspace);
+                            ctx.setOutputArray(idx, outArr, true);
+                        } else {
+                            auto array = fout[idx];
+                            if (!shape::equalsSoft(out, array->shapeInfo())) {
+                                auto eShape = ShapeUtils::shapeAsString(out);
+                                auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
 
-                        if (!shape::equalsSoft(out, shape)) {
-                            auto eShape = ShapeUtils::shapeAsString(out);
-                            auto aShape = ShapeUtils::shapeAsString(shape);
+                                outSha->destroy();
+                                delete outSha;
 
-                            outSha->destroy();
-                            delete outSha;
-
-                            nd4j_printf("Expected vs provided shapes mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
-                            throw std::runtime_error("Expected vs provided shapes mismatch");
+                                nd4j_printf("Expected vs provided shape mismatch: %s vs %s\n", eShape.c_str(), aShape.c_str());
+                                throw std::runtime_error("Expected vs provided shape mismatch");
+                            }
                         }
                     }
                 }
@@ -308,7 +370,7 @@ namespace nd4j {
                     inputTypes[inT++] = array->dataType();
                     if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
                         auto ctype = DataTypeUtils::asString(array->dataType());
-                        nd4j_printf("Op [%sxnj failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt, ctype.c_str());
+                        nd4j_printf("Op [%s] failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt, ctype.c_str());
                         return ND4J_STATUS_BAD_ARGUMENTS;
                     }
                 }
@@ -319,7 +381,7 @@ namespace nd4j {
             // checking optionally available outputs
             auto varSpace = block.getVariableSpace();
             for (int index = 0; index < DataTypeUtils::max<int>(); index++) {
-                if (varSpace->hasVariable(block.nodeId(), index)) {
+                if (varSpace != nullptr && varSpace->hasVariable(block.nodeId(), index)) {
                     auto var = block.variable(block.nodeId(), index);
 
                     // only validating non-null variables
@@ -427,10 +489,22 @@ namespace nd4j {
 
                 for (int e = 0; e < numOutputs; e++) {
                     // if given output index doesn't exist - we're done
-                    if (!vs->hasVariable(block->nodeId(), e))
-                        break;
 
-                    auto array = vs->getVariable(block->nodeId(), e)->getNDArray();
+                    if (!block->isFastPath()) {
+                        if (!vs->hasVariable(block->nodeId(), e))
+                            break;
+                    } else {
+                        // we have to check either in or out stack, depending on isInplace()
+                        if (block->isInplace()) {
+                            if (block->fastpath_in().size() <= e)
+                                break;
+                        } else {
+                            if (block->fastpath_out().size() <= e)
+                                break;
+                        }
+                    }
+
+                    auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e] : vs->getVariable(block->nodeId(), e)->getNDArray();
 
                     auto shape = ShapeUtils::shapeAsString(array);
                     auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
@@ -752,11 +826,9 @@ namespace nd4j {
             if (block.width() == 0)
                 return ND4J_STATUS_OK;
 
-
-            NDArray *a0 = block.variable(0)->getNDArray();
-            for (auto p: *block.inputs()) {
-                auto v = block.variable(p);
-                NDArray *aV = v->getNDArray();
+            NDArray *a0 = block.array(0);
+            for (int e = 0; e < block.width(); e++) {
+                auto aV = block.array(e);
                 if (!shape::equalsSoft(a0->getShapeInfo(), aV->getShapeInfo()))
                     return ND4J_STATUS_BAD_DIMENSIONS;
             }
@@ -769,9 +841,9 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
 
 
-            Nd4jLong l0 = block.variable(0)->getNDArray()->lengthOf();
+            Nd4jLong l0 = block.array(0)->lengthOf();
             for (uint32_t e = 0; e < block.width(); e++) {
-                if (l0 != block.variable(e)->getNDArray()->lengthOf())
+                if (l0 != block.array(e)->lengthOf())
                     return ND4J_STATUS_BAD_LENGTH;
             }
 

@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff;
 
 import org.junit.Test;
@@ -37,7 +53,7 @@ public class TestSessions {
         InferenceSession is = new InferenceSession(sd);
 
         INDArray x = Nd4j.linspace(1, 12, 12).castTo(DataType.FLOAT).reshape(3,4);
-        INDArray y = Nd4j.linspace(0.1, 0.4, 4).castTo(DataType.FLOAT).reshape(1,4);
+        INDArray y = Nd4j.linspace(0.1, 0.4, 4, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(1,4);
 
         INDArray outExp = x.addRowVector(y);
 
@@ -71,7 +87,7 @@ public class TestSessions {
 
         InferenceSession is = new InferenceSession(sd);
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
-        INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        INDArray y = Nd4j.linspace(0.0, 0.9, 9, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(3,3);
 
         INDArray aExp = x.add(y);
         INDArray bExp = x.mmul(y);
@@ -101,7 +117,7 @@ public class TestSessions {
         SDVariable outVar = sd.identity(merge);
 
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
-        INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        INDArray y = Nd4j.linspace(0.0, 0.9, 9, DataType.DOUBLE).castTo(DataType.FLOAT).reshape(3,3);
 //        ph1.setArray(x);
 //        ph2.setArray(y);
 //        INDArray out = sd.execAndEndResult();

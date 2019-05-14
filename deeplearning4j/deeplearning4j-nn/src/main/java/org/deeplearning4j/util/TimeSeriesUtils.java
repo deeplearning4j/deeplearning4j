@@ -257,7 +257,7 @@ public class TimeSeriesUtils {
 
         INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
 
-        INDArray outReshape = workspaceMgr.create(arrayType, new long[]{inReshape.size(0), idxs.length}, 'f');
+        INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
         return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
 
@@ -326,7 +326,7 @@ public class TimeSeriesUtils {
             idxs[j++] = i;
         }
 
-        INDArray ret = workspaceMgr.createUninitialized(arrayType, new long[]{mask.size(0), idxs.length}, 'f');
+        INDArray ret = workspaceMgr.createUninitialized(arrayType, mask.dataType(), new long[]{mask.size(0), idxs.length}, 'f');
 
         return Nd4j.pullRows(mask, ret, 0, idxs);
 
@@ -411,9 +411,12 @@ public class TimeSeriesUtils {
 
             //Now, get and assign the corresponding subsets of 3d activations:
             for (int i = 0; i < fwdPassTimeSteps.length; i++) {
+                int lastStepIdx = fwdPassTimeSteps[i];
+                Preconditions.checkState(lastStepIdx >= 0, "Invalid last time step index: example %s in minibatch is entirely masked out" +
+                        " (input mask is all 0s, meaning no input data is present for this example)", i);
                 //TODO can optimize using reshape + pullRows
                 out.putRow(i, pullFrom.get(NDArrayIndex.point(i), NDArrayIndex.all(),
-                        NDArrayIndex.point(fwdPassTimeSteps[i])));
+                        NDArrayIndex.point(lastStepIdx)));
             }
         }
 

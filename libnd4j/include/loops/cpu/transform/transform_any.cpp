@@ -19,6 +19,7 @@
 //
 
 #include <op_boilerplate.h>
+#include <Loops.h>
 #include <types/types.h>
 #include <loops/transform_any.h>
 #include <loops/legacy_ops.h>
@@ -41,112 +42,28 @@ namespace functions {
                     DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_ANY_OPS);
 		}
 
-        template <typename X, typename Z>
-        template<typename OpType>
-		void _CUDA_H TransformAny<X, Z>::exec(
-                    void *vx,
-                    Nd4jLong *xShapeInfo,
-                    void *vz,
-                    Nd4jLong *zShapeInfo,
-                    void *vextraParams,
-                    Nd4jLong *tadShapeInfo,
-                    Nd4jLong *tadOffsets) {
+/////////////////////////////////////////////////////////////////////
+template <typename X, typename Z>
+template<typename OpType>
+void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
+                                    void *vz,Nd4jLong *zShapeInfo,
+                                    void *vextraParams,
+                                    Nd4jLong *tadShapeInfo,Nd4jLong *tadOffsets) {
 
-		        auto x = reinterpret_cast<X *>(vx);
-		        auto z = reinterpret_cast<Z *>(vz);
-		        auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-                const auto len = shape::length(xShapeInfo);
-                const auto xEws = shape::elementWiseStride(xShapeInfo);
-                const auto zEws = shape::elementWiseStride(zShapeInfo);
-                const auto xOrder = shape::order(xShapeInfo);
-                const auto zOrder = shape::order(zShapeInfo);
-
-                // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
-
-            if(OpType::requiresSpecial) {
-                OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                return;
-            }
-
-
-            if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-                nd4j::OmpLaunchHelper info(len);
-#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                    auto xi = x + xEws * threadOffset;
-                    auto zi = z + zEws * threadOffset;
-#pragma omp simd
-                    for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)
-                        zi[j*zEws] = OpType::op(xi[j*xEws], extraParams);
-                }
-                }
-                else {
-                            
-                    const bool xSimpe = shape::isStrideSimple(xShapeInfo);
-                    const bool zSimpe = shape::isStrideSimple(zShapeInfo);
-                   
-                    nd4j::OmpLaunchHelper info(len);
-                   
-                    if(xSimpe) {
-                        
-                        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                        {
-                            auto threadNum = omp_get_thread_num();                    
-                            Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                            auto xi = x + xEws * threadOffset;    
-                            #pragma omp simd
-                            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                                Nd4jLong zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, len);
-                                z[zOffset] = OpType::op(xi[i*xEws], extraParams);
-                            }
-                        }
-                    }
-                    else if(zSimpe) {
-
-                        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                        {
-                            auto threadNum = omp_get_thread_num();                    
-                            Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                            auto zi = z + zEws * threadOffset;    
-                            #pragma omp simd
-                            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                                Nd4jLong xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, len);
-                                zi[i*zEws] = OpType::op(x[xOffset], extraParams);
-                            }
-                        }
-                    }
-                    else if(shape::equalsStrict(xShapeInfo, zShapeInfo)) {
-                        
-                        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                        {
-                            auto threadNum = omp_get_thread_num();                    
-                            Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                            #pragma omp simd
-                            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                                Nd4jLong offset = shape::getIndexOffset(i+threadOffset, xShapeInfo, len);
-                                z[offset] = OpType::op(x[offset], extraParams);
-                            }
-                        }
-                    }
-                    else {
-                        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                        {
-                            auto threadNum = omp_get_thread_num();                    
-                            Nd4jLong threadOffset = info.getThreadOffset(threadNum);                            
-                            #pragma omp simd
-                            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                                Nd4jLong xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, len);
-                                Nd4jLong zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, len);
-                                z[zOffset] = OpType::op(x[xOffset], extraParams);
-                            }
-                        }
-                    }   
-                }
-        }
-
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+	auto x = reinterpret_cast<X *>(vx);
+	auto z = reinterpret_cast<Z *>(vz);
+	auto extraParams = reinterpret_cast<X *>(vextraParams);
+             
+    if(OpType::requiresSpecial) {
+        OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        return;
     }
+
+    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
+}
+
+
+
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
+}
 }

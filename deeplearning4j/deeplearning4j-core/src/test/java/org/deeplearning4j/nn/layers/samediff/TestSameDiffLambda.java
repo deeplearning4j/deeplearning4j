@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffSimpleLambdaLaye
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffSimpleLambdaVertex;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -120,6 +121,7 @@ public class TestSameDiffLambda extends BaseDL4JTest {
     public void testSameDiffLamdaVertexBasic(){
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .seed(12345)
                 .updater(new Adam(0.01))
                 .graphBuilder()
@@ -134,6 +136,7 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
         //Equavalent, not using SameDiff Lambda:
         ComputationGraphConfiguration confStd = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
                 .seed(12345)
                 .updater(new Adam(0.01))
                 .graphBuilder()

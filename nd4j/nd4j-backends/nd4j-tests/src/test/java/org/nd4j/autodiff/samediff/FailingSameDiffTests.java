@@ -48,7 +48,7 @@ public class FailingSameDiffTests {
         INDArray expOut = Nd4j.pile(stack).reshape(5, 5, 2, 3);
 
         SameDiff sd = SameDiff.create();
-        SDVariable result = sd.eye(2, 3, 5, 5).castTo(DataType.DOUBLE);
+        SDVariable result = sd.math().eye(2, 3, DataType.DOUBLE, 5, 5);
 
         assertEquals(expOut, result.eval());
     }
@@ -147,7 +147,7 @@ public class FailingSameDiffTests {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
 
-        SDVariable tanh = sd.tanh(in);
+        SDVariable tanh = sd.math().tanh(in);
         INDArray exp = Transforms.tanh(in.getArr(), true);
 
         INDArray out = sd.execAndEndResult();
@@ -171,7 +171,7 @@ public class FailingSameDiffTests {
 
         SDVariable input = sd.var("input", ia);
 
-        SDVariable res = sd.dropout(input, p);
+        SDVariable res = sd.nn().dropout(input, p);
         assertArrayEquals(new long[]{2, 2}, res.getShape());
     }
 

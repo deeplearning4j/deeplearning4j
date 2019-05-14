@@ -211,8 +211,9 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * Adds a token
      * to the cache
      * @param element the word to add
+     * @return true if token was added, false if updated
      */
-    void addToken(T element);
+    boolean addToken(T element);
 
     /**
      * Returns the token (again not necessarily in the vocab)
@@ -263,4 +264,5 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
      * @param element SequenceElement to be removed
      */
     void removeElement(T element);
+
 }

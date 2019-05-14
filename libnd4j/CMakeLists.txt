@@ -36,7 +36,7 @@ endif()
 
 if(NOT CUDA_BLAS)
     if (NOT "${MKLDNN_PATH}" STREQUAL "")
-        add_definitions(-DHAVE_MKLDNN)
+        set(HAVE_MKLDNN 1)
         include_directories(${MKLDNN_PATH}/include/)
         link_directories(${MKLDNN_PATH} ${MKLDNN_PATH}/lib/)
         IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -45,12 +45,39 @@ if(NOT CUDA_BLAS)
             set(MKLDNN_LIBRARIES mkldnn mklml)
         endif()
     elseif (NOT "${OPENBLAS_PATH}" STREQUAL "")
-        add_definitions(-DHAVE_OPENBLAS)
+        set(HAVE_OPENBLAS 1)
         include_directories(${OPENBLAS_PATH}/include/)
         link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
         set(OPENBLAS_LIBRARIES openblas)
     endif()
 endif()
+
+# Download and unpack flatbuffers at configure time
+configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+  message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+  message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+endif()
+
+# Add flatbuffers directly to our build.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+                 EXCLUDE_FROM_ALL)
+
+set(HAVE_FLATBUFFERS 1)
+set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
+include_directories(${FLATBUFFERS_PATH}/include)
+
+configure_file(include/config.h.in include/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")

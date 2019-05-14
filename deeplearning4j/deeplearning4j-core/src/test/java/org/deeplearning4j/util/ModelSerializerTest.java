@@ -480,7 +480,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
 
         Map<String,Object> someOtherData = new HashMap<>();
         someOtherData.put("x", new float[]{0,1,2});
-        someOtherData.put("y",Nd4j.linspace(1,10,10));
+        someOtherData.put("y",Nd4j.linspace(1,10,10, Nd4j.dataType()));
 
         ModelSerializer.addObjectToFile(tempFile, "otherData.bin", someOtherData);
 

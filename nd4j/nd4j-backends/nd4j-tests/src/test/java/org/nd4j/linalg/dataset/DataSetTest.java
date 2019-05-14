@@ -79,7 +79,7 @@ public class DataSetTest extends BaseNd4jTest {
         for( int i=0; i<10; i++ ){
             assertTrue(iter.hasNext());
             DataSet d = iter.next();
-            INDArray exp = f.getRow(i);
+            INDArray exp = f.getRow(i, true);
             assertEquals(exp, d.getFeatures());
             assertEquals(exp, d.getLabels());
         }
@@ -430,7 +430,7 @@ public class DataSetTest extends BaseNd4jTest {
 
 
         assertEquals(first, fMerged.get(interval(0, nExamples1), all(), all(), all()));
-        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2, true), all(), all(), all()));
+        assertEquals(second, fMerged.get(interval(nExamples1, nExamples1 + nExamples2), all(), all(), all()));
         assertEquals(labels1, lMerged.get(interval(0, nExamples1), all()));
         assertEquals(labels2, lMerged.get(interval(nExamples1, nExamples1 + nExamples2), all()));
 
@@ -718,8 +718,8 @@ public class DataSetTest extends BaseNd4jTest {
         int entries = nSamples * nChannels * imgRows * imgCols;
         int labels = nSamples * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.FLOAT).reshape(nSamples, nChannels, imgRows, imgCols);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.FLOAT).reshape(nSamples, nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(nSamples, nChannels, imgRows, imgCols);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(nSamples, nLabels);
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
 
@@ -752,8 +752,8 @@ public class DataSetTest extends BaseNd4jTest {
         }
         int labels = shape[0] * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.FLOAT).reshape(shape);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.FLOAT).reshape(shape[0], nLabels);
+        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(shape);
+        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(shape[0], nLabels);
 
         DataSet ds = new DataSet(ds_data, ds_labels);
         ds.shuffle();
@@ -881,8 +881,9 @@ public class DataSetTest extends BaseNd4jTest {
         //The feature mask does not have to be equal to the label mask, just in this ex it should be
         assertEquals(newDs.getLabelsMaskArray(), newDs.getFeaturesMaskArray());
         //System.out.println(newDs);
-        assertEquals(Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE),
-                        newDs.getLabelsMaskArray().sum(1));
+        INDArray exp = Nd4j.linspace(numExamples + from, numExamples + to - 1, to - from, DataType.DOUBLE);
+        INDArray act = newDs.getLabelsMaskArray().sum(1);
+        assertEquals(exp, act);
     }
 
     @Test

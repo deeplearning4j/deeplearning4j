@@ -72,8 +72,8 @@ public class  AMean extends BaseReduceFloatOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable sgn = sameDiff.sign(arg());
-        SDVariable meanBp = f().meanBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        SDVariable sgn = sameDiff.math().sign(arg());
+        SDVariable meanBp = f().meanBp(sameDiff.math().abs(arg()), f1.get(0), false, dimensions);
         return Collections.singletonList(sgn.mul(meanBp));
     }
 }

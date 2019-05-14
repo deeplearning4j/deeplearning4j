@@ -58,7 +58,7 @@ namespace ops {
             block_dims = (int) blocks->lengthOf();
 
             REQUIRE_TRUE(blocks->isVector() || blocks->lengthOf() == 1, 0, "SpaceToBatch: blocks supposed to be vector or scalar, but got %iD instead", blocks->rankOf());
-            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
+            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf(), 0, "SpaceToBatch: blocks length + 1 should match input rank at least");
             REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
             REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
 
@@ -286,13 +286,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
-
         // we always give out C order here
-        shape::shapeBuffer((int) external_output_shape.size(), ArrayOptions::dataType(in), external_output_shape.data(), newShape);
-        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in)); // as in TF
-
+        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());
         return SHAPELIST(newShape);
     }
 }

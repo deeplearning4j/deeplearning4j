@@ -31,6 +31,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            BROADCAST_CHECK_EMPTY(x,y,z);
+
             REQUIRE_TRUE(!y->isB(), 0, "DIVIDE OP: you can't divide by bool array!");
             auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
             if (tZ == nullptr)

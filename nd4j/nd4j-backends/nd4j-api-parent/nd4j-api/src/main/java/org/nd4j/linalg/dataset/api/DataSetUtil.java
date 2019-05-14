@@ -208,7 +208,7 @@ public class DataSetUtil {
             default:
                 throw new IllegalStateException("Cannot merge examples: features rank must be in range 2 to 4"
                                 + " inclusive. First example features shape: "
-                                + Arrays.toString(featureMasksToMerge[0].shape()));
+                                + Arrays.toString(featuresToMerge[0].shape()));
         }
     }
 

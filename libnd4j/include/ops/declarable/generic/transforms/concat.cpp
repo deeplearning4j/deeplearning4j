@@ -30,6 +30,8 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 
+    REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");
+
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> copy its value to vector with length=1
     std::vector<NDArray*> nonEmptyArrs;
@@ -56,12 +58,18 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         }
     }
     
-    const int numOfArrs = nonEmptyArrs.size();        
+    const int numOfArrs = nonEmptyArrs.size();
+
+    if(numOfArrs == 0){
+        //All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
+        REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "CONCAT op: If all input variables are empty, output must be empty");
+        return Status::OK();
+    }
+
     const int rank = nonEmptyArrs[0]->rankOf();                     //  look up to first non-empty array
     int axis = INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank;
 
     // ******** input validation ******** //
-    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
     REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
     REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
@@ -100,6 +108,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         }
 
 DECLARE_SHAPE_FN(concat) {
+
+    REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");
     
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> use the shape of vector with length=1 instead 
@@ -123,7 +133,13 @@ DECLARE_SHAPE_FN(concat) {
     }
 
     const int numOfArrs = nonEmptyArrShapes.size();    
-    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");    
+
+    if(numOfArrs == 0){
+        //All inputs are empty arrays -> return empty, mainly for TF import compatibility
+        Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+        return SHAPELIST(empty);
+    }
     
     const int rank = nonEmptyArrShapes[0][0];     //  look up to first non-empty array
 
@@ -364,23 +380,21 @@ DECLARE_SHAPE_FN(concat) {
             for (int e = 0; e < block.width() - 1; e++) {
                 auto originalChunk = INPUT_VARIABLE(e);
                 auto epsilonChunk = OUTPUT_VARIABLE(e);
-                IndicesList indices;
+                std::vector<Nd4jLong> indices(2 * epsilonNext->rankOf());
 
                 int width = originalChunk->sizeAt(axis);            
 
                 for (int e = 0; e < epsilonNext->rankOf(); e++) {
                     if (e == axis)
-                        indices.push_back(NDIndex::interval(startPos, startPos + width));
+                        indices[2*e + 1] = (indices[2*e] = startPos) + width;                    
                     else
-                        indices.push_back(NDIndex::all());
+                        indices[2*e + 1] = indices[2*e] = 0;
                 }
 
-                auto subarray = epsilonNext->subarray(indices);
+                auto subarray = (*epsilonNext)(indices, true);
                 epsilonChunk->assign(subarray);
 
-                startPos += width;
-
-                delete subarray;
+                startPos += width;                
             }
 
             return ND4J_STATUS_OK;

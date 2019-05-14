@@ -59,9 +59,17 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
             if (nextElement != null && nextElement != terminator) {
                 return true;
             }
-            nextElement = buffer.take();
+
+            // if on previous run we've got terminator - just return false
             if (nextElement == terminator)
                 return false;
+
+            nextElement = buffer.take();
+
+            // same on this run
+            if (nextElement == terminator)
+                return false;
+
             return true;
         } catch (Exception e) {
             log.error("Premature end of loop!");
@@ -72,7 +80,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Override
     public T next() {
         T temp = nextElement;
-        nextElement = null;
+        nextElement = temp == terminator ? terminator : null;
         return temp;
     }
 
@@ -93,6 +101,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
                 Thread.currentThread().interrupt();
             }
             nextElement = terminator;
+            buffer.clear();
         }
     }
 
@@ -113,6 +122,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
 
         @Override
         public void run() {
+            //log.info("AsyncReader [{}] started", Thread.currentThread().getId());
             try {
                 while (iterator.hasNext() && shouldWork.get()) {
                     T smth = iterator.next();
@@ -128,6 +138,8 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
             } catch (Exception e) {
                 // TODO: pass that forward
                 throw new RuntimeException(e);
+            } finally {
+                //log.info("AsyncReader [{}] stopped", Thread.currentThread().getId());
             }
         }
     }

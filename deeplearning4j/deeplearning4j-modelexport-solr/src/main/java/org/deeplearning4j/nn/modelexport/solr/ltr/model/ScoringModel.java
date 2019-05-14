@@ -38,7 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * An <a href="https://lucene.apache.org/solr/7_5_0/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
+ * An <a href="https://lucene.apache.org/solr/7_7_1/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
  * org.apache.solr.ltr.model.LTRScoringModel</a> that computes scores using a {@link MultiLayerNetwork} or
  * {@link ComputationGraph} model.
  * <p>
@@ -58,7 +58,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * <p>
  * Apache Solr Reference Guide:
  * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_5/learning-to-rank.html">Learning To Rank</a>
+ * <li> <a href="https://lucene.apache.org/solr/guide/7_7/learning-to-rank.html">Learning To Rank</a>
  * </ul>
  */
 public class ScoringModel extends AdapterModel {
@@ -127,7 +127,7 @@ public class ScoringModel extends AdapterModel {
    * Uses the {@link NetworkUtils#output(Model, INDArray)} method.
    */
   public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
-    final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
+    final INDArray input = Nd4j.create(new float[][]{ modelFeatureValuesNormalized });
     final INDArray output = NetworkUtils.output(model, input);
     return output.getFloat(0);
   }

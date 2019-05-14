@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.graph.ui;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.flatbuffers.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -275,7 +292,7 @@ public class LogFileWriter {
      * @return          Number of bytes written
      */
     public long writeScalarEvent(String name, long time, int iteration, int epoch, Number scalar) throws IOException {
-        //TODO add support for plugin and frame/iter
+        //TODO add support for plugin, variable and frame/iter
         Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
         int idx = indexNameMap.get(name);
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
@@ -284,6 +301,88 @@ public class LogFileWriter {
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
         int offset2 = Nd4j.scalar(scalar).toFlatArray(fbb2);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventDiscrete(@NonNull String name, long time, int iteration, int epoch, List<String> binLabels, @NonNull INDArray y) throws IOException {
+        Preconditions.checkState(binLabels == null || binLabels.size() == y.length(), "Number of bin labels (if present) must " +
+                "be same as Y array length - got %s bins, array shape %ndShape", (binLabels == null ? 0L : binLabels.size()), y.length());
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+
+        //TODO add support for plugin, variable and frame/iter
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+        int binLabelsOffset = 0;
+        if(binLabels != null){
+            int[] str = new int[binLabels.size()];
+            for( int i=0; i<binLabels.size(); i++ ){
+                String s = binLabels.get(i);
+                if(s == null)
+                    s = "";
+                str[i] = fbb2.createString(s);
+            }
+            binLabelsOffset = UIHistogram.createBinlabelsVector(fbb2, str);
+        }
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.DISCRETE, y.length(), 0, yOffset, binLabelsOffset);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventEqualSpacing(String name, long time, int iteration, int epoch, double min, double max, INDArray y) throws IOException {
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+        Preconditions.checkState(max > min, "Maximum histogram value must be greater than minimum - got max=%s, min=%s", max, min);
+
+        //TODO add support for plugin, variable and frame/iter
+        //TODO: Code duplication for histogram methods...
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+
+        INDArray binRangesArr = Nd4j.createFromArray(min, max);
+        int binRangesOffset = binRangesArr.toFlatArray(fbb2);
+
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.EQUAL_SPACING, y.length(), binRangesOffset, yOffset, 0);
+        fbb2.finish(offset2);
+
+        return append(fbb, fbb2);
+    }
+
+    public long writeHistogramEventCustomBins(String name, long time, int iteration, int epoch, INDArray bins, INDArray y) throws IOException {
+        Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
+        Preconditions.checkState(bins.rank() == 2, "Bins array must have shape [2,numBins], got bins array with shape %ndShape", bins);
+        Preconditions.checkState(y.length() == bins.size(1), "Bins array must have shape [2,numBins], where numBins must match y.length()=%s, got bins array with shape %ndShape", y.length(), bins);
+
+        //TODO add support for plugin, variable and frame/iter
+        //TODO: Code duplication for histogram methods...
+        Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+        int idx = indexNameMap.get(name);
+
+        FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        fbb.finish(offset);
+
+        FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+        int yOffset = y.toFlatArray(fbb2);
+
+        int binRangesOffset = bins.toFlatArray(fbb2);
+
+        int offset2 = UIHistogram.createUIHistogram(fbb2, UIHistogramType.CUSTOM, y.length(), binRangesOffset, yOffset, 0);
         fbb2.finish(offset2);
 
         return append(fbb, fbb2);

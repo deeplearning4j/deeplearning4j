@@ -24,6 +24,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -49,6 +50,7 @@ import java.util.*;
 public class Conv3D extends DynamicCustomOp {
 
     protected Conv3DConfig config;
+    private static final String INVALID_CONFIGURATION = "Invalid Conv3D configuration : sW = %s pH = %s dW = %s ";
 
     public Conv3D() {
     }
@@ -64,6 +66,9 @@ public class Conv3D extends DynamicCustomOp {
         if (outputs != null)
             addOutputArgument(outputs);
         this.config = conv3DConfig;
+        Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
+                                    INVALID_CONFIGURATION,
+                                    config.getSW(), config.getPH(), config.getDW());
         addArgs();
 
 
@@ -235,7 +240,6 @@ public class Conv3D extends DynamicCustomOp {
                 map.put(keys, propertyMapping);
         }
 
-        ret.put(onnxName(), map);
         ret.put(tensorflowName(), map);
         return ret;
     }
@@ -285,7 +289,7 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        return "Conv";
+        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
     @Override

@@ -27,7 +27,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-api</name>
-    <url>http://nd4j.org</url>
+    <url>https://deeplearning4j.org</url>
 
     <build>
         <plugins>
@@ -129,6 +129,12 @@
 
 
     <dependencies>
+        <dependency>
+          <groupId>com.jakewharton.byteunits</groupId>
+          <artifactId>byteunits</artifactId>
+          <version>0.9.1</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>

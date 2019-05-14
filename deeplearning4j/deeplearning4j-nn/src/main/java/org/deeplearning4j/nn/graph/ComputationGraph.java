@@ -16,8 +16,11 @@
 
 package org.deeplearning4j.nn.graph;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -25,6 +28,7 @@ import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -56,12 +60,12 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
-import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -447,6 +451,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initCalled)
             return;
 
+        DataType netDtype = getConfiguration().getDataType();
+        if(parameters != null && parameters.dataType() != netDtype){
+            if(cloneParametersArray){
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    parameters = parameters.castTo(netDtype);
+                }
+            } else {
+                throw new IllegalStateException("Error initializing network: Network datatype is set to " + netDtype
+                        + " but provided array has datatype " + parameters.dataType() + " with cloneParametersArray argument" +
+                        " set to false. Cannot initialize net with specified datatype array if that array does not match network datatype");
+            }
+        }
+
         if (configuration.getTrainingWorkspaceMode() == null)
             configuration.setTrainingWorkspaceMode(WorkspaceMode.NONE);
 
@@ -479,7 +496,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Create network input vertices:
         int vertexNumber = 0;
         for (String name : networkInputNames) {
-            GraphVertex gv = new InputVertex(this, name, vertexNumber, null); //Output vertices: set later
+            GraphVertex gv = new InputVertex(this, name, vertexNumber, null, netDtype); //Output vertices: set later
             allNamesReverse.put(name, vertexNumber);
             vertices[vertexNumber++] = gv;
         }
@@ -513,7 +530,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             initializeParams = false;
         } else if(numParams > 0){
-            flattenedParams = Nd4j.create(1, numParams);
+            flattenedParams = Nd4j.create(netDtype, 1, numParams);
             initializeParams = true;
         } else {
             flattenedParams = null;
@@ -533,7 +550,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (int vertexIdx : topologicalOrder) {
             long nParamsThisVertex = numParamsForVertex[vertexIdx];
             if (nParamsThisVertex != 0) {
-                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.point(0),
+                paramsViewForVertex[vertexIdx] = flattenedParams.get(NDArrayIndex.interval(0,0,true),
                         NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
             }
             i++;
@@ -551,7 +568,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
 
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
-                    initializeParams);
+                    initializeParams, netDtype);
 
             if(gv == null){
                 throw new IllegalStateException("Encountered null layer/vertex during initialization for layer \"" + name +
@@ -644,15 +661,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue; //Output vertex
             VertexIndices[] outputIndices = new VertexIndices[thisVertexOutputsTo.size()];
             int j = 0;
-            for (String s : thisVertexOutputsTo) {
+            for (String s : new HashSet<>(thisVertexOutputsTo)) {
                 //First, we have gv -> s
                 //Which input in s does gv connect to? s may in general have multiple inputs...
                 List<String> nextVertexInputNames = vertexInputs.get(s);
 
-                int outputVertexInputNumber = nextVertexInputNames.indexOf(vertexName);
-
-                int outputVertexIndex = allNamesReverse.get(s);
-                outputIndices[j++] = new VertexIndices(outputVertexIndex, outputVertexInputNumber);
+                for (int k = 0; k < nextVertexInputNames.size(); k++) {
+                    if(vertexName.equals(nextVertexInputNames.get(k))){
+                        int outputVertexIndex = allNamesReverse.get(s);
+                        outputIndices[j++] = new VertexIndices(outputVertexIndex, k);
+                    }
+                }
             }
             gv.setOutputVertices(outputIndices);
         }
@@ -752,7 +771,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             if(numParams > 0) {
-                flattenedGradients = Nd4j.create(1, numParams);
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), 1, numParams);
             }
 
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
@@ -761,7 +780,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (int vertexIdx : topologicalOrder) {
                 long nParamsThisVertex = numParamsForVertex[vertexIdx];
                 if (nParamsThisVertex != 0) {
-                    INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
+                    INDArray gradientView = flattenedGradients.get(NDArrayIndex.interval(0,0,true),
                             NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
                     vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
                 }
@@ -1046,9 +1065,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multi,
-                    Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
-                    configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2), true);
             destructable = true;
         } else
             multiDataSetIterator = multi;
@@ -1519,8 +1536,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (not) clearing the layer input arrays.<br>
      * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
      * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.org/workspaces">
-     *     https://deeplearning4j.org/workspaces</a>
+     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces">
+     *     https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces</a>
      * for more details
      *
      * @param input An array of ComputationGraph inputs
@@ -1690,7 +1707,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public synchronized <T> T output(@NonNull INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
-            return outputAdapter.apply(output(false, inputs, inputMasks, labelMasks, ws));
+            if (outputAdapter instanceof ModelAdapter)
+                return ((ModelAdapter<T>) outputAdapter).apply(this, inputs, inputMasks, labelMasks);
+            else
+                return outputAdapter.apply(output(false, inputs, inputMasks, labelMasks, ws));
         }
     }
 
@@ -1951,6 +1971,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
                                 out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                            }  else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
+                                RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
+                                out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                             } else {
@@ -1965,8 +1988,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
-                                        storeLastForTBPTT, workspaceMgr);
+                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train, storeLastForTBPTT, workspaceMgr);
+                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
                                         current.getInputs()[0], train, storeLastForTBPTT);
@@ -2095,6 +2120,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             if (l instanceof RecurrentLayer) {
                                 out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
                                         storeLastForTBPTT, workspaceMgr);
+                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
                                 List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
                                         current.getInputs()[0], train, storeLastForTBPTT);
@@ -2332,6 +2360,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 Layer l = current.getLayer();
                                 if (l instanceof RecurrentLayer) {
                                     out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                                } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
+                                    RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
+                                    out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                                 } else if (l instanceof MultiLayerNetwork) {
                                     out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                                 } else {
@@ -3191,7 +3222,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             long range = layer.numParams();
             if (range <= 0)
                 continue; //Some layers: no parameters (subsampling etc)
-            INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, range + idx));
+            INDArray get = params.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(idx, range + idx));
             layer.setParams(get);
             idx += range;
         }
@@ -3218,7 +3249,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             long range = layer.numParams();
             if (range <= 0)
                 continue; //Some layers: no parameters (subsampling etc)
-            layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.point(0),
+            layer.setBackpropGradientsViewArray(gradient.get(NDArrayIndex.interval(0,0,true),
                     NDArrayIndex.interval(paramsSoFar, paramsSoFar + range)));
             paramsSoFar += range;
         }
@@ -3437,6 +3468,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> rnnGetPreviousState(String layerName) {
         Layer l = verticesMap.get(layerName).getLayer();
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
         if (l == null || !(l instanceof RecurrentLayer))
             return null;
         return ((RecurrentLayer) l).rnnGetPreviousState();
@@ -3452,6 +3486,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public Map<String, Map<String, INDArray>> rnnGetPreviousStates() {
         Map<String, Map<String, INDArray>> states = new HashMap<>();
         for (Layer l : layers) {
+            if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+                l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+            }
             if (l instanceof RecurrentLayer) {
                 states.put(l.conf().getLayer().getLayerName(), ((RecurrentLayer) l).rnnGetPreviousState());
             }
@@ -3477,6 +3514,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void rnnSetPreviousState(String layerName, Map<String, INDArray> state) {
         Layer l = verticesMap.get(layerName).getLayer();
+        if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer){
+            l = ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+        }
         if (l == null || !(l instanceof RecurrentLayer)) {
             throw new UnsupportedOperationException(
                     "Layer \"" + layerName + "\" is not a recurrent layer. Cannot set state");
@@ -4195,6 +4235,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             maxLength[i] = header[i].length();
         }
 
+        if(topologicalOrder == null){
+            GraphIndices indices = calculateIndices();
+            topologicalOrder = indices.getTopologicalSortOrder();
+        }
+
         for (int currVertexIdx : topologicalOrder) {
 
             GraphVertex currentVertex = vertices[currVertexIdx];
@@ -4446,6 +4491,37 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public static ComputationGraph load(File f, boolean loadUpdater) throws IOException {
         return ModelSerializer.restoreComputationGraph(f, loadUpdater);
+    }
+
+    /**
+     * Return a copy of the network with the parameters and activations set to use the specified (floating point) data type.
+     * If the existing datatype is the same as the requested dataype, the original network will be returned unchanged.
+     * Only floating point datatypes (DOUBLE, FLOAT, HALF) may be used.
+     *
+     * @param dataType Datatype to convert the network to
+     * @return The network, set to use the specified datatype for the parameters and activations
+     */
+    public ComputationGraph convertDataType(@NonNull DataType dataType){
+        Preconditions.checkState(dataType.isFPType(), "Invalid DataType: %s. Can only convert network to a floating point type", dataType);
+        if(dataType == params().dataType()){
+            return this;
+        }
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            INDArray newParams = params().castTo(dataType);
+            String jsonConfig = getConfiguration().toJson();
+            ComputationGraphConfiguration newConf = ComputationGraphConfiguration.fromJson(jsonConfig);
+            newConf.setDataType(dataType);
+            ComputationGraph newNet = new ComputationGraph(newConf);
+            newNet.init(newParams, false);
+
+            Updater u = getUpdater(false);
+            if(u != null && u.getStateViewArray() != null){
+                INDArray oldUpdaterState = u.getStateViewArray();
+                newNet.getUpdater(true).getStateViewArray().assign(oldUpdaterState);
+            }
+            return newNet;
+        }
     }
 
     /**

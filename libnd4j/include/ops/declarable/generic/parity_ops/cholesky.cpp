@@ -31,7 +31,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() >=2, 0, "cholesky: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "cholesky: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
-
+            REQUIRE_TRUE(helpers::checkCholeskyInput(input), 0, "cholesky: The input tensor should be positive-defined and symmetric.");
             return helpers::cholesky(input, output);
         }
         DECLARE_TYPES(cholesky) {

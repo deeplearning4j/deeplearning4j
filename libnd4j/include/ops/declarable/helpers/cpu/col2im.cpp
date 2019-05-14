@@ -53,31 +53,17 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     const Nd4jLong imStride1  = imStride[1];
     const Nd4jLong imStride2  = imStride[2];
     const Nd4jLong imStride3  = imStride[3];
+        
+    memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
 
-    // initial zeroing of image content
-    const auto imEWS = shape::elementWiseStride(imShapeBuffer);
-    if(imEWS == 1) {
-        memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-    } 
-    else if (imEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS)
-            imBuff[i] = static_cast<T>(0.f);
-    } 
-    else {        
-        const auto len = shape::length(imShapeBuffer);
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < len; i++)            
-            imBuff[shape::getIndexOffset(i, imShapeBuffer, len)] = static_cast<T>(0.f);
-    }
-            
 	T *col, *im;
     int imRow, imCol;
 
-    if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
-            
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
-    	for (int b = 0; b < bS; b++) {        
+    // if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
+    if (false) {
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(col, im, imRow, imCol) collapse(2))
+    	for (int b = 0; b < bS; b++) {
       		for (int c = 0; c < iC; ++c) {                    
             	for (int kRow = 0; kRow < kH; ++kRow) {                        
                 	for (int kCol = 0; kCol < kW; ++kCol) {                            
@@ -101,22 +87,27 @@ void col2im_(graph::LaunchContext& context, const NDArray& input,  NDArray& outp
     }
     else {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
-    	for (int b = 0; b < bS; b++) {        
-        	for (int colH = 0; colH < oH; ++colH) {
-            	for (int colW = 0; colW < oW; ++colW) {
-                	for (int c = 0; c < iC; ++c) {                        
-                    	for (int kRow = 0; kRow < kH; ++kRow) {                        
-                        	for (int kCol = 0; kCol < kW; ++kCol) {                            
-                        
-                            	imRow = (-pH + kRow * dH) + colH*sH;
-                                imCol = (-pW + kCol * dW) + colW*sW;
-                                        
-                                col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
-                                im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
+        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(firstprivate(imRow, imCol))
+    	for (int b = 0; b < bS; ++b) {
+            T* im0  = imBuff + b*imStride0;
+            T* col4 = colBuff + b*colStride0;
+        	for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
+                T* col5 = col4;
+            	for (int colW = 0; colW < oW; ++colW, col5 += colStride5) {
+                    T* col1 = col5;
+                    T* im1 = im0;
+                	for (int c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
+                        int imRow = (-pH + colH*sH);
+                        T* col2 = col1;
+                        T* im2 = im1 + imRow*imStride2;
+                    	for (int kRow = 0; kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH*imStride2) {
+                            int imCol =-pW + colW*sW;
+                            T* col3 = col2;                            
+                            T* im3 = im2 + imCol*imStride3;
+                        	for (int kCol = 0; kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW*imStride3) {
 
                                 if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
-                                	*im += *col;
+                                	*im3 += *col3;
                             }
                         }
                     }

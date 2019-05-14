@@ -83,7 +83,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong i = 0; i < length; i++) {
 
             for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -112,7 +112,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             //code branch for absent Z
             z = x[0];
 
-#pragma omp simd
+            PRAGMA_OMP_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
                 z[i] /= n;
             }
@@ -124,7 +124,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 1; ar < n; ar++) {
@@ -133,7 +133,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 1; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }
@@ -151,7 +150,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             int _threads = 4;
 #endif
 
-#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong i = 0; i < length; i++) {
 
                 for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -160,7 +159,6 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             }
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
-#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
             for (Nd4jLong ar = 0; ar < n; ar++) {
                 memcpy(x[ar], z, length * sizeof(T));
             }
@@ -239,7 +237,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         auto array = reinterpret_cast<T *>(varray);
         int cutoff = 1000;
 
-#pragma omp parallel num_threads(numThreads)
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
 #pragma omp single nowait
             {
@@ -287,7 +285,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         Nd4jLong xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         int numTads = xLength / xTadLength;
 
-#pragma omp parallel for
+        PRAGMA_OMP_PARALLEL_FOR
         for (int r = 0; r < numTads; r++) {
             T *dx = x + tadOffsets[r];
 
@@ -307,7 +305,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         float threshold = fb.f_;
 
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong e = 4; e < lim; e++) {
 
             for (int bitId = 0; bitId < 16; bitId++) {
@@ -375,5 +373,5 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         return retVal;
     }
 
-    BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT SpecialMethods, , LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
 }

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -98,19 +99,19 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                    INDArray paramsView, boolean initializeParams) {
+                                                                      INDArray paramsView, boolean initializeParams, DataType networkDatatype) {
         //Now, we need to work out if this vertex is an output vertex or not...
         boolean isOutput = graph.getConfiguration().getNetworkOutputs().contains(name);
 
         org.deeplearning4j.nn.api.Layer layer =
-                        layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
+                        layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams, networkDatatype);
 
         if(layer == null) {
             throw new IllegalStateException("Encountered null layer during initialization for layer:" +
                      layerConf.getLayer().getClass().getSimpleName() + " initialization returned null layer?");
         }
 
-        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
+        return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput, networkDatatype);
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.nd4j.jita.memory.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -27,6 +28,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.slf4j.Logger;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 
 /**
@@ -100,20 +103,24 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
         if (location == AllocationStatus.HOST && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength()) {
 
-            CacheHolder cache = zeroCache.get(shape);
+            val cache = zeroCache.get(shape);
             if (cache != null) {
-                Pointer pointer = cache.poll();
+                val pointer = cache.poll();
                 if (pointer != null) {
                     cacheZeroHit.incrementAndGet();
 
                     // since this memory chunk is going to be used now, remove it's amount from
                     zeroCachedAmount.addAndGet(-1 * reqMemory);
 
-                    PointersPair pair = new PointersPair();
+                    val pair = new PointersPair();
                     pair.setDevicePointer(new CudaPointer(pointer.address()));
                     pair.setHostPointer(new CudaPointer(pointer.address()));
 
                     point.setAllocationStatus(AllocationStatus.HOST);
+
+                    MemoryTracker.getInstance().incrementAllocatedHostAmount(reqMemory);
+                    MemoryTracker.getInstance().decrementCachedHostAmount(reqMemory);
+
                     return pair;
                 }
             }
@@ -121,7 +128,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             if (CudaEnvironment.getInstance().getConfiguration().isUsePreallocation() && zeroCachedAmount.get() < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache() / 10
                             && reqMemory < 16 * 1024 * 1024L) {
-                CachePreallocator preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
+                val preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
                 preallocator.start();
             }
 
@@ -167,14 +174,11 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // we don't cache too big objects
             if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength() || zeroCachedAmount.get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
-                //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
                 return;
             }
 
             ensureCacheHolder(shape);
-
-            //log.info("Saving DEVICE memory into cache...");
 
             /*
                 Now we should decide if this object can be cached or not
@@ -192,13 +196,12 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
                 // total memory allocated within this bucket
                 long cacheDepth = cacheEntries * reqMemory;
 
-                //   if (cacheDepth < MAX_CACHED_MEMORY / cacheHeight) {
                 Pointer.memset(point.getHostPointer(), 0, reqMemory);
                 cache.put(new CudaPointer(point.getHostPointer().address()));
-                //    } else {
-                //       super.free(point);
-                //    }
             }
+
+            MemoryTracker.getInstance().decrementAllocatedHostAmount(reqMemory);
+            MemoryTracker.getInstance().incrementCachedHostAmount(reqMemory);
         }
     }
 
@@ -225,7 +228,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
     protected class CacheHolder {
         private Queue<Pointer> queue = new ConcurrentLinkedQueue<>();
-        private AtomicInteger counter = new AtomicInteger(0);
+        private volatile int counter = 0;
         private long reqMem = 0;
         private final AtomicLong allocCounter;
 
@@ -234,21 +237,21 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             this.allocCounter = counter;
         }
 
-        public int size() {
-            return counter.get();
+        public synchronized int size() {
+            return counter;
         }
 
-        public Pointer poll() {
-            Pointer pointer = queue.poll();
+        public synchronized Pointer poll() {
+            val pointer = queue.poll();
             if (pointer != null)
-                counter.decrementAndGet();
+                counter--;
 
             return pointer;
         }
 
-        public void put(Pointer pointer) {
+        public synchronized void put(Pointer pointer) {
             allocCounter.addAndGet(reqMem);
-            counter.incrementAndGet();
+            counter++;
             queue.add(pointer);
         }
     }
@@ -267,14 +270,12 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
         @Override
         public void run() {
-            //            log.info("Precaching ["+target+"] chunks for shape: " + shape);
-
             ensureCacheHolder(shape);
 
             for (int i = 0; i < target; i++) {
-                AllocationPoint point = new AllocationPoint();
+                val point = new AllocationPoint();
 
-                PointersPair pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
+                val pair = CudaCachingZeroProvider.super.malloc(shape, point, this.location);
                 if (this.location == AllocationStatus.HOST) {
                     Pointer pointer = new CudaPointer(pair.getHostPointer().address());
                     CudaCachingZeroProvider.this.zeroCache.get(shape).put(pointer);
@@ -289,6 +290,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             Pointer ptr = null;
             while ((ptr = zeroCache.get(shape).poll()) != null) {
                 freeHost(ptr);
+                MemoryTracker.getInstance().decrementCachedHostAmount(shape.getNumberOfBytes());
             }
         }
 

@@ -26,7 +26,7 @@
     <packaging>jar</packaging>
 
     <name>nd4j-kafka</name>
-    <url>http://nd4j.org</url>
+    <url>https://deeplearning4j.org</url>
 
     <properties>
         <!-- Default scala versions, may be overwritten by build profiles -->

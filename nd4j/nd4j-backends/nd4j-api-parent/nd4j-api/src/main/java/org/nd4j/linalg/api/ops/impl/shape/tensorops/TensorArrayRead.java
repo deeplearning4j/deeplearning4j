@@ -17,15 +17,22 @@
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class TensorArrayRead extends BaseTensorOp {
+
+    protected DataType importDataType;
 
     public TensorArrayRead(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
@@ -51,11 +58,24 @@ public class TensorArrayRead extends BaseTensorOp {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+
+        this.importDataType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
         //Same output type as the TensorArray - which is defined by input 0
-        SDVariable tArr = arg(0);
-        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputFunction(tArr.getVarName());
-        DataType dt = t3.getTensorArrayDataType();
+        DataType dt;
+        if(importDataType != null){
+            dt = importDataType;
+        } else {
+            SDVariable tArr = arg(0);
+            DifferentialFunction op = sameDiff.getVariableOutputFunction(tArr.getVarName());
+            TensorArray t3 = (TensorArray) op;
+            dt = t3.getTensorArrayDataType();
+        }
         return Collections.singletonList(dt);
     }
 }

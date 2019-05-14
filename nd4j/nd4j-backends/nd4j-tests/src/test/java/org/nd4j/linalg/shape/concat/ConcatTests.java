@@ -251,6 +251,25 @@ public class ConcatTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void concatf(){
+        char orderBefore = Nd4j.order();
+        try {
+            Nd4j.factory().setOrder('f');   //Required to reproduce problem
+            INDArray x = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{1, 6}, 'c');     //These can be C or F - no difference
+            INDArray y = Nd4j.create(new double[]{7, 8, 9, 10, 11, 12}, new int[]{1, 6}, 'c');
+
+            INDArray out = Nd4j.concat(0, x, y);
+
+            INDArray exp = Nd4j.createFromArray(new double[][]{
+                    {1, 2, 3, 4, 5, 6},
+                    {7, 8, 9, 10, 11, 12}});
+
+            assertEquals(exp, out);
+        } finally {
+            Nd4j.factory().setOrder(orderBefore);
+        }
+    }
 
     @Override
     public char ordering() {

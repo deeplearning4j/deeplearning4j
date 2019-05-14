@@ -120,7 +120,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        Layer model = conf.getLayer().instantiate(conf, null, 0, params, true);
+        Layer model = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
@@ -131,7 +131,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         long numParams2 = conf2.getLayer().initializer().numParams(conf);
         INDArray params2 = Nd4j.create(1, numParams);
-        Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true);
+        Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true, params.dataType());
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -209,7 +209,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = getConfig(nIn, nOut, weightInit, preTrain);
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        return conf.getLayer().instantiate(conf, null, 0, params, true);
+        return conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
     }
 
 
@@ -249,7 +249,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         int sizeX = 4;
         int scaleX = 10;
         System.out.println("Here is a leaky vector..");
-        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX);
+        INDArray leakyVector = Nd4j.linspace(-1, 1, sizeX, Nd4j.dataType());
         leakyVector = leakyVector.mul(scaleX);
         System.out.println(leakyVector);
 

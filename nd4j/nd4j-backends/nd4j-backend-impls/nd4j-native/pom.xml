@@ -47,34 +47,34 @@
             <version>${javacpp.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform2}</classifier>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>mkl-dnn</artifactId>
             <version>${mkl-dnn.javacpp.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <groupId>org.bytedeco</groupId>
             <artifactId>mkl-dnn</artifactId>
             <version>${mkl-dnn.javacpp.version}</version>
             <classifier>${dependency.platform2}</classifier>
@@ -138,8 +138,6 @@
     </dependencies>
 
     <build>
-        <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -150,6 +148,7 @@
                     </environmentVariables>
                     <includes>
                         <include>*.java</include>
+                        <include>**/*.java</include>
                         <include>**/Test*.java</include>
                         <include>**/*Test.java</include>
                         <include>**/*TestCase.java</include>
@@ -170,7 +169,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>javacpp.parser</id>
+                        <id>javacpp-parser</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>compile</goal>
@@ -193,6 +192,28 @@
                         <groupId>org.nd4j</groupId>
                         <artifactId>nd4j-native-api</artifactId>
                         <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>openblas</artifactId>
+                        <version>${openblas.version}-${javacpp-presets.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>openblas</artifactId>
+                        <version>${openblas.version}-${javacpp-presets.version}</version>
+                        <classifier>${dependency.platform}</classifier>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>mkl-dnn</artifactId>
+                        <version>${mkl-dnn.javacpp.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>mkl-dnn</artifactId>
+                        <version>${mkl-dnn.javacpp.version}</version>
+                        <classifier>${dependency.platform2}</classifier>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -219,6 +240,8 @@
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
                     <includePaths>
+                        <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                        <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
@@ -231,29 +254,33 @@
                     <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                        <buildResource>/org/bytedeco/javacpp/${javacpp.platform}/</buildResource>
+                        <buildResource>/org/bytedeco/mkldnn/${javacpp.platform}/</buildResource>
+                        <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/javacpp/${javacpp.platform}/include/</includeResource>
+                        <includeResource>/org/bytedeco/mkldnn/${javacpp.platform}/include/</includeResource>
+                        <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/</includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/javacpp/${javacpp.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/javacpp/${javacpp.platform}/lib/</linkResource>
+                        <linkResource>/org/bytedeco/mkldnn/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/mkldnn/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                     </linkResources>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>javacpp.validate</id>
+                        <id>javacpp-validate</id>
                         <phase>validate</phase>
                         <goals>
                           <goal>build</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>javacpp.parser</id>
+                        <id>javacpp-parser</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>build</goal>
@@ -265,7 +292,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>javacpp.compiler</id>
+                        <id>javacpp-compiler</id>
                         <phase>process-classes</phase>
                         <goals>
                             <goal>build</goal>

@@ -19,12 +19,18 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.WeightInitEmbedding;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -62,9 +68,9 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -76,9 +82,9 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+        if (inputType == null || (inputType.getType() != InputType.Type.FF && inputType.getType() != InputType.Type.RNN)) {
             throw new IllegalStateException("Invalid input for Embedding layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect FFN input type. Got: " + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect FF/RNN input type. Got: " + inputType);
         }
         return InputType.recurrent(nOut, inputLength);
     }
@@ -104,6 +110,32 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     public boolean hasBias() {
         return hasBias;
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException(
+                    "Invalid input for layer (layer name = \"" + getLayerName() + "\"): input type is null");
+        }
+
+        if(inputType.getType() == InputType.Type.RNN){
+            return null;
+        }
+        return super.getPreProcessorForInputType(inputType);
+    }
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if(inputType.getType() == InputType.Type.RNN){
+            if (nIn <= 0 || override) {
+                InputType.InputTypeRecurrent f = (InputType.InputTypeRecurrent) inputType;
+                this.nIn = f.getSize();
+            }
+        } else {
+            super.setNIn(inputType, override);
+        }
+
     }
 
     @NoArgsConstructor
@@ -135,7 +167,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this layer
          */
         public Builder hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return this;
         }
 
@@ -146,7 +178,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @return Builder
          */
         public Builder inputLength(int inputLength) {
-            this.inputLength = inputLength;
+            this.setInputLength(inputLength);
             return this;
         }
 
@@ -158,8 +190,44 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          * @return Builder
          */
         public Builder inferInputLength(boolean inferInputLength) {
-            this.inferInputLength = inferInputLength;
+            this.setInferInputLength(inferInputLength);
             return this;
+        }
+
+        @Override
+        public Builder weightInit(IWeightInit weightInit) {
+            this.setWeightInitFn(weightInit);
+            return this;
+        }
+
+        @Override
+        public void setWeightInitFn(IWeightInit weightInit){
+            if(weightInit instanceof WeightInitEmbedding){
+                long[] shape = ((WeightInitEmbedding) weightInit).shape();
+                nIn(shape[0]);
+                nOut(shape[1]);
+            }
+            this.weightInitFn = weightInit;
+        }
+
+        /**
+         * Initialize the embedding layer using the specified EmbeddingInitializer - such as a Word2Vec instance
+         *
+         * @param embeddingInitializer Source of the embedding layer weights
+         */
+        public Builder weightInit(EmbeddingInitializer embeddingInitializer){
+            return weightInit(new WeightInitEmbedding(embeddingInitializer));
+        }
+
+        /**
+         * Initialize the embedding layer using values from the specified array. Note that the array should have shape
+         * [vocabSize, vectorSize]. After copying values from the array to initialize the network parameters, the input
+         * array will be discarded (so that, if necessary, it can be garbage collected)
+         *
+         * @param vectors Vectors to initialize the embedding layer with
+         */
+        public Builder weightInit(INDArray vectors){
+            return weightInit(new ArrayEmbeddingInitializer(vectors));
         }
 
         @Override

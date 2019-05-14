@@ -55,13 +55,11 @@ DECLARE_SHAPE_FN(random_crop) {
     auto in = INPUT_VARIABLE(1);
     auto typeShape = inputShape->at(0);
     std::vector<Nd4jLong> shape(in->lengthOf());
-
-    Nd4jLong *newShape;
-    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
+    
     for (int e = 0; e < shape.size(); e++)
         shape[e] = (*in).e<Nd4jLong>(e);
-
-    shape::shapeBuffer(shape.size(), ArrayOptions::dataType(typeShape), shape.data(), newShape);
+    
+    Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(typeShape), 'c', shape, block.getWorkspace());
 
     return SHAPELIST(newShape);
 }

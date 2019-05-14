@@ -34,6 +34,8 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
+import org.nd4j.imports.graphmapper.OpImportFilter;
+import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -479,7 +481,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState) {
+    public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState,
+                            OpImportOverride<GraphDef, NodeDef, AttrValue> importOverride,
+                            OpImportFilter<GraphDef, NodeDef, AttrValue> opFilter) {
         if (shouldSkip(tfNode) || alreadySeen(tfNode) || isVariableNode(tfNode)) {
             return;
         }
@@ -515,90 +519,148 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else {
             val opName = tfNode.getOp();
 
-            val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
-            if(differentialFunction == null) {
-                throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
-            }
-            try {
-                val newInstance = differentialFunction.getClass().newInstance();
-                List<SDVariable> args = new ArrayList<>();
-                List<String> controlDeps = null;
-                newInstance.setOwnName(tfNode.getName());
-
-                int x=0;
-                for(int i = 0; i < tfNode.getInputCount(); i++) {
+            if(importOverride != null){
+                //First, get inputs:
+                int numInputs = tfNode.getInputCount();
+                List<SDVariable> inputs = new ArrayList<>(numInputs);
+                List<SDVariable> controlDeps = null;
+                for( int i=0; i<numInputs; i++ ){
                     String inName = tfNode.getInput(i);
-                    String inputOpName = varNameToOpName(inName);
-                    NodeDef inputNode = importState.getVariables().get(inputOpName);
-
-                    //Idea here: skip ".../reduction_indices" and the like that get mapped to properties not variables
-                    if(shouldSkip(inputNode) && !inName.endsWith("/read"))
-                        continue;
 
                     boolean controlDep = isControlDependency(inName);
-                    boolean placeholder = isPlaceHolder(tfNode);
                     String name = getNodeName(inName);
 
                     SDVariable v = diff.getVariable(name);
-
                     //At this point, all placeholders, variables and constants should have been imported
                     //This: this should be an array type variable (i.e., activations)
-                    if(v == null) {
-                        //First: try to work out the datatype of this input node
-                        //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+                    //Edge case is we've skipped op X, and this input is missing for (X -> this)
+                    if (v == null) {
+                        //Check 'op skip' edge case
+                        boolean shouldSkip = false;
+                        if(opFilter != null){
+                            //Get the input node
+                            List<NodeDef> l = importState.getGraph().getNodeList();
+                            NodeDef inputNodeDef = null;
+                            for(NodeDef nd : l){
+                                if(inName.equals(nd.getName())){
+                                    inputNodeDef = nd;
+                                    break;
+                                }
+                            }
+                            Preconditions.checkState(inputNodeDef != null, "Could not find node with name \"%s\"", inName);
+                            shouldSkip = true;
+                        }
 
-                        NodeDef inputOp = importState.getVariables().get(inputOpName);
-                        int outputIdx = varNameToOpOutputNumber(name);
-                        org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
-                        if(dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
-                            dt = null;    //Infer it later
+                        if(!shouldSkip) {
+                            //First: try to work out the datatype of this input node
+                            //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                            String inputOpName = varNameToOpName(inName);
+                            NodeDef inputOp = importState.getVariables().get(inputOpName);
+                            int outputIdx = varNameToOpOutputNumber(name);
+                            org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                            if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                                dt = null;    //Infer it later
 
 
-                        v = diff.var(name, VariableType.ARRAY, null, dt, (long[])null);
+                            v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                        }
                     }
 
                     if(controlDep){
-                        //Is only a control dependency input to op, not a real data input
                         if(controlDeps == null)
                             controlDeps = new ArrayList<>();
-                        if(!controlDeps.contains(name))
-                            controlDeps.add(name);
+                        controlDeps.add(v);
                     } else {
-                        //Is a standard/"real" op input
-                        args.add(v);
+                        inputs.add(v);
                     }
                 }
 
+                log.info("Importing op {} using override {}", opName, importOverride);
+                importOverride.initFromTensorFlow(inputs, controlDeps, tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+            } else {
 
-
-                diff.addArgsFor(args.toArray(new SDVariable[args.size()]),newInstance);
-                newInstance.setSameDiff(importState.getSameDiff());
-
-                if(controlDeps != null) {
-                    SameDiffOp op = diff.getOps().get(newInstance.getOwnName());
-                    op.setControlDeps(controlDeps);
-
-                    //Also record this on the variables:
-                    for(String s : controlDeps){
-                        Variable v = diff.getVariables().get(s);
-                        if(v.getControlDepsForOp() == null)
-                            v.setControlDeps(new ArrayList<String>());
-                        List<String> l = v.getControlDepsForOp();
-                        if(!l.contains(op.getName()))
-                            l.add(op.getName());
-                    }
+                val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
+                if (differentialFunction == null) {
+                    throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
                 }
+                try {
+                    DifferentialFunction newInstance = differentialFunction.getClass().newInstance();
+                    List<SDVariable> args = new ArrayList<>();
+                    List<String> controlDeps = null;
+                    newInstance.setOwnName(tfNode.getName());
 
-                newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
-                importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
-                //ensure we can track node name to function instance later.
-                diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-            } catch (Exception e) {
-                log.error("Failed with [{}]", opName);
-                throw new RuntimeException(e);
+                    int x = 0;
+                    for (int i = 0; i < tfNode.getInputCount(); i++) {
+                        String inName = tfNode.getInput(i);
+                        String inputOpName = varNameToOpName(inName);
+                        NodeDef inputNode = importState.getVariables().get(inputOpName);
+
+                        if (shouldSkip(inputNode) && !inName.endsWith("/read"))
+                            continue;
+
+                        boolean controlDep = isControlDependency(inName);
+                        String name = getNodeName(inName);
+
+                        SDVariable v = diff.getVariable(name);
+
+                        //At this point, all placeholders, variables and constants should have been imported
+                        //This: this should be an array type variable (i.e., activations)
+                        if (v == null) {
+                            //First: try to work out the datatype of this input node
+                            //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                            NodeDef inputOp = importState.getVariables().get(inputOpName);
+                            int outputIdx = varNameToOpOutputNumber(name);
+                            org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                            if (dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                                dt = null;    //Infer it later
+
+
+                            v = diff.var(name, VariableType.ARRAY, null, dt, (long[]) null);
+                        }
+
+                        if (controlDep) {
+                            //Is only a control dependency input to op, not a real data input
+                            if (controlDeps == null)
+                                controlDeps = new ArrayList<>();
+                            if (!controlDeps.contains(name))
+                                controlDeps.add(name);
+                        } else {
+                            //Is a standard/"real" op input
+                            args.add(v);
+                        }
+                    }
+
+
+                    diff.addArgsFor(args.toArray(new SDVariable[args.size()]), newInstance);
+                    newInstance.setSameDiff(importState.getSameDiff());
+
+                    if (controlDeps != null) {
+                        SameDiffOp op = diff.getOps().get(newInstance.getOwnName());
+                        op.setControlDeps(controlDeps);
+
+                        //Also record this on the variables:
+                        for (String s : controlDeps) {
+                            Variable v = diff.getVariables().get(s);
+                            if (v.getControlDepsForOp() == null)
+                                v.setControlDeps(new ArrayList<String>());
+                            List<String> l = v.getControlDepsForOp();
+                            if (!l.contains(op.getName()))
+                                l.add(op.getName());
+                        }
+                    }
+
+                    newInstance.initFromTensorFlow(tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+                    mapProperties(newInstance, tfNode, importState.getGraph(), importState.getSameDiff(), newInstance.mappingsForFunction());
+                    importState.getSameDiff().putFunctionForId(newInstance.getOwnName(), newInstance);
+                    //ensure we can track node name to function instance later.
+                    diff.setBaseNameForFunctionInstanceId(tfNode.getName(), newInstance);
+                } catch (Exception e) {
+                    log.error("Failed to import op [{}]", opName);
+                    throw new RuntimeException(e);
+                }
             }
-
         }
     }
 

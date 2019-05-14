@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -34,12 +35,8 @@ import org.deeplearning4j.nn.workspace.ArrayType;
  */
 public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
 
-    public AutoEncoder(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public AutoEncoder(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public AutoEncoder(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -59,7 +56,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     public INDArray encode(INDArray v, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training, workspaceMgr);
-        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, v.size(0), W.size(1));
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, W.dataType(), v.size(0), W.size(1));
         INDArray preAct = v.castTo(W.dataType()).mmuli(W, ret).addiRowVector(hBias);
         ret = layerConf().getActivationFn().getActivation(preAct, training);
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
@@ -93,6 +90,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray input = this.input.castTo(dataType);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
 

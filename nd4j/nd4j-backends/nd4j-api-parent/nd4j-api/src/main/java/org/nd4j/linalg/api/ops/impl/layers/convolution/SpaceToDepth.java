@@ -69,7 +69,7 @@ public class SpaceToDepth extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Gradient to SpaceToDepth is just DepthToSpace of same block size and data format.
         SDVariable gradient = i_v.get(0);
-        SDVariable ret = sameDiff.depthToSpace(gradient, blockSize, dataFormat);
+        SDVariable ret = sameDiff.cnn().depthToSpace(gradient, blockSize, dataFormat);
         return Arrays.asList(ret);
     }
 

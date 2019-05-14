@@ -24,9 +24,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.Bias;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -75,9 +72,9 @@ public class Variance extends BaseReduceOp {
         defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
-        super(x, null, z, newFormat, keepDims, dimensions);
-        this.biasCorrected = true;
+    public Variance(INDArray x, INDArray z, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        super(x, null, z, keepDims, dimensions);
+        this.biasCorrected = biasCorrected;
         defineDimensions(dimensions);
     }
 
@@ -135,6 +132,10 @@ public class Variance extends BaseReduceOp {
         if (this.x() != null && this.x().isR())
             return this.x().dataType();
 
+        if(this.arg() != null){
+            return this.arg().dataType();
+        }
+
         return Nd4j.defaultFloatingPointType();
     }
 
@@ -165,7 +166,7 @@ public class Variance extends BaseReduceOp {
         long[] inputShape = (argShape == null ? x().shape() : argShape);
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
+        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
         ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
         return ret;
     }

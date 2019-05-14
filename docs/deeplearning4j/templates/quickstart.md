@@ -94,6 +94,15 @@ Install the [latest version of Git](https://git-scm.com/book/en/v2/Getting-Start
 $ git clone git://git.kernel.org/pub/scm/git/git.git
 ```
 
+The latest version of Mac's Mojave OS breaks git, producing the following error message:
+
+```xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
+```
+
+This can be fixed by running:
+
+```xcode-select --install
+```
 
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 

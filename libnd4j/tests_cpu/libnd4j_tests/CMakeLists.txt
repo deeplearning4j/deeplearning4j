@@ -1,8 +1,86 @@
 cmake_minimum_required(VERSION 3.9)
 project(dev_tests)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../lib/googletest-release-1.8.0 ${CMAKE_CURRENT_BINARY_DIR}/lib/googletest-release-1.8.0)
-set(gtest_SOURCE_DIR ../lib/googletest-release-1.8.0)
+
+# Download and unpack googletest at configure time
+configure_file(../CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "Build step for googletest failed: ${result}")
+endif()
+
+# OPTIONAL MKL-DNN
+if ("${BUILD_MKLDNN}")
+    # Download and unpack mkl-dnn at configure time
+    configure_file(./CMakeLists.txt.in mkldnn-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+    if(result)
+        message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+    if(result)
+        message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+    endif()
+
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
+        ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+        EXCLUDE_FROM_ALL)
+    set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
+    set(HAVE_MKLDNN 1)
+    add_definitions(-DHAVE_MKLDNN=true)
+    include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+    set(MKLDNN mkldnn)
+endif()
+
+# Download and unpack flatbuffers at configure time
+configure_file(../../CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+    message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+    message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+endif()
+
+# Add flatbuffers directly to our build.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+        EXCLUDE_FROM_ALL)
+
+set(HAVE_FLATBUFFERS 1)
+set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
+include_directories(${FLATBUFFERS_PATH}/include)
+
+
+# Prevent overriding the parent project's compiler/linker
+# settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Add googletest directly to our build. This defines
+# the gtest and gtest_main targets.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
+                 EXCLUDE_FROM_ALL)
+
+set(gtest_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/googletest-src)
+add_definitions(-D__STANDALONE_BUILD__=true)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
@@ -34,12 +112,13 @@ if (APPLE)
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -Wa,-mbig-obj")
 else()
-    if ("${_RELEASE}")
+    if ("${_RELEASE}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+        message("Release build for tests")
         set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
         else()
-            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
         endif()
     else()
         set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fsanitize=address")
@@ -94,6 +173,14 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    find_package(BLAS)
+    if (BLAS_FOUND)
+        message("Found external BLAS implementation...")
+        add_definitions(-D__EXTERNAL_BLAS__=true)
+    endif()
+endif()
+
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
@@ -130,5 +217,5 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
-target_link_libraries(runtests gtest gtest_main)
+target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
 

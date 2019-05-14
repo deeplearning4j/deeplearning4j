@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -385,12 +401,10 @@ public class FlatBuffersMapper {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
-                ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             } else if(opType == Op.Type.INDEXREDUCE){
                 BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
                 bia.setDimensions(dimensions);
                 bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
-                bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
             /*
             Op types that don't need any extra/special mapping:
@@ -446,6 +460,10 @@ public class FlatBuffersMapper {
                 }
             } else if(v instanceof String) {
                 String str = (String) v;
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
+            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ){
+                String str = v.toString();
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
             } else if(v instanceof INDArray){

@@ -16,9 +16,13 @@
 
 package org.deeplearning4j.nn.conf.serde;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -46,6 +50,7 @@ import java.util.ArrayList;
  *
  * @author Alex Black
  */
+@Slf4j
 public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> implements ResolvableDeserializer {
 
     protected final JsonDeserializer<?> defaultDeserializer;
@@ -83,6 +88,15 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     protected boolean requiresRegularizationFromLegacy(Layer[] layers){
         for(Layer l : layers){
             if(l instanceof BaseLayer && ((BaseLayer)l).getRegularization() == null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean requiresWeightInitFromLegacy(Layer[] layers){
+        for(Layer l : layers){
+            if(l instanceof BaseLayer && ((BaseLayer)l).getWeightInitFn() == null){
                 return true;
             }
         }
@@ -200,6 +214,28 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                 if(l2Bias > 0.0){
                     //Default to non-LR based WeightDecay, to match behaviour in 1.0.0-beta3
                     baseLayer.getRegularizationBias().add(new WeightDecay(l2Bias, false));
+                }
+            }
+        }
+    }
+
+    protected void handleWeightInitBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
+        if(on != null && (on.has("weightInit") )){
+            //Legacy format JSON
+            if(on.has("weightInit")){
+                String wi = on.get("weightInit").asText();
+                try{
+                    WeightInit w = WeightInit.valueOf(wi);
+                    Distribution d = null;
+                    if(w == WeightInit.DISTRIBUTION && on.has("dist")){
+                        //TODO deserialize distribution
+                        String dist = on.get("dist").asText();
+                        d = NeuralNetConfiguration.mapper().readValue(dist, Distribution.class);
+                    }
+                    IWeightInit iwi = w.getWeightInitFunction(d);
+                    baseLayer.setWeightInitFn(iwi);
+                } catch (Throwable t){
+                    log.warn("Failed to infer weight initialization from legacy JSON format",t);
                 }
             }
         }

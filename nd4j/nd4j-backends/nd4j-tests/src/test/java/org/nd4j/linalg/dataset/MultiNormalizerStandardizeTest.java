@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestMultiDataSetIterator;
@@ -56,7 +57,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         // Prepare test data
         int nSamples = 5120;
 
-        INDArray values = Nd4j.linspace(1, nSamples, nSamples).reshape(1, -1).transpose();
+        INDArray values = Nd4j.linspace(1, nSamples, nSamples, Nd4j.dataType()).reshape(1, -1).transpose();
         INDArray input1 = values.mul(INPUT1_SCALE);
         INDArray input2 = values.mul(INPUT2_SCALE);
         INDArray output1 = values.mul(OUTPUT1_SCALE);

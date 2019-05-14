@@ -18,6 +18,7 @@ package org.datavec.api.util.files;
 
 import lombok.AllArgsConstructor;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -45,7 +46,14 @@ public class UriFromPathIterator implements Iterator<URI> {
             throw new NoSuchElementException("No next element");
         }
         try {
-            return new URI(paths.next());
+            String s = paths.next();
+            if(!s.matches(".*:/.*")){
+                //No scheme - assume file for backward compatibility
+                return new File(s).toURI();
+            } else {
+                return new URI(s);
+            }
+
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

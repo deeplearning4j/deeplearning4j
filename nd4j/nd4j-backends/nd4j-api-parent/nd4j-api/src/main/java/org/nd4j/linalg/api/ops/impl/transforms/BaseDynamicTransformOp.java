@@ -54,9 +54,10 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         DataType dtypeZ;
 
         if(numInputArguments() == 2){
-            firstArgShape = inputArguments.get(0).shape();
-            secondArgShape = inputArguments.get(1).shape();
-            dtypeZ = Shape.pickPairwiseDataType(inputArguments.get(0).dataType(), inputArguments.get(1).dataType());
+            return super.calculateOutputShape();    //Use c++ shape calc, which also accounts for empty broadcast cases, etc
+//            firstArgShape = inputArguments.get(0).shape();
+//            secondArgShape = inputArguments.get(1).shape();
+//            dtypeZ = Shape.pickPairwiseDataType(inputArguments.get(0).dataType(), inputArguments.get(1).dataType());
         } else {
             val args = args();
             if (args.length < 2) {

@@ -34,8 +34,8 @@ import java.util.List;
 
 public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions){
+        super(x, y, z, keepDims, dimensions);
     }
 
     protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
@@ -52,10 +52,6 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
         super(sameDiff, input, dimensions);
-    }
-
-    public BaseReduceFloatOp(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, null, z, newFormat, keepDims, dimensions);
     }
 
     public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
@@ -118,7 +114,7 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         DataType retType = arg().dataType();
         if(!retType.isFPType())
             retType = Nd4j.defaultFloatingPointType();
@@ -132,7 +128,8 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
                 "Expected 1 or 2 input datatype for %s, got input %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
                 "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
-        //Output data type: always float. TODO let's allow configuration...
+        if(dataTypes.get(0).isFPType())
+            return Collections.singletonList(dataTypes.get(0));
         return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

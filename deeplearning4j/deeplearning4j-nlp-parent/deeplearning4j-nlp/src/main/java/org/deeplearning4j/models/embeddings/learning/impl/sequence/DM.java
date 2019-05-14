@@ -22,6 +22,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -97,7 +98,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     }
 
     @Override
-    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
+                                BatchSequences<T> batchSequences) {
         Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
         if (sequence.getSequenceLabel() == null)
@@ -112,19 +114,21 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels, false, null);
+            dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels, false,
+                    null, batchSequences);
         }
 
         return 0;
     }
 
     public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
-                    boolean isInference, INDArray inferenceVector) {
+                    boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
         int end = window * 2 + 1 - b;
 
         T currentWord = sequence.getElementByIndex(i);
 
         List<Integer> intsList = new ArrayList<>();
+        List<Boolean> statusesList = new ArrayList<>();
         for (int a = b; a < end; a++) {
             if (a != window) {
                 int c = i - window + a;
@@ -132,6 +136,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                     T lastWord = sequence.getElementByIndex(c);
 
                     intsList.add(lastWord.getIndex());
+                    statusesList.add(lastWord.isLocked());
                 }
             }
         }
@@ -143,13 +148,21 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
 
         int[] windowWords = new int[intsList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
         for (int x = 0; x < windowWords.length; x++) {
             windowWords[x] = intsList.get(x);
+            statuses[x] = false;
         }
 
-        // pass for underlying
-        cbow.iterateSample(currentWord, windowWords, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
-                        configuration.isTrainElementsVectors(), inferenceVector);
+        int batchSize = configuration.getBatchSize();
+        if (batchSize == 1 || isInference) {
+            // pass for underlying
+            cbow.iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
+                    configuration.isTrainElementsVectors(), inferenceVector);
+        }
+        else {
+            batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha, labels == null ? 0 : labels.size());
+        }
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(cbow.getBatch());
@@ -187,10 +200,12 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         INDArray ret = Nd4j.rand(new int[] {1, lookupTable.layerSize()}, random).subi(0.5)
                         .divi(lookupTable.layerSize());
 
+        log.info("Inf before: {}", ret);
+
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret);
+                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret, null);
             }
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }

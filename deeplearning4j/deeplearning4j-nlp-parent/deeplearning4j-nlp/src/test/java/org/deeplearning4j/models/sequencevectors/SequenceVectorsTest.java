@@ -19,6 +19,7 @@ package org.deeplearning4j.models.sequencevectors;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.nd4j.linalg.io.ClassPathResource;

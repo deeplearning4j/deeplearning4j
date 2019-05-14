@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 // 
-// created by Yurii Shyrma on 05.12.2017
+// created by Yurii Shyrma on 05.12.2017, Alex Black
 //
 
 #include <op_boilerplate.h>
@@ -29,36 +29,39 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
-    auto x  = INPUT_VARIABLE(0);                     // input [bS x inSize]
-    auto h0 = INPUT_VARIABLE(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
+CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
+    auto x      = INPUT_VARIABLE(0);                   // input [bS x inSize]
+    auto hLast  = INPUT_VARIABLE(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
+    auto Wru    = INPUT_VARIABLE(2);                   // RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+    auto Wc     = INPUT_VARIABLE(3);                   // C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+    auto bru    = INPUT_VARIABLE(4);                   // reset and update biases, [2*numUnits] - reset and update gates
+    auto bc     = INPUT_VARIABLE(5);                   // cell biases, [numUnits]
 
-    auto Wx   = INPUT_VARIABLE(2);                   // input-to-hidden weights, [inSize   x 3*numUnits]
-    auto Wh   = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    auto b    = INPUT_VARIABLE(4);                   // biases, [3*numUnits]
-    
-    auto h    =  OUTPUT_VARIABLE(0);                  // current cell output [bS x numUnits], that is at current time step t
+    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
+    auto u    =  OUTPUT_VARIABLE(1);                  // Update gate output [bS, numUnits]
+    auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, numUnits]
+    auto h    =  OUTPUT_VARIABLE(3);                  // current cell output [bS, numUnits]
 
-    const int rank     = x->rankOf();              // = 2
+    REQUIRE_TRUE(x->rankOf()==2 && hLast->rankOf()==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", x->rankOf(), hLast->rankOf());
+
+    const int rank     = x->rankOf();
     const auto bS       = x->sizeAt(0);
-    const auto inSize   = x->sizeAt(1);
-    const auto numUnits = h0->sizeAt(1);
+    const auto nIn   = x->sizeAt(1);
+    const auto nU = hLast->sizeAt(1);
 
-    const std::string h0Shape        = ShapeUtils::shapeAsString(h0);
-    const std::string h0CorrectShape = ShapeUtils::shapeAsString({bS, numUnits});
-    const std::string wxShape        = ShapeUtils::shapeAsString(Wx);
-    const std::string wxCorrectShape = ShapeUtils::shapeAsString({inSize, 3*numUnits});
-    const std::string whShape        = ShapeUtils::shapeAsString(Wh);
-    const std::string whCorrectShape = ShapeUtils::shapeAsString({numUnits, 3*numUnits});
-    const std::string bShape         = ShapeUtils::shapeAsString(b);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({3*numUnits});
-    
-    REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRUCELL operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str());
-    REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRUCELL operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str());
-    REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRUCELL operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(x->sizeAt(0) == hLast->sizeAt(0), 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
+    REQUIRE_TRUE(Wru->rankOf()==2 && Wc->rankOf()==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", Wru->rankOf(), Wc->rankOf());
+    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", Wru->sizeAt(0));
+    REQUIRE_TRUE(Wru->sizeAt(1)==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru->sizeAt(1));
+    REQUIRE_TRUE(Wc->sizeAt(1)==nU, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc->sizeAt(1));
+    REQUIRE_TRUE(bru->rankOf()==1 && bru->sizeAt(0)==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
+    REQUIRE_TRUE(bc->rankOf()==1 && bc->sizeAt(0)==nU, 0, "gruCell: cell biases must be rank 1, size numUnits");
+    REQUIRE_TRUE(r->rankOf()==2 && u->rankOf()==2 && c->rankOf()==2 && h->rankOf()==2 &&
+                 r->sizeAt(0)==bS && u->sizeAt(0)==bS && c->sizeAt(0)==bS && h->sizeAt(0)==bS &&
+                 r->sizeAt(1)==nU && u->sizeAt(1)==nU && c->sizeAt(1)==nU && h->sizeAt(1)==nU,
+                 0, "gruCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == numUnits");
 
-    helpers::gruCell(x, h0, Wx, Wh, b, h);
+    helpers::gruCell(x, hLast, Wru, Wc, bru, bc, r, u, c, h);
 
     return Status::OK();
 }
@@ -74,42 +77,45 @@ DECLARE_TYPES(gruCell) {
 }
 
 
-DECLARE_SHAPE_FN(gruCell) {    
-    
-    const auto xShapeInfo  = inputShape->at(0);                     // input [bS x inSize]
-    const auto h0ShapeInfo = inputShape->at(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
-    const auto WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
-    const auto WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    const auto bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
+DECLARE_SHAPE_FN(gruCell) {
 
-    const int rank     = shape::rank(xShapeInfo);              // = 2
-    const auto bS       = xShapeInfo[1];
-    const auto inSize   = xShapeInfo[2];
-    const auto numUnits = h0ShapeInfo[2];
+    auto x      = inputShape->at(0);                   // input [bS x inSize]
+    auto hLast  = inputShape->at(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
+    auto Wru    = inputShape->at(2);                   // RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
+    auto Wc     = inputShape->at(3);                   // C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+    auto bru    = inputShape->at(4);                   // reset and update biases, [2*numUnits] - reset and update gates
+    auto bc     = inputShape->at(5);                   // cell biases, [numUnits]
 
-    const std::string h0Shape        = ShapeUtils::shapeAsString(h0ShapeInfo);
-    const std::string h0CorrectShape = ShapeUtils::shapeAsString({bS, numUnits});
-    const std::string wxShape        = ShapeUtils::shapeAsString(WxShapeInfo);
-    const std::string wxCorrectShape = ShapeUtils::shapeAsString({inSize, 3*numUnits});
-    const std::string whShape        = ShapeUtils::shapeAsString(WhShapeInfo);
-    const std::string whCorrectShape = ShapeUtils::shapeAsString({numUnits, 3*numUnits});
-    const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({3*numUnits});
+    REQUIRE_TRUE(shape::rank(x)==2 && shape::rank(hLast)==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", shape::rank(x), shape::rank(hLast));
 
-    REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRUCELL operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str());
-    REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRUCELL operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str());
-    REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRUCELL operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
-    Nd4jLong *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
+    const int rank     = x[0];
+    const auto bS       = x[1];
+    const auto inSize   = x[2];
+    const auto numUnits = hLast[2];
 
-    hShapeInfo[0] = rank;
-    hShapeInfo[1] = bS;
-    hShapeInfo[2] = numUnits;
+    REQUIRE_TRUE(x[1] == hLast[1], 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
+    REQUIRE_TRUE(shape::rank(Wru)==2 && shape::rank(Wc)==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", shape::rank(Wru), shape::rank(Wc));
+    REQUIRE_TRUE(Wru[1]==(inSize+numUnits) && Wc[1]==(inSize+numUnits), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i and %i", Wru[1], Wc[1]);
+    REQUIRE_TRUE(Wru[2]==(2*numUnits), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru[2]);
+    REQUIRE_TRUE(Wc[2]==numUnits, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc[2]);
+    REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
+    REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==numUnits, 0, "gruCell: cell biases must be rank 1, size numUnits");
 
-    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
+    Nd4jLong *s(nullptr);
+    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
-    return SHAPELIST(hShapeInfo);
+    s[0] = rank;
+    s[1] = bS;
+    s[2] = numUnits;
+
+    ShapeUtils::updateStridesAndType(s, x, shape::order(hLast));
+
+    Nd4jLong *s1, *s2, *s3;
+    COPY_SHAPE(s, s1);
+    COPY_SHAPE(s, s2);
+    COPY_SHAPE(s, s3);
+
+    return SHAPELIST(s, s1, s2, s3);
 }
 
 

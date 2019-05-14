@@ -242,8 +242,8 @@ TEST_F(NDArrayTest, TestTad3) {
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5});
-    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
-    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
+    int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
+    int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, 0, 99};
 
     array.permutei({1, 2, 3, 0});
 
@@ -260,7 +260,7 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
 TEST_F(NDArrayTest, TestPermuteReshape2) {
     auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5, 6, 6});
-    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, -1, 99};
+    int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, 0, 99};
     int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
 
@@ -444,18 +444,15 @@ TEST_F(NDArrayTest, TestTranspose2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSumAlongDimension1) {
-    float *c = new float[4] {1, 2, 3, 4};
-    auto array = new NDArray(c, cShape);
 
-    auto res = array->reduceAlongDims(reduce::Sum, {0});
+    NDArray array('c', {2,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
+        
+    auto res = array.reduceAlongDims(reduce::Sum, {0});
 
     ASSERT_EQ(2, res.lengthOf());
 
     ASSERT_EQ(4.0f, res.e<float>(0));
     ASSERT_EQ(6.0f, res.e<float>(1));
-
-    delete[] c;
-    delete array;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1134,14 +1131,10 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_1) {
         b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
-    exp.triggerAllocationFlag(false, false);
-
+    
     auto c = MmulHelper::mmul(&a, &b);
 
-    ASSERT_TRUE(exp.isSameShapeStrict(c));
-    //c->printShapeInfo("Result shape");
-    //c->printBuffer("Result buffer");
-
+    ASSERT_TRUE(exp.isSameShape(c));
     ASSERT_TRUE(exp.equalsTo(c));
 
     delete c;
@@ -1161,14 +1154,10 @@ TEST_F(NDArrayTest, TestMmulHelper_ND_2) {
         b.p(e, e+1);
 
     NDArray exp(_expB, _expS);
-    exp.triggerAllocationFlag(false, false);
 
     auto c = MmulHelper::mmul(&a, &b);
 
-    ASSERT_TRUE(exp.isSameShapeStrict(c));
-    //c->printShapeInfo("Result shape");
-    //c->printBuffer("Result buffer");
-    //exp.printBuffer("Expctd buffer");
+    ASSERT_TRUE(exp.isSameShape(c));
     ASSERT_TRUE(exp.equalsTo(c, 1e1));
 
     delete c;
@@ -1188,7 +1177,7 @@ TEST_F(NDArrayTest, TestNegSize1) {
 TEST_F(NDArrayTest, Permute1) {  
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1205,7 +1194,7 @@ TEST_F(NDArrayTest, Permute1) {
 TEST_F(NDArrayTest, Permute2) {
     
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
-	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, -1, 99};
+	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
     const std::initializer_list<int> perm = {2, 0, 1};    
     
     NDArray arr1(shape1,true);
@@ -1317,40 +1306,30 @@ TEST_F(NDArrayTest, TestIndexing1) {
     auto matrix = NDArrayFactory::create<float>('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.p(e, (float) e);
+    
+    auto sub = matrix({2,4, 0,0}, true);    
 
-    IndicesList idx({NDIndex::interval(2,4), NDIndex::all()});
-    auto sub = matrix.subarray(idx);
+    ASSERT_EQ(2, sub.rows());
+    ASSERT_EQ(5, sub.columns());
 
-    ASSERT_TRUE(sub != nullptr);
-
-    ASSERT_EQ(2, sub->rows());
-    ASSERT_EQ(5, sub->columns());
-
-    ASSERT_NEAR(10, sub->e<float>(0), 1e-5);
-
-    delete sub;
+    ASSERT_NEAR(10, sub.e<float>(0), 1e-5);
 }
 
 
 TEST_F(NDArrayTest, TestIndexing2) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
     matrix.linspace(0);
+    
+    auto sub = matrix({0,0, 2,4, 0,0, 0,0}, true);
 
-    IndicesList idx({ NDIndex::all(), NDIndex::interval(2,4), NDIndex::all(),  NDIndex::all()});
-    auto sub = matrix.subarray(idx);
+    ASSERT_EQ(2, sub.sizeAt(0));
+    ASSERT_EQ(2, sub.sizeAt(1));
+    ASSERT_EQ(4, sub.sizeAt(2));
+    ASSERT_EQ(4, sub.sizeAt(3));
 
-    ASSERT_TRUE(sub != nullptr);
-
-    ASSERT_EQ(2, sub->sizeAt(0));
-    ASSERT_EQ(2, sub->sizeAt(1));
-    ASSERT_EQ(4, sub->sizeAt(2));
-    ASSERT_EQ(4, sub->sizeAt(3));
-
-    ASSERT_EQ(64, sub->lengthOf());
-    ASSERT_NEAR(32, sub->e<float>(0), 1e-5);
-    ASSERT_NEAR(112, sub->e<float>(32), 1e-5);
-
-    delete sub;
+    ASSERT_EQ(64, sub.lengthOf());
+    ASSERT_NEAR(32, sub.e<float>(0), 1e-5);
+    ASSERT_NEAR(112, sub.e<float>(32), 1e-5);
 }
 
 TEST_F(NDArrayTest, TestIndexing3) {

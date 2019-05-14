@@ -34,6 +34,13 @@ namespace nd4j {
             if (block.width() == 1) {
                 auto arguments = block.getIArguments();
                 int argsSize = arguments->size();
+                
+                //Special case: empty.reshape(-1) -> return empty
+                if (x->isEmpty()) {
+                    REQUIRE_TRUE((int) arguments->size() == 1 && arguments->at(0) == -1, 0, "Reshape: when input is empty, iargs must be [-1]");
+                    REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
+                    return ND4J_STATUS_OK;    //No op
+                }
 
                 int e = 1;
                 char order = (char) -(*arguments)[0];
@@ -86,6 +93,13 @@ namespace nd4j {
                 }
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
+                
+                //Special case: empty.reshape(-1) -> return empty
+                if (x->isEmpty()) {
+                    REQUIRE_TRUE(s->lengthOf() == 1 && s->e<Nd4jLong>(0) == -1, 0, "Reshape: when input is empty, shape must be [-1]");
+                    REQUIRE_TRUE(OUTPUT_VARIABLE(0)->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
+                    return ND4J_STATUS_OK;    //No op
+                }
 
                 char order = 'c';
                 if (block.numI() > 0)
@@ -160,6 +174,14 @@ namespace nd4j {
                     order = shape::order(inp);
                     e = 0;
                 }
+                
+                //Special case: empty.reshape(-1) -> return empty
+                if (INPUT_VARIABLE(0)->isEmpty()) {
+                    REQUIRE_TRUE((int) arguments->size() == 1 && arguments->at(0) == -1, 0, "Reshape: when input is empty, iargs must be [-1]");
+                    Nd4jLong *newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp), block.getWorkspace());
+                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    return SHAPELIST(newShape);
+                }
 
                 std::vector<int> shapeNew;
 
@@ -205,9 +227,14 @@ namespace nd4j {
                 // special case here
                 if (y->isEmpty()) {
                     REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
-
-
                     return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp),block.getWorkspace()));
+                }
+                //Special case: empty.reshape(-1) -> return empty
+                if (x->isEmpty()) {
+                    REQUIRE_TRUE(y->lengthOf() == 1 && y->e<Nd4jLong>(0) == -1, 0, "Reshape: when input is empty, shape must be [-1]");
+                    Nd4jLong *newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp), block.getWorkspace());
+                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    return SHAPELIST(newShape);
                 }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
@@ -230,11 +257,7 @@ namespace nd4j {
                     }
                 }
 
-
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);
-
-                shape::shapeBuffer(shapeNew.size(), ArrayOptions::dataType(inp), shapeNew.data(), newShape);
+                Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew, block.getWorkspace());
 
                 return SHAPELIST(newShape);
             }

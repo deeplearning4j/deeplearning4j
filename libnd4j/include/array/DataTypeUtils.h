@@ -30,6 +30,7 @@
 #include <Environment.h>
 #include <ArrayOptions.h> 
 #include <templatemath.h>
+#include <shape.h>
 #include <helpers/logger.h>
 
 namespace nd4j {
@@ -77,6 +78,9 @@ namespace nd4j {
 
         template <typename T1, typename T2>
         FORCEINLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
+
+        template <typename T>
+        FORCEINLINE static bool castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo);
     };
 
 
@@ -315,6 +319,20 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
     }
 }
 
+
+template <typename T>
+FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo) {
+    
+    for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
+        if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
+            newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
+        } else
+            return false;
+    }
+
+    return true;
+}
+
 ///////////////////////////////////////////////////////////////////
 // returns the difference between 1.0 and the next representable value of the given floating-point type 
 template <typename T>
@@ -335,8 +353,8 @@ FORCEINLINE T DataTypeUtils::eps() {
     template <typename T1, typename T2>
     FORCEINLINE std::vector<T2> DataTypeUtils::convertVector(const std::vector<T1> &vector) {
         std::vector<T2> result(vector.size());
-
-        for (Nd4jLong e = 0; e < vector.size(); e++)
+        Nd4jLong vecSize = vector.size();
+        for (Nd4jLong e = 0; e < vecSize; e++)
             result[e] = static_cast<T2>(vector[e]);
 
         return result;

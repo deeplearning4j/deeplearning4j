@@ -1,17 +1,25 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * The MIT License
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * Copyright (c) Carl Rogers, 2011
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  ******************************************************************************/
 
 //Copyright (C) 2011  Carl Rogers
@@ -21,6 +29,7 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include"cnpy.h"
+#include <types/types.h>
 
 
 
@@ -61,6 +70,36 @@ char cnpy::mapType(const std::type_info &t) {
     if(t == typeid(std::complex<float>) ) return 'c';
     if(t == typeid(std::complex<double>) ) return 'c';
     if(t == typeid(std::complex<long double>) ) return 'c';
+
+    else return '?';
+}
+
+template <typename T>
+char cnpy::mapType() {
+    if(std::is_same<float16, T>::value) return 'f';
+    if(std::is_same<float, T>::value) return 'f';
+    if(std::is_same<double, T>::value) return 'f';
+    if(std::is_same<long double, T>::value) return 'f';
+
+    if(std::is_same<int, T>::value) return 'i';
+    if(std::is_same<int8_t, T>::value) return 'i';
+    if(std::is_same<signed char, T>::value) return 'i';
+    if(std::is_same<char, T>::value) return 'i';
+    if(std::is_same<short, T>::value) return 'i';
+    if(std::is_same<long, T>::value) return 'i';
+    if(std::is_same<long long, T>::value) return 'i';
+
+    if(std::is_same<unsigned char, T>::value) return 'u';
+    if(std::is_same<unsigned short, T>::value) return 'u';
+    if(std::is_same<unsigned long, T>::value) return 'u';
+    if(std::is_same<unsigned long long, T>::value) return 'u';
+    if(std::is_same<unsigned int, T>::value) return 'u';
+
+    if(std::is_same<bool, T>::value) return 'b';
+
+    if(std::is_same<std::complex<float>, T>::value) return 'c';
+    if(std::is_same<std::complex<double>, T>::value) return 'c';
+    if(std::is_same<std::complex<long double>, T>::value) return 'c';
 
     else return '?';
 }
@@ -361,7 +400,8 @@ cnpy::npz_t cnpy::npzLoad(FILE* fp){
             throw std::runtime_error("npz_load: failed fread");
 
         //erase the lagging .npy
-        varname.erase(varname.end() - 4,varname.end());
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
@@ -405,7 +445,8 @@ cnpy::npz_t cnpy::npzLoad(std::string fname) {
             throw std::runtime_error("npz_load: failed fread");
 
         //erase the lagging .npy
-        varname.erase(varname.end() - 4,varname.end());
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
@@ -451,7 +492,10 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
         size_t vname_res = fread(&vname[0],sizeof(char),name_len,fp);
         if(vname_res != name_len)
             throw std::runtime_error("npz_load: failed fread");
-        vname.erase(vname.end()-4,vname.end()); //erase the lagging .npy
+
+        //erase the lagging .npy
+        for (int e = 0; e < 4; e++)
+            varname.pop_back();
 
         //read in the extra field
         unsigned short extra_field_len = *(unsigned short*) &local_header[28];
@@ -551,7 +595,7 @@ void cnpy::npy_save(std::string fname,
         tmp_shape[0] += shape[0];
 
         fseek(fp,0,SEEK_SET);
-        std::vector<char> header = createNpyHeader(data,tmp_shape,ndims);
+        std::vector<char> header = createNpyHeader<T>(data,tmp_shape,ndims);
         fwrite(&header[0],sizeof(char),header.size(),fp);
         fseek(fp,0,SEEK_END);
 
@@ -559,7 +603,7 @@ void cnpy::npy_save(std::string fname,
     }
     else {
         fp = fopen(fname.c_str(),"wb");
-        std::vector<char> header = createNpyHeader(data,shape,ndims);
+        std::vector<char> header = createNpyHeader<T>(data,shape,ndims);
         fwrite(&header[0],sizeof(char),header.size(),fp);
     }
 
@@ -580,28 +624,34 @@ void cnpy::npy_save(std::string fname,
  * @return
  */
 template<typename T>
-std::vector<char> cnpy::createNpyHeader(const T *data,
+std::vector<char> cnpy::createNpyHeader(const void *vdata,
                                               const unsigned int *shape,
                                               const unsigned int ndims,
                                               unsigned int wordSize) {
 
+    auto data = reinterpret_cast<const T*>(vdata);
+
     std::vector<char> dict;
     dict += "{'descr': '";
-    dict += BigEndianTest();
-    dict += mapType(typeid(T));
+    dict += sizeof(T) > 1 ? BigEndianTest() : '|';
+    dict += mapType<T>();
     dict += tostring(wordSize);
     dict += "', 'fortran_order': False, 'shape': (";
-    dict += tostring(shape[0]);
-    for(int i = 1; i < ndims;i++) {
-        dict += ", ";
-        dict += tostring(shape[i]);
-    }
+    if (ndims > 0) {
+        dict += tostring(shape[0]);
+        for (int i = 1; i < ndims; i++) {
+            dict += ", ";
+            dict += tostring(shape[i]);
+        }
 
-    if(ndims == 1)
-        dict += ",";
+        if (ndims == 1)
+            dict += ",";
+    }
+    // 0D case still requires close
     dict += "), }";
+
     //pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10 bytes. dict needs to end with \n
-    int remainder = 16 - (10 + dict.size()) % 16;
+    int remainder = 64 - (10 + dict.size()) % 64;
     dict.insert(dict.end(),remainder,' ');
     dict.back() = '\n';
 
@@ -612,20 +662,10 @@ std::vector<char> cnpy::createNpyHeader(const T *data,
     header += (char) 0x00; //minor version of numpy format
     header += (unsigned short) dict.size();
     header.insert(header.end(),dict.begin(),dict.end());
-    std::vector<int> remove;
-    for(int i = 0; i < header.size(); i++) {
-        if(header[i] == '\0') {
-            remove.push_back(i);
-        }
-    }
-
-    for(int i = 0; i < remove.size(); i++) {
-        header.erase(header.begin() + remove[i]);
-    }
 
     return header;
 }
 
-template ND4J_EXPORT std::vector<char> cnpy::createNpyHeader<void>(const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize);
-
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector<char> cnpy::createNpyHeader, (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize), LIBND4J_TYPES);
+//template ND4J_EXPORT std::vector<char> cnpy::createNpyHeader<void>(const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize);
 template ND4J_EXPORT void cnpy::npy_save<float>(std::string fname, const float* data, const unsigned int* shape, const unsigned int ndims, std::string mode);

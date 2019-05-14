@@ -39,6 +39,10 @@
 #define M_E 2.718281828459
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 namespace nd4j {
 #ifdef __CUDACC__
@@ -238,7 +242,6 @@ namespace nd4j {
         math_def inline Z nd4j_dot(X *x, Y *y, int length) {
             Z dot = (Z)0.0f;
 
-//#pragma omp simd reduction(+:dot)
 			for(int e = 0; e < length; e++) {
 				dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
 			}
@@ -249,6 +252,9 @@ namespace nd4j {
 
 		template<typename T, typename Z>
         math_def inline Z nd4j_acos(T val);
+
+        template<typename T, typename Z>
+        math_def inline Z nd4j_sech(T val);
 
 		template<typename T, typename Z>
 		math_def inline Z nd4j_acosh(T val);
@@ -607,6 +613,11 @@ namespace nd4j {
         }
 
         template <typename X, typename Z>
+        math_def inline Z nd4j_sech(X val) {
+            return static_cast<Z>(1) / nd4j_cosh<X,Z>(val);
+        }
+
+        template <typename X, typename Z>
         math_def inline Z nd4j_acosh(X val) {
             return p_acosh<Z>(static_cast<Z>(val));
         }
@@ -679,9 +690,31 @@ namespace nd4j {
         }
 
 
+        template <typename X>
+        math_def inline X neg_tanh(X val) {
+            X o = static_cast<X>(1.0f);
+            X t = static_cast<X>(2.0f);
+            X e = static_cast<X>(M_E);
+
+            auto p = nd4j::math::nd4j_pow<X, X, X>(e, val * t);
+            return (p - o)/ (p + o);
+        }
+
+        template <typename X>
+        math_def inline X pos_tanh(X val) {
+            X o = static_cast<X>(1.0f);
+            X t = static_cast<X>(-2.0f);
+            X e = static_cast<X>(M_E);
+
+            auto p = nd4j::math::nd4j_pow<X, X, X>(e, val * t);
+            return (o - p) / (o + p);
+        }
+
+
 		template <typename X, typename Z>
 		math_def inline Z nd4j_tanh(X val) {
-            return p_tanh<Z>(static_cast<Z>(val));
+            return val <= 0 ? neg_tanh(val) : pos_tanh(val);
+            //return p_tanh<Z>(static_cast<Z>(val));
 		}
 
         template <typename X, typename Z>

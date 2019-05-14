@@ -19,6 +19,7 @@ package org.deeplearning4j.models.embeddings.wordvectors;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -32,7 +33,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public interface WordVectors extends Serializable {
+public interface WordVectors extends Serializable, EmbeddingInitializer {
 
     String getUNK();
 

@@ -24,13 +24,12 @@
 #ifndef BROADCASTING_BOOL_H_
 #define BROADCASTING_BOOL_H_
 #include <dll.h>
-#include <helpers/sharedmem.h>
 #include <helpers/shape.h>
 #include <templatemath.h>
-#include <helper_cuda.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -90,6 +89,20 @@ namespace functions {
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ);
 
+            static void execInverse(int opNum,
+                             void *x,
+                             Nd4jLong *xShapeInfo,
+                             void *y,
+                             Nd4jLong *yShapeInfo,
+                             void *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
+
             /**
              * CPU execution
              * @param x the input
@@ -103,6 +116,20 @@ namespace functions {
              */
             template<typename OpType>
             static void exec(void *x,
+                             Nd4jLong *xShapeInfo,
+                             void *y,
+                             Nd4jLong *yShapeInfo,
+                             void *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
+
+            template<typename OpType>
+            static void execInverse(void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,

@@ -61,7 +61,7 @@ public class SpaceToDepthTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new SpaceToDepthLayer.Builder(blockSize, dataFormat).build()).build();
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        return conf.getLayer().instantiate(conf, null, 0, null, true, Nd4j.defaultFloatingPointType());
     }
 
     @Test

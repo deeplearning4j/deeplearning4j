@@ -38,10 +38,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
-public class NDArrayIndex implements INDArrayIndex {
+public abstract class NDArrayIndex implements INDArrayIndex {
 
     private long[] indices;
-    private boolean isInterval = false;
     private static NewAxis NEW_AXIS = new NewAxis();
 
 
@@ -226,7 +225,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * all elements
      */
     public static INDArrayIndex all() {
-        return new NDArrayIndexAll(true);
+        return new NDArrayIndexAll();
     }
 
     /**
@@ -289,7 +288,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the resolved indexes (containing all where nothing is specified, and the intended index
      * for a particular dimension otherwise)
      */
-    public static INDArrayIndex[] resolve(DataBuffer shapeInfo, INDArrayIndex... intendedIndexes) {
+    public static INDArrayIndex[] resolveLong(long[] shapeInfo, INDArrayIndex... intendedIndexes) {
         int numSpecified = 0;
         for (int i = 0; i < intendedIndexes.length; i++) {
             if (intendedIndexes[i] instanceof SpecifiedIndex)
@@ -297,15 +296,14 @@ public class NDArrayIndex implements INDArrayIndex {
         }
 
         if (numSpecified > 0) {
-            DataBuffer shape = Shape.shapeOf(shapeInfo);
+            val shape = Shape.shapeOf(shapeInfo);
             INDArrayIndex[] ret = new INDArrayIndex[intendedIndexes.length];
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if (intendedIndexes[i] instanceof SpecifiedIndex)
                     ret[i] = intendedIndexes[i];
                 else {
                     if (intendedIndexes[i] instanceof NDArrayIndexAll) {
-                        // FIXME: LONG
-                        SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0L, (long) shape.getInt(i)));
+                        SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0L, shape[i]));
                         ret[i] = specifiedIndex;
                     } else if (intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
@@ -326,7 +324,7 @@ public class NDArrayIndex implements INDArrayIndex {
          * for a scalar just return the array
          */
         int rank = Shape.rank(shapeInfo);
-        DataBuffer shape = Shape.shapeOf(shapeInfo);
+        val shape = Shape.shapeOf(shapeInfo);
         if (intendedIndexes.length >= rank || Shape.isVector(shapeInfo) && intendedIndexes.length == 1) {
             if(Shape.rank(shapeInfo) == 1){
                 //1D edge case, with 1 index
@@ -337,17 +335,17 @@ public class NDArrayIndex implements INDArrayIndex {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
                 long size;
-                if (1 == shape.getLong(0) && rank == 2)
-                    size = shape.getLong(1);
+                if (1 == shape[0] && rank == 2)
+                    size = shape[1];
                 else
-                    size = shape.getLong(0);
+                    size = shape[0];
                 ret[1] = validate(size, intendedIndexes[0]);
                 return ret;
             }
             List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length);
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if (i < rank)
-                    retList.add(validate(shape.getLong(i), intendedIndexes[i]));
+                    retList.add(validate(shape[i], intendedIndexes[i]));
                 else
                     retList.add(intendedIndexes[i]);
             }
@@ -358,11 +356,11 @@ public class NDArrayIndex implements INDArrayIndex {
         int numNewAxes = 0;
 
         if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
-            retList.add(validate(shape.getLong(0), intendedIndexes[0]));
+            retList.add(validate(shape[0], intendedIndexes[0]));
             retList.add(NDArrayIndex.all());
         } else {
             for (int i = 0; i < intendedIndexes.length; i++) {
-                retList.add(validate(shape.getLong(i), intendedIndexes[i]));
+                retList.add(validate(shape[i], intendedIndexes[i]));
                 if (intendedIndexes[i] instanceof NewAxis)
                     numNewAxes++;
             }
@@ -441,9 +439,12 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     protected static INDArrayIndex validate(long size, INDArrayIndex index) {
-        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current() && size > 1)
-            throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.current()
+        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.offset())
+            throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.offset()
                             + " must be less than its size: " + size);
+        if (index instanceof IntervalIndex && index.end() > size)
+            throw new IllegalArgumentException("NDArrayIndex is out of range. End index: " + index.end()
+                    + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && size < index.end()) {
             long begin = ((IntervalIndex) index).begin;
             index = NDArrayIndex.interval(begin, index.stride(), size);
@@ -554,48 +555,6 @@ public class NDArrayIndex implements INDArrayIndex {
         return indexesRet;
     }
 
-
-
-    /**
-     * Create from a matrix. The rows are the indices
-     * The columns are the individual element in each ndarrayindex
-     *
-     * @param index the matrix to getFloat indices from
-     * @return the indices to getFloat
-     */
-    public static INDArrayIndex[] create(INDArray index) {
-
-        if (index.isMatrix()) {
-
-            if (index.rows() > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-
-            NDArrayIndex[] ret = new NDArrayIndex[(int) index.rows()];
-            for (int i = 0; i < index.rows(); i++) {
-                INDArray row = index.getRow(i);
-                val nums = new long[(int) index.getRow(i).columns()];
-                for (int j = 0; j < row.columns(); j++) {
-                    nums[j] = (int) row.getFloat(j);
-                }
-
-                NDArrayIndex idx = new NDArrayIndex(nums);
-                ret[i] = idx;
-
-            }
-
-
-            return ret;
-
-        } else if (index.isVector()) {
-            long[] indices = NDArrayUtil.toLongs(index);
-            return new NDArrayIndex[] {new NDArrayIndex(indices)};
-        }
-
-
-        throw new IllegalArgumentException("Passed in ndarray must be a matrix or a vector");
-
-    }
-
     /**
      * Generates an interval from begin (inclusive) to end (exclusive)
      *
@@ -696,7 +655,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param inclusive whether the end should be inclusive or not
      * @return the interval
      */
-    public static INDArrayIndex interval(int begin, int end, boolean inclusive) {
+    public static INDArrayIndex interval(long begin, long end, boolean inclusive) {
         return interval(begin, 1, end, inclusive);
     }
 
@@ -730,21 +689,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public long current() {
-        return 0;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return false;
-    }
-
-    @Override
-    public long next() {
-        return 0;
-    }
-
-    @Override
     public void reverse() {
         ArrayUtil.reverse(indices);
     }
@@ -775,16 +719,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public boolean isInterval() {
-        return isInterval;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-        this.isInterval = isInterval;
-    }
-
-    @Override
     public void init(INDArray arr, long begin, int dimension) {
 
     }
@@ -803,11 +737,5 @@ public class NDArrayIndex implements INDArrayIndex {
     public void init(long begin, long end) {
 
     }
-
-    @Override
-    public void reset() {
-
-    }
-
 
 }

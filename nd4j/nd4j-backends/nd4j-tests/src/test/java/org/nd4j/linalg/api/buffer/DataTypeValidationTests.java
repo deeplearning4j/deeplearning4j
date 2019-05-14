@@ -98,7 +98,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
     /**
      * Testing level3 blas
      */
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testBlasValidation3() {
         INDArray x = Nd4j.create(100, 100);
 

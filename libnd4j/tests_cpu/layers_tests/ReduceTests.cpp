@@ -90,12 +90,13 @@ TEST_F(StdTest,MultiDimTest) {
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 5;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
-    shape::TAD *tad = new shape::TAD(xShapeInfo,dimensionsForStd,dimensionLength);
+    shape::TAD *tad = new shape::TAD;
+    tad->init(xShapeInfo,dimensionsForStd,dimensionLength);
     float none[1] = {0};
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
     int tadElementWiseStride = shape::elementWiseStride(tad->tadOnlyShapeInfo);
-    ASSERT_EQ(-1,tadElementWiseStride);
+    ASSERT_EQ(0,tadElementWiseStride);
     float *result = new float[shape::length(resultShapeInfo)];
     functions::reduce::ReduceFloatFunction<float,float>::exec(
             opNum,
@@ -123,13 +124,14 @@ TEST_F(StdTest,MultiDimTest) {
 
 
 TEST_F(ReduceTest,MatrixTest) {
-    int opNum = 4;
-    auto xShapeInfo = shape::shapeBuffer(2,  nd4j::DataType::FLOAT32, shape);
+    int opNum = 4;    
+    auto xShapeInfo = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimension,dimensionLength);
     auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
-    shape::TAD *tad = new shape::TAD(xShapeInfo,dimension,dimensionLength);
+    shape::TAD *tad = new shape::TAD;
+    tad->init(xShapeInfo,dimension,dimensionLength);
     float none[1] = {0};
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();

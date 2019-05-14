@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.feedforward.dense;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -25,12 +26,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  * @author Adam Gibson
  */
 public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.DenseLayer> {
-    public DenseLayer(NeuralNetConfiguration conf) {
-        super(conf);
-    }
-
-    public DenseLayer(NeuralNetConfiguration conf, INDArray input) {
-        super(conf, input);
+    public DenseLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
     }
 
     @Override
@@ -46,5 +43,10 @@ public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dens
     @Override
     public boolean hasBias(){
         return layerConf().hasBias();
+    }
+
+    @Override
+    public boolean hasLayerNorm(){
+        return layerConf().hasLayerNorm();
     }
 }

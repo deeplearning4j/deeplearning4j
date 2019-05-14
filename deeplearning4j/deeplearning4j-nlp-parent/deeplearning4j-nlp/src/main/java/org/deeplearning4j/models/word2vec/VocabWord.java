@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.Serializable;
@@ -30,6 +32,9 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
+        setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class VocabWord extends SequenceElement implements Serializable {
 
     private static final long serialVersionUID = 2223750736522624256L;
@@ -119,8 +124,7 @@ public class VocabWord extends SequenceElement implements Serializable {
         return this.elementFrequency.get() == vocabWord.elementFrequency.get();
         */
     }
-
-
+    
 
     @Override
     public int hashCode() {

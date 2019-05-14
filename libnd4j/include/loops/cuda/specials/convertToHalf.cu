@@ -25,10 +25,9 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    __device__ void convertToHalf(void *dx, Nd4jLong n, half *dz) {
-
+    __global__ void execConvertToHalf(void *dx, Nd4jLong n, half *dz) {
         auto x = reinterpret_cast<T *>(dx);
-        int tid = threadIdx.x + blockIdx.x * gridDim.x;
+        int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
         for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x)
             dz[i] = __float2half(static_cast<T>(x[i]));
@@ -36,16 +35,9 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    __global__ void execConvertToHalf(void *dx, Nd4jLong n, half *dz) {
-
-        convertToHalf<T>(dx, n, dz);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    template<typename T>
     __host__ void convertToHalfGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong n, half *dz) {
-
-        execConvertToHalf<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (dx, n, dz);
+        execConvertToHalf<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, n, dz);
+        nd4j::DebugHelper::checkErrorCode(stream, "convertToHalfs(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT convertToHalfGeneric, (dim3 & launchDims, cudaStream_t * stream, void * dx, Nd4jLong n, half * dz), LIBND4J_TYPES);

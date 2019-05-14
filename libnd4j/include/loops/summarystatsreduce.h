@@ -30,7 +30,6 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <helper_cuda.h>
 
 #define host_and_device inline __host__  __device__
 #else

@@ -116,7 +116,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
             smartLock.writeLock().acquire();
 
             if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
-                log.info("Collapsing updates...");
+                log.trace("Collapsing updates...");
 
                 // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
                 INDArray params = smartDecompress(array, (collapsedMode.get() && backingQueue.size() == 1) ? backingQueue.poll() : null);

@@ -51,7 +51,7 @@ public class AutoEncoderNetworkTest {
     private JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
     private SQLContext sqlContext = new SQLContext(sparkContext);
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNetwork() {
         DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/autoencoders"));
         Pipeline p = new Pipeline().setStages(new PipelineStage[] {
@@ -67,7 +67,7 @@ public class AutoEncoderNetworkTest {
         Assert.assertNotNull(mln);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testAutoencoderSave() throws IOException {
         DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/autoencoders"));
         Pipeline p = new Pipeline().setStages(new PipelineStage[] {

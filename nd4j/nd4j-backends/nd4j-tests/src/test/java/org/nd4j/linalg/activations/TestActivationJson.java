@@ -66,7 +66,7 @@ public class TestActivationJson extends BaseNd4jTest {
                         new ActivationHardSigmoid(), new ActivationHardTanH(), new ActivationIdentity(),
                         new ActivationLReLU(0.25), new ActivationRationalTanh(), new ActivationReLU(),
                         new ActivationRReLU(0.25, 0.5), new ActivationSigmoid(), new ActivationSoftmax(),
-                        new ActivationSoftPlus(), new ActivationSoftSign(), new ActivationTanH()};
+                        new ActivationSoftPlus(), new ActivationSoftSign(), new ActivationTanH(), new ActivationGELU(), new ActivationGELU(true)};
 
         String[][] expectedFields = new String[][] {{"@class"}, //Cube
                         {"@class", "alpha"}, //ELU
@@ -81,7 +81,9 @@ public class TestActivationJson extends BaseNd4jTest {
                         {"@class"}, //Softmax
                         {"@class"}, //Softplus
                         {"@class"}, //Softsign
-                        {"@class"} //Tanh
+                        {"@class"}, //Tanh
+                        {"@class", "precise"}, //GELU
+                        {"@class", "precise"}  //GELU precise
 
         };
 

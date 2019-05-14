@@ -129,16 +129,6 @@ public interface NDArrayFactory {
     DataType dtype();
 
     /**
-     * Generate a linearly spaced vector
-     *
-     * @param lower upper bound
-     * @param upper lower bound
-     * @param num   the step size
-     * @return the linearly spaced vector
-     */
-    INDArray linspace(int lower, int upper, int num, DataType dataType);
-
-    /**
      * /**
      * Returns a flattened ndarray with all of the elements in each ndarray
      * regardless of dimension
@@ -233,7 +223,7 @@ public interface NDArrayFactory {
      * @param end   the end of the range
      * @return the range vector
      */
-    INDArray arange(double begin, double end);
+    INDArray arange(double begin, double end, double step);
 
 
     /**
@@ -1127,6 +1117,8 @@ public interface NDArrayFactory {
     INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering);
 
     INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering);
+
+    INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering);
 
     INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType);
 

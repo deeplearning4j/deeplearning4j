@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Arrays;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -26,7 +27,9 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -62,10 +65,10 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
-                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -136,7 +139,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size};
+            this.setSize(new int[] {size});
             return this;
         }
 
@@ -146,8 +149,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          * @param size upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int[] size) {
-            Preconditions.checkArgument(size.length == 1, "Input array must be length 1");
-            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
+            this.setSize(size);
             return this;
         }
 
@@ -158,8 +160,21 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int[] size) {
-            size(size);
+        public void setSize(int... size) {
+
+            if(size.length == 2){
+                if(size[0] == size[1]) {
+                    setSize(new int[]{size[0]});
+                    return;
+                } else {
+                    Preconditions.checkArgument(false,
+                            "When given a length 2 array for size, "
+                                    + "the values must be equal.  Got: " + Arrays.toString(size));
+                }
+            }
+
+            int[] temp = ValidationUtils.validate1NonNegative(size, "size");
+            this.size = new int[]{temp[0], temp[0]};
         }
     }
 

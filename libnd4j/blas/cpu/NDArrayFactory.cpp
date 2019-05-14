@@ -19,6 +19,8 @@
 //
 
 #include <NDArrayFactory.h>
+#include <openmp_pragmas.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
 
@@ -35,11 +37,16 @@ namespace nd4j {
     NDArray NDArrayFactory::string(const std::string &str, nd4j::memory::Workspace* workspace) {
         NDArray res;
 
-        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
+        auto data = buffer + headerLength;
+
+        offsets[0] = 0;
+        offsets[1] = str.length();
+
+        memcpy(data, str.c_str(), str.length());
 
         res.setBuffer(buffer);
         res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
@@ -53,11 +60,16 @@ namespace nd4j {
     NDArray* NDArrayFactory::string_(const std::string &str, nd4j::memory::Workspace* workspace) {
         auto res = new NDArray();
 
-        utf8string **us = nullptr;
         int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
-        us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new utf8string(str);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+        ALLOCATE(buffer, workspace, headerLength + str.length(), int8_t);
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
+        auto data = buffer + headerLength;
+
+        offsets[0] = 0;
+        offsets[1] = str.length();
+
+        memcpy(data, str.c_str(), str.length());
 
         res->setBuffer(buffer);
         res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
@@ -84,7 +96,8 @@ void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
 template <>
 void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<bool> &vector) {
     auto p = reinterpret_cast<bool *>(ptr);
-    for (Nd4jLong e = 0; e < vector.size(); e++) 
+    Nd4jLong vectorSize = vector.size();
+    for (Nd4jLong e = 0; e < vectorSize; e++)
         p[e] = vector[e];       
 }
 
@@ -296,9 +309,14 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     NDArray* NDArrayFactory::linspace(const T from, const T to, const Nd4jLong numElements) {
         auto result = NDArrayFactory::vector<T>(numElements);
 
+        auto b = reinterpret_cast<T *>(result->getBuffer());
+        auto t1 = static_cast<T>(1.0f);
+        auto tn = static_cast<T>(numElements);
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong e = 0; e < numElements; e++) {
-            T step = (T) e / ((T) numElements - (T) 1);
-            reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);            
+            T step = (T) e / (tn - t1);
+            b[e] = (from * (t1 - step) + step * to);
         }
         return result;
     }
@@ -571,12 +589,28 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         if (res.lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res.lengthOf(), int8_t);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+        std::vector<Nd4jLong> offsets(string.size() + 1);
+        Nd4jLong dataLength = 0;
+        for (int e = 0; e < string.size(); e++) {
+            offsets[e] = dataLength;
+            dataLength += string[e].length();
+        }
+        offsets[string.size()] = dataLength;
 
-        auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res.lengthOf(); e++)
-            us[e] = new utf8string(string[e]);
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, headerLength + dataLength, int8_t);
+
+        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+        auto data = buffer + headerLength;
+        int resLen = res.lengthOf();
+        for (int e = 0; e < resLen; e++) {
+            auto length = offsets[e+1] - offsets[e];
+            auto cdata = data + offsets[e];
+            memcpy(cdata, string[e].c_str(), string[e].length());
+        }
+
 
         res.setBuffer(buffer);
         res.setWorkspace(workspace);
@@ -594,12 +628,28 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         if (res->lengthOf() != string.size())
             throw std::invalid_argument("Number of strings should match length of array");
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, workspace, sizeof(utf8string*) * res->lengthOf(), int8_t);
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+        std::vector<Nd4jLong> offsets(string.size() + 1);
+        Nd4jLong dataLength = 0;
+        for (int e = 0; e < string.size(); e++) {
+            offsets[e] = dataLength;
+            dataLength += string[e].length();
+        }
+        offsets[string.size()] = dataLength;
 
-        auto us = reinterpret_cast<utf8string**>(buffer);
-        for (int e = 0; e < res->lengthOf(); e++)
-            us[e] = new utf8string(string[e]);
+        int8_t *buffer = nullptr;
+        ALLOCATE(buffer, workspace, headerLength + dataLength, int8_t);
+
+        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+        auto data = buffer + headerLength;
+        int resLen = res->lengthOf();
+        for (int e = 0; e < resLen; e++) {
+            auto length = offsets[e+1] - offsets[e];
+            auto cdata = data + offsets[e];
+            memcpy(cdata, string[e].c_str(), string[e].length());
+        }
+
 
         res->setBuffer(buffer);
         res->setWorkspace(workspace);
@@ -608,5 +658,22 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         return res;
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet NDArrayFactory::createSetOfArrs(const Nd4jLong numOfArrs, const void* buffer,  const Nd4jLong* shapeInfo,  const Nd4jLong* offsets, memory::Workspace* workspace) {
+
+        ResultSet result;
+
+        const auto sizeOfT = DataTypeUtils::sizeOf(shapeInfo);
+
+        for (int idx = 0; idx < numOfArrs; idx++ ) {
+            auto array = new NDArray(reinterpret_cast<int8_t*>(const_cast<void*>(buffer)) + offsets[idx] * sizeOfT, const_cast<Nd4jLong*>(shapeInfo), workspace);
+            result.push_back(array);
+        }        
+
+        return result;
+    }
+
+
 
 }

@@ -79,7 +79,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                     int nOut = 4;
                     int minibatch = 10;
-                    SDVariable predictions = sd.var("in", DataType.DOUBLE, -1, nOut);
+                    SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
                     SDVariable labels;
                     if("sparsesoftmax".equalsIgnoreCase(fn)){
                         labels = sd.var("labels", DataType.INT, -1);
@@ -128,7 +128,7 @@ public class LossOpValidation extends BaseOpValidation {
                     switch (fn) {
                         case "absdiff":
                             expOut = Transforms.abs(predictionsArr.sub(labelsArr));
-                            loss = sd.lossAbsoluteDifference("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().absoluteDifference("loss", labels, predictions, w, reduction);
                             break;
                         case "cosine":
                             //Cosine _similarity_: dot(a,b)/(l2Norm(a) * l2Norm(b))
@@ -136,8 +136,8 @@ public class LossOpValidation extends BaseOpValidation {
                             //NOTE: both we and TF assume the inputs are normalized
                             predictionsArr.diviColumnVector(predictionsArr.norm2(1));
                             labelsArr.diviColumnVector(labelsArr.norm2(1));
-                            expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0);
-                            loss = sd.lossCosineDistance("loss", labels, predictions, w, reduction, 1);
+                            expOut = predictionsArr.mul(labelsArr).sum(1).rsub(1.0).reshape(10,1);
+                            loss = sd.loss().cosineDistance("loss", labels, predictions, w, reduction, 1);
                             break;
                         case "hinge":
                             //0 or 1 labels, but -1 or 1 when calculating loss
@@ -145,7 +145,7 @@ public class LossOpValidation extends BaseOpValidation {
                             Nd4j.getExecutioner().exec(new BernoulliDistribution(labelsArr, 0.5));
                             INDArray labelMinusOneToOne = labelsArr.mul(2).subi(1);
                             expOut = Transforms.max(predictionsArr.mul(labelMinusOneToOne).rsubi(1), 0);
-                            loss = sd.lossHinge("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().hingeLoss("loss", labels, predictions, w, reduction);
                             break;
                         case "huber":
                             //https://en.wikipedia.org/wiki/Huber_loss
@@ -156,7 +156,7 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray gt = absDiff.gt(delta).castTo(DataType.DOUBLE);
                             expOut = diff.mul(diff).mul(0.5).muli(lte);
                             expOut.addi(absDiff.mul(delta).subi(0.5 * delta * delta).mul(gt));
-                            loss = sd.lossHuber("loss", labels, predictions, w, reduction, delta);
+                            loss = sd.loss().huberLoss("loss", labels, predictions, w, reduction, delta);
                             break;
                         case "log":
                             double eps = 1e-7;
@@ -167,13 +167,13 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray logP = Transforms.log(predictionsArr.add(eps), true);
                             INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
                             expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
-                            loss = sd.lossLog("loss", labels, predictions, w, reduction, eps);
+                            loss = sd.loss().logLoss("loss", labels, predictions, w, reduction, eps);
                             break;
                         case "log_poisson":
                             predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
                             labelsArr = Transforms.abs(labelsArr);
                             expOut = Transforms.exp(predictionsArr).sub(labelsArr.mul(predictionsArr));
-                            loss = sd.lossLogPoisson("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction);
                             break;
                         case "log_poisson_full":
                             predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
@@ -183,14 +183,14 @@ public class LossOpValidation extends BaseOpValidation {
                                     .add(labelsArr.mul(Transforms.log(labelsArr)))
                                     .sub(labelsArr)
                                     .add(Transforms.log(labelsArr.mul(Math.PI * 2)).mul(0.5));
-                            loss = sd.lossLogPoissonFull("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().logPoissonFull("loss", labels, predictions, w, reduction);
                             break;
                         case "mse":
                             //To match TF, this is actually sum of squares - 1/numExamples (prediction-label)^2
                             INDArray sqDiff = labelsArr.sub(predictionsArr);
                             sqDiff.muli(sqDiff);
                             expOut = sqDiff;
-                            loss = sd.lossMeanSquaredError("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().meanSquaredError("loss", labels, predictions, w, reduction);
                             break;
                         case "sigmoidxent_smooth":  //Sigmoid xent with label smoothing
                         case "sigmoidxent":
@@ -205,7 +205,7 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray onePlusExpNegX = Transforms.log(Transforms.exp(predictionsArr.neg()).add(1.0));
                             expOut = predictionsArr.mul(labelArrCopy.rsub(1.0)).add(onePlusExpNegX);
 
-                            loss = sd.lossSigmoidCrossEntropy("loss", labels, predictions, w, reduction, lblSmoothing);
+                            loss = sd.loss().sigmoidCrossEntropy("loss", labels, predictions, w, reduction, lblSmoothing);
                             break;
                         case "softmaxxent":
                         case "softmaxxent_smooth":
@@ -224,10 +224,10 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             INDArray logP2 = Transforms.log(softmaxPredictions, true);
                             expOut = labelsArrCopy.mul(logP2).negi().sum(1);
-                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
+                            loss = sd.loss().softmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
-                            expOut = Nd4j.create(labelsArr.size(0));
+                            expOut = Nd4j.create(labelsArr.size(0), 1);
                             double n = (double) labelsArr.size(1);
                             for(int example = 0; example < labelsArr.size(0); example++){
                                 for(int i = 0; i < labelsArr.size(1); i++){
@@ -246,7 +246,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                             expOut.muli(1/((n*(n-1)) / 2));
 
-                            loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().meanPairwiseSquaredError("loss", labels, predictions, w, reduction);
                             break;
                         case "sparsesoftmax":
                             labelsArr = Nd4j.create(DataType.DOUBLE, minibatch);
@@ -260,7 +260,7 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray logP2_2 = Transforms.log(softmaxPredictions2, true);
                             expOut = oneHot.mul(logP2_2).negi().sum(1);
 
-                            loss = sd.lossSparseSoftmaxCrossEntropy(predictions, labels).sum("loss");
+                            loss = sd.loss().sparseSoftmaxCrossEntropy(predictions, labels).sum("loss");
                             break;
 
                         default:
@@ -405,7 +405,7 @@ public class LossOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("v", arr);
-            SDVariable loss = sd.lossL2("loss", in);
+            SDVariable loss = sd.loss().l2Loss("loss", in);
 
             INDArray exp = arr.mul(arr).sum().muli(0.5);
 
@@ -421,9 +421,9 @@ public class LossOpValidation extends BaseOpValidation {
 
     @Test
     public void testNonZeroResult() {
-        INDArray predictions = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 4);
+        INDArray predictions = Nd4j.rand(DataType.DOUBLE, 10, 5);
         INDArray w = Nd4j.scalar(1.0);
-        INDArray label = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 5);
+        INDArray label = Nd4j.rand(DataType.DOUBLE, 10, 5);
         final INDArray zero = Nd4j.scalar(0.);
         final INDArray zeroBp = Nd4j.zerosLike(predictions);
 
@@ -475,5 +475,15 @@ public class LossOpValidation extends BaseOpValidation {
                 assertNotEquals(lossOp + "_grad returns zero result. Reduction Mode " + reductionMode, outBP, zeroBp);
             }
         }
+    }
+
+    @Test
+    public void TestStdLossMixedDataType(){
+        // Default Data Type in this test suite is Double.
+        // This test used to throw an Exception that we have mixed data types.
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.placeHolder("x", DataType.FLOAT, 3,4);
+        SDVariable loss = v.std(true);
     }
 }

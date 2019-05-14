@@ -97,6 +97,29 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
     ASSERT_NE(x, y);
 }
 
+TEST_F(DeclarableOpsTests14, Multiply_test) {
+
+    for(int k=2;k<10;k++){
+        nd4j_printf("k=%d\n", k);
+        NDArray x = NDArrayFactory::create<double>('c', {k, 1});
+        NDArray y = NDArrayFactory::create<double>('c', {k});
+        NDArray e = NDArrayFactory::create<double>('c', {k, k});
+        x.assign(1.0);
+        y.assign(1.0);
+        e.assign(1.0);
+
+        nd4j::ops::multiply op;
+        auto result = op.execute({&x, &y}, {}, {});
+        auto f = result->at(0);
+        NDArray r = *f;
+
+        ASSERT_EQ(e, r);
+        ASSERT_EQ(e, *f);
+
+        delete result;
+    }
+}
+
 TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_1) {
     auto x = NDArrayFactory::create<int>('c', {3}, {5, 3, 4});
     auto y = NDArrayFactory::create<int>('c', {1}, {1});
@@ -127,6 +150,32 @@ TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_0) {
+    auto x = NDArrayFactory::create<float>('c', {3, 4}, {-999.f, 0.2236f, 0.7973f, 0.0962f, 0.7231f, 0.3381f, -0.7301f, 0.9115f, -0.5094f, 0.9749f, -2.1340f, 0.6023f});
+    auto z = NDArrayFactory::create<float>('c', {4});
+    auto e = NDArrayFactory::create<float>('c', {4}, {-999.f, 0.2236f, -2.1340f, 0.0962f});
+
+    nd4j::ops::reduce_min op;
+    op.execute({&x}, {&z}, {}, {0}, {});
+
+    //z.printIndexedBuffer("Z");
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 4}, {-999.f, 0.2236f, 0.7973f, 0.0962f, 0.7231f, 0.3381f, -0.7301f, 0.9115f, -0.5094f, 0.9749f, -2.1340f, 0.6023f});
+    auto z = NDArrayFactory::create<float>('c', {3});
+    auto e = NDArrayFactory::create<float>('c', {3}, {-999.f, -0.7301f, -2.1340f});
+
+    nd4j::ops::reduce_min op;
+    op.execute({&x}, {&z}, {}, {1}, {});
+
+    //z.printIndexedBuffer("Z");
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
     auto x = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto z = NDArrayFactory::create<double>('c', {2, 2}, {-119, -119, -119, -119});
@@ -137,4 +186,37 @@ TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(exp, z);
+}
+
+TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_1) {
+    auto x = NDArrayFactory::create<float>(1.0f);
+    auto y = NDArrayFactory::create<float>('c', {5, 10});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    e.assign(1.0);
+
+
+    nd4j::ops::add op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_2) {
+    auto x = NDArrayFactory::create<float>(1.0f);
+    auto y = NDArrayFactory::create<float>('c', {5, 10});
+    auto e = NDArrayFactory::create<float>('c', {5, 10});
+    y.assign(2.0f);
+    e.assign(-1.0f);
+
+
+    nd4j::ops::subtract op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
 }

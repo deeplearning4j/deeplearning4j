@@ -109,7 +109,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param constraints Constraints to apply to the recurrent weight parameters of this layer
          */
         public T constrainRecurrent(LayerConstraint... constraints) {
-            this.recurrentConstraints = Arrays.asList(constraints);
+            this.setRecurrentConstraints(Arrays.asList(constraints));
             return (T) this;
         }
 
@@ -121,7 +121,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param constraints Constraints to apply to the input weight parameters of this layer
          */
         public T constrainInputWeights(LayerConstraint... constraints) {
-            this.inputWeightConstraints = Arrays.asList(constraints);
+            this.setInputWeightConstraints(Arrays.asList(constraints));
             return (T) this;
         }
 
@@ -132,7 +132,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param weightInit Weight initialization for the recurrent weights only.
          */
         public T weightInitRecurrent(IWeightInit weightInit) {
-            this.weightInitFnRecurrent = weightInit;
+            this.setWeightInitFnRecurrent(weightInit);
             return (T) this;
         }
 
@@ -148,7 +148,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                                 "Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFnRecurrent = weightInit.getWeightInitFunction();
+            this.setWeightInitFnRecurrent(weightInit.getWeightInitFunction());
             return (T) this;
         }
 
@@ -160,7 +160,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param dist Distribution to use for initializing the recurrent weights
          */
         public T weightInitRecurrent(Distribution dist) {
-            this.weightInitFnRecurrent = new WeightInitDistribution(dist);
+            this.setWeightInitFnRecurrent(new WeightInitDistribution(dist));
             return (T) this;
         }
     }

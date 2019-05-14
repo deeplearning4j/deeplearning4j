@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -40,8 +41,8 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     private int[] cropping; //[padTop, padBottom, padLeft, padRight]
 
-    public Cropping2DLayer(NeuralNetConfiguration conf) {
-        super(conf);
+    public Cropping2DLayer(NeuralNetConfiguration conf, DataType dataType) {
+        super(conf, dataType);
         this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D) conf.getLayer()).getCropping();
     }
 
@@ -63,7 +64,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         val inShape = input.shape();
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inShape, 'c');
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext);
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
@@ -81,7 +82,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Layer clone() {
-        return new Cropping2DLayer(conf.clone());
+        return new Cropping2DLayer(conf.clone(), dataType);
     }
 
     @Override

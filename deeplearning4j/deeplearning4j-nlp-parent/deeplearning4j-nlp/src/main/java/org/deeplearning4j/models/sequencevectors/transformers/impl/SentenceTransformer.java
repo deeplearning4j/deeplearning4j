@@ -79,13 +79,13 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
-        if (currentIterator != null)
+        if (currentIterator == null) {
+            //if (!allowMultithreading)
+                currentIterator = new BasicTransformerIterator(iterator, this);
+            //else
+            //    currentIterator = new ParallelTransformerIterator(iterator, this, true);
+        } else
             reset();
-
-        if (!allowMultithreading)
-            currentIterator = new BasicTransformerIterator(iterator, this);
-        else
-            currentIterator = new ParallelTransformerIterator(iterator, this, true);
 
         return currentIterator;
     }

@@ -159,7 +159,11 @@
         (49, LogSigmoid), \
         (50, Erfc) ,\
         (51, Expm1), \
-        (52, ATanh)
+        (52, ATanh) ,\
+        (53, GELU) ,\
+        (54, GELUDerivative), \
+        (55, PreciseGELU) ,\
+        (56, PreciseGELUDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
@@ -225,7 +229,9 @@
         (40, RELU6), \
         (41, Step), \
         (42, LstmClip), \
-        (43, TruncateMod)
+        (43, TruncateMod) ,\
+        (44, SquaredReverseSubtract) ,\
+        (45, ReversePow)
 
 
 
@@ -263,7 +269,8 @@
         (3, Prod), \
         (4, ASum), \
         (5, AMax) ,\
-        (6, AMin)
+        (6, AMin) ,\
+        (7, ReduceSameBenchmarkOp)
 
 
 
@@ -279,7 +286,7 @@
         (8, Entropy) ,\
         (9, LogEntropy) ,\
         (10, ShannonEntropy) ,\
-        (11, LogSumExp)
+        (12, ReduceFloatBenchmarkOp)
 
 
 
@@ -351,7 +358,8 @@
         (33, LogPoissonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
-        (36, TruncateMod)
+        (36, TruncateMod), \
+        (37, ReplaceNans)
 
 
 

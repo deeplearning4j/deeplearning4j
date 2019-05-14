@@ -30,12 +30,14 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.nio.FloatBuffer;
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
+import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
 /**
  * Warps the perspective of images deterministically or randomly. Calls
- * {@link org.bytedeco.javacpp.opencv_imgproc#warpPerspective(Mat, Mat, Mat, Size, int, int, Scalar)}
+ * {@link org.bytedeco.opencv.global.opencv_imgproc#warpPerspective(Mat, Mat, Mat, Size, int, int, Scalar)}
  * with given properties (interMode, borderMode, and borderValue).
  *
  * @author saudet

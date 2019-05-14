@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2015-2018 Skymind, Inc.
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -206,6 +206,17 @@ public class Convolution1DUtils {
                         "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
                         "strides %s, dilation %s", outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
+    }
+
+    public static int getSameModeBottomRightPadding(int outSize, int inSize, int kernel, int strides, int dilation) {
+        int eKernel = effectiveKernelSize(kernel, dilation);
+        int totalPad = ((outSize - 1) * strides + eKernel - inSize);
+        int tlPad = totalPad / 2;
+        int brPad = totalPad - tlPad;
+        Preconditions.checkState(brPad >= 0, "Invalid padding values (right) calculated: %s - " +
+                "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
+                "strides %s, dilation %s", brPad, inSize, outSize, kernel, strides, dilation);
+        return brPad;
     }
 
     /**

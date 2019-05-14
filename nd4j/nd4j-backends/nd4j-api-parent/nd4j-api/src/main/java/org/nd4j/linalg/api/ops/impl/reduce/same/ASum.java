@@ -71,8 +71,8 @@ public class ASum extends BaseReduceSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable sgn = sameDiff.sign(arg());
-        SDVariable meanBp = f().sumBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        SDVariable sgn = sameDiff.math().sign(arg());
+        SDVariable meanBp = f().sumBp(sameDiff.math().abs(arg()), f1.get(0), false, dimensions);
         return Collections.singletonList(sgn.mul(meanBp));
     }
 }

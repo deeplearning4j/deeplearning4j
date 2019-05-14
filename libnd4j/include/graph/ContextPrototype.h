@@ -100,7 +100,7 @@ namespace nd4j {
              * This method returns number of inputs available in this block
              * @return
              */
-            unsigned long width();
+            virtual unsigned long width();
 
             // just a clone
             ContextPrototype* clone();

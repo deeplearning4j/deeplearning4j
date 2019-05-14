@@ -20,9 +20,10 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.HashUtil;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.*;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -39,10 +40,17 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = VocabWord.class, name = "vocabWord")
+})
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
+        setterVisibility = JsonAutoDetect.Visibility.NONE)
 public abstract class SequenceElement implements Comparable<SequenceElement>, Serializable {
 
     private static final long serialVersionUID = 2223750736522624732L;
 
+    @JsonProperty
     protected AtomicDouble elementFrequency = new AtomicDouble(0);
 
     //used in comparison when building the huffman tree
@@ -74,6 +82,10 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     */
     @Setter
     protected Long storageId;
+
+    @Getter
+    @Setter
+    protected boolean isLocked;
 
     /**
      * This method should return string representation of this SequenceElement, so it can be used for

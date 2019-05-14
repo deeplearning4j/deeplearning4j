@@ -56,13 +56,13 @@ public class TestAnalysis extends BaseSparkTest {
 
         List<List<Writable>> data = new ArrayList<>();
         data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000),
-                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10, 100.0))));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 100.0))));
         data.add(Arrays.asList((Writable) new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000),
-                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10, 200.0))));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 200.0))));
         data.add(Arrays.asList((Writable) new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000),
-                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10, 300.0))));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 300.0))));
         data.add(Arrays.asList((Writable) new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000),
-                        new Text("B"), new NDArrayWritable(Nd4j.valueArrayOf(10, 400.0))));
+                        new Text("B"), new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 400.0))));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 

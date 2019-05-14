@@ -15,10 +15,9 @@
  ******************************************************************************/
 
 
-
-function extractHeaders(/*Uint8Array*/ bytes){
-    var header1a = bytes.slice(0,4);
-    var header1b = bytes.slice(4,8);
+function extractHeaders(/*Uint8Array*/ bytes, offset){
+    var header1a = bytes.slice(offset+0,offset+4);
+    var header1b = bytes.slice(offset+4,offset+8);
     var headerLength = byteArrayToInt(header1a);
     var contentLength = byteArrayToInt(header1b);
     return [headerLength, contentLength];
@@ -57,6 +56,7 @@ function decodeStaticInfo(headerContentBytes, bufferContentBytes){
     }
 }
 
+//Return graph inputs as a String[]
 function uiGraphGetInputs(/*UIGraphStructure*/ graph){
     var inLength = graph.inputsLength();
     var inputs = [];
@@ -66,6 +66,7 @@ function uiGraphGetInputs(/*UIGraphStructure*/ graph){
     return inputs;
 }
 
+//Return graph outputs as a String[]
 function uiGraphGetOutputs(/*UIGraphStructure*/ graph){
     var inLength = graph.outputsLength();
     var outputs = [];
@@ -75,6 +76,7 @@ function uiGraphGetOutputs(/*UIGraphStructure*/ graph){
     return outputs;
 }
 
+//Return graph variables as nd4j.graph.UIVariable[]
 function uiGraphGetVariables(/*UIGraphStructure*/ graph){
     var varsLength = graph.variablesLength();
     var vars = [];
@@ -84,6 +86,17 @@ function uiGraphGetVariables(/*UIGraphStructure*/ graph){
     return vars;
 }
 
+//Return graph variables as String[]
+function uiGraphGetVariableNames(/*UIGraphStructure*/ graph){
+    var varsLength = graph.variablesLength();
+    var vars = [];
+    for( var i=0; i<varsLength; i++ ){
+        vars.push(graph.variables(i).name());
+    }
+    return vars;
+}
+
+//Returns nd4j.graph.UIOp[]
 function uiGraphGetOps(/*UIGraphStructure*/ graph){
     var opsLength = graph.opsLength();
     var ops = [];
@@ -197,11 +210,28 @@ function dataTypeBytesPerElement(dataTypeByte){
     }
 }
 
-function scalarFromFlatArray(/*FlatArray*/ flatArray){
+function getScalar(/*FlatArray*/ flatArray, /*number[]*/ idxs){
+    //First: work out offset... assume C order here
+    var offset = 0;
+    // var prod = 1;
+    var rank = flatArray.shape(0).toFloat64();  //Note: shape is in nd4j format. So rank, shape. We're assuming C order here. Note also shape(i) returns flatbuffers long object
+    for( var i=0; i<rank; i++ ){
+        var size = flatArray.shape(i+1).toFloat64();
+        var stride = flatArray.shape(rank+i+1).toFloat64();
+        offset += stride * idxs[i];
+        // prod *= size.toFloat64();
+    }
+    return scalarFromFlatArrayIdx(flatArray, offset);
+}
 
-    //TODO check if actually scalar...
+function scalarFromFlatArray(/*FlatArray*/ flatArray) {
+    return scalarFromFlatArrayIdx(flatArray, 0);
+}
+
+function scalarFromFlatArrayIdx(/*FlatArray*/ flatArray, idx){
+    //TODO OPTIMIZE THIS!
     var dt = flatArray.dtype();
-    switch (dataTypeByte){
+    switch (dt){
         //Skip hard to decode types for now
         case nd4j.graph.DataType.FLOAT8:
         case nd4j.graph.DataType.QINT8:
@@ -212,17 +242,20 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
             return null;
     }
 
-    var numBytes = dataTypeBytesPerElement(dt);
+    var bytesPerElem = dataTypeBytesPerElement(dt);
     // var array = new Uint8Array(numBytes);
-    var dv = new DataView(new ArrayBuffer(numBytes));
-    for(var i=0; i<numBytes; i++ ){
+    var dv = new DataView(new ArrayBuffer(bytesPerElem));
+    var byteOffset = idx * bytesPerElem;
+    var j=0;
+    for(var i=byteOffset; i<byteOffset + bytesPerElem; i++ ){
         var signedByte = flatArray.buffer(i);
         // array[i] = signedByte;      //TODO do we need to convert here???
-        dv.setInt8(i, signedByte);
+        dv.setInt8(j++, signedByte);
     }
 
+    //Note: "get(idx)" is byte offset
     var out;
-    switch (dataTypeByte){
+    switch (dt){
         case nd4j.graph.DataType.BOOL:
             out = (dv.getUint8(0) === 0 ? "false" : "true");
             break;
@@ -265,6 +298,6 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
         default:
             return "";
     }
-    return "" + out;
+    return out;
 }
 

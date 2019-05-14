@@ -59,7 +59,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray newEps = Nd4j.create(origOutputShape, 'f');
+        INDArray newEps = Nd4j.create(epsilon.dataType(), origOutputShape, 'f');
         if(lastTimeStepIdxs == null){
             //no mask case
             newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2]-1)}, epsilon);
@@ -90,6 +90,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         underlying.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+        this.setMaskArray(maskArray);
 
         //Input: 2d mask array, for masking a time series. After extracting out the last time step, we no longer need the mask array
         return new Pair<>(null, currentMaskState);

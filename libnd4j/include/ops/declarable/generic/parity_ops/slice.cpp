@@ -51,7 +51,7 @@ namespace nd4j {
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
             REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
 
-            IndicesList indices;
+            std::vector<Nd4jLong> indices(2 * x_rank);
             for (int e = 0; e < x_rank; e++) {
                 int size = end[e];
                 int start = begin[e];
@@ -64,13 +64,12 @@ namespace nd4j {
                 }
                 REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1");
                 REQUIRE_TRUE(start + size <= input->sizeAt(e), 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, input->sizeAt(e));
-
-                indices.push_back(NDIndex::interval(start, start + size, 1));
+                
+                indices[2*e]   = start;
+                indices[2*e+1] = start + size;
             }
-            auto sub = input->subarray(indices);
+            auto sub = (*input)(indices, true);
             output->assign(sub);
-
-            delete sub;
 
             STORE_RESULT(output);
 
@@ -105,19 +104,20 @@ namespace nd4j {
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
             REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
-
-            Nd4jLong *newShape;
+            
             std::vector<Nd4jLong> shape;
             for (int e = 0; e < x_rank; e++) {
                 auto stop = end[e];
                 auto start = begin[e];
 
+                if(stop == -1){
+                    stop = inShape[e+1] - start;
+                }
+
                 shape.emplace_back(stop);
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), Nd4jLong);
-            shape::shapeBuffer(x_rank, ArrayOptions::dataType(inShape), shape.data(), newShape);
-
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
             return SHAPELIST(newShape);
         }
 
@@ -155,18 +155,18 @@ namespace nd4j {
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
             REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
 
-            IndicesList indices;
+            std::vector<Nd4jLong> indices(2 * x_rank);
             for (int e = 0; e < x_rank; e++) {
                 int stop = end[e];
                 int start = begin[e];
 
                 REQUIRE_TRUE(stop > 0, 0, "Slice: interval for dimension %i is less then 1", e);
-
-                indices.push_back(NDIndex::interval(start, start+stop, 1));
+                
+                indices[2*e]     = start;
+                indices[2*e + 1] = start + stop;
             }
-            auto sub = output->subarray(indices);
-            sub->assign(epsNext);
-            delete sub;
+            auto sub = (*output)(indices, true);
+            sub.assign(epsNext);            
 
             return Status::OK();
         }

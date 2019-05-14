@@ -189,7 +189,7 @@ public class FirstIterationFunctionAdapter implements
 
             int idx = (int) ((dot + maxExp) * ((double) expTable.length / maxExp / 2.0));
 
-            if (idx > expTable.length)
+            if (idx >= expTable.length)
                 continue;
 
             //score

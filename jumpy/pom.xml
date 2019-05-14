@@ -151,7 +151,7 @@
                                 <argument>install</argument>
                                 <argument>--user</argument>
                                 <argument>-e</argument>
-                                <argument>.[tests]</argument>
+                                <argument>.[tests, spark]</argument>
                             </arguments>
                         </configuration>
                     </execution>

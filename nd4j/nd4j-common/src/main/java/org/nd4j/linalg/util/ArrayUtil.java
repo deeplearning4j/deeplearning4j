@@ -2175,9 +2175,13 @@ public class ArrayUtil {
             return new int[0];
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].length != arr[0].length)
+                throw new IllegalStateException("Length of all rows must be equal");
+
             for (int j = 0; j < arr[i].length; j++)
                 ret[count++] = arr[i][j];
+        }
         return ret;
     }
 
@@ -2197,9 +2201,13 @@ public class ArrayUtil {
             return new byte[0];
         val ret = new byte[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].length != arr[0].length)
+                throw new IllegalStateException("Length of all rows must be equal");
+
             for (int j = 0; j < arr[i].length; j++)
                 ret[count++] = arr[i][j];
+        }
         return ret;
     }
 
@@ -2867,7 +2875,7 @@ public class ArrayUtil {
 
     public static long[] buildInterleavedVector(Random rng, long length) {
         // FIXME: int cast
-        long[] result = new long[(int) length];
+        val result = new long[(int) length];
 
         List<Integer> indexes = new ArrayList<>();
         List<Integer> odds = new ArrayList<>();
@@ -3392,5 +3400,39 @@ public class ArrayUtil {
             return ((short[]) current).length;
         } else
             throw new IllegalStateException("Unknown array type (or not an array): " + current.getClass()); //Should never happen
+    }
+
+    /**
+     * Compute the inverse permutation indices for a permutation operation<br>
+     * Example: if input is [2, 0, 1] then output is [1, 2, 0]<br>
+     * The idea is that x.permute(input).permute(invertPermutation(input)) == x
+     *
+     * @param input 1D indices for permutation
+     * @return 1D inverted permutation
+     */
+    public static int[] invertPermutation(int... input){
+        int[] target = new int[input.length];
+
+        for(int i = 0 ; i < input.length ; i++){
+            target[input[i]] = i;
+        }
+
+        return target;
+    }
+
+    /**
+     * @see #invertPermutation(int...)
+     *
+     * @param input 1D indices for permutation
+     * @return 1D inverted permutation
+     */
+    public static long[] invertPermutation(long... input){
+        long[] target = new long[input.length];
+
+        for(int i = 0 ; i < input.length ; i++){
+            target[(int) input[i]] = i;
+        }
+
+        return target;
     }
 }

@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -45,7 +46,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         for (InputPreProcessor preProcessor : inputPreProcessors)
             input = preProcessor.preProcess(input, miniBatchSize, workspaceMgr);
-        return input;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
     }
 
     @Override
@@ -55,7 +56,7 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
             output = inputPreProcessors[i].backprop(output, miniBatchSize, workspaceMgr);
         }
-        return output;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, output);
     }
 
     @Override

@@ -60,16 +60,8 @@ public class Axpy extends BaseTransformSameOp {
 
     }
 
-    public Axpy(INDArray x, INDArray z, double p) {
-        super(x,z);
-        this.p = p;
-        this.extraArgs = new Object[] {p};
-    }
-
-    public Axpy(INDArray x, INDArray z, double p, long n) {
-        super(x,z);
-        this.p = p;
-        this.extraArgs = new Object[] {p, (double) n};
+    public Axpy(INDArray x, INDArray y, INDArray z, double p) {
+        this(x,y,z,p,x.length());
     }
 
     public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
@@ -101,6 +93,6 @@ public class Axpy extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Backprop: not yet implemented");
     }
 }

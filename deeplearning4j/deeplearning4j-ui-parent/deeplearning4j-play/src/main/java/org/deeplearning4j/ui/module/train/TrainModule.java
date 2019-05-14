@@ -44,6 +44,8 @@ import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.function.Supplier;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
@@ -55,12 +57,20 @@ import play.mvc.Results;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static play.mvc.Results.ok;
-import static play.mvc.Results.redirect;
+import static play.mvc.Results.*;
 
 /**
  * Main DL4J Training UI
@@ -80,20 +90,37 @@ public class TrainModule implements UIModule {
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    private final Supplier<String> addressSupplier;
 
     private enum ModelType {
         MLN, CG, Layer
-    };
+    }
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new WeakHashMap<>());
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new HashMap<>());
     private String currentSessionID;
     private int currentWorkerIdx;
     private Map<String, AtomicInteger> workerIdxCount = new ConcurrentHashMap<>(); //Key: session ID
     private Map<String, Map<Integer, String>> workerIdxToName = new ConcurrentHashMap<>(); //Key: session ID
     private Map<String, Long> lastUpdateForSession = new ConcurrentHashMap<>();
+    private final boolean multiSession;
+    private final Function<String, Boolean> sessionLoader;
 
     public TrainModule() {
+        this(false, null, null);
+    }
+
+    /**
+     * TrainModule
+     * @param multiSession multi-session mode
+     * @param sessionLoader StatsStorage loader to call if an unknown session ID is passed as URL path parameter
+     *                      in multi-session mode
+     * @param addressSupplier supplier for server address (server address in PlayUIServer gets initialized after modules)
+     */
+    public TrainModule(boolean multiSession, Function<String, Boolean> sessionLoader, Supplier<String> addressSupplier) {
+        this.multiSession = multiSession;
+        this.sessionLoader = sessionLoader;
+        this.addressSupplier = addressSupplier;
         String maxChartPointsProp = System.getProperty(DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY);
         int value = DEFAULT_MAX_CHART_POINTS;
         if (maxChartPointsProp != null) {
@@ -117,31 +144,107 @@ public class TrainModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/train", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
-        Route r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(TrainingOverview.apply(I18NProvider.getInstance())));
-        Route r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
-        Route r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(TrainingModel.apply(I18NProvider.getInstance())));
-        Route r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
-        Route r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
-        Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
-        Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
-        Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(currentSessionID == null ? "" : currentSessionID));
-        Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
-        Route r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
-        Route r6c = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
-        Route r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function,
-                        this::getLastUpdateForSession);
-        Route r7 = new Route("/train/workers/currentByIdx", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(String.valueOf(currentWorkerIdx)));
-        Route r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function,
+        Route r0, r0a, r0b, r2, r2a, r3, r3a, r3b, r4, r4a, r6b, r6d, r7a;
+        r0 = new Route("/train/multisession", HttpMethod.GET, FunctionType.Supplier, () -> ok(multiSession ? "true" : "false"));
+
+        if (multiSession) {
+            r0a = new Route("/train", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
+            r0b = new Route("/train/:sessionId", HttpMethod.GET, FunctionType.Function,
+                    (sessionId) -> redirect("/train/" + sessionId + "/overview"));
+            r2 = new Route("/train/:sessionId/overview", HttpMethod.GET, FunctionType.Function,
+                (sessionId) -> knownSessionIDs.containsKey(sessionId)
+                        ? ok(TrainingOverview.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "overview"));
+            r2a = new Route("/train/:sessionId/overview/data", HttpMethod.GET, FunctionType.Function,
+                    this::getOverviewDataForSession);
+            r3 = new Route("/train/:sessionId/model", HttpMethod.GET, FunctionType.Function,
+                (sessionId) -> knownSessionIDs.containsKey(sessionId)
+                        ? ok(TrainingModel.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "model"));
+            r3a = new Route("/train/:sessionId/model/graph", HttpMethod.GET, FunctionType.Function,
+                    this::getModelGraphForSession);
+            r3b = new Route("/train/:sessionId/model/data/:layerId", HttpMethod.GET, FunctionType.BiFunction,
+                    this::getModelDataForSession);
+            r4 = new Route("/train/:sessionId/system", HttpMethod.GET, FunctionType.Function,
+                (sessionId) -> knownSessionIDs.containsKey(sessionId)
+                        ? ok(TrainingSystem.apply(getI18N(sessionId))) : sessionNotFound(sessionId, "system"));
+            r4a = new Route("/train/:sessionId/system/data", HttpMethod.GET, FunctionType.Function,
+                    this::getSystemDataForSession);
+            r6b = new Route("/train/:sessionId/info", HttpMethod.GET, FunctionType.Function, this::sessionInfoForSession);
+        } else {
+            r0a = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier,
+                    () -> ok(currentSessionID == null ? "" : currentSessionID));
+            r0b = new Route("/train/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+            r2 = new Route("/train/overview", HttpMethod.GET, FunctionType.Supplier,
+                    () -> ok(TrainingOverview.apply(getI18N())));
+            r2a = new Route("/train/overview/data", HttpMethod.GET, FunctionType.Supplier, this::getOverviewData);
+            r3 = new Route("/train/model", HttpMethod.GET, FunctionType.Supplier,
+                    () -> ok(TrainingModel.apply(getI18N())));
+            r3a = new Route("/train/model/graph", HttpMethod.GET, FunctionType.Supplier, this::getModelGraph);
+            r3b = new Route("/train/model/data/:layerId", HttpMethod.GET, FunctionType.Function, this::getModelData);
+            r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier,
+                    () -> ok(TrainingSystem.apply(getI18N())));
+            r6b = new Route("/train/sessions/info", HttpMethod.GET, FunctionType.Supplier, this::sessionInfo);
+            r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
+        }
+
+
+        r6d = new Route("/train/sessions/lastUpdate/:sessionId", HttpMethod.GET, FunctionType.Function,
+                        this::getLastUpdateForSession); // common for single- and multi-session mode
+        r7a = new Route("/train/workers/setByIdx/:to", HttpMethod.GET, FunctionType.Function,
                         this::setWorkerByIdx);
 
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r6, r6a, r6b, r6c, r6d, r7, r7a);
+        return Arrays.asList(r0, r0a, r0b, r2, r2a, r3, r3a, r3b, r4, r4a, r6b, r6d, r7a);
+    }
+
+    /**
+     * List training sessions
+     * @return HTML list of training sessions
+     */
+    private Result listSessions() {
+        StringBuilder sb = new StringBuilder("<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "        <meta charset=\"utf-8\">\n" +
+                "        <title>Training sessions - DL4J Training UI</title>\n" +
+                "    </head>\n" +
+                "\n" +
+                "    <body>\n" +
+                "        <h1>DL4J Training UI</h1>\n" +
+                "        <p>UI server is in multi-session mode." +
+                " To visualize a training session, please select one from the following list.</p>\n" +
+                "        <h2>List of attached training sessions</h2>\n");
+        if (!knownSessionIDs.isEmpty()) {
+            sb.append("        <ul>");
+            for (String sessionId : knownSessionIDs.keySet()) {
+                sb.append("            <li><a href=\"train/" + sessionId + "\">" + sessionId + "</a></li>\n");
+            }
+            sb.append("        </ul>");
+        } else {
+            sb.append("No training session attached.");
+        }
+
+        sb.append("    </body>\n" +
+                "</html>\n");
+        return ok(sb.toString()).as("text/html; charset=utf-8");
+    }
+
+    /**
+     * Load StatsStorage via provider, or return "not found"
+     * @param sessionId session ID to look fo with provider
+     * @param targetPath one of overview / model / system, or null
+     * @return temporaryRedirect, ok, or notFound
+     */
+    private Result sessionNotFound(String sessionId, String targetPath) {
+        if (sessionLoader != null && sessionLoader.apply(sessionId)) {
+            if (targetPath != null) {
+                return temporaryRedirect("./" + targetPath);
+            } else {
+                return ok();
+            }
+
+        } else {
+            return notFound("Unknown session ID: " + sessionId);
+        }
     }
 
     @Override
@@ -149,8 +252,13 @@ public class TrainModule implements UIModule {
         for (StatsStorageEvent sse : events) {
             if (StatsListener.TYPE_ID.equals(sse.getTypeID())) {
                 if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo
-                                && StatsListener.TYPE_ID.equals(sse.getTypeID())) {
+                                && StatsListener.TYPE_ID.equals(sse.getTypeID())
+                                && !knownSessionIDs.containsKey(sse.getSessionID())) {
                     knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+                    if (multiSession) {
+                        log.info("Adding training session {}/train/{} of StatsStorage instance {}",
+                                addressSupplier.get(), sse.getSessionID(), sse.getStatsStorage());
+                    }
                 }
 
                 Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
@@ -173,6 +281,18 @@ public class TrainModule implements UIModule {
                 if (!StatsListener.TYPE_ID.equals(typeID))
                     continue;
                 knownSessionIDs.put(sessionID, statsStorage);
+                if (multiSession) {
+                    log.info("Adding training session {}/train/{} of StatsStorage instance {}",
+                            addressSupplier.get(), sessionID, statsStorage);
+                }
+
+                List<Persistable> latestUpdates = statsStorage.getLatestUpdateAllWorkers(sessionID, typeID);
+                for (Persistable update: latestUpdates) {
+                    long updateTime = update.getTimeStamp();
+                    if (lastUpdateForSession.containsKey(sessionID) && lastUpdateForSession.get(sessionID) < updateTime) {
+                        lastUpdateForSession.put(sessionID, updateTime);
+                    }
+                }
             }
         }
 
@@ -185,18 +305,21 @@ public class TrainModule implements UIModule {
         Set<String> toRemove = new HashSet<>();
         for (String s : knownSessionIDs.keySet()) {
             if (knownSessionIDs.get(s) == statsStorage) {
-//                knownSessionIDs.remove(s);
                 toRemove.add(s);
                 workerIdxCount.remove(s);
                 workerIdxToName.remove(s);
                 currentSessionID = null;
-                getDefaultSession();
             }
         }
         for(String s : toRemove) {
-//            knownSessionIDs.put(s, null);
             knownSessionIDs.remove(s);
+            if (multiSession) {
+                log.info("Removing training session {}/train/{} of StatsStorage instance {}.",
+                        addressSupplier.get(), s, statsStorage);
+            }
+            lastUpdateForSession.remove(s);
         }
+        getDefaultSession();
     }
 
     private synchronized void getDefaultSession() {
@@ -222,15 +345,14 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private synchronized String getWorkerIdForIndex(int workerIdx) {
-        String sid = currentSessionID;
-        if (sid == null)
+    private synchronized String getWorkerIdForIndex(String sessionId, int workerIdx) {
+        if (sessionId == null)
             return null;
 
-        Map<Integer, String> idxToId = workerIdxToName.get(sid);
+        Map<Integer, String> idxToId = workerIdxToName.get(sessionId);
         if (idxToId == null) {
             idxToId = Collections.synchronizedMap(new HashMap<>());
-            workerIdxToName.put(sid, idxToId);
+            workerIdxToName.put(sessionId, idxToId);
         }
 
         if (idxToId.containsKey(workerIdx)) {
@@ -239,15 +361,18 @@ public class TrainModule implements UIModule {
 
         //Need to record new worker...
         //Get counter
-        AtomicInteger counter = workerIdxCount.get(sid);
+        AtomicInteger counter = workerIdxCount.get(sessionId);
         if (counter == null) {
             counter = new AtomicInteger(0);
-            workerIdxCount.put(sid, counter);
+            workerIdxCount.put(sessionId, counter);
         }
 
         //Get all worker IDs
-        StatsStorage ss = knownSessionIDs.get(sid);
-        List<String> allWorkerIds = new ArrayList<>(ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID));
+        StatsStorage ss = knownSessionIDs.get(sessionId);
+        if (ss == null) {
+            return null;
+        }
+        List<String> allWorkerIds = new ArrayList<>(ss.listWorkerIDsForSessionAndType(sessionId, StatsListener.TYPE_ID));
         Collections.sort(allWorkerIds);
 
         //Ensure all workers have been assigned an index
@@ -262,66 +387,91 @@ public class TrainModule implements UIModule {
         return idxToId.get(workerIdx);
     }
 
-    private Result listSessions() {
-        return Results.ok(asJson(knownSessionIDs.keySet())).as("application/json");
-    }
+    /**
+     * Display, for each session: session ID, start time, number of workers, last update
+     * @return info for each session as JSON
+     */
+    private synchronized Result sessionInfo() {
 
-    private Result sessionInfo() {
-        //Display, for each session: session ID, start time, number of workers, last update
         Map<String, Object> dataEachSession = new HashMap<>();
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
-            Map<String, Object> dataThisSession = new HashMap<>();
             String sid = entry.getKey();
             StatsStorage ss = entry.getValue();
-            List<String> workerIDs = ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID);
-            int workerCount = (workerIDs == null ? 0 : workerIDs.size());
-            List<Persistable> staticInfo = ss.getAllStaticInfos(sid, StatsListener.TYPE_ID);
-            long initTime = Long.MAX_VALUE;
-            if (staticInfo != null) {
-                for (Persistable p : staticInfo) {
-                    initTime = Math.min(p.getTimeStamp(), initTime);
-                }
-            }
-
-            long lastUpdateTime = Long.MIN_VALUE;
-            List<Persistable> lastUpdatesAllWorkers = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
-            for (Persistable p : lastUpdatesAllWorkers) {
-                lastUpdateTime = Math.max(lastUpdateTime, p.getTimeStamp());
-            }
-
-            dataThisSession.put("numWorkers", workerCount);
-            dataThisSession.put("initTime", initTime == Long.MAX_VALUE ? "" : initTime);
-            dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
-
-            // add hashmap of workers
-            if (workerCount > 0) {
-                dataThisSession.put("workers", workerIDs);
-            }
-
-            //Model info: type, # layers, # params...
-            if (staticInfo != null && !staticInfo.isEmpty()) {
-                StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);
-                String modelClassName = sr.getModelClassName();
-                if (modelClassName.endsWith("MultiLayerNetwork")) {
-                    modelClassName = "MultiLayerNetwork";
-                } else if (modelClassName.endsWith("ComputationGraph")) {
-                    modelClassName = "ComputationGraph";
-                }
-                int numLayers = sr.getModelNumLayers();
-                long numParams = sr.getModelNumParams();
-
-                dataThisSession.put("modelType", modelClassName);
-                dataThisSession.put("numLayers", numLayers);
-                dataThisSession.put("numParams", numParams);
-            } else {
-                dataThisSession.put("modelType", "");
-                dataThisSession.put("numLayers", "");
-                dataThisSession.put("numParams", "");
-            }
-
+            Map<String, Object> dataThisSession = sessionData(sid, ss);
             dataEachSession.put(sid, dataThisSession);
         }
+        return Results.ok(asJson(dataEachSession)).as("application/json");
+    }
 
+    /**
+     * Extract session data from {@link StatsStorage}
+     * @param sid session ID
+     * @param ss {@code StatsStorage} instance
+     * @return session data map
+     */
+    private static Map<String, Object> sessionData(String sid, StatsStorage ss) {
+        Map<String, Object> dataThisSession = new HashMap<>();
+        List<String> workerIDs = ss.listWorkerIDsForSessionAndType(sid, StatsListener.TYPE_ID);
+        int workerCount = (workerIDs == null ? 0 : workerIDs.size());
+        List<Persistable> staticInfo = ss.getAllStaticInfos(sid, StatsListener.TYPE_ID);
+        long initTime = Long.MAX_VALUE;
+        if (staticInfo != null) {
+            for (Persistable p : staticInfo) {
+                initTime = Math.min(p.getTimeStamp(), initTime);
+            }
+        }
+
+        long lastUpdateTime = Long.MIN_VALUE;
+        List<Persistable> lastUpdatesAllWorkers = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
+        for (Persistable p : lastUpdatesAllWorkers) {
+            lastUpdateTime = Math.max(lastUpdateTime, p.getTimeStamp());
+        }
+
+        dataThisSession.put("numWorkers", workerCount);
+        dataThisSession.put("initTime", initTime == Long.MAX_VALUE ? "" : initTime);
+        dataThisSession.put("lastUpdate", lastUpdateTime == Long.MIN_VALUE ? "" : lastUpdateTime);
+
+        // add hashmap of workers
+        if (workerCount > 0) {
+            dataThisSession.put("workers", workerIDs);
+        }
+
+        //Model info: type, # layers, # params...
+        if (staticInfo != null && !staticInfo.isEmpty()) {
+            StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);
+            String modelClassName = sr.getModelClassName();
+            if (modelClassName.endsWith("MultiLayerNetwork")) {
+                modelClassName = "MultiLayerNetwork";
+            } else if (modelClassName.endsWith("ComputationGraph")) {
+                modelClassName = "ComputationGraph";
+            }
+            int numLayers = sr.getModelNumLayers();
+            long numParams = sr.getModelNumParams();
+
+            dataThisSession.put("modelType", modelClassName);
+            dataThisSession.put("numLayers", numLayers);
+            dataThisSession.put("numParams", numParams);
+        } else {
+            dataThisSession.put("modelType", "");
+            dataThisSession.put("numLayers", "");
+            dataThisSession.put("numParams", "");
+        }
+        return dataThisSession;
+    }
+
+    /**
+     * Display, for given session: session ID, start time, number of workers, last update
+     * @param sessionId session ID
+     * @return info for session as JSON
+     */
+    private Result sessionInfoForSession(String sessionId) {
+
+        Map<String, Object> dataEachSession = new HashMap<>();
+        StatsStorage ss = knownSessionIDs.get(sessionId);
+        if (ss != null) {
+            Map<String, Object> dataThisSession = sessionData(sessionId, ss);
+            dataEachSession.put(sessionId, dataThisSession);
+        }
         return Results.ok(asJson(dataEachSession)).as("application/json");
     }
 
@@ -382,33 +532,60 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private Result getOverviewData() {
-        Long lastUpdate = (currentSessionID == null ? null : lastUpdateForSession.get(currentSessionID));
-        if (lastUpdate == null)
-            lastUpdate = -1L;
-        I18N i18N = I18NProvider.getInstance();
-
-        boolean noData = currentSessionID == null;
-        //First pass (optimize later): query all data...
-
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
-
-
-        String wid = getWorkerIdForIndex(currentWorkerIdx);
-        if (wid == null) {
-            noData = true;
+    /**
+     * Get last update time for given session ID, checking for null values
+     * @param sessionId session ID
+     * @return last update time for session if found, or {@code null}
+     */
+    private Long getLastUpdateTime(String sessionId) {
+        if (lastUpdateForSession != null && sessionId != null && lastUpdateForSession.containsKey(sessionId)) {
+            return lastUpdateForSession.get(sessionId);
+        } else {
+            return -1L;
         }
+    }
+
+    /**
+     * Get global {@link I18N} instance if {@link #multiSession} is {@code true}, or instance for session
+     * @param sessionId session ID
+     * @return {@link I18N} instance
+     */
+    private I18N getI18N(String sessionId) {
+        return multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+    }
+
+    /**
+     * Get global {@link I18N} instance, used if {@link #multiSession} is {@code false}
+     * @return {@link I18N} instance
+     */
+    private I18N getI18N() {
+        return I18NProvider.getInstance();
+    }
+
+
+    private Result getOverviewData() {
+        return getOverviewDataForSession(currentSessionID);
+    }
+
+    private Result getOverviewDataForSession(String sessionId) {
+        Long lastUpdateTime = getLastUpdateTime(sessionId);
+        I18N i18N = getI18N(sessionId);
+
+        //First pass (optimize later): query all data...
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
+        String wid = getWorkerIdForIndex(sessionId, currentWorkerIdx);
+        boolean noData = (sessionId == null) || (ss == null) || (wid == null);
 
         List<Integer> scoresIterCount = new ArrayList<>();
         List<Double> scores = new ArrayList<>();
 
         Map<String, Object> result = new HashMap<>();
-        result.put("updateTimestamp", lastUpdate);
+        result.put("updateTimestamp", lastUpdateTime);
         result.put("scores", scores);
         result.put("scoresIter", scoresIterCount);
 
         //Get scores info
-        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(sessionId, StatsListener.TYPE_ID, wid));
         List<Persistable> updates = null;
         if(allTimes != null && allTimes.length > maxChartPoints){
             int subsamplingFrequency = allTimes.length / maxChartPoints;
@@ -421,10 +598,10 @@ public class TrainModule implements UIModule {
                 //Also add final point
                 timesToQuery.add(allTimes[allTimes.length-1]);
             }
-            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+            updates = ss.getUpdates(sessionId, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
         } else if(allTimes != null) {
             //Don't subsample
-            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+            updates = ss.getAllUpdatesAfter(sessionId, StatsListener.TYPE_ID, wid, 0);
         }
         if (updates == null || updates.isEmpty()) {
             noData = true;
@@ -576,7 +753,6 @@ public class TrainModule implements UIModule {
         }
 
 
-
         //----- Performance Info -----
         String[][] perfInfo = new String[][] {{i18N.getMessage("train.overview.perftable.startTime"), ""},
                         {i18N.getMessage("train.overview.perftable.totalRuntime"), ""},
@@ -600,7 +776,7 @@ public class TrainModule implements UIModule {
                         {i18N.getMessage("train.overview.modeltable.nLayers"), ""},
                         {i18N.getMessage("train.overview.modeltable.nParams"), ""}};
         if (!noData) {
-            Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
+            Persistable p = ss.getStaticInfo(sessionId, StatsListener.TYPE_ID, wid);
             if (p != null) {
                 StatsInitializationReport initReport = (StatsInitializationReport) p;
                 int nLayers = initReport.getModelNumLayers();
@@ -631,25 +807,28 @@ public class TrainModule implements UIModule {
     }
 
     private Result getModelGraph() {
+        return getModelGraphForSession(currentSessionID);
+    }
 
+    private Result getModelGraphForSession(String sessionId) {
 
-        boolean noData = currentSessionID == null;
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+        boolean noData = (sessionId == null || !knownSessionIDs.containsKey(sessionId));
+        StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
-                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+                        : ss.getAllStaticInfos(sessionId, StatsListener.TYPE_ID));
 
         if (allStatic.isEmpty()) {
             return ok();
         }
 
-        TrainModuleUtils.GraphInfo gi = getGraphInfo();
+        TrainModuleUtils.GraphInfo gi = getGraphInfo(getConfig(sessionId));
         if (gi == null)
             return ok();
         return Results.ok(asJson(gi)).as("application/json");
     }
 
-    private TrainModuleUtils.GraphInfo getGraphInfo() {
-        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
+    private TrainModuleUtils.GraphInfo getGraphInfo(Triple<MultiLayerConfiguration,
+            ComputationGraphConfiguration, NeuralNetConfiguration> conf) {
         if (conf == null) {
             return null;
         }
@@ -665,11 +844,11 @@ public class TrainModule implements UIModule {
         }
     }
 
-    private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig() {
-        boolean noData = currentSessionID == null;
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+    private Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> getConfig(String sessionId) {
+        boolean noData = (sessionId == null || !knownSessionIDs.containsKey(sessionId));
+        StatsStorage ss = (noData ? null : knownSessionIDs.get(sessionId));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
-                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+                        : ss.getAllStaticInfos(sessionId, StatsListener.TYPE_ID));
         if (allStatic.isEmpty())
             return null;
 
@@ -696,48 +875,45 @@ public class TrainModule implements UIModule {
     }
 
 
-    private Result getModelData(String str) {
-        Long lastUpdateTime = lastUpdateForSession.get(currentSessionID);
-        if (lastUpdateTime == null)
-            lastUpdateTime = -1L;
 
-        int layerIdx = Integer.parseInt(str); //TODO validation
-        I18N i18N = I18NProvider.getInstance();
+    private Result getModelData(String layerId) {
+        return getModelDataForSession(currentSessionID, layerId);
+    }
+
+    private Result getModelDataForSession(String sessionId, String layerId) {
+        Long lastUpdateTime = getLastUpdateTime(sessionId);
+
+        int layerIdx = Integer.parseInt(layerId); //TODO validation
+        I18N i18N = getI18N(sessionId);
 
         //Model info for layer
 
-        boolean noData = currentSessionID == null;
         //First pass (optimize later): query all data...
-
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
-
-        String wid = getWorkerIdForIndex(currentWorkerIdx);
-        if (wid == null) {
-            noData = true;
-        }
-
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
+        String wid = getWorkerIdForIndex(sessionId, currentWorkerIdx);
+        boolean noData = (sessionId == null) || (ss == null) || (wid == null);
 
         Map<String, Object> result = new HashMap<>();
         result.put("updateTimestamp", lastUpdateTime);
 
-        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
+        Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig(sessionId);
         if (conf == null) {
             return Results.ok(asJson(result)).as("application/json");
         }
 
-        TrainModuleUtils.GraphInfo gi = getGraphInfo();
+        TrainModuleUtils.GraphInfo gi = getGraphInfo(conf);
         if (gi == null) {
             return Results.ok(asJson(result)).as("application/json");
         }
 
 
         // Get static layer info
-        String[][] layerInfoTable = getLayerInfoTable(layerIdx, gi, i18N, noData, ss, wid);
+        String[][] layerInfoTable = getLayerInfoTable(sessionId, layerIdx, gi, i18N, noData, ss, wid);
 
         result.put("layerInfo", layerInfoTable);
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
-        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(sessionId, StatsListener.TYPE_ID, wid));
 
         List<Persistable> updates = null;
         List<Integer> iterationCounts = null;
@@ -753,17 +929,17 @@ public class TrainModule implements UIModule {
                 //Also add final point
                 timesToQuery.add(allTimes[allTimes.length-1]);
             }
-            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+            updates = ss.getUpdates(sessionId, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
         } else if(allTimes != null) {
             //Don't subsample
-            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+            updates = ss.getAllUpdatesAfter(sessionId, StatsListener.TYPE_ID, wid, 0);
         }
 
         iterationCounts = new ArrayList<>(updates.size());
         int lastIterCount = -1;
         for (Persistable p : updates) {
             if (!(p instanceof StatsReport))
-                continue;;
+                continue;
             StatsReport sr = (StatsReport) p;
             int iterCount = sr.getIterationCount();
 
@@ -821,23 +997,25 @@ public class TrainModule implements UIModule {
         return Results.ok(asJson(result)).as("application/json");
     }
 
-    public Result getSystemData() {
-        Long lastUpdate = lastUpdateForSession.get(currentSessionID);
-        if (lastUpdate == null)
-            lastUpdate = -1L;
+    private Result getSystemData() {
+        return getSystemDataForSession(currentSessionID);
+    }
 
-        I18N i18n = I18NProvider.getInstance();
+    private Result getSystemDataForSession(String sessionId) {
+        Long lastUpdate = getLastUpdateTime(sessionId);
+
+        I18N i18n = getI18N(sessionId);
 
         //First: get the MOST RECENT update...
         //Then get all updates from most recent - 5 minutes -> TODO make this configurable...
 
-        boolean noData = currentSessionID == null;
-        StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
+        StatsStorage ss = (sessionId == null ? null : knownSessionIDs.get(sessionId));
+        boolean noData = (ss == null);
 
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
-                        : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
+                        : ss.getAllStaticInfos(sessionId, StatsListener.TYPE_ID));
         List<Persistable> latestUpdates = (noData ? Collections.EMPTY_LIST
-                        : ss.getLatestUpdateAllWorkers(currentSessionID, StatsListener.TYPE_ID));
+                        : ss.getLatestUpdateAllWorkers(sessionId, StatsListener.TYPE_ID));
 
 
         long lastUpdateTime = -1;
@@ -851,7 +1029,7 @@ public class TrainModule implements UIModule {
 
         long fromTime = lastUpdateTime - 5 * 60 * 1000; //TODO Make configurable
         List<Persistable> lastNMinutes =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, fromTime));
+                        (noData ? null : ss.getAllUpdatesAfter(sessionId, StatsListener.TYPE_ID, fromTime));
 
         Map<String, Object> mem = getMemory(allStatic, lastNMinutes, i18n);
         Pair<Map<String, Object>, Map<String, Object>> hwSwInfo = getHardwareSoftwareInfo(allStatic, i18n);
@@ -876,7 +1054,7 @@ public class TrainModule implements UIModule {
         return layerType;
     }
 
-    private String[][] getLayerInfoTable(int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData,
+    private static String[][] getLayerInfoTable(String sessionId, int layerIdx, TrainModuleUtils.GraphInfo gi, I18N i18N, boolean noData,
                     StatsStorage ss, String wid) {
         List<String[]> layerInfoRows = new ArrayList<>();
         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerName"),
@@ -884,7 +1062,7 @@ public class TrainModule implements UIModule {
         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerType"), ""});
 
         if (!noData) {
-            Persistable p = ss.getStaticInfo(currentSessionID, StatsListener.TYPE_ID, wid);
+            Persistable p = ss.getStaticInfo(sessionId, StatsListener.TYPE_ID, wid);
             if (p != null) {
                 StatsInitializationReport initReport = (StatsInitializationReport) p;
                 String configJson = initReport.getModelConfigJson();
@@ -1008,7 +1186,7 @@ public class TrainModule implements UIModule {
 
     //TODO float precision for smaller transfers?
     //First: iteration. Second: ratios, by parameter
-    private MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
+    private static MeanMagnitudes getLayerMeanMagnitudes(int layerIdx, TrainModuleUtils.GraphInfo gi,
                     List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return new MeanMagnitudes(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(),
@@ -1104,7 +1282,7 @@ public class TrainModule implements UIModule {
 
     private static Triple<int[], float[], float[]> EMPTY_TRIPLE = new Triple<>(new int[0], new float[0], new float[0]);
 
-    private Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi,
+    private static Triple<int[], float[], float[]> getLayerActivations(int index, TrainModuleUtils.GraphInfo gi,
                     List<Persistable> updates, List<Integer> iterationCounts) {
         if (gi == null) {
             return EMPTY_TRIPLE;
@@ -1172,7 +1350,7 @@ public class TrainModule implements UIModule {
         EMPTY_LR_MAP.put("lrs", Collections.EMPTY_MAP);
     }
 
-    private Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi,
+    private static Map<String, Object> getLayerLearningRates(int layerIdx, TrainModuleUtils.GraphInfo gi,
                     List<Persistable> updates, List<Integer> iterationCounts, ModelType modelType) {
         if (gi == null) {
             return Collections.emptyMap();
@@ -1356,50 +1534,53 @@ public class TrainModule implements UIModule {
                 }
             }
 
-            for (Persistable p : updatesLastNMinutes) {
-                //TODO single pass
-                if (!p.getWorkerID().equals(wid))
-                    continue;
-                if (!(p instanceof StatsReport))
-                    continue;
+            if (updatesLastNMinutes != null) {
+                for (Persistable p : updatesLastNMinutes) {
+                    //TODO single pass
+                    if (!p.getWorkerID().equals(wid))
+                        continue;
+                    if (!(p instanceof StatsReport))
+                        continue;
 
-                StatsReport sp = (StatsReport) p;
+                    StatsReport sp = (StatsReport) p;
 
-                timestamps.add(sp.getTimeStamp());
+                    timestamps.add(sp.getTimeStamp());
 
-                long jvmCurrentBytes = sp.getJvmCurrentBytes();
-                long jvmMaxBytes = sp.getJvmMaxBytes();
-                long ohCurrentBytes = sp.getOffHeapCurrentBytes();
-                long ohMaxBytes = sp.getOffHeapMaxBytes();
+                    long jvmCurrentBytes = sp.getJvmCurrentBytes();
+                    long jvmMaxBytes = sp.getJvmMaxBytes();
+                    long ohCurrentBytes = sp.getOffHeapCurrentBytes();
+                    long ohMaxBytes = sp.getOffHeapMaxBytes();
 
-                double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
-                double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
-                if (Double.isNaN(jvmFrac))
-                    jvmFrac = 0.0;
-                if (Double.isNaN(offheapFrac))
-                    offheapFrac = 0.0;
-                fracJvm.add((float) jvmFrac);
-                fracOffHeap.add((float) offheapFrac);
+                    double jvmFrac = jvmCurrentBytes / ((double) jvmMaxBytes);
+                    double offheapFrac = ohCurrentBytes / ((double) ohMaxBytes);
+                    if (Double.isNaN(jvmFrac))
+                        jvmFrac = 0.0;
+                    if (Double.isNaN(offheapFrac))
+                        offheapFrac = 0.0;
+                    fracJvm.add((float) jvmFrac);
+                    fracOffHeap.add((float) offheapFrac);
 
-                lastBytes[0] = jvmCurrentBytes;
-                lastBytes[1] = ohCurrentBytes;
+                    lastBytes[0] = jvmCurrentBytes;
+                    lastBytes[1] = ohCurrentBytes;
 
-                lastMaxBytes[0] = jvmMaxBytes;
-                lastMaxBytes[1] = ohMaxBytes;
+                    lastMaxBytes[0] = jvmMaxBytes;
+                    lastMaxBytes[1] = ohMaxBytes;
 
-                if (numDevices > 0) {
-                    long[] devBytes = sp.getDeviceCurrentBytes();
-                    long[] devMaxBytes = sp.getDeviceMaxBytes();
-                    for (int i = 0; i < numDevices; i++) {
-                        double frac = devBytes[i] / ((double) devMaxBytes[i]);
-                        if (Double.isNaN(frac))
-                            frac = 0.0;
-                        fracDeviceMem.get(i).add((float) frac);
-                        lastBytes[2 + i] = devBytes[i];
-                        lastMaxBytes[2 + i] = devMaxBytes[i];
+                    if (numDevices > 0) {
+                        long[] devBytes = sp.getDeviceCurrentBytes();
+                        long[] devMaxBytes = sp.getDeviceMaxBytes();
+                        for (int i = 0; i < numDevices; i++) {
+                            double frac = devBytes[i] / ((double) devMaxBytes[i]);
+                            if (Double.isNaN(frac))
+                                frac = 0.0;
+                            fracDeviceMem.get(i).add((float) frac);
+                            lastBytes[2 + i] = devBytes[i];
+                            lastMaxBytes[2 + i] = devMaxBytes[i];
+                        }
                     }
                 }
             }
+
 
             List<List<Float>> fracUtilized = new ArrayList<>();
             fracUtilized.add(fracJvm);
@@ -1454,7 +1635,7 @@ public class TrainModule implements UIModule {
         for (String jvm : jvmList) {
             StatsInitializationReport sr = staticByJvm.get(jvm);
 
-            //---- Harware Info ----
+            //---- Hardware Info ----
             List<String[]> hwInfo = new ArrayList<>();
             int numDevices = sr.getHwNumDevices();
             String[] deviceDescription = sr.getHwDeviceDescription();
@@ -1476,7 +1657,7 @@ public class TrainModule implements UIModule {
 
                 String memLabel = i18n.getMessage("train.system.hwTable.deviceMemory") + " (" + i + ")";
                 String memBytes =
-                                (devTotalMem == null | i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
+                                (devTotalMem == null || i >= devTotalMem.length ? "-" : String.valueOf(devTotalMem[i]));
                 hwInfo.add(new String[] {memLabel, memBytes});
             }
 
@@ -1561,4 +1742,5 @@ public class TrainModule implements UIModule {
             to.add(new I18NResource("dl4j_i18n/" + prefix + "." + s));
         }
     }
+
 }

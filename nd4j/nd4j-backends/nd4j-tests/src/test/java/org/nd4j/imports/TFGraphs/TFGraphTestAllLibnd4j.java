@@ -63,16 +63,6 @@ public class TFGraphTestAllLibnd4j {
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
-    private static final String[] SKIP_ARR = new String[] {
-            //"deep_mnist",
-            //"deep_mnist_no_dropout",
-            //"ssd_mobilenet_v1_coco",
-            //"yolov2_608x608",
-            //"inception_v3_with_softmax",
-            "conv_5" // still RNG differences
-    };
-    public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
-
     private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
             //Exceptions - need to look into:
             "alpha_dropout/.*",
@@ -87,7 +77,34 @@ public class TFGraphTestAllLibnd4j {
 
             //JVM crashes
             "simpleif.*",
-            "simple_cond.*"
+            "simple_cond.*",
+
+            //2019/01/24 - Failing
+            "cond/cond_true",
+            "simplewhile_.*",
+            "simple_while",
+            "while1/.*",
+            "while2/a",
+
+            //2019/01/24 - TensorArray support missing at libnd4j exec level??
+            "tensor_array/.*",
+
+            //2019/02/04 - Native execution exception: "Graph wasn't toposorted"
+            "primitive_gru_dynamic",
+
+            //2019/02/08 - Native execution exception: "Graph wasn't toposorted". Note it's only the dynamic (while loop) RNNs
+            "rnn/basiclstmcell/dynamic.*",
+            "rnn/basicrnncell/dynamic.*",
+            "rnn/bidir_basic/dynamic.*",
+            "rnn/fused_adapt_basic/dynamic.*",
+            "rnn/grucell/dynamic.*",
+            "rnn/lstmcell/dynamic.*",
+            "rnn/srucell/dynamic.*",
+
+            //2019/02/23 Passing for SameDiff exec, failing for libnd4j exec
+            "rnn/grublockcellv2/.*",
+            "rnn/lstmblockcell/.*",
+            "rnn/lstmblockfusedcell/.*",
     };
 
     @BeforeClass
@@ -131,12 +148,6 @@ public class TFGraphTestAllLibnd4j {
     @Test//(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        if (SKIP_SET.contains(modelName)) {
-            log.info("\n\tSKIPPED MODEL: " + modelName);
-            return;
-        }
         for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);

@@ -888,6 +888,21 @@ namespace nd4j {
         #endif
 
         /**
+         * logdet op. Logarithm of the determinant of hermitian positive matricies.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+        #if NOT_EXCLUDED(OP_logdet)
+        DECLARE_CUSTOM_OP(logdet, 1, 1, false, 0, 0);
+        #endif
+        
+        /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
          * input params:

@@ -38,22 +38,28 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class SequenceMask extends DynamicCustomOp {
+    public static final DataType DEFAULT_DTYPE = DataType.BOOL;
 
     private int maxLen;
     private boolean is_static_maxlen = false;
-    public SequenceMask(SameDiff sameDiff, SDVariable input, SDVariable maxLen) {
+    private DataType dataType;
+
+    public SequenceMask(SameDiff sameDiff, SDVariable input, SDVariable maxLen, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {input, maxLen}, false);
+        this.dataType = dataType;
     }
 
-    public SequenceMask(SameDiff sameDiff, SDVariable input, int maxLen) {
+    public SequenceMask(SameDiff sameDiff, SDVariable input, int maxLen, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {input}, false);
         this.maxLen = maxLen;
         this.is_static_maxlen = true;
         addIArgument(maxLen);
+        this.dataType = dataType;
     }
 
-    public SequenceMask(SameDiff sameDiff, SDVariable input) {
+    public SequenceMask(SameDiff sameDiff, SDVariable input, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {input}, false);
+        this.dataType = dataType;
     }
     
 
@@ -69,6 +75,7 @@ public class SequenceMask extends DynamicCustomOp {
         if (is_static_maxlen) {
             addIArgument(this.maxLen);
         }
+
     }
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -112,7 +119,6 @@ public class SequenceMask extends DynamicCustomOp {
         SDVariable[] args = args();
         Preconditions.checkState(dataTypes.size() == args.length, "Expected list with exactly %s datatypes for %s, got %s", args.length, getClass(), dataTypes);
         //Output type is same as input by default
-        //TODO TF allows customizing output type
-        return Collections.singletonList(dataTypes.get(0));
+        return Collections.singletonList(dataType == null ? DEFAULT_DTYPE : dataType);
     }
 }

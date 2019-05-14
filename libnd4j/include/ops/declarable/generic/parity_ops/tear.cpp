@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -53,20 +54,16 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             std::vector<int> dims(*block.getIArguments());
-            std::sort(dims.begin(), dims.end());
 
-            shape::TAD tad(inShape, dims.data(), (int) dims.size());
-            tad.createTadOnlyShapeInfo();
-            Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
+            if (dims.size() > 1)
+                std::sort(dims.begin(), dims.end());
+
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto numTads = tadPack.numberOfTads();
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
-                if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
-                else
-                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()), block.getWorkspace());
                 result->push_back(newShape);
             }
 

@@ -153,7 +153,7 @@ namespace nd4j {
                     } else if (node->getOpClass() == OpClass_REDUCTION) {
                         Nd4jLong *newShape = nullptr;
 
-                        // if that's scalar output - we don't give a fuck about previous node
+                        // if that's scalar output - we don't care about previous node
                         if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
                             newShape = new Nd4jLong[8];
 
@@ -183,7 +183,7 @@ namespace nd4j {
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             Nd4jLong numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             auto shape = new Nd4jLong[2]{1, (int) numTads};
-                            newShape = shape::shapeBuffer(2, ArrayOptions::dataType(oldShape), shape);
+                            newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);                            
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);

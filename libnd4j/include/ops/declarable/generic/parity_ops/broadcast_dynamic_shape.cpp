@@ -38,8 +38,8 @@ namespace nd4j {
             auto x_shape = INPUT_VARIABLE(0);
             auto y_shape = INPUT_VARIABLE(1);
             
-            REQUIRE_TRUE(shape::isVector(x_shape->getShapeInfo()), 0, "broadcast_dynamic_shape: The first argument should be a vector");
-            REQUIRE_TRUE(shape::isVector(y_shape->getShapeInfo()), 0, "broadcast_dynamic_shape: The second argument should be a vector");
+            REQUIRE_TRUE(shape::isVector(x_shape->shapeInfo(), 1), 0, "broadcast_dynamic_shape: The first argument should be a vector");
+            REQUIRE_TRUE(shape::isVector(y_shape->shapeInfo(), 1), 0, "broadcast_dynamic_shape: The second argument should be a vector");
 
             auto output = OUTPUT_VARIABLE(0);
      

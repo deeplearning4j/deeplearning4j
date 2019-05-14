@@ -40,8 +40,8 @@ public class CbowRound extends DynamicCustomOp {
      * @param nextRandom
      * @param inferenceVector
      */
-    public CbowRound(int target, @NonNull int[] context, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, @NonNull int[] indices, @NonNull byte[] codes, double alpha, long nextRandom, @NonNull INDArray inferenceVector) {
-        this(target, context, 0, syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), indices, codes, 0, alpha, nextRandom, inferenceVector);
+    public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, @NonNull int[] indices, @NonNull byte[] codes, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.empty(DataType.INT), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
     }
 
     /**
@@ -58,8 +58,8 @@ public class CbowRound extends DynamicCustomOp {
      * @param nextRandom
      * @param inferenceVector
      */
-    public CbowRound(int target, @NonNull int[] context, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector) {
-        this(target, context, ngStarter, syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, null, null, nsRounds, alpha, nextRandom, inferenceVector);
+    public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
     }
 
     /**
@@ -77,35 +77,30 @@ public class CbowRound extends DynamicCustomOp {
      * @param nextRandom
      * @param inferenceVector
      */
-    public CbowRound(int target, @NonNull int[] context, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int[] indices, byte[] codes, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector) {
-        if (indices != null)
-            Preconditions.checkArgument(indices.length == codes.length, "Indices length should be equal to codes length");
+    public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray lockedWords, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, @NonNull INDArray numLabels, boolean trainWords, int numWorkers) {
 
-        val ctx = Nd4j.createFromArray(context);
-        val idx = indices == null ? Nd4j.empty(DataType.INT) : Nd4j.createFromArray(indices);
-        val code = codes == null ? Nd4j.empty(DataType.BYTE) : Nd4j.createFromArray(codes);
-        val lr = Nd4j.scalar(alpha);
-        val nr = Nd4j.scalar(nextRandom);
-
-        inputArguments.add(Nd4j.scalar(target));
-        inputArguments.add(Nd4j.scalar(ngStarter));
-        inputArguments.add(ctx);
-        inputArguments.add(idx);
-        inputArguments.add(code);
+        inputArguments.add(target);
+        inputArguments.add(ngStarter);
+        inputArguments.add(context);
+        inputArguments.add(indices);
+        inputArguments.add(codes);
         inputArguments.add(syn0);
         inputArguments.add(syn1);
         inputArguments.add(syn1Neg);
         inputArguments.add(expTable);
         inputArguments.add(negTable);
-        inputArguments.add(lr);
-        inputArguments.add(nr);
+        inputArguments.add(alpha);
+        inputArguments.add(nextRandom);
+        inputArguments.add(numLabels);
+        inputArguments.add(lockedWords);
         inputArguments.add(inferenceVector);
 
         // couple of options
-        iArguments.add((long) 0);
+        iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
 
-        bArguments.add(true);
+
+        bArguments.add(trainWords);
         bArguments.add(!inferenceVector.isEmpty());
 
         // this op is always inplace

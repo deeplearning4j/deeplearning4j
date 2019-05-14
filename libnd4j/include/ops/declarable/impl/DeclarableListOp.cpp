@@ -52,9 +52,7 @@ namespace nd4j {
             // TODO: ensure this method isn't ever called
 
             std::vector<Nd4jLong> shape({1, 1});
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-            shape::shapeBuffer(2, block.dataType(), shape.data(), newShape);
+            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape, block.getWorkspace());            
 
             return SHAPELIST(newShape);
         }

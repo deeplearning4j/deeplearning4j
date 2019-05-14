@@ -166,7 +166,7 @@ namespace nd4j {
             int w_l = tid % warpSize;//thread index within a warp
             int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
 
-            int b   = __ballot(pred) & t_m; //balres = number whose ith bit isone if the ith's thread pred is true masked up to the current index in warp
+            int b   = __ballot_sync(t_m, pred); //balres = number whose ith bit isone if the ith's thread pred is true masked up to the current index in warp
             int t_u = __popc(b); // popc count the number of bit one. simply count the number predicated true BEFORE MY INDEX
 
             if(w_l==warpSize-1){
@@ -177,8 +177,8 @@ namespace nd4j {
             if(w_i==0 && w_l<blockDim.x/warpSize){
                 int w_i_u=0;
                 for(int j=0;j<=5;j++){
-                    int b_j =__ballot( warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
-                    w_i_u += (__popc(b_j & t_m)  ) << j;
+                    int b_j =__ballot_sync( t_m, warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
+                    w_i_u += (__popc(b_j)  << j);
                     //printf("indice %i t_m=%i,j=%i,b_j=%i,w_i_u=%i\n",w_l,t_m,j,b_j,w_i_u);
                 }
                 warpTotals[w_l]=w_i_u;
@@ -242,6 +242,7 @@ namespace nd4j {
         auto dx = reinterpret_cast<T *>(vdx);
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+        T off(0.0f);
         __shared__ int counter;
         __shared__ int *shmem;
         __shared__ T *vals;
@@ -253,9 +254,12 @@ namespace nd4j {
         }
         __syncthreads();
 
-        for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
+        Nd4jLong loopRemainder = N % (blockDim.x * gridDim.x);
+        Nd4jLong loopLimit = N + (blockDim.x * gridDim.x - loopRemainder);
+
+        for (Nd4jLong i = tid; i < loopLimit; i += blockDim.x * gridDim.x) {
             // all threads in block reading stuff
-            T val = dx[i];
+            T val = i < N ? dx[i] : off;
             T abs = nd4j::math::nd4j_abs<T>(val);
 
             int byteId = i / 16 + 4;
@@ -264,7 +268,7 @@ namespace nd4j {
             shmem[threadIdx.x] = 0;
             vals[threadIdx.x] = val;
 
-            if (abs >= static_cast<T>(threshold)) {
+            if (abs >= static_cast<T>(threshold) && i < N) {
                 shmem[threadIdx.x] = 1 << (bitId);
                 atomicAdd(&counter, 1);
                 if (val < static_cast<T>(0.0f)) {
@@ -273,7 +277,7 @@ namespace nd4j {
                 } else {
                     vals[threadIdx.x] -= static_cast<T>(threshold);
                 }
-            } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f)) {
+            } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f) && i < N) {
                 atomicAdd(&counter, 1);
                 shmem[threadIdx.x] = 1 << (bitId + 16);
 
@@ -281,7 +285,7 @@ namespace nd4j {
             }
             __syncthreads();
 
-            if (threadIdx.x % 16 == 0) {
+            if (threadIdx.x % 16 == 0 && i < N) {
                 int byte = 0;
                 for (int e = 0; e < 16; e++) {
                     if (i + e >= N)
@@ -293,7 +297,8 @@ namespace nd4j {
             }
             __syncthreads();
 
-            dx[i] = vals[threadIdx.x];
+            if (i < N)
+                dx[i] = vals[threadIdx.x];
         }
         __syncthreads();
 

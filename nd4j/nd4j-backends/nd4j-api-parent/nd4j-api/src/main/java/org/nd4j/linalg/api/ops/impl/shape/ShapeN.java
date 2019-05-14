@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -40,6 +41,8 @@ import java.util.Map;
  * @author Alex Black
  */
 public class ShapeN extends DynamicCustomOp {
+
+    protected DataType dataType;
 
     public ShapeN() {}
 
@@ -78,13 +81,19 @@ public class ShapeN extends DynamicCustomOp {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        dataType = TFGraphMapper.convertType(nodeDef.getAttrOrThrow("out_type").getType());
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Output type is always long (i.e., shape of array) - for each input
         //TODO TF allows customizing int or long
         int n = getNumOutputs();
         List<DataType> outputTypes = new ArrayList<>(n);
         for(int i=0; i<n; i++ ){
-            outputTypes.add(DataType.LONG);
+            outputTypes.add(dataType == null ? DataType.LONG : dataType);
         }
         return outputTypes;
     }

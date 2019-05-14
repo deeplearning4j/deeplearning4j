@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +68,9 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             SDVariable b1 = sd.zero("b1", DataType.FLOAT, 1, 3);
 
             SDVariable z0 = in.mmul(w0).add(b0);
-            SDVariable a0 = sd.tanh(z0);
+            SDVariable a0 = sd.math().tanh(z0);
             SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.softmax(z1);
+            SDVariable a1 = sd.nn().softmax(z1);
 
             SDVariable diff = sd.f().squaredDifference(a1, label);
             SDVariable lossMse = diff.mul(diff).mean();

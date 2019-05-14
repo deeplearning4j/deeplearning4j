@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include<ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <NDArrayFactory.h>
@@ -206,17 +207,17 @@ void ConvolutionUtils::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD
 template <typename T>
 static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -239,7 +240,7 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
 
 if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, vol, volDep, volRow, volCol)
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
     for (int b = 0; b < bS; b++) {
         for (int c = 0; c < iC; ++c) {        
             for (int kDep = 0; kDep < kD; ++kDep) { 
@@ -269,9 +270,9 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
         }
     }  
 
-else 
+else
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(vol, col, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
     for (int b = 0; b < bS; b++) {
         for (int colD = 0; colD < oD; ++colD) {
             for (int colH = 0; colH < oH; ++colH) {
@@ -307,17 +308,17 @@ else
 template <typename T>
 static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const Nd4jLong bS = volume.sizeAt(0);
-    const Nd4jLong iC = volume.sizeAt(1);
-    const Nd4jLong iD = volume.sizeAt(2);
-    const Nd4jLong iH = volume.sizeAt(3);
-    const Nd4jLong iW = volume.sizeAt(4);
-    const Nd4jLong kD = columns.sizeAt(2);
-    const Nd4jLong kH = columns.sizeAt(3);
-    const Nd4jLong kW = columns.sizeAt(4);
-    const Nd4jLong oD = columns.sizeAt(5);
-    const Nd4jLong oH = columns.sizeAt(6);
-    const Nd4jLong oW = columns.sizeAt(7);
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -336,26 +337,14 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, cons
     T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
     // initial zeroing of volume content
-    const Nd4jLong volEWS = volume.ews();
-    const auto volLen = volume.lengthOf();
-    if(volEWS == 1)
-        memset(volBuff, 0, volLen * sizeof(T));
-    else if(volEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (Nd4jLong i = 0; i < volLen * volEWS; i += volEWS)
-            volBuff[i] = static_cast<T>(0.f);
-    }
-    else {        
-        for (Nd4jLong i = 0; i < volLen; i++)
-            volBuff[shape::getIndexOffset(i, volume.getShapeInfo(), volLen)] = static_cast<T>(0.f);
-    }
+    memset(volBuff, 0, volume.lengthOf() * sizeof(T));
 
     T* col, *vol;
     int volDep, volRow, volCol;
 
-if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) 
+if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, vol, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
     for (int b = 0; b < bS; b++) {        
         for (int c = 0; c < iC; ++c) {        
             for (int kDep = 0; kDep < kD; ++kDep) { 
@@ -383,9 +372,9 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
         }
     }  
 
-else 
+else
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(vol, col, volDep, volRow, volCol)    
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
     for (int b = 0; b < bS; b++) {
         for (int colD = 0; colD < oD; ++colD) {
             for (int colH = 0; colH < oH; ++colH) {
@@ -424,6 +413,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv2d(
         const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
         mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
         mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
+        mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
         mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
     mkldnn::memory::dims conv_src_tz = { bS, iC, iH, iW };
     mkldnn::memory::dims conv_weights_tz = { oC, iC, kH, kW };
@@ -440,52 +431,58 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv2d(
     auto formatw = mkldnn::memory::format::hwio;
 
     if (src != nullptr && conv_src_md != nullptr) {
-        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        conv_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        conv_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
-        conv_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
-        conv_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
-        conv_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
+        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
+        *user_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
+        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
     }
 
     if (diff_src != nullptr && conv_diff_src_md != nullptr) {
-        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        conv_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
+        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
+        *user_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
     }
 
     if (weights != nullptr && conv_weights_md != nullptr) {
-        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        conv_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
-        conv_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[3];
-        conv_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[2];
-        conv_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
-        conv_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
+        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
+        *user_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        user_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
+        user_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[3];
+        user_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[2];
+        user_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
+        user_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
     }
 
     if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
-        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        conv_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[3];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[2];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
+        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
+        *user_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        user_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[3];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[2];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
     }
 
     if (bias != nullptr && conv_bias_md != nullptr) {
-        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
+        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::any);
+        *user_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
     }
 
     if (dst != nullptr && conv_dst_md != nullptr) {
-        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
-        conv_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        conv_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
-        conv_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
-        conv_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
-        conv_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
+        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, mkldnn::memory::format::any);
+        *user_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
     }
 }
 
@@ -495,6 +492,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
         const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
         mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
         mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
+        mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
         mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
     mkldnn::memory::dims conv_src_tz = { bS, iC, iD, iH, iW };
     mkldnn::memory::dims conv_weights_tz = { oC, iC, kD, kH, kW };
@@ -512,57 +511,63 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
     auto formatw = mkldnn::memory::format::dhwio;
 
     if (src != nullptr && conv_src_md != nullptr) {
-        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        conv_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        conv_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
-        conv_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
-        conv_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
-        conv_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
-        conv_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
+        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
+        *user_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
+        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
+        user_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
     if (diff_src != nullptr && conv_diff_src_md != nullptr) {
-        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        conv_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
-        conv_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
+        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
+        *user_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
     if (weights != nullptr && conv_weights_md != nullptr) {
-        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        conv_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
-        conv_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[4];
-        conv_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[3];
-        conv_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
-        conv_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
-        conv_weights_md->data.layout_desc.blocking.strides[0][4] = weights->stridesOf()[2];
+        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
+        *user_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        user_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
+        user_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[4];
+        user_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[3];
+        user_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
+        user_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
+        user_weights_md->data.layout_desc.blocking.strides[0][4] = weights->stridesOf()[2];
     }
 
     if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
-        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        conv_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[4];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[3];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
-        conv_diff_weights_md->data.layout_desc.blocking.strides[0][4] = diff_weights->stridesOf()[2];
+        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
+        *user_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        user_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[4];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[3];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
+        user_diff_weights_md->data.layout_desc.blocking.strides[0][4] = diff_weights->stridesOf()[2];
     }
 
     if (bias != nullptr && conv_bias_md != nullptr) {
-        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
+        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::any);
+        *user_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
     }
 
     if (dst != nullptr && conv_dst_md != nullptr) {
-        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
-        conv_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        conv_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
-        conv_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
-        conv_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
-        conv_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
-        conv_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
+        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, mkldnn::memory::format::any);
+        *user_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
+        user_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
     }
 }
 #endif
@@ -604,11 +609,13 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
         if (streams[0].checkAndReset({input, weights, bias}, {output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW})) {
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
             mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
 
             ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                     bS, iC, iH, iW, oC, oH, oW, input, nullptr, weights, nullptr, bias, output,
                     &conv_src_md, nullptr, &conv_weights_md, nullptr, &conv_bias_md, &conv_dst_md,
+                    &user_src_md, nullptr, &user_weights_md, nullptr, &user_bias_md, &user_dst_md,
                     conv_strides, conv_padding, conv_padding_r);
 
             auto conv_desc = bias != nullptr
@@ -619,17 +626,49 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
                             convolution_direct, conv_src_md, conv_weights_md,
                             conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
 
-            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
-            auto conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc(), const_cast<NDArray*>(input)->buffer());
-            auto conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc(), const_cast<NDArray*>(weights)->buffer());
-            auto conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc(), output->buffer());
+            auto engine = streams[0].getEngine();
+            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray*>(input)->buffer());
+            auto user_weights_memory = mkldnn::memory({user_weights_md, engine}, const_cast<NDArray*>(weights)->buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
+
+            auto conv_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(conv_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc());
+                streams[0].addMemory(conv_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, conv_src_memory));
+            }
+
+            auto conv_weights_memory = user_weights_memory;
+            streams[0].addMemory(user_weights_memory);
+            if (mkldnn::memory::primitive_desc(conv_prim_desc.weights_primitive_desc())
+                    != user_weights_memory.get_primitive_desc()) {
+                conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc());
+                streams[0].addMemory(conv_weights_memory);
+                streams[0].addOperation(reorder(user_weights_memory, conv_weights_memory));
+            }
+
+            auto conv_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(conv_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(conv_dst_memory);
+            }
+
             if (bias != nullptr) {
                 auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), const_cast<NDArray*>(bias)->buffer());
-                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory});
-                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
+                streams[0].addMemory(conv_bias_memory);
+                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
             } else {
-                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_dst_memory});
-                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+            }
+
+            if (mkldnn::memory::primitive_desc(conv_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(conv_dst_memory, user_dst_memory));
             }
         }
 
@@ -643,21 +682,34 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     if(!isNCHW)
         input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
     else
-        permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+        permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getWorkspace());
+    NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}    
+    NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getWorkspace());
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, {indWiC, indWkH, indWkH+1}, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    helpers::im2col(ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+    MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
+
+    //----- assign outTemp to output  -----//
+    if(isNCHW) {
+        mmulResult.reshapei({bS, oH, oW, oC});
+        mmulResult.permutei(permutForOutput);
+    }
+    output->assign(mmulResult);
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(*output, *bias, isNCHW);
 
     if(!isNCHW)
         delete input;
+
+    delete colP;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -705,11 +757,14 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty),
                                  conv_diff_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_weights_md(empty),
+                                 user_diff_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
             mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
 
             ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                     bS, iC, iH, iW, oC, oH, oW, input, gradI, weights, gradW, gradB, gradO,
                     &conv_src_md, &conv_diff_src_md, &conv_weights_md, &conv_diff_weights_md, &conv_bias_md, &conv_dst_md,
+                    &user_src_md, &user_diff_src_md, &user_weights_md, &user_diff_weights_md, &user_bias_md, &user_dst_md,
                     conv_strides, conv_padding, conv_padding_r);
 
             auto conv_desc = gradB != nullptr
@@ -731,17 +786,49 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
                                 convolution_direct, conv_src_md, conv_diff_weights_md,
                                 conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
 
-                auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, streams[0].getEngine(), conv_prim_desc);
-                auto convW_src_memory = mkldnn::memory(convW_prim_desc.src_primitive_desc(), const_cast<NDArray*>(input)->buffer());
-                auto convW_weights_memory = mkldnn::memory(convW_prim_desc.diff_weights_primitive_desc(), gradW->buffer());
-                auto convW_dst_memory = mkldnn::memory(convW_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray*>(gradO)->buffer());
+                auto engine = streams[0].getEngine();
+                auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, engine, conv_prim_desc);
+                auto userW_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray*>(input)->buffer());
+                auto userW_weights_memory = mkldnn::memory({user_diff_weights_md, engine}, gradW->buffer());
+                auto userW_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray*>(gradO)->buffer());
+
+                auto convW_src_memory = userW_src_memory;
+                streams[0].addMemory(userW_src_memory);
+                if (mkldnn::memory::primitive_desc(convW_prim_desc.src_primitive_desc())
+                        != userW_src_memory.get_primitive_desc()) {
+                    convW_src_memory = mkldnn::memory(convW_prim_desc.src_primitive_desc());
+                    streams[0].addMemory(convW_src_memory);
+                    streams[0].addOperation(reorder(userW_src_memory, convW_src_memory));
+                }
+
+                auto convW_weights_memory = userW_weights_memory;
+                streams[0].addMemory(userW_weights_memory);
+                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_weights_primitive_desc())
+                        != userW_weights_memory.get_primitive_desc()) {
+                    convW_weights_memory = mkldnn::memory(convW_prim_desc.diff_weights_primitive_desc());
+                    streams[0].addMemory(convW_weights_memory);
+                }
+
+                auto convW_dst_memory = userW_dst_memory;
+                streams[0].addMemory(userW_dst_memory);
+                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_dst_primitive_desc())
+                        != userW_dst_memory.get_primitive_desc()) {
+                    convW_dst_memory = mkldnn::memory(convW_prim_desc.diff_dst_primitive_desc());
+                    streams[0].addMemory(convW_dst_memory);
+                    streams[0].addOperation(reorder(userW_dst_memory, convW_dst_memory));
+                }
+
                 if (gradB != nullptr) {
                     auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_primitive_desc(), gradB->buffer());
-                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory});
-                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
+                    streams[0].addMemory(convW_bias_memory);
+                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
                 } else {
-                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory});
-                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
+                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
+                }
+
+                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_weights_primitive_desc())
+                        != userW_weights_memory.get_primitive_desc()) {
+                    streams[0].addOperation(reorder(convW_weights_memory, userW_weights_memory));
                 }
             }
 
@@ -751,12 +838,44 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
                                 convolution_direct, conv_diff_src_md, conv_weights_md,
                                 conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
 
-                auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, streams[1].getEngine(), conv_prim_desc);
-                auto convI_src_memory = mkldnn::memory(convI_prim_desc.diff_src_primitive_desc(), gradI->buffer());
-                auto convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc(), const_cast<NDArray*>(weights)->buffer());
-                auto convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray*>(gradO)->buffer());
-                streams[1].setMemory({convI_dst_memory, convI_weights_memory, convI_src_memory});
-                streams[1].setOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
+                auto engine = streams[1].getEngine();
+                auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, engine, conv_prim_desc);
+                auto userI_src_memory = mkldnn::memory({user_diff_src_md, engine}, gradI->buffer());
+                auto userI_weights_memory = mkldnn::memory({user_weights_md, engine}, const_cast<NDArray*>(weights)->buffer());
+                auto userI_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray*>(gradO)->buffer());
+
+                auto convI_src_memory = userI_src_memory;
+                streams[1].addMemory(userI_src_memory);
+                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_src_primitive_desc())
+                        != userI_src_memory.get_primitive_desc()) {
+                    convI_src_memory = mkldnn::memory(convI_prim_desc.diff_src_primitive_desc());
+                    streams[1].addMemory(convI_src_memory);
+                }
+
+                auto convI_weights_memory = userI_weights_memory;
+                streams[1].addMemory(userI_weights_memory);
+                if (mkldnn::memory::primitive_desc(convI_prim_desc.weights_primitive_desc())
+                        != userI_weights_memory.get_primitive_desc()) {
+                    convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc());
+                    streams[1].addMemory(convI_weights_memory);
+                    streams[1].addOperation(reorder(userI_weights_memory, convI_weights_memory));
+                }
+
+                auto convI_dst_memory = userI_dst_memory;
+                streams[1].addMemory(userI_dst_memory);
+                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_dst_primitive_desc())
+                        != userI_dst_memory.get_primitive_desc()) {
+                    convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc());
+                    streams[1].addMemory(convI_dst_memory);
+                    streams[1].addOperation(reorder(userI_dst_memory, convI_dst_memory));
+                }
+
+                streams[1].addOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
+
+                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_src_primitive_desc())
+                        != userI_src_memory.get_primitive_desc()) {
+                    streams[1].addOperation(reorder(convI_src_memory, userI_src_memory));
+                }
             }
         }
 
@@ -1002,13 +1121,15 @@ static void upsampling2d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
     // const int size1 = factorH * factorW;
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
-    for(int ih = 0; ih < input.sizeAt(dimIH); ++ih) {
-        for(int iw = 0; iw < input.sizeAt(dimIH+1); ++iw) {
+    int iT = input.sizeAt(dimIH);
+    int iH = input.sizeAt(dimIH + 1);
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
+    for(int ih = 0; ih < iT; ++ih) {
+        for(int iw = 0; iw < iH; ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
 
-// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
             for(int fh = 0; fh < factorH; ++fh) {
                 for(int fw = 0; fw < factorW; ++fw) {
                     
@@ -1036,15 +1157,18 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
     const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
     // const int size1 = factorD * factorH * factorW;
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
-    for(int id = 0; id < input.sizeAt(dimID); ++id) {
-        for(int ih = 0; ih < input.sizeAt(dimID+1); ++ih) {
-            for(int iw = 0; iw < input.sizeAt(dimID+2); ++iw) {
+    int l0 = input.sizeAt(dimID);
+    int l1 = input.sizeAt(dimID + 1);
+    int l2 = input.sizeAt(dimID + 2);
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
+    for(int id = 0; id < l0; ++id) {
+        for(int ih = 0; ih < l1; ++ih) {
+            for(int iw = 0; iw < l2; ++iw) {
                 indIn[j0] = id; indIn[j1] = id+1;
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;
 
-// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
             for(int fd = 0; fd < factorD; ++fd) {
                 for(int fh = 0; fh < factorH; ++fh) {
                     for(int fw = 0; fw < factorW; ++fw) {
@@ -1076,9 +1200,12 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
     const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
-    for(int ih = 0; ih < gradI.sizeAt(dimIH); ++ih) {
-        for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
+    int l0 = gradI.sizeAt(dimIH);
+    int l1 = gradI.sizeAt(dimIH + 1);
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
+    for(int ih = 0; ih < l0; ++ih) {
+        for(int iw = 0; iw < l1; ++iw) {
             indIn[j0] = ih; indIn[j1] = ih+1; 
             indIn[j2] = iw; indIn[j3] = iw+1; 
             NDArray subGradI = gradI(indIn);
@@ -1114,10 +1241,14 @@ static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
     const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
     const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
 
-#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3) firstprivate(indOut, indIn) 
-    for(int id = 0; id < gradI.sizeAt(dimID); ++id) {
-        for(int ih = 0; ih < gradI.sizeAt(dimID+1); ++ih) {
-            for(int iw = 0; iw < gradI.sizeAt(dimID+2); ++iw) {
+    int l0 = gradI.sizeAt(dimID);
+    int l1 = gradI.sizeAt(dimID + 1);
+    int l2 = gradI.sizeAt(dimID + 2);
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(3) firstprivate(indOut, indIn))
+    for(int id = 0; id < l0; ++id) {
+        for(int ih = 0; ih < l1; ++ih) {
+            for(int iw = 0; iw < l2; ++iw) {
                 indIn[j0] = id; indIn[j1] = id+1;
                 indIn[j2] = ih; indIn[j3] = ih+1;
                 indIn[j4] = iw; indIn[j5] = iw+1;
@@ -1149,8 +1280,9 @@ using namespace mkldnn;
 void ConvolutionUtils::getMKLDNNMemoryDescPool2d(
         int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, int poolingMode, int extraParam0, bool isNCHW,
         int bS, int iC, int iH, int iW, int oC, int oH, int oW,
-        const NDArray* src, const NDArray* diff_src, const NDArray* dst,
-        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md, mkldnn::algorithm& algorithm,
+        const NDArray* src, const NDArray* diff_src, const NDArray* dst, mkldnn::algorithm& algorithm,
+        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md,
         mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
     mkldnn::memory::dims pool_src_tz = { bS, iC, iH, iW };
     mkldnn::memory::dims pool_dst_tz = { bS, oC, oH, oW };
@@ -1166,40 +1298,45 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool2d(
                                                     : pooling_avg_include_padding;
     auto type = mkldnn::memory::data_type::f32;
     auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
+    auto supposed_to_be_any_format = mkldnn::memory::format::nChw8c; // doesn't work with "any"
 
     if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
-        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        pool_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        pool_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
-        pool_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
-        pool_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
-        pool_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
+        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
+        *user_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
+        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
     }
 
     if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
-        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        pool_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
+        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
+        *user_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
     }
 
     if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
-        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
-        pool_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        pool_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
-        pool_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
-        pool_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
-        pool_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
+        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
+        *user_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
     }
 }
 
 void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
         int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, int poolingMode, int extraParam0, bool isNCDHW,
         int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW,
-        const NDArray* src, const NDArray* diff_src, const NDArray* dst,
-        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md, mkldnn::algorithm& algorithm,
+        const NDArray* src, const NDArray* diff_src, const NDArray* dst, mkldnn::algorithm& algorithm,
+        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md,
+        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md,
         mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
     mkldnn::memory::dims pool_src_tz = { bS, iC, iD, iH, iW };
     mkldnn::memory::dims pool_dst_tz = { bS, oC, oD, oH, oW };
@@ -1216,35 +1353,39 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                                                     : pooling_avg_include_padding;
     auto type = mkldnn::memory::data_type::f32;
     auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
+    auto supposed_to_be_any_format = mkldnn::memory::format::nCdhw8c; // doesn't work with "any"
 
     if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
-        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        pool_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        pool_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
-        pool_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
-        pool_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
-        pool_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
-        pool_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
+        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
+        *user_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
+        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
+        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
+        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
+        user_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
     if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
-        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        pool_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
-        pool_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
+        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
+        *user_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
+        user_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
     if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
-        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
-        pool_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        pool_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
-        pool_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
-        pool_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
-        pool_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
-        pool_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
+        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
+        *user_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
+        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
+        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
+        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
+        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
+        user_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
     }
 }
 #endif
@@ -1260,13 +1401,13 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iH = input.sizeAt(2);
-    const Nd4jLong iW = input.sizeAt(3);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oH = output.sizeAt(2);
-    const Nd4jLong oW = output.sizeAt(3);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iH = input.sizeAt(2);
+    const int iW = input.sizeAt(3);
+    const int oC = output.sizeAt(1);
+    const int oH = output.sizeAt(2);
+    const int oW = output.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1278,22 +1419,46 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
         if (streams[0].checkAndReset({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_dst_md(empty);
             mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
             mkldnn::algorithm algorithm;
 
             ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iH, iW, oC, oH, oW, &input, nullptr, &output,
-                    &pool_src_md, nullptr, &pool_dst_md, algorithm,
+                    bS, iC, iH, iW, oC, oH, oW, &input, nullptr, &output, algorithm,
+                    &pool_src_md, nullptr, &pool_dst_md, &user_src_md, nullptr, &user_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
             auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
-            auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
-            auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc(), output.buffer());
-            streams[0].setMemory({pool_src_memory, pool_dst_memory});
-            streams[0].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+            auto engine = streams[0].getEngine();
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output.buffer());
+
+            auto pool_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
+                streams[0].addMemory(pool_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
+            }
+
+            auto pool_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(pool_dst_memory);
+            }
+
+            streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(pool_dst_memory, user_dst_memory));
+            }
         }
 
         streams[0].submitAndWait();
@@ -1313,13 +1478,13 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;    
-    const Nd4jLong kProd   = kH*kW;
+    const int kProd         = kH*kW;
 
     Nd4jLong hstart, wstart, hend, wend;
-    T sum, *pIn;
+    T *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1346,15 +1511,15 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = -DataTypeUtils::max<T>();
-                                                                    
+                        T max = -DataTypeUtils::max<T>();
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T val = pIn[kh + kw];
-                                    if (val > sum)
-                                        sum = val;
+                                    if (val > max)
+                                        max = val;
                             }
-                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = max;
                     }
                 }
             }
@@ -1362,7 +1527,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-// #pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1389,27 +1554,22 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                            
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                        T sum = static_cast<T>(0.f);
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
+
 
                         auto oi = b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3;
 
                         if (extraParam0 == 0) {       //Exclude padding
-                            //auto _v = static_cast<float>(hend - hstart) / static_cast<float>(iStep2);
-                            //auto _a = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(_v));
-                            //auto _b = static_cast<T>(nd4j::math::nd4j_ceil<float, T>(static_cast<float>(wend - wstart) / static_cast<float>(iStep3)));
-
-                            auto _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
-                            auto _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
+                            int _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
+                            int _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
 
                             sum /=  _a * _b;   //Accounts for dilation
-
                         } else if (extraParam0 == 1)  //Include padding
                             sum /= kProd;
-
                 
                         out[oi] = sum;
                     }
@@ -1419,7 +1579,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }    
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1446,8 +1606,8 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.f);
-                                                                    
+                        T sum = static_cast<T>(0.f);
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
@@ -1478,15 +1638,15 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = input.sizeAt(0);
-    const Nd4jLong iC = input.sizeAt(1);
-    const Nd4jLong iD = input.sizeAt(2);
-    const Nd4jLong iH = input.sizeAt(3);
-    const Nd4jLong iW = input.sizeAt(4);
-    const Nd4jLong oC = output.sizeAt(1);
-    const Nd4jLong oD = output.sizeAt(2);
-    const Nd4jLong oH = output.sizeAt(3);
-    const Nd4jLong oW = output.sizeAt(4);
+    const int bS = input.sizeAt(0);
+    const int iC = input.sizeAt(1);
+    const int iD = input.sizeAt(2);
+    const int iH = input.sizeAt(3);
+    const int iW = input.sizeAt(4);
+    const int oC = output.sizeAt(1);
+    const int oD = output.sizeAt(2);
+    const int oH = output.sizeAt(3);
+    const int oW = output.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1498,22 +1658,46 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
         if (streams[0].checkAndReset({&input}, {&output}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_dst_md(empty);
             mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
             mkldnn::algorithm algorithm;
 
             ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, nullptr, &output,
-                    &pool_src_md, nullptr, &pool_dst_md, algorithm,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, nullptr, &output, algorithm,
+                    &pool_src_md, nullptr, &pool_dst_md, &user_src_md, nullptr, &user_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
             auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
-            auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
-            auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc(), output.buffer());
-            streams[0].setMemory({pool_src_memory, pool_dst_memory});
-            streams[0].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+            auto engine = streams[0].getEngine();
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
+            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
+            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output.buffer());
+
+            auto pool_src_memory = user_src_memory;
+            streams[0].addMemory(user_src_memory);
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
+                    != user_src_memory.get_primitive_desc()) {
+                pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
+                streams[0].addMemory(pool_src_memory);
+                streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
+            }
+
+            auto pool_dst_memory = user_dst_memory;
+            streams[0].addMemory(user_dst_memory);
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(pool_dst_memory);
+            }
+
+            streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+
+            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
+                    != user_dst_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(pool_dst_memory, user_dst_memory));
+            }
         }
 
         streams[0].submitAndWait();
@@ -1535,7 +1719,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int kProd         = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -1544,7 +1728,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     T sum, *pIn;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -1598,7 +1782,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -1655,7 +1839,7 @@ static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArra
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, sum, dstart, hstart, wstart, dend, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -1734,8 +1918,8 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {        
-#pragma omp parallel for schedule(static) proc_bind(close)
+    else {
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (Nd4jLong i = 0; i < gradILen; i++) 
             gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }
@@ -1743,13 +1927,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iH = gradI.sizeAt(2);
-    const Nd4jLong iW = gradI.sizeAt(3);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oH = gradO.sizeAt(2);
-    const Nd4jLong oW = gradO.sizeAt(3);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iH = gradI.sizeAt(2);
+    const int iW = gradI.sizeAt(3);
+    const int oC = gradO.sizeAt(1);
+    const int oH = gradO.sizeAt(2);
+    const int oW = gradO.sizeAt(3);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -1761,12 +1945,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
             mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
             mkldnn::algorithm algorithm;
 
             ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iH, iW, oC, oH, oW, &input, &gradI, &gradO,
-                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
+                    bS, iC, iH, iW, oC, oH, oW, &input, &gradI, &gradO, algorithm,
+                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
             // input is sometimes null, so we can't rely on pool_src_md being valid
@@ -1774,35 +1959,63 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                     const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
                     pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+            auto engine = streams[0].getEngine();
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
 
             auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, streams[0].getEngine(), pool_prim_desc);
-            auto poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc(), gradI.buffer());
-            auto poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray&>(gradO).buffer());
-            if (algorithm == mkldnn::pooling_max) {
-                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
-                if (streams.size() < 2) {
-                    streams.push_back(MKLDNNStream("pooling2d"));
-                }
-                auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
-                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[1].setMemory({pool_src_memory, pool_dst_memory});
-                streams[1].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
+            auto userB_src_memory = mkldnn::memory({user_src_md, engine}, gradI.buffer());
+            auto userB_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray&>(gradO).buffer());
 
-                streams[0].setMemory({poolB_dst_memory, pool_workspace_memory, poolB_src_memory});
-                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
+            auto poolB_src_memory = userB_src_memory;
+            streams[0].addMemory(userB_src_memory);
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
+                    != userB_src_memory.get_primitive_desc()) {
+                poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc());
+                streams[0].addMemory(poolB_src_memory);
+            }
+
+            auto poolB_dst_memory = userB_dst_memory;
+            streams[0].addMemory(userB_dst_memory);
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_dst_primitive_desc())
+                    != userB_dst_memory.get_primitive_desc()) {
+                poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc());
+                streams[0].addMemory(poolB_dst_memory);
+                streams[0].addOperation(reorder(userB_dst_memory, poolB_dst_memory));
+            }
+
+            if (algorithm == mkldnn::pooling_max) {
+                auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
+
+                auto pool_src_memory = user_src_memory;
+                streams[0].addMemory(user_src_memory);
+                if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
+                        != user_src_memory.get_primitive_desc()) {
+                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
+                    streams[0].addMemory(pool_src_memory);
+                    streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
+                }
+
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(pool_dst_memory);
+
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
+                streams[0].addMemory(pool_workspace_memory);
+
+                streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
             } else {
-                streams[0].setMemory({poolB_dst_memory, poolB_src_memory});
-                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+            }
+
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
+                    != userB_src_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
             }
         }
 
-        if (streams.size() > 1) {
-            streams[1].submitAndWait();
-        }
         streams[0].submitAndWait();
         return;
     }
@@ -1819,7 +2032,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong oStride3 = gradO.stridesOf()[3];
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;
-    const Nd4jLong kProd    = kH*kW;
+    const int      kProd    = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
@@ -1827,7 +2040,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     T sum, valO, *pIn, *pgI;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1841,13 +2054,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -1856,7 +2069,11 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
 
                         sum = -DataTypeUtils::max<T>();
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
-                                                    
+
+                        // we set these to default values
+                        maxKH = hstart;
+                        maxKW = wstart;
+
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T valIn = pIn[kh + kw];
@@ -1874,7 +2091,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg        
-#pragma omp parallel for schedule(guided) private(pgI, valO, hstart, wstart, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, hstart, wstart, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1888,13 +2105,13 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -1918,7 +2135,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, valO, pgI, sum, hstart, wstart, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, pgI, sum, hstart, wstart, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int oh = 0; oh < oH; ++oh) {
@@ -1933,13 +2150,14 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                            hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                            wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                            hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                            wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -1987,12 +2205,12 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         memset(gI, 0, gradILen * sizeof(T));
     }
     else if (gradIEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gI[i] = static_cast<T>(0.f);
     }
-    else {        
-#pragma omp parallel for schedule(static) proc_bind(close)
+    else {
+        PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong i = 0; i < gradILen; i++)             
             gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);        
     }
@@ -2001,15 +2219,15 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const int kHEff = kH + (kH-1)*(dH-1);
     const int kWEff = kW + (kW-1)*(dW-1);
 
-    const Nd4jLong bS = gradI.sizeAt(0);
-    const Nd4jLong iC = gradI.sizeAt(1);
-    const Nd4jLong iD = gradI.sizeAt(2);
-    const Nd4jLong iH = gradI.sizeAt(3);
-    const Nd4jLong iW = gradI.sizeAt(4);
-    const Nd4jLong oC = gradO.sizeAt(1);
-    const Nd4jLong oD = gradO.sizeAt(2);
-    const Nd4jLong oH = gradO.sizeAt(3);
-    const Nd4jLong oW = gradO.sizeAt(4);
+    const int bS = gradI.sizeAt(0);
+    const int iC = gradI.sizeAt(1);
+    const int iD = gradI.sizeAt(2);
+    const int iH = gradI.sizeAt(3);
+    const int iW = gradI.sizeAt(4);
+    const int oC = gradO.sizeAt(1);
+    const int oD = gradO.sizeAt(2);
+    const int oH = gradO.sizeAt(3);
+    const int oW = gradO.sizeAt(4);
 
 #ifdef HAVE_MKLDNN
     if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
@@ -2021,48 +2239,80 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
         if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
             mkldnn_memory_desc_t empty;
             mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
             mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
             mkldnn::algorithm algorithm;
 
             ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, &gradI, &gradO,
-                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, &gradI, &gradO, algorithm,
+                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
             // input is sometimes null, so we can't rely on pool_src_md being valid
-            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
-                    const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
+            if (const_cast<NDArray&>(input).buffer() == nullptr) {
+                pool_src_md = pool_diff_src_md;
+                user_src_md = user_diff_src_md;
+            }
+            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm, pool_src_md,
                     pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+            auto engine = streams[0].getEngine();
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
 
             auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
 
-            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, streams[0].getEngine(), pool_prim_desc);
-            auto poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc(), gradI.buffer());
-            auto poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray&>(gradO).buffer());
-            if (algorithm == mkldnn::pooling_max) {
-                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
-                if (streams.size() < 2) {
-                    streams.push_back(MKLDNNStream("pooling3d"));
-                }
-                auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
-                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[1].setMemory({pool_src_memory, pool_dst_memory});
-                streams[1].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
+            auto userB_src_memory = mkldnn::memory({user_diff_src_md, engine}, gradI.buffer());
+            auto userB_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray&>(gradO).buffer());
 
-                streams[0].setMemory({poolB_dst_memory, pool_workspace_memory, poolB_src_memory});
-                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
+            auto poolB_src_memory = userB_src_memory;
+            streams[0].addMemory(userB_src_memory);
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
+                    != userB_src_memory.get_primitive_desc()) {
+                poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc());
+                streams[0].addMemory(poolB_src_memory);
+            }
+
+            auto poolB_dst_memory = userB_dst_memory;
+            streams[0].addMemory(userB_dst_memory);
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_dst_primitive_desc())
+                    != userB_dst_memory.get_primitive_desc()) {
+                poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc());
+                streams[0].addMemory(poolB_dst_memory);
+                streams[0].addOperation(reorder(userB_dst_memory, poolB_dst_memory));
+            }
+
+            if (algorithm == mkldnn::pooling_max) {
+                auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
+
+                auto pool_src_memory = user_src_memory;
+                streams[0].addMemory(user_src_memory);
+                if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
+                        != user_src_memory.get_primitive_desc()) {
+                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
+                    streams[0].addMemory(pool_src_memory);
+                    streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
+                }
+
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[0].addMemory(pool_dst_memory);
+
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
+                streams[0].addMemory(pool_workspace_memory);
+
+                streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
             } else {
-                streams[0].setMemory({poolB_dst_memory, poolB_src_memory});
-                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+            }
+
+            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
+                    != userB_src_memory.get_primitive_desc()) {
+                streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
             }
         }
 
-        if (streams.size() > 1) {
-            streams[1].submitAndWait();
-        }
         streams[0].submitAndWait();
         return;
     }
@@ -2082,7 +2332,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const Nd4jLong kProd    = kD*kH*kW;
+    const int      kProd    = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -2091,7 +2341,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     T sum, valO, *pIn, *pgI;
 
     if(poolingMode == 0) {        // max 
-#pragma omp parallel for schedule(guided) private(pIn, valO, sum, dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW)
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2108,17 +2358,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;
@@ -2126,6 +2376,10 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             hend   *= iStride3;
                             wstart *= iStride4;
                             wend   *= iStride4;
+
+                            maxKD = dstart;
+                            maxKH = hstart;
+                            maxKW = wstart;
 
                             sum = -DataTypeUtils::max<T>();
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
@@ -2150,7 +2404,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }  
 /*************************************************************************/    
     else if(poolingMode == 1) {     // avg        
-#pragma omp parallel for schedule(guided) private(pgI, valO, dstart, hstart, wstart, dend, hend, wend)        
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2167,17 +2421,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;
@@ -2205,7 +2459,7 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
     }
 /*************************************************************************/    
     else if(poolingMode == 2) {  // pnorm
-#pragma omp parallel for schedule(guided) private(pIn, pgI, valO, sum, dstart, hstart, wstart, dend, hend, wend)    
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, pgI, valO, sum, dstart, hstart, wstart, dend, hend, wend))
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                            
                 for(int od = 0; od < oD; ++od) {
@@ -2223,17 +2477,17 @@ static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, cons
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
-                                dstart += dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-dstart) / static_cast<T>(dD));
+                                dstart += dD * ((-dstart + dD - 1) / dD);
                             if(hstart < 0)
-                                hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                hstart += dH * ((-hstart + dH - 1) / dH);
                             if(wstart < 0)
-                                wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                wstart += dW * ((-wstart + dW - 1) / dW);
                             if(dend > iD)
-                                dend -= dD * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(dend-iD) / static_cast<T>(dD));
+                                dend -= dD * ((dend-iD + dD - 1) / dD);
                             if(hend > iH)
-                                hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                hend -= dH * ((hend-iH + dH - 1) / dH);
                             if(wend > iW)
-                                wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                wend -= dW * ((wend-iW + dW - 1) / dW);
 
                             dstart *= iStride2;
                             dend   *= iStride2;

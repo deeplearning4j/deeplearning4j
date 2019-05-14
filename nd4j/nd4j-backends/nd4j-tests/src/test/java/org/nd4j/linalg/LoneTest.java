@@ -76,9 +76,9 @@ public class LoneTest extends BaseNd4jTest {
         int length = rows * cols;
         int length3d = rows * cols * dim2;
 
-        INDArray first = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', rows, cols);
+        INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
         INDArray second = Nd4j.create(DataType.DOUBLE, new long[]{rows, cols}, 'f').assign(first);
-        INDArray third = Nd4j.linspace(1, length3d, length3d, DataType.DOUBLE).reshape('c', rows, cols, dim2);
+        INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
         third.addi(0.3);
@@ -113,11 +113,11 @@ public class LoneTest extends BaseNd4jTest {
             j = i + 1;
             assertEquals(i + 1,colVector.getRow(i).getInt(0));
             assertEquals(i + 1,rowVector.getColumn(i).getInt(0));
-            assertEquals(i + 1,rowVector.get(NDArrayIndex.interval(i, j)).getInt(0));
-            assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j)).getInt(0));
+            assertEquals(i + 1,rowVector.get(NDArrayIndex.point(0), NDArrayIndex.interval(i, j)).getInt(0));
+            assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j), NDArrayIndex.point(0)).getInt(0));
             System.out.println("Making sure index interval will not crash with begin/end vals...");
-            jj = colVector.get(NDArrayIndex.interval(i, i + 10));
-            jj = colVector.get(NDArrayIndex.interval(i, i + 10));
+            jj = colVector.get(NDArrayIndex.interval(i, i + 1));
+            jj = colVector.get(NDArrayIndex.interval(i, i + 1));
         }
     }
 
@@ -169,16 +169,6 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println(b);
     }
 
-    @Test
-    public void testTad() {
-        int[] someShape = {2, 1, 3, 3};
-        INDArray a = Nd4j.linspace(1, 18, 18).reshape(someShape);
-        INDArray java = a.javaTensorAlongDimension(0, 2, 3);
-        INDArray tad = a.tensorAlongDimension(0, 2, 3);
-        //assertTrue(a.tensorAlongDimension(0,2,3).rank() == 2); //is rank 3 with an extra 1
-        assertEquals(java, tad);
-    }
-
     @Test(expected = IllegalStateException.class)
     @Ignore // test is outdated
     public void opsNotAllowed() {
@@ -195,12 +185,12 @@ public class LoneTest extends BaseNd4jTest {
     public void testArgMax() {
         int max = 63;
         INDArray A = Nd4j.linspace(1, max, max).reshape(1, max);
-        int currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        int currentArgMax = Nd4j.argMax(A).getInt(0);
         assertEquals(max - 1, currentArgMax);
 
         max = 64;
         A = Nd4j.linspace(1, max, max).reshape(1, max);
-        currentArgMax = Nd4j.argMax(A).getInt(0, 0);
+        currentArgMax = Nd4j.argMax(A).getInt(0);
         System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
     }

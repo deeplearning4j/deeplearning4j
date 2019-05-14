@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
@@ -60,11 +61,13 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -86,6 +89,11 @@ public class TestMultiLayerSpace {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void before(){
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
 
     @Test
     public void testBasic() {
@@ -256,7 +264,7 @@ public class TestMultiLayerSpace {
 
                 double lr = ((Sgd)((BaseLayer) layerConf.getLayer()).getIUpdater()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
-                double l2 = ((BaseLayer) layerConf.getLayer()).getL2();
+                double l2 = TestUtils.getL2((BaseLayer) layerConf.getLayer());
                 assertTrue(l2 >= 0.2 && l2 <= 0.5);
 
                 if (j == nLayers - 1) { //Output layer

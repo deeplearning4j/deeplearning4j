@@ -17,6 +17,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
@@ -217,7 +219,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS109");
 
         INDArray row = Nd4j.linspace(1, 10, 10);
-        INDArray exp = Nd4j.create(1, 10).assign(2.0);
+        INDArray exp = Nd4j.create(10).assign(2.0);
         INDArray result = null;
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS109")) {
             INDArray matrix = Nd4j.create(10, 10);
@@ -248,14 +250,52 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 for (int x = 0; x < 10; x++) {
-                    System.out.println("Start iteration (" + j + "," + x + ")");
+                    //System.out.println("Start iteration (" + j + "," + x + ")");
                     INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(1,10);
                     INDArray sum = arr.sum(true, 1);
                     Nd4j.create(DataType.BOOL, x+1);        //NOTE: no crash if set to FLOAT/HALF, No crash if removed entirely; same crash for BOOL/UBYTE
-                    System.out.println("End iteration (" + j + "," + x + ")");
+                    //System.out.println("End iteration (" + j + "," + x + ")");
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testNoOpExecution_1() {
+        val configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
+
+        int iterations = 10000;
+
+        val array0 = Nd4j.create(new long[]{ 100, 100});
+        val array1 = Nd4j.create(new long[]{ 100, 100});
+        val array2 = Nd4j.create(new long[]{ 100, 100});
+        val array3 = Nd4j.create(new long[]{ 100, 100});
+        val array4 = Nd4j.create(new long[]{ 100, 100});
+        val array5 = Nd4j.create(new long[]{ 100, 100});
+        val array6 = Nd4j.create(new long[]{ 100, 100});
+        val array7 = Nd4j.create(new long[]{ 100, 100});
+        val array8 = Nd4j.create(new long[]{ 100, 100});
+        val array9 = Nd4j.create(new long[]{ 100, 100});
+
+        val timeStart = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+
+            val op = DynamicCustomOp.builder("noop")
+                    .addInputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
+                    .addOutputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
+                    .addIntegerArguments(5, 10)
+                    .addFloatingPointArguments(3.0, 10.0)
+                    .addBooleanArguments(true, false)
+                    .callInplace(true)
+                    .build();
+
+            Nd4j.getExecutioner().exec(op);
+        }
+        val timeEnd = System.nanoTime();
+        log.info("{} ns", ((timeEnd - timeStart) / (double) iterations));
     }
 
     @Override

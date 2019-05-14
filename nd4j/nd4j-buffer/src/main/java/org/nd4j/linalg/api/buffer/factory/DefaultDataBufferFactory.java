@@ -65,7 +65,6 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
             return new DoubleBuffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.FLOAT) {
             return new FloatBuffer(underlyingBuffer, length, offset);
-
         } else if (underlyingBuffer.dataType() == DataType.INT) {
             return new IntBuffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.LONG) {

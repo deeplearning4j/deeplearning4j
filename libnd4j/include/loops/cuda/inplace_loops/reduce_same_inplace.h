@@ -25,7 +25,6 @@
 #include <ops.h>
 #include <types/types.h>
 #include <op_boilerplate.h>
-#include <helpers/sharedmem.h>
 #include <shape.h>
 
 using namespace simdOps;
@@ -121,6 +120,7 @@ namespace functions {
             __syncthreads();
             aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
             __syncthreads();
+
 
             if (gridDim.x > 1) {
 

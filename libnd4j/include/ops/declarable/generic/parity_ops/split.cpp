@@ -48,6 +48,15 @@ namespace ops {
                 input = a;
             }
         }
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(input->isEmpty()){
+			for( int i=0; i< num_splits; i++ ){
+				REQUIRE_TRUE(OUTPUT_VARIABLE(i)->isEmpty(), 0, "Split: When input array is empty, all output arrays must be empty");
+			}
+			//No op
+			return Status::OK();
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -58,27 +67,27 @@ namespace ops {
 
         int pos = 0;
         int split = input->sizeAt(axis) / num_splits;
+        std::vector<Nd4jLong> indices(2 * input->rankOf());
+        
         for (int e = 0; e < num_splits; e++) {
+            
             auto out = OUTPUT_VARIABLE(e);
-
-            IndicesList indices;
+            
             for (int d = 0; d < input->rankOf(); d++) {
-                if (d == axis)
-                    indices.push_back(NDIndex::interval(pos, pos + split));
+                if (d == axis) {
+                    indices[2*d]     = pos;
+                    indices[2*d + 1] = pos + split; 
+                }
                 else 
-                    indices.push_back(NDIndex::all());
+                    indices[2*d] = indices[2*d + 1] = 0;
             }
 
-            auto sub = input->subarray(indices);
+            auto sub = (*input)(indices, true);
             
             out->assign(sub);
 
-            delete sub;
-
             pos += split;
         }
-
-
 
         return Status::OK();
     }
@@ -97,6 +106,7 @@ namespace ops {
         // axis is 0 by default
         int axis = 0;
 
+		int inputVar = 0;
         if (inputShape->size() == 1) {
             input = inputShape->at(0);
             dataType = ArrayOptions::dataType(input);
@@ -109,13 +119,27 @@ namespace ops {
                 auto _a = INPUT_VARIABLE(0);
                 axis = _a->e<int>(0);
                 dataType = ArrayOptions::dataType(shape1);
+				inputVar = 1;
             } else if (shape::isScalar(shape1)) {
                 input = shape0;
                 auto _a = INPUT_VARIABLE(1);
                 axis = _a->e<int>(0);
                 dataType = ArrayOptions::dataType(shape0);
+				inputVar = 0;
             }
         }
+		
+		auto shapes = SHAPELIST();
+		
+		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
+		if(INPUT_VARIABLE(inputVar)->isEmpty()){
+			for (int e = 0; e < num_splits; e++) {
+                auto empty = ShapeBuilders::createScalarShapeInfo(dataType, block.getWorkspace());
+                ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+				shapes->push_back(empty);
+			}
+			return shapes;
+		}
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -130,17 +154,9 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e) / num_splits;
             else 
                 shape[e] = shape::sizeAt(input, e);
-
-        auto shapes = SHAPELIST();
-
+        
         for (int e = 0; e < num_splits; e++) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
-
-            if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), dataType, shape.data(), newShape);
-            else
-                shape::shapeBufferFortran(shape.size(), dataType, shape.data(), newShape);
+            auto newShape = ShapeBuilders::createShapeInfo(dataType, shape::order(input), shape, block.getWorkspace());
             shapes->push_back(newShape);
         }
 

@@ -16,6 +16,8 @@
 
 package org.nd4j.jita.memory.impl;
 
+import lombok.val;
+import lombok.var;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -32,6 +34,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,63 +68,66 @@ public class CudaDirectProvider implements MemoryProvider {
 
         switch (location) {
             case HOST: {
-                Pointer devicePointer = new Pointer();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
 
-                Pointer pointer = nativeOps.mallocHost(reqMem, 0);
+                val pointer = nativeOps.mallocHost(reqMem, 0);
                 if (pointer == null)
                     throw new RuntimeException("Can't allocate [HOST] memory: " + reqMem + "; threadId: "
                                     + Thread.currentThread().getId());
 
                 //                log.info("Host allocation, Thread id: {}, ReqMem: {}, Pointer: {}", Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
-                Pointer hostPointer = new CudaPointer(pointer);
+                val hostPointer = new CudaPointer(pointer);
 
-                PointersPair devicePointerInfo = new PointersPair();
+                val devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
                 point.setPointers(devicePointerInfo);
 
                 point.setAllocationStatus(AllocationStatus.HOST);
+
+                MemoryTracker.getInstance().incrementAllocatedHostAmount(reqMem);
+
                 return devicePointerInfo;
             }
             case DEVICE: {
                 // cudaMalloc call
-                int deviceId = AtomicAllocator.getInstance().getDeviceId();
+                val deviceId = AtomicAllocator.getInstance().getDeviceId();
                 long reqMem = AllocationUtils.getRequiredMemory(shape);
 
                 // FIXME: this is WRONG, and directly leads to memleak
                 if (reqMem < 1)
                     reqMem = 1;
 
-                //                if (CudaEnvironment.getInstance().getConfiguration().getDebugTriggered() == 119)
-                //                    throw new RuntimeException("Device allocation happened");
-
-
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, deviceId, reqMem);
-                Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
-                //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
+                var pointer = nativeOps.mallocDevice(reqMem, deviceId, 0);
+                if (pointer == null) {
+                    // try to purge stuff if we're low on memory
+                    purgeCache(deviceId);
 
+                    // call for gc
+                    Nd4j.getMemoryManager().invokeGc();
 
-                if (pointer == null)
-                    return null;
-                //throw new RuntimeException("Can't allocate [DEVICE] memory!");
+                    pointer = nativeOps.mallocDevice(reqMem, deviceId, 0);
+                    if (pointer == null)
+                        return null;
+                }
 
-                Pointer devicePointer = new CudaPointer(pointer);
+                val devicePointer = new CudaPointer(pointer);
 
-                PointersPair devicePointerInfo = point.getPointers();
+                var devicePointerInfo = point.getPointers();
                 if (devicePointerInfo == null)
                     devicePointerInfo = new PointersPair();
                 devicePointerInfo.setDevicePointer(new CudaPointer(devicePointer, reqMem));
 
                 point.setAllocationStatus(AllocationStatus.DEVICE);
                 point.setDeviceId(deviceId);
-
+                MemoryTracker.getInstance().incrementAllocatedAmount(deviceId, reqMem);
                 return devicePointerInfo;
             }
             default:
@@ -139,35 +145,33 @@ public class CudaDirectProvider implements MemoryProvider {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here
-                // FIXME: it would be nice to get rid of typecasting here
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
-
-                //  log.info("Deallocating {} bytes on [HOST]", reqMem);
-
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
                 long result = nativeOps.freeHost(point.getPointers().getHostPointer());
-                //JCuda.cudaFreeHost(new Pointer(point.getPointers().getHostPointer()));
-                if (result == 0)
+                if (result == 0) {
                     throw new RuntimeException("Can't deallocate [HOST] memory...");
+                }
+
+                MemoryTracker.getInstance().decrementAllocatedHostAmount(reqMem);
             }
                 break;
             case DEVICE: {
-                // cudaFree call
-                //JCuda.cudaFree(new Pointer(point.getPointers().getDevicePointer().address()));
                 if (point.isConstant())
                     return;
 
                 long reqMem = AllocationUtils.getRequiredMemory(point.getShape());
 
-                //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
-
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
 
-                long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
+                val pointers = point.getPointers();
+
+                long result = nativeOps.freeDevice(pointers.getDevicePointer(), 0);
                 if (result == 0)
                     throw new RuntimeException("Can't deallocate [DEVICE] memory...");
+
+                MemoryTracker.getInstance().decrementAllocatedAmount(point.getDeviceId(), reqMem);
             }
                 break;
             default:
@@ -204,7 +208,7 @@ public class CudaDirectProvider implements MemoryProvider {
             return true;
         else return false;
         */
-        long freeMem = nativeOps.getDeviceFreeMemory(new CudaPointer(-1));
+        long freeMem = nativeOps.getDeviceFreeMemory(-1);
         if (freeMem - requiredMemory < DEVICE_RESERVED_SPACE)
             return false;
         else
@@ -212,13 +216,17 @@ public class CudaDirectProvider implements MemoryProvider {
     }
 
     protected void freeHost(Pointer pointer) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         nativeOps.freeHost(pointer);
     }
 
     protected void freeDevice(Pointer pointer, int deviceId) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        nativeOps.freeDevice(pointer, new CudaPointer(0));
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.freeDevice(pointer, 0);
+    }
+
+    protected void purgeCache(int deviceId) {
+        //
     }
 
     @Override

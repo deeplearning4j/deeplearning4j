@@ -19,7 +19,9 @@ package org.nd4j.evaluation;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -89,39 +91,60 @@ public class EvalTest extends BaseNd4jTest {
     @Test
     public void testEval2() {
 
-        //Confusion matrix:
-        //actual 0      20      3
-        //actual 1      10      5
+        DataType dtypeBefore = Nd4j.defaultFloatingPointType();
+        Evaluation first = null;
+        String sFirst = null;
+        try {
+            for (DataType globalDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT}) {
+                Nd4j.setDefaultDataTypes(globalDtype, globalDtype.isFPType() ? globalDtype : DataType.DOUBLE);
+                for (DataType lpDtype : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
 
-        Evaluation  evaluation = new Evaluation(Arrays.asList("class0", "class1"));
-        INDArray predicted0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
-        INDArray predicted1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
-        INDArray actual0 = Nd4j.create(new double[] {1, 0}, new long[]{1, 2});
-        INDArray actual1 = Nd4j.create(new double[] {0, 1}, new long[]{1, 2});
-        for (int i = 0; i < 20; i++) {
-            evaluation.eval(actual0, predicted0);
+                    //Confusion matrix:
+                    //actual 0      20      3
+                    //actual 1      10      5
+
+                    Evaluation evaluation = new Evaluation(Arrays.asList("class0", "class1"));
+                    INDArray predicted0 = Nd4j.create(new double[]{1, 0}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray predicted1 = Nd4j.create(new double[]{0, 1}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray actual0 = Nd4j.create(new double[]{1, 0}, new long[]{1, 2}).castTo(lpDtype);
+                    INDArray actual1 = Nd4j.create(new double[]{0, 1}, new long[]{1, 2}).castTo(lpDtype);
+                    for (int i = 0; i < 20; i++) {
+                        evaluation.eval(actual0, predicted0);
+                    }
+
+                    for (int i = 0; i < 3; i++) {
+                        evaluation.eval(actual0, predicted1);
+                    }
+
+                    for (int i = 0; i < 10; i++) {
+                        evaluation.eval(actual1, predicted0);
+                    }
+
+                    for (int i = 0; i < 5; i++) {
+                        evaluation.eval(actual1, predicted1);
+                    }
+
+                    assertEquals(20, evaluation.truePositives().get(0), 0);
+                    assertEquals(3, evaluation.falseNegatives().get(0), 0);
+                    assertEquals(10, evaluation.falsePositives().get(0), 0);
+                    assertEquals(5, evaluation.trueNegatives().get(0), 0);
+
+                    assertEquals((20.0 + 5) / (20 + 3 + 10 + 5), evaluation.accuracy(), 1e-6);
+
+                    String s = evaluation.stats();
+
+                    if(first == null) {
+                        first = evaluation;
+                        sFirst = s;
+                    } else {
+                        assertEquals(first, evaluation);
+                        assertEquals(sFirst, s);
+                    }
+                }
+            }
+        } finally {
+            Nd4j.setDefaultDataTypes(dtypeBefore, dtypeBefore);
         }
-
-        for (int i = 0; i < 3; i++) {
-            evaluation.eval(actual0, predicted1);
-        }
-
-        for (int i = 0; i < 10; i++) {
-            evaluation.eval(actual1, predicted0);
-        }
-
-        for (int i = 0; i < 5; i++) {
-            evaluation.eval(actual1, predicted1);
-        }
-
-        assertEquals(20, evaluation.truePositives().get(0), 0);
-        assertEquals(3, evaluation.falseNegatives().get(0), 0);
-        assertEquals(10, evaluation.falsePositives().get(0), 0);
-        assertEquals(5, evaluation.trueNegatives().get(0), 0);
-
-        assertEquals((20.0 + 5) / (20 + 3 + 10 + 5), evaluation.accuracy(), 1e-6);
-
-        System.out.println(evaluation.confusionToString());
     }
 
     @Test
@@ -893,6 +916,134 @@ public class EvalTest extends BaseNd4jTest {
         } catch (IllegalStateException ex){
             assertTrue(ex.getMessage().contains("NaN"));
         }
+
+    }
+
+    @Test
+    public void testSegmentation(){
+        for( int c : new int[]{4, 1}) { //c=1 should be treated as binary classification case
+            Nd4j.getRandom().setSeed(12345);
+            int mb = 3;
+            int h = 3;
+            int w = 2;
+
+            //NCHW
+            INDArray labels = Nd4j.create(DataType.FLOAT, mb, c, h, w);
+            Random r = new Random(12345);
+            for (int i = 0; i < mb; i++) {
+                for (int j = 0; j < h; j++) {
+                    for (int k = 0; k < w; k++) {
+                        if(c == 1){
+                            labels.putScalar(i, 0, j, k, r.nextInt(2));
+                        } else {
+                            int classIdx = r.nextInt(c);
+                            labels.putScalar(i, classIdx, j, k, 1.0);
+                        }
+                    }
+                }
+            }
+
+            INDArray predictions = Nd4j.rand(DataType.FLOAT, mb, c, h, w);
+            if(c > 1) {
+                DynamicCustomOp op = DynamicCustomOp.builder("softmax")
+                        .addInputs(predictions)
+                        .addOutputs(predictions)
+                        .callInplace(true)
+                        .addIntegerArguments(1) //Axis
+                        .build();
+                Nd4j.exec(op);
+            }
+
+            Evaluation e2d = new Evaluation();
+            Evaluation e4d = new Evaluation();
+
+            e4d.eval(labels, predictions);
+
+            for (int i = 0; i < mb; i++) {
+                for (int j = 0; j < h; j++) {
+                    for (int k = 0; k < w; k++) {
+                        INDArray rowLabel = labels.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j), NDArrayIndex.point(k));
+                        INDArray rowPredictions = predictions.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j), NDArrayIndex.point(k));
+                        rowLabel = rowLabel.reshape(1, rowLabel.length());
+                        rowPredictions = rowPredictions.reshape(1, rowLabel.length());
+
+                        e2d.eval(rowLabel, rowPredictions);
+                    }
+                }
+            }
+
+            assertEquals(e2d, e4d);
+
+
+            //NHWC, etc
+            INDArray lOrig = labels;
+            INDArray fOrig = predictions;
+            for (int i = 0; i < 4; i++) {
+                switch (i) {
+                    case 0:
+                        //CNHW - Never really used
+                        labels = lOrig.permute(1, 0, 2, 3).dup();
+                        predictions = fOrig.permute(1, 0, 2, 3).dup();
+                        break;
+                    case 1:
+                        //NCHW
+                        labels = lOrig;
+                        predictions = fOrig;
+                        break;
+                    case 2:
+                        //NHCW - Never really used...
+                        labels = lOrig.permute(0, 2, 1, 3).dup();
+                        predictions = fOrig.permute(0, 2, 1, 3).dup();
+                        break;
+                    case 3:
+                        //NHWC
+                        labels = lOrig.permute(0, 2, 3, 1).dup();
+                        predictions = fOrig.permute(0, 2, 3, 1).dup();
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                Evaluation e = new Evaluation();
+                e.setAxis(i);
+
+                e.eval(labels, predictions);
+                assertEquals(e2d, e);
+            }
+        }
+    }
+
+    @Test
+    public void testLabelReset(){
+
+        Map<Integer,String> m = new HashMap<>();
+        m.put(0, "False");
+        m.put(1, "True");
+
+        Evaluation e1 = new Evaluation(m);
+        INDArray zero = Nd4j.create(new double[]{1,0}).reshape(1,2);
+        INDArray one = Nd4j.create(new double[]{0,1}).reshape(1,2);
+
+        e1.eval(zero, zero);
+        e1.eval(zero, zero);
+        e1.eval(one, zero);
+        e1.eval(one, one);
+        e1.eval(one, one);
+        e1.eval(one, one);
+
+        String s1 = e1.stats();
+        System.out.println(s1);
+
+        e1.reset();
+        e1.eval(zero, zero);
+        e1.eval(zero, zero);
+        e1.eval(one, zero);
+        e1.eval(one, one);
+        e1.eval(one, one);
+        e1.eval(one, one);
+
+        String s2 = e1.stats();
+        assertEquals(s1, s2);
 
     }
 }

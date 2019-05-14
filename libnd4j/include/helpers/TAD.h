@@ -80,21 +80,13 @@ namespace shape {
         // special case for CUDA, we're passing in __shared__ memory pointers to be used instead of new/malloc
         void *ptrManager = nullptr;
         int *ptrOutput = nullptr;
+
+        INLINEDEF bool dimensionsDescending(int rank, int *dimensions, int length);
+
 #ifdef __CUDACC__
         __host__ __device__
 #endif
         INLINEDEF TAD() {}
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        TAD(int tadIndex,Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
-
-
-#ifdef __CUDACC__
-        __host__ __device__
-#endif
-        TAD(Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
 
 
 #ifdef __CUDACC__
@@ -123,6 +115,11 @@ namespace shape {
         __host__ __device__
 #endif
         INLINEDEF void init(Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
+
+#ifdef __CUDACC__
+        __host__ __device__
+#endif
+        INLINEDEF void init(int index, Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
 
 
 
@@ -293,7 +290,7 @@ namespace shape {
 
 
     ////
-
+/*
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -302,12 +299,14 @@ namespace shape {
         this->init(shapeInfo, dimension, dimensionLength);
     }
 
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
     INLINEDEF TAD::TAD(Nd4jLong *shapeInfo,int *dimension,int dimensionLength) {
         this->init(shapeInfo, dimension, dimensionLength);
     }
+        */
 
     INLINEDEF void TAD::setExternalBuffers(void *ptrManager) {
         this->ptrManager = ptrManager;
@@ -338,6 +337,11 @@ namespace shape {
         this->wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
     }
 
+    INLINEDEF void TAD::init(int tadIndex, Nd4jLong *shapeInfo,int *dimension,int dimensionLength) {
+        this->tadIndex = tadIndex;
+        this->init(shapeInfo, dimension, dimensionLength);
+    }
+
     INLINEDEF  void TAD::init(Nd4jLong *shapeInfo, int *dimension,int dimensionLength) {
         this->originalShapeInfo = shapeInfo;
         this->originalDimension = dimension;
@@ -351,7 +355,9 @@ namespace shape {
 
         Nd4jLong ews = shape::elementWiseStride(shapeInfo);
 
-        if(!shape::isVector(shapeInfo)) {
+        if (dimensionLength == 0) {
+            wholeThing = true;
+        } else if(!shape::isVector(shapeInfo)) {
             wholeThing = this->numTads == 1 // if number of TADs is 1, we just have input shape == TAD shape
                          || ((this->dimensionLength == this->rank // if number of dimensions is the same as input rank, that'll be wholeTad too, but only if EWS==1 (aka - not a View)
                          || (this->numTads == shape::length(shapeInfo) && shape::order(shapeInfo) == 'c')) // OR  number of tads equals to shapeInfo length AND input is in C order. if order is F - we'll have to calculate offsets
@@ -362,7 +368,7 @@ namespace shape {
         } else {
             // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
             //if(dimension == 0 && ) {
-            if(dimension != nullptr && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
+            if(dimensionLength != 0 && dimension != nullptr && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 wholeThing = true;
             }
         }
@@ -416,29 +422,47 @@ namespace shape {
 
     INLINEDEF void TAD::permuteShapeBufferInPlace(Nd4jLong* shapeBuffer, int* rearrange, Nd4jLong* out) {
         memcpy(out, shapeBuffer, sizeof(Nd4jLong) * shape::shapeInfoLength(this->rank));
-        doPermuteShapeBuffer(this->rank, out, rearrange);
+        doPermuteShapeInfo(out, rearrange);
     }
 
     INLINEDEF Nd4jLong* TAD::permuteShapeBuffer(Nd4jLong* shapeBuffer, int *rearrange) {
         int len = shape::shapeInfoLength(this->rank);
         Nd4jLong *copy = shape::copyOf(len,shapeBuffer);
-        doPermuteShapeBuffer(rank, copy,rearrange);
+        doPermuteShapeInfo(copy,rearrange);
         return copy;
+    }
+
+    INLINEDEF bool TAD::dimensionsDescending(int rank, int *dimensions, int length) {
+        int desired = rank - 1;
+        for (int e = length - 1; e >= 0; e--) {
+            if (dimensions[e] != desired--)
+                return false;
+        }
+        return true;
     }
 
     INLINEDEF void TAD::createTadOnlyShapeInfo() {
         this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
         nd4j::ArrayOptions::setDataType(this->tadOnlyShapeInfo, nd4j::ArrayOptions::dataType(this->originalShapeInfo));
 
+        // possible optimization goes here
+        if (shape::order(this->originalShapeInfo) == 'c'
+                && shape::strideDescendingCAscendingF(this->originalShapeInfo)
+                && dimensionsDescending(shape::rank(this->originalShapeInfo), this->originalDimension, this->originalDimensionLength)) {
+            // for C order, if outer dimensions are used, continuous layout is preserved
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] = this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
+        }
+
+        // do not swap order if positive elementwise stride preserved
+        if (shape::elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
+            this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 1] = shape::order(this->originalShapeInfo);
+        }
+
         if (this->tadShape != nullptr)
             delete[] this->tadShape;
 
         this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
         this->tadStride = shape::stride(this->tadOnlyShapeInfo);
-        /* if(tadIndex > 0) {
-             this->createOffsets();
-             this->tadOnlyShapeInfo[shape::shapeInfoLength(shape::rank(this->tadOnlyShapeInfo)) - 3] = this->tadOffsets[tadIndex];
-         }*/
     }
 
     INLINEDEF Nd4jLong TAD::lengthPerSlice(Nd4jLong* shapeBuffer) {
@@ -454,30 +478,12 @@ namespace shape {
         Nd4jLong *shape = shape::shapeOf(shapeInfo);
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - originalDimensionLength;
-#ifdef __CUDACC__
-        Nd4jLong *ret;
-        Nd4jLong *tadShape;
-        Nd4jLong *leftOverIndexes;
-        Nd4jLong *sub;
-        if (ptrManager != nullptr) {
-            UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
-            ret = (Nd4jLong *) manager->getTempRankBuffer1();
-            tadShape = (Nd4jLong *) manager->getTempRankBuffer2();
-            leftOverIndexes = (Nd4jLong *) manager->getTempRankBuffer3();
-            sub =  (Nd4jLong *) manager->getTempRankBuffer4();
-        } else {
-            ret = new Nd4jLong[rank];
-            tadShape = new Nd4jLong[leftOverIndexLen];
-            leftOverIndexes = new Nd4jLong[leftOverIndexLen];
-            sub = new Nd4jLong[rank];
-        }
-#else
+
         Nd4jLong *ret = new Nd4jLong[rank];
         //shape of the tad
         Nd4jLong *tadShape = new Nd4jLong[leftOverIndexLen];
         Nd4jLong *leftOverIndexes = new Nd4jLong[leftOverIndexLen];
         Nd4jLong *sub = new Nd4jLong[rank];
-#endif
 
         //indexes not specified in the tad indexes
 
@@ -520,7 +526,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape, index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape, index,len, sub);
 
 
         for(int i = 0; i < leftOverIndexLen; i++) {
@@ -649,28 +655,11 @@ namespace shape {
         Nd4jLong *sub;
         Nd4jLong *ret;
 
-#ifdef __CUDACC__
-
-        if (ptrManager != nullptr) {
-                UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
-                ret = (Nd4jLong *) manager->getTempRankBuffer1();
-                tadShape = (Nd4jLong *) manager->getTempRankBuffer2();
-                leftOverIndexes = (Nd4jLong *) manager->getTempRankBuffer3();
-                sub = (Nd4jLong *) manager->getTempRankBuffer4();
-            } else {
-                ret = new Nd4jLong[rank];
-                //shape of the tad
-                leftOverIndexes = new Nd4jLong[leftOverIndexLen];
-                sub = new Nd4jLong[rank];
-                tadShape = new Nd4jLong[leftOverIndexLen];
-            }
-#else
         ret = new Nd4jLong[rank];
         //shape of the tad
         leftOverIndexes = new Nd4jLong[leftOverIndexLen];
         sub = new Nd4jLong[rank];
         tadShape = new Nd4jLong[leftOverIndexLen];
-#endif
 
         //indexes not specified in the tad indexes
 
@@ -714,7 +703,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape,index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape,index,len, sub);
 
         for(int i = 0; i < leftOverIndexLen; i++) {
             ret[leftOverIndexes[i]] = sub[i];
@@ -731,16 +720,16 @@ namespace shape {
 
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jLong[this->numTads];
-#pragma omp parallel for if (this->numTads > 128) schedule(static) proc_bind(close) default(shared)
-        for(int i = 0; i < this->numTads; i++) {
+        uint nT = this->numTads;
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(uint i = 0; i < nT; i++)
             this->tadOffsets[i] = this->tadOffset(i);
-        }
     }
 
 
     INLINEDEF Nd4jLong* TAD::shapeInfoOnlyShapeAndStride() {
-        if(wholeThing && (dimensionLength == 1 && dimension[0] == MAX_DIMENSION) || shape::isScalar(shapeInfo))
-            return shape::createScalarShapeInfo();
+        //if(wholeThing || (dimensionLength == 1 && dimension[0] == MAX_DIMENSION) || shape::isScalar(shapeInfo))
+        //    return shape::createScalarShapeInfo();
 
         //ensure tad shapes get setup right for vectors
         if(dimensionLength > 1 && shape::isVector(shapeInfo)) 
@@ -751,7 +740,7 @@ namespace shape {
             // we might have special case here: skipped dimensions might be just full of ones
             Nd4jLong *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
             if (shape::isDimPermuted<int>(dimension, (Nd4jLong) dimensionLength))    // check whether we need permutation
-                shape::doPermuteShapeBuffer(ret, dimension);
+                doPermuteShapeInfo(ret, dimension);
 
             return ret;
         }

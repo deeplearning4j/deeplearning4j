@@ -17,7 +17,8 @@
 package org.deeplearning4j.spark.models.sequencevectors.learning.elements;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
@@ -39,6 +40,11 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
         return "Spark-SkipGram";
     }
 
+    @Override
+    public double learnSequence(Sequence<ShallowSequenceElement> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<ShallowSequenceElement> batchSequences) {
+        throw new UnsupportedOperationException();
+    }
+
     protected transient AtomicLong counter;
     protected transient ThreadLocal<Frame<SkipGramRequestMessage>> frame;
 
@@ -58,7 +64,7 @@ public class SparkSkipGram extends BaseSparkLearningAlgorithm {
         if (vectorsConfiguration.getVariableWindows() != null
                         && vectorsConfiguration.getVariableWindows().length != 0) {
             currentWindow = vectorsConfiguration.getVariableWindows()[RandomUtils
-                            .nextInt(vectorsConfiguration.getVariableWindows().length)];
+                            .nextInt(0, vectorsConfiguration.getVariableWindows().length)];
         }
         if (frame == null)
             synchronized (this) {

@@ -65,7 +65,6 @@ public class NASNet extends ZooModel {
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     @Builder.Default private int numClasses = 0;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
-    @Builder.Default private Distribution weightDistribution = new TruncatedNormalDistribution(0.0, 0.5); // if WeightInit.DISTRIBUTION
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -129,7 +128,6 @@ public class NASNet extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
                 .weightInit(weightInit)
-                .dist(weightDistribution)
                 .l2(5e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)

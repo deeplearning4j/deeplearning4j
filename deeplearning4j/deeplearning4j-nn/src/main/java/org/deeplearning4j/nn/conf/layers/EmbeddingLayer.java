@@ -24,7 +24,12 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
+import org.deeplearning4j.nn.weights.embeddings.WeightInitEmbedding;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -59,9 +64,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -118,6 +123,36 @@ public class EmbeddingLayer extends FeedForwardLayer {
         public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
+        }
+
+        @Override
+        public Builder weightInit(IWeightInit weightInit) {
+            if(weightInit instanceof WeightInitEmbedding){
+                long[] shape = ((WeightInitEmbedding) weightInit).shape();
+                nIn(shape[0]);
+                nOut(shape[1]);
+            }
+            return super.weightInit(weightInit);
+        }
+
+        /**
+         * Initialize the embedding layer using the specified EmbeddingInitializer - such as a Word2Vec instance
+         *
+         * @param embeddingInitializer Source of the embedding layer weights
+         */
+        public Builder weightInit(EmbeddingInitializer embeddingInitializer){
+            return weightInit(new WeightInitEmbedding(embeddingInitializer));
+        }
+
+        /**
+         * Initialize the embedding layer using values from the specified array. Note that the array should have shape
+         * [vocabSize, vectorSize]. After copying values from the array to initialize the network parameters, the input
+         * array will be discarded (so that, if necessary, it can be garbage collected)
+         *
+         * @param vectors Vectors to initialize the embedding layer with
+         */
+        public Builder weightInit(INDArray vectors){
+            return weightInit(new ArrayEmbeddingInitializer(vectors));
         }
 
         @Override

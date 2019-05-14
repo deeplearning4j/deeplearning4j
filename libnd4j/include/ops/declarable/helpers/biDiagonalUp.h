@@ -64,7 +64,7 @@ class BiDiagonalUp {
         *  type - type of sequence, type = 'u' (acting on columns) or type = 'v' (acting on rows)
         */
         template <typename T>
-        HHsequence _makeHHsequence(const char type) const;
+        HHsequence makeHHsequence_(const char type) const;
 
         HHsequence makeHHsequence(const char type) const;
 

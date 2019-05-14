@@ -18,20 +18,23 @@ package org.deeplearning4j.nn.layers.dropout;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import com.jakewharton.byteunits.BinaryByteUnit;
 import org.bytedeco.javacpp.*;
 import org.deeplearning4j.nn.conf.dropout.DropoutHelper;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.util.StringUtils;
 
-import static org.bytedeco.javacpp.cudnn.*;
-import static org.bytedeco.javacpp.cudnn.cudnnDestroyTensorDescriptor;
+import org.bytedeco.cuda.cudart.*;
+import org.bytedeco.cuda.cudnn.*;
+import static org.bytedeco.cuda.global.cudart.*;
+import static org.bytedeco.cuda.global.cudnn.*;
 
 /**
  * CuDNN dropout helper
@@ -59,11 +62,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             }
         }
 
-        private cudnn.cudnnTensorStruct xTensorDesc = new cudnn.cudnnTensorStruct();    //Input
-        private cudnn.cudnnTensorStruct dxTensorDesc = new cudnn.cudnnTensorStruct();   //Grad at input
-        private cudnn.cudnnTensorStruct yTensorDesc = new cudnn.cudnnTensorStruct();    //Output
-        private cudnn.cudnnTensorStruct dyTensorDesc = new cudnn.cudnnTensorStruct();   //Grad at output
-        private cudnn.cudnnDropoutStruct dropoutDesc = new cudnn.cudnnDropoutStruct();
+        private cudnnTensorStruct xTensorDesc = new cudnnTensorStruct();    //Input
+        private cudnnTensorStruct dxTensorDesc = new cudnnTensorStruct();   //Grad at input
+        private cudnnTensorStruct yTensorDesc = new cudnnTensorStruct();    //Output
+        private cudnnTensorStruct dyTensorDesc = new cudnnTensorStruct();   //Grad at output
+        private cudnnDropoutStruct dropoutDesc = new cudnnDropoutStruct();
 
         public CudnnDropoutContext() {
             createHandles();
@@ -72,11 +75,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
         public CudnnDropoutContext(CudnnDropoutContext c) {
             super(c);
-            xTensorDesc = new cudnn.cudnnTensorStruct(c.xTensorDesc);
-            dxTensorDesc = new cudnn.cudnnTensorStruct(c.dxTensorDesc);
-            yTensorDesc = new cudnn.cudnnTensorStruct(c.yTensorDesc);
-            dyTensorDesc = new cudnn.cudnnTensorStruct(c.dyTensorDesc);
-            dropoutDesc = new cudnn.cudnnDropoutStruct(c.dropoutDesc);
+            xTensorDesc = new cudnnTensorStruct(c.xTensorDesc);
+            dxTensorDesc = new cudnnTensorStruct(c.dxTensorDesc);
+            yTensorDesc = new cudnnTensorStruct(c.yTensorDesc);
+            dyTensorDesc = new cudnnTensorStruct(c.dyTensorDesc);
+            dropoutDesc = new cudnnDropoutStruct(c.dropoutDesc);
         }
 
         @Override
@@ -108,6 +111,10 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     private SizeTPointer reserveSizeBytesPtr;
     private float lastInitializedP;
 
+    public CudnnDropoutHelper(DataType dataType){
+        super(dataType);
+    }
+
     @Override
     public void applyDropout(INDArray input, INDArray resultArray, double dropoutInputRetainProb) {
         float p = (float)(1.0 - dropoutInputRetainProb);    //CuDNN uses p = probability of setting to 0. We use p = probability of retaining
@@ -135,11 +142,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(rngStates == null){
                     log.trace("CudnnDropoutHelper: Allocating intial RNG states workspace of size {} ({})", rngStateSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                            BinaryByteUnit.format(rngStateSizeBytes, "#.00"));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating RNG states of size {} ({}), allocating new workspace of size {} ({})",
-                            rngStates.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(rngStates.capacity(), "B", 2),
-                            rngStateSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                            rngStates.capacity(), BinaryByteUnit.format(rngStates.capacity(), "#.00"),
+                            rngStateSizeBytes, BinaryByteUnit.format(rngStateSizeBytes, "#.00"));
                 }
             }
 
@@ -153,11 +160,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(mask == null){
                     log.trace("CudnnDropoutHelper: Allocating intial mask array of size {} ({})", maskReserveSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                            BinaryByteUnit.format(maskReserveSizeBytes, "#.00"));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating mask array of size {} ({}), allocating new mask array of size {} ({})",
-                            mask.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(mask.capacity(), "B", 2),
-                            maskReserveSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                            mask.capacity(), BinaryByteUnit.format(mask.capacity(), "#.00"),
+                            maskReserveSizeBytes, BinaryByteUnit.format(maskReserveSizeBytes, "#.00"));
                 }
             }
 
@@ -187,7 +194,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         Pointer xPtr = allocator.getPointer(input, context);
         Pointer yPtr = allocator.getPointer(resultArray, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new cuda.CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
         checkCudnn(cudnnDropoutForward(cudnnContext, cudnnContext.dropoutDesc, cudnnContext.xTensorDesc, xPtr,
                 cudnnContext.yTensorDesc, yPtr, mask, mask.capacity()));
 

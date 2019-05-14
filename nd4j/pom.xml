@@ -33,7 +33,7 @@
     <packaging>pom</packaging>
 
     <name>nd4j</name>
-    <url>http://nd4j.org/</url>
+    <url>https://deeplearning4j.org</url>
 
     <licenses>
         <license>
@@ -54,7 +54,6 @@
     <modules>
         <module>nd4j-shade</module>
         <module>nd4j-jdbc</module>
-        <module>nd4j-instrumentation</module>
         <module>nd4j-serde</module>
         <module>nd4j-common</module>
         <module>nd4j-buffer</module>
@@ -246,7 +245,6 @@
                     <directories>
                         <directory>nd4j-shade</directory>
                         <directory>nd4j-jdbc</directory>
-                        <directory>nd4j-instrumentation</directory>
                         <directory>nd4j-serde</directory>
                         <directory>nd4j-common</directory>
                         <directory>nd4j-buffer</directory>
