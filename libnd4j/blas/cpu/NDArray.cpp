@@ -2434,6 +2434,12 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    void NDArray::printSpecialBuffer(const char* msg, const int precision) const {
+
+    }
+
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
