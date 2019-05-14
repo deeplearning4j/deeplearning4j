@@ -3004,6 +3004,7 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
 }
 
 nd4j::DataBuffer* NativeOps::shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty) {
-    auto buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
-    return &buffer;
+    auto buffer = new DataBuffer();
+    *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
+    return buffer;
 }
