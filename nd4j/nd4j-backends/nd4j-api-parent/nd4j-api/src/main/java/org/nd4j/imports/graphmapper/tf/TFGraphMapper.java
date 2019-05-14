@@ -22,6 +22,7 @@ import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -1151,7 +1152,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 double val = tfTensor.getDoubleVal(0);
                 INDArray array = Nd4j.trueScalar(val);
-                return array;
+                if (arrayShape.length > 0)
+                    return array.reshape('c', arrayShape);
+                else
+                    return array;
             } else if (tfTensor.getDoubleValCount() > 0) {
                 val jArray = new double[tfTensor.getDoubleValCount()];
                 for (int e = 0; e < tfTensor.getDoubleValCount(); e++) {
@@ -1194,7 +1198,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 int val = tfTensor.getHalfVal(0);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
                 INDArray array = Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.BFLOAT16, 0);
                 array.putScalar(0, Bfloat16Indexer.toFloat(val));
-                return array;
+                if (arrayShape.length > 0)
+                    return array.reshape('c', arrayShape);
+                else
+                    return array;
             } else if (tfTensor.getHalfValCount() > 0) {
                 //TODO this won't work for huge arrays due to int indexing
                 int n = tfTensor.getHalfValCount();
@@ -1228,8 +1235,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 int val = tfTensor.getHalfVal(0);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
                 INDArray array = Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.HALF, 0);
-                setFloat16ValueFromInt(array, 0, val);
-                return array;
+                //setFloat16ValueFromInt(array, 0, val);
+                array.putScalar(0, HalfIndexer.toFloat(val));
+                if (arrayShape.length > 0)
+                    return array.reshape('c', arrayShape);
+                else
+                    return array;
             } else if (tfTensor.getHalfValCount() > 0) {
                 //TODO this won't work for huge arrays due to int indexing
                 int n = tfTensor.getHalfValCount();
@@ -1238,8 +1249,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 for (int e = 0; e < n; e++) {
                     int val = tfTensor.getHalfVal(e);   //FP16 byte returned as int32 bytes (not cast/conversion) with 2 bytes padding :/
-                    bb.put(2*e, (byte)((val >> 8) & 0xff));
-                    bb.put(2*e+1, (byte)(val & 0xff));
+                    //bb.put(2*e, (byte)((val >> 8) & 0xff));
+                    //bb.put(2*e+1, (byte)(val & 0xff));
+                    arr.putScalar(e, HalfIndexer.fromFloat(val));
                 }
 
                 return arr.reshape('c', arrayShape);
