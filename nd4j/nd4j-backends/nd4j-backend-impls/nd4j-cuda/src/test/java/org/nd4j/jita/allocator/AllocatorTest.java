@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class AllocatorTest {
-    private static final long SAFETY_OFFSET = 1024L;	
+    private static final long SAFETY_OFFSET = 1024L;
 
     @Test
     public void testCounters() {
@@ -169,7 +169,7 @@ public class AllocatorTest {
         	assertTrue(allocSize ==
                     MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
 	}
-        assertTrue(allocSize == 
+        assertTrue(allocSize ==
                 MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
         /*Nd4j.getWorkspaceManager().destroyWorkspace(ws);
         assertTrue(0L ==
@@ -315,4 +315,16 @@ public class AllocatorTest {
             Thread.sleep(30000);
         }
     }
+
+    @Test
+    public void testReallocations() {
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        assertArrayEquals(new long[]{3, 5}, x.shape());
+
+        System.out.println("deviceId = " + AtomicAllocator.getInstance().getDeviceId(x));
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertNotNull(pointX);
+    }
+
 }
