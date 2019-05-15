@@ -186,6 +186,11 @@ public class TFGraphTestAllHelper {
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
+                    if(!tfPred.equalShapes(nd4jPred)){
+                        fail("Output node \"" + outputNode + "\" SameDiff output shape does not match TF output shape: SameDiff shape: " +
+                                Arrays.toString(nd4jPred.shape()) + " vs. TF shape: " + Arrays.toString(tfPred.shape()));
+                    }
+
                     INDArray diff = Transforms.abs(tfPred.sub(nd4jPred), false);
                     INDArray absErrorMask = diff.gte(minAbsErrorOverride).castTo(Nd4j.defaultFloatingPointType());   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
                     INDArray sumAbs = Transforms.abs(tfPred, true).addi(Transforms.abs(nd4jPred, true));
