@@ -81,6 +81,7 @@ public class DeallocatorService {
         referenceMap.put(deallocatable.getUniqueId(), reference);
     }
 
+    private static final String DeallocatorThreadNamePrefix = "DeallocatorServiceThread thread ";
 
     private class DeallocatorServiceThread extends Thread implements Runnable {
         private final ReferenceQueue<Deallocatable> queue;
@@ -89,6 +90,7 @@ public class DeallocatorService {
         private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx) {
             this.queue = queue;
             this.threadIdx = threadIdx;
+            this.setName(DeallocatorThreadNamePrefix + threadIdx);
         }
 
         @Override
