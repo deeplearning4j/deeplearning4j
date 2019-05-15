@@ -67,6 +67,7 @@ bool verbose = false;
 
 #include <array/ShapeList.h>
 #include <array/DataBuffer.h>
+#include <array/TadPack.h>
 #include <graph/VariablesSet.h>
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
@@ -882,11 +883,9 @@ public:
      * @param targetBuffer
      * @param offsetsBuffer
      */
-    void tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
+    nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
                           int *dimension,
-                          int dimensionLength,
-                          Nd4jLong *targetBuffer,
-                          Nd4jLong *offsetsBuffer);
+                          int dimensionLength);
 
     /*
      * PullRow special op
