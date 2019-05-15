@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -53,14 +54,20 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //2019/01/10 - Need TensorArray support - https://github.com/deeplearning4j/deeplearning4j/issues/6972
+            //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+
+            //2019/05/15 - CUSTOM CONV2D OP: rank of input array must be equal to 4, but got 0 instead !
             "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
+            //2019/05/15 - "Output node "SemanticPredictions" SameDiff output shape does not match TF output shape: SameDiff shape: [1, 513, 3] vs. TF shape: [367, 513]"
             "deeplabv3_pascal_train_aug_2018_01_04",
+
+            //2019/05/15 - "Output node "SemanticPredictions" SameDiff output shape does not match TF output shape: SameDiff shape: [1, 513, 3] vs. TF shape: [367, 513]"
             "deeplab_mobilenetv2_coco_voc_trainval",
+
+            //2019/05/15 - Strided slice: "Can't assign new value to the array: this shape [3]; other shape: [3, 3]"
+            "faster_rcnn_resnet101_coco_2018_01_28"
     };
 
     @Rule
@@ -128,16 +135,30 @@ public class TFGraphTestZooModels {
                         //Extract specific file
                         toExtract = split[2];
                     } else {
+                        List<String> pbFiles = new ArrayList<>();
                         for (String f : files) {
                             if (f.endsWith(".pb")) {
-                                if (toExtract != null) {
-                                    throw new IllegalStateException("Found multiple .pb files in archive: " + toExtract + " and " + f);
+                                pbFiles.add(f);
+                            }
+                        }
+
+                        if(pbFiles.size() == 1){
+                            toExtract = pbFiles.get(0);
+                        } else if(pbFiles.size() == 0){
+                            toExtract = null;
+                        } else {
+                            //Multiple files... try to find "frozen_inference_graph.pb"
+                            for(String str : pbFiles){
+                                if(str.endsWith("frozen_inference_graph.pb")){
+                                    toExtract = str;
                                 }
-                                toExtract = f;
+                            }
+                            if(toExtract == null){
+                                throw new IllegalStateException("Found multiple .pb files in archive: " + localFile + " - pb files in archive: " + pbFiles);
                             }
                         }
                     }
-                    Preconditions.checkState(toExtract != null, "Found to .pb files in archive: %s", localFile.getAbsolutePath());
+                    Preconditions.checkState(toExtract != null, "Found no .pb files in archive: %s", localFile.getAbsolutePath());
 
                     Preconditions.checkNotNull(currentTestDir, "currentTestDir has not been set (is null)");
                     modelFile = new File(currentTestDir, "tf_model.pb");
