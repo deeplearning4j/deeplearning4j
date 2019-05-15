@@ -725,25 +725,24 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
 
     }
 
-    template <typename T>
+    template <typename F, typename I>
     static __global__ void mirrorPadKernel(void const* vx, Nd4jLong* xShape, void* vz, Nd4jLong* zShape, Nd4jLong outLen, void const* paddings, Nd4jLong* paddingShape, int reflBorder) {
 
-        __shared__ T const* x;
-        __shared__ int const* pads;
-        __shared__ T* z;
+        __shared__ F const* x;
+        __shared__ I const* pads;
+        __shared__ F* z;
         __shared__ Nd4jLong zRank, rank;
         __shared__ Nd4jLong* xShapeOf, *xStrideOf;
         __shared__ Nd4jLong* zShapeOf, *zStrideOf;
-        __shared__ Nd4jLong* xIdx, *zIdx;
+        __shared__ Nd4jLong* xIdx;
         if (threadIdx.x == 0) {
             extern __shared__ unsigned char shmem[];
             xIdx    = reinterpret_cast<Nd4jLong*>(shmem);
             rank = shape::rank(xShape);
 
-            zIdx    = xIdx + blockDim.x * rank;
-            x = reinterpret_cast<T const*>(vx);//
-            pads = reinterpret_cast<int const*>(paddings);
-            z = reinterpret_cast<T*>(vz);
+            x = reinterpret_cast<F const*>(vx);//
+            pads = reinterpret_cast<I const*>(paddings);
+            z = reinterpret_cast<F*>(vz);
             xShapeOf = shape::shapeOf(xShape);
             xStrideOf = shape::stride(xShape);
             zShapeOf = shape::shapeOf(zShape);
@@ -752,12 +751,12 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
 
         }
         __syncthreads();
-        auto xzCoord = xIdx + (2 * threadIdx.x) * rank;
-        auto zxCoord = xIdx + (1 + 2 * threadIdx.x) * rank;
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 
             for(Nd4jLong i = start; i < outLen; i+= step) {
+                auto xzCoord = xIdx + (2 * threadIdx.x) * rank;
+                auto zxCoord = xIdx + (1 + 2 * threadIdx.x) * rank;
 
                 shape::index2coords(rank, zShapeOf, i, zxCoord);
 //                auto intStep = blockDim.y * gridDim.y;
@@ -789,7 +788,7 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
             }
     }
 
-    template<typename T>
+    template<typename F, typename I>
     static void mirrorPad_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
         // mode:  0 - REFLECT, else - SYMMETRIC
         const int reflBorder = (bool)mode ? 1 : 0;
@@ -804,21 +803,21 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
             const auto leftSideCorrected = leftSide - reflBorder;
             const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
 
-            mirrorPadLinearKernel<T><<<256, 512, 256, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
-            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernek(...) failed");
+            mirrorPadLinearKernel<F><<<256, 512, 256, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
+            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
         }
         else {
-            mirrorPadKernel<T><<<256, 512, 1024, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
-            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernek(...) failed");
+            mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
+            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
         }
         output.tickWriteDevice();
     }
 
     void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (context, input, paddings, output, mode), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(input.dataType(), paddings.dataType(), mirrorPad_, (context, input, paddings, output, mode), LIBND4J_TYPES, INTEGER_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void mirrorPad_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES, INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
