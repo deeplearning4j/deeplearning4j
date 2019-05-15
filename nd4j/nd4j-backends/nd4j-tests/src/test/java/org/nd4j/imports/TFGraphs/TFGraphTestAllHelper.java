@@ -49,6 +49,8 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.resources.strumpf.ResourceFile;
+import org.nd4j.resources.strumpf.StrumpfResolver;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -570,14 +572,23 @@ public class TFGraphTestAllHelper {
 
                 try {
                     String content;
-                    try(InputStream is = new BufferedInputStream(resources.get(i).getSecond().getInputStream())){
-//                        long start = System.currentTimeMillis();
-//                        log.info("STARTING READ: {}", resources.get(i).getSecond());
-                        content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
-//                        long end = System.currentTimeMillis();
-//                        log.info("Finished reading: {} ms", end - start);
+                    Pair<Resource,Resource> p = resources.get(i);
+                    boolean isRef = p.getSecond().isFile() && !p.getSecond().exists();
+
+                    InputStream stream;
+                    if(isRef){
+                        //Slight hack for loading strumpf reference files
+                        File r = new StrumpfResolver().localCacheRoot();
+                        String path = p.getSecond().getFile() + StrumpfResolver.REF;
+                        File f = ResourceFile.fromFile(path).localFile(r);
+                        stream = new BufferedInputStream(new FileInputStream(f));
+                    } else {
+                        stream = new BufferedInputStream(resources.get(i).getSecond().getInputStream());
                     }
-                    //= FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
+
+                    try(InputStream is = stream){
+                        content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
+                    }
 
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {

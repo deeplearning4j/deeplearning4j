@@ -53,7 +53,7 @@ public class Keras2ModelConfigurationTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
 
-    @Test(expected = FileNotFoundException.class)
+    @Test(expected = IllegalStateException.class)
     public void fileNotFoundTest() throws Exception {
         runModelConfigTest("modelimport/keras/foo/bar.json");
     }

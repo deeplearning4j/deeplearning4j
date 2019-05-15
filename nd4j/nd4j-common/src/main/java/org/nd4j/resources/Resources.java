@@ -79,7 +79,7 @@ public class Resources {
             }
         }
 
-        throw new IllegalStateException("Cannot resolve resource: none of " + resolvers.size() +
+        throw new IllegalStateException("Cannot resolve resource (not found): none of " + resolvers.size() +
                 " resolvers can resolve resource \"" + resourcePath + "\" - available resolvers: " + resolvers.toString());
     }
 
@@ -92,7 +92,7 @@ public class Resources {
             }
         }
 
-        throw new IllegalStateException("Cannot resolve resource: none of " + resolvers.size() +
+        throw new IllegalStateException("Cannot resolve resource (not found): none of " + resolvers.size() +
                 " resolvers can resolve resource \"" + resourcePath + "\" - available resolvers: " + resolvers.toString());
     }
 

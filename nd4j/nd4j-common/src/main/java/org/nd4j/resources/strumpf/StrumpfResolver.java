@@ -50,8 +50,6 @@ public class StrumpfResolver implements Resolver {
         String cd = System.getProperty(TEST_CACHE_DIR_SYSTEM_PROPERTY, DEFAULT_CACHE_DIR);
         cacheDir = new File(cd);
         cacheDir.mkdirs();
-
-
     }
 
     public int priority() {
@@ -111,7 +109,7 @@ public class StrumpfResolver implements Resolver {
                 if(f2.exists() && f2.isFile()){
                     //OK - found resource reference. Need to download to local cache... and/or validate what we have in cache
                     ResourceFile rf = ResourceFile.fromFile(s);
-
+                    return rf.localFile(cacheDir);
                 }
             }
         }
