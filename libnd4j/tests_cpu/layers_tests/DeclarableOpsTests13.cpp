@@ -326,7 +326,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {1});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Symmetrized1");
+    result->at(2)->printBuffer("Symmetrized1");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -345,7 +345,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {3});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Symmetrized2");
+    result->at(2)->printBuffer("Symmetrized2");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
@@ -364,7 +364,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Symmetrized3");
+    result->at(2)->printBuffer("Symmetrized3");
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     //ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -388,7 +388,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
-    auto res = result->at(0);
+    auto res = result->at(2);
     res->printBuffer("Symmetrized4");
     exp4.printBuffer("Expected sym");
     nd4j_printf("Total res is {1, %lld}\n", res->lengthOf());

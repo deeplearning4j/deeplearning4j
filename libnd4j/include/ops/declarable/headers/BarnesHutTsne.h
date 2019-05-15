@@ -57,7 +57,7 @@ namespace nd4j {
          * 0: symmetric 2D matrix with given values on given places
          */
         #if NOT_EXCLUDED(OP_barnes_symmetrized)
-        DECLARE_CUSTOM_OP(barnes_symmetrized, 3, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(barnes_symmetrized, 3, 3, false, 0, -1);
         #endif
 
         /**
@@ -75,6 +75,23 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_barnes_gains)
         DECLARE_OP(barnes_gains, 3, 1, true);
         #endif
+
+        /**
+         * This operation used as helper with Cell class
+         * to check vals in given set 
+         *
+         * Expected input:
+         * 0: 1D float row-vector (corners)
+         * 1: 1D float col-vector (widths)
+         * 2: 1D float vector (point)
+         * 
+         * Output:
+         * 0: bool val
+         */
+        #if NOT_EXCLUDED(OP_cell_contains)
+        DECLARE_CUSTOM_OP(cell_contains, 3, 1, false, 0, 1);
+        #endif
+
     }
 }
 

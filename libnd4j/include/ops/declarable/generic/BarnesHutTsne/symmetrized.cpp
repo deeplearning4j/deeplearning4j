@@ -28,17 +28,20 @@ namespace nd4j {
 namespace ops  {
 		NDArray* rowCountsPtr = nullptr;
 
-		CUSTOM_OP_IMPL(barnes_symmetrized, 3, 1, false, 0, -1) {
+		CUSTOM_OP_IMPL(barnes_symmetrized, 3, 3, false, 0, -1) {
     		auto rowP  = INPUT_VARIABLE(0);
             auto colP  = INPUT_VARIABLE(1);
             auto valP  = INPUT_VARIABLE(2);
             auto N = rowP->lengthOf() - 1;
-    		auto output = OUTPUT_VARIABLE(0);
+    		auto outputRows = OUTPUT_VARIABLE(0);
+            auto outputCols = OUTPUT_VARIABLE(1);
+            auto outputVals = OUTPUT_VARIABLE(2);
+
     		if (block.getIArguments()->size() > 0)
     		    N = INT_ARG(0);
 
             if (rowCountsPtr) {
-                helpers::barnes_symmetrize(rowP, colP, valP, N, output, rowCountsPtr);
+                helpers::barnes_symmetrize(rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCountsPtr);
                 delete rowCountsPtr;
                 return Status::OK();
             }
@@ -62,7 +65,7 @@ namespace ops  {
             auto N = rowP->lengthOf() - 1;
             if (block.getIArguments()->size() > 0)
                 N = INT_ARG(0);
-
+            auto dataType = ArrayOptions::dataType(inputShape->at(0));
             NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}); //rowP->dup();
             //srowCounts->assign(0);
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
@@ -75,7 +78,7 @@ namespace ops  {
            // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
             //outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
             outShapeInfo = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
-    		return SHAPELIST(outShapeInfo);
+    		return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dataType, N+1, block.workspace()), ShapeBuilders::createVectorShapeInfo(dataType, len, block.workspace()), outShapeInfo);
 		}
 
 }

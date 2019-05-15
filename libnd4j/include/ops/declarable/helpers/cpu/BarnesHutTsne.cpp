@@ -61,20 +61,24 @@ namespace helpers {
 //    }
 
     template <typename T>
-    static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
+    static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
         //auto N = rowP->lengthOf() - 1; /// 2 + rowP->lengthOf() % 2;
         //auto numElements = output->lengthOf();
-        std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
+        //std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
-        symRowP.insert(symRowP.begin(),0);
+        //symRowP.insert(symRowP.begin(),0);
         //symRowP(1, {0}) = *rowCounts;
+        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        int* symRowP = reinterpret_cast<int*>(outputRows->buffer());
+        symRowP[0] = 0;
         for (int n = 0; n < N; n++)
             symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
+        int* symColP = reinterpret_cast<int*>(outputCols->buffer());
 //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
-        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        outputRows->printBuffer("SymRows are");
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
         T const* pVals = reinterpret_cast<T const*>(valP->getBuffer());
-        T* pOutput = reinterpret_cast<T*>(output->buffer());
+        T* pOutput = reinterpret_cast<T*>(outputVals->buffer());
         //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
         std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
@@ -93,9 +97,9 @@ namespace helpers {
                 for (int m = start; m < end; m++) {
                     if (pCols[m] == n) {
                         present = true;
-                        if (n <= pCols[i]) {
-                            //pOutput[sym_row_P[n]        + offset[n]]        = col_P[i];
-                            //pOutput[sym_row_P[col_P[i]] + offset[col_P[i]]] = n;
+                        if (n <= colPI) {
+                            symColP[symRowP[n] + offset[n]]        = colPI;
+                            symColP[symRowP[colPI] + offset[colPI]] = n;
                             pOutput[symRowP[n] + offset[n]] = pVals[i] + pVals[m];
                             pOutput[symRowP[colPI] + offset[colPI]] = pVals[i] + pVals[m];
                         }
@@ -106,8 +110,8 @@ namespace helpers {
                 if (!present) {
                     //int colPI = pCols[i];
                     //if (n <= colPI) {
-                        //pOutput[symRowP[n] + offset[n]] = T(colPI);
-                        //pOutput[symRowP[pCols[i]] + offset[colPI]] = T(n);
+                        symColP[symRowP[n] + offset[n]] = colPI;
+                        symColP[symRowP[pCols[i]] + offset[colPI]] = n;
                         pOutput[symRowP[n] + offset[n]] = pVals[i];
                         pOutput[symRowP[colPI] + offset[colPI]] = pVals[i];
                     //}
@@ -124,15 +128,15 @@ namespace helpers {
             }
         }
     }
-    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts) {
+    void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
 
         // Divide the result by two
-        BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, output, rowCounts), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_, (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), NUMERIC_TYPES);
 
-        *output /= 2.0;
+        *outputVals /= 2.0;
         //output->assign(symValP);
     }
-    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* output, NDArray* rowCounts), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_, (const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts), NUMERIC_TYPES);
 
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
@@ -249,6 +253,20 @@ namespace helpers {
 
     }
     BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output), NUMERIC_TYPES);
+
+    bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, Nd4jLong dimension) {
+        auto  cornerMinusWidth = *corner - *width;
+        auto cornerPlusWidth = *corner + *width;
+
+        for (Nd4jLong i = 0; i < dimension; i++) {
+            if (cornerMinusWidth.e<double>(i) > point->e<double>(i))
+                return false;
+            if (cornerPlusWidth.e<double>(i) < point->e<double>(i))
+                return false;
+        }
+
+        return true;
+    }
 }
 }
 }
