@@ -108,6 +108,7 @@ public class DataVecAnalysisUtils {
                     minsMaxes[i][1] = lac.getMaxValueSeen();
 
                     break;
+                case Float:
                 case Double:
                     DoubleAnalysisCounter dac = (DoubleAnalysisCounter) counters.get(i);
                     DoubleAnalysis da = new DoubleAnalysis.Builder().min(dac.getMinValueSeen())
@@ -155,6 +156,20 @@ public class DataVecAnalysisUtils {
 
                     minsMaxes[i][0] = nda.getMinValue();
                     minsMaxes[i][1] = nda.getMaxValue();
+
+                    break;
+                case Boolean:
+                    IntegerAnalysisCounter iac2 = (IntegerAnalysisCounter) counters.get(i);
+                    IntegerAnalysis ia2 = new IntegerAnalysis.Builder().min(iac2.getMinValueSeen())
+                            .max(iac2.getMaxValueSeen()).mean(iac2.getMean()).sampleStdev(iac2.getSampleStdev())
+                            .sampleVariance(iac2.getSampleVariance()).countZero(iac2.getCountZero())
+                            .countNegative(iac2.getCountNegative()).countPositive(iac2.getCountPositive())
+                            .countMinValue(iac2.getCountMinValue()).countMaxValue(iac2.getCountMaxValue())
+                            .countTotal(iac2.getCountTotal()).digest(iac2.getDigest()).build();
+                    list.add(ia2);
+
+                    minsMaxes[i][0] = iac2.getMinValueSeen();
+                    minsMaxes[i][1] = iac2.getMaxValueSeen();
 
                     break;
                 default:

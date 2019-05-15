@@ -24,6 +24,8 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
+import org.datavec.api.transform.metadata.BinaryMetaData;
+import org.datavec.api.transform.metadata.BooleanMetaData;
 import org.datavec.api.transform.quality.DataQualityAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ui.HtmlAnalysis;
@@ -33,6 +35,7 @@ import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.graph.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -323,6 +326,37 @@ public class TestAnalysis extends BaseSparkTest {
         for( String k : mapLocal.keySet()){
             assertEquals(mapLocal.get(k), new HashSet<Writable>(mapSpark.get(k)));
         }
+    }
+
+    @Test
+    public void testAnalysisAllColTypes(){
+
+        Schema s = new Schema.Builder()
+                .addColumn(new BinaryMetaData("binary"))
+                .addColumn(new BooleanMetaData("boolean"))
+                .addColumnCategorical("categorical", "a", "b")
+                .addColumnDouble("double")
+                .addColumnFloat("float")
+                .addColumnInteger("integer")
+                .addColumnLong("long")
+                .addColumnNDArray("ndarray", new long[]{1,4})
+                .addColumnString("string")
+                .addColumnTime("time", TimeZone.getDefault())
+                .build();
+
+        List<List<Writable>> data = Arrays.asList(
+                Arrays.asList(new BytesWritable(new byte[3]), new BooleanWritable(true), new Text("a"),
+                        new DoubleWritable(1.0), new FloatWritable(1.0f), new IntWritable(1),
+                        new LongWritable(1L), new NDArrayWritable(Nd4j.create(DataType.FLOAT, 1, 4)), new Text("text"),
+                        new LongWritable(100L)),
+                Arrays.asList(new BytesWritable(new byte[3]), new BooleanWritable(false), new Text("b"),
+                        new DoubleWritable(0.0), new FloatWritable(0.0f), new IntWritable(0),
+                        new LongWritable(0L), new NDArrayWritable(Nd4j.create(DataType.FLOAT, 1, 4)), new Text("text2"),
+                        new LongWritable(101L)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(data);
+        DataAnalysis da = AnalyzeSpark.analyze(s, rdd);
+        System.out.println(da);
     }
 
 }

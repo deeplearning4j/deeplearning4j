@@ -90,6 +90,39 @@ public class MergeVertex extends GraphVertex {
             throw new InvalidInputTypeException(
                             "Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: "
                                             + vertexInputs);
+        } else if (first.getType() == InputType.Type.CNN3D) {
+            // CNN3D inputs: check that the channels, width and height match:
+            InputType.InputTypeConvolutional3D firstConv = (InputType.InputTypeConvolutional3D) first;
+
+            // FIXME: int cast
+            val fd = (int) firstConv.getDepth();
+            val fw = (int) firstConv.getWidth();
+            val fh = (int) firstConv.getHeight();
+            val fc = (int) firstConv.getChannels();
+
+            int depthSum = fc;
+            InputType.InputTypeConvolutional3D otherConv = null;
+            for (int i = 1; i < vertexInputs.length; i++) {
+                if (vertexInputs[i].getType() != InputType.Type.CNN3D) {
+                    throw new InvalidInputTypeException(
+                            "Invalid input: MergeVertex cannot process activations of different types:" + " first type = " + InputType.Type.CNN3D + ", input type " + (i + 1) + " = " + vertexInputs[i].getType());
+                }
+
+                otherConv = (InputType.InputTypeConvolutional3D) vertexInputs[i];
+                val od = (int) otherConv.getDepth();
+                val ow = (int) otherConv.getWidth();
+                val oh = (int) otherConv.getHeight();
+                val oc = (int) otherConv.getChannels();
+
+                if (fd != od || fw != ow || fh != oh) {
+                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge CNN3D activations of different width/heights:" + "first [channels,width,height] = [" + fd + "," + fw + "," + fh
+                            + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
+                }
+
+                depthSum += oc;
+            }
+
+            return InputType.convolutional3D(Convolution3D.DataFormat.NDHWC, fd, fh, fw, depthSum);
         } else if (first.getType() != InputType.Type.CNN) {
             //FF or RNN data inputs
             int size = 0;
@@ -140,39 +173,6 @@ public class MergeVertex extends GraphVertex {
                 }
             }
 
-        }  else if (first.getType() == InputType.Type.CNN3D) {
-            // CNN3D inputs: check that the channels, width and height match:
-            InputType.InputTypeConvolutional3D firstConv = (InputType.InputTypeConvolutional3D) first;
-
-            // FIXME: int cast
-            val fd = (int) firstConv.getDepth();
-            val fw = (int) firstConv.getWidth();
-            val fh = (int) firstConv.getHeight();
-            val fc = (int) firstConv.getChannels();
-
-            int depthSum = fc;
-            InputType.InputTypeConvolutional3D otherConv = null;
-            for (int i = 1; i < vertexInputs.length; i++) {
-                if (vertexInputs[i].getType() != InputType.Type.CNN3D) {
-                    throw new InvalidInputTypeException(
-                            "Invalid input: MergeVertex cannot process activations of different types:" + " first type = " + InputType.Type.CNN3D + ", input type " + (i + 1) + " = " + vertexInputs[i].getType());
-                }
-
-                otherConv = (InputType.InputTypeConvolutional3D) vertexInputs[i];
-                val od = (int) otherConv.getDepth();
-                val ow = (int) otherConv.getWidth();
-                val oh = (int) otherConv.getHeight();
-                val oc = (int) otherConv.getChannels();
-
-                if (fd != od || fw != ow || fh != oh) {
-                    throw new InvalidInputTypeException("Invalid input: MergeVertex cannot merge CNN3D activations of different width/heights:" + "first [channels,width,height] = [" + fd + "," + fw + "," + fh
-                            + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
-                }
-
-                depthSum += oc;
-            }
-
-            return InputType.convolutional3D(Convolution3D.DataFormat.NDHWC, fd, fh, fw, depthSum);
         } else {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;

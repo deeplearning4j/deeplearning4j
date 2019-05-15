@@ -40,17 +40,20 @@ public class DataTypeAdapter implements AttributeAdapter {
 
     public static org.nd4j.linalg.api.buffer.DataType dtypeConv(int dataType) {
         switch (dataType) {
-            case 1: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
-            case 2: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
-            case 3: return org.nd4j.linalg.api.buffer.DataType.INT;
-            case 4: return org.nd4j.linalg.api.buffer.DataType.UBYTE;
-            case 5: return org.nd4j.linalg.api.buffer.DataType.SHORT;
-            case 6: return org.nd4j.linalg.api.buffer.DataType.BYTE;
-            case 7: return org.nd4j.linalg.api.buffer.DataType.UTF8;
-            case 9: return org.nd4j.linalg.api.buffer.DataType.LONG;
-            case 10: return org.nd4j.linalg.api.buffer.DataType.BOOL;
-            case 19: return org.nd4j.linalg.api.buffer.DataType.HALF;
-            default: throw new UnsupportedOperationException("DataType isn't supported: " + dataType);
+            case DataType.DT_FLOAT_VALUE: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+            case DataType.DT_DOUBLE_VALUE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+            case DataType.DT_INT32_VALUE: return org.nd4j.linalg.api.buffer.DataType.INT;
+            case DataType.DT_UINT8_VALUE: return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+            case DataType.DT_INT16_VALUE: return org.nd4j.linalg.api.buffer.DataType.SHORT;
+            case DataType.DT_INT8_VALUE: return org.nd4j.linalg.api.buffer.DataType.BYTE;
+            case DataType.DT_STRING_VALUE: return org.nd4j.linalg.api.buffer.DataType.UTF8;
+            case DataType.DT_INT64_VALUE: return org.nd4j.linalg.api.buffer.DataType.LONG;
+            case DataType.DT_BOOL_VALUE: return org.nd4j.linalg.api.buffer.DataType.BOOL;
+            case DataType.DT_UINT16_VALUE: return org.nd4j.linalg.api.buffer.DataType.UINT16;
+            case DataType.DT_HALF_VALUE: return org.nd4j.linalg.api.buffer.DataType.HALF;
+            case DataType.DT_UINT32_VALUE: return org.nd4j.linalg.api.buffer.DataType.UINT32;
+            case DataType.DT_UINT64_VALUE: return org.nd4j.linalg.api.buffer.DataType.UINT64;
+            default: throw new UnsupportedOperationException("DataType isn't supported: " + dataType + " - " + DataType.forNumber(dataType));
         }
     };
 }

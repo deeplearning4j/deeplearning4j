@@ -23,7 +23,7 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Metadata for an integer column
+ * Metadata for an binary column
  *
  * @author Alex Black
  */
@@ -86,7 +86,7 @@ public class BinaryMetaData extends BaseColumnMetaData {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("BooleanMetaData(name=\"").append(name).append("\",");
+        sb.append("BinaryMetaData(name=\"").append(name).append("\",");
         sb.append(")");
         return sb.toString();
     }
