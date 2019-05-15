@@ -50,10 +50,12 @@ namespace ops  {
 
 		DECLARE_TYPES(barnes_symmetrized) {
 			getOpDescriptor()
-				->setAllowedInputTypes(0, {ALL_INTS})
-                ->setAllowedInputTypes(1, {ALL_INTS})
+				->setAllowedInputTypes(0, {DataType::INT32})
+                ->setAllowedInputTypes(1, {DataType::INT32})
                 ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes(1, {DataType::INT32})
+                ->setAllowedOutputTypes(1, {DataType::INT32})
+                ->setAllowedOutputTypes(2, {ALL_INTS, ALL_FLOATS})
 				->setSameMode(false);
 		}
 
