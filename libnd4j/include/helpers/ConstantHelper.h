@@ -42,6 +42,7 @@ namespace nd4j {
 
         static ConstantHelper* getInstance();
         static int getCurrentDevice();
+        static int getNumberOfDevices();
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
     };
 }

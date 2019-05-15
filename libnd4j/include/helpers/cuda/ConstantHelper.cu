@@ -50,13 +50,37 @@ namespace nd4j {
         return dev;
     }
 
-    ConstantHelper::ConstantHelper() {
-        auto deviceId = getCurrentDevice();
-        auto constant = getConstantSpace();
+    int ConstantHelper::getNumberOfDevices() {
+        int dev = 0;
+        auto res = cudaGetDeviceCount(&dev);
 
-        // filling default ptr, which will be 0 probably
-        _devicePointers[deviceId] = constant;
-        _deviceOffsets[deviceId] = 0;
+        if (res != 0)
+            throw cuda_exception::build("cudaGetDeviceCount failed", res);
+
+        return dev;
+    }
+
+
+    ConstantHelper::ConstantHelper() {
+        auto initialDevice = getCurrentDevice();
+
+        auto numDevices = getNumberOfDevices();
+
+        // filling all pointers
+        for (int e = 0; e < numDevices; e++) {
+            auto res = cudaSetDevice(e);
+            if (res != 0)
+                throw cuda_exception::build("cudaSetDevice failed", res);
+             auto constant = getConstantSpace();
+
+            _devicePointers[e] = constant;
+            _deviceOffsets[e] = 0;
+        }
+
+        //
+        auto res = cudaSetDevice(initialDevice);
+        if (res != 0)
+            throw cuda_exception::build("Final cudaSetDevice failed", res);
     }
 
     ConstantHelper* ConstantHelper::getInstance() {

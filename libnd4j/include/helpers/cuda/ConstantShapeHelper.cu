@@ -25,19 +25,12 @@
 #include <ConstantHelper.h>
 
 namespace nd4j {
-    static int getCurrentDevice() {
-        int dev = 0;
-        auto res = cudaGetDevice(&dev);
-
-        if (res != 0)
-            throw cuda_exception::build("cudaGetDevice failed", res);
-
-        return dev;
-    }
 
     ConstantShapeHelper::ConstantShapeHelper() {
-        _cache.resize(32);
-        for (int e = 0; e < 32; e++) {
+        auto numDevices = ConstantHelper::getNumberOfDevices();
+
+        _cache.resize(numDevices);
+        for (int e = 0; e < numDevices; e++) {
             std::map<ShapeDescriptor, DataBuffer> cache;
             _cache[e] = cache;
         }
@@ -56,7 +49,7 @@ namespace nd4j {
     }
 
     DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
-        int deviceId = getCurrentDevice();
+        int deviceId = ConstantHelper::getCurrentDevice();
 
         _mutex.lock();
 
@@ -85,7 +78,7 @@ namespace nd4j {
 
     bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor) {
         bool result;
-        int deviceId = getCurrentDevice();
+        auto deviceId = ConstantHelper::getCurrentDevice();
         _mutex.lock();
 
         if (_cache[deviceId].count(descriptor) == 0)

@@ -44,5 +44,9 @@ namespace nd4j {
         return 0L;
     }
 
+    int ConstantHelper::getNumberOfDevices() {
+        return 1;
+    }
+
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;
 }

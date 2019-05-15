@@ -27,8 +27,12 @@
 
 namespace nd4j {
     ConstantTadHelper::ConstantTadHelper() {
-        std::map<TadDescriptor, TadPack> pack;
-        _cache.emplace_back(pack);
+        auto numDevices = ConstantHelper::getNumberOfDevices();
+
+        for (int e = 0; e < numDevices; e++) {
+            std::map<TadDescriptor, TadPack> pack;
+            _cache.emplace_back(pack);
+        }
     }
 
     ConstantTadHelper* ConstantTadHelper::getInstance() {
@@ -57,7 +61,7 @@ namespace nd4j {
     }
 
     TadPack& ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
-        const int deviceId = 0;
+        const int deviceId = ConstantHelper::getCurrentDevice();
 
         _mutex.lock();
 
