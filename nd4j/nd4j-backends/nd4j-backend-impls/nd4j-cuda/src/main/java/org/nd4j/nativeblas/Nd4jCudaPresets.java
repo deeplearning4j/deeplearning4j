@@ -30,6 +30,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
                         "array/DataType.h",
                         "array/DataBuffer.h",
+                        "array/TadPack.h",
                         "memory/MemoryType.h",
                         "Environment.h",
                         "types/utf8string.h",

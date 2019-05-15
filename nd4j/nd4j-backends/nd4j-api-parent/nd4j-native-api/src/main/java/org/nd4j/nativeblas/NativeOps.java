@@ -741,8 +741,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void setGridLimit(int gridSize);
 
-    public abstract void tadOnlyShapeInfo(@Cast("Nd4jLong *") LongPointer shapeInfo, IntPointer dimension, int dimensionLength,
-                                          @Cast("Nd4jLong *") LongPointer targetBuffer, @Cast("Nd4jLong *") LongPointer offsetsBuffer);
+    public abstract Pointer tadOnlyShapeInfo(@Cast("Nd4jLong *") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
 
     ///////////////
 

@@ -100,8 +100,9 @@ public class CpuTADManager implements TADManager {
                 Pointer targetPointer = outputBuffer.addressPointer();
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
-                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                                (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
+                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length);
+                if (1 > 0)
+                    throw new RuntimeException();
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side

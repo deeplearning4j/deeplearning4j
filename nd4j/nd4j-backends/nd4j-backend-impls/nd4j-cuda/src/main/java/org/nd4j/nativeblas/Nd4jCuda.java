@@ -302,6 +302,69 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #endif //DEV_TESTS_DATABUFFER_H
 
 
+// Parsed from array/TadPack.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef DEV_TESTS_TADPACK_H
+// #define DEV_TESTS_TADPACK_H
+
+// #include "DataBuffer.h"
+    @Namespace("nd4j") @NoOffset public static class TadPack extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public TadPack(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public TadPack(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public TadPack position(long position) {
+            return (TadPack)super.position(position);
+        }
+    
+        public TadPack(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
+        private native void allocate(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads);
+        public TadPack() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native @Cast("Nd4jLong*") LongPointer primaryShapeInfo();
+        public native @Cast("Nd4jLong*") LongPointer primaryOffsets();
+
+        public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
+        public native @Cast("Nd4jLong*") LongPointer specialOffsets();
+
+        public native @Cast("Nd4jLong") long numberOfTads();
+
+        /**
+         * These methods return either primary or special pointers depending on platform binaries were compiled for
+         * @return
+         */
+        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
+        public native @Cast("Nd4jLong*") LongPointer platformOffsets();
+    }
+
+
+
+// #endif //DEV_TESTS_TADPACK_H
+
+
 // Parsed from memory/MemoryType.h
 
 //
@@ -531,6 +594,7 @@ bool verbose = false;
 
 // #include <array/ShapeList.h>
 // #include <array/DataBuffer.h>
+// #include <array/TadPack.h>
 // #include <graph/VariablesSet.h>
 // #include <graph/GraphState.h>
 // #include <graph/execution/LogicExecutor.h>
@@ -1953,21 +2017,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param targetBuffer
      * @param offsetsBuffer
      */
-    public native void tadOnlyShapeInfo(@Cast("Nd4jLong*") LongPointer xShapeInfo,
+    public native TadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") LongPointer xShapeInfo,
                               IntPointer dimension,
-                              int dimensionLength,
-                              @Cast("Nd4jLong*") LongPointer targetBuffer,
-                              @Cast("Nd4jLong*") LongPointer offsetsBuffer);
-    public native void tadOnlyShapeInfo(@Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                              int dimensionLength);
+    public native TadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") LongBuffer xShapeInfo,
                               IntBuffer dimension,
-                              int dimensionLength,
-                              @Cast("Nd4jLong*") LongBuffer targetBuffer,
-                              @Cast("Nd4jLong*") LongBuffer offsetsBuffer);
-    public native void tadOnlyShapeInfo(@Cast("Nd4jLong*") long[] xShapeInfo,
+                              int dimensionLength);
+    public native TadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") long[] xShapeInfo,
                               int[] dimension,
-                              int dimensionLength,
-                              @Cast("Nd4jLong*") long[] targetBuffer,
-                              @Cast("Nd4jLong*") long[] offsetsBuffer);
+                              int dimensionLength);
 
     /*
      * PullRow special op
@@ -3710,6 +3768,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
+
+        /**
+        *  prints _bufferD as it is, that is in current state without checking buffer status
+        */
 
         /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
@@ -9871,69 +9933,6 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 // #endif //DEV_TESTS_TADDESCRIPTOR_H
-
-
-// Parsed from array/TadPack.h
-
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
-//
-//  @author raver119@gmail.com
-//
-
-// #ifndef DEV_TESTS_TADPACK_H
-// #define DEV_TESTS_TADPACK_H
-
-// #include "DataBuffer.h"
-    @Namespace("nd4j") @NoOffset public static class TadPack extends Pointer {
-        static { Loader.load(); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public TadPack(Pointer p) { super(p); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public TadPack(long size) { super((Pointer)null); allocateArray(size); }
-        private native void allocateArray(long size);
-        @Override public TadPack position(long position) {
-            return (TadPack)super.position(position);
-        }
-    
-        public TadPack(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
-        private native void allocate(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads);
-        public TadPack() { super((Pointer)null); allocate(); }
-        private native void allocate();
-
-        public native @Cast("Nd4jLong*") LongPointer primaryShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer primaryOffsets();
-
-        public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer specialOffsets();
-
-        public native @Cast("Nd4jLong") long numberOfTads();
-
-        /**
-         * These methods return either primary or special pointers depending on platform binaries were compiled for
-         * @return
-         */
-        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer platformOffsets();
-    }
-
-
-
-// #endif //DEV_TESTS_TADPACK_H
 
 
 // Parsed from helpers/DebugInfo.h

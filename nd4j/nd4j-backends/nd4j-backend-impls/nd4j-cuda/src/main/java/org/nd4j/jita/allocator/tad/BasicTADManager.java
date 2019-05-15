@@ -84,10 +84,12 @@ public class BasicTADManager implements TADManager {
         Pointer xShapeInfo = AddressRetriever.retrieveHostPointer(array.shapeInfoDataBuffer());
         Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
         Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
-        if(!isScalar)
-            nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                    (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
+        if (1 > 0)
+            throw new RuntimeException();
+
+        if(!isScalar)
+            nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length);
         else  {
             outputBuffer.put(0,2);
             outputBuffer.put(1,1);

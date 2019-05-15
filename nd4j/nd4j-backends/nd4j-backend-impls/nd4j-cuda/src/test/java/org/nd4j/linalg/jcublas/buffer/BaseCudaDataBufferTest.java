@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 public class BaseCudaDataBufferTest {
 
     @Test
-    public void testShapes_1() {
+    public void testShapeCache_1() {
         val x = Nd4j.create(DataType.FLOAT, 3, 5);
 
         assertEquals(DataType.FLOAT, x.dataType());
@@ -49,5 +49,33 @@ public class BaseCudaDataBufferTest {
         assertEquals(pointM.getDevicePointer().address(), pointX.getDevicePointer().address());
 
         assertArrayEquals(x.shapeInfoJava(), jvm);
+    }
+
+    @Test
+    public void testTadCache_1() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 5);
+        val row = x.getRow(1);
+        val tad = x.tensorAlongDimension(1, 1);
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(row.shapeInfoDataBuffer());
+        val pointM = AtomicAllocator.getInstance().getAllocationPoint(tad.shapeInfoDataBuffer());
+
+        assertNotNull(pointX);
+        assertNotNull(pointM);
+
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+        assertNotNull(pointM.getHostPointer());
+        assertNotNull(pointM.getDevicePointer());
+
+
+        log.info("X hPtr: {}; dPtr: {}", pointX.getHostPointer().address(), pointX.getDevicePointer().address());
+        log.info("M hPtr: {}; dPtr: {}", pointM.getHostPointer().address(), pointM.getDevicePointer().address());
+
+        assertEquals(pointM.getHostPointer().address(), pointX.getHostPointer().address());
+        assertEquals(pointM.getDevicePointer().address(), pointX.getDevicePointer().address());
+
+        assertArrayEquals(row.shapeInfoJava(), tad.shapeInfoJava());
     }
 }
