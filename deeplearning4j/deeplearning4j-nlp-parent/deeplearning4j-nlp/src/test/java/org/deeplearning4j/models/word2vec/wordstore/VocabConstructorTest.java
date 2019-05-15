@@ -311,7 +311,7 @@ public class VocabConstructorTest {
         log.info("Source Vocab size: " + sourceSize);
 
         val dir = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()

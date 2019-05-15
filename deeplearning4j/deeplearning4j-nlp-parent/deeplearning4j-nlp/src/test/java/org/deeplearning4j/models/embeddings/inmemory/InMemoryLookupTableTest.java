@@ -136,7 +136,7 @@ public class InMemoryLookupTableTest {
 
 
         val dir = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
                         .addSourceFolder(dir).build();
