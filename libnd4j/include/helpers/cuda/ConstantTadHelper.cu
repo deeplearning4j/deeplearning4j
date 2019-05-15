@@ -84,8 +84,8 @@ namespace nd4j {
             if (res != 0)
                 throw cuda_exception::build("tadOffsets copy failed", res);
 
-            DataBuffer shapesBuffer(sPtr, ssPtr);
-            DataBuffer offsetsBuffer(oPtr, soPtr);
+            DataBuffer shapesBuffer(sPtr, ssPtr, shape::shapeInfoLength(subArrRank), sizeof(Nd4jLong));
+            DataBuffer offsetsBuffer(oPtr, soPtr, numOfSubArrs, sizeof(Nd4jLong));
 
             TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
             _cache[deviceId][descriptor] = t;

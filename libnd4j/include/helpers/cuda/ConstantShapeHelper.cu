@@ -63,7 +63,7 @@ namespace nd4j {
         if (_cache[deviceId].count(descriptor) == 0) {
             auto hPtr = descriptor.toShapeInfo();
             auto dPtr = ConstantHelper::getInstance()->replicatePointer(hPtr, shape::shapeInfoByteLength(hPtr));
-            DataBuffer buffer(hPtr, dPtr);
+            DataBuffer buffer(hPtr, dPtr, shape::shapeInfoLength(hPtr), sizeof(Nd4jLong));
             ShapeDescriptor descriptor1(descriptor);
             _cache[deviceId][descriptor1] = buffer;
             DataBuffer &r = _cache[deviceId][descriptor1];

@@ -72,8 +72,8 @@ namespace nd4j {
 
             shape::calcSubArrShapeAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
 
-            DataBuffer shapesBuffer(sPtr, nullptr);
-            DataBuffer offsetsBuffer(oPtr, nullptr);
+            DataBuffer shapesBuffer(sPtr, nullptr, shape::shapeInfoLength(subArrRank), sizeof(Nd4jLong));
+            DataBuffer offsetsBuffer(oPtr, nullptr, numOfSubArrs, sizeof(Nd4jLong));
             TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
 
 

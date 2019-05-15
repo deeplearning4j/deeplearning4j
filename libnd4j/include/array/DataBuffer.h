@@ -29,11 +29,16 @@ namespace nd4j {
     private:
         Nd4jPointer _primaryBuffer = nullptr;
         Nd4jPointer _specialBuffer = nullptr;
+        Nd4jLong _length = 0;
+        Nd4jLong _sizeOf = 0;
     public:
-        DataBuffer(Nd4jPointer primary, Nd4jPointer special = nullptr);
+        DataBuffer(Nd4jPointer primary, Nd4jPointer special, Nd4jLong numEelements, Nd4jLong sizeOf);
         DataBuffer(const DataBuffer &other);
         explicit DataBuffer() = default;
         ~DataBuffer() = default;
+
+        Nd4jLong sizeOf();
+        Nd4jLong length();
 
         Nd4jPointer primary();
         Nd4jPointer special();

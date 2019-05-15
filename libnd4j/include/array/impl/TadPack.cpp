@@ -20,6 +20,7 @@
 
 #include "../TadPack.h"
 #include <Environment.h>
+#include <helpers/shape.h>
 
 namespace nd4j {
     TadPack::TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads) {
@@ -53,5 +54,9 @@ namespace nd4j {
 
     Nd4jLong* TadPack::platformOffsets() {
         return nd4j::Environment::getInstance()->isCPU() ? primaryOffsets() : specialOffsets();
+    }
+
+    int TadPack::shapeInfoLength() {
+        return (int) shape::shapeInfoLength(primaryShapeInfo());
     }
 }

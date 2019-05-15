@@ -29,6 +29,7 @@ namespace nd4j {
         DataBuffer _tadShape;
         DataBuffer _tadOffsets;
         Nd4jLong _numTads;
+        int _shapeInfoLength;
     public:
         explicit TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads);
         TadPack() = default;
@@ -41,6 +42,7 @@ namespace nd4j {
         Nd4jLong* specialOffsets();
 
         Nd4jLong numberOfTads();
+        int shapeInfoLength();
 
         /**
          * These methods return either primary or special pointers depending on platform binaries were compiled for
