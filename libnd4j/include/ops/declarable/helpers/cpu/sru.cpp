@@ -74,77 +74,6 @@ void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0,
     // *h = r * (activation<T>(c) - *x) + *x;        
 }
 
-//////////////////////////////////////////////////////////////////////////
-// template <typename T>
-// void sruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs) {
-
-//     NDArray<T>* x    = inArrs[0];               // input [bS x inSize], bS - batch size, inSize - number of features
-//     NDArray<T>* c0   = inArrs[1];               // previous cell state c  [bS x inSize], that is at previous time step t-1   
-//     NDArray<T>* w    = inArrs[2];               // weights [inSize x 3*inSize]
-//     NDArray<T>* b    = inArrs[3];               // biases [2*inSize]
-//     NDArray<T>* dLdC = inArrs[4];               // gradient of the loss func with respect to cell output [bS x inSize]
-//     NDArray<T>* dLdH = inArrs[5];               // gradient of the loss func with respect to cell state  [bS x inSize]
-
-//     NDArray<T>* dLdX  = outArrs[0];             // gradient of the loss func with respect to input [bS x inSize], so called epsilon
-//     NDArray<T>* dLdW  = outArrs[1];             // gradient of the loss func with respect to weights [inSize x 3*inSize]
-//     NDArray<T>* dLdB  = outArrs[2];             // gradient of the loss func with respect to biases [2*inSize]
-//     NDArray<T>* dLdC0 = outArrs[3];             // gradient of the loss func with respect to previous cell state [bS, inSize]
-
-//     const int inSize = x->sizeAt(1);           // inSize - number of features
-            
-//     //*********** feed forward ***********//
-//     NDArray<T> z = mmul(*x, *w);               //  [bS x 3*inSize]    
-
-//     // forget gate = sigmoid(x*Wf + bf)
-//     NDArray<T> f = sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{0, inSize}}));             // [bS, inSize]    
-//     NDArray<T> oneMinusF = 1. - f;
-    
-//     // reset gate = sigmoid(x*Wr + br)
-//     NDArray<T> r = sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{inSize, 2*inSize}}));      // [bS, inSize]    
-//     NDArray<T> oneMinusR = 1. - r;
-
-//     // current sell state = f◦c0 + (1 - f)◦(x*Wc)             --->  c->assign( f*(*c0) + ((T)1. - f) * z({{},{0, inSize}}) );
-//     // current cell output = r◦activation(c) + (1 - r)◦x      --->  h->assign( r*activation<T>(*c) + ((T)1. - r) * (*x) );    
-
-
-//     //*********** back propagation ***********//
-//     // dCdC0 = f;    
-//     // dFdX = Wf    
-//     // dRdX = Wr
-
-//     NDArray<T> tanh = activation<T>(*c);
-//     NDArray<T> dFdBf = f * oneMinusF;
-//     NDArray<T> dRdBr = r * oneMinusR;   
-//     NDArray<T> dHdR = tanh - *x;    
-//     // dCdF = c0 - x*Wc;    
-//     NDArray<T> dCdF = *c0 - z({{},{0, inSize}});    
-//     // dHdC = r * (1 - tanh*tanh)
-//     NDArray<T> dHdC = r * (1. - tanh * tanh);
-//     // dCdX = dCdX + dCdF*dFdX = (1-f)*Wc +  dCdF*Wf
-//     NDArray<T> dCdX = oneMinusF * (*w)({{},{0, inSize}}) + dCdF * (*w)({{},{inSize, 2*inSize}});
-
-
-//     // dLdC0 =  dLdC * dCdC0 = dLdC * f
-//     dLdC0->assign((*dLdC) * f);
-
-    
-//     // dLdBf = dLdH*dHdBf + dLdC*dCdBf = dLdH*dHdC*dCdBf + dLdC*dCdF*dFdBf =  dLdH*dHdC*dCdF*dFdBf + dLdC*dCdF*dFdBf = (dLdH*dHdC + dLdC)*dCdF*dFdBf
-//     (*dLdB)({{0, inSize}}).assign(((*dLdH) * dHdC + *dLdC) * dCdF * dFdBf);
-//     // dLdBr = dLdH * dHdR * dRdBr 
-//     (*dLdB)({{inSize, 2*inSize}}).assign((*dLdH) * dHdR * dRdBr)
-    
-    
-//     // dLdWc = dLdH*dHdWc + dLdC*dCdWc = dLdH*dHdC*dCdWc + dLdC*dCdWc = (dLdH*dHdC + dLdC) * dCdWc = (dLdH*dHdC + dLdC) * (1-f)*x
-//     (*dLdW)({{}, {0, inSize}}).assign(((*dLdH) * dHdC + *dLdC) * oneMinusF * (*x));
-//     // dLdWf = dLdBf * x
-//     (*dLdW)({{}, {inSize, 2*inSize}}).assign((*dLdB)({{0, inSize}}) * (*x));
-//     // dLdWr = dLdBr * x
-//     (*dLdW)({{}, {2*inSize, 3*inSize}}).assign((*dLdB)({{inSize, 2*inSize}}) * (*x));    
-    
-
-//     // dLdX = dLdH*dHdX + dLdC*dCdX = dLdH*(dHdX + dHdR*dRdX + dHdC*dCdX) + dLdC*dCdF*dFdX = dLdH*(1 - r + dHdR*dRdX + dHdC*dCdX) + dLdC*dCdX
-//     dLdX->assign((*dLdH) * (oneMinusR + dHdR * (*w)({{},{2*inSize, 3*inSize}}) + dHdC * dCdX) + (*dLdC) * dCdX);   
-// }
 
 //////////////////////////////////////////////////////////////////////////
 void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
@@ -187,8 +116,8 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
     // c0    2d tensor of initial state [bS x 2*inSize] at time t=0
     // mask  optional, 2d tensor of dropout mask [bS x 2*inSize]
 
-    // ht  [time x bS x 2K]
-    // ct  [time x bS x 2K]
+    // ht  [time x bS x 2*inSize]
+    // ct  [time x bS x 2*inSize]
     
     const Nd4jLong time   = x->sizeAt(0);                     // time - number of time steps
     const Nd4jLong bS     = x->sizeAt(1);                     // bS - batch size
@@ -199,7 +128,7 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
         x->applyBroadcast(broadcast::Multiply, {1, 2}, mask, x, nullptr);             // apply mask
     
     // U = x * w
-    NDArray wi = mmul(*x, *w);                    //  U [time x bS x 6K]
+    NDArray wi = mmul(*x, *w);                    //  U [time x bS x 6*inSize]
 
     const Nd4jLong d2      = 2*inSize;
     const Nd4jLong ncols   = bS*d2;     
@@ -220,11 +149,12 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
 
     for (Nd4jLong col = 0; col < ncols; ++col) {           
         
-        flip       = (col % d2) >= inSize;
+        const auto colNum = col % d2; 
+        flip       = colNum >= inSize;
         maskVal    = mask ? *(pMask + col) : T(1);
         cur        = *(pInit + col);
-        bF         = *(pBias + col%d2);
-        bR         = *(pBias + col%d2 + d2);
+        bF         = *(pBias + colNum);
+        bR         = *(pBias + colNum + d2);
         pWiVal     = pWi     + 3*col;
         pIVal      = pI      + col;
         pHtVal     = pHt     + col;
@@ -313,11 +243,12 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
     
     for (Nd4jLong col = 0; col < ncols; ++col) {           
         gbF = gbR = (T)0.;
-        flip          = (col%d2) >= inSize;
+        const auto colNum = col % d2;
+        flip          = colNum >= inSize;
         maskVal       = mask ? *(pMask + col) : T(1.);
         cur           = *(pInGradCt + col);
-        bF            = *(pBias     + col%d2);
-        bR            = *(pBias     + col%d2 + d2);
+        bF            = *(pBias     + colNum);
+        bR            = *(pBias     + colNum + d2);
         pWiVal        = pWi         + 3*col;
         pInputVal     = pInput      + col;
         pStateVal     = pState      + col;
@@ -371,7 +302,7 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
     }
 
     // gradB    
-    gradBias.reduceAlongDimension(reduce::Sum, gradB, {0}, false, true);    // [1 x 4K]    
+    gradBias.reduceAlongDimension(reduce::Sum, gradB, {0}, false, true);    // [1 x 4*inSize]    
     
     // gradW     
     x->permutei({0, 2, 1});                                             // [time x bS x 2*inSize] -> [time x 2*inSize x bS]
@@ -394,3 +325,76 @@ BUILD_SINGLE_TEMPLATE(template void sruBIBP_, (NDArray* x, const NDArray* w, con
 }
 }
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// template <typename T>
+// void sruCellBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs) {
+
+//     NDArray<T>* x    = inArrs[0];               // input [bS x inSize], bS - batch size, inSize - number of features
+//     NDArray<T>* c0   = inArrs[1];               // previous cell state c  [bS x inSize], that is at previous time step t-1   
+//     NDArray<T>* w    = inArrs[2];               // weights [inSize x 3*inSize]
+//     NDArray<T>* b    = inArrs[3];               // biases [2*inSize]
+//     NDArray<T>* dLdC = inArrs[4];               // gradient of the loss func with respect to cell output [bS x inSize]
+//     NDArray<T>* dLdH = inArrs[5];               // gradient of the loss func with respect to cell state  [bS x inSize]
+
+//     NDArray<T>* dLdX  = outArrs[0];             // gradient of the loss func with respect to input [bS x inSize], so called epsilon
+//     NDArray<T>* dLdW  = outArrs[1];             // gradient of the loss func with respect to weights [inSize x 3*inSize]
+//     NDArray<T>* dLdB  = outArrs[2];             // gradient of the loss func with respect to biases [2*inSize]
+//     NDArray<T>* dLdC0 = outArrs[3];             // gradient of the loss func with respect to previous cell state [bS, inSize]
+
+//     const int inSize = x->sizeAt(1);           // inSize - number of features
+            
+//     //*********** feed forward ***********//
+//     NDArray<T> z = mmul(*x, *w);               //  [bS x 3*inSize]    
+
+//     // forget gate = sigmoid(x*Wf + bf)
+//     NDArray<T> f = sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{0, inSize}}));             // [bS, inSize]    
+//     NDArray<T> oneMinusF = 1. - f;
+    
+//     // reset gate = sigmoid(x*Wr + br)
+//     NDArray<T> r = sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{inSize, 2*inSize}}));      // [bS, inSize]    
+//     NDArray<T> oneMinusR = 1. - r;
+
+//     // current sell state = f◦c0 + (1 - f)◦(x*Wc)             --->  c->assign( f*(*c0) + ((T)1. - f) * z({{},{0, inSize}}) );
+//     // current cell output = r◦activation(c) + (1 - r)◦x      --->  h->assign( r*activation<T>(*c) + ((T)1. - r) * (*x) );    
+
+
+//     //*********** back propagation ***********//
+//     // dCdC0 = f;    
+//     // dFdX = Wf    
+//     // dRdX = Wr
+
+//     NDArray<T> tanh = activation<T>(*c);
+//     NDArray<T> dFdBf = f * oneMinusF;
+//     NDArray<T> dRdBr = r * oneMinusR;   
+//     NDArray<T> dHdR = tanh - *x;    
+//     // dCdF = c0 - x*Wc;    
+//     NDArray<T> dCdF = *c0 - z({{},{0, inSize}});    
+//     // dHdC = r * (1 - tanh*tanh)
+//     NDArray<T> dHdC = r * (1. - tanh * tanh);
+//     // dCdX = dCdX + dCdF*dFdX = (1-f)*Wc +  dCdF*Wf
+//     NDArray<T> dCdX = oneMinusF * (*w)({{},{0, inSize}}) + dCdF * (*w)({{},{inSize, 2*inSize}});
+
+
+//     // dLdC0 =  dLdC * dCdC0 = dLdC * f
+//     dLdC0->assign((*dLdC) * f);
+
+    
+//     // dLdBf = dLdH*dHdBf + dLdC*dCdBf = dLdH*dHdC*dCdBf + dLdC*dCdF*dFdBf =  dLdH*dHdC*dCdF*dFdBf + dLdC*dCdF*dFdBf = (dLdH*dHdC + dLdC)*dCdF*dFdBf
+//     (*dLdB)({{0, inSize}}).assign(((*dLdH) * dHdC + *dLdC) * dCdF * dFdBf);
+//     // dLdBr = dLdH * dHdR * dRdBr 
+//     (*dLdB)({{inSize, 2*inSize}}).assign((*dLdH) * dHdR * dRdBr)
+    
+    
+//     // dLdWc = dLdH*dHdWc + dLdC*dCdWc = dLdH*dHdC*dCdWc + dLdC*dCdWc = (dLdH*dHdC + dLdC) * dCdWc = (dLdH*dHdC + dLdC) * (1-f)*x
+//     (*dLdW)({{}, {0, inSize}}).assign(((*dLdH) * dHdC + *dLdC) * oneMinusF * (*x));
+//     // dLdWf = dLdBf * x
+//     (*dLdW)({{}, {inSize, 2*inSize}}).assign((*dLdB)({{0, inSize}}) * (*x));
+//     // dLdWr = dLdBr * x
+//     (*dLdW)({{}, {2*inSize, 3*inSize}}).assign((*dLdB)({{inSize, 2*inSize}}) * (*x));    
+    
+
+//     // dLdX = dLdH*dHdX + dLdC*dCdX = dLdH*(dHdX + dHdR*dRdX + dHdC*dCdX) + dLdC*dCdF*dFdX = dLdH*(1 - r + dHdR*dRdX + dHdC*dCdX) + dLdC*dCdX
+//     dLdX->assign((*dLdH) * (oneMinusR + dHdR * (*w)({{},{2*inSize, 3*inSize}}) + dHdC * dCdX) + (*dLdC) * dCdX);   
+// }

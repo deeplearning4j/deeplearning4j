@@ -695,9 +695,123 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
     BUILD_SINGLE_TEMPLATE(template void clipByValue_, (nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static __global__ void mirrorPadLinearKernel(void const* vx, Nd4jLong* xShape, void* vz, Nd4jLong* zShape, Nd4jLong leftSide, Nd4jLong leftSideCorrected, Nd4jLong xLen, Nd4jLong len, Nd4jLong zLen) {
+
+        __shared__ T const* x;
+        __shared__ T* z;
+        if (threadIdx.x == 0) {
+            x = reinterpret_cast<T const*>(vx);
+            z = reinterpret_cast<T*>(vz);
+        }
+        __syncthreads();
+        auto start = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for(int i = start; i < zLen; i+= step) {
+            auto zIndex = shape::getIndexOffset(i, zShape, zLen);
+            auto xIndex = shape::getIndexOffset(len - i, xShape, xLen);
+
+            if (i < leftSide)                                   // left side
+                xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape, xLen);
+
+            else if(i >= leftSide && i < leftSide + xLen)       // middle
+                xIndex = shape::getIndexOffset(i - leftSide, xShape, xLen);
+
+//            else                                                // right side
+//                z[i] = x[len - i];
+            z[zIndex] = x[xIndex];
+        }
+
+    }
+
+    template <typename T>
+    static __global__ void mirrorPadKernel(void const* vx, Nd4jLong* xShape, void* vz, Nd4jLong* zShape, Nd4jLong outLen, void const* paddings, Nd4jLong* paddingShape, int reflBorder) {
+
+        __shared__ T const* x;
+        __shared__ int const* pads;
+        __shared__ T* z;
+        __shared__ Nd4jLong zRank, rank;
+        __shared__ Nd4jLong* xShapeOf, *xStrideOf;
+        __shared__ Nd4jLong* zShapeOf, *zStrideOf;
+        __shared__ Nd4jLong* xIdx, *zIdx;
+        if (threadIdx.x == 0) {
+            extern __shared__ unsigned char shmem[];
+            xIdx    = reinterpret_cast<Nd4jLong*>(shmem);
+            rank = shape::rank(xShape);
+
+            zIdx    = xIdx + blockDim.x * rank;
+            x = reinterpret_cast<T const*>(vx);//
+            pads = reinterpret_cast<int const*>(paddings);
+            z = reinterpret_cast<T*>(vz);
+            xShapeOf = shape::shapeOf(xShape);
+            xStrideOf = shape::stride(xShape);
+            zShapeOf = shape::shapeOf(zShape);
+            zRank = shape::rank(zShape);
+            zStrideOf = shape::stride(zShape);
+
+        }
+        __syncthreads();
+        auto xzCoord = xIdx + (2 * threadIdx.x) * rank;
+        auto zxCoord = xIdx + (1 + 2 * threadIdx.x) * rank;
+        auto start = threadIdx.x + blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+
+            for(Nd4jLong i = start; i < outLen; i+= step) {
+
+                shape::index2coords(rank, zShapeOf, i, zxCoord);
+//                auto intStep = blockDim.y * gridDim.y;
+                for(int j = 0; j < rank; j++) {
+
+                    const Nd4jLong inLen         = shape::sizeAt(xShape, j);
+                    Nd4jLong coords[2] = {j, 0};
+                    auto padOffset = shape::getOffset(0, xShapeOf, xStrideOf, coords, rank);
+                    const auto leftSide          = pads[padOffset];
+                    const auto leftSideCorrected = leftSide - reflBorder;
+                    const Nd4jLong len           = 2 * (inLen - 1) + leftSide + reflBorder;
+
+                    if(zxCoord[j] < leftSide)                                        // left side
+                        xzCoord[j] = leftSideCorrected - zxCoord[j];
+
+                    else if(zxCoord[j] >= leftSide && zxCoord[j] < leftSide + inLen)  // middle
+                        xzCoord[j] = zxCoord[j] - leftSide;
+
+                    else if (len > zxCoord[j])                                                           // right side
+                        xzCoord[j] = len - zxCoord[j];
+                    else
+                        xzCoord[j] = zxCoord[j] - len;
+                }
+
+                auto outOffset = shape::getOffset(0, zShapeOf, zStrideOf, zxCoord, rank);
+                auto inOffset  = shape::getOffset(0, xShapeOf, xStrideOf,  xzCoord,  rank);
+
+                z[outOffset] = x[inOffset];
+            }
+    }
+
     template<typename T>
     static void mirrorPad_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+        // mode:  0 - REFLECT, else - SYMMETRIC
+        const int reflBorder = (bool)mode ? 1 : 0;
+        const int rank        = input.rankOf();
+        const Nd4jLong outLen = output.lengthOf();
+        auto stream = context->getCudaStream();
 
+        if(rank <= 1) {
+
+            const Nd4jLong inLen         = input.lengthOf();
+            const auto leftSide          = paddings.e<Nd4jLong>(0);
+            const auto leftSideCorrected = leftSide - reflBorder;
+            const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
+
+            mirrorPadLinearKernel<T><<<256, 512, 256, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
+            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernek(...) failed");
+        }
+        else {
+            mirrorPadKernel<T><<<256, 512, 1024, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
+            nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernek(...) failed");
+        }
+        output.tickWriteDevice();
     }
 
     void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
