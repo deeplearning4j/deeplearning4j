@@ -38,6 +38,7 @@ import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.imports.graphmapper.OpImportFilter;
 import org.nd4j.imports.graphmapper.OpImportOverride;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -45,6 +46,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
+import org.tensorflow.framework.DataType;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -937,6 +939,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else {
             if(tensorProto.getOp().equals("NoOp")){
                 return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+            } else if(tensorProto.getOp().equals("Assert")){
+                return org.nd4j.linalg.api.buffer.DataType.BOOL;
             }
             log.warn("No TensorFlow descriptor found for tensor \"{}\", op \"{}\"", tensorProto.getName(), tensorProto.getOp());
 
