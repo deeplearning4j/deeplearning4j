@@ -212,7 +212,7 @@ public class ManualTests {
 
     @Test
     public void testWord2VecPlot() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();

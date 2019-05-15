@@ -93,7 +93,7 @@ public class KerasModelEndToEndTest {
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test(expected = FileNotFoundException.class)
+    @Test(expected = IllegalStateException.class)
     public void fileNotFoundEndToEnd() throws Exception {
         String modelPath = "modelimport/keras/examples/foo/bar.h5";
         importEndModelTest(modelPath, null, true, true, false);

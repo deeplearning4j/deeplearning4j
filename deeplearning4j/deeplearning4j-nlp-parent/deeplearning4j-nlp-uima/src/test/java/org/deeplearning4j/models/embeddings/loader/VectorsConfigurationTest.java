@@ -72,7 +72,7 @@ public class VectorsConfigurationTest {
         configuration.setMinLearningRate(0.25d);
         configuration.setEpochs(1);
 
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
 
         Word2Vec vec = new Word2Vec.Builder(configuration).iterate(iter).build();

@@ -163,7 +163,7 @@ public class Word2VecTest {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
         // Path of data part-00000
-        //String dataPath = new ClassPathResource("/big/raw_sentences.txt").getFile().getAbsolutePath();
+        //String dataPath = Resources.asFile("big/raw_sentences.txt").getAbsolutePath();
         //        String dataPath = "/ext/Temp/SampleRussianCorpus.txt";
         String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
