@@ -325,6 +325,11 @@ public class AllocatorTest {
 
         val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
         assertNotNull(pointX);
+
+        System.out.println(pointX.getHostPointer());
+        System.out.println(pointX.getHostPointer().address());
+        System.out.println(pointX.getDevicePointer());
+        System.out.println(pointX.getDevicePointer().address());
     }
 
 }
