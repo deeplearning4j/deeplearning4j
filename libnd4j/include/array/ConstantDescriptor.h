@@ -21,11 +21,49 @@
 #ifndef DEV_TESTS_CONSTANTDESCRIPTOR_H
 #define DEV_TESTS_CONSTANTDESCRIPTOR_H
 
+#include <array/DataType.h>
+#include <map>
+#include <vector>
+#include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
-    class ConstantDescriptor {
+    class ND4J_EXPORT ConstantDescriptor {
     private:
+        std::vector<Nd4jLong> _integerValues;
+        std::vector<double> _floatValues;
+
+        std::map<nd4j::DataType, Nd4jPointer> _references;
     public:
+        ConstantDescriptor(std::initializer_list<Nd4jLong> &values);
+        ConstantDescriptor(std::initializer_list<double> &values);
+
+        ConstantDescriptor(std::vector<Nd4jLong> &values);
+        ConstantDescriptor(std::vector<double> &values);
+
+        ~ConstantDescriptor() = default;
+
+        // equal to operator
+        bool operator==(const ConstantDescriptor &other) const;
+
+        // less than operator
+        bool operator<(const ConstantDescriptor &other) const;
+
+        ///////////////////////
+        bool hasPointer(nd4j::DataType dataType);
+
+        template <typename T>
+        bool hasPointer();
+
+        void addPointer(Nd4jPointer pointer, nd4j::DataType dataType);
+
+        template <typename T>
+        void addPointer(Nd4jPointer pointer);
+
+        Nd4jPointer getPointer(nd4j::DataType dataType);
+
+        template <typename T>
+        void* getPointer();
     };
 }
 
