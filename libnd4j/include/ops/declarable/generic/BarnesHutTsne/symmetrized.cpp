@@ -67,20 +67,22 @@ namespace ops  {
             auto N = rowP->lengthOf() - 1;
             if (block.getIArguments()->size() > 0)
                 N = INT_ARG(0);
-            auto dataType = ArrayOptions::dataType(inputShape->at(0));
+            auto dataType = rowP->dataType(); //ArrayOptions::dataType(inputShape->at(0));
             NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}); //rowP->dup();
             //srowCounts->assign(0);
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
             //rowCounts->printBuffer("Row Counts");
             if (len <= 0) throw std::runtime_error("barnes_symmetrized: Cannot allocate shape due non-positive len.");
             rowCountsPtr = rowCounts;
-            ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
-            outShapeInfo[1] = 1;
-            outShapeInfo[2] = len;
+            //ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
+//            outShapeInfo[1] = 1;
+//            outShapeInfo[2] = len;
            // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
             //outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
             outShapeInfo = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
-    		return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dataType, N+1, block.workspace()), ShapeBuilders::createVectorShapeInfo(dataType, len, block.workspace()), outShapeInfo);
+            auto outColsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
+            auto outRowsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());
+    		return SHAPELIST(outRowsShapeInfo, outColsShapeInfo, outShapeInfo);
 		}
 
 }
