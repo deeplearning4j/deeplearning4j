@@ -86,8 +86,6 @@ public class Resources {
     public InputStream getAsStream(String resourcePath){
         checkResolvers();
 
-        checkResolvers();
-
         for(Resolver r : resolvers){
             if(r.exists(resourcePath)){
                 return r.asStream(resourcePath);

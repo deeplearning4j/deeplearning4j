@@ -57,10 +57,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -599,11 +601,11 @@ public class KerasModelEndToEndTest {
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train)
             throws Exception {
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        File modelFile;
+        try(InputStream is = Resources.asStream(modelPath)) {
+            modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(train);
         if (inputShape != null) {
@@ -619,18 +621,17 @@ public class KerasModelEndToEndTest {
 
 
     private MultiLayerNetwork importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false);
-        if (inputShape != null) {
-            builder.inputShape(inputShape);
+        try(InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(false);
+            if (inputShape != null) {
+                builder.inputShape(inputShape);
+            }
+            KerasSequentialModel model = builder.buildSequential();
+            return model.getMultiLayerNetwork();
         }
-        KerasSequentialModel model = builder.buildSequential();
-        return model.getMultiLayerNetwork();
     }
 
 
@@ -640,21 +641,20 @@ public class KerasModelEndToEndTest {
 
     public void importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
                                     boolean checkGradients) throws Exception {
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        KerasSequentialModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildSequential();
+        MultiLayerNetwork model;
+        try(InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            KerasSequentialModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(false).buildSequential();
 
-        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
+            model = kerasModel.getMultiLayerNetwork();
+        }
 
-        ClassPathResource outputsResource =
-                new ClassPathResource(inputsOutputsPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
         File outputsFile = createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
-        Files.copy(outputsResource.getInputStream(), outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        try(InputStream is = Resources.asStream(inputsOutputsPath)) {
+            Files.copy(is, outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
         try (Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath())) {
 
             if (checkPredictions) {
