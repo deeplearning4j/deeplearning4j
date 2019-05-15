@@ -22,6 +22,7 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
