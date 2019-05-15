@@ -319,17 +319,23 @@ public class AllocatorTest {
     @Test
     public void testReallocations() {
         INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
-        assertArrayEquals(new long[]{3, 5}, x.shape());
+        assertArrayEquals(new long[]{10, 5}, x.shape());
 
-        System.out.println("deviceId = " + AtomicAllocator.getInstance().getDeviceId(x));
+        for (int i = 0; i < 10; ++i) {
 
-        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
-        assertNotNull(pointX);
+            x = Nd4j.create(DataType.FLOAT, 10*i+1, 5*i+2);
+            System.out.println(x.shape());
 
-        System.out.println(pointX.getHostPointer());
-        System.out.println(pointX.getHostPointer().address());
-        System.out.println(pointX.getDevicePointer());
-        System.out.println(pointX.getDevicePointer().address());
+            System.out.println("deviceId = " + AtomicAllocator.getInstance().getDeviceId(x));
+
+            val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+            assertNotNull(pointX);
+
+            System.out.println(pointX.getHostPointer());
+            System.out.println(pointX.getHostPointer().address());
+            System.out.println(pointX.getDevicePointer());
+            System.out.println(pointX.getDevicePointer().address());
+        }
     }
 
 }
