@@ -30,7 +30,9 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
@@ -436,7 +438,8 @@ public interface OpExecutioner {
 
 
     /**
-     * This method returns DataBuffer
+     * This method returns shapeInfo DataBuffer
+     *
      * @param shape
      * @param stride
      * @param elementWiseStride
@@ -445,4 +448,9 @@ public interface OpExecutioner {
      * @return
      */
     DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype);
+
+    /**
+     * This method returns host/device tad buffers
+     */
+    TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension);
 }

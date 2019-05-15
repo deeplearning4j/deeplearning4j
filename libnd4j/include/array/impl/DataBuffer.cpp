@@ -21,9 +21,11 @@
 #include "../DataBuffer.h"
 
 namespace nd4j {
-    DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special) {
+    DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special, Nd4jLong numEelements, Nd4jLong sizeOf) {
         _primaryBuffer = primary;
         _specialBuffer = special;
+        _length = numEelements;
+        _sizeOf = sizeOf;
     }
 
     Nd4jPointer DataBuffer::primary() {
@@ -34,9 +36,19 @@ namespace nd4j {
         return _specialBuffer;
     }
 
+    Nd4jLong DataBuffer::sizeOf() {
+        return _sizeOf;
+    }
+
+    Nd4jLong DataBuffer::length() {
+        return _length;
+    }
+
     DataBuffer::DataBuffer(const DataBuffer &other) {
         _primaryBuffer = other._primaryBuffer;
         _specialBuffer = other._specialBuffer;
+        _length = other._length;
+        _sizeOf = other._sizeOf;
     }
 
     template <typename T>

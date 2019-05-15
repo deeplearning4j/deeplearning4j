@@ -293,6 +293,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 // #include <pointercast.h>
     @Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
         static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DataBuffer(Pointer p) { super(p); }
         /** Native array allocator. Access with {@link Pointer#position(long)}. */
         public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
         private native void allocateArray(long size);
@@ -300,14 +302,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
             return (DataBuffer)super.position(position);
         }
     
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/) { super((Pointer)null); allocate(primary, special); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/);
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary) { super((Pointer)null); allocate(primary); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary);
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
         public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef DataBuffer other);
         public DataBuffer() { super((Pointer)null); allocate(); }
         private native void allocate();
+
+        public native @Cast("Nd4jLong") long sizeOf();
+        public native @Cast("Nd4jLong") long length();
 
         public native @Cast("Nd4jPointer") Pointer primary();
         public native @Cast("Nd4jPointer") Pointer special();
@@ -369,6 +372,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public native @Cast("Nd4jLong*") LongPointer specialOffsets();
 
         public native @Cast("Nd4jLong") long numberOfTads();
+        public native int shapeInfoLength();
 
         /**
          * These methods return either primary or special pointers depending on platform binaries were compiled for
@@ -15184,39 +15188,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef LIBND4J_HEADERS_RECURRENT_H
 // #define LIBND4J_HEADERS_RECURRENT_H
 
-// #include <ops/declarable/headers/common.h>
-        
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operations for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of cell output [bS x K x N]
-       *    1: 3d tensor of cell state [bS x K x N]
-       */
-//         #if NOT_EXCLUDED(OP_sru)
-        @Namespace("nd4j::ops") public static class sru_old extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public sru_old(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public sru_old(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public sru_old position(long position) {
-                return (sru_old)super.position(position);
-            }
-        
-                                                                                    public sru_old() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
+// #include <ops/declarable/headers/common.h> 
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -15233,6 +15205,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: 3d tensor of cell output [bS x K x N]
        *    1: 3d tensor of cell state [bS x K x N]
        */
+//         #if NOT_EXCLUDED(OP_sru)
         @Namespace("nd4j::ops") public static class sru extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -15249,39 +15222,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operation for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of cell output [bS x K x N]
-       *    1: 3d tensor of cell state [bS x K x N]
-       */
-//         #if NOT_EXCLUDED(OP_sru_logic)
-        @Namespace("nd4j::ops") public static class sru_logic extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public sru_logic(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public sru_logic(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public sru_logic position(long position) {
-                return (sru_logic)super.position(position);
-            }
-        
-                                                                                    public sru_logic() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -15354,46 +15294,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-
-    
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operation for back propagation in Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: 3d tensor of cell state [bS x K x N]
-       *    5: 2d tensor of cell state gradients [bS x K]
-       *    6: 3d tensor of state output gradients [bS x K x N]
-       *    7: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of input gradients [bS x K x N]
-       *    1: 3d tensor of weights gradients [bS x 3K x K]
-       *    2: 2d, row of biases gradients [1 x 2K]
-       *    3: 2d, tensor of state gradients [bS x K]
-       */                  
-//         #if NOT_EXCLUDED(OP_sru_logic)
-        @Namespace("nd4j::ops") public static class sru_bp_logic extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public sru_bp_logic(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public sru_bp_logic(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public sru_bp_logic position(long position) {
-                return (sru_bp_logic)super.position(position);
-            }
-        
-                                                                                    public sru_bp_logic() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -15903,7 +15803,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
-    
+
+
 
 // #endif
 

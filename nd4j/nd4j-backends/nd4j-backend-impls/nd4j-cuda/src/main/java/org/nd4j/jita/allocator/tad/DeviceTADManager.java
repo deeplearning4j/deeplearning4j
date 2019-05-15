@@ -109,13 +109,13 @@ public class DeviceTADManager extends BasicTADManager {
             
              We do this for device access to shape information.
              */
-            if (buffers.getFirst() != array.shapeInfoDataBuffer())
-                AtomicAllocator.getInstance().moveToConstant(buffers.getFirst());
+            //if (buffers.getFirst() != array.shapeInfoDataBuffer())
+                //AtomicAllocator.getInstance().moveToConstant(buffers.getFirst());
             /**
              * @see {@link org.nd4j.jita.constant.ProtectedCudaConstantHandler}
              */
-            if (buffers.getSecond() != null)
-                AtomicAllocator.getInstance().moveToConstant(buffers.getSecond());
+            //if (buffers.getSecond() != null)
+           //     AtomicAllocator.getInstance().moveToConstant(buffers.getSecond());
 
             // so, at this point we have buffer valid on host side.
             // And we just need to replace DevicePointer with constant pointer

@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -888,6 +889,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         throw new UnsupportedOperationException();
     }
 }

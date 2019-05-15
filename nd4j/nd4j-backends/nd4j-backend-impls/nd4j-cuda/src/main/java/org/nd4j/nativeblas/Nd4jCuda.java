@@ -275,6 +275,8 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #include <pointercast.h>
     @Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
         static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public DataBuffer(Pointer p) { super(p); }
         /** Native array allocator. Access with {@link Pointer#position(long)}. */
         public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
         private native void allocateArray(long size);
@@ -282,14 +284,15 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
             return (DataBuffer)super.position(position);
         }
     
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/) { super((Pointer)null); allocate(primary, special); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special/*=nullptr*/);
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary) { super((Pointer)null); allocate(primary); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary);
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
         public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef DataBuffer other);
         public DataBuffer() { super((Pointer)null); allocate(); }
         private native void allocate();
+
+        public native @Cast("Nd4jLong") long sizeOf();
+        public native @Cast("Nd4jLong") long length();
 
         public native @Cast("Nd4jPointer") Pointer primary();
         public native @Cast("Nd4jPointer") Pointer special();
@@ -351,6 +354,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         public native @Cast("Nd4jLong*") LongPointer specialOffsets();
 
         public native @Cast("Nd4jLong") long numberOfTads();
+        public native int shapeInfoLength();
 
         /**
          * These methods return either primary or special pointers depending on platform binaries were compiled for
