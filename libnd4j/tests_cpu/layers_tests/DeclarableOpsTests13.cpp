@@ -399,3 +399,25 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
     ASSERT_TRUE(exp4.equalsTo(res));
     delete result;
 }
+
+TEST_F(DeclarableOpsTests13, CellContains_test_1) {
+
+auto corners = NDArrayFactory::create<double>( {0.5384,    0.5640,    0.3449,    0.5257,    0.5505});
+auto width = NDArrayFactory::create<double>({0.4306,    0.3960,    0.4639,    0.5040,    0.4904});
+auto point = NDArrayFactory::create<double>({0.3000,    0.2625,    0.2674,    0.8604,    0.4803});
+//auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000, 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+//    data.linspace(1);
+
+//    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
+//    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+//    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+nd4j::ops::cell_contains op;
+auto result = op.execute({&corners, &width, &point}, {}, {5});
+ASSERT_EQ(result->status(), Status::OK());
+ASSERT_TRUE(result->at(0)->e<bool>(0));
+//result->at(2)->printBuffer("Symmetrized3");
+//exp.printBuffer("EXPect symm3");
+//    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
+//ASSERT_TRUE(exp.equalsTo(result->at(0)));
+delete result;
+}
