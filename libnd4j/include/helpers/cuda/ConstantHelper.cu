@@ -40,7 +40,7 @@ namespace nd4j {
         return dConstAddr;
     }
 
-    static int getCurrentDevice() {
+    int ConstantHelper::getCurrentDevice() {
         int dev = 0;
         auto res = cudaGetDevice(&dev);
 

@@ -15,34 +15,11 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
 //
 
-#include <ConstantHelper.h>
-#include <cstring>
+#include <array/ConstantDescriptor.h>
 
 namespace nd4j {
-    ConstantHelper::ConstantHelper() {
-        //
-    }
-
-    ConstantHelper* ConstantHelper::getInstance() {
-        if (!_INSTANCE)
-            _INSTANCE = new nd4j::ConstantHelper();
-
-        return _INSTANCE;
-    }
-
-    void* ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
-        int8_t *ptr = nullptr;
-        ALLOCATE(ptr, workspace, numBytes, int8_t);
-        std::memcpy(ptr, src, numBytes);
-        return ptr;
-    }
-
-    int ConstantHelper::getCurrentDevice() {
-        return 0L;
-    }
-
-    nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;
+    
 }

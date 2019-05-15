@@ -41,7 +41,7 @@ namespace nd4j {
         ~ConstantHelper() = default;
 
         static ConstantHelper* getInstance();
-
+        static int getCurrentDevice();
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
     };
 }
