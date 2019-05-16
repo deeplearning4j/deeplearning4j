@@ -23,7 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- *
+ * ResourceFile - represents a Strumpf resource file - which are references to remote files with filename ending with {@link StrumpfResolver#REF}
+ * @author Alex Black
  */
 @AllArgsConstructor
 @NoArgsConstructor
@@ -41,47 +42,47 @@ public class ResourceFile {
 
     //Note: Field naming to match Strumpf JSON format
     protected int current_version;
-    protected Map<String,String> v1;
+    protected Map<String, String> v1;
 
     //Not in JSON:
     protected String filePath;
 
-    public static ResourceFile fromFile(String path){
+    public static ResourceFile fromFile(String path) {
         return fromFile(new File(path));
     }
 
-    public static ResourceFile fromFile(File file){
+    public static ResourceFile fromFile(File file) {
         String s;
         try {
             s = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
             ResourceFile rf = MAPPER.readValue(s, ResourceFile.class);
             rf.setFilePath(file.getPath());
             return rf;
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String relativePath(){
+    public String relativePath() {
         String hashKey = null;
-        for(String key : v1.keySet()){
-            if(key.endsWith(HASH) && !key.endsWith(COMPRESSED_HASH)){
+        for (String key : v1.keySet()) {
+            if (key.endsWith(HASH) && !key.endsWith(COMPRESSED_HASH)) {
                 hashKey = key;
                 break;
             }
         }
-        if(hashKey == null){
+        if (hashKey == null) {
             throw new IllegalStateException("Could not find <filename>_hash in resource reference file: " + filePath);
         }
 
-        String relativePath = hashKey.substring(0, hashKey.length()-5); //-5 to remove "_hash" suffix
+        String relativePath = hashKey.substring(0, hashKey.length() - 5); //-5 to remove "_hash" suffix
         return relativePath.replaceAll("\\\\", "/");
     }
 
-    public boolean localFileExistsAndValid(File cacheRootDir){
+    public boolean localFileExistsAndValid(File cacheRootDir) {
 
         File file = getLocalFile(cacheRootDir);
-        if(!file.exists()){
+        if (!file.exists()) {
             return false;
         }
 
@@ -92,7 +93,7 @@ public class ResourceFile {
         Preconditions.checkState(expSha256 != null, "Expected JSON property %s was not found in resource reference file %s", sha256Property, filePath);
 
         String actualSha256 = sha256(file);
-        if(!expSha256.equals(actualSha256)){
+        if (!expSha256.equals(actualSha256)) {
             return false;
         }
         return true;
@@ -100,9 +101,10 @@ public class ResourceFile {
 
     /**
      * Get the local file - or where it *would* be if it has been downloaded. If it does not exist, it will not be downloaded here
+     *
      * @return
      */
-    protected File getLocalFile(File cacheRootDir){
+    protected File getLocalFile(File cacheRootDir) {
         String relativePath = relativePath();
 
         //For resolving local files with different versions, we want paths like:
@@ -113,10 +115,10 @@ public class ResourceFile {
 
         int lastSlash = Math.max(relativePath.lastIndexOf('/'), relativePath.lastIndexOf('\\'));
         String filename;
-        if(lastSlash < 0){
+        if (lastSlash < 0) {
             filename = relativePath;
         } else {
-            filename = relativePath.substring(lastSlash+1);
+            filename = relativePath.substring(lastSlash + 1);
         }
 
         File parentDir = new File(cacheRootDir, relativePath + "__v" + current_version);
@@ -126,10 +128,11 @@ public class ResourceFile {
 
     /**
      * Get the local file - downloading and caching if required
+     *
      * @return
      */
-    public File localFile( File cacheRootDir ){
-        if(localFileExistsAndValid(cacheRootDir)){
+    public File localFile(File cacheRootDir) {
+        if (localFileExistsAndValid(cacheRootDir)) {
             return getLocalFile(cacheRootDir);
         }
 
@@ -177,24 +180,24 @@ public class ResourceFile {
                 }
             }
 
-            if(!correctHash){
+            if (!correctHash) {
                 throw new RuntimeException("Could not successfully download with correct hash file after " + MAX_DOWNLOAD_ATTEMPTS +
                         " attempts: " + remotePath);
             }
 
             //Now, extract:
             f.getParentFile().mkdirs();
-            try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f));
-                InputStream is = new BufferedInputStream(new GzipCompressorInputStream(new FileInputStream(tempFile)))){
+            try (OutputStream os = new BufferedOutputStream(new FileOutputStream(f));
+                 InputStream is = new BufferedInputStream(new GzipCompressorInputStream(new FileInputStream(tempFile)))) {
                 IOUtils.copy(is, os);
-            } catch (IOException e){
+            } catch (IOException e) {
                 throw new RuntimeException("Error extracting resource file", e);
             }
             log.info("Extracted {} to {}", tempFile, f);
 
             //Check extracted file hash:
             String extractedHash = sha256(f);
-            if(!extractedHash.equals(sha256Uncompressed)){
+            if (!extractedHash.equals(sha256Uncompressed)) {
                 throw new RuntimeException("Extracted file hash does not match expected hash: " + remotePath +
                         " -> " + f.getAbsolutePath() + " - expected has " + sha256Uncompressed + ", actual hash " + extractedHash);
             }
@@ -206,16 +209,16 @@ public class ResourceFile {
         return f;
     }
 
-    public static String sha256(File f){
-        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+    public static String sha256(File f) {
+        try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
             return DigestUtils.sha256Hex(is);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException("Error when hashing file: " + f.getPath(), e);
         }
     }
 
 
-    public static final ObjectMapper newMapper(){
+    public static final ObjectMapper newMapper() {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);

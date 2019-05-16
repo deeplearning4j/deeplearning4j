@@ -7,19 +7,28 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 
+/**
+ * API for accessing resources (usually test resources) from a path.
+ * For example, depending on the implementation (underlying set of {@link Resolver instances} this class cas be used to
+ * resolve files on the classpath, or reference files (referring to a remote file that needs to be downloaded).<br>
+ * By default only the {@link StrumpfResolver} is used, but others can be added using the Java {@link ServiceLoader} mechanism
+ * for {@link Resolver} class.
+ *
+ * @author Alex Black
+ */
 public class Resources {
     private static Resources INSTANCE = new Resources();
 
     protected final List<Resolver> resolvers;
 
-    protected Resources(){
+    protected Resources() {
 
         ServiceLoader<Resolver> loader = ServiceLoader.load(Resolver.class);
         Iterator<Resolver> iter = loader.iterator();
 
         resolvers = new ArrayList<>();
         resolvers.add(new StrumpfResolver());
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             Resolver r = iter.next();
             resolvers.add(r);
         }
@@ -35,46 +44,62 @@ public class Resources {
 
     }
 
-
-    public static boolean exists(@NonNull String resourcePath){
+    /**
+     * Check if the specified resource exists (can be resolved by any method) hence can be loaded by {@link #asFile(String)}
+     * or {@link #asStream(String)}
+     *
+     * @param resourcePath Path of the resource to be resolved
+     * @return Whether the resource can be resolved or not
+     */
+    public static boolean exists(@NonNull String resourcePath) {
         return INSTANCE.resourceExists(resourcePath);
     }
 
-    public static File asFile(@NonNull String resourcePath){
+    /**
+     * Get the specified resource as a local file.
+     * If it cannot be found (i.e., {@link #exists(String)} returns false) this method will throw an exception.
+     *
+     * @param resourcePath Path of the resource to get
+     * @return Resource file
+     */
+    public static File asFile(@NonNull String resourcePath) {
         return INSTANCE.getAsFile(resourcePath);
     }
 
-    public static InputStream asStream(@NonNull String resourcePath){
+    /**
+     * Get the specified resource as an input stream.<br>
+     * If it cannot be found (i.e., {@link #exists(String)} returns false) this method will throw an exception.
+     *
+     * @param resourcePath Path of the resource to get
+     * @return Resource stream
+     */
+    public static InputStream asStream(@NonNull String resourcePath) {
         return INSTANCE.getAsStream(resourcePath);
     }
 
-    protected void checkResolvers(){
-        if(resolvers.isEmpty()){
-           throw new IllegalStateException("Cannot resolve resources: no Resolver instances are available." +
-                   "No Strumpf backends on classpath or issue with ServiceLoader?");
-        }
+    /**
+     * Copy the contents of the specified directory (path) to the specified destination directory, resolving any resources in the process
+     *
+     * @param directoryPath  Directory to copy contents of
+     * @param destinationDir Destination
+     */
+    public static void copyDirectory(@NonNull String directoryPath, @NonNull File destinationDir) {
+        INSTANCE.copyDir(directoryPath, destinationDir);
     }
 
-    protected String listResolvers(){
-        return "";
-    }
 
-    protected boolean resourceExists(String resourcePath){
-        checkResolvers();
-
-        for(Resolver r : resolvers){
-            if(r.exists(resourcePath))
+    protected boolean resourceExists(String resourcePath) {
+        for (Resolver r : resolvers) {
+            if (r.exists(resourcePath))
                 return true;
         }
 
         return false;
     }
 
-    protected File getAsFile(String resourcePath){
-        checkResolvers();
-
-        for(Resolver r : resolvers){
-            if(r.exists(resourcePath)){
+    protected File getAsFile(String resourcePath) {
+        for (Resolver r : resolvers) {
+            if (r.exists(resourcePath)) {
                 return r.asFile(resourcePath);
             }
         }
@@ -83,11 +108,9 @@ public class Resources {
                 " resolvers can resolve resource \"" + resourcePath + "\" - available resolvers: " + resolvers.toString());
     }
 
-    public InputStream getAsStream(String resourcePath){
-        checkResolvers();
-
-        for(Resolver r : resolvers){
-            if(r.exists(resourcePath)){
+    public InputStream getAsStream(String resourcePath) {
+        for (Resolver r : resolvers) {
+            if (r.exists(resourcePath)) {
                 return r.asStream(resourcePath);
             }
         }
@@ -96,5 +119,13 @@ public class Resources {
                 " resolvers can resolve resource \"" + resourcePath + "\" - available resolvers: " + resolvers.toString());
     }
 
+    public void copyDir(String directoryPath, File destinationDir) {
+        for (Resolver r : resolvers) {
+            if (r.directoryExists(directoryPath)) {
+                r.copyDirectory(directoryPath, destinationDir);
+                return;
+            }
+        }
+    }
 
 }
