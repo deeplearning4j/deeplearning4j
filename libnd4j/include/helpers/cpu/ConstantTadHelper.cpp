@@ -72,8 +72,8 @@ namespace nd4j {
 
             shape::calcSubArrShapeAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
 
-            DataBuffer shapesBuffer(sPtr, nullptr, shape::shapeInfoLength(subArrRank), sizeof(Nd4jLong));
-            DataBuffer offsetsBuffer(oPtr, nullptr, numOfSubArrs, sizeof(Nd4jLong));
+            DataBuffer shapesBuffer(sPtr, nullptr, shape::shapeInfoLength(subArrRank)*sizeof(Nd4jLong), DataType::INT64);
+            DataBuffer offsetsBuffer(oPtr, nullptr, numOfSubArrs*sizeof(Nd4jLong), DataType::INT64);
             TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
 
 
@@ -90,8 +90,6 @@ namespace nd4j {
             // memcpy(sPtr, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
             // memcpy(oPtr, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-            // DataBuffer shapesBuffer(sPtr, nullptr);
-            // DataBuffer offsetsBuffer(oPtr, nullptr);
             // TadPack t(shapesBuffer, offsetsBuffer, tad.numTads);
 
 

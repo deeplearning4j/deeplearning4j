@@ -124,7 +124,7 @@ namespace nd4j {
         /**
         *  pointer on device launch context (with all data needed there).
         */  
-        nd4j::LaunchContext * _context = nd4j::LaunchContext ::defaultContext();
+        nd4j::LaunchContext * _context = nd4j::LaunchContext::defaultContext();
         /**
         *  alternative buffers for special computational devices (like GPUs for CUDA)
         */  

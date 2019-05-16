@@ -16,43 +16,117 @@
 
 //
 // @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #ifndef DEV_TESTS_DATABUFFER_H
 #define DEV_TESTS_DATABUFFER_H
 
 #include <dll.h>
+#include <op_boilerplate.h>
 #include <pointercast.h>
+#include <memory/Workspace.h>
+#include <DataType.h>
+#include <LaunchContext.h>
 
 namespace nd4j {
-    class ND4J_EXPORT DataBuffer {
+
+class ND4J_EXPORT DataBuffer {
+
     private:
+
         Nd4jPointer _primaryBuffer = nullptr;
         Nd4jPointer _specialBuffer = nullptr;
-        Nd4jLong _length = 0;
-        Nd4jLong _sizeOf = 0;
+        size_t _lenInBytes = 0;
+        DataType _dataType = INT8;
+        memory::Workspace* _workspace = nullptr;
+        mutable Nd4jLong _counter = 0L;
+        mutable Nd4jLong _writePrimary = 0L;
+        mutable Nd4jLong _writeSpecial = 0L;
+        mutable Nd4jLong _readPrimary = 0L;
+        mutable Nd4jLong _readSpecial = 0L;
+    
     public:
-        DataBuffer(Nd4jPointer primary, Nd4jPointer special, Nd4jLong numEelements, Nd4jLong sizeOf);
-        DataBuffer(const DataBuffer &other);
+        
+        FORCEINLINE DataBuffer(Nd4jPointer primary, Nd4jPointer special, const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr);
+        DataBuffer(const DataBuffer &other) = default;
         explicit DataBuffer() = default;
-        ~DataBuffer() = default;
+        ~DataBuffer();
 
-        Nd4jLong sizeOf();
-        Nd4jLong length();
+        FORCEINLINE DataType getDataType();
+        FORCEINLINE size_t getLenInBytes();
 
-        Nd4jPointer primary();
-        Nd4jPointer special();
+        FORCEINLINE Nd4jPointer primary();
+        FORCEINLINE Nd4jPointer special();
 
         DataBuffer& operator=(const DataBuffer& other) = default;
         DataBuffer& operator=(DataBuffer&& other) noexcept = default;
 
+        void writePrimary() const;
+        void writeSpecial() const;
+        void readPrimary()  const;
+        void readSpecial()  const;
+        bool isPrimaryActual() const;
+        bool isSpecialActual() const;
 
         template <typename T>
-        T* primaryAsT();
+        FORCEINLINE T* primaryAsT();
 
         template <typename T>
-        T* specialAsT();
-    };
+        FORCEINLINE T* specialAsT();
+
+        void syncToPrimary(const LaunchContext* context);
+        void syncToSpecial();
+
+        void allocatePrimary();
+        void allocateSpecial();
+};
+
+
+
+///// IMLEMENTATION OF INLINE METHODS ///// 
+DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special, const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace) {
+    _primaryBuffer = primary;
+    _specialBuffer = special;
+    _lenInBytes = lenInBytes;
+    _dataType = dataType;
+    _workspace = workspace;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jPointer DataBuffer::primary() {
+    return _primaryBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jPointer DataBuffer::special() {
+    return _specialBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////
+DataType DataBuffer::getDataType() {
+    return _dataType;
+}
+
+////////////////////////////////////////////////////////////////////////
+size_t DataBuffer::getLenInBytes() {
+    return _lenInBytes;
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T* DataBuffer::primaryAsT() {
+    return reinterpret_cast<T*>(_primaryBuffer);
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T* DataBuffer::specialAsT() {
+    return reinterpret_cast<T*>(_specialBuffer);
+}
+
+
+
 }
 
 

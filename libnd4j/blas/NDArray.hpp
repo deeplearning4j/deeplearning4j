@@ -128,7 +128,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::LaunchContext * contex
         tickReadHost();
     }
     else {        
-        _buffer = reinterpret_cast<int8_t *>(buffer);            
+        _buffer = reinterpret_cast<int8_t *>(buffer);
         triggerAllocationFlag(isBuffAlloc);
         #ifdef __CUDABLAS__
             ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
