@@ -278,14 +278,16 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         System.out.println("Symmetrized from Java:" + actualSymmetrized);
         assertArrayEquals(expectedSymmetrized.toDoubleVector(), actualSymmetrized.toDoubleVector(), 1e-4);
 
-        INDArray outRowsP = Nd4j.create(new int[]{rowsP.rows(),rowsP.columns()});
-        INDArray outColsP = Nd4j.create(new int[]{colsP.rows(),colsP.columns()});
-        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rowsP, colsP, valsP, 11, outRowsP, outColsP);
+
+        INDArray rowsFromCpp = Nd4j.create(new int[]{rowsP.rows(),rowsP.columns()});
+        BarnesHutSymmetrize op = new BarnesHutSymmetrize(rowsP, colsP, valsP, 11, rowsFromCpp);
         Nd4j.getExecutioner().exec(op);
-        INDArray output = op.getResult();
-        valsP = output;
+        INDArray valsFromCpp = op.getSymmetrizedValues();
+        INDArray colsFromCpp = op.getSymmetrizedCols();
         System.out.println("Symmetrized from C++: " + valsP);
         assertArrayEquals(expectedSymmetrized.toDoubleVector(), valsP.toDoubleVector(), 1e-2);
+        assertArrayEquals(rowsP.toIntVector(), rowsFromCpp.toIntVector());
+        assertArrayEquals(colsP.toIntVector(), colsFromCpp.toIntVector());
     }
 
     @Test
