@@ -419,7 +419,7 @@ public class BarnesHutTsne implements Model {
                             present = true;
                             if (n <= colP.getInt(i)) {
                                 // make sure we do not add elements twice
-                                symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
+                                //symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
                                 symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
                                 symValP.putScalar(symRowP.getInt(n) + offset.getInt(n),
                                         valP.getDouble(i) + valP.getDouble(m));
@@ -432,8 +432,8 @@ public class BarnesHutTsne implements Model {
                     // If (colP[i], n) is not present, there is no addition involved
                     if (!present) {
                         int colPI = colP.getInt(i);
-                        symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
-                        symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
+                        //symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
+                        //symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
                         symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
                         symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
                     }
@@ -579,20 +579,29 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
+                //System.out.println("cols = " + cols);
+                //System.out.println("vals = " + vals);
                 //TODO: uncomment when C++ implementation is available
-                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N);
-                //Nd4j.getExecutioner().exec(op);
-                //INDArray output = op.getResult();
-                //vals = output.divi(vals.sum(Integer.MAX_VALUE));
-                vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                INDArray outRows = Nd4j.create(rows.shape());
+                INDArray outCols = Nd4j.create(cols.shape());
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows, outCols);
+                Nd4j.getExecutioner().exec(op);
+                INDArray output = op.getResult();
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));
+                //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                rows = outRows;
+                cols = outCols;
+                System.out.println("rows = " + rows);
                 //lie about gradient
                 vals.muli(12);
+                //System.out.println("vals symmetrized = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    if (i == switchMomentumIteration)
+                    System.out.println("Learning Y = " + Y);
+                    /*if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
-                        vals.divi(12);
+                        vals.divi(12);*/
 
 
                     if (trainingListener != null) {
@@ -631,12 +640,27 @@ public class BarnesHutTsne implements Model {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray yGrads = gradient;
+            System.out.println("yGrads = " + yGrads);
+            System.out.println("yIncs = " + yIncs);
             Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
-            /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));*/
 
+            /*for (int i = 0; i < yGrads.rows(); ++i) {
+                for (int  j = 0; j < yGrads.columns(); ++j) {
+                    if (Math.signum(yGrads.getDouble(i,j)) == Math.signum(yIncs.getDouble(i,j))) {
+                        gains.putScalar(new int[]{i,j}, gains.getDouble(i,j)*0.8);
+                    }
+                    else {
+                        gains.putScalar(new int[]{i,j}, gains.getDouble(i,j)+0.2);
+                    }
+                }
+            }*/
+            /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).eq(sign(yIncs)).castTo(gains.dataType()));*/
+            System.out.println("gains = " + gains);
+            System.out.println("yGrads = " + yGrads);
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
+            Y.addi(yIncs);
             INDArray gradChange = gains.mul(yGrads);
 
             if (useAdaGrad) {
@@ -654,7 +678,7 @@ public class BarnesHutTsne implements Model {
             }
 
             yIncs.muli(momentum).subi(gradChange);
-            Y.addi(yIncs);
+            System.out.println("mY = " + yIncs);
         }
     }
 
@@ -842,7 +866,7 @@ public class BarnesHutTsne implements Model {
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
             INDArray posF = Nd4j.create(Y.shape());
             INDArray negF = Nd4j.create(Y.shape());
-            if (tree == null) {
+            /*if (tree == null)*/ {
                 tree = new SpTree(Y);
                 tree.setWorkspaceMode(workspaceMode);
             }
@@ -853,6 +877,10 @@ public class BarnesHutTsne implements Model {
 
 
             INDArray dC = posF.subi(negF.divi(sumQ));
+            System.out.println("dC = " + dC);
+            System.out.println("posF = " + posF);
+            System.out.println("negF = " + negF);
+            System.out.println("sumQ = " + sumQ);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
