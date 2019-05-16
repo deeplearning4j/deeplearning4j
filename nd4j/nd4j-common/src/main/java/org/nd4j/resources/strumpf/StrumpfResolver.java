@@ -34,7 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class StrumpfResolver implements Resolver {
-    public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".nd4j/test_resources").getAbsolutePath();
+    public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".cache/nd4j/test_resources").getAbsolutePath();
     public static final String REF = ".resource_reference";
 
     protected final List<String> localResourceDirs;
