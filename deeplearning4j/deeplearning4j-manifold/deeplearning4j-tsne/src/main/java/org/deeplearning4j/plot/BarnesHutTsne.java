@@ -583,18 +583,19 @@ public class BarnesHutTsne implements Model {
                 //System.out.println("vals = " + vals);
                 //TODO: uncomment when C++ implementation is available
                 INDArray outRows = Nd4j.create(rows.shape());
-                INDArray outCols = Nd4j.create(cols.shape());
-                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows, outCols);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
                 Nd4j.getExecutioner().exec(op);
-                INDArray output = op.getResult();
+                INDArray output = op.getSymmetrizedValues();
+                INDArray outCols = op.getSymmetrizedCols();
                 vals = output.divi(vals.sum(Integer.MAX_VALUE));
                 //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 rows = outRows;
                 cols = outCols;
                 System.out.println("rows = " + rows);
+                System.out.println("cols = " + cols);
                 //lie about gradient
                 vals.muli(12);
-                //System.out.println("vals symmetrized = " + vals);
+                System.out.println("vals symmetrized = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
                     System.out.println("Learning Y = " + Y);

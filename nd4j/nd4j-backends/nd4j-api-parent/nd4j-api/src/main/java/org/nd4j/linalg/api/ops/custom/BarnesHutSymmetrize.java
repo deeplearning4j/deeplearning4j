@@ -7,9 +7,10 @@ import org.nd4j.linalg.factory.Nd4j;
 public class BarnesHutSymmetrize extends DynamicCustomOp {
 
     private INDArray output;
+    private INDArray outCols;
 
     public BarnesHutSymmetrize(INDArray rowP, INDArray colP, INDArray valP, long N,
-                               INDArray outRows, INDArray outCols) {
+                               INDArray outRows) {
 
         INDArray rowCounts = Nd4j.create(N);
         for (int n = 0; n < N; n++) {
@@ -33,6 +34,7 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
         }
         long outputCols = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
         output = Nd4j.createUninitialized(1, outputCols);
+        outCols = Nd4j.createUninitialized(1, outputCols);
 
         inputArguments.add(rowP);
         inputArguments.add(colP);
@@ -45,8 +47,12 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
         iArguments.add(N);
     }
 
-    public INDArray getResult() {
+    public INDArray getSymmetrizedValues() {
         return output;
+    }
+
+    public INDArray getSymmetrizedCols() {
+        return outCols;
     }
 
     @Override
