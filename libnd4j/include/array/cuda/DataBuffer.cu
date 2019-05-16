@@ -59,7 +59,7 @@ DataBuffer::DataBuffer(const DataBuffer &other) {
         memcpy(_primaryBuffer, other._primaryBuffer, _lenInBytes);
     }
 
-    if(other._specialBuffer != nullptr) {
+    if(other._primaryBuffer != nullptr) {
         allocateSpecial();
         cudaMemcpy(_specialBuffer, other._specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
     }
@@ -126,7 +126,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
         memcpy(_primaryBuffer, other._primaryBuffer, _lenInBytes);
     }
 
-    if(other._specialBuffer != nullptr) {
+    if(other._primaryBuffer != nullptr) {
         allocateSpecial();
         cudaMemcpy(_specialBuffer, other._specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
     }
