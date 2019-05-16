@@ -27,7 +27,7 @@
 #include <mutex>
 #include <vector>
 #include <ShapeDescriptor.h>
-#include <DataBuffer.h>
+#include <array/ConstantDataBuffer.h>
 #include <memory/Workspace.h>
 
 namespace nd4j {
@@ -37,7 +37,7 @@ namespace nd4j {
         static ConstantShapeHelper *_INSTANCE;
 
         std::mutex _mutex;
-        std::vector<std::map<ShapeDescriptor, DataBuffer>> _cache;
+        std::vector<std::map<ShapeDescriptor, ConstantDataBuffer>> _cache;
 
 
         ConstantShapeHelper();
@@ -47,9 +47,9 @@ namespace nd4j {
         static ConstantShapeHelper* getInstance();
 
 
-        DataBuffer& bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        DataBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
-        DataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
+        ConstantDataBuffer& bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
+        ConstantDataBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
+        ConstantDataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
 
 
         Nd4jLong* emptyShapeInfo(const nd4j::DataType dataType);

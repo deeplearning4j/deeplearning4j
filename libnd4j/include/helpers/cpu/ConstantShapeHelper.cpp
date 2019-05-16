@@ -27,7 +27,7 @@ namespace nd4j {
     ConstantShapeHelper::ConstantShapeHelper() {
         _cache.resize(32);
         for (int e = 0; e < 32; e++) {
-            std::map<ShapeDescriptor, DataBuffer> cache;
+            std::map<ShapeDescriptor, ConstantDataBuffer> cache;
             _cache[e] = cache;
         }
     }
@@ -39,34 +39,34 @@ namespace nd4j {
         return _INSTANCE;
     }
 
-    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape) {
+    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape) {
         ShapeDescriptor descriptor(dataType, order, shape);
         return bufferForShapeInfo(descriptor);
     }
 
-    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
+    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = 0;
 
         _mutex.lock();
 
         if (_cache[deviceId].count(descriptor) == 0) {
             auto hPtr = descriptor.toShapeInfo();
-            DataBuffer buffer(hPtr, nullptr, shape::shapeInfoLength(hPtr)*sizeof(Nd4jLong), DataType::INT64);
+            ConstantDataBuffer buffer(hPtr, nullptr, shape::shapeInfoLength(hPtr)*sizeof(Nd4jLong), DataType::INT64);
             ShapeDescriptor descriptor1(descriptor);
             _cache[deviceId][descriptor1] = buffer;
-            DataBuffer &r = _cache[deviceId][descriptor1];
+            ConstantDataBuffer &r = _cache[deviceId][descriptor1];
             _mutex.unlock();
 
             return r;
         } else {
-            DataBuffer &r = _cache[deviceId].at(descriptor);
+            ConstantDataBuffer &r = _cache[deviceId].at(descriptor);
             _mutex.unlock();
 
             return r;
         }
     }
 
-    DataBuffer& ConstantShapeHelper::bufferForShapeInfo(const Nd4jLong *shapeInfo) {
+    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const Nd4jLong *shapeInfo) {
         ShapeDescriptor descriptor(shapeInfo);
         return bufferForShapeInfo(descriptor);
     }

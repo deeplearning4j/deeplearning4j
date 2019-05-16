@@ -20,6 +20,8 @@
 //
 
 #include "../DataBuffer.h"
+#include <op_boilerplate.h>
+#include <exceptions/cuda_exception.h>
 
 namespace nd4j {
 
@@ -218,7 +220,7 @@ void DataBuffer::writePrimary() const    { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const    { _writeSpecial = ++_counter; }
 void DataBuffer::readPrimary()  const    { _readPrimary  = ++_counter; }
 void DataBuffer::readSpecial()  const    { _readSpecial  = ++_counter; }
-bool DataBuffer::isPrimaryActual() const { return (_writePrimary > _writeSpecial || _readPrimary > _writeSpecial); }
-bool DataBuffer::isSpecialActual() const { return (_writeSpecial > _writePrimary || _readSpecial > _writePrimary); }
+bool DataBuffer::isPrimaryActual() const { return (_writePrimary.load() > _writeSpecial.load() || _readPrimary.load() > _writeSpecial.load()); }
+bool DataBuffer::isSpecialActual() const { return (_writeSpecial.load() > _writePrimary.load() || _readSpecial.load() > _writePrimary.load()); }
 
 }

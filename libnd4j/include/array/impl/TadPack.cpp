@@ -23,7 +23,7 @@
 #include <helpers/shape.h>
 
 namespace nd4j {
-    TadPack::TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads) {
+    TadPack::TadPack(ConstantDataBuffer &shapes, ConstantDataBuffer &offets, Nd4jLong numTads) {
         _tadShape = shapes;
         _tadOffsets = offets;
         _numTads = numTads;
