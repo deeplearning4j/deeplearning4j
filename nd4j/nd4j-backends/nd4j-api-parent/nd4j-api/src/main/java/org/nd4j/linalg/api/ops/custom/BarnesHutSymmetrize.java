@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.custom;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,9 +33,9 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
                 }
             }
         }
-        long outputCols = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
-        output = Nd4j.createUninitialized(1, outputCols);
-        outCols = Nd4j.createUninitialized(1, outputCols);
+        int outputCols = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+        output = Nd4j.create(1, outputCols);
+        outCols = Nd4j.create(new int[]{1, outputCols}, DataType.INT);
 
         inputArguments.add(rowP);
         inputArguments.add(colP);

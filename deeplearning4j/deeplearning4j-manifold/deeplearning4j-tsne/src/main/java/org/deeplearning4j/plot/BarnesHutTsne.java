@@ -20,7 +20,6 @@ package org.deeplearning4j.plot;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
@@ -37,11 +36,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -579,10 +576,7 @@ public class BarnesHutTsne implements Model {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 computeGaussianPerplexity(x, perplexity);
-                //System.out.println("cols = " + cols);
-                //System.out.println("vals = " + vals);
-                //TODO: uncomment when C++ implementation is available
-                INDArray outRows = Nd4j.create(rows.shape());
+                INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
                 BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
                 Nd4j.getExecutioner().exec(op);
                 INDArray output = op.getSymmetrizedValues();
@@ -591,18 +585,14 @@ public class BarnesHutTsne implements Model {
                 //vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 rows = outRows;
                 cols = outCols;
-                System.out.println("rows = " + rows);
-                System.out.println("cols = " + cols);
                 //lie about gradient
                 vals.muli(12);
-                System.out.println("vals symmetrized = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    System.out.println("Learning Y = " + Y);
-                    /*if (i == switchMomentumIteration)
+                    if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
-                        vals.divi(12);*/
+                        vals.divi(12);
 
 
                     if (trainingListener != null) {
@@ -641,10 +631,9 @@ public class BarnesHutTsne implements Model {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray yGrads = gradient;
-            System.out.println("yGrads = " + yGrads);
-            System.out.println("yIncs = " + yIncs);
             Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
 
+            // Reference
             /*for (int i = 0; i < yGrads.rows(); ++i) {
                 for (int  j = 0; j < yGrads.columns(); ++j) {
                     if (Math.signum(yGrads.getDouble(i,j)) == Math.signum(yIncs.getDouble(i,j))) {
@@ -655,10 +644,9 @@ public class BarnesHutTsne implements Model {
                     }
                 }
             }*/
+            // Legacy
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
                     .addi(gains.mul(0.8).muli(sign(yGrads)).eq(sign(yIncs)).castTo(gains.dataType()));*/
-            System.out.println("gains = " + gains);
-            System.out.println("yGrads = " + yGrads);
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
             Y.addi(yIncs);
@@ -679,7 +667,6 @@ public class BarnesHutTsne implements Model {
             }
 
             yIncs.muli(momentum).subi(gradChange);
-            System.out.println("mY = " + yIncs);
         }
     }
 
@@ -867,7 +854,7 @@ public class BarnesHutTsne implements Model {
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
             INDArray posF = Nd4j.create(Y.shape());
             INDArray negF = Nd4j.create(Y.shape());
-            /*if (tree == null)*/ {
+            if (tree == null) {
                 tree = new SpTree(Y);
                 tree.setWorkspaceMode(workspaceMode);
             }
@@ -878,10 +865,6 @@ public class BarnesHutTsne implements Model {
 
 
             INDArray dC = posF.subi(negF.divi(sumQ));
-            System.out.println("dC = " + dC);
-            System.out.println("posF = " + posF);
-            System.out.println("negF = " + negF);
-            System.out.println("sumQ = " + sumQ);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);

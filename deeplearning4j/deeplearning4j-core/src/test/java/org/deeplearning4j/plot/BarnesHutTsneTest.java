@@ -69,6 +69,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
+        b.saveAsFile(labelsList, "mnist_data.dat");
     }
 
     @Test

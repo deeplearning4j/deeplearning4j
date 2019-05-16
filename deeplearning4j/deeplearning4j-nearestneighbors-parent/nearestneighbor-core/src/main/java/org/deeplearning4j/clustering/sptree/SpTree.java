@@ -170,13 +170,13 @@ public class SpTree implements Serializable {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray point = data.slice(index);
-            boolean contains = false;
+            /*boolean contains = false;
             SpTreeCell op = new SpTreeCell(boundary.corner(), boundary.width(), point, N, contains);
             Nd4j.getExecutioner().exec(op);
             op.getOutputArgument(0).getScalar(0);
-            if (!contains) return false;
-            /*if (!boundary.contains(point))
-                return false;*/
+            if (!contains) return false;*/
+            if (!boundary.contains(point))
+                return false;
 
 
             cumSize++;
