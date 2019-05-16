@@ -216,20 +216,20 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         b.fit(data);
         System.out.println(b.getData());
 
-        double[] expectedData = new double[]{ 95.7422,    204.1027,    93.4250,   37.2965,  720.5467,
-                                                201.7626,  281.1831,  112.6211,  253.5442,  281.5215,
-                                                298.2705,  341.9751,  138.9898,  306.1721,  253.5843,
-                                                216.1541,  163.5028,   72.5626,  285.4470,  217.4066,
-                                                261.8770,  287.8564,  146.9964,  430.8185,  355.4268,
-                                                125.8167,  138.6875,   59.9295,   88.6333,  115.2455,
-                                                183.1120,  185.3690,  154.1721,  136.4739,  139.4099,
-                                                396.2162,  135.6869,  124.6483,  146.5401,  277.8906,
-                                                582.9872,  453.6362,  349.6344,  407.7697,  392.8740,
-                                                228.0742,  240.4862,  110.6878,  272.0466,  313.7355,
-                                                172.7794,  117.0965,   35.9576,  226.7186,  188.8074};
+        double[] expectedData = new double[]{15.538573092516227, 19.254074740264553, -5.197894960007315, -31.7834713628353, 48.8614915367832,
+                24.930934093744863, -22.617436264839153, -29.793740196707745, 19.0218525631085, -16.016931188021438,
+                -27.45290535309887, 1.2834256242432636, -40.45425796558328, 61.2291461505214, 5.624067178947265,
+                -28.15766472474109, -20.054206270792854, 12.803450251866824, -24.876387031529276, 45.12007990743564,
+                21.59745174096266, 18.631726513092065, -4.024539280166883, -0.45706549764270177, -42.34767084409472,
+                -69.24805943403573, 40.93731760624968, -24.606957841057883, 17.68566008299872, -3.67616666839052,
+                -30.917986023731544, 10.647130858266719, 36.58565503999654, -64.7421573332578, -39.362782995478256,
+                72.54894086130215, -35.29925040820432, 19.379513782265495, -7.7866259736623045, 19.65763726525753,
+                58.13294040085929, -18.495491969492004, -3.5029056819888424, 5.6598318317190035, 39.69067079959966,
+                -15.118064407109452, -32.425035097878705, 17.042670952238133, 42.256739755895474, -2.6969017240580357,
+                -16.34669035511952, 41.72879824966716, 20.940776468887368, -3.2178907389085385, -45.36427127988699};
         INDArray expectedArray = Nd4j.createFromArray(expectedData).reshape(11,5);
         for (int i = 0; i < expectedArray.rows(); ++i)
-            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-3);
+            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-2);
     }
 
     @Test
@@ -279,15 +279,19 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         assertArrayEquals(expectedSymmetrized.toDoubleVector(), actualSymmetrized.toDoubleVector(), 1e-4);
 
 
-        INDArray rowsFromCpp = Nd4j.create(new int[]{rowsP.rows(),rowsP.columns()});
+        INDArray rowsFromCpp = Nd4j.create(new int[]{rowsP.rows(),rowsP.columns()}, DataType.INT);
         BarnesHutSymmetrize op = new BarnesHutSymmetrize(rowsP, colsP, valsP, 11, rowsFromCpp);
         Nd4j.getExecutioner().exec(op);
         INDArray valsFromCpp = op.getSymmetrizedValues();
         INDArray colsFromCpp = op.getSymmetrizedCols();
         System.out.println("Symmetrized from C++: " + valsP);
-        assertArrayEquals(expectedSymmetrized.toDoubleVector(), valsP.toDoubleVector(), 1e-2);
-        assertArrayEquals(rowsP.toIntVector(), rowsFromCpp.toIntVector());
-        assertArrayEquals(colsP.toIntVector(), colsFromCpp.toIntVector());
+        assertArrayEquals(expectedSymmetrized.toDoubleVector(), valsFromCpp.toDoubleVector(), 1e-2);
+
+        int[] expectedRows = new int[]{0, 10, 20, 30, 40, 50, 60, 69, 78, 88, 98, 108};
+        int[] expectedCols = new int[]{4, 3, 10, 8, 6, 7, 1, 5, 9, 2, 0, 4, 9, 8, 10, 2, 6, 7, 3, 5, 1, 6, 8, 3, 9, 10, 4, 0, 5, 7, 0, 1, 2, 10, 4, 6, 8, 9, 5, 7, 0, 1, 2, 3, 10, 8, 9, 6, 7, 5, 0, 2, 3, 7, 9, 10, 4, 8, 1, 6, 0, 1, 2, 3, 4, 8, 10, 9, 5, 0, 1, 3, 4, 5, 9, 10, 8, 2, 0, 1, 2, 3, 4, 5, 6, 7, 10, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        assertArrayEquals(expectedRows, rowsFromCpp.toIntVector());
+        assertArrayEquals(expectedCols, colsFromCpp.toIntVector());
     }
 
     @Test
