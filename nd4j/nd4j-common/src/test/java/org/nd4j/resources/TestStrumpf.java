@@ -6,6 +6,7 @@ import org.apache.commons.io.LineIterator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.resources.strumpf.ResourceFile;
 import org.nd4j.resources.strumpf.StrumpfResolver;
 
@@ -24,31 +25,9 @@ public class TestStrumpf {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testResourceFiles() throws Exception {
-//        File cacheDir = testDir.newFolder();
-        File cacheDir = new File("C:\\Temp\\TestResources");
-
-
-        File f = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\strumpf\\gauss-vector.txt.resource_reference");
-
-        ResourceFile rf = ResourceFile.fromFile(f);
-        File lf = rf.localFile(cacheDir);
-
-        assertTrue(lf.exists());
-
-        try(Reader r = new BufferedReader(new FileReader(lf))){
-            LineIterator iter = IOUtils.lineIterator(r);
-            for( int i=0; i<5 && iter.hasNext(); i++ ){
-                System.out.println("LINE " + i + ": " + iter.next());
-            }
-        }
-
-    }
-
-    @Test
     public void testResolvingReference() throws Exception {
 
-        File f = Resources.asFile("strumpf/gauss-vector.txt");
+        File f = Resources.asFile("big/raw_sentences.txt");
         assertTrue(f.exists());
 
         System.out.println(f.getAbsolutePath());
@@ -90,7 +69,7 @@ public class TestStrumpf {
         testFile.getParentFile().mkdir();
         FileUtils.writeStringToFile(testFile, content, StandardCharsets.UTF_8);
 
-        System.setProperty(StrumpfResolver.LOCAL_DIRS_SYSTEM_PROPERTY, dir.getAbsolutePath());
+        System.setProperty(ND4JSystemProperties.RESOURCES_LOCAL_DIRS, dir.getAbsolutePath());
 
         try{
             StrumpfResolver r = new StrumpfResolver();
@@ -101,7 +80,7 @@ public class TestStrumpf {
             String s = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
             assertEquals(content, s);
         } finally {
-            System.setProperty(StrumpfResolver.LOCAL_DIRS_SYSTEM_PROPERTY, "");
+            System.setProperty(ND4JSystemProperties.RESOURCES_LOCAL_DIRS, "");
         }
     }
 

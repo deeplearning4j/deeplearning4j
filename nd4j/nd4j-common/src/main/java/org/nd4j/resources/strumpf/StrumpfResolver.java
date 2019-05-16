@@ -2,6 +2,7 @@ package org.nd4j.resources.strumpf;
 
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resolver;
@@ -33,7 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class StrumpfResolver implements Resolver {
-    public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".skymind/test_resources").getAbsolutePath();
+    public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".nd4j/test_resources").getAbsolutePath();
     public static final String REF = ".resource_reference";
 
     protected final List<String> localResourceDirs;
@@ -50,7 +51,10 @@ public class StrumpfResolver implements Resolver {
             localResourceDirs = null;
         }
 
-        String cd = System.getProperty(ND4JSystemProperties.RESOURCES_CACHE_DIR, DEFAULT_CACHE_DIR);
+        String cd = System.getenv(ND4JEnvironmentVars.ND4J_RESOURCES_CACHE_DIR);
+        if(cd == null || cd.isEmpty()) {
+            cd = System.getProperty(ND4JSystemProperties.RESOURCES_CACHE_DIR, DEFAULT_CACHE_DIR);
+        }
         cacheDir = new File(cd);
         cacheDir.mkdirs();
     }
