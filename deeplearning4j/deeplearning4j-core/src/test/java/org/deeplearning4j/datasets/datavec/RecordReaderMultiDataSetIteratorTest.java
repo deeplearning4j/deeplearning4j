@@ -53,6 +53,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.*;
 import java.net.URI;
@@ -72,11 +73,11 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
     public void testsBasic() throws Exception {
         //Load details from CSV files; single input/output -> compare to RecordReaderDataSetIterator
         RecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 10, 4, 3);
 
         RecordReader rr2 = new CSVRecordReader(0, ',');
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr2.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
         MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
                         .addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
@@ -157,7 +158,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
     public void testsBasicMeta() throws Exception {
         //As per testBasic - but also loading metadata
         RecordReader rr2 = new CSVRecordReader(0, ',');
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr2.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
                         .addReader("reader", rr2).addInput("reader", 0, 3).addOutputOneHot("reader", 4, 3).build();
@@ -181,11 +182,11 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         //Outputs: columns 3, and 4->OneHot
         //need to manually extract
         RecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 10, 4, 3);
 
         RecordReader rr2 = new CSVRecordReader(0, ',');
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr2.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
         MultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10).addReader("reader", rr2)
                         .addInput("reader", 0, 0).addInput("reader", 1, 2).addOutput("reader", 3, 3)
@@ -231,7 +232,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         //Inputs: columns 0 and 1-2
         //Outputs: columns 3, and 4->OneHot
         RecordReader rr2 = new CSVRecordReader(0, ',');
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr2.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
         RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
                         .addReader("reader", rr2).addInput("reader", 0, 0).addInput("reader", 1, 2)
@@ -366,7 +367,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         //Test: reference to reader that doesn't exist
         try {
             RecordReader rr = new CSVRecordReader(0, ',');
-            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+            rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr)
                             .addInput("thisDoesntExist", 0, 3).addOutputOneHot("iris", 4, 3).build();
@@ -377,7 +378,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         //Test: no inputs or outputs
         try {
             RecordReader rr = new CSVRecordReader(0, ',');
-            rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+            rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
             MultiDataSetIterator r = new RecordReaderMultiDataSetIterator.Builder(1).addReader("iris", rr).build();
             fail("Should have thrown exception");

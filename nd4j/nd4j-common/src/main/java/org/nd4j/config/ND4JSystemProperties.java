@@ -110,6 +110,21 @@ public class ND4JSystemProperties {
      */
     public static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
 
+    /**
+     * Applicability: nd4j-common {@link org.nd4j.resources.Resources} class (and hence {@link org.nd4j.resources.strumpf.StrumpfResolver})<br>
+     * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
+     * where should the remote files be downloaded to?<br>
+     * This is generally used for resolving test resources, but can be used for Strumpf resource files generally.
+     */
+    public static final String RESOURCES_CACHE_DIR = "org.nd4j.test.resources.cache.dir";
+
+    /**
+     * Applicability: nd4j-common {@link org.nd4j.resources.Resources} class (and hence {@link org.nd4j.resources.strumpf.StrumpfResolver})<br>
+     * Description: When resolving resources, what local directories should be checked (in addition to the classpath) for files?
+     * This is optional. Multiple directories may be specified, using comma-separated paths
+     */
+    public static final String RESOURCES_LOCAL_DIRS = "org.nd4j.strumpf.resource.dirs";
+
     private ND4JSystemProperties() {
     }
 }

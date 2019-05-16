@@ -39,6 +39,7 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 
@@ -62,8 +63,7 @@ public class RegressionTest050 extends BaseDL4JTest {
     @Test
     public void regressionTestMLP1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/050/050_ModelSerializer_Regression_MLP_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/050/050_ModelSerializer_Regression_MLP_1.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -97,8 +97,7 @@ public class RegressionTest050 extends BaseDL4JTest {
     @Test
     public void regressionTestMLP2() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/050/050_ModelSerializer_Regression_MLP_2.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/050/050_ModelSerializer_Regression_MLP_2.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -137,8 +136,7 @@ public class RegressionTest050 extends BaseDL4JTest {
     @Test
     public void regressionTestCNN1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/050/050_ModelSerializer_Regression_CNN_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/050/050_ModelSerializer_Regression_CNN_1.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 

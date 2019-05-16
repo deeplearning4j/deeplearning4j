@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.Nd4jValidator;
+import org.nd4j.resources.Resources;
 import org.nd4j.validation.ValidationResult;
 
 import java.io.BufferedInputStream;
@@ -44,10 +45,7 @@ public class MiscTests {
 
     @Test(timeout = 60000L)
     public void testMultiThreadedLoading() throws Exception {
-
-        String path = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
-        File root = testDir.newFolder();
-        final File f = new ClassPathResource(path).getTempFileFromArchive(root);
+        final File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
 
         int numThreads = 4;
         final CountDownLatch latch = new CountDownLatch(numThreads);
@@ -90,10 +88,7 @@ public class MiscTests {
 
     @Test(timeout = 60000L)
     public void testLoadFromStream() throws Exception {
-
-        String path = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
-        File root = testDir.newFolder();
-        final File f = new ClassPathResource(path).getTempFileFromArchive(root);
+        final File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
 
         try(InputStream is = new BufferedInputStream(new FileInputStream(f))) {
             MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(is);
@@ -144,7 +139,7 @@ public class MiscTests {
         System.out.println(vr3.toString());
 
         //Test corrupted npy format:
-        File fValid = new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5").getFile();
+        File fValid = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
         for( int i=0; i<30; i++ ){
             numpyBytes[i] = 0;
@@ -213,7 +208,7 @@ public class MiscTests {
         System.out.println(vr3.toString());
 
         //Test corrupted npy format:
-        File fValid = new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5").getFile();
+        File fValid = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
         for( int i=0; i<30; i++ ){
             numpyBytes[i] = 0;

@@ -29,9 +29,11 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -321,21 +323,21 @@ public class KerasWeightSettingTests {
     }
 
     private MultiLayerNetwork loadMultiLayerNetwork(String modelPath, boolean training) throws Exception {
-        ClassPathResource modelResource = new ClassPathResource(modelPath,
-                KerasWeightSettingTests.class.getClassLoader());
         File modelFile = createTempFile("temp", ".h5");
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(training).buildSequential().getMultiLayerNetwork();
+        try(InputStream is = Resources.asStream(modelPath)) {
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(training).buildSequential().getMultiLayerNetwork();
+        }
     }
 
     private ComputationGraph loadComputationalGraph(String modelPath, boolean training) throws Exception {
-        ClassPathResource modelResource = new ClassPathResource(modelPath,
-                KerasWeightSettingTests.class.getClassLoader());
         File modelFile = createTempFile("temp", ".h5");
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(training).buildModel().getComputationGraph();
+        try(InputStream is = Resources.asStream(modelPath)) {
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(training).buildModel().getComputationGraph();
+        }
     }
 
     private File createTempFile(String prefix, String suffix) throws IOException {

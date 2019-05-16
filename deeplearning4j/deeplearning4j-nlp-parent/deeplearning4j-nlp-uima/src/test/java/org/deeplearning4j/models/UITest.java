@@ -43,7 +43,7 @@ public class UITest {
     @Test
     public void testPosting() throws Exception {
 
-        //        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        //        File inputFile = Resources.asFile("big/raw_sentences.txt");
         File inputFile = new ClassPathResource("/basic/word2vec_advance.txt").getFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words

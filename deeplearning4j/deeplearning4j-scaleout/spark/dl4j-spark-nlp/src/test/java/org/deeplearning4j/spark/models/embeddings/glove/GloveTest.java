@@ -43,7 +43,7 @@ public class GloveTest extends BaseSparkTest {
     @Test
     public void testGlove() throws Exception {
         Glove glove = new Glove(true, 5, 100);
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath())
+        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("big/raw_sentences.txt").getFile().getAbsolutePath())
                         .map(new Function<String, String>() {
                             @Override
                             public String call(String s) throws Exception {
