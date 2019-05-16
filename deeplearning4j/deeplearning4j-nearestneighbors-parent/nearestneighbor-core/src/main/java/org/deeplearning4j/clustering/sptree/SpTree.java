@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
+import org.nd4j.linalg.api.ops.custom.SpTreeCell;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.slf4j.Logger;
@@ -169,8 +170,13 @@ public class SpTree implements Serializable {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             INDArray point = data.slice(index);
-            if (!boundary.contains(point))
-                return false;
+            boolean contains = false;
+            SpTreeCell op = new SpTreeCell(boundary.corner(), boundary.width(), point, N, contains);
+            Nd4j.getExecutioner().exec(op);
+            op.getOutputArgument(0).getScalar(0);
+            if (!contains) return false;
+            /*if (!boundary.contains(point))
+                return false;*/
 
 
             cumSize++;
@@ -320,11 +326,13 @@ public class SpTree implements Serializable {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
-        //Nd4j.exec(computeEdgeForces);
-
+        INDArray outRows = Nd4j.create(rowP.shape());
+        INDArray outCols = Nd4j.create(colP.shape());
+        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
+        Nd4j.getExecutioner().exec(computeEdgeForces);
+        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
         // Loop over all edges in the graph
-        double D;
+        /*double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
@@ -339,7 +347,29 @@ public class SpTree implements Serializable {
                 posF.slice(n).addi(buf.muli(D));
 
             }
+        }*/
+        /*double [] buff = new double[N];
+        int ind1 = 0;
+        int ind2 = 0;
+        double D;
+        for(int n = 0; n < N; n++) {
+            for(int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
+
+                // Compute pairwise distance and Q-value
+                D = 1.0;
+                ind2 = colP.getInt(i) * 5;
+                for(int d = 0; d < 5; d++) {
+                    buff[d] = data.getDouble(ind1 + d) - data.getDouble(ind2 + d);
+                    D += buff[d] * buff[d];
+                }
+                D = valP.getDouble(i) / D;
+
+                // Sum positive force
+                for(int d = 0; d < 5; d++) posF.putScalar(ind1 + d,  posF.getDouble(ind1 + d) + D * buff[d]);
+            }
+            ind1 += 5;
         }
+        System.out.println("posF = " + posF);*/
     }
 
 

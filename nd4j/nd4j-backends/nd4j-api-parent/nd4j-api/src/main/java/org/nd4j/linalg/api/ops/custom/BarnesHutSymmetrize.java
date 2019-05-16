@@ -8,7 +8,8 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
 
     private INDArray output;
 
-    public BarnesHutSymmetrize(INDArray rowP, INDArray colP, INDArray valP, long N) {
+    public BarnesHutSymmetrize(INDArray rowP, INDArray colP, INDArray valP, long N,
+                               INDArray outRows, INDArray outCols) {
 
         INDArray rowCounts = Nd4j.create(N);
         for (int n = 0; n < N; n++) {
@@ -37,6 +38,8 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
         inputArguments.add(colP);
         inputArguments.add(valP);
 
+        outputArguments.add(outRows);
+        outputArguments.add(outCols);
         outputArguments.add(output);
 
         iArguments.add(N);
