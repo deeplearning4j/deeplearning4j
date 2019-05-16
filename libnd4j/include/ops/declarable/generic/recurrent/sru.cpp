@@ -215,22 +215,22 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         auto gradUZt  = gradUZ(idx);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         auto gradUFt  = gradUF(idx);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         auto gradURt  = gradUR(idx);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        
+
         if(t != 0) {
             idx[4] = t - 1;
             idx[5] = t;
             ct_1  = new NDArray((*c)(idx));        // previous c_{t-1}
         }
-        else            
+        else
             ct_1 = c0;
-        
+
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
         ft.addRowVector(&bF, &ft);
         rt.addRowVector(&bR, &rt);
         ft.applyTransform(transform::Sigmoid, nullptr, nullptr);
         rt.applyTransform(transform::Sigmoid, nullptr, nullptr);
-        
+
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
         ct.applyTransform(transform::Tanh, gct);
         // ftMinus = 1-ft,  rtMinus = 1-rt
@@ -243,12 +243,12 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         rtMinus->applyPairwiseTransform(pairwise::Multiply, &rt, temp2, nullptr);             // temp2 = (1.0f - rt) * rt;
         temp1->applyPairwiseTransform(pairwise::Multiply, *temp2, nullptr);                   // temp1 = (g_ct - xt) * (1.0f - rt) * rt;
         inGradHt.applyPairwiseTransform(pairwise::Multiply, temp1, &gradBRt, nullptr);       // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;        
-        
+
         // bF, TODO - tanh
         // gradTanh = (1.0f - g_ct * g_ct);
         gct->applyPairwiseTransform(pairwise::Multiply, gct, gradTanh, nullptr);             // gradTanh = g_ct * g_ct
         gradTanh->applyTransform(transform::OneMinus, gradTanh);                              // gradTanh = (1.0f - g_ct * g_ct)
-        // gradCt  = inGradHt * rt * gradTanh                
+        // gradCt  = inGradHt * rt * gradTanh
         rt.applyPairwiseTransform(pairwise::Multiply, gradTanh, gradCt, nullptr);           // gradCt = rt * gradTanh
         inGradHt.applyPairwiseTransform(pairwise::Multiply, gradCt, gradCt, nullptr);       // gradCt = inGradHt * rt * gradTanh
         // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
@@ -259,7 +259,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         temp1->applyPairwiseTransform(pairwise::Multiply, temp2, &gradBFt, nullptr);          // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
 
         // x_t (highway connection), gradHXt = inGradHt * (1.0f - rt);
-        inGradHt.applyPairwiseTransform(pairwise::Multiply, rtMinus, &gradHXt, nullptr);
+        inGradHt.applyPairwiseTransform(pairwise::Multiply, rtMinus, &gradHXt, nullptr);        
 
         // U_t, gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
         rt.applyPairwiseTransform(pairwise::Multiply, gradTanh, temp1, nullptr);        // temp1 = rt * grad_tanh
@@ -272,9 +272,9 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
         gradCt->applyPairwiseTransform(pairwise::Add, inGradCt, temp1, nullptr);         // temp1 = (gradCt + inGradCt)
         temp1->applyPairwiseTransform(pairwise::Multiply, &ft, inGradCt, nullptr);       // inGradCt = (gradCt + inGradCt) * ft;
-        
+
         if(t != 0)
-            delete ct_1;         
+            delete ct_1;
     }
 
     // gradInit

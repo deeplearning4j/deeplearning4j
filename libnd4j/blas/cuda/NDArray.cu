@@ -2458,35 +2458,50 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void NDArray::printSpecialBuffer(const char* msg, const int precision) const {
+    void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {\
 
-        if(_bufferD == nullptr || _length == 0)
-            { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
         if(_length == 0)
-            { printf("NDArray::printSpecialBuffer: array length is zero !\n"); return; }
+                { printf("NDArray::printActualBuffer: array length is zero !\n"); return; }
 
-        void* pHost = operator new(sizeof(T) * _length);
+        if(msg)
+            printf("%s", msg);
 
-        if (ews() != 1) {
-            //for (uint i = 0; i < _length; i++)
-                //cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(_context->getCudaStream()));
+        if(host) {
+            if(_buffer == nullptr || _length == 0)
+                { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }            
+
+            const T* buff = bufferAsT<T>();
+            for (uint i = 0; i < _length; i++) 
+                printf("%.*f, ", precision, (double)buff[getOffset(i)]);
+            printf("\n");                
         }
-        else 
-            cudaMemcpyAsync(pHost, _bufferD, sizeOfT() * _length, cudaMemcpyDeviceToHost, *_context->getCudaStream());
-
-        cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if(cudaResult != 0)
-            throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");                
-
-        for (uint i = 0; i < _length; i++) 
-            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
-        printf("\n");        
-
-        operator delete(pHost);
+        else {
+            if(_bufferD == nullptr || _length == 0)
+                { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
+    
+            void* pHost = operator new(sizeof(T) * _length);
+    
+            if (ews() != 1) {
+                for (uint i = 0; i < _length; i++)
+                    cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(_context->getCudaStream()));
+            }
+            else
+                cudaMemcpyAsync(pHost, _bufferD, sizeOfT() * _length, cudaMemcpyDeviceToHost, *_context->getCudaStream());
+    
+            cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+            if(cudaResult != 0)
+                throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");                
+    
+            for (uint i = 0; i < _length; i++) 
+                printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
+            printf("\n");        
+    
+            operator delete(pHost);
+        }
     }
-    template void NDArray::printSpecialBuffer<int>(const char* msg, const int precision) const;
-    template void NDArray::printSpecialBuffer<float>(const char* msg, const int precision) const;
-    template void NDArray::printSpecialBuffer<double>(const char* msg, const int precision) const;
+    template void NDArray::printCurrentBuffer<int>(const bool host,const char* msg, const int precision) const;
+    template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
+    template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
 
 
 } // end namespace nd4j

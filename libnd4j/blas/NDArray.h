@@ -449,14 +449,15 @@ namespace nd4j {
         *  prints buffer elements
         *  msg - message to print out 
         *  limit - number of array elements to print out
+        *  sync - if true check whether host buffer is actual, if it is not then make it so 
         */ 
-        void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1) const;
+        void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1, const bool sync = true) const;
 
         /**
-        *  prints _bufferD as it is, that is in current state without checking buffer status
+        *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
         */
         template<typename T>
-        void printSpecialBuffer(const char* msg = nullptr, const int precision = 0) const;
+        void printCurrentBuffer(const bool host = true, const char* msg = nullptr, const int precision = 1) const;
 
         /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
@@ -2115,7 +2116,13 @@ void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
 void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
 bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
-void NDArray::makeBothBuffersActual() const  { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
+
+void NDArray::makeBothBuffersActual() const  { 
+    if(!isActualOnHostSide()) 
+        syncToHost(); 
+    if(!isActualOnDeviceSide()) 
+        syncToDevice(); 
+}
 
 
 

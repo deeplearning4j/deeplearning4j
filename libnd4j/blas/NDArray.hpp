@@ -1015,8 +1015,8 @@ prepareSpecialUse({&target}, {this});
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::printBuffer(const char* msg, Nd4jLong limit) const{
-        if (!isActualOnHostSide())
+    void NDArray::printBuffer(const char* msg, Nd4jLong limit, const bool sync) const{
+        if (sync && !isActualOnHostSide())
             syncToHost();
         if (limit == -1)
             limit = (int) this->lengthOf();
@@ -2674,7 +2674,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
 
         subArrLen *= shapeOf[d];
     }
-        
+
     // check if there is possibility to set ews = 1
     shape::setEws(newShape, subArrLen);
 
@@ -2682,14 +2682,14 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
         makeBothBuffersActual();
         NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false);
         result.copyBufferStatus(*this);
-    #else            
+    #else
         NDArray result(bufferWithOffset(offset), newShape, _context, false);
-    #endif     
-    
+    #endif
+
     if(!keepUnitiesInShape) {
         const int coeff = isStrided ? 3 : 2;
         std::vector<Nd4jLong> nonUnitDims;
-        
+
         for (int d = 0; d < rank; ++d) 
             if(!(idx[coeff*d] != idx[coeff*d+1] && newShape[d+1] == 1))
                 nonUnitDims.push_back(newShape[d+1]);        

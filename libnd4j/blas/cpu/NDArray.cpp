@@ -2436,7 +2436,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    void NDArray::printSpecialBuffer(const char* msg, const int precision) const {
+    void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
 
     }
 
