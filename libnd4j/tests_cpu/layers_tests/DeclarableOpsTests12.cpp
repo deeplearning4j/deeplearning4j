@@ -651,22 +651,6 @@ TEST_F(DeclarableOpsTests12, mirrorPad_test18) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, pad_tests26) {
-
-    NDArray input('c', {5}, {0.778786, 0.801198, 0.724375, 0.230894, 0.727141}, nd4j::DataType::FLOAT32);
-    NDArray paddings('c', {1,2}, {1,1}, nd4j::DataType::INT32);
-    NDArray expected('c', {7}, {10., 0.778786, 0.801198, 0.724375, 0.230894, 0.727141, 10.}, nd4j::DataType::FLOAT32);    
-    NDArray z('c', {7}, nd4j::DataType::FLOAT32);    
-
-    nd4j::ops::pad op;    
-    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {10}, {0}, {});      // constant 
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
-    ASSERT_TRUE(expected.equalsTo(z));
-}
-
-////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, relu_1) {
 
     NDArray input('c', {1,5,5,6}, { 0.557449, 0.768277, 1.094015, -0.557449, -0.768277, -1.094015,0.563735, 0.900299, 0.789979, -0.563735, -0.900299, -0.789979,
@@ -1361,4 +1345,696 @@ TEST_F(DeclarableOpsTests12, inTopK_1) {
 
     ASSERT_TRUE(expV.isSameShape(z));
     ASSERT_TRUE(expV.equalsTo(z));    
+}
+
+////////////////////////////////////////////////////////////////////
+// CONSTANT mode 2D
+TEST_F(DeclarableOpsTests12, Pad_1) {
+
+    float inBuff[]  = {1,2,3,4,5,6};
+    int padBuff[] = {1,1,2,2};
+    float expBuff[] = {0,0,0,0,0,0,0, 0,0,1,2,3,0,0, 0,0,4,5,6,0,0, 0,0,0,0,0,0,0};    
+
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+// REFLECT mode 2D
+TEST_F(DeclarableOpsTests12, Pad_2) {
+
+    float inBuff[]  = {1,2,3,4,5,6};
+    int padBuff[] = {1,1,2,2};
+    float expBuff[] = {6,5,4,5,6,5,4, 3,2,1,2,3,2,1, 6,5,4,5,6,5,4, 3,2,1,2,3,2,1};    
+
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+// SYMMETRIC mode 2D
+TEST_F(DeclarableOpsTests12, Pad_3) {
+
+    float inBuff[]  = {1,2,3,4,5,6};
+    int padBuff[] = {1,1,2,2};
+    float expBuff[] = {2,1,1,2,3,3,2, 2,1,1,2,3,3,2, 5,4,4,5,6,6,5, 5,4,4,5,6,6,5};    
+
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+// CONSTANT mode 3D
+TEST_F(DeclarableOpsTests12, Pad_4) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+    int padBuff[] = {1,1,2,2,2,2};
+    float expBuff[] = {0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 1, 2, 3,0,0,0,0, 4, 5, 6,0,0,0,0, 7, 8, 9,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0,10,11,12,0,0,0,0,13,14,15,0,0,0,0,16,17,18,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0};
+
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+
+////////////////////////////////////////////////////////////////////
+// REFLECT mode 3D
+TEST_F(DeclarableOpsTests12, Pad_5) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+    int padBuff[] = {1,1,2,2,2,2};
+    float expBuff[] = {18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1};                      
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+// SYMMETRIC mode 3D
+TEST_F(DeclarableOpsTests12, Pad_6) {
+
+    float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+    int padBuff[] = {1,1,2,2,2,2};
+    float expBuff[] = {5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 8, 7, 7, 8, 9, 9, 8, 8, 7, 7, 8, 9, 9, 8, 5, 4, 4, 5, 6, 6, 5, 5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 8, 7, 7, 8, 9, 9, 8, 8, 7, 7, 8, 9, 9, 8, 5, 4, 4, 5, 6, 6, 5, 14,13,13,14,15,15,14, 11,10,10,11,12,12,11, 11,10,10,11,12,12,11, 14,13,13,14,15,15,14, 17,16,16,17,18,18,17, 17,16,16,17,18,18,17, 14,13,13,14,15,15,14, 14,13,13,14,15,15,14, 11,10,10,11,12,12,11, 11,10,10,11,12,12,11, 14,13,13,14,15,15,14, 17,16,16,17,18,18,17, 17,16,16,17,18,18,17, 14,13,13,14,15,15,14};
+
+    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+// CONSTANT mode 4D
+TEST_F(DeclarableOpsTests12, Pad_7)
+{
+
+    float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    float expBuff[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 6, 0, 0, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 14, 0, 0, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+// REFLECT mode 4D
+TEST_F(DeclarableOpsTests12, Pad_8)
+{
+
+    float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    float expBuff[] = {16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1};    
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////
+// SYMMETRIC mode 4D 
+TEST_F(DeclarableOpsTests12, Pad_9)
+{
+
+    float inBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
+    float expBuff[] = {1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 5, 5, 6, 6, 5, 5, 6, 6, 7, 7, 8, 8, 7, 7, 8, 8, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 9, 9, 10, 10, 9, 9, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16};
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
+    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
+    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests12, Test_Expose_1) {
+    auto input0 = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 6, 5, 4});
+    auto input1 = NDArrayFactory::create<float>('c', {2, 3}, {3, 2, 1, 4, 5, 6});
+
+    nd4j::ops::expose op;
+
+    auto result = op.execute({&input0, &input1}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z0 = result->at(0);
+    auto z1 = result->at(1);
+
+    ASSERT_TRUE(input0.equalsTo(z0));
+    ASSERT_TRUE(input1.equalsTo(z1));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests10) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2,3,4});
+    auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+
+    input = 1.f;
+    //input.assign(1.);
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests11) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2,3,4});
+    auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0, 0,1, 0,0});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,4}, {1., 2., 3., 4., 5., 6., 7., 8., 9.,10.,11.,12., 5., 6., 7., 8.,13.,14.,15.,16.,17.,18.,19.,20.,21.,22.,23.,24.,17.,18.,19.,20.});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests12) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2,3,4,5});
+    auto paddings = NDArrayFactory::create<int>('c', {4,2}, {0,0, 0,1, 0,1, 0,0});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,5,5}, { 1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.,  9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 16., 17., 18., 19., 20.,
+                                             21., 22., 23., 24., 25., 26., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40., 36., 37., 38., 39., 40.,
+                                             41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51., 52., 53., 54., 55., 56., 57., 58., 59., 60., 56., 57., 58., 59., 60.,
+                                             41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51., 52., 53., 54., 55., 56., 57., 58., 59., 60., 56., 57., 58., 59., 60.,
+                                             61., 62., 63., 64., 65., 66., 67., 68., 69., 70., 71., 72., 73., 74., 75., 76., 77., 78., 79., 80., 76., 77., 78., 79., 80.,
+                                             81., 82., 83., 84., 85., 86., 87., 88., 89., 90., 91., 92., 93., 94., 95., 96., 97., 98., 99.,100., 96., 97., 98., 99.,100.,
+                                            101.,102.,103.,104.,105.,106.,107.,108.,109.,110.,111.,112.,113.,114.,115.,116.,117.,118.,119.,120.,116.,117.,118.,119.,120.,
+                                            101.,102.,103.,104.,105.,106.,107.,108.,109.,110.,111.,112.,113.,114.,115.,116.,117.,118.,119.,120.,116.,117.,118.,119.,120.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests13) {
+
+    auto input    = NDArrayFactory::create<double>('c', {5});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {2,3});
+    auto expected = NDArrayFactory::create<double>('c', {10}, {3., 2., 1., 2., 3., 4., 5., 4., 3., 2.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests14) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,5});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0,2,3});
+    auto expected = NDArrayFactory::create<double>('c', {1,10}, {2., 1., 1., 2., 3., 4., 5., 5., 4., 3.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests15) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,5});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {1,1,0,0});
+    auto expected = NDArrayFactory::create<double>('c', {3,5}, {1., 2., 3., 4., 5., 1., 2., 3., 4., 5., 1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests16) {
+
+    auto input    = NDArrayFactory::create<double>('c', {5,1});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {2,3,0,0});
+    auto expected = NDArrayFactory::create<double>('c', {10,1}, {3., 2., 1., 2., 3., 4., 5., 4., 3., 2.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests17) {
+
+    auto input    = NDArrayFactory::create<double>('c', {5,1});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0,1,0});
+    auto expected = NDArrayFactory::create<double>('c', {5,2}, {1.,1., 2.,2., 3.,3., 4.,4., 5.,5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests18) {
+
+    auto input    = NDArrayFactory::create<double>('c', {5});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {0,0});
+    auto expected = NDArrayFactory::create<double>('c', {5}, {1.,2.,3.,4.,5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests19) {
+
+    auto input    = NDArrayFactory::create<double>('c', {5,1});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0,0,0});
+    auto expected = NDArrayFactory::create<double>('c', {5,1}, {1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests20) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,5});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0,0,0});
+    auto expected = NDArrayFactory::create<double>('c', {1,5}, {1., 2., 3., 4., 5.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests21) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,3,1,5});
+    auto paddings = NDArrayFactory::create<int>('c', {4,2}, {0,0, 0,1, 0,1, 0,0});
+    auto expected = NDArrayFactory::create<double>('c', {1,4,2,5}, {1., 2., 3., 4., 5., 1., 2., 3., 4., 5., 6., 7., 8., 9.,10., 6., 7., 8., 9.,10.,
+                                             11.,12.,13.,14.,15.,11.,12.,13.,14.,15.,11.,12.,13.,14.,15.,11.,12.,13.,14.,15.});
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests22) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,1});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0, 0,0});
+    auto expected = NDArrayFactory::create<double>('c', {1,1}, {1.});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests23) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1,1});
+    auto paddings = NDArrayFactory::create<int>('c', {2,2}, {0,0, 1,0});
+    auto expected = NDArrayFactory::create<double>('c', {1,2}, {0.,1.});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printShapeInfo("r");
+    // expected.printShapeInfo("e");
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests24) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {0,0});
+    auto expected = NDArrayFactory::create<double>('c', {1}, {1.});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests25) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {1,1});
+    auto expected = NDArrayFactory::create<double>('c', {3}, {1.,1.,1});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests26) {
+
+    auto input    = NDArrayFactory::create<double>('c', {1});
+    auto paddings = NDArrayFactory::create<int>('c', {1,2}, {3,2});
+    auto expected = NDArrayFactory::create<double>('c', {6}, {0., 0., 0., 1., 0., 0.});
+
+    input.linspace(1.f);
+
+    nd4j::ops::pad op;
+    auto results = op.execute({&input, &paddings}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests27) {
+    
+    NDArray input('c', {2,3}, nd4j::DataType::FLOAT32);
+    NDArray paddings('c', {2,2}, {0,0,0,1}, nd4j::DataType::INT32);
+    NDArray exp('c', {2,4}, {1,1,1,0,1,1,1,0}, nd4j::DataType::FLOAT32);   
+    NDArray z('c', {2,4}, nd4j::DataType::FLOAT32);    
+    input = 1.;
+
+    nd4j::ops::pad op;
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
+    // z.printIndexedBuffer();
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(exp.isSameShapeStrict(&z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests28) {
+    
+    NDArray input('c', {1,111,111,32}, nd4j::DataType::FLOAT32);
+    NDArray paddings('c', {4,2}, {0,0,0,1,0,1,0,0}, nd4j::DataType::INT32);    
+    NDArray z('c', {1,112,112,32}, nd4j::DataType::FLOAT32);    
+    input = 1.;
+
+    nd4j::ops::pad op;
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
+    // z.printIndexedBuffer();
+
+    NDArray sum = z.reduceNumber(nd4j::reduce::Sum);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_EQ(sum.e<float>(0), 111*111*32);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, Pad_SGO_Test_1) {
+
+    auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
+//    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new long[]{1, 2});
+    auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
+//    auto value(10.0);
+
+    auto exp = NDArrayFactory::create<double>({10., 1., 1., 1., 1., 1., 10.});
+
+    nd4j::ops::pad op;
+
+    auto res = op.execute({&in, &pad}, {10.0}, {0});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    // res->at(0)->printIndexedBuffer("PAD_SGO");
+    // exp.printIndexedBuffer("PAD_EXP");
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    delete res;
 }

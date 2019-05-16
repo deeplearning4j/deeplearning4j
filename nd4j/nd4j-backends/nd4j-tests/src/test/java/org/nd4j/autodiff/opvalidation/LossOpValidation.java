@@ -421,10 +421,9 @@ public class LossOpValidation extends BaseOpValidation {
 
     @Test
     public void testNonZeroResult() {
-        OpValidationSuite.ignoreFailing(); //TEMPORARY - Waiting on PR #7082
-        INDArray predictions = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 4);
+        INDArray predictions = Nd4j.rand(DataType.DOUBLE, 10, 5);
         INDArray w = Nd4j.scalar(1.0);
-        INDArray label = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 5);
+        INDArray label = Nd4j.rand(DataType.DOUBLE, 10, 5);
         final INDArray zero = Nd4j.scalar(0.);
         final INDArray zeroBp = Nd4j.zerosLike(predictions);
 
@@ -476,5 +475,15 @@ public class LossOpValidation extends BaseOpValidation {
                 assertNotEquals(lossOp + "_grad returns zero result. Reduction Mode " + reductionMode, outBP, zeroBp);
             }
         }
+    }
+
+    @Test
+    public void TestStdLossMixedDataType(){
+        // Default Data Type in this test suite is Double.
+        // This test used to throw an Exception that we have mixed data types.
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.placeHolder("x", DataType.FLOAT, 3,4);
+        SDVariable loss = v.std(true);
     }
 }
