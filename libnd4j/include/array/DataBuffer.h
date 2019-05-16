@@ -23,6 +23,7 @@
 #define DEV_TESTS_DATABUFFER_H
 
 #include <dll.h>
+#include <cstring>
 #include <op_boilerplate.h>
 #include <pointercast.h>
 #include <memory/Workspace.h>
@@ -35,23 +36,27 @@ class ND4J_EXPORT DataBuffer {
 
     private:
 
-        Nd4jPointer _primaryBuffer = nullptr;
-        Nd4jPointer _specialBuffer = nullptr;
-        size_t _lenInBytes = 0;
-        DataType _dataType = INT8;
-        memory::Workspace* _workspace = nullptr;
-        mutable Nd4jLong _counter = 0L;
-        mutable Nd4jLong _writePrimary = 0L;
-        mutable Nd4jLong _writeSpecial = 0L;
-        mutable Nd4jLong _readPrimary = 0L;
-        mutable Nd4jLong _readSpecial = 0L;
+        Nd4jPointer _primaryBuffer;
+        Nd4jPointer _specialBuffer;
+        size_t _lenInBytes;
+        DataType _dataType;
+        memory::Workspace* _workspace;
+
+    #ifdef __CUDABLAS__
+        mutable std::atomic<Nd4jLong> _counter;
+        mutable std::atomic<Nd4jLong> _writePrimary;
+        mutable std::atomic<Nd4jLong> _writeSpecial;
+        mutable std::atomic<Nd4jLong> _readPrimary;
+        mutable std::atomic<Nd4jLong> _readSpecial;
+    #endif
     
     public:
         
-        FORCEINLINE DataBuffer(Nd4jPointer primary, Nd4jPointer special, const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr);
-        DataBuffer(const DataBuffer &other) = default;
-        explicit DataBuffer() = default;
-        ~DataBuffer();
+        DataBuffer(Nd4jPointer primary, Nd4jPointer special, const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr);
+        DataBuffer(const DataBuffer& other);
+        DataBuffer(DataBuffer&& other);
+        explicit DataBuffer();
+        FORCEINLINE ~DataBuffer();
 
         FORCEINLINE DataType getDataType();
         FORCEINLINE size_t getLenInBytes();
@@ -59,8 +64,8 @@ class ND4J_EXPORT DataBuffer {
         FORCEINLINE Nd4jPointer primary();
         FORCEINLINE Nd4jPointer special();
 
-        DataBuffer& operator=(const DataBuffer& other) = default;
-        DataBuffer& operator=(DataBuffer&& other) noexcept = default;
+        DataBuffer& operator=(const DataBuffer& other);
+        DataBuffer& operator=(DataBuffer&& other) noexcept;
 
         void writePrimary() const;
         void writeSpecial() const;
@@ -78,20 +83,15 @@ class ND4J_EXPORT DataBuffer {
         void syncToPrimary(const LaunchContext* context);
         void syncToSpecial();
 
-        void allocatePrimary();
-        void allocateSpecial();
+        FORCEINLINE void allocatePrimary();
+                    void allocateSpecial();
+
+        void deleteBuffers();
 };
 
 
 
 ///// IMLEMENTATION OF INLINE METHODS ///// 
-DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special, const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace) {
-    _primaryBuffer = primary;
-    _specialBuffer = special;
-    _lenInBytes = lenInBytes;
-    _dataType = dataType;
-    _workspace = workspace;
-}
 
 ////////////////////////////////////////////////////////////////////////
 Nd4jPointer DataBuffer::primary() {
@@ -125,6 +125,18 @@ T* DataBuffer::specialAsT() {
     return reinterpret_cast<T*>(_specialBuffer);
 }
 
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::allocatePrimary() {
+    
+    if (_primaryBuffer == nullptr && getLenInBytes() > 0) 
+        ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
+}
+
+////////////////////////////////////////////////////////////////////////
+DataBuffer::~DataBuffer() {
+    
+    deleteBuffers();
+}
 
 
 }

@@ -69,6 +69,7 @@ NDArray::NDArray(NDArray&& other) noexcept {
     _shapeInfoD   = other._shapeInfoD;
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
+    _length       = other._length;
 
     _writeDevice = other._writeDevice;
     _readDevice = other._readDevice;
@@ -78,7 +79,7 @@ NDArray::NDArray(NDArray&& other) noexcept {
 
     other._buffer = other._bufferD = nullptr;
     other._shapeInfo = other._shapeInfoD = nullptr;
-    this->_length = other.lengthOf();
+    other._length = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -470,6 +471,7 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
 
     other._buffer = other._bufferD = nullptr;
     other._shapeInfo = other._shapeInfoD = nullptr;
+    other._length = 0;
 
     return *this;
 }

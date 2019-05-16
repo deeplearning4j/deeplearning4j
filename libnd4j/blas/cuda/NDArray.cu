@@ -245,7 +245,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     NDArray& NDArray::operator=(const NDArray& other) {
     nd4j_printf("Assignment operator...\n","");
     if (this == &other)
-        return *this;    
+        return *this;
 
     if (shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
         if(!isEmpty())
