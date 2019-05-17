@@ -25,7 +25,13 @@
 
 namespace nd4j {
 
+////////////////////////////////////////////////////////////////////////
+DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
+            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
 
+    allocateSpecial();
+    copyBuffers(*this);
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
@@ -36,9 +42,11 @@ void DataBuffer::allocateSpecial() {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToPrimary(const LaunchContext* context) {
+void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
+
+    if(isPrimaryActual() && !forceSync)
+        return;
 
     allocatePrimary();
 
@@ -53,7 +61,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context) {
 
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToSpecial() {
+void DataBuffer::syncToSpecial(const bool forceSync) {
+
+    if(isSpecialActual() && !forceSync)
+        return;
 
     allocateSpecial();
 
@@ -62,24 +73,24 @@ void DataBuffer::syncToSpecial() {
     readSpecial();
 }
 
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteSpecial() {
+
+    if(getLenInBytes() != 0 && _primaryBuffer != nullptr && _isOwnerSpecial) {
+        auto p = reinterpret_cast<int8_t*>(_specialBuffer);
+        RELEASE_SPECIAL(p, _workspace);
+        _specialBuffer = nullptr;
+        _isOwnerSpecial = false;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteBuffers() {
 
-    if(getLenInBytes() != 0) {
-        if(_primaryBuffer != nullptr && _isOwnerPrimary) {
-            auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-            RELEASE(p, _workspace);
-            _primaryBuffer = nullptr;
-            _isOwnerPrimary = false;
-        }
-        if(_primaryBuffer != nullptr && _isOwnerSpecial) {
-            auto p = reinterpret_cast<int8_t*>(_specialBuffer);
-            RELEASE_SPECIAL(p, _workspace);
-            _specialBuffer = nullptr;
-            _isOwnerSpecial = false;
-        }
-        _lenInBytes = 0;
-    }
+    deleteSpecial();
+    deletePrimary();
+    _lenInBytes = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -112,13 +123,26 @@ void DataBuffer::copyBuffers(const DataBuffer& other) {     // always copies onl
         auto res = cudaMemcpy(_specialBuffer, other._primaryBuffer, other._lenInBytes, cudaMemcpyHostToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+        other.readPrimary();
     }
     else {
         auto res = cudaMemcpy(_specialBuffer, other._specialBuffer, other._lenInBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+        other.readSpecial();
     }
+
+    writeSpecial();
 }
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
+
+    deleteSpecial();
+    _specialBuffer = special;
+    _isOwnerSpecial = isOwnerSpecial;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateBuffers() {    // always allocate special buffer only (cuda case)

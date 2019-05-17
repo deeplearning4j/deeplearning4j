@@ -44,6 +44,12 @@ namespace nd4j {
         return bufferForShapeInfo(descriptor);
     }
 
+    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
+        ShapeDescriptor descriptor(type, order, shape, rank);
+        return bufferForShapeInfo(descriptor);
+    }
+
+
     ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = 0;
 

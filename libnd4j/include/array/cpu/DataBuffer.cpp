@@ -24,19 +24,25 @@
 namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
+DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
+            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
 
 }
 
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToPrimary(const LaunchContext* context) {
+void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
 
 }
 
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToSpecial() {
+void DataBuffer::syncToSpecial(const bool forceSync) {
 
 }
 
@@ -73,6 +79,16 @@ void DataBuffer::copyBuffers(const DataBuffer& other) {
 
     if(other._primaryBuffer != nullptr)
         memcpy(_primaryBuffer, other._primaryBuffer, other._lenInBytes);
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteSpecial() {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
+
 }
 
 

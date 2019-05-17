@@ -56,7 +56,7 @@ void* NDArray::operator new(size_t i) {
         return ws->allocateBytes((Nd4jLong) i);
     } else {
         auto p = malloc(i);
-        
+
         CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
         return p;
     }
@@ -64,7 +64,7 @@ void* NDArray::operator new(size_t i) {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void* p) {
-    
+
     if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached())
         free(p);
 }
@@ -95,15 +95,9 @@ NDArray::NDArray(const NDArray& other) {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::lazyAllocateBuffer() const {
-    
-    if (lengthOf() > 0 && _buffer == nullptr && !isEmpty()) {
-        
-        NDArray* constThis = const_cast<NDArray*>(this);
-        // ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
-        ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-        constThis->triggerAllocationFlag(true);
-    }
-}   
+
+    _buffer->allocatePrimary();
+}
 
 ////////////////////////////////////////////////////////////////////////
 // scalar constructor
@@ -145,7 +139,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     cudaMemset(_bufferD, 0, _length * sizeOfT());
     _isBuffDAlloc = true;
-   
+
     tickWriteDevice();
 }
 
@@ -169,13 +163,13 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 
     ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
     triggerAllocationFlag(true);
-    
+
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
-    _isBuffDAlloc = true;    
+    _isBuffDAlloc = true;
 
     for(Nd4jLong i=0; i < _length; ++i) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
-    }    
+    }
     syncToDevice();
     tickReadHost();
 }
@@ -189,7 +183,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    _context = context;    
+    _context = context;
 
     setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
@@ -203,41 +197,41 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::LaunchContext * context) {
     _context = context;
-    
+
     if (copyStrides)
         setShapeInfo(ShapeDescriptor(other->_shapeInfo, other->dataType()));
     else
         setShapeInfo(ShapeDescriptor(other->dataType(), other->ordering(), other->getShapeAsVector()));
-    
+
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-    _isBuffDAlloc = true;    
+    _isBuffDAlloc = true;
 
     tickWriteDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context) {
-    
+
     if (shape.empty())
         throw std::runtime_error("NDArray constructor: input shape is empty !");
-        
+
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
-    
+
     _context = context;
 
     setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
     _buffer = reinterpret_cast<int8_t *>(buffer);
-    
+
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     _isBuffDAlloc = true;
-    
+
     if(_buffer != nullptr)
         cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-        
+
     tickWriteDevice();
-    tickReadHost(); 
+    tickReadHost();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -252,20 +246,20 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             this->assign(&other);
     }
     else {
-        
+
         if(_context->getWorkspace() == nullptr) {
             if(_isBuffAlloc) delete []_buffer;
             if(_isBuffDAlloc)  RELEASE_SPECIAL(_bufferD, nullptr);
         }
-               
+
         _context= other._context;
         _buffer = nullptr;
 
         //setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.getShapeInfoAsVector()));
         setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
         ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-        _isBuffDAlloc = true;        
-                
+        _isBuffDAlloc = true;
+
         this->assign(&other);
     }
     nd4j_printf("Assigned array with shape rank %lld.\n", this->getShapeInfo()[0]);
@@ -430,7 +424,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
         //max->syncToDevice();
-        //pMin->syncToDevice(); // tile has a problem with syncing data to device        
+        //pMin->syncToDevice(); // tile has a problem with syncing data to device
 //        if (sameDims.size() == max->rankOf()) {
 //            target->syncToDevice();
 //            max->applyPairwiseTransform(op.p, pMin, target, extraArgs);
@@ -614,15 +608,15 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
-    
+
 
 
     //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
     bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
 
-        // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary 
-        if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))         
+        // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
+        if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))
             return true;
 
         std::vector<Nd4jLong> shape(cshape);
@@ -677,9 +671,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         Nd4jLong *shapeInfoNew;
         ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-       
+
         bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
-        
+
         // we can do this only if there was no permute applied, or there are no weird strides
         if (canReshape) {
             if(ordering() == 'c' && order == 'f')
@@ -687,11 +681,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
             shape::setEws(shapeInfoNew, arrLength);
             setShapeInfo(ShapeDescriptor(shapeInfoNew, dataType()));
-        } 
+        }
         else {
-        
+
             NDArray temp(order, shape, dataType(), _context);
-            this->applyTransform(transform::Copy, &temp, nullptr);            
+            this->applyTransform(transform::Copy, &temp, nullptr);
             temp.tickWriteDevice();
             *this = std::move(temp);
         }
@@ -712,7 +706,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         this->assign(1.);
 
         setValueInDiagMatrix(0.f, 1, 'u');
-        setValueInDiagMatrix(0.f, -1, 'l');        
+        setValueInDiagMatrix(0.f, -1, 'l');
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -757,67 +751,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (this->_bufferD, this->_shapeInfoD, other.specialBuffer(), other.specialShapeInfo(), _context->getCudaStream()), LIBND4J_TYPES);
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::streamline(char o) {
-        char order = o == 'a' ? this->ordering() : o;
-        if (!isActualOnDeviceSide())
-            syncToDevice();
-
-        Nd4jLong rank = this->rankOf();
-
-        int8_t *newBuffer = nullptr;
-        int8_t* newBufferD;
-        ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
-        ALLOCATE_SPECIAL(newBufferD, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
-
-        std::vector<Nd4jLong> shape(this->rankOf());
-        for (int e = 0; e < this->rankOf(); e++)
-            shape[e] = this->sizeAt(e);
-
-        auto theNewShape = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());
-
-        ShapeDescriptor descriptor(dataType(), order, shape); //theNewShape);
-        auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor);
-
-        if (!isView()) {
-            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, (Nd4jLong*)shapeBuffer.primary(), newBufferD, (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
-            //memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
-
-            if (_isBuffAlloc) {
-                RELEASE(this->_buffer, this->_context->getWorkspace());
-            }
-            if (_isBuffDAlloc) {
-                RELEASE_SPECIAL(_bufferD, this->_context->getWorkspace());
-            }
-
-            _buffer == nullptr;
-            //_shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
-            setShapeInfo(descriptor);
-            setSpecialBuffer(newBufferD);//, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
-            //this->_buffer = newBuffer;
-            this->_isBuffAlloc = false;
-            this->_isBuffDAlloc = true;
-        } else {
-            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, (Nd4jLong*)shapeBuffer.primary(), newBufferD, (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
-
-            if (_isBuffAlloc)
-                RELEASE(_buffer, this->_context->getWorkspace());
-
-            if (_isBuffDAlloc)
-                RELEASE_SPECIAL(_bufferD, this->_context->getWorkspace());
-
-            _buffer = nullptr;
-            //setBuffer(newBuffer);
-            setShapeInfo(descriptor);
-            //_shapeInfo = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
-            setSpecialBuffer(newBufferD); //, reinterpret_cast<Nd4jLong *>(shapeBuffer.special()));
-            this->_isBuffAlloc = false;
-            this->_isBuffDAlloc = true;
-        }
-
-        //tickReadHost();
-        tickWriteDevice();
-    }
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
@@ -844,10 +777,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::syncToHost() const {
-        
+
         if(isEmpty() || lengthOf() == 0) return;
-        
-        lazyAllocateBuffer();        
+
+        lazyAllocateBuffer();
         auto stream = _context->getCudaStream();
         auto res = cudaStreamSynchronize(*stream);
         if (res != 0)
@@ -862,13 +795,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         }
         else
             cudaMemcpy(_buffer, _bufferD, _length * sizeOfT(), cudaMemcpyDeviceToHost);
-        
+
         tickReadHost();
     }
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::syncToDevice() const {
-        
+
         if(isEmpty()) return;
 
         if (_bufferD == nullptr) {
@@ -886,8 +819,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         }
         else
             cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-                
-        tickReadDevice();        
+
+        tickReadDevice();
     }
 
     void NDArray::syncShape() const {
@@ -953,9 +886,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         prepareSpecialUse({this}, {&other});
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1) 
+        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
             cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
-        else 
+        else
             NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
 
         registerSpecialUse({this}, {&other});
@@ -995,7 +928,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!isS())
             throw std::runtime_error("Can't get std::string out of non-string array");
-        
+
         preparePrimaryUse({}, {this});
 
         // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
@@ -1007,9 +940,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto data = _buffer + offsetsLength + start;
 
         std::string r(reinterpret_cast<const char *>(data), (end - start));
-        
+
         registerPrimaryUse({}, {this});
-        
+
         return r;
     }
 
@@ -1021,11 +954,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         preparePrimaryUse({}, {this});
-        
+
         auto rp = getOffset(i);
         registerPrimaryUse({}, {this});
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
-        
+
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
@@ -1042,9 +975,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong coords[2] = {i, j};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         registerPrimaryUse({}, {this});
-        
+
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-                
+
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -1065,7 +998,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         registerPrimaryUse({}, {this});
 
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-                
+
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -1085,7 +1018,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         registerPrimaryUse({}, {this});
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-        
+
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -1096,7 +1029,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         throw std::invalid_argument("scalar NDArray::e(i): input index is out of array length !");
 
     NDArray scalar(_dataType, _context);
-    
+
     if(isActualOnHostSide()) {
         cudaMemcpy(scalar._bufferD, bufferWithOffset(getOffset(i)), sizeOfT(), cudaMemcpyHostToDevice);
         tickReadHost();
@@ -1108,7 +1041,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
     scalar.tickWriteDevice();
     return scalar;
-}    
+}
 
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
@@ -1153,7 +1086,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
-        
+
         prepareSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
         registerSpecialUse({target}, {this});
@@ -1170,7 +1103,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if (!target->isB())
             throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
-        prepareSpecialUse({target}, {this});        
+        prepareSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformBool(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(this->dataType()) : nullptr, nullptr, nullptr);
         registerSpecialUse({target}, {this});
     }
@@ -1202,7 +1135,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         registerSpecialUse({&result}, {this});
         NativeOpExecutioner::execTransformFloat(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, extraParams, nullptr, nullptr);
         prepareSpecialUse({&result}, {this});
-        
+
         return result;
     }
 
@@ -1230,7 +1163,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         prepareSpecialUse({&result}, {this});
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, extraParams, nullptr, nullptr);
         registerSpecialUse({&result}, {this});
-        
+
         return result;
     }
 
@@ -1280,12 +1213,12 @@ NDArray NDArray::e(const Nd4jLong i) const {
             nd4j_printf("This dtype: [%i]; scalar dtype: [%i]\n", this->_dataType, scalar->_dataType);
             throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
         }
-        
-        prepareSpecialUse({target}, {this, scalar});        
+
+        prepareSpecialUse({target}, {this, scalar});
         NativeOpExecutioner::execScalarBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
         registerSpecialUse({target}, {this, scalar});
     }
-    
+
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray *target, ExtraArguments *extraParams) const {
@@ -1316,7 +1249,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             target = this;
         if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo) && !(target->_dataType == this->_dataType || target->_dataType == scalar->_dataType))
             throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
-        
+
         prepareSpecialUse({target}, {this, scalar});
         NativeOpExecutioner::execScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
         registerSpecialUse({target}, {this, scalar});
@@ -1421,7 +1354,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         return result;
     }
-  
+
     ////////////////////////////////////////////////////////////////////////
     void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
         if (isS())
@@ -1429,7 +1362,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (target->dataType() != nd4j::DataType::INT64)
             throw std::runtime_error("NDArray::applyIndexReduce operations return INT64");
-        
+
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
         NDArray::prepareSpecialUse({target}, {this});
@@ -1449,7 +1382,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
         NDArray::registerSpecialUse({target}, {this});
     }
-    
+
     ////////////////////////////////////////////////////////////////////////
     // reduce dimensions in this array relying on index operations
     NDArray* NDArray::applyIndexReduce(nd4j::indexreduce::Ops op,const std::vector<int>& dimensions, const ExtraArguments* extraParams ) const {
@@ -1485,9 +1418,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
             auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
             if (cudaResult != 0) throw cuda_exception::build("NDArray::applyIndexReduce cuda failed !", cudaResult);
         }
-        
+
         NDArray::registerSpecialUse({result}, {this});
-        
+
         return result;
     }
 
@@ -1506,13 +1439,13 @@ NDArray NDArray::e(const Nd4jLong i) const {
         // create output array (scalar)
         auto result = new NDArray(newShape, true, _context);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;        
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
         NDArray::prepareSpecialUse({result}, {this, other});
 
         NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD);
 
-        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
 
         NDArray::registerSpecialUse({result}, {this, other});
@@ -1523,7 +1456,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     ////////////////////////////////////////////////////////////////////////
     // apply reduce3 (exec) operations to this and other array, return result in new output array
     NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
-        
+
         if (isS())
             throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
         if(_dataType != other->_dataType)
@@ -1561,7 +1494,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
             if (cudaResult != 0)
                 throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
-        }        
+        }
 
         NDArray::registerSpecialUse({result}, {this, other});
 
@@ -1611,7 +1544,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
 
         NDArray::registerSpecialUse({result}, {this, other});
-        
+
         return result;
     }
 
@@ -1632,9 +1565,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {                
+    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
-		for (const auto& p : readList) 
+		for (const auto& p : readList)
 			p->tickReadDevice();
 
         for (const auto& p : writeList)
@@ -1643,8 +1576,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
-        
-    for (const auto& a : writeList) {    
+
+    for (const auto& a : writeList) {
         if (synchronizeWritables && !a->isActualOnHostSide())
             a->syncToHost();
         a->tickWriteHost();
@@ -1652,21 +1585,21 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
 
     for (const auto& a : readList) {
         if (!a->isActualOnHostSide())
-            a->syncToHost();            
+            a->syncToHost();
         a->tickReadHost();
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
-        
-    for (const auto& p : writeList)         
-        p->tickWriteHost();        
 
-    for (const auto& p : readList) 
-        p->tickReadHost();        
+    for (const auto& p : writeList)
+        p->tickWriteHost();
+
+    for (const auto& p : readList)
+        p->tickReadHost();
 }
-        
+
 ////////////////////////////////////////////////////////////////////////
 // default destructor
 NDArray::~NDArray() noexcept {
@@ -1849,8 +1782,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
 
     NDArray::prepareSpecialUse({target}, {this});
 
-    if(rankOf() == copy.size() || copy.empty()) {        
-        NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+    if(rankOf() == copy.size() || copy.empty()) {
+        NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0)
@@ -1890,8 +1823,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 
     NDArray::prepareSpecialUse({target}, {this});
 
-    if(rankOf() == copy.size() || copy.empty()) {        
-        NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+    if(rankOf() == copy.size() || copy.empty()) {
+        NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
@@ -1915,7 +1848,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: you can't use this method on String array!");
     if (target == nullptr || !target->isB())
-        throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");    
+        throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");
 
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
@@ -1928,8 +1861,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
 
     NDArray::prepareSpecialUse({target}, {this});
 
-    if(rankOf() == copy.size() || copy.empty()) {        
-        NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+    if(rankOf() == copy.size() || copy.empty()) {
+        NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
@@ -1966,8 +1899,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     NDArray::prepareSpecialUse({target}, {this});
 
-    if(rankOf() == copy.size() || copy.empty()) {        
-        NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+    if(rankOf() == copy.size() || copy.empty()) {
+        NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
@@ -1995,8 +1928,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
         auto rp = getOffset(i);
-        const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));        
-    
+        const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
+
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), templatedSet<, T>(this->_buffer, rp, pV), LIBND4J_TYPES);
 
         registerPrimaryUse({this}, {});
@@ -2015,14 +1948,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     ////////////////////////////////////////////////////////////////////////
     void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
-        
+
         if(!scalar.isScalar())
             throw std::invalid_argument("NDArray::p method: input array must be scalar!");
         if (i >= _length)
             throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
 
         preparePrimaryUse({this}, {&scalar}, true);
-        auto rp = getOffset(i);        
+        auto rp = getOffset(i);
         BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
         registerPrimaryUse({this}, {&scalar});
     }
@@ -2038,7 +1971,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         preparePrimaryUse({this}, {}, true);
 
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         Nd4jLong coords[2] = {i, j};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
@@ -2064,9 +1997,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
 
         preparePrimaryUse({this}, {}, true);
-        
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
-        Nd4jLong coords[3] = {i, j, k};        
+
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        Nd4jLong coords[3] = {i, j, k};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
         registerPrimaryUse({this}, {});
@@ -2090,9 +2023,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
 
         preparePrimaryUse({this}, {}, true);
-        
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
-        Nd4jLong coords[4] = {i, j, k, l};                
+
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        Nd4jLong coords[4] = {i, j, k, l};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
         registerPrimaryUse({this}, {});
@@ -2113,7 +2046,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return _bufferD != nullptr ? _bufferD + (offset * sizeOfT()) : nullptr;
     }
 
-//////////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
@@ -2126,7 +2059,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-        auto array = new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]), packX.primaryShapeInfo(), _context);        
+        auto array = new NDArray(bufferWithOffset(packX.primaryOffsets()[index]), specialBufferWithOffset(packX.primaryOffsets()[index]), packX.primaryShapeInfo(), _context);
         array->_isView = true;
         array->copyBufferStatus(*this);
 
@@ -2280,7 +2213,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({this}, {column});
     }
-    
+
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
@@ -2301,7 +2234,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
                 result.reshapei(ordering(), shapeNew);
             }
             return result;             // nothing to do, if diff >= 0 -> identity tile
-        }        
+        }
 
         // evaluate shapeInfo for resulting array
         auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _context->getWorkspace());
@@ -2375,7 +2308,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     }
 
     //////////////////////////////////////////////////////////////////////////
-    // create new  array by repeating it the number of times given by reps    
+    // create new  array by repeating it the number of times given by reps
     NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
         auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
 
@@ -2468,34 +2401,34 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         if(host) {
             if(_buffer == nullptr || _length == 0)
-                { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }            
+                { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }
 
             const T* buff = bufferAsT<T>();
-            for (uint i = 0; i < _length; i++) 
+            for (uint i = 0; i < _length; i++)
                 printf("%.*f, ", precision, (double)buff[getOffset(i)]);
-            printf("\n");                
+            printf("\n");
         }
         else {
             if(_bufferD == nullptr || _length == 0)
                 { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
-    
+
             void* pHost = operator new(sizeof(T) * _length);
-    
+
             if (ews() != 1) {
                 for (uint i = 0; i < _length; i++)
                     cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(_context->getCudaStream()));
             }
             else
                 cudaMemcpyAsync(pHost, _bufferD, sizeOfT() * _length, cudaMemcpyDeviceToHost, *_context->getCudaStream());
-    
+
             cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
             if(cudaResult != 0)
-                throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");                
-    
-            for (uint i = 0; i < _length; i++) 
+                throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
+
+            for (uint i = 0; i < _length; i++)
                 printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
-            printf("\n");        
-    
+            printf("\n");
+
             operator delete(pHost);
         }
     }

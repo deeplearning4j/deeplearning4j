@@ -58,7 +58,7 @@ namespace nd4j {
             return ws->allocateBytes((Nd4jLong) i);
         } else {
             auto p = malloc(i);
-            
+
             CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
 
             return p;
@@ -753,38 +753,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
             throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
         BUILD_SINGLE_SELECTOR(xType, templatedSwap, (this->_buffer, other.buffer(), this->lengthOf()), LIBND4J_TYPES);
-    }
-
-    void NDArray::streamline(char o) {
-        char order = o == 'a' ? this->ordering() : o;
-
-        int8_t *newBuffer;
-        ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
-
-        std::vector<Nd4jLong> shape(this->rankOf());
-        for (int e = 0; e < this->rankOf(); e++)
-            shape[e] = this->sizeAt(e);
-
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dataType(), order, shape);
-
-        if (!isView()) {
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
-            memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
-
-            RELEASE(newBuffer, this->_context->getWorkspace());
-
-            setShapeInfo(newShape);
-        } else {
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
-
-            if (_isBuffAlloc)
-                RELEASE(this->_buffer, this->_context->getWorkspace());
-
-            this->_buffer = newBuffer;
-            triggerAllocationFlag(true);
-
-            setShapeInfo(newShape);
-        }
     }
 
     void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
@@ -1928,7 +1896,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto rp = getOffset(i);
         BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
         // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
-    }    
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j
