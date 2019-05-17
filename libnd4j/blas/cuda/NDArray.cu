@@ -2482,8 +2482,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             void* pHost = operator new(sizeof(T) * _length);
     
             if (ews() != 1) {
-                for (uint i = 0; i < _length; i++)
-                    cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(_context->getCudaStream()));
+                //for (uint i = 0; i < _length; i++)
+               //     cudaMemcpyAsync(pHost + i * sizeof(T), _bufferD + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(_context->getCudaStream()));
+               throw std::runtime_error("OOPS");
             }
             else
                 cudaMemcpyAsync(pHost, _bufferD, sizeOfT() * _length, cudaMemcpyDeviceToHost, *_context->getCudaStream());
