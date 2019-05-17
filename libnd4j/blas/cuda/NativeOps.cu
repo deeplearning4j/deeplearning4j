@@ -3709,5 +3709,5 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
 }
 
 int NativeOps::dataTypeFromNpyHeader(void *header) {
-    return 0;
+    return (int) cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header));
 }
