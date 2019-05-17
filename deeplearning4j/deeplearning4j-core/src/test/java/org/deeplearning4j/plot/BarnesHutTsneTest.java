@@ -16,15 +16,20 @@
 
 package org.deeplearning4j.plot;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -49,6 +54,10 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 10/1/14.
  */
 public class BarnesHutTsneTest extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Before
     public void setUp() {
         //   CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);
@@ -69,7 +78,8 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
-        b.saveAsFile(labelsList, "mnist_data.dat");
+        File outDir = testDir.newFolder();
+        b.saveAsFile(labelsList, new File(outDir, "out.txt").getAbsolutePath());
     }
 
     @Test
@@ -161,7 +171,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     public void testCorrectness() throws IOException {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(20.0).numDimension(55).learningRate(500)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().perplexity(30.0).numDimension(2).learningRate(200)
                 .useAdaGrad(false).build();
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
@@ -170,7 +180,13 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         StopWatch watch = new StopWatch();
         watch.start();
         b.fit(data);
+        System.out.println(b.getData());
         watch.stop();
+        File outDir = testDir.newFolder();
+        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream());
+        b.saveAsFile(/*labelsList,*/ new File(outDir, "raw.txt").getAbsolutePath());
+
         System.out.println("Fit done in " + watch);
         assertEquals(2500, b.getData().size(0));
         System.out.println(b.getData());
@@ -211,7 +227,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(2).perplexity(3.0).theta(0.5).
                 invertDistanceMetric(false).similarityFunction(Distance.EUCLIDIAN.toString())
-                .setMomentum(0.5).learningRate(200)
+                .setMomentum(0.5).learningRate(200).staticInit(data)
                 .useAdaGrad(false).staticInit(data).build();
 
         b.fit(data);
@@ -230,11 +246,68 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 -16.34669035511952, 41.72879824966716, 20.940776468887368, -3.2178907389085385, -45.36427127988699};
         INDArray expectedArray = Nd4j.createFromArray(expectedData).reshape(11,5);
         for (int i = 0; i < expectedArray.rows(); ++i)
-            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-2);
+            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-5);
     }
 
     @Test
     public void testComputePerplexity() {
+        double[] input = new double[]{0.2999816948164936, 0.26252049735806526, 0.2673853427498767, 0.8604464129156685, 0.4802652829902563, 0.10959096539488711, 0.7950242948008909, 0.5917848948003486,
+                0.2738285999345498, 0.9519684328285567, 0.9690024759209738, 0.8585615547624705, 0.8087760944312002, 0.5337951589543348, 0.5960876109129123, 0.7187130179825856,
+                0.4629777327445964, 0.08665909175584818, 0.7748005397731237, 0.48020186965468536, 0.24927351841378798, 0.32272599988270445, 0.306414968984427, 0.6980212149215657,
+                0.7977183964212472, 0.7673513094629704, 0.1679681724796478, 0.3107359484804584, 0.021701726051792103, 0.13797462786662518, 0.8618953518813538, 0.841333838365635,
+                0.5284957375170422, 0.9703367685039823, 0.677388096913733, 0.2624474979832243, 0.43740966353106536, 0.15685545957858893, 0.11072929134449871, 0.06007395961283357,
+                0.4093918718557811, 0.9563909195720572, 0.5994144944480242, 0.8278927844215804, 0.38586830957105667, 0.6201844716257464, 0.7603829079070265, 0.07875691596842949,
+                0.08651136699915507, 0.7445210640026082, 0.6547649514127559, 0.3384719042666908, 0.05816723105860, 0.6248951423054205, 0.7431868493349041};
+        INDArray ndinput = Nd4j.createFromArray(input).reshape(11, 5);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+                .useAdaGrad(false).build();
+        b.computeGaussianPerplexity(ndinput, 3.0);
+        INDArray expectedRows = Nd4j.createFromArray(new int[]{0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99});
+        INDArray expectedCols = Nd4j.createFromArray(new int[] {4, 3, 10, 8, 6, 7, 1, 5, 9, 4, 9, 8, 10, 2, 0, 6, 7, 3, 6, 8, 3, 9, 10, 1, 4, 0, 5, 10, 0, 4, 6, 8, 9, 2, 5, 7, 0, 10, 3, 1, 8, 9, 6, 7, 2, 7, 9, 3, 10, 0, 4, 2, 8, 1, 2, 8, 3, 10, 0, 4, 9, 1, 5, 5, 9, 0, 3, 10, 4, 8, 1, 2, 6, 2, 0, 3, 4, 1, 10, 9, 7, 10, 1, 3, 7, 4, 5, 2, 8, 6, 3, 4, 0, 9, 6, 5, 8, 7, 1});
+        INDArray expectedValues = Nd4j.createFromArray(new double[]{0.6199394088807811, 0.1964597878478939, 0.13826096288374987, 0.019500202354103796, 0.00892011933324624, 0.008390894278481041, 0.00333353509170543, 0.0026231979968002537, 0.0025718913332382506, 0.5877813741023542, 0.2824053513290301, 0.08100641562340703, 0.014863269403258283, 0.01219532549481422, 0.011522812905961816, 0.004243949243254114, 0.0034625890823446427, 0.002518912815575669, 0.6776991917357972, 0.18322100043035286, 0.040180871517768765, 0.02941481903928284, 0.021638322103495665, 0.019899251613183868, 0.011684443899339756, 0.008438621670147969, 0.007823477990631192, 0.6771051692354304, 0.16616561426152007, 0.06038657043891834, 0.04649900136463559, 0.01688479525099354, 0.014596215509122025, 0.006410339053808227, 0.006075759373243866, 0.005876535512328113, 0.6277958923349469, 0.23516301304728018, 0.07022275517450298, 0.030895020584550934, 0.012294459258033335, 0.009236709512467177, 0.00821667460222265, 0.0043013613064171955, 0.0018741141795786528, 0.7122763773574693, 0.07860063708191449, 0.07060648172121314, 0.06721282603559373, 0.028960026354739106, 0.017791245039439314, 0.01482510169996304, 0.005496178688168659, 0.004231126021499254, 0.5266697563046261, 0.33044733058681547, 0.10927281903651001, 0.018510201893239094, 0.006973656012751928, 0.006381768970069082, 0.0010596892780182746, 6.535010081417198E-4, 3.127690982824874E-5, 0.7176189632561156, 0.08740746743997298, 0.059268842313360166, 0.04664131589557433, 0.03288791302822797, 0.029929724912968133, 0.013368915822982491, 0.010616377319500762, 0.0022604800112974647, 0.689185362462809, 0.13977758696450715, 0.05439663822300743, 0.05434167873889952, 0.028687383013327405, 0.02099540802182275, 0.0072154477293594615, 0.0032822412915506907, 0.0021182535547164334, 0.6823844384306867, 0.13452128016104092, 0.08713547969428868, 0.04287399325857787, 0.025452813990877978, 0.016881841237860937, 0.0072200814416566415, 0.0019232561582331975, 0.0016068156267770154, 0.6425943207872832, 0.18472852256294967, 0.1089653923564887, 0.03467849453890959, 0.013282484305873534, 0.005149863792637524, 0.0037974408302766656, 0.003787710699822367, 0.003015770125758626});
+        assertArrayEquals(expectedCols.toIntVector(), b.getCols().toIntVector());
+        assertArrayEquals(expectedRows.toIntVector(), b.getRows().toIntVector());
+        assertArrayEquals(expectedValues.toDoubleVector(), b.getVals().toDoubleVector(), 1e-5);
+    }
+
+    @Test
+    public void testComputeGradient() {
+        double[] input = new double[]{0.3000,    0.2625,    0.2674,    0.8604,    0.4803,
+                                    0.1096,    0.7950,    0.5918,    0.2738,    0.9520,
+                                    0.9690,    0.8586,    0.8088,    0.5338,    0.5961,
+                                    0.7187,    0.4630,    0.0867,    0.7748,    0.4802,
+                                    0.2493,    0.3227,    0.3064,    0.6980,    0.7977,
+                                    0.7674,    0.1680,    0.3107,    0.0217,    0.1380,
+                                    0.8619,    0.8413,    0.5285,    0.9703,    0.6774,
+                                    0.2624,    0.4374,    0.1569,    0.1107,    0.0601,
+                                    0.4094,    0.9564,    0.5994,    0.8279,    0.3859,
+                                    0.6202,    0.7604,    0.0788,    0.0865,    0.7445,
+                                    0.6548,    0.3385,    0.0582,    0.6249,    0.7432};
+        INDArray ndinput = Nd4j.createFromArray(input).reshape(11, 5);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+                .useAdaGrad(false).staticInit(ndinput).build();
+        b.setY(ndinput);
+        b.setN(11);
+
+        INDArray rowsP = Nd4j.createFromArray(new int[]{0,         9,        18,        27,        36,        45,        54,        63,        72,        81,        90,        99});
+        INDArray colsP = Nd4j.createFromArray(new int[]{4,         3,        10,         8,         6,         7,         1,         5,         9,         4,         9,         8,        10,         2,         0,         6,         7,         3,         6,         8,         3,         9,        10,         1,         4,         0,         5,        10,         0,         4,         6,         8,         9,         2,         5,         7,         0,        10,         3,         1,         8,         9,         6,         7,         2,         7,         9,         3,        10,         0,         4,         2,         8,         1,         2,         8,         3,        10,         0,         4,         9,         1,         5,         5,         9,         0,         3,        10,         4,         8,         1,         2,         6,         2,         0,         3,         4,         1,        10,         9,         7,        10,         1,         3,         7,         4,         5,         2,         8,         6,         3,         4,         0,         9,         6,         5,         8,         7,         1});
+        INDArray valsP = Nd4j.createFromArray(new double[]{0.6200,    0.1964,    0.1382,    0.0195,    0.0089,    0.0084,    0.0033,    0.0026,    0.0026,    0.5877,    0.2825,    0.0810,    0.0149,    0.0122,    0.0115,    0.0042,    0.0035,    0.0025,    0.6777,    0.1832,    0.0402,    0.0294,    0.0216,    0.0199,    0.0117,    0.0084,    0.0078,    0.6771,    0.1662,    0.0604,    0.0465,    0.0169,    0.0146,    0.0064,    0.0061,    0.0059,    0.6278,    0.2351,    0.0702,    0.0309,    0.0123,    0.0092,    0.0082,    0.0043,    0.0019,    0.7123,    0.0786,    0.0706,    0.0672,    0.0290,    0.0178,    0.0148,    0.0055,    0.0042,    0.5267,    0.3304,    0.1093,    0.0185,    0.0070,    0.0064,    0.0011,    0.0007, 3.1246e-5,    0.7176,    0.0874,    0.0593,    0.0466,    0.0329,    0.0299,    0.0134,    0.0106,    0.0023,    0.6892,    0.1398,    0.0544,    0.0544,    0.0287,    0.0210,    0.0072,    0.0033,    0.0021,    0.6824,    0.1345,    0.0871,    0.0429,    0.0254,    0.0169,    0.0072,    0.0019,    0.0016,    0.6426,    0.1847,    0.1090,    0.0347,    0.0133,    0.0051,    0.0038,    0.0038,    0.0030});
+
+        b.setRows(rowsP);
+        b.setCols(colsP);
+        b.setVals(valsP);
+        Gradient gradient = b.gradient();
+
+        double[] dC = {-0.05913502813340141, -0.3695906858515785, -0.07812422672950466, 0.05041856189668993, -0.16761966539821507, -0.21685454875909746, 0.377396724524964, 0.18584937576937421, -0.03693371205457209, 0.46903910756362793, 0.2717046965423622, 0.12346585872533174, 0.30493828327564226, 0.40078941613152413, -0.2509458918901562, -0.0748859794996872, -0.13836710539854616, -0.22628621345537156, 0.23318638968497046, -0.04746903580333563, -0.4636419149118186, -0.28841615176755225};
+        double[] pos_f = {-0.07895388439010698, -0.3909760246374273, -0.09837300903503136, 0.07501418239921706, -0.17234539203932242, -0.247961775523025, 0.4002706919172537, 0.19190421684358677, -0.054677325241642726, 0.4971310351445974, 0.2981177850439035, 0.14415575614737988, 0.32893868718268227, 0.4015686646520566, -0.24589956253718234, -0.05634951036583797, -0.14416723131584627, -0.25791254065898384, 0.2547102399074155, -0.05165260456498494, -0.4876209994921228, -0.30492139943657853};
+        //double[] neg_f = {-2.1034968861348564, -2.269757293877738], [-2.149127577091482, 2.6104842009798457], [-0.5015703805274085, -3.301600949453041], [2.427754586844644, 0.642637454991294], [-1.8832385988548799, 2.9815687356883678], [2.803383237486188, 2.1959458324948904], [2.5473102095564357, 0.08270642943437448], [0.5355979145769308, 1.9673892679752527], [-0.6156029716448893, -3.3566962659700392], [2.2844583629909287, -0.44402783637339943], [-2.545047458526685, -1.7518032638707177};
+        double sumQ = 106.13613918427575;
+
+        assertArrayEquals(dC, gradient.getGradientFor("yIncs").toDoubleVector(), 1e-05);
+    }
+
+    @Test
+    public void testComputeEdgeForces() {
         double[] input = new double[]{0.3000, 0.2625, 0.2674, 0.8604, 0.4803,
                 0.1096, 0.7950, 0.5918, 0.2738, 0.9520,
                 0.9690, 0.8586, 0.8088, 0.5338, 0.5961,
@@ -247,23 +320,40 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.6202, 0.7604, 0.0788, 0.0865, 0.7445,
                 0.6548, 0.3385, 0.0582, 0.6249, 0.7432};
         INDArray ndinput = Nd4j.createFromArray(input).reshape(11, 5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
-                .useAdaGrad(false).build();
-        b.computeGaussianPerplexity(ndinput, 3.0);
-        INDArray expectedRows = Nd4j.createFromArray(new int[]{0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99});
-        INDArray expectedValues = Nd4j.createFromArray(new double[]{0.6200, 0.1964, 0.1382, 0.0195, 0.0089,
-                0.0084, 0.0033, 0.0026, 0.0026, 0.5877, 0.2825, 0.0810, 0.0149, 0.0122, 0.0115,
-                0.0042, 0.0035, 0.0025, 0.6777, 0.1832, 0.0402, 0.0294, 0.0216, 0.0199, 0.0117,
-                0.0084, 0.0078, 0.6771, 0.1662, 0.0604, 0.0465, 0.0169, 0.0146, 0.0064, 0.0061,
-                0.0059, 0.6278, 0.2351, 0.0702, 0.0309, 0.0123, 0.0092, 0.0082, 0.0043, 0.0019,
-                0.7123, 0.0786, 0.0706, 0.0672, 0.0290, 0.0178, 0.0148, 0.0055, 0.0042, 0.5267,
-                0.3304, 0.1093, 0.0185, 0.0070, 0.0064, 0.0011, 0.0007, 3.1246e-5, 0.7176, 0.0874,
-                0.0593, 0.0466, 0.0329, 0.0299, 0.0134, 0.0106, 0.0023, 0.6892, 0.1398, 0.0544,
-                0.0544, 0.0287, 0.0210, 0.0072, 0.0033, 0.0021, 0.6824, 0.1345, 0.0871, 0.0429,
-                0.0254, 0.0169, 0.0072, 0.0019, 0.0016, 0.6426, 0.1847, 0.1090, 0.0347, 0.0133,
-                0.0051, 0.0038, 0.0038, 0.0030});
-        assertArrayEquals(expectedRows.toIntVector(), b.getRows().toIntVector());
-        assertArrayEquals(expectedValues.toDoubleVector(), b.getVals().toDoubleVector(), 1e-4);
+        SpTree tree = new SpTree(ndinput);
+        INDArray rows = Nd4j.createFromArray(new int[]{0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99});
+        INDArray cols = Nd4j.createFromArray(new int[]{4, 3, 10, 8, 6, 7, 1, 5, 9, 4, 9, 8, 10, 2, 0, 6, 7, 3, 6, 8, 3, 9, 10, 1, 4, 0, 5, 10, 0, 4, 6, 8, 9, 2, 5, 7, 0, 10, 3, 1, 8, 9, 6, 7, 2, 7, 9, 3, 10, 0, 4, 2, 8, 1, 2, 8, 3, 10, 0, 4, 9, 1, 5, 5, 9, 0, 3, 10, 4, 8, 1, 2, 6, 2, 0, 3, 4, 1, 10, 9, 7, 10, 1, 3, 7, 4, 5, 2, 8, 6, 3, 4, 0, 9, 6, 5, 8, 7, 1});
+        INDArray vals = Nd4j.createFromArray(new double[]{0.6200, 0.1964, 0.1382, 0.0195, 0.0089, 0.0084, 0.0033, 0.0026, 0.0026, 0.5877, 0.2825, 0.0810, 0.0149, 0.0122, 0.0115, 0.0042, 0.0035, 0.0025, 0.6777, 0.1832, 0.0402, 0.0294, 0.0216, 0.0199, 0.0117, 0.0084, 0.0078, 0.6771, 0.1662, 0.0604, 0.0465, 0.0169, 0.0146, 0.0064, 0.0061, 0.0059, 0.6278, 0.2351, 0.0702, 0.0309, 0.0123, 0.0092, 0.0082, 0.0043, 0.0019, 0.7123, 0.0786, 0.0706, 0.0672, 0.0290, 0.0178, 0.0148, 0.0055, 0.0042, 0.5267, 0.3304, 0.1093, 0.0185, 0.0070, 0.0064, 0.0011, 0.0007, 3.1246e-5, 0.7176, 0.0874, 0.0593, 0.0466, 0.0329, 0.0299, 0.0134, 0.0106, 0.0023, 0.6892, 0.1398, 0.0544, 0.0544, 0.0287, 0.0210, 0.0072, 0.0033, 0.0021, 0.6824, 0.1345, 0.0871, 0.0429, 0.0254, 0.0169, 0.0072, 0.0019, 0.0016, 0.6426, 0.1847, 0.1090, 0.0347, 0.0133, 0.0051, 0.0038, 0.0038, 0.0030});
+        int N = 11;
+        INDArray posF = Nd4j.create(ndinput.shape());
+        tree.computeEdgeForces(rows, cols, vals, N, posF);
+        double[] expectedPosF = {-0.08017022778816381, -0.08584612446002386, 0.024041740837932417, 0.13353853518214748, -0.19989209255196486, -0.17059164865362167, 0.18730152809351328, 0.20582835656173232, -0.1652505189678666, 0.13123839113710167, 0.15511476126066306, 0.021425546153174206, 0.21755440369356663, -0.2628756936897519, -0.021079609911707077, 0.11455959658671841, 0.08803186126822704, -0.039212116057989604, 0.08800854045636688, -0.1795568260613919, -0.13265313037184673, 0.0036829788349159154, 0.07205631770917967, -0.06873974602987808, 0.20446419876515043, 0.28724205607738795, -0.19397780156808536, 0.10457369548573531, -0.12340830629973816, -0.03634773269456816, 0.0867775929922852, 0.0029761730963277894, -0.09131897988004745, 0.2348924028566898, 0.12026408931908775, -0.30400848137321873, 0.1282943410872978, -0.08487864823843354, -0.017561758195375168, -0.13082811573092396, -0.2885857462722986, 0.12469730654026252, 0.05408469871148934, -0.03417740859260864, -0.19261929748672968, 0.03318694717819495, 0.22818123908045765, -0.044944593551341956, -0.3141734963080852, 0.020297428845239652, 0.05442118949793863, -0.07890301602838638, -0.07823705950336371, -0.10455483898962027, 0.16980714813230746};
+        INDArray indExpectedPositive = Nd4j.createFromArray(expectedPosF).reshape(11, 5);
+        assertEquals(indExpectedPositive, posF);
+
+        AtomicDouble sumQ = new AtomicDouble(0.0);
+        double theta = 0.5;
+        INDArray negF = Nd4j.create(ndinput.shape());
+
+        double[][] neg = {{-1.6243229118532043, -2.0538918185758117, -0.5277950148630416, 2.280133920112387, -0.4781864949257863},
+        {-2.033904565482581, 1.0957067439325718, 1.1711627018218371, -1.1947911960637323, 1.904335906364157},
+        {2.134613094178481, 1.4606030267537151, 2.299972033488509, 0.040111598796927175, 0.22611223726312565},
+        {1.4330457669590706, -0.8027368824700638, -2.052297868677289, 1.9801035811739054, -0.5587649959721402},
+        {-2.088283171473531, -1.7427092080895168, -0.27787744880128185, 1.2444077055013942, 1.7855201950031347},
+        {0.9426889976629138, -1.6302714638583877, -0.14069035384185855, -2.075023651861262, -1.698239988087389},
+        {1.7424090804808496, 1.493794306111751, 0.989121494481274, 2.394820866756112, 0.6836049340540907},
+        {-1.279836833417519, -0.5869132848699253, -0.871560326864079, -1.9242443527432451, -2.273762088892443},
+        {-0.7743611464510498, 2.3551097898757134, 1.527553257122278, 1.813608037002701, -0.9877974041073948},
+        {0.49604405759812625, 1.1914983778171337, -1.6140319597311803, -2.6642997837396654, 1.1768845173097966},
+        {0.8986049706740562, -1.7411217160869163, -2.213624650045752, 0.7659306956507013, 1.4880578211349607}};
+
+        double expectedSumQ = 88.60782954084712;
+
+        for (int n = 0; n < N; n++) {
+            tree.computeNonEdgeForces(n, theta, negF.slice(n), sumQ);
+            assertArrayEquals(neg[n], negF.slice(n).toDoubleVector(), 1e-05);
+        }
+        assertEquals(expectedSumQ, sumQ.get(), 1e-05);
     }
 
     @Test
@@ -275,9 +365,11 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         INDArray colsP = Nd4j.createFromArray(new int[]{4,         3,        10,         8,         6,         7,         1,         5,         9,         4,         9,         8,        10,         2,         0,         6,         7,         3,         6,         8,         3,         9,        10,         1,         4,         0,         5,        10,         0,         4,         6,         8,         9,         2,         5,         7,         0,        10,         3,         1,         8,         9,         6,         7,         2,         7,         9,         3,        10,         0,         4,         2,         8,         1,         2,         8,         3,        10,         0,         4,         9,         1,         5,         5,         9,         0,         3,        10,         4,         8,         1,         2,         6,         2,         0,         3,         4,         1,        10,         9,         7,        10,         1,         3,         7,         4,         5,         2,         8,         6,         3,         4,         0,         9,         6,         5,         8,         7,         1});
         INDArray valsP = Nd4j.createFromArray(new double[]{0.6200,    0.1964,    0.1382,    0.0195,    0.0089,    0.0084,    0.0033,    0.0026,    0.0026,    0.5877,    0.2825,    0.0810,    0.0149,    0.0122,    0.0115,    0.0042,    0.0035,    0.0025,    0.6777,    0.1832,    0.0402,    0.0294,    0.0216,    0.0199,    0.0117,    0.0084,    0.0078,    0.6771,    0.1662,    0.0604,    0.0465,    0.0169,    0.0146,    0.0064,    0.0061,    0.0059,    0.6278,    0.2351,    0.0702,    0.0309,    0.0123,    0.0092,    0.0082,    0.0043,    0.0019,    0.7123,    0.0786,    0.0706,    0.0672,    0.0290,    0.0178,    0.0148,    0.0055,    0.0042,    0.5267,    0.3304,    0.1093,    0.0185,    0.0070,    0.0064,    0.0011,    0.0007, 3.1246e-5,    0.7176,    0.0874,    0.0593,    0.0466,    0.0329,    0.0299,    0.0134,    0.0106,    0.0023,    0.6892,    0.1398,    0.0544,    0.0544,    0.0287,    0.0210,    0.0072,    0.0033,    0.0021,    0.6824,    0.1345,    0.0871,    0.0429,    0.0254,    0.0169,    0.0072,    0.0019,    0.0016,    0.6426,    0.1847,    0.1090,    0.0347,    0.0133,    0.0051,    0.0038,    0.0038,    0.0030});
         b.setN(11);
-        INDArray actualSymmetrized = b.symmetrized(rowsP, colsP, valsP);
+        BarnesHutTsne.SymResult actualSymmetrized = b.symmetrized(rowsP, colsP, valsP);
         System.out.println("Symmetrized from Java:" + actualSymmetrized);
-        assertArrayEquals(expectedSymmetrized.toDoubleVector(), actualSymmetrized.toDoubleVector(), 1e-4);
+        System.out.println(actualSymmetrized.rows);
+        System.out.println(actualSymmetrized.cols);
+        assertArrayEquals(expectedSymmetrized.toDoubleVector(), actualSymmetrized.vals.toDoubleVector(), 1e-5);
 
 
         INDArray rowsFromCpp = Nd4j.create(new int[]{rowsP.rows(),rowsP.columns()}, DataType.INT);
@@ -286,7 +378,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         INDArray valsFromCpp = op.getSymmetrizedValues();
         INDArray colsFromCpp = op.getSymmetrizedCols();
         System.out.println("Symmetrized from C++: " + valsP);
-        assertArrayEquals(expectedSymmetrized.toDoubleVector(), valsFromCpp.toDoubleVector(), 1e-2);
+        assertArrayEquals(expectedSymmetrized.toDoubleVector(), valsFromCpp.toDoubleVector(), 1e-5);
 
         int[] expectedRows = new int[]{0, 10, 20, 30, 40, 50, 60, 69, 78, 88, 98, 108};
         int[] expectedCols = new int[]{4, 3, 10, 8, 6, 7, 1, 5, 9, 2, 0, 4, 9, 8, 10, 2, 6, 7, 3, 5, 1, 6, 8, 3, 9, 10, 4, 0, 5, 7, 0, 1, 2, 10, 4, 6, 8, 9, 5, 7, 0, 1, 2, 3, 10, 8, 9, 6, 7, 5, 0, 2, 3, 7, 9, 10, 4, 8, 1, 6, 0, 1, 2, 3, 4, 8, 10, 9, 5, 0, 1, 3, 4, 5, 9, 10, 8, 2, 0, 1, 2, 3, 4, 5, 6, 7, 10, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9};

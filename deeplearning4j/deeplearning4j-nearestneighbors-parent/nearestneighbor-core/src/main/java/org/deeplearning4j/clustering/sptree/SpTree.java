@@ -329,10 +329,10 @@ public class SpTree implements Serializable {
         INDArray outRows = Nd4j.create(rowP.shape());
         INDArray outCols = Nd4j.create(colP.shape());
         BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
-        Nd4j.getExecutioner().exec(computeEdgeForces);
+        //Nd4j.getExecutioner().exec(computeEdgeForces);
         //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
         // Loop over all edges in the graph
-        /*double D;
+        double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
@@ -347,7 +347,7 @@ public class SpTree implements Serializable {
                 posF.slice(n).addi(buf.muli(D));
 
             }
-        }*/
+        }
         /*double [] buff = new double[N];
         int ind1 = 0;
         int ind2 = 0;
