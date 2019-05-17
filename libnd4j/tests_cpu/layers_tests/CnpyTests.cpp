@@ -35,7 +35,7 @@ class HeaderTest :  public testing::Test {
 };
 
 TEST_F(HeaderTest, test_dataTypes_1) {
-    std::string header("{'descr': '>f4");
+    std::string header("0NUMPY6789{'descr': '>f4");
 
 
     NativeOps nativeOps;
@@ -43,7 +43,7 @@ TEST_F(HeaderTest, test_dataTypes_1) {
 }
 
 TEST_F(HeaderTest, test_dataTypes_2) {
-    std::string header("{'descr': '>f8");
+    std::string header("0NUMPY6789{'descr': '>f8");
 
 
     NativeOps nativeOps;
@@ -51,7 +51,7 @@ TEST_F(HeaderTest, test_dataTypes_2) {
 }
 
 TEST_F(HeaderTest, test_dataTypes_3) {
-    std::string header("{'descr': '<i4");
+    std::string header("0NUMPY6789{'descr': '<i4");
 
 
     NativeOps nativeOps;
@@ -59,7 +59,7 @@ TEST_F(HeaderTest, test_dataTypes_3) {
 }
 
 TEST_F(HeaderTest, test_dataTypes_4) {
-    std::string header("{'descr': '>u2");
+    std::string header("0NUMPY6789{'descr': '>u2");
 
 
     NativeOps nativeOps;

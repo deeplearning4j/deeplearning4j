@@ -107,11 +107,12 @@ char cnpy::mapType() {
 nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
 
     // indices for type & data size
-    const int ti = 12;
-    const int si = 13;
+    const int st = 10;
+    const int ti = 22;
+    const int si = 23;
 
     // read first char to make sure it looks like a header
-    if (data == nullptr || data[0] != '{')
+    if (data == nullptr || data[st] != '{')
         throw std::runtime_error("cnpy::dataTypeFromHeader() - provided pointer doesn't look like a pointer to numpy header");
 
     const auto t = data[ti];
