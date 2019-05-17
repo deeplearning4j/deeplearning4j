@@ -37,24 +37,22 @@ namespace nd4j {
     }
 
     NDArray NDArrayFactory::string(const std::string &str, nd4j::LaunchContext * context) {
-        NDArray res;
 
-        int8_t *buffer = nullptr;
         auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
-        ALLOCATE(buffer, context->getWorkspace(), headerLength + str.length(), int8_t);
-        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
-        auto data = buffer + headerLength;
 
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, true, context->getWorkspace());
+
+        NDArray res(pBuffer, ShapeDescriptor::scalarDescriptor(DataType::UTF8), context);
+
+        int8_t buffer = reinterpret_cast<int8_t*>(getBuffer());
+
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
         offsets[0] = 0;
         offsets[1] = str.length();
 
+        auto data = buffer + headerLength;
+
         memcpy(data, str.c_str(), str.length());
-
-        res.setBuffer(buffer);
-        res.setContext(context);
-        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
-
-        res.triggerAllocationFlag(true);
 
         return res;
     }
@@ -100,7 +98,7 @@ void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<bool> &vector
     auto p = reinterpret_cast<bool *>(ptr);
     Nd4jLong vectorSize = vector.size();
     for (Nd4jLong e = 0; e < vectorSize; e++)
-        p[e] = vector[e];       
+        p[e] = vector[e];
 }
 
 template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<double> &vector);
@@ -152,7 +150,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArrayFactory::create_(const T scalar, nd4j::LaunchContext * context) {
-        
+
         auto res = new NDArray();
 
         if (context == nullptr)
@@ -249,7 +247,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
-        
+
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -266,7 +264,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
         nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->shapeInfo()));
         throw std::runtime_error("Data size doesn't match shape");
     }
-        
+
     int8_t* buffer(nullptr);
     ALLOCATE(buffer, context->getWorkspace(), result->lengthOf() * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), int8_t);
     result->setBuffer(buffer);
@@ -404,7 +402,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::LaunchContext * context) {
-  
+
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -415,7 +413,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     res.setAttached(context->getWorkspace() != nullptr);
     res.setShapeInfo(ShapeDescriptor(dtype, order, shape));
-    
+
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
     memset(buffer, 0, res.lengthOf() * res.sizeOfT());
@@ -430,7 +428,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * context) {
-    
+
     NDArray res;
 
     if (context == nullptr)
@@ -445,7 +443,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
     res.setContext(context);
     res.setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
     res.triggerAllocationFlag(true);
-    
+
     return res;
 }
 
@@ -453,7 +451,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext * context) {
-        
+
     NDArray res;
 
     if (context == nullptr)
@@ -461,15 +459,15 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext
 
     res.setAttached(context->getWorkspace() != nullptr);
     res.setShapeInfo(ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()));
-        
+
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), values.size() * sizeof(T), int8_t);
     memcpyFromVector<T>(buffer, values);
-        
-    res.setBuffer(buffer);        
+
+    res.setBuffer(buffer);
     res.triggerAllocationFlag(true);
     res.setContext(context);
-        
+
     return res;
 }
 template NDArray NDArrayFactory::create(const std::vector<double> &values, nd4j::LaunchContext * context);
@@ -524,7 +522,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::L
 
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::LaunchContext * context) {
-        
+
         return new NDArray(order, shape, dataType, context);
     }
 
@@ -566,7 +564,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     result.setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
     result.setContext(context);
     result.triggerAllocationFlag(false);
-    
+
     return result;
 }
 

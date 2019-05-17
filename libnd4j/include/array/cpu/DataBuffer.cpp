@@ -23,11 +23,6 @@
 
 namespace nd4j {
 
-////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
-            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
-
-}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
@@ -69,7 +64,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateBuffers() {    // always allocate primary buffer only (cpu case)
+void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate primary buffer only (cpu case)
 
     allocatePrimary();
 }

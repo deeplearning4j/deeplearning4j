@@ -155,6 +155,11 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
+        NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const Nd4jLong offset = 0);
+
+        /**
+        *  do not allocate memory, memory for array is passed from outside
+        */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isBuffAlloc = false);
 
         /**
@@ -349,8 +354,11 @@ namespace nd4j {
             return _context;
         }
 
+
+        std::shared_ptr<DataBuffer> getDataBuffer();
+
         /**
-        *   returns _buffer
+        *   returns host buffer
         */
         void* getBuffer() const;
         void* buffer();
@@ -381,11 +389,6 @@ namespace nd4j {
         */
         Nd4jLong* specialShapeInfo();
         Nd4jLong* getSpecialShapeInfo() const;
-
-        /**
-        *  set values for _bufferD and _shapeInfoD
-        */
-        void setSpecialBuffer(void *buffer, const bool isBuffDAlloc);
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array

@@ -60,7 +60,7 @@ class ND4J_EXPORT DataBuffer {
         void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
         void allocatePrimary();
         void allocateSpecial();
-        void allocateBuffers();
+        void allocateBuffers(const bool allocBoth = false);
         void setSpecial(void* special, const bool isOwnerSpecial);
 
 
@@ -73,10 +73,10 @@ class ND4J_EXPORT DataBuffer {
 
         DataBuffer(Nd4jPointer primary,
                     const size_t lenInBytes, const DataType dataType,
-                    const bool isOwnerPrimary = false
+                    const bool isOwnerPrimary = false,
                     memory::Workspace* workspace = nullptr);
 
-        DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr);
+        DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr, const bool allocBoth = false);
 
         DataBuffer(const DataBuffer& other);
         DataBuffer(DataBuffer&& other);
@@ -176,7 +176,14 @@ DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special,
 }
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace) {
+DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
+            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+
+    syncToSpecial(true);
+}
+
+////////////////////////////////////////////////////////////////////////
+DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) {
 
     if(lenInBytes == 0)
         throw std::runtime_error("DataBuffer constructor: can't create buffer of zero length !");
@@ -188,7 +195,7 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
     _primaryBuffer = nullptr;
     _specialBuffer = nullptr;
 
-    allocateBuffers();
+    allocateBuffers(allocBoth);
 
     writeSpecial();
 }

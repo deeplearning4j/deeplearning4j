@@ -81,6 +81,17 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::LaunchContex
 }
 
 ////////////////////////////////////////////////////////////////////////
+NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext* context = nd4j::LaunchContext ::defaultContext(), const Nd4jLong offset) {
+
+    _context = context;
+    _offset  = offset;
+
+    setShapeInfo(descriptor);
+
+    _buffer = buffer;
+}
+
+////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::LaunchContext * context, const bool isBuffAlloc) {
 
@@ -302,6 +313,11 @@ void NDArray::linspace(const double start, const double step) {
         this->p(e, start + (step * e));
 }
 
+std::shared_ptr<DataBuffer> getDataBuffer() {
+
+    return _buffer;
+}
+
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::getBuffer() const {
     return _buffer->primary();
@@ -358,7 +374,7 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 void NDArray::streamline(char o) {
     char order = o == 'a' ? this->ordering() : o;
     syncToDevice();
-    std::shared_ptr<DataBuffer> newBuffer = std::make_shared<DataBuffer>(this->lengthOf() * sizeOfT(), dataType(), _context->getWorkspace());
+    std::shared_ptr<DataBuffer> newBuffer = std::make_shared<DataBuffer>(this->lengthOf() * sizeOfT(), dataType(), false, _context->getWorkspace());
     auto shapeBuffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(dataType(), order, rankOf(), shapeOf());
     NativeOpExecutioner::execTransformSame(_context, transform::Copy, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), newBuffer.primary(), (Nd4jLong*)shapeBuffer.primary(), newBuffer.special(), (Nd4jLong*)shapeBuffer.special(), nullptr, nullptr, nullptr);
     setShapeInfo(shapeBuffer.primary());
@@ -366,10 +382,6 @@ void NDArray::streamline(char o) {
     tickWriteDevice();
 }
 
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::setSpecialBuffer(void * buffer, const bool isBuffDAlloc) {
-        _buffer->setSpecial(buffer, isBuffDAlloc);
-    }
 
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
@@ -2733,6 +2745,23 @@ void NDArray::setShapeInfo(const ShapeDescriptor& descriptor) {
 
     _dataType = ArrayOptions::dataType(_shapeInfo);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(const ConstantDataBuffer& shapeBuffer) {
+
+    _shapeInfo  = reinterpret_cast<Nd4jLong *>(shapeBuffer.primary());
+    #ifdef __CUDABLAS__
+    _shapeInfoD = reinterpret_cast<Nd4jLong *>(shapeBuffer.special());
+    #endif
+
+    if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+        _length = 0;
+    else
+        _length = shape::length(_shapeInfo);
+
+    _dataType = ArrayOptions::dataType(_shapeInfo);
+}
+
 
 /*
 #ifndef __CLION_IDE__

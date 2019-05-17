@@ -26,14 +26,6 @@
 namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
-            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
-
-    allocateSpecial();
-    copyBuffers(*this);
-}
-
-////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
 
     if (_specialBuffer == nullptr && getLenInBytes() > 0) {
@@ -145,9 +137,12 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
 
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateBuffers() {    // always allocate special buffer only (cuda case)
+void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate special buffer only (cuda case)
 
     allocateSpecial();
+
+    if(allocBoth)
+        allocatePrimary();
 }
 
 ////////////////////////////////////////////////////////////////////////
