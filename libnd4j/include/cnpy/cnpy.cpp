@@ -111,7 +111,7 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
     const int si = 13;
 
     // read first char to make sure it looks like a header
-    if (data[0] != '{')
+    if (data == nullptr || data[0] != '{')
         throw std::runtime_error("cnpy::dataTypeFromHeader() - provided pointer doesn't look like a pointer to numpy header");
 
     const auto t = data[ti];
