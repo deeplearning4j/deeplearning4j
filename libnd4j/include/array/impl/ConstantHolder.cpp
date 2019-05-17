@@ -7,6 +7,11 @@
 
 
 namespace nd4j {
+    ConstantHolder::ConstantHolder(const ConstantHolder& other) {
+        _buffers = other._buffers;
+        _deviceId = other._deviceId;
+    }
+
     bool ConstantHolder::hasBuffer(nd4j::DataType dataType) {
         return _buffers.count(dataType) > 0;
     }

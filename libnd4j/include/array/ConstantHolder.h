@@ -32,8 +32,12 @@ namespace nd4j {
 
         std::map<nd4j::DataType, ConstantDataBuffer> _buffers;
     public:
+        ConstantHolder(const ConstantHolder& other);
         ConstantHolder() = default;
         ~ConstantHolder() = default;
+
+        ConstantHolder& operator=(const ConstantHolder& other) = default;
+        ConstantHolder& operator=(ConstantHolder&& other) noexcept = default;
 
         bool hasBuffer(nd4j::DataType dataType);
 

@@ -26,7 +26,12 @@
 
 namespace nd4j {
     ConstantHelper::ConstantHelper() {
-        //
+        int numDevices = getNumberOfDevices();
+        _cache.resize(numDevices);
+        for (int e = 0; e < numDevices; e++) {
+            std::map<ConstantDescriptor, ConstantHolder> map;
+            _cache[e] = map;
+        }
     }
 
     ConstantHelper* ConstantHelper::getInstance() {
@@ -64,8 +69,7 @@ namespace nd4j {
         if (holder.hasBuffer(dataType))
             return holder.getConstantDataBuffer(dataType);
         else {
-            int8_t *cbuff;
-            ALLOCATE_SPECIAL(cbuff, nullptr, descriptor.length(), int8_t);
+            int8_t *cbuff = new int8_t[descriptor.length() * DataTypeUtils::sizeOf(dataType)];
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {

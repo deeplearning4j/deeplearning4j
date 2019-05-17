@@ -148,7 +148,7 @@ TEST_F(ConstantHelperTests, basic_test_1) {
     ASSERT_NEAR(3.f, fPtr[2], 1e-5);
 
     auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::INT32);
-    auto iPtr = fBuffer->primaryAsT<int>();
+    auto iPtr = iBuffer->primaryAsT<int>();
 
     ASSERT_EQ(1, iPtr[0]);
     ASSERT_EQ(2, iPtr[1]);
