@@ -39,7 +39,7 @@ public enum DataType {
         switch (type) {
             case 1: return BOOL;
             case 3: return HALF;
-            case  5: return FLOAT;
+            case 5: return FLOAT;
             case 6: return DOUBLE;
             case 7: return BYTE;
             case 8: return SHORT;
