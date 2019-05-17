@@ -44,6 +44,7 @@ import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -894,6 +895,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(int[] values, DataType desiredType) {
+        return createConstantBuffer(ArrayUtil.toLongArray(values), desiredType);
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(float[] values, DataType desiredType) {
+        return createConstantBuffer(ArrayUtil.toDoubles(values), desiredType);
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
         throw new UnsupportedOperationException();
     }
 }

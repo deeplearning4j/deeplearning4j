@@ -453,4 +453,14 @@ public interface OpExecutioner {
      * This method returns host/device tad buffers
      */
     TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension);
+
+    /**
+     * This method returns constant buffer for the given jvm array
+     * @param values
+     * @return
+     */
+    DataBuffer createConstantBuffer(long[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(int[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(float[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(double[] values, DataType desiredType);
 }

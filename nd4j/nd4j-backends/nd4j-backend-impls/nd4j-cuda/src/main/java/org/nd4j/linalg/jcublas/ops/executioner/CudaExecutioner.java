@@ -2713,6 +2713,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         return new TadPack(tadShape, tadOffsets);
     }
+
+    @Override
+    public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
+        throw new UnsupportedOperationException();
+    }
 }
 
 
