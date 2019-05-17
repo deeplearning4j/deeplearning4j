@@ -128,24 +128,24 @@ public class TestNativeImageLoader {
         assertEquals(h4, array6.size(3));
         assertEquals(w4, array6.size(4));
 
-        int ch5 = 4, pages1 = 1, depth1 = 1;
-        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, 1, NativeImageLoader.MultiPageMode.CHANNELS);
-        loader6.direct = false; // simulate conditions under Android
-        INDArray array7 = null;
-        try {
-            array7 = loader6.asMatrix(
-                  new ClassPathResource(path2MitosisFile).getFile());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        assertEquals(5, array7.rank());
-        assertEquals(pages1, array7.size(0));
-        assertEquals(ch5, array7.size(1));
-        assertEquals(depth1, array7.size(2));
-        assertEquals(h4, array7.size(3));
-        assertEquals(w4, array7.size(4));
+//        int ch5 = 4, pages1 = 1;
+//        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, 1, NativeImageLoader.MultiPageMode.CHANNELS);
+//        loader6.direct = false; // simulate conditions under Android
+//        INDArray array7 = null;
+//        try {
+//            array7 = loader6.asMatrix(
+//                  new ClassPathResource(path2MitosisFile).getFile());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        assertEquals(5, array7.rank());
+//        assertEquals(pages1, array7.size(0));
+//        assertEquals(ch5, array7.size(1));
+//        assertEquals(depth1, array7.size(2));
+//        assertEquals(h4, array7.size(3));
+//        assertEquals(w4, array7.size(4));
 
-        int ch6 = 1, pages2 = 4;
+        int ch6 = 1, pages2 = 4, depth1 = 1;
         NativeImageLoader loader7 = new NativeImageLoader(h4, w4, ch6, NativeImageLoader.MultiPageMode.MINIBATCH);
         INDArray array8 = null;
         try {
@@ -160,9 +160,9 @@ public class TestNativeImageLoader {
         assertEquals(h4, array8.size(3));
         assertEquals(w4, array8.size(4));
 
-        int w5 = 256, h5 = 256, ch7 = 1, pages3 = 2;
-        String braintiff = "datavec-data-image/testimages2/3d.tiff";
-        NativeImageLoader loader8 = new NativeImageLoader(h5, w5, ch7, NativeImageLoader.MultiPageMode.MINIBATCH);
+        int w5 = 256, h5 = 256, pages3 = 2;
+        String braintiff = "datavec-data-image/testimages2/3d.tiff"; // this is a 16-bit 3d image
+        NativeImageLoader loader8 = new NativeImageLoader(h5, w5, ch6, NativeImageLoader.MultiPageMode.MINIBATCH);
         INDArray array9 = null;
         try {
             array9 = loader8.asMatrix(new ClassPathResource(braintiff).getFile().getAbsolutePath());
@@ -172,7 +172,7 @@ public class TestNativeImageLoader {
         }
         assertEquals(5, array9.rank());
         assertEquals(pages3, array9.size(0));
-        assertEquals(ch7, array9.size(1));
+        assertEquals(ch6, array9.size(1));
         assertEquals(depth1, array9.size(2));
         assertEquals(h5, array9.size(3));
         assertEquals(w5, array9.size(4));
