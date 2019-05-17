@@ -266,29 +266,174 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
 //
 // @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 // #ifndef DEV_TESTS_DATABUFFER_H
 // #define DEV_TESTS_DATABUFFER_H
 
 // #include <dll.h>
+// #include <cstring>
+// #include <op_boilerplate.h>
 // #include <pointercast.h>
-    @Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
-        static { Loader.load(); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public DataBuffer(Pointer p) { super(p); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
-        private native void allocateArray(long size);
-        @Override public DataBuffer position(long position) {
-            return (DataBuffer)super.position(position);
-        }
-    
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
+// #include <memory/Workspace.h>
+// #include <array/DataType.h>
+// #include <execution/LaunchContext.h>
+
+@Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public DataBuffer(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public DataBuffer position(long position) {
+        return (DataBuffer)super.position(position);
+    }
+
+
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
+                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType,
+                            @Cast("const bool") boolean isOwnerPrimary/*=false*/, @Cast("const bool") boolean isOwnerSpecial/*=false*/,
+                            Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(primary, special, lenInBytes, dataType, isOwnerPrimary, isOwnerSpecial, workspace); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
+                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType,
+                            @Cast("const bool") boolean isOwnerPrimary/*=false*/, @Cast("const bool") boolean isOwnerSpecial/*=false*/,
+                            Workspace workspace/*=nullptr*/);
+        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
+                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType) { super((Pointer)null); allocate(primary, special, lenInBytes, dataType); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
+                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType);
+
         public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef DataBuffer other);
         public DataBuffer() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native @ByRef @Name("operator =") DataBuffer put(@Const @ByRef DataBuffer other);
+
+        public native @Cast("nd4j::DataType") int getDataType();
+        public native @Cast("size_t") long getLenInBytes();
+
+        public native @Cast("Nd4jPointer") Pointer primary();
+        public native @Cast("Nd4jPointer") Pointer special();
+
+        public native void writePrimary();
+        public native void writeSpecial();
+        public native void readPrimary();
+        public native void readSpecial();
+        public native @Cast("bool") boolean isPrimaryActual();
+        public native @Cast("bool") boolean isSpecialActual();
+
+        public native void syncToPrimary(@Const LaunchContext context);
+        public native void syncToSpecial();
+}
+
+
+
+///// IMLEMENTATION OF INLINE METHODS /////
+
+
+////////////////////////////////////////////////////////////////////////
+// default constructor
+
+
+////////////////////////////////////////////////////////////////////////
+// copy constructor
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////
+// move constructor
+
+
+////////////////////////////////////////////////////////////////////////
+// assignment operator
+
+
+////////////////////////////////////////////////////////////////////////
+// move assignment operator
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+// #endif //DEV_TESTS_DATABUFFER_H
+
+
+// Parsed from array/ConstantDataBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+
+// #ifndef LIBND4J_CONSTANTDATABUFFER_H
+// #define LIBND4J_CONSTANTDATABUFFER_H
+
+// #include <dll.h>
+// #include <pointercast.h>
+    @Namespace("nd4j") @NoOffset public static class ConstantDataBuffer extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ConstantDataBuffer(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public ConstantDataBuffer(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public ConstantDataBuffer position(long position) {
+            return (ConstantDataBuffer)super.position(position);
+        }
+    
+        public ConstantDataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
+        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
+        public ConstantDataBuffer(@Const @ByRef ConstantDataBuffer other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef ConstantDataBuffer other);
+        public ConstantDataBuffer() { super((Pointer)null); allocate(); }
         private native void allocate();
 
         public native @Cast("Nd4jLong") long sizeOf();
@@ -297,12 +442,11 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         public native @Cast("Nd4jPointer") Pointer primary();
         public native @Cast("Nd4jPointer") Pointer special();
 
-        public native @ByRef @Name("operator =") DataBuffer put(@Const @ByRef DataBuffer other);
+        public native @ByRef @Name("operator =") ConstantDataBuffer put(@Const @ByRef ConstantDataBuffer other);
     }
 
 
-
-// #endif //DEV_TESTS_DATABUFFER_H
+// #endif //DEV_TESTS_CONSTANTDATABUFFER_H
 
 
 // Parsed from array/TadPack.h
@@ -330,7 +474,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 // #ifndef DEV_TESTS_TADPACK_H
 // #define DEV_TESTS_TADPACK_H
 
-// #include "DataBuffer.h"
+// #include "ConstantDataBuffer.h"
     @Namespace("nd4j") @NoOffset public static class TadPack extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -342,8 +486,8 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
             return (TadPack)super.position(position);
         }
     
-        public TadPack(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
-        private native void allocate(@ByRef DataBuffer shapes, @ByRef DataBuffer offets, @Cast("Nd4jLong") long numTads);
+        public TadPack(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
+        private native void allocate(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads);
         public TadPack() { super((Pointer)null); allocate(); }
         private native void allocate();
 
@@ -597,7 +741,7 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
-// #include <array/DataBuffer.h>
+// #include <array/ConstantDataBuffer.h>
 // #include <array/TadPack.h>
 // #include <graph/VariablesSet.h>
 // #include <graph/GraphState.h>
@@ -2854,9 +2998,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") long[] specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 
 
-    public native DataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-    public native DataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-    public native DataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+    public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+    public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+    public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 }
 
 
@@ -3768,13 +3912,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  prints buffer elements
         *  msg - message to print out 
         *  limit - number of array elements to print out
+        *  sync - if true check whether host buffer is actual, if it is not then make it so 
         */ 
-        public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
+        public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
         public native void printBuffer();
-        public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
+        public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
 
         /**
-        *  prints _bufferD as it is, that is in current state without checking buffer status
+        *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
         */
 
         /**
@@ -4893,6 +5038,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 ////////////////////////////////////////////////////////////////////////
+
 
 
 

@@ -36,6 +36,7 @@ import java.util.Scanner;
                                               "memory/MemoryType.h",
                                               "array/DataType.h",
                                               "array/DataBuffer.h",
+                                              "array/ConstantDataBuffer.h",
                                               "array/TadPack.h",
                                               "Environment.h",
                                               "types/utf8string.h",
