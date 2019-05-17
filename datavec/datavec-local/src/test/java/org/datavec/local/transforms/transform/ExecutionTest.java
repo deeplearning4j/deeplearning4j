@@ -246,7 +246,7 @@ public class ExecutionTest  {
         assertEquals(expOut, out);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testPythonExecutionNdarray()throws Exception{
         Schema schema = new Schema.Builder()
                 .addColumnNDArray("first",new long[]{1,32577})

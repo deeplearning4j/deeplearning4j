@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestPythonExecutioner {
 
-    @Test
+    @Test(timeout = 60000L)
     public void testStr() throws Exception{
 
         PythonVariables pyInputs = new PythonVariables();
@@ -46,7 +46,7 @@ public class TestPythonExecutioner {
         assertEquals("Hello World", z);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testInt()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -67,7 +67,7 @@ public class TestPythonExecutioner {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testList() throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -98,7 +98,7 @@ public class TestPythonExecutioner {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayFloat()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -117,7 +117,7 @@ public class TestPythonExecutioner {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayDouble()throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -134,7 +134,7 @@ public class TestPythonExecutioner {
         assertEquals(6.0, z.sum().getDouble(0), 1e-5);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayShort()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -152,7 +152,7 @@ public class TestPythonExecutioner {
     }
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayInt()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -170,7 +170,7 @@ public class TestPythonExecutioner {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayLong()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
