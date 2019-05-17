@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.IOException;
 
@@ -42,8 +43,7 @@ public class TokenizerImportTest {
 
         String path = "modelimport/keras/preprocessing/tokenizer.json";
 
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        KerasTokenizer tokenizer = KerasTokenizer.fromJson(configResource.getFile().getAbsolutePath());
+        KerasTokenizer tokenizer = KerasTokenizer.fromJson(Resources.asFile(path).getAbsolutePath());
 
         assertEquals(100, tokenizer.getNumWords().intValue());
         assertTrue(tokenizer.isLower());
@@ -59,8 +59,7 @@ public class TokenizerImportTest {
 
         String path = "modelimport/keras/preprocessing/tokenizer_num_words_null.json";
 
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        KerasTokenizer tokenizer = KerasTokenizer.fromJson(configResource.getFile().getAbsolutePath());
+        KerasTokenizer tokenizer = KerasTokenizer.fromJson(Resources.asFile(path).getAbsolutePath());
 
         assertNull(tokenizer.getNumWords());
         assertTrue(tokenizer.isLower());

@@ -30,10 +30,12 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import static junit.framework.TestCase.assertTrue;
@@ -51,7 +53,7 @@ public class Keras2ModelConfigurationTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
 
-    @Test(expected = FileNotFoundException.class)
+    @Test(expected = IllegalStateException.class)
     public void fileNotFoundTest() throws Exception {
         runModelConfigTest("modelimport/keras/foo/bar.json");
     }
@@ -228,7 +230,7 @@ public class Keras2ModelConfigurationTest {
 
     @Test
     public void test5982() throws Exception {
-        File jsonFile = new ClassPathResource("modelimport/keras/configs/bidirectional_last_timeStep.json").getFile();
+        File jsonFile = Resources.asFile("modelimport/keras/configs/bidirectional_last_timeStep.json");
         val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
         MultiLayerNetwork model = new MultiLayerNetwork(modelGraphConf);
 
@@ -242,34 +244,36 @@ public class Keras2ModelConfigurationTest {
 
     @Test
     public void oneLstmLayerTest() throws Exception {
-        ClassPathResource configResource = new ClassPathResource(
-                "/modelimport/keras/configs/keras2/one_lstm_no_sequences_tf_keras_2.json", classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
-        INDArray input = Nd4j.create(50, 500, 1500);
-        INDArray out = model.output(input);
-        assertTrue(Arrays.equals(out.shape(), new long[]{50, 64}));
+        try(InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/one_lstm_no_sequences_tf_keras_2.json")) {
+            MultiLayerConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
+            MultiLayerNetwork model = new MultiLayerNetwork(config);
+            model.init();
+            INDArray input = Nd4j.create(50, 500, 1500);
+            INDArray out = model.output(input);
+            assertTrue(Arrays.equals(out.shape(), new long[]{50, 64}));
+        }
     }
 
 
     private void runSequentialConfigTest(String path) throws Exception {
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
+        try(InputStream is = Resources.asStream(path)) {
+            MultiLayerConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
+            MultiLayerNetwork model = new MultiLayerNetwork(config);
+            model.init();
+        }
     }
 
     private void runModelConfigTest(String path) throws Exception {
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        ComputationGraphConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
-        ComputationGraph model = new ComputationGraph(config);
-        model.init();
+        try(InputStream is = Resources.asStream(path)) {
+            ComputationGraphConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
+            ComputationGraph model = new ComputationGraph(config);
+            model.init();
+        }
     }
 }

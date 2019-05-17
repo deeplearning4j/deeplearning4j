@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,14 +72,10 @@ public class KerasModelImportTest {
 
     private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename)
             throws NullPointerException {
-        ClassPathResource modelResource = new ClassPathResource(modelJsonFilename, classLoader);
-        ClassPathResource weightResource = new ClassPathResource(modelWeightFilename, classLoader);
-
-
         MultiLayerNetwork network = null;
         try {
-            network = KerasModelImport.importKerasSequentialModelAndWeights(modelResource.getFile().getAbsolutePath(),
-                    weightResource.getFile().getAbsolutePath(), false);
+            network = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelJsonFilename).getAbsolutePath(),
+                    Resources.asFile(modelWeightFilename).getAbsolutePath(), false);
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
@@ -87,11 +84,9 @@ public class KerasModelImportTest {
     }
 
     private MultiLayerNetwork loadModel(String modelFilename) {
-        ClassPathResource modelResource = new ClassPathResource(modelFilename, classLoader);
-
         MultiLayerNetwork model = null;
         try {
-            model = KerasModelImport.importKerasSequentialModelAndWeights(modelResource.getFile().getAbsolutePath());
+            model = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelFilename).getAbsolutePath());
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }

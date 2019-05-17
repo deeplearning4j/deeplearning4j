@@ -23,6 +23,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokeni
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class BertWordPieceTokenizerTests {
 
-    private File pathToVocab =  new ClassPathResource("other/vocab.txt").getFile();
+    private File pathToVocab =  Resources.asFile("other/vocab.txt");
     private Charset c = StandardCharsets.UTF_8;
 
     public BertWordPieceTokenizerTests() throws IOException {

@@ -32,6 +32,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class ParallelTransformerIteratorTest {
 
     @Test
     public void hasNext() throws Exception {
-        SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+        SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
 
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
                         .tokenizerFactory(factory).build();
@@ -78,7 +79,7 @@ public class ParallelTransformerIteratorTest {
     @Test
     public void testSpeedComparison1() throws Exception {
         SentenceIterator iterator = new MutipleEpochsSentenceIterator(
-                        new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25);
+                        new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25);
 
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
                         .allowMultithreading(false).tokenizerFactory(factory).build();
@@ -119,7 +120,7 @@ public class ParallelTransformerIteratorTest {
 
 
         LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(
-                        new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile()), 25)).build();
+                        new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25)).build();
 
         transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(false)
                         .tokenizerFactory(factory).build();

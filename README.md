@@ -24,8 +24,10 @@ mvn clean install -Dmaven.test.skip -Dlibnd4j.cuda=x.x -Dlibnd4j.compute=xx
 ```
 or
 ```
-mvn clean install -Ptestresources -Ptest-native -Dlibnd4j.cuda=x.x -Dlibnd4j.compute=xx
+mvn -B -V -U clean install -pl '!jumpy,!pydatavec,!pydl4j' -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=cuda -Dlibnd4j.cuda=9.2 -Dlibnd4j.compute=<your GPU CC> -Djavacpp.platform=linux-x86_64 -Dmaven.test.skip=true
 ```
+
+An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
 
 # Want some examples?
 We have separate repository with various examples available: https://github.com/deeplearning4j/dl4j-examples

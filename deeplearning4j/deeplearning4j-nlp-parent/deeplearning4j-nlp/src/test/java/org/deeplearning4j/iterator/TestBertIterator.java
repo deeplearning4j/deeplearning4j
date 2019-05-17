@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,7 @@ import static org.junit.Assert.*;
 
 public class TestBertIterator {
 
-    private File pathToVocab =  new ClassPathResource("other/vocab.txt").getFile();
+    private File pathToVocab = Resources.asFile("other/vocab.txt");
     private static Charset c = StandardCharsets.UTF_8;
 
     public TestBertIterator() throws IOException{ }

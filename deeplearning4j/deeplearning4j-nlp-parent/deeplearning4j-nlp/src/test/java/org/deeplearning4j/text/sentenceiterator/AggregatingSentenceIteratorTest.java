@@ -18,6 +18,7 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 
@@ -30,8 +31,7 @@ public class AggregatingSentenceIteratorTest {
 
     @Test
     public void testHasNext() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);
         BasicLineIterator iterator2 = new BasicLineIterator(file);
 
