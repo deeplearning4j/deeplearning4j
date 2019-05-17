@@ -23,11 +23,7 @@
 #include <stdexcept>
 
 namespace nd4j {
-    ConstantDescriptor::ConstantDescriptor(std::initializer_list<Nd4jLong> &values) {
-        _integerValues = values;
-    }
-
-    ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> &values) {
+    ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> values) {
         _floatValues = values;
     }
 

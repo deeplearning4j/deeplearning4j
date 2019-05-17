@@ -34,8 +34,7 @@ namespace nd4j {
         std::vector<Nd4jLong> _integerValues;
         std::vector<double> _floatValues;
     public:
-        ConstantDescriptor(std::initializer_list<Nd4jLong> &values);
-        ConstantDescriptor(std::initializer_list<double> &values);
+        ConstantDescriptor(std::initializer_list<double> values);
 
         ConstantDescriptor(std::vector<Nd4jLong> &values);
         ConstantDescriptor(std::vector<double> &values);
