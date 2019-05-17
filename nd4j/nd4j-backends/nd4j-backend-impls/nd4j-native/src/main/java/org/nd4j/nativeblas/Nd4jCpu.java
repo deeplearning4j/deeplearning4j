@@ -2468,6 +2468,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native Pointer getNpyArrayFromMap(Pointer map, int index);
 
+    public native int dataTypeFromNpyHeader(Pointer header);
+
     public native Pointer getNpyArrayData(Pointer npArray);
 
     public native int getNpyArrayRank(Pointer npArray);

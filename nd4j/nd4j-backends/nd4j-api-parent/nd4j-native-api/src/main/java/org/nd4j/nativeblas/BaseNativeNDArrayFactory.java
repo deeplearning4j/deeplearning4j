@@ -184,6 +184,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray createFromNpyHeaderPointer(Pointer pointer) {
+        val dtype = DataType.fromInt(nativeOps.dataTypeFromNpyHeader(pointer));
+
         Pointer dataPointer = nativeOps.dataPointForNumpyHeader(pointer);
         int dataBufferElementSize = nativeOps.elementSizeForNpyArrayHeader(pointer);
         DataBuffer data = null;
@@ -213,35 +215,35 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-        if(dataBufferElementSize == (Float.SIZE / 8)) {
-            FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+        switch (dtype) {
+            case FLOAT: {
+                FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
 
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+                data = Nd4j.createBuffer(dPointer,
+                        DataType.FLOAT,
+                        Shape.length(shapeBuffer),
+                        FloatIndexer.create(dPointer));
+                }
+                break;
+            case DOUBLE: {
+                DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
-
-            data = Nd4j.createBuffer(dPointer,
-                    DataType.FLOAT,
-                    Shape.length(shapeBuffer),
-                    FloatIndexer.create(dPointer));
+                data = Nd4j.createBuffer(dPointer,
+                        DataType.DOUBLE,
+                        Shape.length(shapeBuffer),
+                        DoubleIndexer.create(dPointer));
+            }
+            break;
+            default:
+                throw new RuntimeException("Unsupported data type: [" + dtype + "]");
         }
-        else if(dataBufferElementSize == (Double.SIZE / 8)) {
-            DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
 
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
-
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
-
-            data = Nd4j.createBuffer(dPointer,
-                    DataType.DOUBLE,
-                    Shape.length(shapeBuffer),
-                    DoubleIndexer.create(dPointer));
-        }
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
         INDArray ret = Nd4j.create(data,
                 Shape.shape(shapeBuffer),
