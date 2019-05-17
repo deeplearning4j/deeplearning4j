@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ConstantShapeHelper.h>
 #include <ShapeDescriptor.h>
-#include <DataBuffer.h>
+#include <array/ConstantDataBuffer.h>
 #include <helpers/PointersManager.h>
 
 using namespace nd4j;
@@ -95,7 +95,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
 
 TEST_F(ConstantShapeHelperTests, basic_test_5) {
-    
+
     auto arrayA = NDArrayFactory::create<int>(1);
     auto arrayB = NDArrayFactory::create_<float>('c', {128, 256});
 
@@ -134,7 +134,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
-    
+
     Nd4jLong shapeInfo1[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
     Nd4jLong shapeInfo2[] = {4, 2, 5, 5, 2, 50, 10, 2, 1, 8192, 1, 99};
 
