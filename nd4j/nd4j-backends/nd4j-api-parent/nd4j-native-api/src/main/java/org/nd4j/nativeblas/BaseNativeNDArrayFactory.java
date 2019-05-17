@@ -20,10 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.ByteIndexer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
@@ -218,28 +215,132 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         switch (dtype) {
-            case HALF: {
+            case BYTE: {
+                    val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        ByteIndexer.create(dPointer));
+                }
+                break;
+            case SHORT: {
+                    val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        ShortIndexer.create(dPointer));
+                }
+                break;
+            case INT: {
+                    val dPointer = new IntPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        IntIndexer.create(dPointer));
+                }
+                break;
+            case LONG: {
+                    val dPointer = new LongPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        LongIndexer.create(dPointer));
+                }
+                break;
+            case UBYTE: {
+                    val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        UByteIndexer.create(dPointer));
+                }
+                break;
+            case UINT16: {
+                    val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        UShortIndexer.create(dPointer));
+                }
+                break;
+            case UINT32: {
+                    val dPointer = new IntPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        IntIndexer.create(dPointer));
+                }
+                break;
+            case UINT64: {
+                    val dPointer = new LongPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        LongIndexer.create(dPointer));
+                }
+                break;
+            case HALF: {
+                    val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.limit(dataPointer.limit() / dataBufferElementSize);
+                    //dPointer.capacity(dataPointer.limit() / dataBufferElementSize);
+                    Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                    data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        ShortIndexer.create(dPointer));
                 }
                 break;
             case FLOAT: {
                 // TODO: we might want to skip copy, and use existing pointer/data here
-                FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+                val dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
                 Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
                 data = Nd4j.createBuffer(dPointer,
-                        DataType.FLOAT,
+                        dtype,
                         Shape.length(shapeBuffer),
                         FloatIndexer.create(dPointer));
                 }
                 break;
             case DOUBLE: {
                 // TODO: we might want to skip copy, and use existing pointer/data here
-                DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+                val dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
                 Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
                 data = Nd4j.createBuffer(dPointer,
-                        DataType.DOUBLE,
+                        dtype,
                         Shape.length(shapeBuffer),
                         DoubleIndexer.create(dPointer));
             }
