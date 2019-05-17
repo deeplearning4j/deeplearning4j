@@ -320,7 +320,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     data = Nd4j.createBuffer(dPointer,
                         dtype,
                         Shape.length(shapeBuffer),
-                        ShortIndexer.create(dPointer));
+                        HalfIndexer.create(dPointer));
                 }
                 break;
             case FLOAT: {
