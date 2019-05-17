@@ -26,14 +26,13 @@
 #include <vector>
 #include <pointercast.h>
 #include <dll.h>
+#include <array/ConstantDataBuffer.h>
 
 namespace nd4j {
     class ND4J_EXPORT ConstantDescriptor {
     private:
         std::vector<Nd4jLong> _integerValues;
         std::vector<double> _floatValues;
-
-        std::map<nd4j::DataType, Nd4jPointer> _references;
     public:
         ConstantDescriptor(std::initializer_list<Nd4jLong> &values);
         ConstantDescriptor(std::initializer_list<double> &values);
@@ -49,21 +48,13 @@ namespace nd4j {
         // less than operator
         bool operator<(const ConstantDescriptor &other) const;
 
-        ///////////////////////
-        bool hasPointer(nd4j::DataType dataType);
+        bool isInteger();
+        bool isFloat();
 
-        template <typename T>
-        bool hasPointer();
+        Nd4jLong length();
 
-        void addPointer(Nd4jPointer pointer, nd4j::DataType dataType);
-
-        template <typename T>
-        void addPointer(Nd4jPointer pointer);
-
-        Nd4jPointer getPointer(nd4j::DataType dataType);
-
-        template <typename T>
-        void* getPointer();
+        std::vector<Nd4jLong>& integerValues();
+        std::vector<double>& floatValues();
     };
 }
 

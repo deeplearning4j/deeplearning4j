@@ -25,8 +25,12 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <memory/Workspace.h>
+#include <vector>
 #include <map>
 #include <mutex>
+#include <array/ConstantDescriptor.h>
+#include <array/ConstantDataBuffer.h>
+#include <array/ConstantHolder.h>
 
 namespace nd4j {
     class ND4J_EXPORT ConstantHelper {
@@ -34,8 +38,11 @@ namespace nd4j {
         static ConstantHelper* _INSTANCE;
         ConstantHelper();
 
-        std::map<int, Nd4jPointer > _devicePointers;
-        std::map<int, Nd4jLong> _deviceOffsets;
+        std::vector<std::map<ConstantDescriptor, ConstantHolder>> _cache;
+
+        // tracking of per-device constant memory buffers (CUDA only atm)
+        std::vector<Nd4jPointer> _devicePointers;
+        std::vector<Nd4jLong> _deviceOffsets;
         std::mutex _mutex;
     public:
         ~ConstantHelper() = default;
@@ -44,6 +51,8 @@ namespace nd4j {
         static int getCurrentDevice();
         static int getNumberOfDevices();
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
+
+        ConstantDataBuffer* constantBuffer(ConstantDescriptor &descriptor, nd4j::DataType dataType);
     };
 }
 

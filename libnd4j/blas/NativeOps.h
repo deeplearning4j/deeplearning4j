@@ -66,7 +66,9 @@ bool verbose = false;
 */
 
 #include <array/ShapeList.h>
+#include <array/ConstantDescriptor.h>
 #include <array/ConstantDataBuffer.h>
+#include <helpers/ConstantHelper.h>
 #include <array/TadPack.h>
 #include <graph/VariablesSet.h>
 #include <graph/GraphState.h>
@@ -1660,6 +1662,10 @@ public:
 
 
     nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty);
+
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length);
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, double *data, int length);
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
 };
 
 
