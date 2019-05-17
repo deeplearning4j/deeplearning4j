@@ -138,9 +138,10 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 }
 
 TEST_F(ConstantHelperTests, basic_test_1) {
+
     ConstantDescriptor descriptor({1, 2, 3});
 
-    auto fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
+    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
     auto fPtr = fBuffer->primaryAsT<float>();
 
     ASSERT_NEAR(1.f, fPtr[0], 1e-5);

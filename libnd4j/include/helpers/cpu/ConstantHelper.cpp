@@ -64,10 +64,10 @@ namespace nd4j {
             _cache[deviceId][descriptor] = holder;
         }
 
-        auto holder = _cache[deviceId][descriptor];
+        ConstantHolder* holder = &_cache[deviceId][descriptor];
 
-        if (holder.hasBuffer(dataType))
-            return holder.getConstantDataBuffer(dataType);
+        if (holder->hasBuffer(dataType))
+            return holder->getConstantDataBuffer(dataType);
         else {
             int8_t *cbuff = new int8_t[descriptor.length() * DataTypeUtils::sizeOf(dataType)];
 
@@ -79,9 +79,9 @@ namespace nd4j {
             }
 
             ConstantDataBuffer dataBuffer(cbuff, nullptr, descriptor.length(), DataTypeUtils::sizeOf(dataType));
-            holder.addBuffer(dataBuffer, dataType);
+            holder->addBuffer(dataBuffer, dataType);
 
-            return holder.getConstantDataBuffer(dataType);
+            return holder->getConstantDataBuffer(dataType);
         }
     }
 
