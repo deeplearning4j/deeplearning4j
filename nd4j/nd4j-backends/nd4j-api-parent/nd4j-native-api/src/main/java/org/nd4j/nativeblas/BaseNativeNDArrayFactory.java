@@ -218,9 +218,13 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         switch (dtype) {
-            case FLOAT: {
-                FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+            case HALF: {
 
+                }
+                break;
+            case FLOAT: {
+                // TODO: we might want to skip copy, and use existing pointer/data here
+                FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
                 Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
                 data = Nd4j.createBuffer(dPointer,
@@ -230,6 +234,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 }
                 break;
             case DOUBLE: {
+                // TODO: we might want to skip copy, and use existing pointer/data here
                 DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
                 Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
