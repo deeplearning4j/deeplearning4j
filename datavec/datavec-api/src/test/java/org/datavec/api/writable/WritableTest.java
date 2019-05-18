@@ -63,7 +63,9 @@ public class WritableTest {
         BytesWritable byteWritable = new BytesWritable(doubleWrite);
         assertEquals(2,byteWritable.getDouble(1),1e-1);
         DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});
-        assertEquals(dataBuffer,byteWritable.asNd4jBuffer(DataType.DOUBLE,8));
+        double[] d1 = dataBuffer.asDouble();
+        double[] d2 = byteWritable.asNd4jBuffer(DataType.DOUBLE,8).asDouble();
+        assertArrayEquals(d1, d2, 0.0);
     }
 
     @Test
