@@ -947,8 +947,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * <b>Note 3</b>: If a layer has an nIn set manually, this will not be overridden
          */
         public GraphBuilder setInputTypes(InputType... inputTypes) {
-            if (inputTypes != null && inputTypes.length > 0)
+            if (inputTypes != null && inputTypes.length > 0) {
+                if (networkInputTypes.size() + inputTypes.length != networkInputs.size()) {
+                    throw new IllegalArgumentException(
+                        "Invalid number of InputTypes: " +
+                        "existing inputTypes ("+networkInputTypes.size()+") + additional inputTypes ("+inputTypes.length+")" +
+                        " != number of network inputs ("+networkInputs.size()+")");
+                }
                 Collections.addAll(networkInputTypes, inputTypes);
+            }
             return this;
         }
 
