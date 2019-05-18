@@ -51,6 +51,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -193,7 +194,7 @@ public class TestConvolution extends BaseDL4JTest {
     @Test
     public void validateXceptionImport() throws Exception {
         File dir = testDir.newFolder();
-        File fSource = new ClassPathResource("modelimport/keras/examples/xception/xception_tf_keras_2.h5").getFile();
+        File fSource = Resources.asFile("modelimport/keras/examples/xception/xception_tf_keras_2.h5");
         File fExtracted = new File(dir, "xception_tf_keras_2.h5" );
         FileUtils.copyFile(fSource, fExtracted);
 

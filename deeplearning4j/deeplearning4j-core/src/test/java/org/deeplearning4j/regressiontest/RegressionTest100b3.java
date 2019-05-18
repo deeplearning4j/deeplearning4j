@@ -47,8 +47,7 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class RegressionTest100b3 extends BaseDL4JTest {
 
@@ -225,6 +224,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
 
         INDArray outAct = net.outputSingle(in);
 
-        assertEquals(outExp, outAct.castTo(outExp.dataType()));
+        boolean eq = outExp.equalsWithEps(outAct.castTo(outExp.dataType()), 1e-3);
+        assertTrue(eq);
     }
 }
