@@ -17,11 +17,10 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.Updater
-import org.deeplearning4j.scalnet.layers.recurrent.{ GravesLSTM, RnnOutputLayer }
+import org.deeplearning4j.scalnet.layers.recurrent.{ LSTM, RnnOutputLayer }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -55,8 +54,8 @@ object BasicRNNExample extends App with Logging {
   logger.info("Build model...")
   val model: NeuralNet = {
     val model: NeuralNet = NeuralNet(rngSeed = seed, miniBatch = false)
-    model.add(GravesLSTM(learningChars.length, hiddenSize, Activation.TANH))
-    model.add(GravesLSTM(hiddenSize, hiddenSize, Activation.TANH))
+    model.add(LSTM(learningChars.length, hiddenSize, Activation.TANH))
+    model.add(LSTM(hiddenSize, hiddenSize, Activation.TANH))
     model.add(RnnOutputLayer(hiddenSize, learningChars.length, Activation.SOFTMAX))
     model.compile(LossFunction.MCXENT, OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, Updater.RMSPROP)
     model
@@ -66,18 +65,5 @@ object BasicRNNExample extends App with Logging {
 
   (0 until epochs).foreach { e =>
     rnn.fit(trainingData)
-    rnn.rnnClearPreviousState()
-    val init = Nd4j.zeros(learningChars.length)
-    init.putScalar(learningChars.indexOf(learningString(0)), 1)
-    var output = rnn.rnnTimeStep(init)
-
-    val predicted: Vector[Char] = learningString.map { _ =>
-      val sampledCharacterIdx = output.argMax(1).getInt(0)
-      val nextInput = Nd4j.zeros(learningChars.length)
-      nextInput.putScalar(sampledCharacterIdx, 1)
-      output = rnn.rnnTimeStep(nextInput)
-      learningChars(sampledCharacterIdx)
-    }
-    logger.info(s"Epoch $e - ${predicted.mkString}")
   }
 }
