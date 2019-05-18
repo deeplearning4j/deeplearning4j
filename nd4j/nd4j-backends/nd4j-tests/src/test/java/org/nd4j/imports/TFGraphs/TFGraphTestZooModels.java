@@ -55,9 +55,11 @@ public class TFGraphTestZooModels {
 
     public static final String[] IGNORE_REGEXES = {
             //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
 
             //2019/05/15 - CUSTOM CONV2D OP: rank of input array must be equal to 4, but got 0 instead !
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_coco_2018_01_28",
 
             //2019/05/15 - "Output node "SemanticPredictions" SameDiff output shape does not match TF output shape: SameDiff shape: [1, 513, 3] vs. TF shape: [367, 513]"
@@ -67,6 +69,7 @@ public class TFGraphTestZooModels {
             "deeplab_mobilenetv2_coco_voc_trainval",
 
             //2019/05/15 - Strided slice: "Can't assign new value to the array: this shape [3]; other shape: [3, 3]"
+            //2019/05/17 - https://github.com/deeplearning4j/deeplearning4j/issues/7751
             "faster_rcnn_resnet101_coco_2018_01_28"
     };
 
@@ -199,7 +202,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("ssd")){
+//        if(!modelName.startsWith("deeplab_mobilenetv2_coco_voc_trainval")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
