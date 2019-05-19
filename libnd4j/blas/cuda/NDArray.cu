@@ -181,7 +181,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         throw std::runtime_error("NDArray constructor: input shape is empty !");
 
     if ((int) shape.size() > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        throw std::invalid_argument("NDArray constructor:: rank of NDArray can't exceed 32");
 
     _context = context;
 

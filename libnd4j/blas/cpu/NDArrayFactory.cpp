@@ -40,7 +40,7 @@ namespace nd4j {
 
         auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
 
-        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, true, context->getWorkspace());
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, context->getWorkspace());
 
         NDArray res(pBuffer, ShapeDescriptor::scalarDescriptor(DataType::UTF8), context);
 
@@ -57,25 +57,23 @@ namespace nd4j {
         return res;
     }
 
-    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::LaunchContext * context) {
-        auto res = new NDArray();
+    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::LaunchContext* context) {
 
-        int8_t *buffer = nullptr;
         auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
-        ALLOCATE(buffer, context->getWorkspace(), headerLength + str.length(), int8_t);
-        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
-        auto data = buffer + headerLength;
 
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, context->getWorkspace());
+
+        NDArray* res = new NDArray(pBuffer, ShapeDescriptor::scalarDescriptor(DataType::UTF8), context);
+
+        int8_t buffer = reinterpret_cast<int8_t*>(getBuffer());
+
+        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
         offsets[0] = 0;
         offsets[1] = str.length();
 
+        auto data = buffer + headerLength;
+
         memcpy(data, str.c_str(), str.length());
-
-        res->setBuffer(buffer);
-        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataType::UTF8));
-        res->setContext(context);
-
-        res->triggerAllocationFlag(true);
 
         return res;
     }
@@ -151,22 +149,17 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template <typename T>
     NDArray* NDArrayFactory::create_(const T scalar, nd4j::LaunchContext * context) {
 
-        auto res = new NDArray();
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-        if (context == nullptr)
-            context = nd4j::LaunchContext ::defaultContext();
+        NDArray* res = new NDArray(buffer, ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()), context);
 
         res->setAttached(context->getWorkspace() != nullptr);
 
-        int8_t *buffer;
-        ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
+        res->bufferAsT<T>()[0] = scalar;
 
-        res->setContext(context);
-        res->setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()));
-        res->setBuffer(buffer);
-        res->triggerAllocationFlag(true);
+        res->tickWriteHost();
 
-        res->assign(scalar);
+        res->syncToDevice();
 
         return res;
     }
@@ -185,14 +178,6 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     NDArray NDArrayFactory::create(DataType type, const T scalar, nd4j::LaunchContext * context) {
 
         NDArray res(type, context, true);
-
-        //int8_t *buffer;
-        //ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
-
-        //res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
-        //res.setBuffer(buffer);
-        //res.triggerAllocationFlag(true);
-        //res.setWorkspace(workspace);
 
         res.p(0, scalar);
 
@@ -213,22 +198,15 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template <typename T>
     NDArray NDArrayFactory::create(const T scalar, nd4j::LaunchContext * context) {
 
-        NDArray res;
+        Nstd::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-        if (context == nullptr)
-            context = nd4j::LaunchContext ::defaultContext();
-
-        res.setAttached(context->getWorkspace() != nullptr);
-
-        int8_t *buffer;
-        ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
-
-        res.setContext(context);
-        res.setShapeInfo(ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()));
-        res.setBuffer(buffer);
-        res.triggerAllocationFlag(true);
+        NDArray res(buffer, ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()), context);
 
         res.bufferAsT<T>()[0] = scalar;
+
+        res.tickWriteHost();
+
+        res.syncToDevice();
 
         return res;
     }
@@ -248,29 +226,24 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
 
-    if ((int) shape.size() > MAX_RANK)
+   if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    auto result = new NDArray();
+    ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shape);
 
-    if (context == nullptr)
-        context = nd4j::LaunchContext ::defaultContext();
-
-    result->setAttached(context->getWorkspace() != nullptr);
-
-    result->setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
-
-    if (result->lengthOf() != data.size()) {
-        nd4j_printf("Data size [%i] doesn't match shape length [%i]\n", data.size(), shape::length(result->shapeInfo()));
-        throw std::runtime_error("Data size doesn't match shape");
+    if (descriptor.arrLength() != data.size()) {
+        nd4j_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(), descriptor.arrLength());
+        throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
     }
 
-    int8_t* buffer(nullptr);
-    ALLOCATE(buffer, context->getWorkspace(), result->lengthOf() * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), int8_t);
-    result->setBuffer(buffer);
-    result->setContext(context);
-    result->triggerAllocationFlag(true);
-    memcpyFromVector(result->getBuffer(), data);        // old memcpy_
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+
+    auto result = new NDArray(buffer, descriptor, context);
+
+    memcpyFromVector(result->getBuffer(), data);
+
+    result->tickWriteHost();
+    result->syncToDevice();
 
     return result;
 }
@@ -350,28 +323,18 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     template <typename T>
     NDArray* NDArrayFactory::vector(Nd4jLong length, const T startingValue, nd4j::LaunchContext * context) {
 
-        auto res = new NDArray();
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-        if (context == nullptr)
-            context = nd4j::LaunchContext ::defaultContext();
+        auto result = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
 
-        res->setAttached(context->getWorkspace() != nullptr);
-
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), length * sizeof(T), int8_t);
-
-        //ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), length, context->getWorkspace())
-        res->setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), length));
-        res->setBuffer(buffer);
-        res->setContext(context);
-        res->triggerAllocationFlag(true);
-
-        if (startingValue == (T)0.0f) {
+        if (value == (T)0.0f) {
             memset(buffer, 0, length);
-        } else {
-            res->assign(startingValue);
+            res->tickWriteHost();
+            res->syncToDevice();
         }
-
+        else {
+            res->assign(value);
+        }
         return res;
     }
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, nd4j::LaunchContext * context);
@@ -404,45 +367,33 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
     if ((int) shape.size() > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
 
-    NDArray res;
+    ShapeDescriptor descriptor(dtype, order, shape);
 
-    if (context == nullptr)
-        context = nd4j::LaunchContext ::defaultContext();
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
-    res.setAttached(context->getWorkspace() != nullptr);
-    res.setShapeInfo(ShapeDescriptor(dtype, order, shape));
+    NDArray result(buffer, descriptor, context);
 
-    int8_t *buffer = nullptr;
-    ALLOCATE(buffer, context->getWorkspace(), res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(buffer, 0, res.lengthOf() * res.sizeOfT());
+    memset(result.getBuffer(), 0, buffer->getLenInBytes());
+    result.setAttached(context->getWorkspace() != nullptr);
+    result.tickWriteDevice();
 
-    res.setBuffer(buffer);
-    res.setContext(context);
-    res.triggerAllocationFlag(true);
-
-    return res;
+    return result;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
-    NDArray res;
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
 
-    if (context == nullptr)
-        context = nd4j::LaunchContext ::defaultContext();
+    NDArray res(buffer, ShapeDescriptor::scalarDescriptor(dtype), context);
 
-    res.setAttached(context->getWorkspace() != nullptr);
+    memset(res.getBuffer(), 0, buffer->getLenInBytes());
 
-    int8_t *buffer = nullptr;
-    ALLOCATE(buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(buffer, 0, DataTypeUtils::sizeOfElement(dtype));
-    res.setBuffer(buffer);
-    res.setContext(context);
-    res.setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
-    res.triggerAllocationFlag(true);
+    res.tickWriteHost();
+    res.syncToDevice();
 
     return res;
 }
@@ -452,21 +403,14 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
 template <typename T>
 NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext * context) {
 
-    NDArray res;
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-    if (context == nullptr)
-        context = nd4j::LaunchContext ::defaultContext();
+    NDArray res(buffer, ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()), context);
 
-    res.setAttached(context->getWorkspace() != nullptr);
-    res.setShapeInfo(ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()));
+    memcpyFromVector<T>(getBuffer(), values);
 
-    int8_t *buffer = nullptr;
-    ALLOCATE(buffer, context->getWorkspace(), values.size() * sizeof(T), int8_t);
-    memcpyFromVector<T>(buffer, values);
-
-    res.setBuffer(buffer);
-    res.triggerAllocationFlag(true);
-    res.setContext(context);
+    res.tickWriteHost();
+    res.syncToDevice()
 
     return res;
 }
@@ -551,19 +495,14 @@ template <typename T>
 NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context) {
 
     if ((int) shape.size() > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
-    NDArray result;
+    std::vector<Nd4jLong> shp(shape);
+    ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
 
-    if (context == nullptr)
-        context = nd4j::LaunchContext ::defaultContext();
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), false, context->getWorkspace()):
 
-    result.setAttached(context->getWorkspace() != nullptr);
-
-    result.setBuffer(reinterpret_cast<uint8_t*>(buffer));
-    result.setShapeInfo(ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape));
-    result.setContext(context);
-    result.triggerAllocationFlag(false);
+    NDArray result(pBuffer, descriptor, context);
 
     return result;
 }
@@ -622,18 +561,21 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     }
 
     NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
-        NDArray res;
 
         if (context == nullptr)
             context = nd4j::LaunchContext ::defaultContext();
 
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, context->getWorkspace(), true);
+
+        NDArray res(pBuffer, ShapeDescriptor(DataType::UTF8, order, shape), context);
+
         res.setAttached(context->getWorkspace() != nullptr);
-        res.setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res.lengthOf() != string.size())
-            throw std::invalid_argument("Number of strings should match length of array");
+            throw std::invalid_argument("NDArrayFactory::string: Number of strings should match length of array");
 
-        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
         std::vector<Nd4jLong> offsets(string.size() + 1);
         Nd4jLong dataLength = 0;
         for (int e = 0; e < string.size(); e++) {
@@ -642,12 +584,9 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         }
         offsets[string.size()] = dataLength;
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), headerLength + dataLength, int8_t);
+        memcpy(res.getBuffer(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
 
-        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
-
-        auto data = buffer + headerLength;
+        auto data = res.getBuffer() + headerLength;
         int resLen = res.lengthOf();
         for (int e = 0; e < resLen; e++) {
             auto length = offsets[e+1] - offsets[e];
@@ -655,27 +594,28 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
             memcpy(cdata, string[e].c_str(), string[e].length());
         }
 
-
-        res.setBuffer(buffer);
-        res.setContext(context);
-
-        res.triggerAllocationFlag(true);
+        res.tickWriteHost();
+        res.syncToDevice();
 
         return res;
     }
 
     NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
-        auto res = new NDArray();
-        if (context == nullptr)
+
+       if (context == nullptr)
             context = nd4j::LaunchContext ::defaultContext();
 
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, context->getWorkspace(), true);
+
+        NDArray* res = new NDArray(pBuffer, ShapeDescriptor(DataType::UTF8, order, shape), context);
+
         res->setAttached(context->getWorkspace() != nullptr);
-        res->setShapeInfo(ShapeDescriptor(DataType::UTF8, order, shape));
 
         if (res->lengthOf() != string.size())
-            throw std::invalid_argument("Number of strings should match length of array");
+            throw std::invalid_argument("NDArrayFactory::string: Number of strings should match length of array");
 
-        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
         std::vector<Nd4jLong> offsets(string.size() + 1);
         Nd4jLong dataLength = 0;
         for (int e = 0; e < string.size(); e++) {
@@ -684,12 +624,9 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         }
         offsets[string.size()] = dataLength;
 
-        int8_t *buffer = nullptr;
-        ALLOCATE(buffer, context->getWorkspace(), headerLength + dataLength, int8_t);
+        memcpy(res->getBuffer(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
 
-        memcpy(buffer, offsets.data(), offsets.size() * sizeof(Nd4jLong));
-
-        auto data = buffer + headerLength;
+        auto data = res->getBuffer() + headerLength;
         int resLen = res->lengthOf();
         for (int e = 0; e < resLen; e++) {
             auto length = offsets[e+1] - offsets[e];
@@ -697,11 +634,8 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
             memcpy(cdata, string[e].c_str(), string[e].length());
         }
 
-
-        res->setBuffer(buffer);
-        res->setContext(context);
-
-        res->triggerAllocationFlag(true);
+        res->tickWriteHost();
+        res->syncToDevice();
 
         return res;
     }

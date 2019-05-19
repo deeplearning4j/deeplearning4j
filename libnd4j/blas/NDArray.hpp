@@ -140,6 +140,23 @@ NDArray::NDArray(void *buffer, void* bufferD, Nd4jLong *shapeInfo, nd4j::LaunchC
 }
 
 //////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, std::shared_ptr<DataBuffer> buffer, nd4j::LaunchContext* context = nd4j::LaunchContext ::defaultContext()) {
+
+     if (shape.empty())
+        throw std::runtime_error("NDArray constructor: input shape is empty !");
+
+    if ((int) shape.size() > MAX_RANK)
+        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+
+    _context = context;
+    _offset  = 0;
+
+    setShapeInfo(ShapeDescriptor(buffer->getDataType(), order, shape));
+
+    _buffer = buffer;
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool NDArray::isC() const {
     // TODO: this method must be implemented once we add support for complex numbers
     return false;

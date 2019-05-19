@@ -204,6 +204,7 @@ namespace nd4j {
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
         NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, std::shared_ptr<DataBuffer> buffer, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
@@ -1214,11 +1215,6 @@ namespace nd4j {
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
 
         /**
-        *  set _buffer
-        */
-        FORCEINLINE void setBuffer(void* buffer);
-
-        /**
         *  set _isBuffAlloc and _isShapeAlloc
         */
         FORCEINLINE void triggerAllocationFlag(bool bufferAllocated);
@@ -1566,16 +1562,6 @@ namespace nd4j {
             _dataType = nd4j::DataType::INHERIT;
             _length = 0;
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::setBuffer(void* buffer) {
-        if(_isBuffAlloc)
-            RELEASE(_buffer, _context->getWorkspace());
-
-        _buffer = reinterpret_cast<int8_t *>(buffer);
-        _isBuffAlloc = false;
-        tickWriteHost();
     }
 
     //////////////////////////////////////////////////////////////////////////

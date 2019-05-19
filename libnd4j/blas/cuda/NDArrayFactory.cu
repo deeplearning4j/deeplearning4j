@@ -77,7 +77,12 @@ BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char ord
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
+
+    #ifdef __CUDABLAS__
+    cudaMemcpy(ptr, vector.data() * sizeof(T), cudaMemcpyHostToDevice);
+    #else
     memcpy(ptr, vector.data(), vector.size() * sizeof(T));
+    #endif
 }
 
 template <>
@@ -162,20 +167,12 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
     template <typename T>
     NDArray NDArrayFactory::create(nd4j::DataType type, const T scalar, nd4j::LaunchContext * context) {
+
         if (type == DataTypeUtils::fromT<T>())
             return NDArrayFactory::create(scalar,  context);
+
         NDArray res(type, context);
-
-        int8_t *buffer;
-        ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
-
-        //res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
-        res.setBuffer(buffer);
-        res.triggerAllocationFlag(true);
-        res.setContext(context);
-
         res.p(0, scalar);
-        res.syncShape();
         res.syncToDevice();
 
         return res;
@@ -398,7 +395,6 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
 template <typename T>
 NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext * context) {
 
-
     std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
     NDArray res(buffer, ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()), context);
@@ -476,22 +472,10 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::L
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
+
         auto res = create<T>(order, shape, context);
-        int8_t* buffer = nullptr;
-        size_t allocationSize = res.lengthOf() * res.sizeOfT();
-        ALLOCATE(buffer, context->getWorkspace(), allocationSize, int8_t);
-        res.setBuffer(buffer);
-        //res.setShapeInfo(ShapeDescriptor( order, DataTypeUtils::fromT<T>(), shape));
-        //res.lazyAllocateBuffer();
-        //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
-        memcpyFromVector<T>(res.buffer(), data);
-        size_t bufferSize = data.size() * sizeof(T);
-        //size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
-        cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
-        //cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
+        memcpyFromVector<T>(res.getSpecialBuffer(), data);
         res.tickWriteDevice();
-        res.tickReadHost();
-        res.triggerAllocationFlag(true);
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::LaunchContext * context);
@@ -511,7 +495,7 @@ template <typename T>
 NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context) {
 
     if ((int) shape.size() > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
     std::vector<Nd4jLong> shp(shape);
     ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
@@ -589,7 +573,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
         res.setAttached(context->getWorkspace() != nullptr);
 
         if (res.lengthOf() != string.size())
-            throw std::invalid_argument("Number of strings should match length of array");
+            throw std::invalid_argument("NDArrayFactory::string: Number of strings should match length of array");
 
         std::vector<Nd4jLong> offsets(string.size() + 1);
         Nd4jLong dataLength = 0;
