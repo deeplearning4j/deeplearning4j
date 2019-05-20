@@ -784,7 +784,6 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
                 }
 
                 auto inOffset  = shape::getOffset(0, xShapeOf, xStrideOf,  xzCoord,  rank);
-
                 z[outOffset] = x[inOffset];
             }
     }
@@ -796,6 +795,7 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
         const int rank        = input.rankOf();
         const Nd4jLong outLen = output.lengthOf();
         auto stream = context->getCudaStream();
+        NDArray::prepareSpecialUse({&output}, {&input, &paddings});
 
         if(rank <= 1) {
 
@@ -811,7 +811,7 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
             mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
             nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
         }
-        output.tickWriteDevice();
+        NDArray::registerSpecialUse({&output}, {&input, &paddings});
     }
 
     void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
