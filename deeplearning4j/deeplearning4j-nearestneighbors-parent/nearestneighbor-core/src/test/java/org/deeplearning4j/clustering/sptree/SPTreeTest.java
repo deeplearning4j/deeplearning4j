@@ -42,10 +42,10 @@ public class SPTreeTest {
 
     @Test
     public void testStructure() {
-        INDArray data = Nd4j.create(new float[][] {{1, 2, 3}, {4, 5, 6}});
+        INDArray data = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
         SpTree tree = new SpTree(data);
         try (MemoryWorkspace ws = tree.workspace().notifyScopeEntered()) {
-            assertEquals(Nd4j.create(new float[]{2.5f, 3.5f, 4.5f}), tree.getCenterOfMass());
+            assertEquals(Nd4j.create(new double[]{2.5f, 3.5f, 4.5f}), tree.getCenterOfMass());
             assertEquals(2, tree.getCumSize());
             assertEquals(8, tree.getNumChildren());
             assertTrue(tree.isCorrect());
