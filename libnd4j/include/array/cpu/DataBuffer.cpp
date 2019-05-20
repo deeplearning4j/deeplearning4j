@@ -69,6 +69,13 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
 
 }
 
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setToZeroBuffers(const bool both) {
+
+    memset(primary(), 0, getLenInBytes());
+    writePrimary();
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { }

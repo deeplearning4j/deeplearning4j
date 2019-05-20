@@ -212,7 +212,8 @@ namespace nd4j {
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
-        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        *  this constructor creates new NDArray with shape matching "other" array,
+        *  doesn't copy "other" elements into new array !!!
         */
         explicit NDArray(const NDArray *other, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
@@ -355,8 +356,8 @@ namespace nd4j {
         /**
         *   returns host buffer
         */
-        void* getBuffer() const;
-        void* buffer();
+        FORCEINLINE void* getBuffer() const;
+        FORCEINLINE void* buffer();
 
         template <typename T>
         T* bufferAsT() const;
@@ -364,14 +365,14 @@ namespace nd4j {
         /**
         *   returns _shapeInfo
         */
-        Nd4jLong* shapeInfo();
-        Nd4jLong* getShapeInfo() const;
+        FORCEINLINE Nd4jLong* shapeInfo();
+        FORCEINLINE Nd4jLong* getShapeInfo() const;
 
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
-        void* specialBuffer();
-        void* getSpecialBuffer() const;
+        FORCEINLINE void* specialBuffer();
+        FORCEINLINE void* getSpecialBuffer() const;
 
         /**
          * Returns True if it's legally empty NDArray, or false otherwise
@@ -382,8 +383,8 @@ namespace nd4j {
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
         */
-        Nd4jLong* specialShapeInfo();
-        Nd4jLong* getSpecialShapeInfo() const;
+        FORCEINLINE Nd4jLong* specialShapeInfo();
+        FORCEINLINE Nd4jLong* getSpecialShapeInfo() const;
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -1168,6 +1169,7 @@ namespace nd4j {
         void setShapeInfo(const Nd4jLong *shapeInfo);
         void setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype);
         void setShapeInfo(const ShapeDescriptor& descriptor);
+        void setShapeInfo(const ConstantDataBuffer& shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -1949,7 +1951,7 @@ bool NDArray::isSameShapeStrict(const NDArray *other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
     if (this->_shapeInfo == nullptr)
-            return false;
+        return false;
 
     return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
@@ -2061,13 +2063,59 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::copyBufferStatus(const NDArray& other) const {
+void* NDArray::getBuffer() const {
 
-    if (other.isActualOnHostSide())
-        tickWriteHost();
-    else
-        tickWriteDevice();
+    return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
+
+//////////////////////////////////////////////////////////////////////////
+void* NDArray::buffer() {
+    return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::getShapeInfo() const {
+    return _shapeInfo;
+}
+
+//////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::shapeInfo() {
+    return _shapeInfo;
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::specialShapeInfo() {
+    if (_shapeInfoD == nullptr)
+        return _shapeInfo;
+    // FIXME: this should be fixed once CUDA backend added
+    return _shapeInfoD;
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+      if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::getSpecialShapeInfo() const{
+    if (_shapeInfoD == nullptr)
+        return _shapeInfo;
+    // FIXME: this should be fixed once CUDA backend added
+    return _shapeInfoD;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::syncToDevice() const {

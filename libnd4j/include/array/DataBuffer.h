@@ -108,6 +108,8 @@ class ND4J_EXPORT DataBuffer {
         void syncToPrimary(const LaunchContext* context, const bool forceSync = false);
         void syncToSpecial(const bool forceSync = false);
 
+        void setToZeroBuffers(const bool both = false);
+
         void deleteSpecial();
 };
 

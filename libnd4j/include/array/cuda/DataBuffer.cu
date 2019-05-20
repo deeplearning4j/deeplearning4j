@@ -146,6 +146,18 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate s
 }
 
 ////////////////////////////////////////////////////////////////////////
+void DataBuffer::setToZeroBuffers(const bool both) {
+
+    cudaMemset(special(), 0, getLenInBytes());
+    writeSpecial();
+
+    if(both) {
+        memset(primary(), 0, getLenInBytes());
+        readPrimary();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const    { _writeSpecial = ++_counter; }
 void DataBuffer::readPrimary()  const    { _readPrimary  = ++_counter; }
