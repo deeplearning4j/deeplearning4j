@@ -65,7 +65,8 @@ namespace nd4j {
         auto initialDevice = getCurrentDevice();
 
         auto numDevices = getNumberOfDevices();
-
+        _devicePointers.resize(numDevices);
+        _deviceOffsets.resize(numDevices);
         // filling all pointers
         for (int e = 0; e < numDevices; e++) {
             auto res = cudaSetDevice(e);
