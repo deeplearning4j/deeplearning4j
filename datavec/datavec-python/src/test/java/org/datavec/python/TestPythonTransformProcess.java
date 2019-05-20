@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestPythonTransformProcess {
 
-    @Test
+    @Test(timeout = 60000L)
     public void testStringConcat() throws Exception{
         Schema.Builder schemaBuilder = new Schema.Builder();
         schemaBuilder
@@ -65,7 +65,7 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testMixedTypes() throws Exception{
         Schema.Builder schemaBuilder = new Schema.Builder();
         schemaBuilder
@@ -96,7 +96,7 @@ public class TestPythonTransformProcess {
         assertEquals(((LongWritable)outputs.get(4)).get(), 36);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArray() throws Exception{
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(shape);
@@ -129,7 +129,8 @@ public class TestPythonTransformProcess {
         assertEquals(expectedOutput,((NDArrayWritable)outputs.get(2)).get());
 
     }
-    @Test
+
+    @Test(timeout = 60000L)
     public void testNDArray2() throws Exception{
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(shape);
@@ -163,7 +164,7 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNDArrayMixed() throws Exception{
         long[] shape = new long[]{3, 2};
         INDArray arr1 = Nd4j.rand(DataType.DOUBLE, shape);
@@ -196,7 +197,7 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testPythonFilter(){
         Schema schema = new Schema.Builder().addColumnInteger("column").build();
 
@@ -216,7 +217,7 @@ public class TestPythonTransformProcess {
 
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testPythonFilterAndTransform() throws Exception{
         Schema.Builder schemaBuilder = new Schema.Builder();
         schemaBuilder

@@ -285,7 +285,11 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             byte[] localHeader = new byte[30];
             is.read(localHeader);
             if ((int)localHeader[2] != 3 || (int)localHeader[3] != 4){
-                break;
+                if(map.isEmpty()) {
+                    throw new IllegalStateException("Found malformed NZP file header: File is not a npz file? " + file.getPath());
+                } else {
+                    break;
+                }
             }
             int fNameLength = localHeader[26];
             byte[] fNameBytes = new byte[fNameLength];
@@ -306,16 +310,42 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 headerStr += (char)b;
             }
 
-            int idx = headerStr.indexOf("'<") + 2;
-            String typeStr = headerStr.substring(idx, idx + 2);
+            int idx;
+            String typeStr;
+            if(headerStr.contains("<")){
+                idx = headerStr.indexOf("'<") + 2;
+            } else {
+                idx = headerStr.indexOf("'|") + 2;
+            }
+            typeStr = headerStr.substring(idx, idx + 2);
+
             int elemSize;
+            DataType dt;
             if (typeStr.equals("f8")){
                 elemSize = 8;
-            }
-            else if (typeStr.equals("f4")){
+                dt = DataType.DOUBLE;
+            } else if (typeStr.equals("f4")){
                 elemSize = 4;
-            }
-            else{
+                dt = DataType.FLOAT;
+            } else if(typeStr.equals("f2")){
+                elemSize = 2;
+                dt = DataType.HALF;
+            } else if(typeStr.equals("i8")){
+                elemSize = 8;
+                dt = DataType.LONG;
+            } else if (typeStr.equals("i4")){
+                elemSize = 4;
+                dt = DataType.INT;
+            } else if(typeStr.equals("i2")){
+                elemSize = 2;
+                dt = DataType.SHORT;
+            } else if(typeStr.equals("i1")){
+                elemSize = 1;
+                dt = DataType.BYTE;
+            } else if(typeStr.equals("u1")){
+                elemSize = 1;
+                dt = DataType.UBYTE;
+            } else{
                 throw new Exception("Unsupported data type: " + typeStr);
             }
             idx = headerStr.indexOf("'fortran_order': ");
@@ -341,21 +371,65 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             is.read(data);
             ByteBuffer bb = ByteBuffer.wrap(data);
 
-            if (elemSize == 8){
+            if (dt == DataType.DOUBLE){
                 double[] doubleData = new double[(int)size];
                 for (int i=0; i<size; i++){
-                    doubleData[i] = bb.getDouble(i);
+                    long l = bb.getLong(8*i);
+                    l = Long.reverseBytes(l);
+                    doubleData[i] = Double.longBitsToDouble(l);
                 }
                 map.put(fName, Nd4j.create(doubleData, shape, order));
-
-            }
-            else{
-                double[] floatData = new double[(int)size];
+            } else if(dt == DataType.FLOAT){
+                float[] floatData = new float[(int)size];
                 for (int i=0; i<size; i++){
-                    floatData[i] = bb.getFloat(i);
+                    int i2 = bb.getInt(4*i);
+                    i2 = Integer.reverseBytes(i2);
+                    float f = Float.intBitsToFloat(i2);
+                    floatData[i] = f;
                 }
                 map.put(fName, Nd4j.create(floatData, shape, order));
-
+            } else if(dt == DataType.HALF){
+                INDArray arr = Nd4j.create(DataType.HALF, size);
+                ByteBuffer bb2 = arr.data().pointer().asByteBuffer();
+                for( int i=0; i<size; i++ ) {
+                    short s = bb.getShort(2*i);
+                    bb2.put((byte)((s >> 8) & 0xff));
+                    bb2.put((byte)(s & 0xff));
+                }
+                map.put(fName, arr.reshape(order, shape));
+            } else if(dt == DataType.LONG){
+                long[] d = new long[(int)size];
+                for (int i=0; i<size; i++){
+                    long l = bb.getLong(8*i);
+                    l = Long.reverseBytes(l);
+                    d[i] = l;
+                }
+                map.put(fName, Nd4j.createFromArray(d).reshape(order, shape));
+            } else if(dt == DataType.INT){
+                int[] d = new int[(int)size];
+                for (int i=0; i<size; i++){
+                    int l = bb.getInt(4*i);
+                    l = Integer.reverseBytes(l);
+                    d[i] = l;
+                }
+                map.put(fName, Nd4j.createFromArray(d).reshape(order, shape));
+            } else if(dt == DataType.SHORT){
+                short[] d = new short[(int)size];
+                for (int i=0; i<size; i++){
+                    short l = bb.getShort(2*i);
+                    l = Short.reverseBytes(l);
+                    d[i] = l;
+                }
+                map.put(fName, Nd4j.createFromArray(d).reshape(order, shape));
+            } else if(dt == DataType.BYTE){
+                map.put(fName, Nd4j.createFromArray(data).reshape(order, shape));
+            } else if(dt == DataType.UBYTE){
+                short[] d = new short[(int)size];
+                for (int i=0; i<size; i++){
+                    short l = ((short) (bb.get(i) & (short) 0xff));
+                    d[i] = l;
+                }
+                map.put(fName, Nd4j.createFromArray(d).reshape(order, shape).castTo(DataType.UBYTE));
             }
 
         }

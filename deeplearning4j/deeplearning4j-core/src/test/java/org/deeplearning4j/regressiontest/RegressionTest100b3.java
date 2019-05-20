@@ -39,6 +39,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
+import org.nd4j.resources.Resources;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -46,8 +47,7 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class RegressionTest100b3 extends BaseDL4JTest {
 
@@ -63,7 +63,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
             String dtype = (i == 0 ? "float" : "double");
             DataType dt = (i == 0 ? DataType.FLOAT : DataType.DOUBLE);
 
-            File f = new ClassPathResource("regression_testing/100b3/CustomLayerExample_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            File f = Resources.asFile("regression_testing/100b3/CustomLayerExample_100b3_" + dtype + ".bin");
             MultiLayerNetwork.load(f, true);
 
             MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
@@ -81,13 +81,13 @@ public class RegressionTest100b3 extends BaseDL4JTest {
 
 
             INDArray outExp;
-            File f2 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Output_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            File f2 = Resources.asFile("regression_testing/100b3/CustomLayerExample_Output_100b3_" + dtype + ".bin");
             try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
                 outExp = Nd4j.read(dis);
             }
 
             INDArray in;
-            File f3 = new ClassPathResource("regression_testing/100b3/CustomLayerExample_Input_100b3_" + dtype + ".bin").getTempFileFromArchive();
+            File f3 = Resources.asFile("regression_testing/100b3/CustomLayerExample_Input_100b3_" + dtype + ".bin");
             try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
                 in = Nd4j.read(dis);
             }
@@ -115,7 +115,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
     @Test
     public void testLSTM() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/100b3/GravesLSTMCharModelingExample_100b3.bin").getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_100b3.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         LSTM l0 = (LSTM) net.getLayer(0).conf().getLayer();
@@ -144,13 +144,13 @@ public class RegressionTest100b3 extends BaseDL4JTest {
         assertEquals(50, net.getLayerWiseConfigurations().getTbpttFwdLength());
 
         INDArray outExp;
-        File f2 = new ClassPathResource("regression_testing/100b3/GravesLSTMCharModelingExample_Output_100b3.bin").getTempFileFromArchive();
+        File f2 = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_Output_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = new ClassPathResource("regression_testing/100b3/GravesLSTMCharModelingExample_Input_100b3.bin").getTempFileFromArchive();
+        File f3 = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_Input_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
             in = Nd4j.read(dis);
         }
@@ -163,7 +163,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
     @Test
     public void testVae() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/100b3/VaeMNISTAnomaly_100b3.bin").getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/100b3/VaeMNISTAnomaly_100b3.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         VariationalAutoencoder l0 = (VariationalAutoencoder) net.getLayer(0).conf().getLayer();
@@ -176,13 +176,13 @@ public class RegressionTest100b3 extends BaseDL4JTest {
         assertEquals(new Adam(1e-3), l0.getIUpdater());
 
         INDArray outExp;
-        File f2 = new ClassPathResource("regression_testing/100b3/VaeMNISTAnomaly_Output_100b3.bin").getTempFileFromArchive();
+        File f2 = Resources.asFile("regression_testing/100b3/VaeMNISTAnomaly_Output_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = new ClassPathResource("regression_testing/100b3/VaeMNISTAnomaly_Input_100b3.bin").getTempFileFromArchive();
+        File f3 = Resources.asFile("regression_testing/100b3/VaeMNISTAnomaly_Input_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
             in = Nd4j.read(dis);
         }
@@ -196,7 +196,7 @@ public class RegressionTest100b3 extends BaseDL4JTest {
     @Test
     public void testYoloHouseNumber() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/100b3/HouseNumberDetection_100b3.bin").getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/100b3/HouseNumberDetection_100b3.bin");
         ComputationGraph net = ComputationGraph.load(f, true);
 
         int nBoxes = 5;
@@ -211,19 +211,20 @@ public class RegressionTest100b3 extends BaseDL4JTest {
         assertArrayEquals(new int[]{1,1}, cl.getKernelSize());
 
         INDArray outExp;
-        File f2 = new ClassPathResource("regression_testing/100b3/HouseNumberDetection_Output_100b3.bin").getTempFileFromArchive();
+        File f2 = Resources.asFile("regression_testing/100b3/HouseNumberDetection_Output_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = new ClassPathResource("regression_testing/100b3/HouseNumberDetection_Input_100b3.bin").getTempFileFromArchive();
+        File f3 = Resources.asFile("regression_testing/100b3/HouseNumberDetection_Input_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
             in = Nd4j.read(dis);
         }
 
         INDArray outAct = net.outputSingle(in);
 
-        assertEquals(outExp, outAct.castTo(outExp.dataType()));
+        boolean eq = outExp.equalsWithEps(outAct.castTo(outExp.dataType()), 1e-3);
+        assertTrue(eq);
     }
 }
