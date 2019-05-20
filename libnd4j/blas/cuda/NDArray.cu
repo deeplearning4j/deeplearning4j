@@ -775,54 +775,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             this->synchronize();
     }
 
-////////////////////////////////////////////////////////////////////////
-    void NDArray::syncToHost() const {
-
-        if(isEmpty() || lengthOf() == 0) return;
-
-        lazyAllocateBuffer();
-        auto stream = _context->getCudaStream();
-        auto res = cudaStreamSynchronize(*stream);
-        if (res != 0)
-            throw cuda_exception::build("syncToHost failed to to some previous kernel failre", res);
-
-        if (ews() != 1) {
-            // FIXME: ^$%@#$%@#$!@#!!!!!!!!!!!
-            for (Nd4jLong i = 0; i < _length; i++) {
-                auto offset = getOffset(i) * sizeOfT();
-                cudaMemcpy(_buffer + offset, _bufferD + offset, sizeOfT(), cudaMemcpyDeviceToHost);
-            }
-        }
-        else
-            cudaMemcpy(_buffer, _bufferD, _length * sizeOfT(), cudaMemcpyDeviceToHost);
-
-        tickReadHost();
-    }
-
-////////////////////////////////////////////////////////////////////////
-    void NDArray::syncToDevice() const {
-
-        if(isEmpty()) return;
-
-        if (_bufferD == nullptr) {
-            NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
-            void* p = constThis->_bufferD;
-            ALLOCATE_SPECIAL(p, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-            constThis->_isBuffDAlloc = true;
-        }
-
-         if (ews() != 1) {
-            for (Nd4jLong i = 0; i < _length; i++) {
-                auto offset = getOffset(i) * sizeOfT();
-                cudaMemcpy(_bufferD + offset, _buffer + offset, sizeOfT(), cudaMemcpyHostToDevice);
-            }
-        }
-        else
-            cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-
-        tickReadDevice();
-    }
-
     void NDArray::syncShape() const {
         cudaMemcpy(_shapeInfoD, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo), cudaMemcpyHostToDevice);
     }
@@ -1554,13 +1506,11 @@ NDArray NDArray::e(const Nd4jLong i) const {
         for (const auto& a : readList) {
             if (!a->isActualOnDeviceSide())
                 a->syncToDevice();
-            a->tickReadDevice();
         }
 
         for (const auto& a : writeList) {
             if (synchronizeWritables && !a->isActualOnDeviceSide())
                 a->syncToDevice();
-            a->tickWriteDevice();
         }
     }
 

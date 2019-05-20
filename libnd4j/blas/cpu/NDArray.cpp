@@ -780,14 +780,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
         // no-op
     }
 
-    void NDArray::syncToDevice() const {
-        //
-    }
-
-    void NDArray::syncToHost() const {
-      //
-    }
-
     void NDArray::syncShape() const {
 
     }

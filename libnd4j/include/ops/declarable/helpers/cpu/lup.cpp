@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T> 
+    template <typename T>
     static void _swapRows(NDArray* matrix, int theFirst, int theSecond) {
 
         if (theFirst != theSecond)
@@ -62,8 +62,8 @@ namespace helpers {
 
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 2; i < n; i++) {
-            for (int j = i - 2; j > -1; --j) 
-                for (int k = 0; k < i; k++) 
+            for (int j = i - 2; j > -1; --j)
+                for (int k = 0; k < i; k++)
                     invertedMatrix->t<T>(i, j) -= (invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k));
         }
     }
@@ -93,8 +93,8 @@ namespace helpers {
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = n - 2; i > - 1; i--) {
-            for (int j = i + 2; j < n; j++) 
-                for (int k = i; k < n; k++) 
+            for (int j = i + 2; j < n; j++)
+                for (int k = i; k < n; k++)
                     invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
     }
@@ -114,7 +114,7 @@ namespace helpers {
 
         NDArray determinant = NDArrayFactory::create<T>(1.f);
         std::unique_ptr<NDArray> compoundMatrix(input->dup()); // copy
-        std::unique_ptr<NDArray> permutationMatrix(input->dupUninitialized()); //put identity
+        std::unique_ptr<NDArray> permutationMatrix(input); //put identity
         permutationMatrix->setIdentity();
 
         T pivotValue; // = T(0.0);
@@ -219,7 +219,7 @@ template <typename T>
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
-        
+
         output->assign(0.f); // fill up output tensor with zeros
         auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
         auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
@@ -345,7 +345,7 @@ template <typename T>
 
     int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
-    }    
+    }
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 

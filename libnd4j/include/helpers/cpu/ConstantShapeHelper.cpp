@@ -45,7 +45,7 @@ namespace nd4j {
     }
 
     ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
-        ShapeDescriptor descriptor(type, order, shape, rank);
+        ShapeDescriptor descriptor(dataType, order, shape, rank);
         return bufferForShapeInfo(descriptor);
     }
 

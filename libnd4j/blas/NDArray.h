@@ -155,18 +155,18 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const Nd4jLong offset = 0);
+        NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const Nd4jLong offset = 0);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isBuffAlloc = false);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
+        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
 
         /**
         *  copy constructor
@@ -226,8 +226,6 @@ namespace nd4j {
          */
         void synchronize() const;
 
-        bool isContiguous() const;
-
         /**
          * This method allows to set _isAttached flag
          * @param reallyAttached
@@ -238,12 +236,13 @@ namespace nd4j {
         FORCEINLINE void tickWriteDevice() const;
         FORCEINLINE void tickReadHost() const;
         FORCEINLINE void tickReadDevice() const;
+        FORCEINLINE void tickBothActual() const;
         FORCEINLINE bool isActualOnHostSide() const;
         FORCEINLINE bool isActualOnDeviceSide() const;
         FORCEINLINE void makeBothBuffersActual() const;
 
-        void syncToHost() const;
-        void syncToDevice() const;
+        FORCEINLINE void syncToHost() const;
+        FORCEINLINE void syncToDevice() const;
         void syncShape() const;
 
         /**
@@ -291,11 +290,6 @@ namespace nd4j {
 
 
         void setContext(nd4j::LaunchContext * context);
-
-        /**
-        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-        */
-        void replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool releaseExisting = true);
 
         /**
         *  create a new array by replicating current array by repeats times along given dimension
@@ -355,8 +349,8 @@ namespace nd4j {
             return _context;
         }
 
-
-        std::shared_ptr<DataBuffer> getDataBuffer();
+        FORCEINLINE std::shared_ptr<DataBuffer> getDataBuffer() const;
+        FORCEINLINE std::shared_ptr<DataBuffer> dataBuffer();
 
         /**
         *   returns host buffer
@@ -862,7 +856,6 @@ namespace nd4j {
         */
         template <typename T>
         std::vector<T> getBufferAsVector();
-        void *getBufferAsPointer(nd4j::DataType dtype);
         std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
@@ -1159,8 +1152,6 @@ namespace nd4j {
         */
         double getTrace() const;
 
-        NDArray* dupUninitialized() const;
-
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 
         ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
@@ -1213,12 +1204,6 @@ namespace nd4j {
         */
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo);
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
-
-        /**
-        *  set _isBuffAlloc and _isShapeAlloc
-        */
-        FORCEINLINE void triggerAllocationFlag(bool bufferAllocated);
-        FORCEINLINE void triggerSpecialAllocationFlag(bool bufferAllocated);
 
         /**
         *  returns the value of "dim" dimension
@@ -1565,15 +1550,6 @@ namespace nd4j {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::triggerAllocationFlag(bool bufferAllocated) {
-        _isBuffAlloc = bufferAllocated;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated) {
-        _isBuffDAlloc = bufferAllocated;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
     char NDArray::ordering() const {
         return shape::order(_shapeInfo);
     }
@@ -1649,9 +1625,9 @@ namespace nd4j {
             return true;
 
         if(!Environment::getInstance()->isCPU())
-            return this->_bufferD != nullptr && this->_shapeInfoD != nullptr;
+            return getDataBuffer()->primary() != nullptr && getSpecialShapeInfo() != nullptr;
 
-        return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+        return getDataBuffer()->special() != nullptr && getShapeInfo() != nullptr;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -2075,6 +2051,16 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
+std::shared_ptr<DataBuffer> NDArray::getDataBuffer() const {
+    return _buffer;
+}
+
+////////////////////////////////////////////////////////////////////////
+std::shared_ptr<DataBuffer> NDArray::dataBuffer() {
+    return _buffer;
+}
+
+////////////////////////////////////////////////////////////////////////
 void NDArray::copyBufferStatus(const NDArray& other) const {
 
     if (other.isActualOnHostSide())
@@ -2084,18 +2070,38 @@ void NDArray::copyBufferStatus(const NDArray& other) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tickWriteHost() const          { _writeHost   = ++_opCounter; }
-void NDArray::tickWriteDevice() const        {  _writeDevice = ++_opCounter; }
-void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
-void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
-bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
-bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
+void NDArray::syncToDevice() const {
 
-void NDArray::makeBothBuffersActual() const  {
+    #ifdef __CUDABLAS__
+    _buffer->syncToSpecial();
+    #endif
+}
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::syncToHost() const {
+
+    #ifdef __CUDABLAS__
+    _buffer->syncToPrimary();
+    #endif
+}
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::tickWriteHost() const         { _buffer->writePrimary(); }
+void NDArray::tickWriteDevice() const       { _buffer->writeSpecial(); }
+void NDArray::tickReadHost() const          { _buffer->readPrimary(); }
+void NDArray::tickReadDevice() const        { _buffer->readSpecial(); }
+void NDArray::tickBothActual() const        { _buffer->writePrimary(); _buffer->readSpecial(); }
+bool NDArray::isActualOnHostSide() const    { return _buffer->isPrimaryActual(); }
+bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual(); }
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::makeBothBuffersActual() const {
+    #ifdef __CUDABLAS__
     if(!isActualOnHostSide())
         syncToHost();
     if(!isActualOnDeviceSide())
         syncToDevice();
+    #endif
 }
 
 
