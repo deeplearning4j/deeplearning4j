@@ -68,6 +68,33 @@ public enum DataType {
         return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE || this == UINT16 || this == UINT32 || this == UINT64;
     }
 
+    public int width(){
+        switch (this){
+            case DOUBLE:
+            case LONG:
+            case UINT64:
+                return 8;
+            case FLOAT:
+            case INT:
+            case UINT32:
+                return 4;
+            case HALF:
+            case SHORT:
+            case BFLOAT16:
+            case UINT16:
+                return 2;
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+                return 1;
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                return -1;
+        }
+    }
+
     public static DataType fromNumpy(String numpyDtypeName){
         switch (numpyDtypeName.toLowerCase()){
             case "bool": return BOOL;

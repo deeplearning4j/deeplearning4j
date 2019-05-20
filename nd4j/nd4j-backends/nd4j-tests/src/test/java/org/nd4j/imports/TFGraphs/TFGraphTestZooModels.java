@@ -19,6 +19,7 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -55,19 +56,23 @@ public class TFGraphTestZooModels {
 
     public static final String[] IGNORE_REGEXES = {
             //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
 
             //2019/05/15 - CUSTOM CONV2D OP: rank of input array must be equal to 4, but got 0 instead !
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //2019/05/15 - "Output node "SemanticPredictions" SameDiff output shape does not match TF output shape: SameDiff shape: [1, 513, 3] vs. TF shape: [367, 513]"
-            "deeplabv3_pascal_train_aug_2018_01_04",
-
-            //2019/05/15 - "Output node "SemanticPredictions" SameDiff output shape does not match TF output shape: SameDiff shape: [1, 513, 3] vs. TF shape: [367, 513]"
-            "deeplab_mobilenetv2_coco_voc_trainval",
-
             //2019/05/15 - Strided slice: "Can't assign new value to the array: this shape [3]; other shape: [3, 3]"
+            //2019/05/17 - https://github.com/deeplearning4j/deeplearning4j/issues/7751
             "faster_rcnn_resnet101_coco_2018_01_28"
+    };
+
+    public static final String[] IGNORE_REGEXES_LIBND4J_EXEC_ONLY = {
+            // 2019/05/20 - Buffer is too big to export? https://github.com/deeplearning4j/deeplearning4j/issues/7760
+            // File: C:/DL4J/Git/deeplearning4j/libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h, Line 668
+            //Expression: size() < FLATBUFFERS_MAX_BUFFER_SIZE
+            "deeplabv3_pascal_train_aug_2018_01_04"
     };
 
     @Rule
@@ -199,7 +204,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("ssd")){
+//        if(!modelName.startsWith("deeplab_mobilenetv2_coco_voc_trainval")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
@@ -208,11 +213,9 @@ public class TFGraphTestZooModels {
         Nd4j.getMemoryManager().setAutoGcWindow(2000);
 
         Nd4j.create(1);
-        for(String s : IGNORE_REGEXES){
-            if(modelName.matches(s)){
-                log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
-                OpValidationSuite.ignoreFailing();
-            }
+        if(ArrayUtils.contains(IGNORE_REGEXES, modelName)){
+            log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, modelName);
+            OpValidationSuite.ignoreFailing();
         }
 
         Double maxRE = 1e-3;
@@ -222,6 +225,10 @@ public class TFGraphTestZooModels {
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
 
+        if(ArrayUtils.contains(IGNORE_REGEXES_LIBND4J_EXEC_ONLY, modelName)){
+            log.warn("\n\tIGNORING MODEL FOR LIBND4J EXECUTION ONLY: ");
+            return;
+        }
 
         //Libnd4j exec:
         currentTestDir = testDir.newFolder();
