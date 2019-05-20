@@ -27,8 +27,15 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import sun.awt.image.DataBufferNative;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -333,7 +340,58 @@ public class DataBufferTests extends BaseNd4jTest {
                 }
             }
         }
+    }
 
+    @Test
+    public void testAsBytes() {
+        INDArray orig = Nd4j.linspace(DataType.INT, 0, 10, 1);
+
+        for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.BFLOAT16,
+                DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.BOOL,
+                DataType.UINT64, DataType.UINT32, DataType.UINT16, DataType.UBYTE}) {
+            INDArray arr = orig.castTo(dt);
+
+            byte[] b = arr.data().asBytes();        //NOTE: BIG ENDIAN
+
+            if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+                //Switch from big endian (as defined by asBytes which uses big endian) to little endian
+                int w = dt.width();
+                if (w > 1) {
+                    int len = b.length / w;
+                    for (int i = 0; i < len; i++) {
+                        for (int j = 0; j < w / 2; j++) {
+                            byte temp = b[(i + 1) * w - j - 1];
+                            b[(i + 1) * w - j - 1] = b[i * w + j];
+                            b[i * w + j] = temp;
+                        }
+                    }
+                }
+            }
+
+            INDArray arr2 = Nd4j.create(dt, arr.shape());
+            ByteBuffer bb = arr2.data().pointer().asByteBuffer();
+            bb.position(0);
+            bb.put(b);
+
+            assertEquals(arr.toString(), arr2.toString());
+            assertEquals(arr, arr2);
+
+            //Sanity check on data buffer getters:
+            DataBuffer db = arr.data();
+            DataBuffer db2 = arr2.data();
+            for( int i=0; i<10; i++ ){
+                assertEquals(db.getDouble(i), db2.getDouble(i), 0);
+                assertEquals(db.getFloat(i), db2.getFloat(i), 0);
+                assertEquals(db.getInt(i), db2.getInt(i), 0);
+                assertEquals(db.getLong(i), db2.getLong(i), 0);
+                assertEquals(db.getNumber(i), db2.getNumber(i));
+            }
+
+            assertArrayEquals(db.getDoublesAt(0, 10), db2.getDoublesAt(0, 10), 0);
+            assertArrayEquals(db.getFloatsAt(0, 10), db2.getFloatsAt(0, 10), 0);
+            assertArrayEquals(db.getIntsAt(0, 10), db2.getIntsAt(0, 10));
+            assertArrayEquals(db.getLongsAt(0, 10), db2.getLongsAt(0, 10));
+        }
     }
 
     @Override

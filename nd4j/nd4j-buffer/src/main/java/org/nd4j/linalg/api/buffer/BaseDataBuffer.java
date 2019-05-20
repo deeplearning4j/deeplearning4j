@@ -526,21 +526,65 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         allocationMode = AllocUtil.getAllocationModeFromContext();
 
-        if (dataType() == DataType.DOUBLE) {
-            pointer = new DoublePointer(buffer.asDoubleBuffer());
-            setIndexer(DoubleIndexer.create((DoublePointer) pointer));
-        } else if (dataType() == DataType.FLOAT) {
-            pointer = new FloatPointer(buffer.asFloatBuffer());
-            setIndexer(FloatIndexer.create((FloatPointer) pointer));
-        } else if (dataType() == DataType.INT) {
-            pointer = new IntPointer(buffer.asIntBuffer());
-            setIndexer(IntIndexer.create((IntPointer) pointer));
-        } else if (dataType() == DataType.LONG) {
-            pointer = new LongPointer(buffer.asLongBuffer());
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+        switch (dataType()){
+            case DOUBLE:
+                pointer = new DoublePointer(buffer.asDoubleBuffer());
+                setIndexer(DoubleIndexer.create((DoublePointer) pointer));
+                break;
+            case FLOAT:
+                pointer = new FloatPointer(buffer.asFloatBuffer());
+                setIndexer(FloatIndexer.create((FloatPointer) pointer));
+                break;
+            case HALF:
+                pointer = new ShortPointer(buffer.asShortBuffer());
+                setIndexer(HalfIndexer.create((ShortPointer) pointer));
+                break;
+            case LONG:
+                pointer = new LongPointer(buffer.asLongBuffer());
+                setIndexer(LongIndexer.create((LongPointer) pointer));
+                break;
+            case INT:
+                pointer = new IntPointer(buffer.asIntBuffer());
+                setIndexer(IntIndexer.create((IntPointer) pointer));
+                break;
+            case SHORT:
+                pointer = new ShortPointer(buffer.asShortBuffer());
+                setIndexer(ShortIndexer.create((ShortPointer) pointer));
+                break;
+            case UBYTE: //Fall through
+            case BYTE:
+                pointer = new BytePointer(buffer);
+                setIndexer(UByteIndexer.create((BytePointer)pointer));
+                break;
+            case BOOL:
+                pointer = new BooleanPointer(length());
+                setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
+                break;
+            case UTF8:
+                pointer = new BytePointer(length());
+                setIndexer(ByteIndexer.create((BytePointer) pointer));
+                break;
+            case BFLOAT16:
+                pointer = new ShortPointer(length());
+                setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
+                break;
+            case UINT16:
+                pointer = new ShortPointer(length());
+                setIndexer(UShortIndexer.create((ShortPointer) pointer));
+                break;
+            case UINT32:
+                pointer = new IntPointer(length());
+                // FIXME: we need unsigned indexer here
+                setIndexer(IntIndexer.create((IntPointer) pointer));
+                break;
+            case UINT64:
+                pointer = new LongPointer(length());
+                // FIXME: we need unsigned indexer here
+                setIndexer(LongIndexer.create((LongPointer) pointer));
+                break;
         }
 
-        // log.info("Creating new buffer of size: {}; dtype: {}; D", length, dataType());
+//         log.info("Creating new buffer of size: {}; dtype: {}; D", length, dataType());
     }
 
     //sets the nio wrapped buffer (allows to be overridden for other use cases like cuda)
@@ -1158,6 +1202,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public byte[] asBytes() {
+        //NOTE: DataOutputStream is big endian
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         val dataType = dataType();
@@ -1218,30 +1263,90 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 }
                 break;
             case SHORT:
-                for (int i = 0; i < length(); i++) {
-                    try {
-                        dos.writeShort(getShort(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                try{
+                    for (int i = 0; i < length(); i++) {
+                            dos.writeShort(getShort(i));
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
                 break;
             case INT:
-                for (int i = 0; i < length(); i++) {
-                    try {
+                try {
+                    for (int i = 0; i < length(); i++) {
                         dos.writeInt(getInt(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
                 break;
             case LONG:
-                for (int i = 0; i < length(); i++) {
-                    try {
+                try {
+                    for (int i = 0; i < length(); i++) {
                         dos.writeLong(getLong(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            case BFLOAT16:
+            case UINT16:
+                //Treat BFloat16 and UINT16 as bytes
+                byte[] temp = new byte[(int)(2*length)];
+                asNio().get(temp);
+                try {
+                    if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+                        //Switch endianness to big endian
+                        for (int i = 0; i < temp.length / 2; i++) {
+                            dos.write(temp[2 * i + 1]);
+                            dos.write(temp[2 * i]);
+                        }
+                    } else {
+                        //Keep as big endian
+                        dos.write(temp);
+                    }
+                } catch (IOException e){
+                    throw new RuntimeException(e);
+                }
+                break;
+            case UINT64:
+                //Treat unsigned long (UINT64) as 8 bytes
+                byte[] temp2 = new byte[(int)(8*length)];
+                asNio().get(temp2);
+                try {
+                    if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+                        //Switch endianness to big endian
+                        for (int i = 0; i < temp2.length / 8; i++) {
+                            for( int j=0; j<8; j++ ){
+                                dos.write(temp2[8 * i + (7-j)]);
+                            }
+                        }
+                    } else {
+                        //Keep as big endian
+                        dos.write(temp2);
+                    }
+                } catch (IOException e){
+                    throw new RuntimeException(e);
+                }
+                break;
+            case UINT32:
+                //Treat unsigned integer (UINT32) as 4 bytes
+                byte[] temp3 = new byte[(int)(4*length)];
+                asNio().get(temp3);
+                try {
+                    if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+                        //Switch endianness to big endian
+                        for (int i = 0; i < temp3.length / 4; i++) {
+                            for( int j=0; j<4; j++ ){
+                                dos.write(temp3[4 * i + (3-j)]);
+                            }
+                        }
+                    } else {
+                        //Keep as big endian
+                        dos.write(temp3);
+                    }
+                } catch (IOException e){
+                    throw new RuntimeException(e);
                 }
                 break;
             default:
@@ -1306,6 +1411,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case HALF:
                 return ((HalfIndexer) indexer).get(offset() + i);
             case UINT16:
+                return ((UShortIndexer) indexer).get(offset() + i);
             case SHORT:
                 return ((ShortIndexer) indexer).get(offset() + i);
             case UINT64:
@@ -1342,6 +1448,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case INT:
                 return (long) ((IntIndexer) indexer).get(offset() + i);
             case UINT16:
+                return (long) ((UShortIndexer) indexer).get(offset() + i);
             case SHORT:
                 return (long) ((ShortIndexer) indexer).get(offset() + i);
             case BYTE:
@@ -1408,12 +1515,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case INT:
                 return (float) ((IntIndexer) indexer).get(offset() + i);
             case UINT16:
+                return ((UShortIndexer) indexer).get(offset() + i);
             case SHORT:
                 return (float) ((ShortIndexer) indexer).get(offset() + i);
             case BFLOAT16:
-                return (float) ((Bfloat16Indexer) indexer).get(offset() + i);
+                return ((Bfloat16Indexer) indexer).get(offset() + i);
             case HALF:
-                return (float) ((HalfIndexer) indexer).get(offset() + i);
+                return ((HalfIndexer) indexer).get(offset() + i);
             case UBYTE:
                 return (float) ((UByteIndexer) indexer).get(offset() + i);
             case BYTE:
