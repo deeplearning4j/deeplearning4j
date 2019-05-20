@@ -732,7 +732,7 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
         __shared__ I const* pads;
         __shared__ F* z;
         __shared__ Nd4jLong zRank, rank;
-        __shared__ Nd4jLong* xShapeOf, *xStrideOf;
+        __shared__ Nd4jLong* xShapeOf, *xStrideOf, *padsShapeOf, *padsStrideOf;
         __shared__ Nd4jLong* zShapeOf, *zStrideOf;
         __shared__ Nd4jLong* xIdx;
         if (threadIdx.x == 0) {
@@ -748,7 +748,8 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
             zShapeOf = shape::shapeOf(zShape);
             zRank = shape::rank(zShape);
             zStrideOf = shape::stride(zShape);
-
+            padsShapeOf = shape::shapeOf(paddingShape);
+            padsStrideOf = shape::stride(paddingShape);
         }
         __syncthreads();
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
@@ -765,7 +766,7 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
 
                     const Nd4jLong inLen         = shape::sizeAt(xShape, j);
                     Nd4jLong coords[2] = {j, 0};
-                    auto padOffset = shape::getOffset(0, xShapeOf, xStrideOf, coords, rank);
+                    auto padOffset = shape::getOffset(0, padsShapeOf, padsStrideOf, coords, 2); // padding already has rank 2
                     const auto leftSide          = pads[padOffset];
                     const auto leftSideCorrected = leftSide - reflBorder;
                     const Nd4jLong len           = 2 * (inLen - 1) + leftSide + reflBorder;
