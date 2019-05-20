@@ -323,8 +323,8 @@ public class VPTree implements Serializable {
         }
 
         // opening workspace, and creating it if that's the first call
-        MemoryWorkspace workspace =
-                Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
+       /* MemoryWorkspace workspace =
+                Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");*/
 
         INDArray items = Nd4j.vstack(points);
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
@@ -358,7 +358,7 @@ public class VPTree implements Serializable {
         }
 
         // closing workspace
-        workspace.notifyScopeLeft();
+        //workspace.notifyScopeLeft();
         //log.info("Thread: {}; Workspace size: {} MB; ConstantCache: {}; ShapeCache: {}; TADCache: {}", Thread.currentThread().getId(), (int) (workspace.getCurrentSize() / 1024 / 1024 ), Nd4j.getConstantHandler().getCachedBytes(), Nd4j.getShapeInfoProvider().getCachedBytes(), Nd4j.getExecutioner().getTADManager().getCachedBytes());
 
         if (workers > 1) {
@@ -402,14 +402,14 @@ public class VPTree implements Serializable {
         final Node ret = new Node(0, 0);
         size.incrementAndGet();
 
-        workspaceConfiguration = WorkspaceConfiguration.builder().cyclesBeforeInitialization(1)
+        /*workspaceConfiguration = WorkspaceConfiguration.builder().cyclesBeforeInitialization(1)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL).policyReset(ResetPolicy.BLOCK_LEFT)
                 .policySpill(SpillPolicy.REALLOCATE).build();
 
         // opening workspace
         MemoryWorkspace workspace =
-                Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");
+                Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "VPTREE_WORSKPACE");*/
 
         int randomPoint = MathUtils.randomNumberBetween(0, items.rows() - 1, Nd4j.getRandom());
         INDArray basePoint = items.getRow(randomPoint, true);
@@ -442,8 +442,8 @@ public class VPTree implements Serializable {
         }
 
         // closing workspace
-        workspace.notifyScopeLeft();
-        workspace.destroyWorkspace(true);
+        //workspace.notifyScopeLeft();
+        //workspace.destroyWorkspace(true);
 
         if (!leftPoints.isEmpty())
             ret.left = buildFromPoints(leftPoints, leftIndices);
@@ -452,7 +452,7 @@ public class VPTree implements Serializable {
             ret.right = buildFromPoints(rightPoints, rightIndices);
 
         // destroy once again
-        workspace.destroyWorkspace(true);
+        //workspace.destroyWorkspace(true);
 
         if (ret.left != null)
             ret.left.fetchFutures();

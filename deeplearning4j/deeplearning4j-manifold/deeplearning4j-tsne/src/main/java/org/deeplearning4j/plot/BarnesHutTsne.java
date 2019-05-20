@@ -229,12 +229,12 @@ public class BarnesHutTsne implements Model {
         final double enthropy = FastMath.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
             log.info("Calculating probabilities of data similarities...");
             for (int i = 0; i < N; i++) {
                 if (i % 500 == 0)
@@ -376,13 +376,13 @@ public class BarnesHutTsne implements Model {
     public SymResult symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
         INDArray rowCounts = Nd4j.create(N);
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
             for (int n = 0; n < N; n++) {
                 int begin = rowP.getInt(n);
                 int end = rowP.getInt(n + 1);
@@ -575,14 +575,14 @@ public class BarnesHutTsne implements Model {
                 Y = initializer.initData();
             }
 
-            MemoryWorkspace workspace =
+            /*MemoryWorkspace workspace =
                     workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                             : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                             workspaceConfigurationExternal,
                             workspaceExternal);
 
 
-            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
                 computeGaussianPerplexity(x, perplexity);
                 INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
@@ -591,10 +591,12 @@ public class BarnesHutTsne implements Model {
                 //INDArray output = op.getSymmetrizedValues();
                 //INDArray outCols = op.getSymmetrizedCols();
                 //vals = output.divi(vals.sum(Integer.MAX_VALUE));
+
+                SymResult result = symmetrized(rows, cols, vals);
                 System.out.println("rows = " + rows);
                 System.out.println("cols = " + cols);
                 System.out.println("vals = " + vals);
-                SymResult result = symmetrized(rows, cols, vals);
+
                 vals = result.vals.divi(vals.sum(Integer.MAX_VALUE));
                 //rows = outRows;
                 //cols = outCols;
@@ -607,7 +609,7 @@ public class BarnesHutTsne implements Model {
                 System.out.println("symm vals = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    System.out.println("Vals on iteration " + i + " = " + vals);
+                    System.out.println("Vals on iteration " + i + " = " + Y);
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
@@ -641,13 +643,13 @@ public class BarnesHutTsne implements Model {
     @Override
     public void update(INDArray gradient, String paramType) {
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray yGrads = gradient;
             //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
@@ -684,8 +686,8 @@ public class BarnesHutTsne implements Model {
             } else {
                 gradChange.muli(learningRate);
             }
-
             yIncs.muli(momentum).subi(gradChange);
+            System.out.println("yIncs = " + yIncs);
         }
     }
 
@@ -744,10 +746,10 @@ public class BarnesHutTsne implements Model {
                 write.write(sb.toString());
             }
             write.flush();
-            write.close();
+            //write.close();
         } finally {
-            if (write != null)
-                write.close();
+            /*if (write != null)
+                write.close();*/
         }
     }
     /**
@@ -770,14 +772,14 @@ public class BarnesHutTsne implements Model {
     @Override
     public double score() {
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
 
             // Get estimate of normalization term
@@ -876,40 +878,41 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public Gradient gradient() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
 
             if (yIncs == null)
-                yIncs = zeros(Y.shape());
+                yIncs = zeros(DataType.DOUBLE, Y.shape());
             if (gains == null)
-                gains = ones(Y.shape());
+                gains = ones(DataType.DOUBLE, Y.shape());
 
             AtomicDouble sumQ = new AtomicDouble(0);
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
-            INDArray posF = Nd4j.create(Y.shape());
-            INDArray negF = Nd4j.create(Y.shape());
+            INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
+            INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
             if (tree == null) {
                 tree = new SpTree(Y);
-                tree.setWorkspaceMode(workspaceMode);
+                //tree.setWorkspaceMode(workspaceMode);
             }
             tree.computeEdgeForces(rows, cols, vals, N, posF);
-
-            for (int n = 0; n < N; n++)
-                tree.computeNonEdgeForces(n, theta, negF.slice(n), sumQ);
-
-
+            System.out.println("posF = " + posF);
+            for (int n = 0; n < N; n++) {
+                INDArray temp = negF.slice(n);
+                tree.computeNonEdgeForces(n, theta, temp, sumQ);
+                System.out.println("negF = " + negF);
+            }
             INDArray dC = posF.subi(negF.divi(sumQ));
+            System.out.println("dC = " + dC);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
-            System.out.println("posF = " + posF);
             return ret;
         }
     }

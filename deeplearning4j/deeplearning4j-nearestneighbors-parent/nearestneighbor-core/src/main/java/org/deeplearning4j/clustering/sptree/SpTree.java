@@ -162,12 +162,12 @@ public class SpTree implements Serializable {
 
 
     private boolean insert(int index) {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray point = data.slice(index);
             /*boolean contains = false;
@@ -220,12 +220,12 @@ public class SpTree implements Serializable {
      * 4 children
      */
     public void subDivide() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) */{
 
             INDArray newCorner = Nd4j.create(D);
             INDArray newWidth = Nd4j.create(D);
@@ -269,16 +269,17 @@ public class SpTree implements Serializable {
      * @param negativeForce
      * @param sumQ
      */
+    private INDArray prevForces = Nd4j.zeros(1,5);
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
         if (cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
-        MemoryWorkspace workspace =
+       /* MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
 
             // Compute distance between point and center-of-mass
@@ -287,6 +288,8 @@ public class SpTree implements Serializable {
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
+            //System.out.println("D = " + D + " maxWidth = " + maxWidth);
+
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
@@ -295,7 +298,23 @@ public class SpTree implements Serializable {
                 double mult = cumSize * Q;
                 sumQ.addAndGet(mult);
                 mult *= Q;
-                negativeForce.addi(buf.muli(mult));
+                //System.out.println("buf before = " + buf);
+                /*INDArray temp = Nd4j.create(this.D);
+                for (int k = 0; k < this.D; ++k) {
+                    System.out.println("mult = " + mult + " buf.getDouble(k) = " + buf.getDouble(k));
+                    temp.putScalar(k, buf.getDouble(k) * mult);
+                }*/
+                //System.out.println("negativeF before  = " + negativeForce);
+                //buf.muli(mult);
+                /*for (int k = 0; k < this.D; ++k) {
+                    double curr = negativeForce.getDouble(k);
+                    negativeForce.putScalar(k, prevForces.getDouble(k)+temp.getDouble(k));
+                    prevForces.putScalar(k, negativeForce.getDouble(k));
+                }*/
+                //negativeForce.addi(temp);
+                negativeForce.addi(buf.mul(mult));
+                //System.out.println("buf after = " + buf);
+                //System.out.println("negativeF after  = " + negativeForce);
 
             } else {
 
@@ -321,11 +340,11 @@ public class SpTree implements Serializable {
     public void computeEdgeForces(INDArray rowP, INDArray colP, INDArray valP, int N, INDArray posF) {
         if (!rowP.isVector())
             throw new IllegalArgumentException("RowP must be a vector");
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
-                        workspaceExternal);
+                        workspaceExternal);*/
         INDArray outRows = Nd4j.create(rowP.shape());
         INDArray outCols = Nd4j.create(colP.shape());
         BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
@@ -384,12 +403,12 @@ public class SpTree implements Serializable {
      * is correct.
      */
     public boolean isCorrect() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             for (int n = 0; n < size; n++) {
                 INDArray point = data.slice(index[n]);
