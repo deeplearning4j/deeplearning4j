@@ -6513,12 +6513,12 @@ public class Nd4j {
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
-                val doubles = new byte[prod];
+                val bytes = new byte[prod];
                 val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (byte) sb.get(e + sb.position());
+                    bytes[e] = (byte) sb.get(e + sb.position());
 
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
+                return Nd4j.create(bytes, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
                 val doubles = new boolean[prod];
@@ -6544,6 +6544,13 @@ public class Nd4j {
                     throw new RuntimeException(e);
                 }
             }
+            case UBYTE:
+                UInt8Buffer b = new UInt8Buffer(ArrayUtil.prod(shapeOf));
+                val sb = bb.order(_order).asReadOnlyBuffer();
+                for (int e = 0; e < prod; e++)
+                    b.put(e, sb.get(e));
+
+                return Nd4j.create(b, shapeOf);
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }
