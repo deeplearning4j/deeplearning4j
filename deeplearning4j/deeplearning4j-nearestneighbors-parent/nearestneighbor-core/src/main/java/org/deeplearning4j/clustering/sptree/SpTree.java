@@ -49,7 +49,6 @@ public class SpTree implements Serializable {
     private INDArray data;
     public final static int NODE_RATIO = 8000;
     private int N;
-    private INDArray buf;
     private int size;
     private int cumSize;
     private Cell boundary;
@@ -156,7 +155,6 @@ public class SpTree implements Serializable {
         boundary.setCorner(corner.dup());
         boundary.setWidth(width.dup());
         centerOfMass = Nd4j.create(D);
-        buf = Nd4j.create(D);
     }
 
 
@@ -272,6 +270,8 @@ public class SpTree implements Serializable {
     private INDArray prevForces = Nd4j.zeros(1,5);
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
+        INDArray buf = Nd4j.create(this.D);
+
         if (cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
        /* MemoryWorkspace workspace =
@@ -281,15 +281,13 @@ public class SpTree implements Serializable {
                         workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
-
             // Compute distance between point and center-of-mass
             buf.assign(data.slice(pointIndex)).subi(centerOfMass);
 
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
-            //System.out.println("D = " + D + " maxWidth = " + maxWidth);
-
+            System.out.println("D = " + D + " maxWidth = " + maxWidth + " buf = " + buf + " centerOfMass = " + centerOfMass);
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
@@ -298,6 +296,7 @@ public class SpTree implements Serializable {
                 double mult = cumSize * Q;
                 sumQ.addAndGet(mult);
                 mult *= Q;
+                //System.out.println("D = " + D + " maxWidth = " + maxWidth);
                 //System.out.println("buf before = " + buf);
                 /*INDArray temp = Nd4j.create(this.D);
                 for (int k = 0; k < this.D; ++k) {
@@ -347,10 +346,11 @@ public class SpTree implements Serializable {
                         workspaceExternal);*/
         INDArray outRows = Nd4j.create(rowP.shape());
         INDArray outCols = Nd4j.create(colP.shape());
-        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
+        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
         //Nd4j.getExecutioner().exec(computeEdgeForces);
         //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
         // Loop over all edges in the graph
+        INDArray buf = Nd4j.create(this.D);
         double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);

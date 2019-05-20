@@ -897,7 +897,7 @@ public class BarnesHutTsne implements Model {
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
             INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
             INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
-            if (tree == null) {
+            /*if (tree == null)*/ {
                 tree = new SpTree(Y);
                 //tree.setWorkspaceMode(workspaceMode);
             }
@@ -906,10 +906,11 @@ public class BarnesHutTsne implements Model {
             for (int n = 0; n < N; n++) {
                 INDArray temp = negF.slice(n);
                 tree.computeNonEdgeForces(n, theta, temp, sumQ);
-                System.out.println("negF = " + negF);
             }
+            System.out.println("negF = " + negF);
             INDArray dC = posF.subi(negF.divi(sumQ));
             System.out.println("dC = " + dC);
+            System.out.println("sumQ = " + sumQ);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
