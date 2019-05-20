@@ -528,7 +528,7 @@ public class TFGraphTestAllHelper {
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
             String varName = u.toString();
-            int idx = varName.indexOf(modelName);
+            int idx = varName.lastIndexOf(modelName);
             varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
             varName = varName.replaceAll("____","/");
             varName = varName.replaceAll(".placeholder.shape","");

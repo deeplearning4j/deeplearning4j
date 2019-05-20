@@ -948,7 +948,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder setInputTypes(InputType... inputTypes) {
             if (inputTypes != null && inputTypes.length > 0) {
-                if (networkInputTypes.size() + inputTypes.length != networkInputs.size()) {
+                if (networkInputs.size() > 0 &&     //If no network inputs have been set here - can't valid number of input types here...
+                        networkInputTypes.size() + inputTypes.length != networkInputs.size()) {
                     throw new IllegalArgumentException(
                         "Invalid number of InputTypes: " +
                         "existing inputTypes ("+networkInputTypes.size()+") + additional inputTypes ("+inputTypes.length+")" +

@@ -239,7 +239,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                      .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "add")
                      .setOutputs("out").build();
             fail("No exception thrown for invalid configuration");
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             //OK - exception is good
             //e.printStackTrace();
         }
