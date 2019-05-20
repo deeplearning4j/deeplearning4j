@@ -755,10 +755,11 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
         auto step = blockDim.x * gridDim.x;
 
             for(Nd4jLong i = start; i < outLen; i+= step) {
-                auto xzCoord = xIdx + (2 * threadIdx.x) * rank;
-                auto zxCoord = xIdx + (1 + 2 * threadIdx.x) * rank;
+                auto xzCoord = xIdx + threadIdx.x * rank;
+                //auto zxCoord = xIdx + (threadIdx.x + threadIdx.x % 2 + 1) * rank;
 
-                shape::index2coords(rank, zShapeOf, i, zxCoord);
+                shape::index2coords(rank, zShapeOf, i, xzCoord);
+                auto outOffset = shape::getOffset(0, zShapeOf, zStrideOf, xzCoord, rank);
 //                auto intStep = blockDim.y * gridDim.y;
                 for(int j = 0; j < rank; j++) {
 
@@ -769,19 +770,18 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
                     const auto leftSideCorrected = leftSide - reflBorder;
                     const Nd4jLong len           = 2 * (inLen - 1) + leftSide + reflBorder;
 
-                    if(zxCoord[j] < leftSide)                                        // left side
-                        xzCoord[j] = leftSideCorrected - zxCoord[j];
+                    if(xzCoord[j] < leftSide)                                        // left side
+                        xzCoord[j] = leftSideCorrected - xzCoord[j];
 
-                    else if(zxCoord[j] >= leftSide && zxCoord[j] < leftSide + inLen)  // middle
-                        xzCoord[j] = zxCoord[j] - leftSide;
+                    else if(xzCoord[j] >= leftSide && xzCoord[j] < leftSide + inLen)  // middle
+                        xzCoord[j] = xzCoord[j] - leftSide;
 
-                    else if (len > zxCoord[j])                                                           // right side
-                        xzCoord[j] = len - zxCoord[j];
+                    else if (len > xzCoord[j])                                                           // right side
+                        xzCoord[j] = len - xzCoord[j];
                     else
-                        xzCoord[j] = zxCoord[j] - len;
+                        xzCoord[j] = xzCoord[j] - len;
                 }
 
-                auto outOffset = shape::getOffset(0, zShapeOf, zStrideOf, zxCoord, rank);
                 auto inOffset  = shape::getOffset(0, xShapeOf, xStrideOf,  xzCoord,  rank);
 
                 z[outOffset] = x[inOffset];
