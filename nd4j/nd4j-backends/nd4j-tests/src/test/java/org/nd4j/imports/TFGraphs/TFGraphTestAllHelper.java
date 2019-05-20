@@ -191,6 +191,11 @@ public class TFGraphTestAllHelper {
                                 Arrays.toString(nd4jPred.shape()) + " vs. TF shape: " + Arrays.toString(tfPred.shape()));
                     }
 
+                    if(tfPred.dataType() != nd4jPred.dataType()){
+                        fail("Output node \"" + outputNode + "\" SameDiff output datatype does not match TF output : SameDiff type: " +
+                                nd4jPred.dataType() + " vs. TF datatype: " + tfPred.dataType());
+                    }
+
                     if(!tfPred.dataType().isFPType()){
                         //Can't do relative error on long type...
                         tfPred = tfPred.castTo(DataType.DOUBLE);
