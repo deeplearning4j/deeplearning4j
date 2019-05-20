@@ -47,6 +47,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.nd4j.linalg.factory.Nd4j.zeros;
 
 // import org.nd4j.jita.conf.CudaEnvironment;
 
@@ -171,7 +172,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     public void testCorrectness() throws IOException {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().perplexity(20.0).numDimension(2).learningRate(200)//.setMaxIter(2)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().perplexity(20.0).numDimension(2).learningRate(200).setMaxIter(50)
                 .useAdaGrad(false).build();
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
@@ -226,7 +227,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.08651136699915507, 0.7445210640026082, 0.6547649514127559, 0.3384719042666908, 0.05816723105860,0.6248951423054205, 0.7431868493349041};
         INDArray data = Nd4j.createFromArray(aData).reshape(11,5);
 
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(3).perplexity(3.0).theta(0.5).numDimension(5).
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(20).perplexity(3.0).theta(0.5).numDimension(5).
                 invertDistanceMetric(false).similarityFunction(Distance.EUCLIDIAN.toString())
                 .setMomentum(0.5).learningRate(200).staticInit(data)
                 .useAdaGrad(false).build();
@@ -259,7 +260,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         INDArray expectedArray = Nd4j.createFromArray(expectedData).reshape(11,5);
         for (int i = 0; i < expectedArray.rows(); ++i)
-            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-5);
+            assertArrayEquals(expectedArray.getRow(i).toDoubleVector(), b.getData().getRow(i).toDoubleVector(), 1e-2);
     }
 
     @Test
@@ -315,6 +316,51 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         INDArray actual = gradient.getGradientFor("yIncs");
         System.out.println(actual);
         assertArrayEquals(dC, actual.reshape(1,55).toDoubleVector(), 1e-05);
+    }
+
+    @Test
+    public void testApplyGradient() {
+        double[] Y = new double[]{0.2999816948164936, 0.26252049735806526, 0.2673853427498767, 0.8604464129156685, 0.4802652829902563, 0.10959096539488711, 0.7950242948008909, 0.5917848948003486,
+                0.2738285999345498, 0.9519684328285567, 0.9690024759209738, 0.8585615547624705, 0.8087760944312002, 0.5337951589543348, 0.5960876109129123, 0.7187130179825856,
+                0.4629777327445964, 0.08665909175584818, 0.7748005397731237, 0.48020186965468536, 0.24927351841378798, 0.32272599988270445, 0.306414968984427, 0.6980212149215657,
+                0.7977183964212472, 0.7673513094629704, 0.1679681724796478, 0.3107359484804584, 0.021701726051792103, 0.13797462786662518, 0.8618953518813538, 0.841333838365635,
+                0.5284957375170422, 0.9703367685039823, 0.677388096913733, 0.2624474979832243, 0.43740966353106536, 0.15685545957858893, 0.11072929134449871, 0.06007395961283357,
+                0.4093918718557811, 0.9563909195720572, 0.5994144944480242, 0.8278927844215804, 0.38586830957105667, 0.6201844716257464, 0.7603829079070265, 0.07875691596842949,
+                0.08651136699915507, 0.7445210640026082, 0.6547649514127559, 0.3384719042666908, 0.05816723105860, 0.6248951423054205, 0.7431868493349041};
+        INDArray ndinput = Nd4j.createFromArray(Y).reshape(11,5);
+
+        double[] gradient = {   -0.0635,   -0.0791,    0.0228,    0.1360,   -0.2016,
+                   -0.1034,    0.0976,    0.1266,   -0.0781,    0.0707,
+                    0.1184,   -0.0018,    0.1719,   -0.2529,   -0.0209,
+                    0.1204,    0.0855,   -0.0530,    0.1069,   -0.1860,
+                   -0.0890,   -0.0763,    0.0181,    0.0048,    0.1798,
+                    0.2917,   -0.1699,    0.1038,   -0.0736,    0.0159,
+                    0.1324,   -0.0409,   -0.1502,    0.2738,    0.1668,
+                   -0.3012,    0.1489,   -0.0801,    0.0329,   -0.0817,
+                   -0.2405,    0.0810,    0.0171,   -0.0201,   -0.1638,
+                    0.0656,    0.1383,   -0.0707,   -0.1757,    0.0144,
+                    0.0708,   -0.1725,   -0.0870,    0.0160,    0.1921};
+        INDArray ndgrad = Nd4j.createFromArray(gradient).reshape(11, 5);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+                .useAdaGrad(false).staticInit(ndinput).build();
+        b.setY(ndinput);
+        b.setN(11);
+        INDArray yIncs = zeros(DataType.DOUBLE, ndinput.shape());
+        b.setYIncs(yIncs);
+        b.update(ndinput, "yIncs");
+        System.out.println("dY = " + b.getYIncs());
+
+        /*[[   15.2393,   18.9897,   -5.4623,  -32.6481,   48.3872],
+ [   24.8182,  -23.4170,  -30.3826,   18.7535,  -16.9658],
+ [  -28.4237,    0.4344,  -41.2588,   60.6988,    5.0267],
+ [  -28.8854,  -20.5180,   12.7166,  -25.6521,   44.6357],
+ [   21.3482,   18.3098,   -4.3361,   -1.1576,  -43.1511],
+ [  -70.0146,   40.7754,  -24.9194,   17.6682,   -3.8160],
+ [  -31.7799,    9.8041,   36.0573,  -65.7201,  -40.0415],
+ [   72.2864,  -35.7440,   19.2143,   -7.9016,   19.5986],
+ [   57.7239,  -19.4486,   -4.1044,    4.8350,   39.3095],
+ [  -15.7348,  -33.1841,   16.9605,   42.1696,   -3.4459],
+ [  -16.9933,   41.3956,   20.8832,   -3.8394,  -46.1035]]*/
     }
 
     @Test

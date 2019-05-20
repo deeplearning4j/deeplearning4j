@@ -19,6 +19,7 @@ package org.deeplearning4j.plot;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -106,6 +107,7 @@ public class BarnesHutTsne implements Model {
     public final static String Y_GRAD = "yIncs";
     private SpTree tree;
     private INDArray gains;
+    @Setter
     private INDArray yIncs;
     private int vpTreeWorkers;
     protected transient TrainingListener trainingListener;
@@ -626,7 +628,6 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public void update(Gradient gradient) {
-
     }
 
     /**
@@ -652,6 +653,8 @@ public class BarnesHutTsne implements Model {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray yGrads = gradient;
+            if (gains == null)
+                gains = ones(DataType.DOUBLE, Y.shape());
             //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
 
             // Reference
@@ -687,7 +690,8 @@ public class BarnesHutTsne implements Model {
                 gradChange.muli(learningRate);
             }
             yIncs.muli(momentum).subi(gradChange);
-            System.out.println("yIncs = " + yIncs);
+            System.out.println("gains = " + gains);
+            System.out.println("uY = " + yIncs);
         }
     }
 
@@ -898,6 +902,7 @@ public class BarnesHutTsne implements Model {
             INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
             INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
             /*if (tree == null)*/ {
+                System.out.println("Create tree for " + Y);
                 tree = new SpTree(Y);
                 //tree.setWorkspaceMode(workspaceMode);
             }
