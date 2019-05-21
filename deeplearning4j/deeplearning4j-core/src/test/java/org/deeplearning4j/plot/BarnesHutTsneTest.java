@@ -341,26 +341,19 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                     0.0656,    0.1383,   -0.0707,   -0.1757,    0.0144,
                     0.0708,   -0.1725,   -0.0870,    0.0160,    0.1921};
         INDArray ndgrad = Nd4j.createFromArray(gradient).reshape(11, 5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString())
+                .invertDistanceMetric(false).theta(0.5).learningRate(200)
                 .useAdaGrad(false).staticInit(ndinput).build();
         b.setY(ndinput);
         b.setN(11);
-        INDArray yIncs = zeros(DataType.DOUBLE, ndinput.shape());
+        INDArray yIncs = Nd4j.zeros(DataType.DOUBLE, ndinput.shape());
         b.setYIncs(yIncs);
-        b.update(ndinput, "yIncs");
-        System.out.println("dY = " + b.getYIncs());
+        INDArray gains = Nd4j.zeros(DataType.DOUBLE, ndinput.shape());
+        b.setGains(gains);
+        b.update(ndgrad, "yIncs");
 
-        /*[[   15.2393,   18.9897,   -5.4623,  -32.6481,   48.3872],
- [   24.8182,  -23.4170,  -30.3826,   18.7535,  -16.9658],
- [  -28.4237,    0.4344,  -41.2588,   60.6988,    5.0267],
- [  -28.8854,  -20.5180,   12.7166,  -25.6521,   44.6357],
- [   21.3482,   18.3098,   -4.3361,   -1.1576,  -43.1511],
- [  -70.0146,   40.7754,  -24.9194,   17.6682,   -3.8160],
- [  -31.7799,    9.8041,   36.0573,  -65.7201,  -40.0415],
- [   72.2864,  -35.7440,   19.2143,   -7.9016,   19.5986],
- [   57.7239,  -19.4486,   -4.1044,    4.8350,   39.3095],
- [  -15.7348,  -33.1841,   16.9605,   42.1696,   -3.4459],
- [  -16.9933,   41.3956,   20.8832,   -3.8394,  -46.1035]]*/
+        double[] expected = {2.54, 3.164, -0.912, -5.44, 8.064, 4.136, -3.9040000000000004, -5.064, 3.124, -2.828, -4.736000000000001, 0.072, -6.8759999999999994, 10.116, 0.836, -4.816, -3.4200000000000004, 2.12, -4.276, 7.4399999999999995, 3.5599999999999996, 3.0520000000000005, -0.7240000000000001, -0.19199999999999998, -7.191999999999999, -11.668000000000001, 6.795999999999999, -4.152, 2.944, -0.636, -5.295999999999999, 1.636, 6.008, -10.952, -6.672000000000001, 12.048000000000002, -5.956, 3.204, -1.3159999999999998, 3.268, 9.62, -3.24, -0.684, 0.804, 6.552, -2.624, -5.532, 2.828, 7.028, -0.576, -2.832, 6.8999999999999995, 3.4799999999999995, -0.64, -7.683999999999999};
+        assertArrayEquals(expected, b.getYIncs().reshape(55).toDoubleVector(), 1e-5);
     }
 
     @Test
