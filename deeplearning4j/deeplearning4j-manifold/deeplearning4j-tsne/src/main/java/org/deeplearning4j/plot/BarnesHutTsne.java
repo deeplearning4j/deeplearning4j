@@ -52,10 +52,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.nd4j.linalg.factory.Nd4j.*;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
@@ -562,20 +559,24 @@ public class BarnesHutTsne implements Model {
         }
     }
 
-    void zeroMean(INDArray input) {
+    public static void zeroMean(INDArray input) {
 
         int N = input.rows();
         int D = input.columns();
 
         // Compute data mean
-        INDArray means = Nd4j.zeros(input.shape());
+        INDArray means = Nd4j.zeros(D);
         for(int n = 0; n < N; n++) {
             for(int d = 0; d < D; d++) {
-                means.putScalar(d, input.getDouble(n * D + d));
+                means.putScalar(d, means.getDouble(d) + input.getDouble(n * D + d));
             }
         }
         means.divi(N);
-        input.subi(means);
+        for(int n = 0; n < N; n++) {
+            for(int d = 0; d < D; d++) {
+                input.putScalar((n*D + d),input.getDouble((n*D + d)) - means.getDouble(d));
+            }
+        }
     }
 
     @Override
@@ -626,8 +627,9 @@ public class BarnesHutTsne implements Model {
                 System.out.println("symm vals = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    zeroMean(Y);
                     System.out.println("Vals on iteration " + i + " = " + Y);
+                    zeroMean(Y);
+                    System.out.println("ZM Vals on iteration " + i + " = " + Y);
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
