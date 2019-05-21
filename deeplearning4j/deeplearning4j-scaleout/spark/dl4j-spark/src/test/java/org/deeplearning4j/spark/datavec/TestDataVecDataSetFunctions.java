@@ -236,7 +236,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaSparkContext sc = getContext();
 
         File f = testDir.newFolder();
-        ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence");
+        ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
         cpr.copyDirectory(f);
         String path = f.getAbsolutePath() + "/*";
 
