@@ -259,13 +259,15 @@ public class BarnesHutTsne implements Model {
                 distances.toArray(dists);
                 INDArray cArr = Nd4j.createFromArray(dists); //VPTree.buildFromData(results);
 
-                Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
-                INDArray currP = pair.getFirst();
-                double hDiff = pair.getSecond() - enthropy;
+                INDArray currP = null;
                 int tries = 0;
                 boolean found = false;
                 //binary search
                 while (!found && tries < 200) {
+                    Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
+                    currP = pair.getFirst();
+                    double hDiff = pair.getSecond() - enthropy;
+
                     if (hDiff < tolerance && -hDiff < tolerance)
                         found = true;
                     else {
@@ -284,13 +286,10 @@ public class BarnesHutTsne implements Model {
                                 betas = (betas + betaMin) / 2.0;
                         }
 
-                        pair = computeGaussianKernel(cArr, betas, k);
-                        currP = pair.getFirst();
-                        hDiff = pair.getSecond() - enthropy;
                         tries++;
                     }
-
                 }
+
                 currP.divi(currP.sum(Integer.MAX_VALUE));
                 INDArray indices = Nd4j.create(1, k + 1);
                 for (int j = 0; j < indices.length(); j++) {
