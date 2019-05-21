@@ -65,8 +65,7 @@ import scala.Tuple2;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class TestSparkComputationGraph extends BaseSparkTest {
 
@@ -275,8 +274,10 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         sparkNet2.getTrainingMaster().deleteTempFiles(sc);
         sparkNet3.getTrainingMaster().deleteTempFiles(sc);
 
-        assertEquals(p1, p2);
-        assertNotEquals(p1, p3);
+        boolean eq1 = p1.equalsWithEps(p2, 0.01);
+        boolean eq2 = p1.equalsWithEps(p3, 0.01);
+        assertTrue("Model 1 and 2 params should be equal", eq1);
+        assertFalse("Model 1 and 3 params shoud be different", eq2);
     }
 
 
