@@ -124,7 +124,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
         validateLayers(net, classesToTest, true, fShape, lShape, CuDNNValidationUtil.MAX_REL_ERROR, CuDNNValidationUtil.MIN_ABS_ERROR);
     }
 
-    @Test
+    @Test @Ignore //AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7766
     public void validateConvLayersSimpleBN() {
         //Test ONLY BN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);
