@@ -79,7 +79,7 @@ public class BarnesHutTsne implements Model {
     protected double finalMomentum = 0.8;
     protected double minGain = 1e-2;
     protected double momentum = initialMomentum;
-    protected int switchMomentumIteration = 100;
+    protected int switchMomentumIteration = 250;
     protected boolean normalize = true;
     protected boolean usePca = false;
     protected int stopLyingIteration = 250;
