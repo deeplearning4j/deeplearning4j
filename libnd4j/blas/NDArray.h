@@ -86,9 +86,6 @@ namespace nd4j {
         void templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value);
 
         template <typename T>
-        void templatedSwap(void *xBuffer, void *yBuffer, const Nd4jLong length);
-
-        template <typename T>
         void templatedAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const;
 
         template <typename X, typename Y>
@@ -359,6 +356,20 @@ namespace nd4j {
         FORCEINLINE void* getBuffer() const;
         FORCEINLINE void* buffer();
 
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
+        FORCEINLINE void* specialBuffer();
+        FORCEINLINE void* getSpecialBuffer() const;
+
+        /**
+        *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
+        */
+        FORCEINLINE void* getPlatformBuffer() const;
+        FORCEINLINE void* platformBuffer();
+
+
+
         template <typename T>
         T* bufferAsT() const;
 
@@ -368,11 +379,6 @@ namespace nd4j {
         FORCEINLINE Nd4jLong* shapeInfo();
         FORCEINLINE Nd4jLong* getShapeInfo() const;
 
-        /**
-        *  if _bufferD==nullptr return _buffer, else return _bufferD
-        */
-        FORCEINLINE void* specialBuffer();
-        FORCEINLINE void* getSpecialBuffer() const;
 
         /**
          * Returns True if it's legally empty NDArray, or false otherwise
@@ -748,9 +754,9 @@ namespace nd4j {
         NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
         NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
-        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions) const;
 
-        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
 #endif
 
@@ -920,12 +926,6 @@ namespace nd4j {
         *  other - input array
         */
 		NDArray* broadcast(const NDArray& other);
-
-        /**
-        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
-        *  arg - 0 -> row, 1 -> column
-        */
-		bool hasOrthonormalBasis(const int arg);
 
         /**
         *  check whether array is identity matrix
@@ -1199,7 +1199,7 @@ namespace nd4j {
         /**
         *  default destructor
         */
-        ~NDArray() noexcept;
+        ~NDArray() noexcept = default;
 
         /**
         *  set _shapeInfo
@@ -2106,6 +2106,26 @@ void* NDArray::getSpecialBuffer() const {
         return getBuffer();
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getPlatformBuffer() const {
+
+    #ifdef __CUDABLAS__
+    return getBuffer();
+    #else
+    return getSpecialBuffer();
+    #endif
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::platformBuffer() {
+
+    #ifdef __CUDABLAS__
+    return buffer();
+    #else
+    return specialBuffer();
+    #endif
 }
 
 ////////////////////////////////////////////////////////////////////////

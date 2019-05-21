@@ -56,7 +56,6 @@ class ND4J_EXPORT DataBuffer {
         void copyCounters(const DataBuffer& other);
         void deleteBuffers();
         void deletePrimary();
-        void copyBuffers(const DataBuffer& other);
         void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
         void allocatePrimary();
         void allocateSpecial();
@@ -109,6 +108,8 @@ class ND4J_EXPORT DataBuffer {
         void syncToSpecial(const bool forceSync = false);
 
         void setToZeroBuffers(const bool both = false);
+
+        void copyBuffers(const DataBuffer& other);
 
         void deleteSpecial();
 };

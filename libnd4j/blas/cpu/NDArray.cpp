@@ -50,717 +50,151 @@
 namespace nd4j {
 
 
-//////////////////////////////////////////////////////////////////////////
-void* NDArray::operator new(size_t i) {
-    if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
-        nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
-        return ws->allocateBytes((Nd4jLong) i);
-    }
-    else {
-        auto p = malloc(i);
-        CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
-        return p;
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
+    if (isS())
+        throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
+    if(rankOf() != 2)
+       throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
+
+    const auto rows = sizeAt(0);
+    const auto cols = sizeAt(1);
+
+    switch(direction) {
+
+        case 'u':                           // fill upper triangular block
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+            for(Nd4jLong i = 0; i < rows; ++i)
+                for(Nd4jLong j = 0; j < cols; ++j)
+                    if (i + diag <= j)
+                        p<T>(i, j, value);
+            break;
+
+        case 'l':                           // fill lower triangular block
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+            for(Nd4jLong i = 0; i < rows; ++i)
+                for(Nd4jLong j = 0; j < cols; ++j)
+                    if (i + diag >= j)
+                        p<T>(i, j, value);
+            break;
+        default:
+            throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
     }
 }
+template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const float16& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const bfloat16& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const int& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const uint8_t& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
+template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
-//////////////////////////////////////////////////////////////////////////
-void NDArray::operator delete(void* p) {
-    if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached())
-        free(p);
+////////////////////////////////////////////////////////////////////////
+void NDArray::setIdentity() {
+    if (isS())
+        throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
+
+    this->assign(0.);
+
+    int  rank    = rankOf();
+    auto shape   = shapeOf();
+    auto strides = stridesOf();
+    int  minDim  = MAX_INT;
+    Nd4jLong indices[MAX_RANK];
+    for(int j = 0; j < rank; ++j)
+        indices[j] = 1;
+
+    Nd4jLong offset = shape::getOffset(0, shape, strides, indices, rank);
+
+    for(int i = 0; i < rank; ++i)
+        if(minDim > shape[i])
+            minDim = shape[i];
+
+    float v = 1.0f;
+#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(int i = 0; i < minDim; ++i)
+        templatedSet<float>(buffer(), i*offset, this->dataType(), &v);
 }
 
 ////////////////////////////////////////////////////////////////////////
-// assignment operator
-NDArray& NDArray::operator=(const NDArray& other) {
-
-    if (this == &other)
-        return *this;
-
-    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
-        this->assign(&other);
-    }
-    else {
-        if(_isBuffAlloc && _context->getWorkspace() == nullptr)
-            delete []_buffer;
-
-        _context = other._context;
-        setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
-
-        ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-
-        triggerAllocationFlag(true);
-        this->assign(&other);
-    }
-
-    return *this;
-}
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
-        if(target == nullptr || other == nullptr)
-            throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
-
-        if (isScalar()) {
-            NDArray temp(target->_shapeInfo, _dataType, false, _context);
-            temp.assign(this);
-            temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
-            return;
-        }
-        if (other->isScalar()) {
-            this->applyScalarArr(op.s, other, target, extraArgs);
-            return;
-        }
-
-        const NDArray* min(nullptr), *max(nullptr);
-        if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
-        }
-        else {
-            max = other;
-            min = this;
-        }
-
-        if(checkTargetShape) {
-            Nd4jLong* newShapeInfo = nullptr;
-            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _context->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->_dataType != DataType::BOOL)
-                throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
-            if(_dataType != other->_dataType)
-                throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
-        }
-
-        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
-        // check whether max array has to be tiled
-        if(!max->isSameShape(target)) {
-            // evaluate repeating dimensions for tile operation
-            std::vector<Nd4jLong> repeatMax(max->rankOf());
-            for(int i = 1; i <= max->rankOf(); ++i)
-                repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-            max->tile(repeatMax, *pTarget);
-        }
-        else
-            pTarget->assign(max);
-
-        // check whether min array has to be tiled
-        std::vector<Nd4jLong> repeatMin(min->rankOf());
-        int product = 1;
-        for(int i = min->rankOf(); i >=1 ; --i) {
-            repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-            product *= repeatMin[i-1];
-        }
-
-        auto pMin = const_cast<NDArray *>(min);
-        if(product != 1 )
-            pMin = new NDArray(min->tile(repeatMin));
-
-
-        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
-
-        if(max == this) {
-            pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
-        }
-        else {
-            auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
-            const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-
-#pragma omp parallel for schedule(guided)
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                NDArray targetSubArr = (*target)(i, dimsToExclude);
-                if (pTarget == target)
-                    pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
-                else {
-                    NDArray pTargetSubArr = (*pTarget)(i, dimsToExclude);
-                    pMin->applyPairwiseTransform(op.p, &pTargetSubArr, &targetSubArr, extraArgs);
-                }
-            }
-        }
-
-        if(pMin != min)
-            delete pMin;
-        if(pTarget != target)
-            delete pTarget;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyTrueBroadcast: you can't use this method on String array!");
-        if(target == nullptr || other == nullptr)
-            throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
-        if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
-            throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
-
-        if (isScalar()) {
-            target->assign(this);
-            target->applyPairwiseTransform(op.p, *other, extraArgs);
-            return;
-        }
-        if (other->isScalar()) {
-            const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
-            return;
-        }
-
-        const NDArray* min(nullptr), *max(nullptr);
-        if(this->rankOf() >= other->rankOf()) {
-            max = this;
-            min = other;
-        }
-        else {
-            max = other;
-            min = this;
-        }
-
-        if(checkTargetShape) {
-            Nd4jLong* newShapeInfo = nullptr;
-            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _context->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-            if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
-        }
-
-        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
-        // check whether max array has to be tiled
-        if(!max->isSameShape(target)) {
-            // evaluate repeating dimensions for tile operation
-            std::vector<Nd4jLong> repeatMax(max->rankOf());
-            for(int i = 1; i <= max->rankOf(); ++i)
-                repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-            max->tile(repeatMax, *pTarget);
-        }
-        else
-            pTarget->assign(max);
-
-
-        // check whether min array has to be tiled
-        std::vector<Nd4jLong> repeatMin(min->rankOf());
-        int product = 1;
-        for(int i = min->rankOf(); i >=1 ; --i) {
-            repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
-            product *= repeatMin[i-1];
-        }
-
-        auto pMin = const_cast<NDArray *>(min);
-        if(product != 1 )
-            pMin = new NDArray(min->tile(repeatMin));
-
-        std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
-
-        if(max == this) {
-            pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
-        }
-        else {
-            auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
-            const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-
-#pragma omp parallel for schedule(guided)
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                auto targetSubArr = (*target)(i, dimsToExclude);
-                if(pTarget == target)
-                    pMin->applyPairwiseTransform(op.p, &targetSubArr, &targetSubArr, extraArgs);
-                else {
-                    auto pTargetSubArr = (*pTarget)(i, dimsToExclude);
-                    pMin->applyPairwiseTransform(op.p, &pTargetSubArr, &targetSubArr, extraArgs);
-                }
-            }
-        }
-
-        if(pMin != min)
-            delete pMin;
-         if(pTarget != target)
-            delete pTarget;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // return array which is broadcasted from this and argument array
-    NDArray* NDArray::broadcast(const NDArray& other) {
-	    // the orders must be the same
-	    char order = ordering();
-	    if(order != other.ordering())
-		    throw std::runtime_error("Broadcast method: arrays have different orders!");
-
-	    // recognize shapes with smaller and bigger rank
-	    Nd4jLong* biggerShapeInfo = nullptr;
-	    Nd4jLong* smallerShapeInfo = nullptr;
-	    int smallerRank, biggerRank;
-	    if (rankOf() > other.rankOf()) {
-		    biggerShapeInfo = _shapeInfo;
-		    biggerRank = shape::rank(_shapeInfo);
-		    smallerShapeInfo = other._shapeInfo;
-		    smallerRank = shape::rank(other._shapeInfo);
-	    }
-	    else {
-		    biggerShapeInfo = other._shapeInfo;
-		    biggerRank = shape::rank(other._shapeInfo);
-		    smallerShapeInfo = _shapeInfo;
-		    smallerRank = shape::rank(_shapeInfo);
-	    }
-
-	    // check shapes on consistency
-	    int diff = biggerRank - smallerRank;
-	    for (int i = smallerRank; i<=1; --i)
-		    if(biggerShapeInfo[diff+i] != smallerShapeInfo[i] && biggerShapeInfo[i] != 1 && smallerShapeInfo[i] != 1)
-			    throw std::runtime_error("Broadcast method: arrays have incompatible shapes !");
-
-		// create and fill ret shapeInfo
-	    auto shapeInfoNew = new Nd4jLong[shape::shapeInfoLength(biggerRank)];
-	    memcpy(shapeInfoNew, biggerShapeInfo, shape::shapeInfoByteLength(biggerRank));
-	    for (int i = smallerRank; i>=1; --i)
-		    if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1)
-			    shapeInfoNew[diff+i] *= smallerShapeInfo[i];
-
-	    auto ret = new NDArray(shapeInfoNew, true, _context);
-        ShapeUtils::updateStridesAndType(ret->getShapeInfo(), DataTypeUtils::pickPairwiseResultType(_dataType, other._dataType), order);
-	    delete []shapeInfoNew;
-
-    	return ret;
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////
-    // check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
-    bool NDArray::hasOrthonormalBasis(const int arg) {
-        if (isS())
-            throw std::runtime_error("NDArray::hasOrthonormalBasis: you can't use this method on String array!");
-	    if(rankOf() !=2 )
-		    throw std::runtime_error("NDArray::hasOrthBasis method: rank of ndarray is not equal 2 !");
-
-	    if(arg!=0  && arg!=1)
-		    throw std::runtime_error("NDArray::hasOrthBasis method: input argument is not equal to 0 or 1 !");
-
-	    const double eps = 1e-5;
-        double dot = 0.f;
-
-        if(arg) {					// check whether columns create orthogonal basis
-		    for(int j=0; j<columns()-1; ++j)
-			    for(int k=j+1; k<columns(); ++k) {
-				    for(int i=0; i<rows(); ++i)
-					    dot += e<double>(i,j)*e<double>(i,k);
-
-				    if(nd4j::math::nd4j_abs(dot) > eps )
-					    return false;
-
-				    dot = 0.f;
-			    }
-
-			    for(int j=0; j<columns(); ++j)	{	// check whether norm of column vector = 1
-			        for(int i=0; i<rows(); ++i)
-				        dot += e<double>(i,j)*e<double>(i,j);
-			    if(dot != 0.f && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.f) > eps)
-				    return false;
-
-			    dot = 0.f;
-		    }
-	    }
-	    else {						// check whether rows create orthogonal basis
-		    for(int i=0; i<rows()-1; ++i)
-			    for(int k=i+1; k<rows(); ++k) {
-				    for(int j=0; j<columns(); ++j)
-					    dot += e<double>(i,j)*e<double>(k,j);
-
-				    if(nd4j::math::nd4j_abs(dot) > eps )
-					    return false;
-
-				    dot = 0.;
-			    }
-
-		        for(int i=0; i<rows(); ++i) {		// check whether norm of row vector = 1
-			        for(int j=0; j<columns(); ++j)
-					    dot += e<double>(i,j)*e<double>(i,j);
-
-			        if(dot!= 0. && nd4j::math::nd4j_abs(nd4j::math::nd4j_sqrt<double, double>(dot) - 1.) > eps)
-				        return false;
-			        dot = 0.;
-		        }
-	        }
-	    return true;
-    }
-
-    template <typename T>
-    std::vector<T> NDArray::asVectorT() {
-        std::vector<T> result(this->lengthOf());
-
-#pragma omp parallel for simd
-        for (int e = 0; e < this->lengthOf(); e++)
-            result[e] = this->e<T>(e);
-
-        return result;
-    }
-    BUILD_SINGLE_TEMPLATE(template std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
-
-
-    ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
-        if (isS())
-            throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
-        if(rankOf() != 2)
-           throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
-
-        const auto rows = sizeAt(0);
-        const auto cols = sizeAt(1);
-
-        switch(direction) {
-
-            case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(Nd4jLong i = 0; i < rows; ++i)
-                    for(Nd4jLong j = 0; j < cols; ++j)
-                        if (i + diag <= j)
-                            p<T>(i, j, value);
-                break;
-
-            case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(Nd4jLong i = 0; i < rows; ++i)
-                    for(Nd4jLong j = 0; j < cols; ++j)
-                        if (i + diag >= j)
-                            p<T>(i, j, value);
-                break;
-            default:
-                throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
-        }
-    }
-    template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const float16& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const bfloat16& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const int& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const uint8_t& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
-    template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
-
-    ////////////////////////////////////////////////////////////////////////
-    // default destructor
-    NDArray::~NDArray() noexcept {
-        if (_isBuffAlloc && !_isAttached && _buffer != nullptr) {
-                RELEASE(_buffer, _context->getWorkspace());
-        }
-    }
-
-
-//////////////////////////////////////////////////////////////////////////
-// set new order and shape in case of suitable array length
-    bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
-
-        // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
-        if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))
-            return true;
-
-        std::vector<Nd4jLong> shape(cshape);
-        int rank = shape.size();
-
-        // looking for negative in shape
-
-        int numberNegativesOnes = 0;
-
-        Nd4jLong* shape_ = shape.data();
-        for (int i = 0; i < (int) shape.size(); i++) {
-            if (shape[i] < 0) {
-                if (numberNegativesOnes >= 1)
-                    throw std::runtime_error("Only one dimension can be negative at once");
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for (int j = 0; j < (int) shape.size(); j++)
-                    if (i != j)
-                        shapeLength *= shape_[j];
-
-                Nd4jLong realShape = nd4j::math::nd4j_abs<int>(lengthOf() / shapeLength);
-                auto thisNewShape = new Nd4jLong[shape.size()];
-
-                for (int j = 0; j < (int) shape.size(); j++)
-                    if (i != j)
-                        thisNewShape[j] = shape_[j];
-                    else
-                        thisNewShape[j] = realShape;
-
-                shape_ = thisNewShape;
-            }
-        }
-
-        for (int e = 0; e < (int) shape.size(); e++)
-            shape[e] = shape_[e];
-
-        if (numberNegativesOnes > 0)
-            delete[] shape_;
-
-        int arrLength = 1;
-        for(const auto& item : shape)
-            arrLength *= item;
-
-        if(_buffer==nullptr || arrLength != this->lengthOf()) {
-            this->printShapeInfo("Mismatched shape");
-            nd4j::Logger::printv("Shape requested: ", shape);
-            nd4j_debug("Requested length in reshape: %i; Existing length: %i;\n", arrLength, this->lengthOf());
-            throw std::runtime_error("Bad shape!");
-        }
-
-        Nd4jLong *shapeInfoNew;
-        ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-        bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
-
-        // we can do this only if there was no permute applied, or there are no weird strides
-        if (canReshape) {
-
-            if(ordering() == 'c' && order == 'f')
-                throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
-
-            shape::setEws(shapeInfoNew, arrLength);
-            setShapeInfo(shapeInfoNew);
-        }
-        else {
-            NDArray temp(order, shape, dataType(), _context);
-            this->applyTransform(transform::Assign, &temp, nullptr);
-            *this = std::move(temp);
-        }
-
-        RELEASE(shapeInfoNew, _context->getWorkspace());
-
-        return canReshape;
-    }
-
-    void NDArray::nullify() {
-        if (isEmpty())
-            return;
-
-        if (isS())
-            throw std::runtime_error("Can't nullify string array");
-
-        if (isView()) {
-            this->assign(0);
-        } else {
-            memset(_buffer, 0, this->lengthOf() * this->sizeOfT());
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::setIdentity() {
-        if (isS())
-            throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
-
-        this->assign(0.);
-
-        int  rank    = rankOf();
-        auto shape   = shapeOf();
-        auto strides = stridesOf();
-        int  minDim  = 100000000;
-        Nd4jLong indices[MAX_RANK];
-        for(int j = 0; j < rank; ++j)
-            indices[j] = 1;
-
-        Nd4jLong offset = shape::getOffset(0, shape, strides, indices, rank);
-
-        for(int i = 0; i < rank; ++i)
-            if(minDim > shape[i])
-                minDim = shape[i];
-
-        float v = 1.0f;
-#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i = 0; i < minDim; ++i)
-            templatedSet<float>(_buffer, i*offset, this->dataType(), &v);
-    }
-
-    template <typename T>
-    void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value) {
-        BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedSet< , T>(buffer, xOfsset, value), LIBND4J_TYPES);
-    }
-    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value), LIBND4J_TYPES);
-
-
-
-    template <typename T>
-    void NDArray::templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
-        auto x = reinterpret_cast<T *>(xBuffer);
-        auto y = reinterpret_cast<T *>(yBuffer);
+template <typename T>
+static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
+    auto x = reinterpret_cast<T *>(xBuffer);
+    auto y = reinterpret_cast<T *>(yBuffer);
 
 #pragma omp parallel for simd schedule(static)
-        for (int i = 0; i < length; ++i) {
-            auto temp = x[i];
-            x[i] = y[i];
-            y[i] = temp;
-        }
+    for (int i = 0; i < length; ++i) {
+        auto temp = x[i];
+        x[i] = y[i];
+        y[i] = temp;
     }
-    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
 
-    ////////////////////////////////////////////////////////////////////////
-    void NDArray::swapUnsafe(NDArray& other) {
-        auto xType = this->dataType();
+////////////////////////////////////////////////////////////////////////
+void NDArray::swapUnsafe(NDArray& other) {
+    auto xType = this->dataType();
 
-        if (xType != other.dataType())
-            throw std::runtime_error("NDArray::swapUnsage method: both arrays must have the same data type");
+    if (xType != other.dataType())
+        throw std::runtime_error("NDArray::swapUnsage method: both arrays must have the same data type");
 
-        if(_buffer == nullptr || other._buffer == nullptr)
-            throw std::runtime_error("NDArray::swapUnsafe method: input array should not be empty!");
+    if(buffer() == nullptr || other.buffer() == nullptr)
+        throw std::runtime_error("NDArray::swapUnsafe method: input array should not be empty!");
 
-        // if(_buffer == other._buffer)
-        //     throw std::runtime_error("NDArray::swapUnsafe method: the buffers of input arrays should not point on the same address!");
+    if(lengthOf() != other.lengthOf())
+        throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
-        if(lengthOf() != other.lengthOf())
-            throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
+    BUILD_SINGLE_SELECTOR(xType, templatedSwap, (buffer(), other.buffer(), this->lengthOf()), LIBND4J_TYPES);
+}
 
-        BUILD_SINGLE_SELECTOR(xType, templatedSwap, (this->_buffer, other.buffer(), this->lengthOf()), LIBND4J_TYPES);
-    }
-
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
-        if (isS())
-            throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
-        if (other->lengthOf() != target->lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
-        if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
-            throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
-
-        NativeOpExecutioner::execPairwiseTransform(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
-    }
-
-    template <typename X, typename Y>
-    void NDArray::templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
-        auto x = reinterpret_cast<X *>(xBuffer);
-        const auto y = reinterpret_cast<const Y *>(yBuffer);
-
-        x[xOffset] = static_cast<X>(y[yOffset]);
-    }
-    BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
-
-
-    void NDArray::synchronize() const {
-        // no-op
-    }
-
-    void NDArray::syncShape() const {
-
-    }
-
-    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
-        // no-op
-    }
-
-    void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
-        // no-op
-    }
-
-    void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
-        // no-op
-    }
-
-    void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
-        // no-op
-    }
+////////////////////////////////////////////////////////////////////////
+void NDArray::synchronize() const {
+    // no-op
+}
+void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+    // no-op
+}
+void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
+    // no-op
+}
+void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+    // no-op
+}
+void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
+    // no-op
+}
+//////////////////////////////////////////////////////////////////////////
+void NDArray::syncShape() const {
+    // no-op
+}
 
 
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
-        if (isS())
-            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
-        std::vector<int> copy(dimensions);
-        if (copy.size() > 1)
-            std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
-        auto result = new NDArray(newShape, true, _context);
 
-        if(rankOf() == copy.size() || copy.empty())
-            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
-        else {
-            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, biasCorrected);
-        }
 
-        return result;
-    }
 
-    ////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
-        if (isS())
-            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
-        std::vector<int> copy(dimensions);
-        if (copy.size() > 1)
-            std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(_dataType), false, false, _context->getWorkspace());
-        NDArray result(newShape, true, _context);
 
-        if(rankOf() == copy.size() || copy.empty())
-            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), biasCorrected);
-        else {
-            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, biasCorrected);
-        }
 
-        return result;
-    }
 
-    void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
-        if (isS())
-            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
-        std::vector<int> copy(dimensions);
-        if (copy.size() > 1)
-            std::sort(copy.begin(), copy.end());
 
-        if (!target->isR())
-            throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
 
-        if(rankOf() == copy.size() || copy.empty())
-            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), biasCorrected);
-        else
-            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, biasCorrected);
-    }
 
-    // This method assigns values of given NDArray to this one
-    void NDArray::assign(const NDArray& other) {
 
-        if (this == &other)
-            return;
 
-        // if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
-        //     throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
-        // }
 
-        if (other.isScalar()) {
-            if(this->isScalar()) {
-                if (!this->isEmpty() && !other.isEmpty()) {
-                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
-                }
-                else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
-                    if (other.isEmpty())
-                        ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
-                    else
-                        *this = other;
-                }
-            } else {
-                if (this->dataType() != other.dataType()) {
-                    auto tmp = other.cast(this->dataType());
 
-                    NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, tmp->_buffer, tmp->_shapeInfo, tmp->_bufferD, tmp->_shapeInfoD, nullptr);
 
-                    delete tmp;
-                } else
-                    NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
-            }
-            return;
-        }
 
-        if (other._length != _length) {
-            auto shapeThis = ShapeUtils::shapeAsString(this);
-            auto shapeThat = ShapeUtils::shapeAsString(&other);
-            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
-            throw std::runtime_error("Lengths of arrays are mismatched");
-        }
 
-        // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
-            memcpy(_buffer, other._buffer, _length * sizeOfT());
-        else
-            NativeOpExecutioner::execTransformAny(_context, transform::Assign, other._buffer, other._shapeInfo, nullptr, nullptr, _buffer, _shapeInfo, nullptr, nullptr, nullptr, nullptr, nullptr);
-    }
+
 
     ////////////////////////////////////////////////////////////////////////
     // This method returns new copy of this NDArray, optionally in different order
@@ -1276,24 +710,6 @@ NDArray& NDArray::operator=(const NDArray& other) {
 
     }
 
-//////////////////////////////////////////////////////////////////////////
-// perform pairwise transformation
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, ExtraArguments *extraParams) {
-        applyPairwiseTransform(op, &other, this, extraParams);
-    }
-
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams) const{
-        if (isS())
-            throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
-        if (other->lengthOf() != target->lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
-        if (!target->isB())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
-        if (_dataType != other->_dataType)
-            throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
-
-        NativeOpExecutioner::execPairwiseBoolTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-    }
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) const {
