@@ -38,8 +38,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
-import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -222,9 +220,6 @@ public class BarnesHutTsne implements Model {
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
-
-        final INDArray beta = ones(N, 1);
-
         final double enthropy = FastMath.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
@@ -244,7 +239,7 @@ public class BarnesHutTsne implements Model {
                 List<DataPoint> results = new ArrayList<>();
                 List<Double> distances = new ArrayList<>();
                 tree.search(d.getRow(i), k + 1, results, distances);
-                double betas = beta.getDouble(i);
+                double betas = 1.0;
 
                 if(results.size() == 0){
                     throw new IllegalStateException("Search returned no values for vector " + i +
@@ -261,7 +256,7 @@ public class BarnesHutTsne implements Model {
                 boolean found = false;
                 //binary search
                 while (!found && tries < 200) {
-                    Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
+                    Pair<INDArray, Double> pair = computeGaussianKernel(cArr, betas, k);
                     currP = pair.getFirst();
                     double hDiff = pair.getSecond() - enthropy;
 
