@@ -53,10 +53,15 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate p
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffers(const DataBuffer& other) {
+void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
+
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = other.getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
 
     if(other._primaryBuffer != nullptr)
-        memcpy(_primaryBuffer, other._primaryBuffer, other._lenInBytes);
+        memcpy(_primaryBuffer + offsetThis, other._primaryBuffer + offsetOther, sizeToCopyinBytes);
 }
 
 ////////////////////////////////////////////////////////////////////////

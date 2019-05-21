@@ -106,19 +106,24 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffers(const DataBuffer& other) {     // always copies only to special buffer
+void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {     // always copies only to special buffer
 
     if(other._primaryBuffer == nullptr && other._specialBuffer == nullptr)
         return;
 
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = other.getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
     if(other.isPrimaryActual()) {
-        auto res = cudaMemcpy(_specialBuffer, other._primaryBuffer, other._lenInBytes, cudaMemcpyHostToDevice);
+        auto res = cudaMemcpy(_specialBuffer + offsetThis, other._primaryBuffer + offsetOther, sizeToCopyinBytes, cudaMemcpyHostToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
         other.readPrimary();
     }
     else {
-        auto res = cudaMemcpy(_specialBuffer, other._specialBuffer, other._lenInBytes, cudaMemcpyDeviceToDevice);
+        auto res = cudaMemcpy(_specialBuffer + offsetThis, other._specialBuffer + offsetOther, sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
         other.readSpecial();

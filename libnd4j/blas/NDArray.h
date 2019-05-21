@@ -222,7 +222,7 @@ namespace nd4j {
         /**
          * This method blocks until asynchronous operation finishes
          */
-        void synchronize() const;
+        void synchronize(const char* msg) const;
 
         /**
          * This method allows to set _isAttached flag
@@ -356,6 +356,13 @@ namespace nd4j {
         FORCEINLINE void* getBuffer() const;
         FORCEINLINE void* buffer();
 
+
+        /**
+        *   returns buffer offset (offset is the same for host and device buffers)
+        */
+        FORCEINLINE Nd4jLong getBufferOffset() const;
+        FORCEINLINE Nd4jLong bufferOffset();
+
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
@@ -406,6 +413,8 @@ namespace nd4j {
         bool isFinite();
         bool hasNaNs();
         bool hasInfs();
+
+        void copyBuffersContinuously(const NDArray& other, size_t sizeToCopyInBytes = 0, Nd4jLong offsetThis = 0, Nd4jLong offsetOther = 0);
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -2106,6 +2115,16 @@ void* NDArray::getSpecialBuffer() const {
         return getBuffer();
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::getBufferOffset() const {
+    return _offset;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::bufferOffset() {
+    return _offset;
 }
 
 ////////////////////////////////////////////////////////////////////////

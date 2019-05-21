@@ -109,7 +109,7 @@ class ND4J_EXPORT DataBuffer {
 
         void setToZeroBuffers(const bool both = false);
 
-        void copyBuffers(const DataBuffer& other);
+        void copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
 
         void deleteSpecial();
 };
