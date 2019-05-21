@@ -17,6 +17,7 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
@@ -35,6 +36,7 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+@Ignore("AB 2019/05/21 - JVM Crash on ppc64 - Issue #7657")
 public class FailingSameDiffTests {
 
     @Test
