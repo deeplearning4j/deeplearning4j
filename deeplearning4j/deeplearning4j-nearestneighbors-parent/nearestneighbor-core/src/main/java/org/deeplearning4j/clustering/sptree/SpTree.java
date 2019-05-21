@@ -285,7 +285,7 @@ public class SpTree implements Serializable {
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
-            System.out.println("D = " + D + " maxWidth = " + maxWidth + " buf = " + buf + " centerOfMass = " + centerOfMass);
+            //System.out.println("D = " + D + " maxWidth = " + maxWidth + " buf = " + buf + " centerOfMass = " + centerOfMass);
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
@@ -301,7 +301,7 @@ public class SpTree implements Serializable {
                     System.out.println("mult = " + mult + " buf.getDouble(k) = " + buf.getDouble(k));
                     temp.putScalar(k, buf.getDouble(k) * mult);
                 }*/
-                //System.out.println("negativeF before  = " + negativeForce);
+                System.out.println("negativeF before  = " + negativeForce);
                 //buf.muli(mult);
                 /*for (int k = 0; k < this.D; ++k) {
                     double curr = negativeForce.getDouble(k);
@@ -311,7 +311,7 @@ public class SpTree implements Serializable {
                 //negativeForce.addi(temp);
                 negativeForce.addi(buf.mul(mult));
                 //System.out.println("buf after = " + buf);
-                //System.out.println("negativeF after  = " + negativeForce);
+                System.out.println("negativeF after  = " + negativeForce);
 
             } else {
 

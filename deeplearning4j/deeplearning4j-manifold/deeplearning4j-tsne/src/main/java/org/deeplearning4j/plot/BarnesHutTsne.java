@@ -555,23 +555,8 @@ public class BarnesHutTsne implements Model {
     }
 
     public static void zeroMean(INDArray input) {
-
-        int N = input.rows();
-        int D = input.columns();
-
-        // Compute data mean
-        INDArray means = Nd4j.zeros(D);
-        for(int n = 0; n < N; n++) {
-            for(int d = 0; d < D; d++) {
-                means.putScalar(d, means.getDouble(d) + input.getDouble(n * D + d));
-            }
-        }
-        means.divi(N);
-        for(int n = 0; n < N; n++) {
-            for(int d = 0; d < D; d++) {
-                input.putScalar((n*D + d),input.getDouble((n*D + d)) - means.getDouble(d));
-            }
-        }
+        INDArray means = input.mean(0);
+        input.subiRowVector(means);
     }
 
     @Override
@@ -622,9 +607,9 @@ public class BarnesHutTsne implements Model {
                 System.out.println("symm vals = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    System.out.println("Vals on iteration " + i + " = " + Y);
+                    //System.out.println("Vals on iteration " + i + " = " + Y);
                     zeroMean(Y);
-                    System.out.println("ZM Vals on iteration " + i + " = " + Y);
+                    //System.out.println("ZM Vals on iteration " + i + " = " + Y);
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
@@ -666,7 +651,8 @@ public class BarnesHutTsne implements Model {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray yGrads = gradient;
-            if (gains == null)
+            System.out.println("yGrads = " + yGrads);
+;            if (gains == null)
                 gains = ones(DataType.DOUBLE, Y.shape());
             //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
 
@@ -920,15 +906,15 @@ public class BarnesHutTsne implements Model {
                 //tree.setWorkspaceMode(workspaceMode);
             }
             tree.computeEdgeForces(rows, cols, vals, N, posF);
-            System.out.println("posF = " + posF);
+            //System.out.println("posF = " + posF);
             for (int n = 0; n < N; n++) {
                 INDArray temp = negF.slice(n);
                 tree.computeNonEdgeForces(n, theta, temp, sumQ);
             }
-            System.out.println("negF = " + negF);
+            //System.out.println("negF = " + negF);
             INDArray dC = posF.subi(negF.divi(sumQ));
-            System.out.println("dC = " + dC);
-            System.out.println("sumQ = " + sumQ);
+            //System.out.println("dC = " + dC);
+            //System.out.println("sumQ = " + sumQ);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
