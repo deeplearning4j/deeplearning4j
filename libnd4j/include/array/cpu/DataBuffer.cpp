@@ -61,7 +61,7 @@ void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, 
         return;
 
     if(other._primaryBuffer != nullptr)
-        memcpy(_primaryBuffer + offsetThis, other._primaryBuffer + offsetOther, sizeToCopyinBytes);
+        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis, static_cast<int8_t*>(other._primaryBuffer) + offsetOther, sizeToCopyinBytes);
 }
 
 ////////////////////////////////////////////////////////////////////////

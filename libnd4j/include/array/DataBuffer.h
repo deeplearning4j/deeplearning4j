@@ -86,7 +86,7 @@ class ND4J_EXPORT DataBuffer {
         DataBuffer& operator=(DataBuffer&& other) noexcept;
 
         DataType getDataType();
-        size_t getLenInBytes();
+        size_t getLenInBytes() const;
 
         Nd4jPointer primary();
         Nd4jPointer special();
@@ -292,7 +292,7 @@ DataType DataBuffer::getDataType() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-size_t DataBuffer::getLenInBytes() {
+size_t DataBuffer::getLenInBytes() const {
     return _lenInBytes;
 }
 

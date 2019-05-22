@@ -117,13 +117,13 @@ void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, 
         return;
 
     if(other.isPrimaryActual()) {
-        auto res = cudaMemcpy(_specialBuffer + offsetThis, other._primaryBuffer + offsetOther, sizeToCopyinBytes, cudaMemcpyHostToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis, static_cast<int8_t*>(other._primaryBuffer) + offsetOther, sizeToCopyinBytes, cudaMemcpyHostToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
         other.readPrimary();
     }
     else {
-        auto res = cudaMemcpy(_specialBuffer + offsetThis, other._specialBuffer + offsetOther, sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis, static_cast<int8_t*>(other._specialBuffer) + offsetOther, sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
         other.readSpecial();
