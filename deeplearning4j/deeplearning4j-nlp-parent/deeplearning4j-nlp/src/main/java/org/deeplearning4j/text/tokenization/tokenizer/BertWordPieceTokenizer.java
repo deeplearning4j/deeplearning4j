@@ -85,41 +85,54 @@ public class BertWordPieceTokenizer implements Tokenizer {
 
     }
 
-    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie) {
+    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenize) {
         final List<String> output = new ArrayList<>();
 
-        String fullString = toTokenzie;
+        String fullString = toTokenize;
         if(preTokenizePreProcessor != null){
-            fullString = preTokenizePreProcessor.preProcess(toTokenzie);
+            fullString = preTokenizePreProcessor.preProcess(toTokenize);
         }
 
         for (String basicToken : splitPattern.split(fullString)) {
             String candidate = basicToken;
-
+            int count = 0;
             while(candidate.length() > 0 && !"##".equals(candidate)){
-                System.out.println("About to call findLongestSubstring(vocab,\"" + candidate + "\")");
                 String longestSubstring = findLongestSubstring(vocab, candidate);
                 output.add(longestSubstring);
-                System.out.println("longestSubstring: \"" + longestSubstring + "\"");
                 candidate = "##"+candidate.substring(longestSubstring.length());
-                System.out.println(candidate + " - longestSubstring=\"" + longestSubstring + "\"");
+                if(count++ > basicToken.length()){
+                    //Can't take more steps to tokenize than the length of the token
+                    throw new IllegalStateException("Invalid token encountered: \"" + basicToken + "\" likely contains characters that are not " +
+                            "present in the vocabulary. Invalid tokens may be cleaned in a preprocessing step using a TokenPreProcessor." +
+                            " preTokenizePreProcessor=" + preTokenizePreProcessor + ", tokenPreProcess=" + tokenPreProcess);
+                }
             }
         }
 
         return output;
     }
 
-    protected static String findLongestSubstring(NavigableMap<String, Integer> vocab, String candidate) {
+    protected String findLongestSubstring(NavigableMap<String, Integer> vocab, String candidate) {
         NavigableMap<String, Integer> tailMap = vocab.tailMap(candidate, true);
+        checkIfEmpty(tailMap, candidate);
+
         String longestSubstring = tailMap.firstKey();
         int subStringLength = Math.min(candidate.length(), longestSubstring.length());
         while(!candidate.startsWith(longestSubstring)){
             subStringLength--;
-            System.out.println(candidate + " - " + subStringLength);
             tailMap = tailMap.tailMap(candidate.substring(0, subStringLength), true);
+            checkIfEmpty(tailMap, candidate);
             longestSubstring = tailMap.firstKey();
         }
         return longestSubstring;
+    }
+
+    protected void checkIfEmpty(Map<String,Integer> m, String candidate){
+        if(m.isEmpty()){
+            throw new IllegalStateException("Invalid token/character encountered: \"" + candidate + "\" likely contains characters that are not " +
+                    "present in the vocabulary. Invalid tokens may be cleaned in a preprocessing step using a TokenPreProcessor." +
+                    " preTokenizePreProcessor=" + preTokenizePreProcessor + ", tokenPreProcess=" + tokenPreProcess);
+        }
     }
 
 }

@@ -66,7 +66,7 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     public static boolean isControlCharacter(int cp){
         //Treat newline/tab as whitespace
-        if(cp == 'c' || cp == '\n' || cp == '\r')
+        if(cp == '\t' || cp == '\n' || cp == '\r')
             return false;
         int type = Character.getType(cp);
         return type == Character.CONTROL || type == Character.FORMAT;
@@ -74,7 +74,7 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     public static boolean isWhiteSpace(int cp){
         //Treat newline/tab as whitespace
-        if(cp == 'c' || cp == '\n' || cp == '\r')
+        if(cp == '\t' || cp == '\n' || cp == '\r')
             return true;
         int type = Character.getType(cp);
         return type == Character.SPACE_SEPARATOR;

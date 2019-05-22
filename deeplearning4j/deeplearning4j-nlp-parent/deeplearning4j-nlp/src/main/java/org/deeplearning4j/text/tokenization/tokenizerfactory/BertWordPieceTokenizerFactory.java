@@ -16,7 +16,9 @@
 
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceStreamTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
@@ -37,8 +39,10 @@ import java.util.TreeMap;
 public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
     private final NavigableMap<String, Integer> vocab;
+    @Getter @Setter
     private TokenPreProcess preTokenizePreProcessor;
-    private TokenPreProcess tokenPreProcess;
+    @Getter @Setter
+    private TokenPreProcess tokenPreProcessor;
     private Charset charset;
 
     public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, boolean lowerCaseOnly, boolean stripAccents) {
@@ -62,29 +66,14 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
     @Override
     public Tokenizer create(String toTokenize) {
-        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab, preTokenizePreProcessor, tokenPreProcess);
+        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab, preTokenizePreProcessor, tokenPreProcessor);
         return t;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, charset, vocab, preTokenizePreProcessor, tokenPreProcess);
+        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, charset, vocab, preTokenizePreProcessor, tokenPreProcessor);
         return t;
-    }
-
-    @Override
-    public void setTokenPreProcessor(TokenPreProcess preProcessor) {
-        this.tokenPreProcess = preProcessor;
-    }
-
-    /**
-     * Returns TokenPreProcessor set for this TokenizerFactory instance
-     *
-     * @return TokenPreProcessor instance, or null if no preprocessor was defined
-     */
-    @Override
-    public TokenPreProcess getTokenPreProcessor() {
-        return tokenPreProcess;
     }
 
     public Map<String,Integer> getVocab(){

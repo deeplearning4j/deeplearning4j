@@ -34,8 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class BertWordPieceTokenizerTests {
@@ -76,7 +75,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer3() throws Exception {
         String toTokenize = "Donaudampfschifffahrtskapitänsmützeninnenfuttersaum";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false,c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -139,7 +138,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer8() throws Exception {
         //Insert some invalid characters...
-        String toTokenize = "I saw a girl " + (char) 8 + " with a telescope.";
+        String toTokenize = "I saw a girl " + (char) 8 + " with a tele" + (char)7 + "scope.";
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
 
         Tokenizer tokenizer = t.create(toTokenize);
@@ -149,21 +148,39 @@ public class BertWordPieceTokenizerTests {
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
     }
-//
-//    @Test
-//    public void testBertWordPieceTokenizerBadChar() throws Exception {
-//        String toTokenize = "I saw a girl with a telescope. bad" + (char) 8 + "word";
-//        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, c);
-//        Tokenizer tokenizer = t.create(toTokenize);
-//        Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
-//        int position = 1;
-//        while (tokenizer2.hasMoreTokens()) {
-//            String tok1 = tokenizer.nextToken();
-//            String tok2 = tokenizer2.nextToken();
-//            log.info("Position: [" + position + "], token1: '" + tok1 + "', token 2: '" + tok2 + "'");
-//            position++;
-//            assertEquals(tok1, tok2);
-//        }
-//    }
 
+    @Test
+    public void testBertWordPieceTokenizer9() throws Exception {
+        //Insert some invalid characters - without the preprocessing. This should fail
+
+        for(String toTokenize : new String[]{
+                "I saw a girl with a tele" + (char) 7 + "scope.",
+                "I saw a girl " + (char) 8 + " with a tele" + (char)7 + "scope.",
+                "\u23A0I saw a girl with a telescope.",
+                "I saw a girl with a telescope.\u23A0"
+        }) {
+            BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
+            t.setPreTokenizePreProcessor(null);
+
+            try {
+                t.create(toTokenize);
+                fail("Expected exception: " + toTokenize);
+            } catch (IllegalStateException e) {
+                String m = e.getMessage();
+                assertNotNull(m);
+                m = m.toLowerCase();
+                assertTrue(m, m.contains("invalid") && m.contains("token") && m.contains("preprocessor"));
+            }
+
+            try {
+                t.create(new ByteArrayInputStream(toTokenize.getBytes()));
+                fail("Expected exception: " + toTokenize);
+            } catch (IllegalStateException e) {
+                String m = e.getMessage();
+                assertNotNull(m);
+                m = m.toLowerCase();
+                assertTrue(m, m.contains("invalid") && m.contains("token") && m.contains("preprocessor"));
+            }
+        }
+    }
 }
