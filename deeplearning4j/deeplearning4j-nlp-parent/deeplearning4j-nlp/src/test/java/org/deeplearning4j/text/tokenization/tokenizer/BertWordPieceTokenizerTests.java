@@ -49,7 +49,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer1() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
         int position = 1;
@@ -64,7 +64,7 @@ public class BertWordPieceTokenizerTests {
 
     @Test
     public void testBertWordPieceTokenizer2() throws Exception {
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
 
         ClassPathResource resource = new ClassPathResource("reuters/5250");
         String str = FileUtils.readFileToString(resource.getFile());
@@ -76,7 +76,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer3() throws Exception {
         String toTokenize = "Donaudampfschifffahrtskapitänsmützeninnenfuttersaum";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false,c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -88,7 +88,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer4() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -101,7 +101,7 @@ public class BertWordPieceTokenizerTests {
     public void testBertWordPieceTokenizer5() throws Exception {
         // Longest Token in Vocab is 22 chars long, so make sure splits on the edge are properly handled
         String toTokenize = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -113,8 +113,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer6() throws Exception {
         String toTokenize = "I sAw A gIrL wItH a tElEsCoPe.";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
-        t.setLowerCaseOnly(true);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
 
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
@@ -127,8 +126,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer7() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
-        t.setTokenPreProcessor(new LowCasePreProcessor());
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
 
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
@@ -137,5 +135,35 @@ public class BertWordPieceTokenizerTests {
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
     }
+
+    @Test
+    public void testBertWordPieceTokenizer8() throws Exception {
+        //Insert some invalid characters...
+        String toTokenize = "I saw a girl " + (char) 8 + " with a telescope.";
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, true, c);
+
+        Tokenizer tokenizer = t.create(toTokenize);
+        Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
+
+        final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
+        assertEquals(expected, tokenizer.getTokens());
+        assertEquals(expected, tokenizer2.getTokens());
+    }
+//
+//    @Test
+//    public void testBertWordPieceTokenizerBadChar() throws Exception {
+//        String toTokenize = "I saw a girl with a telescope. bad" + (char) 8 + "word";
+//        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, true, c);
+//        Tokenizer tokenizer = t.create(toTokenize);
+//        Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
+//        int position = 1;
+//        while (tokenizer2.hasMoreTokens()) {
+//            String tok1 = tokenizer.nextToken();
+//            String tok2 = tokenizer2.nextToken();
+//            log.info("Position: [" + position + "], token1: '" + tok1 + "', token 2: '" + tok2 + "'");
+//            position++;
+//            assertEquals(tok1, tok2);
+//        }
+//    }
 
 }

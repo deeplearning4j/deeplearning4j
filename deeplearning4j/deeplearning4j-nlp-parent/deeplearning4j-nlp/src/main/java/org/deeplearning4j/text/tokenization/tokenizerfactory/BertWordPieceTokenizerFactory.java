@@ -21,6 +21,7 @@ import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceStreamTokeniz
 import org.deeplearning4j.text.tokenization.tokenizer.BertWordPieceTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiecePreProcessor;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -36,32 +37,38 @@ import java.util.TreeMap;
 public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
     private final NavigableMap<String, Integer> vocab;
+    private TokenPreProcess preTokenizePreProcessor;
     private TokenPreProcess tokenPreProcess;
-    private boolean lowerCaseOnly = false;
+    private Charset charset;
 
-    public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab) {
+    public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, boolean lowerCaseOnly, boolean stripAccents) {
+        this(vocab, new BertWordPiecePreProcessor(lowerCaseOnly, stripAccents));
+    }
+
+    public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, TokenPreProcess preTokenizePreProcessor) {
         this.vocab = vocab;
+        this.preTokenizePreProcessor = preTokenizePreProcessor;
     }
 
-    public BertWordPieceTokenizerFactory(File pathToVocab, @NonNull Charset charset) throws IOException {
-        this(loadVocab(pathToVocab, charset));
+    public BertWordPieceTokenizerFactory(File pathToVocab, boolean lowerCaseOnly, boolean stripAccents, @NonNull Charset charset) throws IOException {
+        this(loadVocab(pathToVocab, charset), lowerCaseOnly, stripAccents);
+        this.charset = charset;
     }
 
-    public BertWordPieceTokenizerFactory(InputStream vocabInputStream, @NonNull Charset charset) throws IOException {
-        this(loadVocab(vocabInputStream, charset));
+    public BertWordPieceTokenizerFactory(InputStream vocabInputStream, boolean lowerCaseOnly, boolean stripAccents, @NonNull Charset charset) throws IOException {
+        this(loadVocab(vocabInputStream, charset), lowerCaseOnly, stripAccents);
+        this.charset = charset;
     }
 
     @Override
     public Tokenizer create(String toTokenize) {
-        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab, lowerCaseOnly);
-        t.setTokenPreProcessor(tokenPreProcess);
+        Tokenizer t = new BertWordPieceTokenizer(toTokenize, vocab, preTokenizePreProcessor, tokenPreProcess);
         return t;
     }
 
     @Override
     public Tokenizer create(InputStream toTokenize) {
-        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, vocab, lowerCaseOnly);
-        t.setTokenPreProcessor(tokenPreProcess);
+        Tokenizer t = new BertWordPieceStreamTokenizer(toTokenize, charset, vocab, preTokenizePreProcessor, tokenPreProcess);
         return t;
     }
 
@@ -78,15 +85,6 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
     @Override
     public TokenPreProcess getTokenPreProcessor() {
         return tokenPreProcess;
-    }
-
-
-    public boolean isLowerCaseOnly() {
-        return lowerCaseOnly;
-    }
-
-    public void setLowerCaseOnly(boolean lowerCaseOnly) {
-        this.lowerCaseOnly = lowerCaseOnly;
     }
 
     public Map<String,Integer> getVocab(){

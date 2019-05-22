@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiecePreProcessor;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,15 +32,19 @@ public class BertWordPieceTokenizer implements Tokenizer {
     public static final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
 
     private final List<String> tokens;
+    private final TokenPreProcess preTokenizePreProcessor;
     private TokenPreProcess tokenPreProcess;
-    private AtomicInteger cursor = new AtomicInteger(0);
+    private final AtomicInteger cursor = new AtomicInteger(0);
 
-    public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab, boolean lowerCaseOnly) {
+    public BertWordPieceTokenizer(String tokens, NavigableMap<String, Integer> vocab, TokenPreProcess preTokenizePreProcessor,
+                                  TokenPreProcess tokenPreProcess) {
         if(vocab.comparator() == null || vocab.comparator().compare("a", "b") < 0){
             throw new IllegalArgumentException("Vocab must use reverse sort order!");
         }
+        this.preTokenizePreProcessor = preTokenizePreProcessor;
+        this.tokenPreProcess = tokenPreProcess;
 
-        this.tokens = tokenize(vocab, tokens, lowerCaseOnly);
+        this.tokens = tokenize(vocab, tokens);
     }
 
 
@@ -80,21 +85,24 @@ public class BertWordPieceTokenizer implements Tokenizer {
 
     }
 
-    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie, boolean lowerCaseOnly) {
+    private List<String> tokenize(NavigableMap<String, Integer> vocab, String toTokenzie) {
         final List<String> output = new ArrayList<>();
 
         String fullString = toTokenzie;
-        if(lowerCaseOnly){
-            fullString = fullString.toLowerCase();
+        if(preTokenizePreProcessor != null){
+            fullString = preTokenizePreProcessor.preProcess(toTokenzie);
         }
 
         for (String basicToken : splitPattern.split(fullString)) {
             String candidate = basicToken;
 
             while(candidate.length() > 0 && !"##".equals(candidate)){
+                System.out.println("About to call findLongestSubstring(vocab,\"" + candidate + "\")");
                 String longestSubstring = findLongestSubstring(vocab, candidate);
                 output.add(longestSubstring);
+                System.out.println("longestSubstring: \"" + longestSubstring + "\"");
                 candidate = "##"+candidate.substring(longestSubstring.length());
+                System.out.println(candidate + " - longestSubstring=\"" + longestSubstring + "\"");
             }
         }
 
@@ -107,6 +115,7 @@ public class BertWordPieceTokenizer implements Tokenizer {
         int subStringLength = Math.min(candidate.length(), longestSubstring.length());
         while(!candidate.startsWith(longestSubstring)){
             subStringLength--;
+            System.out.println(candidate + " - " + subStringLength);
             tailMap = tailMap.tailMap(candidate.substring(0, subStringLength), true);
             longestSubstring = tailMap.firstKey();
         }
