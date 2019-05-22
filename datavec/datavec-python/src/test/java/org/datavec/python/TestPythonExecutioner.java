@@ -15,13 +15,14 @@
  ******************************************************************************/
 
 package org.datavec.python;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertEquals;
 
-
+@Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
 public class TestPythonExecutioner {
 
     @Test(timeout = 60000L)
