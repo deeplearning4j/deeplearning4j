@@ -19,15 +19,130 @@
 //
 
 #include <ops/declarable/helpers/segment.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    // segment max
-    template <typename T>
-    static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
+    template <typename T, typename I>
+    static __global__ void segmentMaxLinearKernel(void* input, Nd4jLong* inputShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
+         __shared__ T* val;
+         __shared__ Nd4jLong xLen, zLen;
+         __shared__ T* x;
+         __shared__ T* z;
+         if (threadIdx.x == 0) {
+             x = reinterpret_cast<T*>(input);
+             z = reinterpret_cast<T*>(output);
+             extern __shared__ unsigned char shmem[];
+             val = reinterpret_cast<T*>(shmem);
+             xLen = shape::length(inputShape);
+             zLen = shape::length(outputShape);
+         }
+         __syncthreads();
 
+         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+         auto step = blockDim.x * gridDim.x;
+         for (auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
+             for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
+                 auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+                 if (e >= starts[segment] && e < starts[segment] + lengths[segment]) {
+
+                     val[segment] = nd4j::math::nd4j_max<T>(val[segment], x[xIndex]);
+                 }
+                 else {
+                     val[segment] = x[xIndex];
+                 }
+             }
+             auto zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+             z[zIndex] = val[segment];
+         }
+    }
+    template <typename I>
+    static __global__ void fillUpSegmentsKernel(void* indices, Nd4jLong* indexShape, int numClasses, int* classesRangesStart, int* classesRangesLenghts) {
+        __shared__ I* idxBuf;
+        __shared__ Nd4jLong idxLen;
+        __shared__ int* result;
+        if (threadIdx.x == 0) {
+            idxBuf = reinterpret_cast<I*>(indices);
+            idxLen = shape::length(indexShape);
+            extern __shared__ unsigned char shmem[];
+            result = reinterpret_cast<int*>(shmem);
+        }
+        __syncthreads();
+
+        auto tid = threadIdx.x + blockDim.x * blockIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (auto j = tid; j < idxLen; j += step) {
+            //printf("%d, %d\n", idxBuf[j], j);
+            auto pos = idxBuf[j];
+          //  result[pos] = classesRangesStart[pos];
+//            classesRangesStart[pos] = nd4j::math::nd4j_min<int>(j, classesRangesStart[pos]);
+            result[pos] = j; //classesRangesStart[pos];
+            classesRangesStart[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], result[pos]);
+            nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
+        }
+    }
+    // segment max
+    template <typename T, typename I>
+    static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+        //int numClasses = output->sizeAt(0);
+        // if input is a vector: (as if in doc sample)
+        //Nd4jLong idx = indices->e<Nd4jLong>(0);
+        auto stream = context->getCudaStream();
+        Nd4jLong numClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses});
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses});
+
+        classesRangesBegs.assign(indices->lengthOf());
+        classesRangesLens.assign(0);
+
+        dim3 dims(256, 512, 256);
+        int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
+        int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+        fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(), numClasses, begins, lengths);
+//        classesRangesBegs.syncToHost();
+//        classesRangesLens.syncToHost();
+//        classesRangesBegs.printBuffer("Segments Begins");
+//        classesRangesLens.printBuffer("Segments Length");
+        if (input->isVector()) {
+            segmentMaxLinearKernel<T,I><<<256, 512, 512, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+//            std::vector<int> restDims(input->rankOf() - 1);
+//            Nd4jLong loop_size = input->rankOf();
+//            PRAGMA_OMP_PARALLEL_FOR
+//            for (Nd4jLong e = 1; e < loop_size; e++)
+//                restDims[e - 1] = e;
+//
+//            auto listOfTensors = input->allTensorsAlongDimension(restDims);
+//            auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
+//
+//            auto numOfClasses = output->sizeAt(0); // number of classes
+//            std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+//            auto maxT = listOfOutTensors->at(idx);
+//
+//            //int pos = 0;
+//            maxT->assign(listOfTensors->at(0));
+//
+//            for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
+//                if (indices->e<int>(i) == idx) {
+//
+//                    for (Nd4jLong e = 0; e < maxT->lengthOf(); e++) {
+//                        maxT->t<T>(e) = nd4j::math::nd4j_max(maxT->t<T>(e), listOfTensors->at(i)->t<T>(e));
+//                    }
+//                }
+//                else {
+//                    idx = indices->e<Nd4jLong>(i);
+//                    maxT = listOfOutTensors->at(idx);
+//                    maxT->assign(listOfTensors->at(i));
+//                }
+//
+//            }
+//            delete listOfTensors;
+//            delete listOfOutTensors;
+        }
     }
 
     // segmen min 
@@ -52,13 +167,13 @@ namespace helpers {
 
     }
 
-    template <typename T>
+    template <typename T, typename I>
     static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& aoutput) {
         return true;
     }
 
     void segmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMaxFunctor_, (context, input, indices, output), LIBND4J_TYPES, INTEGER_TYPES);
     }
 
     void segmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
@@ -78,15 +193,15 @@ namespace helpers {
     }
 
     bool segmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, NDArray& expected, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), return segmentIndicesValidate_, (indices, expected, output), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_, (indices, expected, output), LIBND4J_TYPES, INTEGER_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), LIBND4J_TYPES, INTEGER_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentProdFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentSumFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentMeanFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
     BUILD_SINGLE_TEMPLATE(template void segmentMinFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void segmentMaxFunctor_, (NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void segmentMaxFunctor_, (LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), LIBND4J_TYPES, INTEGER_TYPES);
     // -------------------------------------------------------------------------------------------------------------- //
     // Unsorted segment ops
     // -------------------------------------------------------------------------------------------------------------- //
