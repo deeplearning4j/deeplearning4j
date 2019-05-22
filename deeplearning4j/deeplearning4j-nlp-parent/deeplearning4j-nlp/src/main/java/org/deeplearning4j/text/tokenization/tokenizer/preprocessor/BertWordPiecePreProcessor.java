@@ -4,6 +4,14 @@ import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 
 import java.text.Normalizer;
 
+/**
+ * A preprocessor for cleaning/normaling text. Does the following:
+ * 1. Optionally converts all characters to lower case
+ * 2. Optionally strips accents off characters
+ * 3. Strips all control characters
+ * 4. Replaces whitespace characters with space ' ' (this includes newline and tab)
+ * 5. Appends spaces before/after Chinese characters
+ */
 public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     public static final char REPLACEMENT_CHAR = 0xfffd;
@@ -15,6 +23,11 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
         this(false, false);
     }
 
+    /**
+     *
+     * @param lowerCase If true: tokenization should convert all characters to lower case
+     * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
+     */
     public BertWordPiecePreProcessor(boolean lowerCase, boolean stripAccents){
         this.lowerCase = lowerCase;
         this.stripAccents = stripAccents;
@@ -79,8 +92,10 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
         int type = Character.getType(cp);
         return type == Character.SPACE_SEPARATOR;
     }
-
+    
     public static boolean isChineseCharacter(int cp) {
+        //Remove any CJK Unicode code block characters
+        // https://en.wikipedia.org/wiki/List_of_CJK_Unified_Ideographs,_part_1_of_4
         return (cp >= 0x4E00 && cp <= 0x9FFF) ||
                 (cp >= 0x3400 && cp <= 0x4DBF) ||
                 (cp >= 0x20000 && cp <= 0x2A6DF) ||

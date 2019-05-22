@@ -45,20 +45,48 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
     private TokenPreProcess tokenPreProcessor;
     private Charset charset;
 
+    /**
+     * @param vocab                   Vocabulary, as a navigable map
+     * @param lowerCaseOnly If true: tokenization should convert all characters to lower case
+     * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
+     */
     public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, boolean lowerCaseOnly, boolean stripAccents) {
         this(vocab, new BertWordPiecePreProcessor(lowerCaseOnly, stripAccents));
     }
 
+    /**
+     * @param vocab                   Vocabulary, as a navigable map
+     * @param preTokenizePreProcessor The preprocessor that should be used on the raw strings, before splitting
+     */
     public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, TokenPreProcess preTokenizePreProcessor) {
         this.vocab = vocab;
         this.preTokenizePreProcessor = preTokenizePreProcessor;
     }
 
+    /**
+     * Create a BertWordPieceTokenizerFactory, load the vocabulary from the specified file.<br>
+     * The expected format is a \n seperated list of tokens for vocab entries
+     *
+     * @param pathToVocab   Path to vocabulary file
+     * @param lowerCaseOnly If true: tokenization should convert all characters to lower case
+     * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
+     * @param charset       Character set for the file
+     * @throws IOException If an error occurs reading the vocab file
+     */
     public BertWordPieceTokenizerFactory(File pathToVocab, boolean lowerCaseOnly, boolean stripAccents, @NonNull Charset charset) throws IOException {
         this(loadVocab(pathToVocab, charset), lowerCaseOnly, stripAccents);
         this.charset = charset;
     }
 
+    /**
+     * Create a BertWordPieceTokenizerFactory, load the vocabulary from the specified input stream.<br>
+     * The expected format for vocabulary is a \n seperated list of tokens for vocab entries
+     * @param vocabInputStream Input stream to load vocabulary
+     * @param lowerCaseOnly If true: tokenization should convert all characters to lower case
+     * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
+     * @param charset       Character set for the vocab stream
+     * @throws IOException  If an error occurs reading the vocab stream
+     */
     public BertWordPieceTokenizerFactory(InputStream vocabInputStream, boolean lowerCaseOnly, boolean stripAccents, @NonNull Charset charset) throws IOException {
         this(loadVocab(vocabInputStream, charset), lowerCaseOnly, stripAccents);
         this.charset = charset;
@@ -81,7 +109,7 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
     }
 
     /**
-     * The expected format is a \n seperated list of tokens for examples
+     * The expected format is a \n seperated list of tokens for vocab entries
      *
      * <code>
      *     foo
