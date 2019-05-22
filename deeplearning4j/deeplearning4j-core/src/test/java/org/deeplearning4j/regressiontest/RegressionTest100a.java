@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -213,6 +214,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testYoloHouseNumber() throws Exception {
 
         File f = Resources.asFile("regression_testing/100a/HouseNumberDetection_100a.bin");

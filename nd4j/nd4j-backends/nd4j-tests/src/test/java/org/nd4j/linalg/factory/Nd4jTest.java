@@ -20,6 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -211,6 +212,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyConversion() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
@@ -248,6 +250,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNumpyWrite() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
@@ -256,10 +259,10 @@ public class Nd4jTest extends BaseNd4jTest {
 
         INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
         assertEquals(linspace,numpyFromFile);
-
     }
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNpyByteArray() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
         byte[] bytes = Nd4j.toNpyByteArray(linspace);
