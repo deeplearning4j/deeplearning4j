@@ -285,7 +285,7 @@ public class VPTree implements Serializable {
                         .getFinalResult().doubleValue();
                 return invert ? -ret3 : ret3;
             case "dot":
-                double dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
+                double dotRet = Nd4j.getBlasWrapper().dot(arr1, arr2);
                 return invert ? -dotRet : dotRet;
             default:
                 double ret4 = Nd4j.getExecutioner()
