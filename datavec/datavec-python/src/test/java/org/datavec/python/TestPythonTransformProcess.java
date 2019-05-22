@@ -22,6 +22,7 @@ import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.schema.Schema;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-
+@Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
 public class TestPythonTransformProcess {
 
     @Test(timeout = 60000L)
