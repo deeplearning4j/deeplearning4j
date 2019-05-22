@@ -246,51 +246,51 @@ public class VPTree implements Serializable {
      * Euclidean distance
      * @return the distance between the two points
      */
-    public float distance(INDArray arr1, INDArray arr2) {
+    public double distance(INDArray arr1, INDArray arr2) {
         if (scalars == null)
             scalars = new ThreadLocal<>();
 
-        if (Nd4j.scalar(0.0f).equals(scalars.get()))
-            scalars.set(Nd4j.scalar(0.0));
+        if (scalars.get() == null)
+            scalars.set(Nd4j.scalar(0.0D));
 
         switch (similarityFunction) {
             case "jaccard":
-                float ret7 = Nd4j.getExecutioner()
+                double ret7 = Nd4j.getExecutioner()
                         .execAndReturn(new JaccardDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret7 : ret7;
             case "hamming":
-                float ret8 = Nd4j.getExecutioner()
+                double ret8 = Nd4j.getExecutioner()
                         .execAndReturn(new HammingDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret8 : ret8;
             case "euclidean":
-                float ret = Nd4j.getExecutioner()
+                double ret = Nd4j.getExecutioner()
                         .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret : ret;
             case "cosinesimilarity":
-                float ret2 = Nd4j.getExecutioner()
+                double ret2 = Nd4j.getExecutioner()
                         .execAndReturn(new CosineSimilarity(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret2 : ret2;
             case "cosinedistance":
-                float ret6 = Nd4j.getExecutioner()
+                double ret6 = Nd4j.getExecutioner()
                         .execAndReturn(new CosineDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret6 : ret6;
             case "manhattan":
-                float ret3 = Nd4j.getExecutioner()
+                double ret3 = Nd4j.getExecutioner()
                         .execAndReturn(new ManhattanDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret3 : ret3;
             case "dot":
-                float dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
+                double dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
                 return invert ? -dotRet : dotRet;
             default:
-                float ret4 = Nd4j.getExecutioner()
+                double ret4 = Nd4j.getExecutioner()
                         .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().floatValue();
+                        .getFinalResult().doubleValue();
                 return invert ? -ret4 : ret4;
 
         }
