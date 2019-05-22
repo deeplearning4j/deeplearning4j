@@ -326,6 +326,13 @@ public class TrainingConfig {
         }
 
         /**
+         * See {@link #dataSetFeatureMaskMapping(List)}
+         */
+        public Builder dataSetFeatureMaskMapping(String... dataSetFeatureMaskMapping){
+            return dataSetFeatureMaskMapping(Arrays.asList(dataSetFeatureMaskMapping));
+        }
+
+        /**
          * Set the name of the placeholders/variables that should be set using the feature mask INDArray(s) from the
          * DataSet or MultiDataSet. For example, if the network had 2 mask variables called "mask1" and "mask2"
          * and the MultiDataSet features masks should be mapped with {@code MultiDataSet.getFeatureMaskArray(0)->"mask1"}
@@ -336,6 +343,13 @@ public class TrainingConfig {
         public Builder dataSetFeatureMaskMapping(List<String> dataSetFeatureMaskMapping){
             this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
             return this;
+        }
+
+        /**
+         * See {@link #dataSetLabelMaskMapping(List)}
+         */
+        public Builder dataSetLabelMaskMapping(String... dataSetLabelMaskMapping){
+            return dataSetLabelMaskMapping(Arrays.asList(dataSetLabelMaskMapping));
         }
 
         /**
