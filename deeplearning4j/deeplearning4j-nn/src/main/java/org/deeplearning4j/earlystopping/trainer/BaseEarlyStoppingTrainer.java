@@ -16,9 +16,6 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
-import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
-import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.AsyncShieldDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
@@ -26,11 +23,12 @@ import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -44,6 +42,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+;
 
 /**Base/abstract class for conducting early stopping training locally (single machine).<br>
  * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping

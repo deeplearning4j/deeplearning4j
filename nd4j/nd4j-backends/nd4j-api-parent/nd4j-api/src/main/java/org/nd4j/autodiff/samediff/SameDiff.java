@@ -58,6 +58,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
@@ -1482,7 +1483,22 @@ public class SameDiff extends SDBaseOps {
     }
 
     //Synchronized for thread safety
-    protected synchronized void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+    protected synchronized void fit(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount) {
+        boolean async = iter.asyncSupported();
+        if(async){
+            iter = new AsyncMultiDataSetIterator(iter, 3, true);
+        }
+        try{
+            fitHelper(iter, numEpochs, incrementEpochCount);
+        } finally {
+            if(async){
+                ((AsyncMultiDataSetIterator)iter).shutdown();
+            }
+        }
+    }
+
+    //fitHelper should only be called from fit method above
+    protected synchronized void fitHelper(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
         Preconditions.checkNotNull(iter, "Iterator must not be null");
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
