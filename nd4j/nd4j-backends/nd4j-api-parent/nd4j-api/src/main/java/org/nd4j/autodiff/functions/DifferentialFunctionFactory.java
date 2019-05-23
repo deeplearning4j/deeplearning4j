@@ -28,19 +28,24 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
-import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
-import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.indexaccum.*;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.loss.*;
 import org.nd4j.linalg.api.ops.impl.loss.bp.*;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
-import org.nd4j.linalg.api.ops.impl.reduce.custom.*;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
-import org.nd4j.linalg.api.ops.impl.reduce.same.*;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
+import org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul;
+import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -48,59 +53,60 @@ import org.nd4j.linalg.api.ops.impl.reduce.same.AMax;
 import org.nd4j.linalg.api.ops.impl.reduce.same.AMin;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Min;
-import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
-import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
-import org.nd4j.linalg.api.ops.impl.indexaccum.*;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.reduce.same.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
-import org.nd4j.linalg.api.ops.impl.loss.*;
-import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
-import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Constant;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.api.ops.impl.transforms.ReluLayer;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsFinite;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsInf;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
-import org.nd4j.linalg.api.ops.impl.transforms.bool.*;
-import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
-import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.*;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
-import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -514,6 +520,13 @@ public class DifferentialFunctionFactory {
         return new TileBp(sameDiff, in, grad, repeat).outputVariable();
     }
 
+    public SDVariable tile(@NonNull SDVariable iX, @NonNull SDVariable repeat) {
+        return new Tile(sameDiff(), iX, repeat).outputVariable();
+    }
+
+    public SDVariable tileBp(@NonNull SDVariable in, @NonNull SDVariable repeat,  @NonNull SDVariable grad){
+        return new TileBp(sameDiff, in, repeat, grad).outputVariable();
+    }
 
     public SDVariable dropout(SDVariable input, double p) {
         return new DropOutInverted(sameDiff(), input, p).outputVariable();

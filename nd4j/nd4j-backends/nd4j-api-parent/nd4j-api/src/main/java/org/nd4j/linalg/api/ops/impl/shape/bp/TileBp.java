@@ -39,6 +39,11 @@ public class TileBp extends DynamicCustomOp {
         addArguments();
     }
 
+    public TileBp(SameDiff sameDiff, SDVariable in, SDVariable repeat, SDVariable grad) {
+        super(null,sameDiff, new SDVariable[]{in, repeat, grad}, false);
+        this.repeat = null;
+    }
+
     public TileBp() {}
 
     private void addArguments() {
@@ -59,7 +64,7 @@ public class TileBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 2, "Expected list with exactly 2 datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 2 || (repeat == null && dataTypes.size() == 3) , "Expected list with exactly 2 datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as (original) input type
         return Collections.singletonList(arg().dataType());
     }
