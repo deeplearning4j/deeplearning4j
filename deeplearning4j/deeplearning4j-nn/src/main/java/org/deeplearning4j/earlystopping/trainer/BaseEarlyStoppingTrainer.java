@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncShieldDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
