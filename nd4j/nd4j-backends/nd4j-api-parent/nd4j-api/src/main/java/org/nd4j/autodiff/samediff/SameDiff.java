@@ -2536,7 +2536,12 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
-
+    /**
+     * Rename the specified variable to the new name.
+     *
+     * @param from The variable to rename - this variable must exist
+     * @param to   The new name for the variable - no variable with this name must already exist
+     */
     public void renameVariable(String from, String to){
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
@@ -2549,8 +2554,7 @@ public class SameDiff extends SDBaseOps {
                 SameDiffOp op = ops.get(opName);
                 List<String> newInputs = new ArrayList<>(op.getInputsToOp());
                 while(newInputs.contains(from)){
-                    int idx = newInputs.indexOf(from);
-                    newInputs.set(idx, to);
+                    newInputs.set(newInputs.indexOf(from), to);
                 }
                 op.setInputsToOp(newInputs);
             }
@@ -2561,8 +2565,7 @@ public class SameDiff extends SDBaseOps {
                 SameDiffOp op = ops.get(opName);
                 List<String> newCDs = new ArrayList<>(op.getControlDeps());
                 while(newCDs.contains(from)){
-                    int idx = newCDs.indexOf(from);
-                    newCDs.set(idx, to);
+                    newCDs.set(newCDs.indexOf(from), to);
                 }
                 op.setControlDeps(newCDs);
             }

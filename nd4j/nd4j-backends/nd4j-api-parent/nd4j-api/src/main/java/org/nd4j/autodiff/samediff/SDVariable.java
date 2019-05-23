@@ -1901,7 +1901,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.convertToVariable(this);
     }
 
-    public SDVariable rename(String newName){
+    /**
+     * Rename this variable to a new name. Equivalent to {@link SameDiff#renameVariable(String, String)}
+     *
+     * @param newName The new name for the variable - no variable with this name must already exist
+     * @return The current variable (same object)
+     */
+    public SDVariable rename(String newName) {
         sameDiff.renameVariable(getVarName(), newName);
         return this;
     }
