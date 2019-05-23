@@ -78,9 +78,22 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
 void DataBuffer::setToZeroBuffers(const bool both) {
 
     memset(primary(), 0, getLenInBytes());
-    writePrimary();
 }
 
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::syncToSpecial(const bool forceSync) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::allocateSpecial() {
+
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { }

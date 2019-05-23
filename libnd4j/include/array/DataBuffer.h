@@ -52,44 +52,45 @@ class ND4J_EXPORT DataBuffer {
         mutable std::atomic<Nd4jLong> _readSpecial;
     #endif
 
-        void setCountersToZero();
-        void copyCounters(const DataBuffer& other);
-        void deleteBuffers();
-        void deletePrimary();
-        void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
-        void allocatePrimary();
-        void allocateSpecial();
-        void allocateBuffers(const bool allocBoth = false);
-        void setSpecial(void* special, const bool isOwnerSpecial);
+                    void setCountersToZero();
+                    void copyCounters(const DataBuffer& other);
+                    void deleteBuffers();
+                    void deleteSpecial();
+        FORCEINLINE void deletePrimary();
+        FORCEINLINE void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
+        FORCEINLINE void allocatePrimary();
+                    void allocateSpecial();
+                    void allocateBuffers(const bool allocBoth = false);
+                    void setSpecial(void* special, const bool isOwnerSpecial);
 
 
     public:
 
-        DataBuffer(Nd4jPointer primary, Nd4jPointer special,
-                    const size_t lenInBytes, const DataType dataType,
-                    const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
-                    memory::Workspace* workspace = nullptr);
+        FORCEINLINE DataBuffer(Nd4jPointer primary, Nd4jPointer special,
+                                const size_t lenInBytes, const DataType dataType,
+                                const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
+                                memory::Workspace* workspace = nullptr);
 
-        DataBuffer(Nd4jPointer primary,
-                    const size_t lenInBytes, const DataType dataType,
-                    const bool isOwnerPrimary = false,
-                    memory::Workspace* workspace = nullptr);
+        FORCEINLINE DataBuffer(Nd4jPointer primary,
+                                const size_t lenInBytes, const DataType dataType,
+                                const bool isOwnerPrimary = false,
+                                memory::Workspace* workspace = nullptr);
 
-        DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr, const bool allocBoth = false);
+        FORCEINLINE DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr, const bool allocBoth = false);
 
-        DataBuffer(const DataBuffer& other);
-        DataBuffer(DataBuffer&& other);
-        explicit DataBuffer();
-        ~DataBuffer();
+        FORCEINLINE DataBuffer(const DataBuffer& other);
+        FORCEINLINE DataBuffer(DataBuffer&& other);
+        FORCEINLINE explicit DataBuffer();
+        FORCEINLINE ~DataBuffer();
 
-        DataBuffer& operator=(const DataBuffer& other);
-        DataBuffer& operator=(DataBuffer&& other) noexcept;
+        FORCEINLINE DataBuffer& operator=(const DataBuffer& other);
+        FORCEINLINE DataBuffer& operator=(DataBuffer&& other) noexcept;
 
-        DataType getDataType();
-        size_t getLenInBytes() const;
+        FORCEINLINE DataType getDataType();
+        FORCEINLINE size_t getLenInBytes() const;
 
-        Nd4jPointer primary();
-        Nd4jPointer special();
+        FORCEINLINE Nd4jPointer primary();
+        FORCEINLINE Nd4jPointer special();
 
         void writePrimary() const;
         void writeSpecial() const;
@@ -98,11 +99,8 @@ class ND4J_EXPORT DataBuffer {
         bool isPrimaryActual() const;
         bool isSpecialActual() const;
 
-        template <typename T>
-        T* primaryAsT();
-
-        template <typename T>
-        T* specialAsT();
+        template <typename T> FORCEINLINE T* primaryAsT();
+        template <typename T> FORCEINLINE T* specialAsT();
 
         void syncToPrimary(const LaunchContext* context, const bool forceSync = false);
         void syncToSpecial(const bool forceSync = false);
@@ -110,8 +108,6 @@ class ND4J_EXPORT DataBuffer {
         void setToZeroBuffers(const bool both = false);
 
         void copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
-
-        void deleteSpecial();
 };
 
 
