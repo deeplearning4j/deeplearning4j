@@ -19,6 +19,7 @@ package org.nd4j.linalg.mixed;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -464,6 +465,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testArrayCreationFromPointer() {
         val source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
 

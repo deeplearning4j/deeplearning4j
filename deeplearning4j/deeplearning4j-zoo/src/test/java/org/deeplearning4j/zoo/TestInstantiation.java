@@ -17,6 +17,7 @@
 package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -78,22 +79,23 @@ public class TestInstantiation extends BaseDL4JTest {
                             gridWidth, gridHeight);
 
             Model initializedModel = model.init();
-            while (iter.hasNext()) {
-                DataSet ds = iter.next();
-                if (initializedModel instanceof ComputationGraph)
-                    ((ComputationGraph) initializedModel).fit(ds);
-                else if (initializedModel instanceof MultiLayerNetwork)
-                    ((MultiLayerNetwork) initializedModel).fit(ds);
-                else
-                    throw new IllegalStateException("Zoo models are only MultiLayerNetwork or ComputationGraph.");
+            AsyncDataSetIterator async = new AsyncDataSetIterator(iter);
+            if(initializedModel instanceof MultiLayerNetwork){
+                ((MultiLayerNetwork)initializedModel).fit(async);
+            } else {
+                ((ComputationGraph)initializedModel).fit(async);
             }
+            async.shutdown();
 
             // clean up for current model
             model = null;
             initializedModel = null;
+            async = null;
+            iter = null;
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
             System.gc();
             Thread.sleep(1000);
+            System.gc();
         }
     }
 

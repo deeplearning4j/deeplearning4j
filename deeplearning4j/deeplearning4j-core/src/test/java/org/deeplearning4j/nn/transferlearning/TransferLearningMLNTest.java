@@ -230,7 +230,7 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         modelNow.fit(randomData);
         double scoreExpected = modelExpectedArch.score();
         double scoreActual = modelNow.score();
-        assertEquals(scoreExpected, scoreActual, 1e-8);
+        assertEquals(scoreExpected, scoreActual, 1e-4);
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
