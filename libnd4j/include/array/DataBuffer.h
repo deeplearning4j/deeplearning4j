@@ -22,12 +22,12 @@
 #ifndef DEV_TESTS_DATABUFFER_H
 #define DEV_TESTS_DATABUFFER_H
 
-#include <dll.h>
 #include <cstring>
 #include <op_boilerplate.h>
+#include <dll.h>
 #include <pointercast.h>
-#include <memory/Workspace.h>
 #include <DataType.h>
+#include <Workspace.h>
 #include <LaunchContext.h>
 
 namespace nd4j {
