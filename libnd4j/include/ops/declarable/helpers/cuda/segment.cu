@@ -51,7 +51,6 @@ namespace helpers {
                 //val[segment] = ;
                 z[zIndex] = x[shape::getIndexOffset(start++, inputShape, xLen)];
                 val[segment] = z[zIndex];
-                printf("%lld: [%d, %d); %f\n", segment, start - 1, finish, z[segment]);
             }
 
         }
@@ -60,17 +59,17 @@ namespace helpers {
 //         auto step = blockDim.x * gridDim.x;
 
          for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
-             printf("%lld: %d in [%d, %d)\n", segment, e, starts[segment], finish);
              auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
              //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-             z[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
+             val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
              if (segment == numOfClasses - 1)
              printf("%d: val[%lld] = %f; x[%d]=%f; z[%lld] = %f\n", e, segment, val[segment], xIndex, x[xIndex], zIndex, z[zIndex]);
-             val[segment] = nd4j::math::nd4j_max<T>(z[zIndex], val[segment]);
 //             if (val[segment] > z[zIndex])
 //                 z[zIndex] = val[segment];
 //             printf("%d: val[%lld] = %f; x[%d]=%f; z[%lld] = %f\n", e, segment, val[segment], xIndex, x[xIndex], zIndex, z[zIndex]);
          }
+         if (segment < numOfClasses)
+             z[zIndex] = nd4j::math::nd4j_max<T>(z[zIndex], val[segment]);
     }
 
     template <typename I>
