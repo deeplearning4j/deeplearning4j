@@ -92,7 +92,7 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
         int type = Character.getType(cp);
         return type == Character.SPACE_SEPARATOR;
     }
-    
+
     public static boolean isChineseCharacter(int cp) {
         //Remove any CJK Unicode code block characters
         // https://en.wikipedia.org/wiki/List_of_CJK_Unified_Ideographs,_part_1_of_4

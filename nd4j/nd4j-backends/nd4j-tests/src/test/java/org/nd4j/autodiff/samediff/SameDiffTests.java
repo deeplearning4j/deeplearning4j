@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
@@ -3046,5 +3047,59 @@ public class SameDiffTests {
         assertNotNull(sd.grad("a"));
         assertNull(sd.grad("b"));
         assertNull(sd.grad("c"));
+    }
+
+    @Test
+    public void testDuplicateNamePlaceholder(){
+
+        for( int i=0; i<2; i++ ) {
+            SameDiff sd = SameDiff.create();
+            SDVariable x1 = i == 0 ? sd.placeHolder("a", DataType.FLOAT, 5, 3) : sd.var("a", DataType.FLOAT, 5, 3);
+            SDVariable x2 = i == 0 ? sd.placeHolder("b", DataType.FLOAT, 5, 3) : sd.var("b", DataType.FLOAT, 5, 3);
+            try {
+                sd.placeHolder("a", DataType.FLOAT, 5, 3);
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", DataType.FLOAT, 1, 2);
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", Nd4j.zeros(1));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.constant("a", Nd4j.zeros(1));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+        }
     }
 }

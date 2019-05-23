@@ -2054,7 +2054,8 @@ public class SameDiff extends SDBaseOps {
      * @param shape    the shape of the variable if any
      * @return SDVariable placeholder
      */
-    public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+        Preconditions.checkState(!variables.containsKey(name), "Variable already exists with name %s", name);
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -2839,7 +2840,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.getSameDiff() == this, "Samediff instance must be the same.");
 
         if (variables.containsKey(variable.getVarName()) && !variables.get(variable.getVarName()).getVariable().equals(variable)) {
-            throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
+            throw new IllegalArgumentException("Variable with name \"" + variable.getVarName() + "\" already exists");
         }
 
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");
