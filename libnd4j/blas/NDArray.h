@@ -159,6 +159,8 @@ namespace nd4j {
         */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
+        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+
         /**
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
@@ -201,7 +203,6 @@ namespace nd4j {
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
         NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, std::shared_ptr<DataBuffer> buffer, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
@@ -1501,8 +1502,6 @@ namespace nd4j {
         FORCEINLINE bool operator==(const NDArray &other) const;
 
         FORCEINLINE bool operator!=(const NDArray &other) const;
-
-        void lazyAllocateBuffer() const;
     };
 
 
@@ -1703,12 +1702,10 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -1717,7 +1714,6 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     }
 }
@@ -1735,14 +1731,12 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
 
         // FIXME: bad
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -1751,7 +1745,6 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     }
 }*/
@@ -1770,7 +1763,6 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
     // TODO: do we really want a view here?
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1786,7 +1778,6 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -1806,7 +1797,6 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1824,7 +1814,6 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -1841,7 +1830,6 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1857,7 +1845,6 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
     // FIXME
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1873,7 +1860,6 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1889,7 +1875,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     // FIXME
     return result;

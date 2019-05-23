@@ -171,6 +171,12 @@ void NDArray::syncShape() const {
     // no-op
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
+
+}
+
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
     return nullptr;
@@ -385,45 +391,6 @@ void NDArray::repeat(int dimension, NDArray& target) const {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
-
-    }
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////
 #ifndef __JAVACPP_HACK__
@@ -737,32 +704,6 @@ template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::fun
 template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<bool (Nd4jLong, bool, bool)>& func, NDArray* target);
 #endif
 
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const int* dimensions, const int rank) {
-
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-        setShapeInfo(shapeInfo);
-
-        return true;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
-
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-        setShapeInfo(shapeInfo);
-
-        return true;
-    }
-
-
-    //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__
 #include "NDArray.macro"

@@ -58,7 +58,6 @@ namespace helpers {
 	template <typename T>
 	static void stack_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		if(inArrs[0]->isScalar()) {
-            outArr->lazyAllocateBuffer();
 
 //#pragma omp parallel for
 			for (size_t i = 0; i < inArrs.size(); ++i) {

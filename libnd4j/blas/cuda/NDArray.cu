@@ -321,108 +321,54 @@ void NDArray::repeat(int dimension, NDArray& target) const {
     NDArray::registerSpecialUse({&target}, {this});
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {\
 
+    if(_length == 0)
+            { printf("NDArray::printActualBuffer: array length is zero !\n"); return; }
 
+    if(msg)
+        printf("%s", msg);
 
+    if(host) {
+        if(getBuffer() == nullptr || _length == 0)
+            { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }
 
+        const T* buff = bufferAsT<T>();
+        for (uint i = 0; i < _length; i++)
+            printf("%.*f, ", precision, (double)buff[getOffset(i)]);
+        printf("\n");
+    }
+    else {
+        if(getSpecialBuffer() == nullptr || _length == 0)
+            { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
 
+        void* pHost = operator new(sizeof(T) * _length);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {\
-
-        if(_length == 0)
-                { printf("NDArray::printActualBuffer: array length is zero !\n"); return; }
-
-        if(msg)
-            printf("%s", msg);
-
-        if(host) {
-            if(getBuffer() == nullptr || _length == 0)
-                { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }
-
-            const T* buff = bufferAsT<T>();
+        if (ews() != 1) {
             for (uint i = 0; i < _length; i++)
-                printf("%.*f, ", precision, (double)buff[getOffset(i)]);
-            printf("\n");
+                cudaMemcpyAsync(pHost + i * sizeof(T), getSpecialBuffer() + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
         }
-        else {
-            if(getSpecialBuffer() == nullptr || _length == 0)
-                { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
+        else
+            cudaMemcpyAsync(pHost, getSpecialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
 
-            void* pHost = operator new(sizeof(T) * _length);
+        cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
+        if(cudaResult != 0)
+            throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
 
-            if (ews() != 1) {
-                for (uint i = 0; i < _length; i++)
-                    cudaMemcpyAsync(pHost + i * sizeof(T), getSpecialBuffer() + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
-            }
-            else
-                cudaMemcpyAsync(pHost, getSpecialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
+        for (uint i = 0; i < _length; i++)
+            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
+        printf("\n");
 
-            cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
-            if(cudaResult != 0)
-                throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
-
-            for (uint i = 0; i < _length; i++)
-                printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
-            printf("\n");
-
-            operator delete(pHost);
-        }
+        operator delete(pHost);
     }
-    template void NDArray::printCurrentBuffer<int>(const bool host,const char* msg, const int precision) const;
-    template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
-    template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
-
-
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const int* dimensions, const int rank) {
-
-        // check if current object is getShapeInfo() owner
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-
-        ShapeDescriptor descriptor(shapeInfo, dataType());
-        setShapeInfo(descriptor);
-
-        return true;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
-
-        // check if current object is getShapeInfo() owner
-
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-        ShapeDescriptor descriptor(shapeInfo, dataType());
-
-        return true;
-    }
+}
+template void NDArray::printCurrentBuffer<int>(const bool host,const char* msg, const int precision) const;
+template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
+template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
 
 
 } // end namespace nd4j
-
-
-
 #endif
 

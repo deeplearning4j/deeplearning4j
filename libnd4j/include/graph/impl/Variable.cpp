@@ -209,7 +209,6 @@ namespace nd4j {
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
-                            // _ndarray->triggerAllocationFlag(true);
                         }
 
                         _variableType = VariableType::NDARRAY;
@@ -225,7 +224,6 @@ namespace nd4j {
                         } else {
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                         }
-                        // _ndarray->triggerAllocationFlag(true);
 
                         _variableType = VariableType::NDARRAY;
                     }

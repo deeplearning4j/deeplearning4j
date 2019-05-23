@@ -498,7 +498,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     std::vector<Nd4jLong> shp(shape);
     ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
 
-    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), false, context->getWorkspace());
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), context->getWorkspace());
 
     NDArray result(pBuffer, descriptor, context);
 
