@@ -3102,4 +3102,13 @@ public class SameDiffTests {
             }
         }
     }
+
+    @Test
+    public void testSameDiffGetArrayScalar(){
+        final INDArray array = Nd4j.rand(1, 1);
+        final SameDiff sd = SameDiff.create();
+        final SDVariable a = sd.var("a", array.shape());
+        a.setScalarValue(array);
+        a.getArr();
+    }
 }

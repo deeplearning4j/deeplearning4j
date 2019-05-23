@@ -205,13 +205,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             return sameDiff.getArrForVarName(getVarName());
 
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
-        if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
-            INDArray arr = Nd4j.valueArrayOf(getShape(),getScalarValue().getDouble(0));
-            sameDiff.associateArrayWithVariable(arr,this);
-            if(log.isTraceEnabled()){
-                log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
-            }
-        } else if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
+        if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
             INDArray arr = weightInitScheme.create(dataType, shape);
             sameDiff.associateArrayWithVariable(arr, this);
             if(log.isTraceEnabled()){
