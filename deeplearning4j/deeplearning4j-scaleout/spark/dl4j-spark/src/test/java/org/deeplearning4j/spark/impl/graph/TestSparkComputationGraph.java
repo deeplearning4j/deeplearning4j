@@ -68,6 +68,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@Ignore("AB 2019/05/24 - Rarely getting stuck on CI - see issue #7657")
 public class TestSparkComputationGraph extends BaseSparkTest {
 
     public static ComputationGraph getBasicNetIris2Class() {
