@@ -3111,4 +3111,48 @@ public class SameDiffTests {
         a.setScalarValue(array);
         a.getArr();
     }
+
+    @Test
+    public void testVariableRenaming(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.var("x", Nd4j.rand(DataType.FLOAT, 3,4));
+        SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4,5));
+        SDVariable v3 = v1.mmul("oldName", v2);
+
+        INDArray out = sd.execSingle(null, "oldName");
+
+        SDVariable renamed = v3.rename("newName");
+        assertTrue(v3 == renamed);
+        assertEquals("newName", renamed.getVarName());
+
+        assertNull(sd.getVariable("oldName"));
+        assertNotNull(sd.getVariable("newName"));
+
+        INDArray out2 = sd.execSingle(null, "newName");
+
+        assertEquals(out, out2);
+    }
+
+    @Test
+    public void testVariableRenaming2(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.placeHolder("x", DataType.FLOAT,3,4);
+        SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4,5));
+        SDVariable v3 = v1.mmul("oldName", v2);
+        SDVariable v4 = v3.std("out", false);
+
+        INDArray out = sd.execSingle(Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4)), "out");
+
+        sd.setTrainingConfig(TrainingConfig.builder()
+                .updater(new Adam(1e-3))
+                .dataSetFeatureMapping("x")
+                .markLabelsUnused()
+                .build());
+
+        sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
+        v3.rename("newName");
+        sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
+    }
 }

@@ -222,15 +222,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             }
             return null;
         }
-//        else {
-//            long[] shape = sameDiff.getShapeForVarName(getVarName());
-//            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
-//            sameDiff.associateArrayWithVariable(newAlloc,this);
-//            if(log.isTraceEnabled()){
-//                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
-//            }
-//        }
-
         return sameDiff.getArrForVarName(getVarName());
     }
 
@@ -1910,6 +1901,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.convertToVariable(this);
     }
 
+    public SDVariable rename(String newName){
+        sameDiff.renameVariable(getVarName(), newName);
+        return this;
+    }
 
     /**
      * Mark this variable as a loss function variable. This means that this variable will be minimized via backprop during training.<br>

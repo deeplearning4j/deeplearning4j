@@ -2537,6 +2537,129 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    public void renameVariable(String from, String to){
+        Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
+        Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
+
+        Variable v = variables.get(from);
+        v.setName(to);
+        v.getVariable().setVarName(to);
+        if(v.getInputsForOp() != null){
+            for(String opName : v.getInputsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newInputs = new ArrayList<>(op.getInputsToOp());
+                while(newInputs.contains(from)){
+                    int idx = newInputs.indexOf(from);
+                    newInputs.set(idx, to);
+                }
+                op.setInputsToOp(newInputs);
+            }
+        }
+
+        if(v.getControlDepsForOp() != null){
+            for(String opName : v.getControlDepsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newCDs = new ArrayList<>(op.getControlDeps());
+                while(newCDs.contains(from)){
+                    int idx = newCDs.indexOf(from);
+                    newCDs.set(idx, to);
+                }
+                op.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDepsForVar() != null){
+            for(String varName : v.getControlDepsForVar()){
+                Variable var = variables.get(varName);
+                List<String> newCDs = new ArrayList<>(var.getControlDeps());
+                while(newCDs.contains(from)){
+                    newCDs.set(newCDs.indexOf(from), to);
+                }
+                var.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDeps() != null){
+            for(String varName : v.getControlDeps()){
+                Variable var = variables.get(varName);
+                List<String> newCDsFor = new ArrayList<>(var.getControlDepsForVar());
+                while(newCDsFor.contains(from)){
+                    newCDsFor.set(newCDsFor.indexOf(from), to);
+                }
+                var.setControlDepsForVar(newCDsFor);
+            }
+        }
+
+        if(v.getOutputOfOp() != null){
+            SameDiffOp op = ops.get(v.getOutputOfOp());
+            List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
+            while(newOuts.contains(from)){
+                newOuts.set(newOuts.indexOf(from), to);
+            }
+            op.setOutputsOfOp(newOuts);
+        }
+
+        variables.remove(from);
+        variables.put(to, v);
+
+        if(trainingConfig != null){
+            if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMapping(l);
+            }
+
+            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMaskMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMaskMapping(l);
+            }
+
+            if(trainingConfig.getTrainableParams() != null && trainingConfig.getTrainableParams().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getTrainableParams());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setTrainableParams(l);
+            }
+
+            if(trainingConfig.getLossVariables() != null && trainingConfig.getLossVariables().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getLossVariables());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setLossVariables(l);
+            }
+        }
+
+        for(SameDiff sd : sameDiffFunctionInstances.values()){
+            if(sd.hasVariable(from)){
+                sd.renameVariable(from, to);
+            }
+        }
+    }
+
+
     /**
      * Remove an argument for a function. Note that if this function does not contain the argument, it will just be a no op.
      *
