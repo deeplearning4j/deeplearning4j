@@ -41,23 +41,21 @@ namespace helpers {
          }
          __syncthreads();
 
-         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-         auto step = blockDim.x * gridDim.x;
+//         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+//         auto step = blockDim.x * gridDim.x;
          for (auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
-             for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
-                 auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-                 if (e >= starts[segment] && e < starts[segment] + lengths[segment]) {
-
-                     val[segment] = nd4j::math::nd4j_max<T>(val[segment], x[xIndex]);
-                 }
-                 else {
-                     val[segment] = x[xIndex];
-                 }
-             }
              auto zIndex = shape::getIndexOffset(segment, outputShape, zLen);
-             z[zIndex] = val[segment];
+             z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)];
+             auto start = threadIdx.x + starts[segment];
+             auto finish = starts[segment] + lengths[segment];
+             for (auto e = start; e < finish; e += blockDim.x) {
+                 auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+                 val[segment] = z[zIndex];
+                 z[zIndex] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
+             }
          }
     }
+
     template <typename I>
     static __global__ void fillUpSegmentsKernel(void* indices, Nd4jLong* indexShape, int numClasses, int* classesRangesStart, int* classesRangesLenghts) {
         __shared__ I* idxBuf;
