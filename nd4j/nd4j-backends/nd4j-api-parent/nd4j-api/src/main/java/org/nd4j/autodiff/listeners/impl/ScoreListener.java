@@ -10,6 +10,11 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.text.DecimalFormat;
 
+/**
+ * A listener that reports scores and performance metrics for each epoch
+ * 
+ * @author Alex Black
+ */
 @Slf4j
 public class ScoreListener extends BaseListener {
 
@@ -19,8 +24,10 @@ public class ScoreListener extends BaseListener {
     private long epochStart;
     private long epochExampleCount;
     private int epochBatchCount;
+    private long etlTotalTimeEpoch;
 
     private long lastIterTime;
+    private long etlTimeSumSinceLastReport;
     private long iterTimeSumSinceLastReport;
     private int examplesSinceLastReportIter;
 
@@ -45,6 +52,7 @@ public class ScoreListener extends BaseListener {
             epochStart = System.currentTimeMillis();
             epochExampleCount = 0;
             epochBatchCount = 0;
+            etlTotalTimeEpoch = 0;
         }
     }
 
@@ -54,27 +62,46 @@ public class ScoreListener extends BaseListener {
             long epochDuration = System.currentTimeMillis() - epochStart;
             double batchesPerSec = epochBatchCount / (epochDuration / 1000.0);
             double examplesPerSec = epochExampleCount / (epochDuration / 1000.0);
-            log.info("Epoch {} complete on iteration {} - {} batches ({} examples) in {} - {} batches/sec, {} examples/sec",
-                    at.epoch(), at.iteration(), epochBatchCount, epochExampleCount, formatDurationMs(epochDuration), format2dp(batchesPerSec), format2dp(examplesPerSec));
+            double pcEtl = 100.0 * etlTotalTimeEpoch / (double)epochDuration;
+            String etl = formatDurationMs(etlTotalTimeEpoch) + " ETL time" + (etlTotalTimeEpoch > 0 ? "(" + format2dp(pcEtl) + " %)" : "");
+            log.info("Epoch {} complete on iteration {} - {} batches ({} examples) in {} - {} batches/sec, {} examples/sec, {}",
+                    at.epoch(), at.iteration(), epochBatchCount, epochExampleCount, formatDurationMs(epochDuration),
+                    format2dp(batchesPerSec), format2dp(examplesPerSec), etl);
         }
     }
 
     @Override
-    public void iterationStart(SameDiff sd, At at, MultiDataSet data) {
+    public void iterationStart(SameDiff sd, At at, MultiDataSet data, long etlMs) {
         lastIterTime = System.currentTimeMillis();
+        etlTimeSumSinceLastReport += etlMs;
+        etlTotalTimeEpoch += etlMs;
     }
 
     @Override
     public void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss) {
         iterTimeSumSinceLastReport += System.currentTimeMillis() - lastIterTime;
+        epochBatchCount++;
         if(dataSet.numFeatureArrays() > 0 && dataSet.getFeatures(0) != null){
-            examplesSinceLastReportIter += dataSet.getFeatures(0).size(0);
+            int n = (int)dataSet.getFeatures(0).size(0);
+            examplesSinceLastReportIter += n;
+            epochExampleCount += n;
         }
 
         if(at.iteration() > 0 && at.iteration() % frequency == 0){
             double l = loss.totalLoss();
-            log.info("Loss at epoch {}, iteration {}: {}", at.epoch(), at.iteration(), format5dp(l));
+            String etl = "";
+            if(etlTimeSumSinceLastReport > 0){
+                etl = "(" + formatDurationMs(etlTimeSumSinceLastReport) + " ETL";
+                if(frequency == 1){
+                    etl += ")";
+                } else {
+                    etl += " in " + frequency + " iter)";
+                }
+            }
+
+            log.info("Loss at epoch {}, iteration {}: {}{}", at.epoch(), at.iteration(), format5dp(l), etl);
             iterTimeSumSinceLastReport = 0;
+            etlTimeSumSinceLastReport = 0;
         }
     }
 
@@ -113,23 +140,23 @@ public class ScoreListener extends BaseListener {
         }
     }
 
-    protected static final ThreadLocal<DecimalFormat> DF_4DP = new ThreadLocal<>();
-    protected static final ThreadLocal<DecimalFormat> DF_4DP_SCI = new ThreadLocal<>();
+    protected static final ThreadLocal<DecimalFormat> DF_5DP = new ThreadLocal<>();
+    protected static final ThreadLocal<DecimalFormat> DF_5DP_SCI = new ThreadLocal<>();
     protected String format5dp(double d){
 
         if (d < 1e-4 || d > 1e4) {
             //Use scientific
-            DecimalFormat f = DF_4DP_SCI.get();
+            DecimalFormat f = DF_5DP_SCI.get();
             if (f == null) {
-                f = new DecimalFormat("0.0000E0");
-                DF_4DP_SCI.set(f);
+                f = new DecimalFormat("0.00000E0");
+                DF_5DP_SCI.set(f);
             }
             return f.format(d);
         } else {
-            DecimalFormat f = DF_4DP.get();
+            DecimalFormat f = DF_5DP.get();
             if (f == null) {
-                f = new DecimalFormat("#.0000");
-                DF_4DP.set(f);
+                f = new DecimalFormat("0.00000");
+                DF_5DP.set(f);
             }
             return f.format(d);
         }

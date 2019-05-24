@@ -13,7 +13,7 @@ public interface Listener {
 
     void epochEnd(SameDiff sd, At at);
 
-    void iterationStart(SameDiff sd, At at, MultiDataSet data);
+    void iterationStart(SameDiff sd, At at, MultiDataSet data, long etlTimeMs);
 
     void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss);
 

@@ -31,6 +31,9 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.Loss;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -119,6 +122,8 @@ public class SameDiff extends SDBaseOps {
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final List<String> lossVariables = new ArrayList<>();
+
+    private final List<Listener> listeners = new ArrayList<>();
 
     ///////////////////////////////////////
     //Fields related to training
@@ -412,6 +417,24 @@ public class SameDiff extends SDBaseOps {
      */
     public DifferentialFunctionFactory f() {
         return functionFactory;
+    }
+
+    public void setListeners(Listener... listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void setListeners(Collection<? extends Listener> listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void addListeners(Listener... listeners){
+        addListeners(Arrays.asList(listeners));
+    }
+
+    public void addListeners(Collection<? extends Listener> listeners){
+        this.listeners.addAll(listeners);
     }
 
 
@@ -1511,9 +1534,31 @@ public class SameDiff extends SDBaseOps {
 
         boolean performedValidation = false;
 
+        int trainThreadNum = 0;
+        long jThreadId = Thread.currentThread().getId();
+        boolean hasListeners = !listeners.isEmpty();
+        At at = At.builder()
+                .epoch(trainingConfig.getEpochCount())
+                .iteration(trainingConfig.getIterationCount())
+                .device(null)   //TODO
+                .trainingThreadNum(trainThreadNum)
+                .javaThreadNum(jThreadId)
+                .build();
+
+
         for(int i = 0; i < numEpochs; i++) {
+
+            if(incrementEpochCount && hasListeners){
+                at.setEpoch(trainingConfig.getEpochCount());
+                for(Listener l : listeners){
+                    l.epochStart(this, at);
+                }
+            }
+
             while (iter.hasNext()) {
+                long dataStart = hasListeners ? System.currentTimeMillis() : 0;
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
                 if(!performedValidation){
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
@@ -1525,6 +1570,13 @@ public class SameDiff extends SDBaseOps {
                                     " the number of dataset label arrays (%s)", lblSize, ds.numLabelsArrays());
 
                     performedValidation = true;
+                }
+
+                if(hasListeners){
+                    at.setIteration(trainingConfig.getIterationCount());
+                    for(Listener l : listeners){
+                        l.iterationStart(this, at, ds, (dataEnd-dataStart));
+                    }
                 }
 
                 //Create placeholder variable map
@@ -1576,6 +1628,8 @@ public class SameDiff extends SDBaseOps {
                     GradientUpdater u = updaterMap.get(s);
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
+
+                        //TODO listener call
                     } catch (Throwable t) {
                         throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
@@ -1597,6 +1651,24 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+                if(hasListeners){
+                    double[] d = new double[lossVariables.size()];
+                    Loss loss = new Loss(lossVariables, d);
+
+                    //Collect the losses...
+                    SameDiff gradFn = sameDiffFunctionInstances.get("grad");
+                    int count=0;
+                    for(String s : lossVariables){
+                        INDArray arr = gradFn.getArrForVarName(s);
+                        double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                        d[count++] = l;
+                    }
+
+                    for(Listener l : listeners){
+                        l.iterationDone(this, at, ds, loss);
+                    }
+                }
+
                 trainingConfig.incrementIterationCount();
             }
 
@@ -1604,8 +1676,14 @@ public class SameDiff extends SDBaseOps {
                 iter.reset();
             }
 
-            if(incrementEpochCount)
+            if(incrementEpochCount) {
+                if(hasListeners){
+                    for(Listener l : listeners){
+                        l.epochEnd(this, at);
+                    }
+                }
                 trainingConfig.incrementEpochCount();
+            }
         }
     }
 

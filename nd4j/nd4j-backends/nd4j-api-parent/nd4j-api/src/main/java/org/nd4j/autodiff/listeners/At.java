@@ -1,20 +1,19 @@
 package org.nd4j.autodiff.listeners;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
+@Builder
+@Setter
 public class At {
 
     private int epoch;
     private int iteration;
     private String device;
     private int trainingThreadNum;
-    private int javaThreadNum;
+    private long javaThreadNum;
 
     public int epoch(){
         return epoch;
@@ -32,7 +31,7 @@ public class At {
         return trainingThreadNum;
     }
 
-    public int javaThreadNum(){
+    public long javaThreadNum(){
         return javaThreadNum;
     }
 
