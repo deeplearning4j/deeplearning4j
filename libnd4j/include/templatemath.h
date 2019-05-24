@@ -978,6 +978,71 @@ inline __device__ float nd4j_atomicMul<float>(float* address, float val) {
 	return __int_as_float(old);
 }
 
+template <>
+inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
+	int* address_as_ull = (int*) address;
+
+	long addr = (long)(address);
+	bool misaligned = addr & 0x3;
+
+	if (misaligned)
+		address_as_ull = (int *) (addr - 2);
+
+	BPAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
+	do {
+
+		if (!misaligned) {
+			bfloat16 res = old.B.H * val;
+			fresh.B.H = res;
+			fresh.B.L = old.B.L;
+		} else {
+			bfloat16 res = old.B.L * val;
+			fresh.B.L = res;
+			fresh.B.H = old.B.H;
+		}
+
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+
+	if (!misaligned) return old.B.H;
+	else return old.B.L;
+}
+
+template <>
+inline __device__ float16 nd4j_atomicMul<float16>(float16* address, float16 val) {
+	int* address_as_ull = (int*) address;
+
+	long addr = (long)(address);
+	bool misaligned = addr & 0x3;
+
+	if (misaligned)
+		address_as_ull = (int *) (addr - 2);
+
+	BPAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
+	do {
+
+		if (!misaligned) {
+			bfloat16 res = old.B.H * val;
+			fresh.B.H = res;
+			fresh.B.L = old.B.L;
+		} else {
+			bfloat16 res = old.B.L * val;
+			fresh.B.L = res;
+			fresh.B.H = old.B.H;
+		}
+
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+
+	if (!misaligned) return old.B.H;
+	else return old.B.L;
+}
 
 template <>
 inline __device__ float nd4j_atomicDiv<float>(float* address, float val) {

@@ -79,8 +79,10 @@ namespace nd4j {
 
         DECLARE_TYPES(segment_prod) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
         }
 
 
