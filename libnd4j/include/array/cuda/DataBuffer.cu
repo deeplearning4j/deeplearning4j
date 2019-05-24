@@ -69,7 +69,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
 
-    if(getLenInBytes() != 0 && _primaryBuffer != nullptr && _isOwnerSpecial) {
+    if(_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
         auto p = reinterpret_cast<int8_t*>(_specialBuffer);
         RELEASE_SPECIAL(p, _workspace);
         _specialBuffer = nullptr;
@@ -77,13 +77,6 @@ void DataBuffer::deleteSpecial() {
     }
 }
 
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteBuffers() {
-
-    deleteSpecial();
-    deletePrimary();
-    _lenInBytes = 0;
-}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
@@ -117,13 +110,13 @@ void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, 
         return;
 
     if(other.isPrimaryActual()) {
-        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis, static_cast<int8_t*>(other._primaryBuffer) + offsetOther, sizeToCopyinBytes, cudaMemcpyHostToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyHostToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
         other.readPrimary();
     }
     else {
-        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis, static_cast<int8_t*>(other._specialBuffer) + offsetOther, sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
             throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
         other.readSpecial();

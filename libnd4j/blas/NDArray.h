@@ -1635,9 +1635,9 @@ namespace nd4j {
             return true;
 
         if(!Environment::getInstance()->isCPU())
-            return getDataBuffer()->primary() != nullptr && getSpecialShapeInfo() != nullptr;
+            return getDataBuffer()->special() != nullptr && getSpecialShapeInfo() != nullptr;
 
-        return getDataBuffer()->special() != nullptr && getShapeInfo() != nullptr;
+        return getDataBuffer()->primary() != nullptr && getShapeInfo() != nullptr;
     }
 
     //////////////////////////////////////////////////////////////////////////

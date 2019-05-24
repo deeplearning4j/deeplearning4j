@@ -49,6 +49,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestDup1) {
+
     NDArray array(arr1, shape1);
 
     auto arrC = array.dup('c');
@@ -246,6 +247,7 @@ TEST_F(NDArrayTest, TestTad3) {
 
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
+
     NDArray array('c', {2, 2, 5, 5}, nd4j::DataType::FLOAT32);
     int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
     int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, 0, 99};
@@ -287,27 +289,27 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
+
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
-    auto array = NDArrayFactory::create_<float>('c', {2, 2});
+    NDArray array('c', {2, 2}, nd4j::DataType::FLOAT32);
     auto exp = new NDArray(eBuffer, eShape);
-    for (int e = 0; e < array->lengthOf(); e++)
-        array->p(e, e + 1);
+    for (int e = 0; e < array.lengthOf(); e++)
+        array.p(e, e + 1);
 
-    //array->printBuffer();
+    // array.printBuffer();
 
-    auto rep = array->repeat(0, {2});
+    auto rep = array.repeat(0, {2});
 
     ASSERT_EQ(4, rep->sizeAt(0));
     ASSERT_EQ(2, rep->sizeAt(1));
 
-    //rep->printIndexedBuffer("Repeated");
+    // rep->printIndexedBuffer("Repeated");
 
     ASSERT_TRUE(exp->equalsTo(rep));
 
     delete[] eBuffer;
     delete[] eShape;
-    delete array;
     delete exp;
     delete rep;
 }

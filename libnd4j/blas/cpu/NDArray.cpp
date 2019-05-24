@@ -331,7 +331,6 @@ NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) co
 
     auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
     auto numTads = this->tensorsAlongDimension({dimension});
-    // printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
 
     for (int i = 0; i < numTads; i++) {
         auto thisTensor = this->tensorAlongDimension(i, {dimension});

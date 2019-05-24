@@ -20,21 +20,10 @@
 //
 
 #include "../DataBuffer.h"
+#include <DataTypeUtils.h>
 
 namespace nd4j {
 
-
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteBuffers() {
-
-    if(getLenInBytes() != 0 && _primaryBuffer != nullptr) {
-        auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-        RELEASE(p, _workspace);
-        _primaryBuffer  = nullptr;
-        _isOwnerPrimary = false;
-        _lenInBytes     = 0;
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
@@ -61,7 +50,7 @@ void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, 
         return;
 
     if(other._primaryBuffer != nullptr)
-        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis, static_cast<int8_t*>(other._primaryBuffer) + offsetOther, sizeToCopyinBytes);
+        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes);
 }
 
 ////////////////////////////////////////////////////////////////////////

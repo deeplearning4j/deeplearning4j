@@ -3212,7 +3212,6 @@ NDArray NDArray::e(const Nd4jLong i) const {
     return scalar;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
 void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, ExtraArguments *extraParams) {

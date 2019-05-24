@@ -54,9 +54,9 @@ class ND4J_EXPORT DataBuffer {
 
                     void setCountersToZero();
                     void copyCounters(const DataBuffer& other);
-                    void deleteBuffers();
                     void deleteSpecial();
         FORCEINLINE void deletePrimary();
+        FORCEINLINE void deleteBuffers();
         FORCEINLINE void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
         FORCEINLINE void allocatePrimary();
                     void allocateSpecial();
@@ -262,17 +262,6 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::deletePrimary() {
-
-    if(getLenInBytes() != 0 && _primaryBuffer != nullptr && _isOwnerPrimary) {
-        auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-        RELEASE(p, _workspace);
-        _primaryBuffer = nullptr;
-        _isOwnerPrimary = false;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 Nd4jPointer DataBuffer::primary() {
     return _primaryBuffer;
 }
@@ -318,6 +307,25 @@ void DataBuffer::setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpec
 
     _isOwnerPrimary = isOwnerPrimary;
     _isOwnerSpecial = isOwnerSpecial;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deletePrimary() {
+
+    if(_isOwnerPrimary && _primaryBuffer != nullptr && getLenInBytes() != 0) {
+        auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
+        RELEASE(p, _workspace);
+        _primaryBuffer = nullptr;
+        _isOwnerPrimary = false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteBuffers() {
+
+    deletePrimary();
+    deleteSpecial();
+    _lenInBytes = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
