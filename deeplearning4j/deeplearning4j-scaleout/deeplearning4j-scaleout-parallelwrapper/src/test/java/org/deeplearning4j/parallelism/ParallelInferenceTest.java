@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.junit.Ignore;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -390,7 +391,7 @@ public class ParallelInferenceTest {
     }
 
 
-    @Test(timeout = 30000L)
+    @Test(timeout = 120000L)
     public void testParallelInferenceVariableLengthTS() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 

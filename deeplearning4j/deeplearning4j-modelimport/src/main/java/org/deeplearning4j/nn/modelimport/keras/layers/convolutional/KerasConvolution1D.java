@@ -199,7 +199,7 @@ public class KerasConvolution1D extends KerasConvolution {
                         ArrayUtils.reverse(flattenedFilter);
                         INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
                         INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
-                        inPlaceFilter.muli(0).addi(newFilter);
+                        inPlaceFilter.muli(0).addi(newFilter.castTo(inPlaceFilter.dataType()));
                     }
                     break;
                 default:

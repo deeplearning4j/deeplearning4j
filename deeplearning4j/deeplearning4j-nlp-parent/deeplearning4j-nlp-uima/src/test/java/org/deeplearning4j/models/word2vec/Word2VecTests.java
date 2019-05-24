@@ -319,9 +319,9 @@ public class Word2VecTests {
         labels.add("week");
 
         INDArray matrix = vec.getWordVectors(labels);
-        assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("day"));
-        assertEquals(matrix.getRow(1), vec.getWordVectorMatrix("night"));
-        assertEquals(matrix.getRow(2), vec.getWordVectorMatrix("week"));
+        assertEquals(matrix.getRow(0, true), vec.getWordVectorMatrix("day"));
+        assertEquals(matrix.getRow(1, true), vec.getWordVectorMatrix("night"));
+        assertEquals(matrix.getRow(2, true), vec.getWordVectorMatrix("week"));
 
         WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
     }
@@ -686,9 +686,9 @@ public class Word2VecTests {
 
         INDArray matrix = vec.getWordVectors(labels);
         assertEquals(3, matrix.rows());
-        assertEquals(matrix.getRow(0), vec.getWordVectorMatrix("day"));
-        assertEquals(matrix.getRow(1), vec.getWordVectorMatrix("night"));
-        assertEquals(matrix.getRow(2), vec.getWordVectorMatrix("week"));
+        assertEquals(matrix.getRow(0, true), vec.getWordVectorMatrix("day"));
+        assertEquals(matrix.getRow(1, true), vec.getWordVectorMatrix("night"));
+        assertEquals(matrix.getRow(2, true), vec.getWordVectorMatrix("week"));
     }
 
 
@@ -742,7 +742,7 @@ public class Word2VecTests {
 
         INDArray matrix = vec.getWordVectors(labels);
         for (int i = 0; i < labels.size(); ++i)
-            assertEquals(matrix.getRow(i), vec.getWordVectorMatrix("UNKNOWN"));
+            assertEquals(matrix.getRow(i, true), vec.getWordVectorMatrix("UNKNOWN"));
     }
 
     @Test
