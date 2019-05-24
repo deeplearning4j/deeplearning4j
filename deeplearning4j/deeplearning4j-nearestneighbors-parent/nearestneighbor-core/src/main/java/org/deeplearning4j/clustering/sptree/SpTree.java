@@ -91,7 +91,7 @@ public class SpTree implements Serializable {
         this.N = data.rows();
         this.D = data.columns();
         this.similarityFunction = similarityFunction;
-        data = data.migrate();
+        data = data.dup();
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
@@ -139,7 +139,7 @@ public class SpTree implements Serializable {
         D = data.columns();
         N = data.rows();
         this.similarityFunction = similarityFunction;
-        nodeCapacity = N % NODE_RATIO;
+        nodeCapacity = 11; //N % NODE_RATIO;
         index = new int[nodeCapacity];
         for (int d = 1; d < this.D; d++)
             numChildren *= 2;
@@ -265,10 +265,9 @@ public class SpTree implements Serializable {
      * @param negativeForce
      * @param sumQ
      */
-    private INDArray prevForces = Nd4j.zeros(1,5);
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
-        INDArray buf = Nd4j.create(this.D);
+        INDArray buf = Nd4j.create(data.dataType(), this.D);
 
         if (cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
@@ -284,7 +283,7 @@ public class SpTree implements Serializable {
 
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
-            double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
+            double maxWidth = boundary.width().maxNumber().doubleValue();
             //System.out.println("D = " + D + " maxWidth = " + maxWidth + " buf = " + buf + " centerOfMass = " + centerOfMass);
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {

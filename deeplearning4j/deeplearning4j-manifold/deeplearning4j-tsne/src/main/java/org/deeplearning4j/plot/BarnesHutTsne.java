@@ -18,10 +18,12 @@ package org.deeplearning4j.plot;
 
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
@@ -215,12 +217,12 @@ public class BarnesHutTsne implements Model {
 
         rows = zeros(DataType.INT, 1, N + 1);
         cols = zeros(DataType.INT, 1, N * k);
-        vals = zeros(1, N * k);
+        vals = zeros(d.dataType(),  N * k);
 
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
-        final double enthropy = FastMath.log(perplexity);
+        final double enthropy = Math.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
         /*MemoryWorkspace workspace =
@@ -282,7 +284,7 @@ public class BarnesHutTsne implements Model {
                     }
                 }
 
-                currP.divi(currP.sum(Integer.MAX_VALUE));
+                currP.divi(currP.sumNumber().doubleValue() + Double.MIN_VALUE);
                 INDArray indices = Nd4j.create(1, k + 1);
                 for (int j = 0; j < indices.length(); j++) {
                     if (j >= results.size())
@@ -353,6 +355,8 @@ public class BarnesHutTsne implements Model {
     }
 
 
+    @Data
+    @AllArgsConstructor
     static class SymResult {
         INDArray rows;
         INDArray cols;
@@ -367,7 +371,7 @@ public class BarnesHutTsne implements Model {
      * @return
      */
     public SymResult symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
-        INDArray rowCounts = Nd4j.create(N);
+        INDArray rowCounts = Nd4j.create(DataType.INT, N);
 
         /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
@@ -388,23 +392,23 @@ public class BarnesHutTsne implements Model {
 
 
                     if (present)
-                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                        rowCounts.putScalar(n, rowCounts.getInt(n) + 1);
 
                     else {
-                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
-                        rowCounts.putScalar(colP.getInt(i), rowCounts.getDouble(colP.getInt(i)) + 1);
+                        rowCounts.putScalar(n, rowCounts.getInt(n) + 1);
+                        rowCounts.putScalar(colP.getInt(i), rowCounts.getInt(colP.getInt(i)) + 1);
                     }
                 }
             }
 
             int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
-            INDArray offset = Nd4j.create(N);
-            INDArray symRowP = Nd4j.zeros(N + 1);
-            INDArray symColP = Nd4j.create(numElements);
-            INDArray symValP = Nd4j.create(numElements);
+            INDArray offset = Nd4j.create(DataType.INT, N);
+            INDArray symRowP = Nd4j.zeros(DataType.INT, N + 1);
+            INDArray symColP = Nd4j.create(DataType.INT, numElements);
+            INDArray symValP = Nd4j.create(valP.dataType(), numElements);
 
             for (int n = 0; n < N; n++)
-                symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
+                symRowP.putScalar(n + 1, symRowP.getInt(n) + rowCounts.getInt(n));
 
             for (int n = 0; n < N; n++) {
                 for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
@@ -438,18 +442,14 @@ public class BarnesHutTsne implements Model {
                         offset.putScalar(n, offset.getInt(n) + 1);
                         int colPI = colP.getInt(i);
                         if (colPI != n)
-                            offset.putScalar(colPI, offset.getDouble(colPI) + 1);
+                            offset.putScalar(colPI, offset.getInt(colPI) + 1);
                     }
                 }
             }
 
             // Divide the result by two
             symValP.divi(2.0);
-            SymResult result = new SymResult();
-            result.rows = symRowP;
-            result.cols = symColP;
-            result.vals = symValP;
-            return result;
+            return new SymResult(symRowP, symColP, symValP);
 
         }
 
@@ -468,15 +468,15 @@ public class BarnesHutTsne implements Model {
         // Compute Gaussian kernel row
         INDArray currP = Nd4j.create(k);
         for (int m = 0; m < k; m++) {
-            currP.putScalar(m, FastMath.exp(-beta * distances.getDouble(m + 1)));
+            currP.putScalar(m, Math.exp(-beta * distances.getDouble(m + 1)));
         }
 
-        double sum = currP.sum(Integer.MAX_VALUE).getDouble(0);
+        double sum = currP.sumNumber().doubleValue() + Double.MIN_VALUE;
         double h = 0.0;
         for (int m = 0; m < k; m++)
             h += beta * (distances.getDouble(m + 1) * currP.getDouble(m));
 
-        h = (h / sum) + FastMath.log(sum);
+        h = (h / sum) + Math.log(sum);
 
         return new Pair<>(currP, h);
     }
@@ -549,7 +549,7 @@ public class BarnesHutTsne implements Model {
 
         public INDArray initData() {
             if (staticData != null)
-                return staticData;
+                return staticData.dup();
             return randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
         }
     }
@@ -582,6 +582,8 @@ public class BarnesHutTsne implements Model {
 
             try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
+                x.divi(x.maxNumber());
+
                 computeGaussianPerplexity(x, perplexity);
                 INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
                 //BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
@@ -595,7 +597,7 @@ public class BarnesHutTsne implements Model {
                 System.out.println("cols = " + cols);
                 System.out.println("vals = " + vals);
 
-                vals = result.vals.divi(vals.sum(Integer.MAX_VALUE));
+                vals = result.vals.divi(result.vals.sumNumber().doubleValue());
                 //rows = outRows;
                 //cols = outCols;
                 rows = result.rows;
@@ -638,6 +640,8 @@ public class BarnesHutTsne implements Model {
         update(gradient().getGradientFor(Y_GRAD), Y_GRAD);
     }
 
+    static double sign_tsne(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
+
 
     @Override
     public void update(INDArray gradient, String paramType) {
@@ -659,7 +663,7 @@ public class BarnesHutTsne implements Model {
             // Reference
             for (int i = 0; i < yGrads.rows(); ++i) {
                 for (int  j = 0; j < yGrads.columns(); ++j) {
-                    if (Math.signum(yGrads.getDouble(i,j)) == Math.signum(yIncs.getDouble(i,j))) {
+                    if (sign_tsne(yGrads.getDouble(i,j)) == sign_tsne(yIncs.getDouble(i,j))) {
                         gains.putScalar(new int[]{i,j}, gains.getDouble(i,j)*0.8);
                     }
                     else {
@@ -975,7 +979,7 @@ public class BarnesHutTsne implements Model {
         private double theta = 0.5;
         private boolean invert = true;
         private int numDim = 2;
-        private String similarityFunction = "cosinesimilarity";
+        private String similarityFunction = Distance.EUCLIDIAN.toString();
         private int vpTreeWorkers = 1;
         protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
