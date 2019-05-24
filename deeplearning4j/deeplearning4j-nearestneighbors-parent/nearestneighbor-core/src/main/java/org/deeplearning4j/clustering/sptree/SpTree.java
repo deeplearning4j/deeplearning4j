@@ -284,7 +284,6 @@ public class SpTree implements Serializable {
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().maxNumber().doubleValue();
-            //System.out.println("D = " + D + " maxWidth = " + maxWidth + " buf = " + buf + " centerOfMass = " + centerOfMass);
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
@@ -293,25 +292,7 @@ public class SpTree implements Serializable {
                 double mult = cumSize * Q;
                 sumQ.addAndGet(mult);
                 mult *= Q;
-                //System.out.println("D = " + D + " maxWidth = " + maxWidth);
-                //System.out.println("buf before = " + buf);
-                /*INDArray temp = Nd4j.create(this.D);
-                for (int k = 0; k < this.D; ++k) {
-                    System.out.println("mult = " + mult + " buf.getDouble(k) = " + buf.getDouble(k));
-                    temp.putScalar(k, buf.getDouble(k) * mult);
-                }*/
-                System.out.println("negativeF before  = " + negativeForce);
-                //buf.muli(mult);
-                /*for (int k = 0; k < this.D; ++k) {
-                    double curr = negativeForce.getDouble(k);
-                    negativeForce.putScalar(k, prevForces.getDouble(k)+temp.getDouble(k));
-                    prevForces.putScalar(k, negativeForce.getDouble(k));
-                }*/
-                //negativeForce.addi(temp);
                 negativeForce.addi(buf.mul(mult));
-                //System.out.println("buf after = " + buf);
-                System.out.println("negativeF after  = " + negativeForce);
-
             } else {
 
                 // Recursively apply Barnes-Hut to children
@@ -340,12 +321,12 @@ public class SpTree implements Serializable {
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
-                        workspaceExternal);*/
+                        workspaceExternal);
         INDArray outRows = Nd4j.create(rowP.shape());
         INDArray outCols = Nd4j.create(colP.shape());
-        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, posF, buf);
-        //Nd4j.getExecutioner().exec(computeEdgeForces);
-        //BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
+        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
+        Nd4j.getExecutioner().exec(computeEdgeForces);*/
+
         // Loop over all edges in the graph
         INDArray buf = Nd4j.create(this.D);
         double D;
@@ -364,28 +345,6 @@ public class SpTree implements Serializable {
 
             }
         }
-        /*double [] buff = new double[N];
-        int ind1 = 0;
-        int ind2 = 0;
-        double D;
-        for(int n = 0; n < N; n++) {
-            for(int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
-
-                // Compute pairwise distance and Q-value
-                D = 1.0;
-                ind2 = colP.getInt(i) * 5;
-                for(int d = 0; d < 5; d++) {
-                    buff[d] = data.getDouble(ind1 + d) - data.getDouble(ind2 + d);
-                    D += buff[d] * buff[d];
-                }
-                D = valP.getDouble(i) / D;
-
-                // Sum positive force
-                for(int d = 0; d < 5; d++) posF.putScalar(ind1 + d,  posF.getDouble(ind1 + d) + D * buff[d]);
-            }
-            ind1 += 5;
-        }
-        System.out.println("posF = " + posF);*/
     }
 
 

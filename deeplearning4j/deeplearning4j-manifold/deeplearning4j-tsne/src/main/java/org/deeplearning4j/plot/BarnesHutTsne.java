@@ -585,33 +585,24 @@ public class BarnesHutTsne implements Model {
                 x.divi(x.maxNumber());
 
                 computeGaussianPerplexity(x, perplexity);
-                INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
-                //BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
-                //Nd4j.getExecutioner().exec(op);
-                //INDArray output = op.getSymmetrizedValues();
-                //INDArray outCols = op.getSymmetrizedCols();
-                //vals = output.divi(vals.sum(Integer.MAX_VALUE));
+                /*INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
+                Nd4j.getExecutioner().exec(op);
+                INDArray output = op.getSymmetrizedValues();
+                INDArray outCols = op.getSymmetrizedCols();
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));
+                rows = outRows;
+                cols = outCols;*/
 
                 SymResult result = symmetrized(rows, cols, vals);
-                System.out.println("rows = " + rows);
-                System.out.println("cols = " + cols);
-                System.out.println("vals = " + vals);
-
                 vals = result.vals.divi(result.vals.sumNumber().doubleValue());
-                //rows = outRows;
-                //cols = outCols;
                 rows = result.rows;
                 cols = result.cols;
                 //lie about gradient
                 vals.muli(12);
-                System.out.println("symm rows = " + rows);
-                System.out.println("symm cols = " + cols);
-                System.out.println("symm vals = " + vals);
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-                    //System.out.println("Vals on iteration " + i + " = " + Y);
                     zeroMean(Y);
-                    //System.out.println("ZM Vals on iteration " + i + " = " + Y);
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
@@ -655,12 +646,10 @@ public class BarnesHutTsne implements Model {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray yGrads = gradient;
-            System.out.println("yGrads = " + yGrads);
 ;            if (gains == null)
                 gains = ones(DataType.DOUBLE, Y.shape());
             //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
-
-            // Reference
+            // Copied from Reference
             for (int i = 0; i < yGrads.rows(); ++i) {
                 for (int  j = 0; j < yGrads.columns(); ++j) {
                     if (sign_tsne(yGrads.getDouble(i,j)) == sign_tsne(yIncs.getDouble(i,j))) {
@@ -671,7 +660,7 @@ public class BarnesHutTsne implements Model {
                     }
                 }
             }
-            // Legacy
+            // Legacy implementation
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
                     .addi(gains.mul(0.8).muli(sign(yGrads)).eq(sign(yIncs)).castTo(gains.dataType()));*/
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
@@ -693,8 +682,6 @@ public class BarnesHutTsne implements Model {
                 gradChange.muli(learningRate);
             }
             yIncs.muli(momentum).subi(gradChange);
-            System.out.println("gains = " + gains);
-            System.out.println("uY = " + yIncs);
         }
     }
 
@@ -753,10 +740,10 @@ public class BarnesHutTsne implements Model {
                 write.write(sb.toString());
             }
             write.flush();
-            //write.close();
+            write.close();
         } finally {
-            /*if (write != null)
-                write.close();*/
+            if (write != null)
+                write.close();
         }
     }
     /**
@@ -905,20 +892,15 @@ public class BarnesHutTsne implements Model {
             INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
             INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
             /*if (tree == null)*/ {
-                System.out.println("Create tree for " + Y);
                 tree = new SpTree(Y);
                 //tree.setWorkspaceMode(workspaceMode);
             }
             tree.computeEdgeForces(rows, cols, vals, N, posF);
-            //System.out.println("posF = " + posF);
             for (int n = 0; n < N; n++) {
                 INDArray temp = negF.slice(n);
                 tree.computeNonEdgeForces(n, theta, temp, sumQ);
             }
-            //System.out.println("negF = " + negF);
             INDArray dC = posF.subi(negF.divi(sumQ));
-            //System.out.println("dC = " + dC);
-            //System.out.println("sumQ = " + sumQ);
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
