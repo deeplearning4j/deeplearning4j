@@ -49,7 +49,7 @@ namespace helpers {
                 start = starts[segment];
                 finish = start + lengths[segment];
                 //val[segment] = ;
-                z[zIndex] = x[shape::getIndexOffset(start++, inputShape, xLen)];
+                z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
                 val[segment] = z[zIndex];
             }
 
@@ -58,18 +58,26 @@ namespace helpers {
 //         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 //         auto step = blockDim.x * gridDim.x;
 
-         for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
+         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
              auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
              //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-             val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-             if (segment == numOfClasses - 1)
-             printf("%d: val[%lld] = %f; x[%d]=%f; z[%lld] = %f\n", e, segment, val[segment], xIndex, x[xIndex], zIndex, z[zIndex]);
-//             if (val[segment] > z[zIndex])
-//                 z[zIndex] = val[segment];
-//             printf("%d: val[%lld] = %f; x[%d]=%f; z[%lld] = %f\n", e, segment, val[segment], xIndex, x[xIndex], zIndex, z[zIndex]);
+             if (val[segment] < x[xIndex])
+                 val[segment] = x[xIndex];
+
          }
-         if (segment < numOfClasses)
-             z[zIndex] = nd4j::math::nd4j_max<T>(z[zIndex], val[segment]);
+        __syncthreads();
+        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
+            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
+            if (val[segment] < x[xIndex])
+                val[segment] = x[xIndex];
+        }
+        __syncthreads();
+
+        if (threadIdx.x == 0) {
+            z[zIndex] = val[segment];
+        }
+
     }
 
     template <typename I>
