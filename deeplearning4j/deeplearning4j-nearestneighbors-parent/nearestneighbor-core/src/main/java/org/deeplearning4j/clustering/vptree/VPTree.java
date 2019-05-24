@@ -506,14 +506,16 @@ public class VPTree implements Serializable {
         Collections.reverse(results);
         Collections.reverse(distances);
 
-        if (dropEdge && results.size() > k) {
+        if (dropEdge || results.size() > k) {
             if (filterEqual && distances.get(0) == 0.0) {
                 results.remove(0);
                 distances.remove(0);
             }
 
-            results.remove(results.size() - 1);
-            distances.remove(distances.size() - 1);
+            while (results.size() > k) {
+                results.remove(results.size() - 1);
+                distances.remove(distances.size() - 1);
+            }
         }
     }
 

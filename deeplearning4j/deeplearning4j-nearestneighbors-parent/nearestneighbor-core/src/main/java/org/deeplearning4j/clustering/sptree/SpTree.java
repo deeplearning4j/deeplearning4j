@@ -98,7 +98,7 @@ public class SpTree implements Serializable {
         INDArray width = Nd4j.create(meanY.shape());
         for (int i = 0; i < width.length(); i++) {
             width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
-                    meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
+                    meanY.getDouble(i) - minY.getDouble(i)) + Nd4j.EPS_THRESHOLD);
         }
 
         try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {

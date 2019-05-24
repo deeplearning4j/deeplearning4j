@@ -238,7 +238,7 @@ public class BarnesHutTsne implements Model {
                 double betaMax = Double.MAX_VALUE;
                 List<DataPoint> results = new ArrayList<>();
                 List<Double> distances = new ArrayList<>();
-                tree.search(d.getRow(i), k + 1, results, distances);
+                tree.search(d.getRow(i), k + 1, results, distances, false, true);
                 double betas = 1.0;
 
                 if(results.size() == 0){
@@ -971,7 +971,7 @@ public class BarnesHutTsne implements Model {
         private double learningRate = 1e-1f;
         private boolean useAdaGrad = false;
         private double perplexity = 30;
-        private double minGain = 1e-1f;
+        private double minGain = 1e-2f;
         private double theta = 0.5;
         private boolean invert = true;
         private int numDim = 2;
