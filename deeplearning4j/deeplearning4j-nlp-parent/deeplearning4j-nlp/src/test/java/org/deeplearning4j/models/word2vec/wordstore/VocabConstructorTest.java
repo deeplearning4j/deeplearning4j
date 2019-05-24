@@ -37,6 +37,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class VocabConstructorTest {
 
     @Test
     public void testVocab() throws Exception {
-        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile);
 
         Set<String> set = new HashSet<>();
@@ -93,7 +94,7 @@ public class VocabConstructorTest {
 
     @Test
     public void testBuildJointVocabulary1() throws Exception {
-        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile);
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -121,7 +122,7 @@ public class VocabConstructorTest {
 
     @Test
     public void testBuildJointVocabulary2() throws Exception {
-        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile);
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -256,9 +257,9 @@ public class VocabConstructorTest {
 
         AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File resource = Resources.asFile("big/raw_sentences.txt");
 
-        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource);
 
 
         SentenceTransformer transformer =
@@ -290,9 +291,9 @@ public class VocabConstructorTest {
 
         AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File resource = Resources.asFile("big/raw_sentences.txt");
 
-        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource);
 
 
         SentenceTransformer transformer =
@@ -310,7 +311,7 @@ public class VocabConstructorTest {
         log.info("Source Vocab size: " + sourceSize);
 
         val dir = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
@@ -432,7 +433,7 @@ public class VocabConstructorTest {
 
     @Test(timeout=5000)		// 5s timeout
     public void testParallelTokenizationDisabled_Completes() throws Exception {
-        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile);
 
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();

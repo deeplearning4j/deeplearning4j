@@ -361,7 +361,9 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         int nClassesIn = 10;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
+                .dataType(DataType.DOUBLE)
+                .list()
                 .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
                 .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
@@ -370,7 +372,9 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER).list()
+                .weightInit(WeightInit.XAVIER)
+                .dataType(DataType.DOUBLE)
+                .list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
                 .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
@@ -413,7 +417,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         net2.computeGradientAndScore();
 
         System.out.println(net.score() + "\t" + net2.score());
-        assertEquals(net2.score(), net.score(), 1e-6);
+        assertEquals(net2.score(), net.score(), 1e-5);
 
         Map<String, INDArray> gradient = net.gradient().gradientForVariable();
         Map<String, INDArray> gradient2 = net2.gradient().gradientForVariable();

@@ -19,6 +19,7 @@ package org.deeplearning4j.text.sentenceiterator;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,8 +38,7 @@ public class BasicLineIteratorTest {
 
     @Test
     public void testHasMoreLinesFile() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);
 
         int cnt = 0;
@@ -62,8 +62,7 @@ public class BasicLineIteratorTest {
 
     @Test
     public void testHasMoreLinesStream() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile(); //.getParentFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(new FileInputStream(file));
 
         int cnt = 0;

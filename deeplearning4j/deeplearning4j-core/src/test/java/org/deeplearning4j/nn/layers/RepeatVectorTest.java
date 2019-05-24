@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -38,9 +39,10 @@ public class RepeatVectorTest {
 
     private Layer getRepeatVectorLayer() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
+                .dataType(DataType.DOUBLE)
                 .layer(new RepeatVector.Builder(REPEAT).build()).build();
         return conf.getLayer().instantiate(conf, null, 0,
-                null, false, Nd4j.defaultFloatingPointType());
+                null, false, DataType.DOUBLE);
     }
 
     @Test

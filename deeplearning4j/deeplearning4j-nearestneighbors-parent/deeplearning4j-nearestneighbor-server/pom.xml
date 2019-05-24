@@ -50,7 +50,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <argLine>-Ddtype=double</argLine>
+                        <argLine>-Ddtype=float -Xmx8g</argLine>
+                        <includes>
+                            <!-- Default setting only runs tests that start/end with "Test" -->
+                            <include>*.java</include>
+                            <include>**/*.java</include>
+                        </includes>
                         <systemPropertyVariables>
                             <config.file>../../deeplearning4j-ui-parent/deeplearning4j-play/src/main/resources/application.conf</config.file>
                         </systemPropertyVariables>

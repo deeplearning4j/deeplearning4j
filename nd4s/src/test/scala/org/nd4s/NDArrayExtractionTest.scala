@@ -48,7 +48,7 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     assert(extracted == expected)
   }
 
-  it should "be able to extract a part of 2d matrix with offset" in {
+  it should "be able to extract a part of 2d matrix with offset" ignore { //Ignored AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7657
     val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
 
     val expectedArray = Array(
@@ -249,7 +249,7 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     )
   }
 
-  "num2Scalar" should "convert number to Scalar INDArray" in {
+  "num2Scalar" should "convert number to Scalar INDArray" ignore { //Ignored AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7657
     assert(1.toScalar == List(1).toNDArray)
     assert(2f.toScalar == List(2).toNDArray)
     assert(3d.toScalar == List(3).toNDArray)

@@ -22,7 +22,9 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,9 +46,8 @@ public class FilenamesLabelAwareIteratorTest {
 
     @Test
     public void testNextDocument() throws Exception {
-        ClassPathResource big = new ClassPathResource("/big");
         val tempDir = testDir.newFolder();
-        big.copyDirectory(tempDir);
+        Resources.copyDirectory("/big/", tempDir);
 
         FilenamesLabelAwareIterator iterator = new FilenamesLabelAwareIterator.Builder()
                         .addSourceFolder(tempDir).useAbsolutePathAsLabel(false).build();

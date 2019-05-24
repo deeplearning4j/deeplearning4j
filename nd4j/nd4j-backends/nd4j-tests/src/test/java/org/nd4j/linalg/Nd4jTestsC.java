@@ -1341,7 +1341,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{12});
         INDArray flattened = Nd4j.toFlattened(concat);
         assertEquals(assertion, flattened);
-
     }
 
 

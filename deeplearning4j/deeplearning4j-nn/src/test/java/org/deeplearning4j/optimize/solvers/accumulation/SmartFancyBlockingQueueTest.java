@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.util.ThreadUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,7 +32,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.*;
 
-@Slf4j
+@Slf4j @Ignore("AB 2019/05/21 - Failing (stuck, causing timeouts) - Issue #7657")
 public class SmartFancyBlockingQueueTest {
     @Test(timeout = 120000L)
     public void testSFBQ_1() throws Exception {

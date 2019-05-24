@@ -58,6 +58,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.nd4j.resources.Resources;
 
 import java.util.*;
 
@@ -164,7 +165,7 @@ public class EvalTest extends BaseDL4JTest {
     public void testEvaluationWithMetaData() throws Exception {
 
         RecordReader csv = new CSVRecordReader();
-        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        csv.initialize(new FileSplit(Resources.asFile("iris.txt")));
 
         int batchSize = 10;
         int labelIdx = 4;

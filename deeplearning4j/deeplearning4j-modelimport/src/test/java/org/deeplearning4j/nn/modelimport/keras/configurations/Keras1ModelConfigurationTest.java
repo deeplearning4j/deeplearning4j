@@ -24,6 +24,9 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
+
+import java.io.InputStream;
 
 
 /**
@@ -138,20 +141,22 @@ public class Keras1ModelConfigurationTest {
     }
 
     private void runSequentialConfigTest(String path, boolean training) throws Exception {
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        MultiLayerConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(training).buildSequential().getMultiLayerConfiguration();
-        MultiLayerNetwork model = new MultiLayerNetwork(config);
-        model.init();
+        try(InputStream is = Resources.asStream(path)) {
+            MultiLayerConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(training).buildSequential().getMultiLayerConfiguration();
+            MultiLayerNetwork model = new MultiLayerNetwork(config);
+            model.init();
+        }
     }
 
     private void runModelConfigTest(String path) throws Exception {
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        ComputationGraphConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
-        ComputationGraph model = new ComputationGraph(config);
-        model.init();
+        try(InputStream is = Resources.asStream(path)) {
+            ComputationGraphConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
+            ComputationGraph model = new ComputationGraph(config);
+            model.init();
+        }
     }
 }

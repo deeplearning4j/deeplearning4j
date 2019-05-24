@@ -37,7 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -94,8 +94,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
                         .useAdaGrad(false).build();
 
-        ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
-        File f = resource.getTempFileFromArchive();
+        File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
                         NDArrayIndex.interval(0, 784));
 

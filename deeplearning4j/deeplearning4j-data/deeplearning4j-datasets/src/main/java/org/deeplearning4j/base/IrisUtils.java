@@ -70,7 +70,7 @@ public class IrisUtils {
         }
 
         for (int i = 0; i < ret.rows(); i++) {
-            DataSet add = new DataSet(ret.getRow(i), Nd4j.create(outcomes[from + i]));
+            DataSet add = new DataSet(ret.getRow(i, true), Nd4j.create(outcomes[from + i], new long[]{1,3}));
             list.add(add);
         }
         return list;

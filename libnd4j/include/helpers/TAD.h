@@ -478,30 +478,12 @@ namespace shape {
         Nd4jLong *shape = shape::shapeOf(shapeInfo);
         int rank = shape::rank(shapeInfo);
         int leftOverIndexLen = rank - originalDimensionLength;
-#ifdef __CUDACC__
-        Nd4jLong *ret;
-        Nd4jLong *tadShape;
-        Nd4jLong *leftOverIndexes;
-        Nd4jLong *sub;
-        if (ptrManager != nullptr) {
-            UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
-            ret = (Nd4jLong *) manager->getTempRankBuffer1();
-            tadShape = (Nd4jLong *) manager->getTempRankBuffer2();
-            leftOverIndexes = (Nd4jLong *) manager->getTempRankBuffer3();
-            sub =  (Nd4jLong *) manager->getTempRankBuffer4();
-        } else {
-            ret = new Nd4jLong[rank];
-            tadShape = new Nd4jLong[leftOverIndexLen];
-            leftOverIndexes = new Nd4jLong[leftOverIndexLen];
-            sub = new Nd4jLong[rank];
-        }
-#else
+
         Nd4jLong *ret = new Nd4jLong[rank];
         //shape of the tad
         Nd4jLong *tadShape = new Nd4jLong[leftOverIndexLen];
         Nd4jLong *leftOverIndexes = new Nd4jLong[leftOverIndexLen];
         Nd4jLong *sub = new Nd4jLong[rank];
-#endif
 
         //indexes not specified in the tad indexes
 
@@ -544,7 +526,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape, index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape, index,len, sub);
 
 
         for(int i = 0; i < leftOverIndexLen; i++) {
@@ -673,28 +655,11 @@ namespace shape {
         Nd4jLong *sub;
         Nd4jLong *ret;
 
-#ifdef __CUDACC__
-
-        if (ptrManager != nullptr) {
-                UnifiedSharedMemory *manager = (UnifiedSharedMemory *) ptrManager;
-                ret = (Nd4jLong *) manager->getTempRankBuffer1();
-                tadShape = (Nd4jLong *) manager->getTempRankBuffer2();
-                leftOverIndexes = (Nd4jLong *) manager->getTempRankBuffer3();
-                sub = (Nd4jLong *) manager->getTempRankBuffer4();
-            } else {
-                ret = new Nd4jLong[rank];
-                //shape of the tad
-                leftOverIndexes = new Nd4jLong[leftOverIndexLen];
-                sub = new Nd4jLong[rank];
-                tadShape = new Nd4jLong[leftOverIndexLen];
-            }
-#else
         ret = new Nd4jLong[rank];
         //shape of the tad
         leftOverIndexes = new Nd4jLong[leftOverIndexLen];
         sub = new Nd4jLong[rank];
         tadShape = new Nd4jLong[leftOverIndexLen];
-#endif
 
         //indexes not specified in the tad indexes
 
@@ -738,7 +703,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::ind2subC(leftOverIndexLen,tadShape,index,len, sub);
+        shape::index2coords(leftOverIndexLen,tadShape,index,len, sub);
 
         for(int i = 0; i < leftOverIndexLen; i++) {
             ret[leftOverIndexes[i]] = sub[i];

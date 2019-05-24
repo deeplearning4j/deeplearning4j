@@ -82,7 +82,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     private INDArray boundingBoxes;
 
     private Yolo2OutputLayer() {
-        //No-arg costructor for Jackson JSON
+        //No-arg constructor for Jackson JSON
     }
 
     private Yolo2OutputLayer(Builder builder) {
@@ -228,7 +228,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          *
          * @param lambdaNoObj Lambda value for no-object (confidence) component of the loss function
          */
-        public Builder lambbaNoObj(double lambdaNoObj) {
+        public Builder lambdaNoObj(double lambdaNoObj) {
             this.setLambdaNoObj(lambdaNoObj);
             return this;
         }

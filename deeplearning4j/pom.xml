@@ -373,6 +373,7 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                    <inherited>true</inherited>
                     <configuration>
                         <!--
                          By default: Surefire will set the classpath based on the manifest. Because tests are not included
@@ -384,6 +385,12 @@
                          -->
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
+                        <argLine>-Ddtype=float -Xmx8g</argLine>
+                        <includes>
+                            <!-- Default setting only runs tests that start/end with "Test" -->
+                            <include>*.java</include>
+                            <include>**/*.java</include>
+                        </includes>
                     </configuration>
                 </plugin>
                 <plugin>
