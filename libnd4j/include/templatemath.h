@@ -772,6 +772,44 @@ inline __device__ Nd4jLong nd4j_atomicAdd<Nd4jLong>(Nd4jLong* address, Nd4jLong 
 }
 
 template <>
+inline __device__ long nd4j_atomicAdd<long>(long* address, long val)  {
+	unsigned long long* address_as_ull = (unsigned long long int *) address;
+
+//	return atomicAdd(address, val);
+	unsigned long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, val + assumed);
+	} while (assumed != old);
+	return old;
+}
+
+template <>
+inline __device__ unsigned long nd4j_atomicAdd<unsigned long>(unsigned long* address, unsigned long val)  {
+	unsigned long long* address_as_ull = (unsigned long long int *) address;
+
+//	return atomicAdd(address, val);
+	unsigned long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, val + assumed);
+	} while (assumed != old);
+	return old;
+}
+template <>
+inline __device__ unsigned long long nd4j_atomicAdd<unsigned long long>(unsigned long long* address, unsigned long long val)  {
+	//unsigned long* address_as_ull = (unsigned long int *) address;
+
+	//return (Nd4jLong) atomicAdd(address_as_ull, (unsigned long long int) val);
+	unsigned long int old = *address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address, assumed, val + assumed);
+	} while (assumed != old);
+	return old;
+}
+
+template <>
 inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
 	int* address_as_ull = (int*) address;
 
@@ -846,6 +884,21 @@ template <>
 inline __device__ uint16_t nd4j_atomicAdd<uint16_t>(uint16_t* address, uint16_t val)  {
     return nd4j_atomicAdd((bfloat16*)address, (bfloat16)val);
 }
+template <>
+inline __device__ int8_t nd4j_atomicAdd<int8_t>(int8_t* address, int8_t val)  {
+    int res = *address;
+    atomicAdd(&res, (int)val);
+    *address = res;
+    return *address;
+}
+
+template <>
+inline __device__ uint8_t nd4j_atomicAdd<uint8_t>(uint8_t* address, uint8_t val)  {
+    int res = *address;
+    atomicAdd(&res, (int)val);
+    *address = res;
+    return *address;
+}
 
 template <>
 inline __device__ double nd4j_atomicSub<double>(double* address, double val)  {
@@ -890,9 +943,13 @@ template <>
 inline __device__ float nd4j_atomicAdd<float>(float* address, float val)  {
 	return atomicAdd(address,val);
 }
+//template <>
+//inline __device__ int nd4j_atomicAdd<int>(int* address, int val)  {
+//	return atomicAdd(address, val);
+//}
 template <>
-inline __device__ int nd4j_atomicAdd<int>(int* address, int val)  {
-	return atomicAdd(address, val);
+inline __device__ int32_t nd4j_atomicAdd<int32_t>(int32_t* address, int32_t val)  {
+	return (int32_t)atomicAdd((int*)address, (int)val);
 }
 
 

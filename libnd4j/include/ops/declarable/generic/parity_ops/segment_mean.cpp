@@ -65,7 +65,8 @@ namespace nd4j {
 
         DECLARE_TYPES(segment_mean) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(false);
         }
