@@ -54,10 +54,12 @@ NDArray::NDArray(const NDArray& other) {
 
     setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
-    if(isEmpty()) {
+    if(!isEmpty()) {
         _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(), other.getContext()->getWorkspace());
         this->assign(&other);
     }
+    else
+        _buffer = std::make_shared<DataBuffer>();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -697,12 +699,13 @@ NDArray NDArray::sumNumber() const {
 //////////////////////////////////////////////////////////////////////////
 // This method returns mean number of this NDArray
 NDArray NDArray::meanNumber() const {
+
     if (isS())
         throw std::runtime_error("NDArray::meanNumber: you can't use this method on String array!");
     NDArray res(DataTypeUtils::pickFloatingType(dataType()), getContext());
 
     NDArray::prepareSpecialUse({&res}, {this});
-    NativeOpExecutioner::execReduceSameScalar(getContext(), nd4j::reduce::SameOps::Sum, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
+    NativeOpExecutioner::execReduceFloatScalar(getContext(), nd4j::reduce::FloatOps::Mean, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
     NDArray::registerSpecialUse({&res}, {this});
     return res;
 }
@@ -2902,7 +2905,7 @@ NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool bias
         NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
+        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
         synchronize("NDArray::varianceAlongDimension");
     }
 
@@ -2929,7 +2932,7 @@ NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrec
         NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), biasCorrected);
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
+        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
         synchronize("NDArray::varianceAlongDims");
     }
 
@@ -2954,7 +2957,7 @@ void NDArray::varianceAlongDimension(nd4j::variance::Ops op, NDArray *target, co
         NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), biasCorrected);
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->getSpecialBuffer(), target->specialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
+        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->getSpecialBuffer(), target->specialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
         synchronize("NDArray::varianceAlongDimension");
     }
 
@@ -3441,7 +3444,7 @@ void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray* target, const
         std::vector<int> copy = dimensions;
         shape::checkDimensions(rankOf(), copy);
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-        NativeOpExecutioner::execIndexReduce(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execIndexReduce(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
         synchronize("NDArray::applyIndexReduce");
     }
 
@@ -3517,7 +3520,7 @@ NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, cons
         if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()) || (packX.numberOfTads() != packY.numberOfTads() && packX.numberOfTads() != 1 && packY.numberOfTads() != 1))
             throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
 
-        NativeOpExecutioner::execReduce3(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+        NativeOpExecutioner::execReduce3(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
     }
 
     registerSpecialUse({result}, {this, other});
@@ -3567,9 +3570,9 @@ NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, c
 void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps cuda: you can't use this method on String array!");
+        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
     if (target == nullptr || !target->isR())
-        throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps cuda: requires target array to be present and have type form real space!");
+        throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
     if (copy.size())
@@ -3578,7 +3581,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw std::runtime_error("NDArray::reduceAlongDimension FloatOps cuda: wrong target shape!");
+            throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: wrong target shape!");
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -3588,7 +3591,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     }
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension FloatOps");
 
@@ -3600,18 +3603,18 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
 void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: you can't use this method on String array!");
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
     if (target == nullptr || target->dataType() != dataType())
-        throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: requires target array to be present and have same dtype as input");
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
     std::vector<int> copy(dimensions);
     if (copy.size())
-    shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: wrong target shape!");
+            throw std::runtime_error("NDArray::reduceAlongDimension SameOps: wrong target shape!");
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -3621,7 +3624,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
     }
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension SameOps");
 
@@ -3633,9 +3636,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: you can't use this method on String array!");
+        throw std::runtime_error("NDArray::reduceAlongDimension LongOps: you can't use this method on String array!");
     if (target == nullptr || target->dataType() != DataType::INT64)
-        throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: requires target array to be present and have type of INT64");
+        throw std::runtime_error("NDArray::reduceAlongDimension LongOps: requires target array to be present and have type of INT64");
 
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
@@ -3643,7 +3646,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: wrong target shape!");
+            throw std::runtime_error("NDArray::reduceAlongDimension LongOps: wrong target shape!");
     }
 
     NDArray::prepareSpecialUse({target}, {this});
@@ -3653,7 +3656,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     }
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceLong(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceLong(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension LongOps");
 
@@ -3685,7 +3688,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
     }
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension LongOps");
 
@@ -3849,7 +3852,7 @@ void NDArray::subRowVector(const NDArray *row, NDArray *target) const {
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
     NDArray::prepareSpecialUse({target}, {this, row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), &dimension, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
     NDArray::registerSpecialUse({target}, {this, row});
 }
 

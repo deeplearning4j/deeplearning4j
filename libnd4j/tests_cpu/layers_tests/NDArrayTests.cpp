@@ -357,6 +357,7 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSum1) {
+    // Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
     float *c = new float[4] {1, 2, 3, 4};
 
     auto array = new NDArray(c, cShape);
@@ -726,15 +727,20 @@ TEST_F(NDArrayTest, TestChecks5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTile1) {
 
-	NDArray array1(arr1,shape1);
-	NDArray array2(arr2,shape2);
+    // float arr1[6] = {1,2,3,4,5,6};
+    // Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
+    // float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
+    // Nd4jLong shape2[10] = {3,2,4,6,24,6,1,8192,1,99};
+
+	NDArray array1(arr1,shape1);   // {2,3}
+	NDArray array2(arr2,shape2);   // {2,4,6}
     auto expA = array1.dup('c');
 
     auto tiled = array1.tile(tileShape1);
 
-    //array2.printShapeInfo("Expct shape");
-    //tiled.printShapeInfo("Tiled shape");
-    //tiled.printBuffer();
+    // array2.printShapeInfo("Expct shape");
+    // tiled.printShapeInfo("Tiled shape");
+    // tiled.printBuffer();
 
 	ASSERT_TRUE(tiled.isSameShape(&array2));
 	ASSERT_TRUE(tiled.equalsTo(&array2));

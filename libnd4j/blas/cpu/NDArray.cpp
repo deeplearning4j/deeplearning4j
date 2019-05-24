@@ -218,9 +218,9 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     if(result.ordering() == 'c') {           //  ews == 1 always here
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i=0;  i<resultLen; ++i) {
+        for(Nd4jLong i = 0;  i < resultLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
 
         }
     }
@@ -230,7 +230,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         for(int i=0;  i<resultLen; ++i) {
             auto xOffset = result.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
         }
     }
     result.tickWriteHost();
@@ -323,18 +323,17 @@ NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) co
     // the size of outShape == rank
     int rank = rankOf();            // = outShape.size()
 
-    std::vector<Nd4jLong> newShape(rank);
-    for (int i = 0; i < rank; i++)
-        newShape[i] = outShape[i];
-
     auto ret = new NDArray('c', outShape, dataType(),  getContext());
 
-    auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
-    auto numTads = this->tensorsAlongDimension({dimension});
+    auto retArrs  = ret->allTensorsAlongDimension({dimension});
+    auto thisArrs = this->allTensorsAlongDimension({dimension});
+
+    auto repeatDelta = shape::prodLong(outShape.data(), rank) / this->lengthOf();
+    auto numTads = retArrs->size();
 
     for (int i = 0; i < numTads; i++) {
-        auto thisTensor = this->tensorAlongDimension(i, {dimension});
-        auto retTensor = ret->tensorAlongDimension(i, {dimension});
+        auto thisTensor = thisArrs->at(i);
+        auto retTensor  = retArrs->at(i);
         Nd4jLong retIdx = 0;
 
         for (Nd4jLong k = 0; k < thisTensor->lengthOf(); k++) {
@@ -342,10 +341,9 @@ NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) co
             for (Nd4jLong j = 0; j < repeatDelta; j++)
                 retTensor->p(retIdx++, s);
         }
-        delete thisTensor;
-        delete retTensor;
     }
 
+    delete retArrs;
     return ret;
 }
 
