@@ -3425,7 +3425,7 @@ public class SameDiff extends SDBaseOps {
      *
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
-    public void execBackwards(Map<String,INDArray> placeholders){
+    public void execBackwards(Map<String,INDArray> placeholders) {
         if (getFunction("grad") == null) {
             createGradFunction();
         }
@@ -3441,6 +3441,11 @@ public class SameDiff extends SDBaseOps {
                     varGradNames.add(g.getVarName());
                 }
             }
+        }
+
+        //Also add loss values - we need these so we can report them to listeners...
+        if(!listeners.isEmpty()){
+            varGradNames.addAll(lossVariables);
         }
 
         //Edge case: if no variables, no variable gradients to calculate...
@@ -4150,7 +4155,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, false);
         return ret;
     }
 
@@ -5193,7 +5198,7 @@ public class SameDiff extends SDBaseOps {
                 phValues.put(v.getName(), dt);
             }
         }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false);
         return out;
     }
 

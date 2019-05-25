@@ -83,7 +83,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class LogFileWriter {
-    public enum EventSubtype {NONE, EVALUATION, LOSS, TUNING_MATRIC, PERFORMANCE, PROFILING, FEATURE_LABEL, PREDICTION, USER_CUSTOM;
+    public enum EventSubtype {NONE, EVALUATION, LOSS, TUNING_METRIC, PERFORMANCE, PROFILING, FEATURE_LABEL, PREDICTION, USER_CUSTOM;
 
         public byte asUIEventSubtype(){
             switch (this){
@@ -93,7 +93,7 @@ public class LogFileWriter {
                     return UIEventSubtype.EVALUATION;
                 case LOSS:
                     return UIEventSubtype.LOSS;
-                case TUNING_MATRIC:
+                case TUNING_METRIC:
                     return UIEventSubtype.TUNING_METRIC;
                 case PERFORMANCE:
                     return UIEventSubtype.PERFORMANCE;

@@ -24,8 +24,22 @@ nd4j.graph.UIEventType = {
   IMAGE: 5,
   SUMMARY_STATISTICS: 6,
   OP_TIMING: 7,
-  HARDWARE_STATE: 8,
-  GC_EVENT: 9
+  HARDWARE_STATE: 8
+};
+
+/**
+ * @enum
+ */
+nd4j.graph.UIEventSubtype = {
+  NONE: 0,
+  EVALUATION: 1,
+  LOSS: 2,
+  TUNING_METRIC: 3,
+  PERFORMANCE: 4,
+  PROFILING: 5,
+  FEATURE_LABEL: 6,
+  PREDICTION: 7,
+  USER_CUSTOM: 8
 };
 
 /**
@@ -81,10 +95,18 @@ nd4j.graph.UIEvent.prototype.eventType = function() {
 };
 
 /**
+ * @returns {nd4j.graph.UIEventSubtype}
+ */
+nd4j.graph.UIEvent.prototype.eventSubType = function() {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? /** @type {nd4j.graph.UIEventSubtype} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.UIEventSubtype.NONE;
+};
+
+/**
  * @returns {number}
  */
 nd4j.graph.UIEvent.prototype.nameIdx = function() {
-  var offset = this.bb.__offset(this.bb_pos, 6);
+  var offset = this.bb.__offset(this.bb_pos, 8);
   return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
 };
 
@@ -92,7 +114,7 @@ nd4j.graph.UIEvent.prototype.nameIdx = function() {
  * @returns {flatbuffers.Long}
  */
 nd4j.graph.UIEvent.prototype.timestamp = function() {
-  var offset = this.bb.__offset(this.bb_pos, 8);
+  var offset = this.bb.__offset(this.bb_pos, 10);
   return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
 };
 
@@ -100,14 +122,6 @@ nd4j.graph.UIEvent.prototype.timestamp = function() {
  * @returns {number}
  */
 nd4j.graph.UIEvent.prototype.iteration = function() {
-  var offset = this.bb.__offset(this.bb_pos, 10);
-  return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns {number}
- */
-nd4j.graph.UIEvent.prototype.epoch = function() {
   var offset = this.bb.__offset(this.bb_pos, 12);
   return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
 };
@@ -115,8 +129,16 @@ nd4j.graph.UIEvent.prototype.epoch = function() {
 /**
  * @returns {number}
  */
-nd4j.graph.UIEvent.prototype.variableId = function() {
+nd4j.graph.UIEvent.prototype.epoch = function() {
   var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.UIEvent.prototype.variableId = function() {
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.readInt16(this.bb_pos + offset) : 0;
 };
 
@@ -125,7 +147,7 @@ nd4j.graph.UIEvent.prototype.variableId = function() {
  * @returns {nd4j.graph.FrameIteration|null}
  */
 nd4j.graph.UIEvent.prototype.frameIter = function(obj) {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? (obj || new nd4j.graph.FrameIteration).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
 };
 
@@ -133,7 +155,7 @@ nd4j.graph.UIEvent.prototype.frameIter = function(obj) {
  * @returns {number}
  */
 nd4j.graph.UIEvent.prototype.plugin = function() {
-  var offset = this.bb.__offset(this.bb_pos, 18);
+  var offset = this.bb.__offset(this.bb_pos, 20);
   return offset ? this.bb.readUint16(this.bb_pos + offset) : 0;
 };
 
@@ -141,7 +163,7 @@ nd4j.graph.UIEvent.prototype.plugin = function() {
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.UIEvent.startUIEvent = function(builder) {
-  builder.startObject(8);
+  builder.startObject(9);
 };
 
 /**
@@ -154,10 +176,18 @@ nd4j.graph.UIEvent.addEventType = function(builder, eventType) {
 
 /**
  * @param {flatbuffers.Builder} builder
+ * @param {nd4j.graph.UIEventSubtype} eventSubType
+ */
+nd4j.graph.UIEvent.addEventSubType = function(builder, eventSubType) {
+  builder.addFieldInt8(1, eventSubType, nd4j.graph.UIEventSubtype.NONE);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
  * @param {number} nameIdx
  */
 nd4j.graph.UIEvent.addNameIdx = function(builder, nameIdx) {
-  builder.addFieldInt32(1, nameIdx, 0);
+  builder.addFieldInt32(2, nameIdx, 0);
 };
 
 /**
@@ -165,7 +195,7 @@ nd4j.graph.UIEvent.addNameIdx = function(builder, nameIdx) {
  * @param {flatbuffers.Long} timestamp
  */
 nd4j.graph.UIEvent.addTimestamp = function(builder, timestamp) {
-  builder.addFieldInt64(2, timestamp, builder.createLong(0, 0));
+  builder.addFieldInt64(3, timestamp, builder.createLong(0, 0));
 };
 
 /**
@@ -173,7 +203,7 @@ nd4j.graph.UIEvent.addTimestamp = function(builder, timestamp) {
  * @param {number} iteration
  */
 nd4j.graph.UIEvent.addIteration = function(builder, iteration) {
-  builder.addFieldInt32(3, iteration, 0);
+  builder.addFieldInt32(4, iteration, 0);
 };
 
 /**
@@ -181,7 +211,7 @@ nd4j.graph.UIEvent.addIteration = function(builder, iteration) {
  * @param {number} epoch
  */
 nd4j.graph.UIEvent.addEpoch = function(builder, epoch) {
-  builder.addFieldInt32(4, epoch, 0);
+  builder.addFieldInt32(5, epoch, 0);
 };
 
 /**
@@ -189,7 +219,7 @@ nd4j.graph.UIEvent.addEpoch = function(builder, epoch) {
  * @param {number} variableId
  */
 nd4j.graph.UIEvent.addVariableId = function(builder, variableId) {
-  builder.addFieldInt16(5, variableId, 0);
+  builder.addFieldInt16(6, variableId, 0);
 };
 
 /**
@@ -197,7 +227,7 @@ nd4j.graph.UIEvent.addVariableId = function(builder, variableId) {
  * @param {flatbuffers.Offset} frameIterOffset
  */
 nd4j.graph.UIEvent.addFrameIter = function(builder, frameIterOffset) {
-  builder.addFieldOffset(6, frameIterOffset, 0);
+  builder.addFieldOffset(7, frameIterOffset, 0);
 };
 
 /**
@@ -205,7 +235,7 @@ nd4j.graph.UIEvent.addFrameIter = function(builder, frameIterOffset) {
  * @param {number} plugin
  */
 nd4j.graph.UIEvent.addPlugin = function(builder, plugin) {
-  builder.addFieldInt16(7, plugin, 0);
+  builder.addFieldInt16(8, plugin, 0);
 };
 
 /**

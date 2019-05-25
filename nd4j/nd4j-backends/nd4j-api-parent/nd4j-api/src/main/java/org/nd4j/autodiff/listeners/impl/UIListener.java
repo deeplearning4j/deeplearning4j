@@ -93,27 +93,6 @@ public class UIListener extends BaseListener {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public static Builder builder(File logFile){
         return new Builder(logFile);
     }

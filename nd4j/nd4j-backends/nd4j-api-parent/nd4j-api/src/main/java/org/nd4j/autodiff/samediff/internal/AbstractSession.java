@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -137,7 +138,7 @@ public abstract class AbstractSession<T, O> {
      * @param placeholderValues The placeholder values (if any).
      * @return The specified variable values, optionally in the specified workspace
      */
-    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues) {
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, List<Listener> listeners, boolean training) {
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
         List<String> sdPlaceholders = sameDiff.inputs();
         Preconditions.checkState(sdPlaceholders == null || sdPlaceholders.isEmpty()
