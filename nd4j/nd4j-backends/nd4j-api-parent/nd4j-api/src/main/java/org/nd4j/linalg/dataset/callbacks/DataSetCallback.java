@@ -14,17 +14,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.datasets.iterator.callbacks;
+package org.nd4j.linalg.dataset.callbacks;
 
-import org.nd4j.linalg.api.concurrency.AffinityManager;
+
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * @deprecated use {@link org.nd4j.linalg.dataset.callbacks.DefaultCallback}
+ * @author raver119@gmail.com
  */
-@Deprecated
-public class DefaultCallback extends org.nd4j.linalg.dataset.callbacks.DefaultCallback {
+public interface DataSetCallback {
 
+    void call(DataSet dataSet);
+
+    void call(MultiDataSet multiDataSet);
+
+    void reset();
 }

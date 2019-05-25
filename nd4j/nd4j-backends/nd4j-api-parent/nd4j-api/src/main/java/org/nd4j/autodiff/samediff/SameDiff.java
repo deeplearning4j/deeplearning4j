@@ -31,6 +31,9 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.Loss;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -58,6 +61,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
@@ -118,6 +122,8 @@ public class SameDiff extends SDBaseOps {
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final List<String> lossVariables = new ArrayList<>();
+
+    private final List<Listener> listeners = new ArrayList<>();
 
     ///////////////////////////////////////
     //Fields related to training
@@ -411,6 +417,24 @@ public class SameDiff extends SDBaseOps {
      */
     public DifferentialFunctionFactory f() {
         return functionFactory;
+    }
+
+    public void setListeners(Listener... listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void setListeners(Collection<? extends Listener> listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void addListeners(Listener... listeners){
+        addListeners(Arrays.asList(listeners));
+    }
+
+    public void addListeners(Collection<? extends Listener> listeners){
+        this.listeners.addAll(listeners);
     }
 
 
@@ -1482,7 +1506,22 @@ public class SameDiff extends SDBaseOps {
     }
 
     //Synchronized for thread safety
-    protected synchronized void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+    protected synchronized void fit(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount) {
+        boolean async = iter.asyncSupported();
+        if(async){
+            iter = new AsyncMultiDataSetIterator(iter, 3, true);
+        }
+        try{
+            fitHelper(iter, numEpochs, incrementEpochCount);
+        } finally {
+            if(async){
+                ((AsyncMultiDataSetIterator)iter).shutdown();
+            }
+        }
+    }
+
+    //fitHelper should only be called from fit method above
+    protected synchronized void fitHelper(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
         Preconditions.checkNotNull(iter, "Iterator must not be null");
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
@@ -1495,9 +1534,30 @@ public class SameDiff extends SDBaseOps {
 
         boolean performedValidation = false;
 
+        int trainThreadNum = 0;
+        long jThreadId = Thread.currentThread().getId();
+        boolean hasListeners = !listeners.isEmpty();
+        At at = At.builder()
+                .epoch(trainingConfig.getEpochCount())
+                .iteration(trainingConfig.getIterationCount())
+                .trainingThreadNum(trainThreadNum)
+                .javaThreadNum(jThreadId)
+                .build();
+
+
         for(int i = 0; i < numEpochs; i++) {
+
+            if(incrementEpochCount && hasListeners){
+                at.setEpoch(trainingConfig.getEpochCount());
+                for(Listener l : listeners){
+                    l.epochStart(this, at);
+                }
+            }
+
             while (iter.hasNext()) {
+                long dataStart = hasListeners ? System.currentTimeMillis() : 0;
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
                 if(!performedValidation){
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
@@ -1509,6 +1569,13 @@ public class SameDiff extends SDBaseOps {
                                     " the number of dataset label arrays (%s)", lblSize, ds.numLabelsArrays());
 
                     performedValidation = true;
+                }
+
+                if(hasListeners){
+                    at.setIteration(trainingConfig.getIterationCount());
+                    for(Listener l : listeners){
+                        l.iterationStart(this, at, ds, (dataEnd-dataStart));
+                    }
                 }
 
                 //Create placeholder variable map
@@ -1560,6 +1627,8 @@ public class SameDiff extends SDBaseOps {
                     GradientUpdater u = updaterMap.get(s);
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
+
+                        //TODO listener call
                     } catch (Throwable t) {
                         throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
@@ -1581,6 +1650,24 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+                if(hasListeners){
+                    double[] d = new double[lossVariables.size()];
+                    Loss loss = new Loss(lossVariables, d);
+
+                    //Collect the losses...
+                    SameDiff gradFn = sameDiffFunctionInstances.get("grad");
+                    int count=0;
+                    for(String s : lossVariables){
+                        INDArray arr = gradFn.getArrForVarName(s);
+                        double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                        d[count++] = l;
+                    }
+
+                    for(Listener l : listeners){
+                        l.iterationDone(this, at, ds, loss);
+                    }
+                }
+
                 trainingConfig.incrementIterationCount();
             }
 
@@ -1588,8 +1675,14 @@ public class SameDiff extends SDBaseOps {
                 iter.reset();
             }
 
-            if(incrementEpochCount)
+            if(incrementEpochCount) {
+                if(hasListeners){
+                    for(Listener l : listeners){
+                        l.epochEnd(this, at);
+                    }
+                }
                 trainingConfig.incrementEpochCount();
+            }
         }
     }
 
@@ -2054,7 +2147,8 @@ public class SameDiff extends SDBaseOps {
      * @param shape    the shape of the variable if any
      * @return SDVariable placeholder
      */
-    public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+        Preconditions.checkState(!variables.containsKey(name), "Variable already exists with name %s", name);
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -2535,6 +2629,132 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    /**
+     * Rename the specified variable to the new name.
+     *
+     * @param from The variable to rename - this variable must exist
+     * @param to   The new name for the variable - no variable with this name must already exist
+     */
+    public void renameVariable(String from, String to){
+        Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
+        Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
+
+        Variable v = variables.get(from);
+        v.setName(to);
+        v.getVariable().setVarName(to);
+        if(v.getInputsForOp() != null){
+            for(String opName : v.getInputsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newInputs = new ArrayList<>(op.getInputsToOp());
+                while(newInputs.contains(from)){
+                    newInputs.set(newInputs.indexOf(from), to);
+                }
+                op.setInputsToOp(newInputs);
+            }
+        }
+
+        if(v.getControlDepsForOp() != null){
+            for(String opName : v.getControlDepsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newCDs = new ArrayList<>(op.getControlDeps());
+                while(newCDs.contains(from)){
+                    newCDs.set(newCDs.indexOf(from), to);
+                }
+                op.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDepsForVar() != null){
+            for(String varName : v.getControlDepsForVar()){
+                Variable var = variables.get(varName);
+                List<String> newCDs = new ArrayList<>(var.getControlDeps());
+                while(newCDs.contains(from)){
+                    newCDs.set(newCDs.indexOf(from), to);
+                }
+                var.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDeps() != null){
+            for(String varName : v.getControlDeps()){
+                Variable var = variables.get(varName);
+                List<String> newCDsFor = new ArrayList<>(var.getControlDepsForVar());
+                while(newCDsFor.contains(from)){
+                    newCDsFor.set(newCDsFor.indexOf(from), to);
+                }
+                var.setControlDepsForVar(newCDsFor);
+            }
+        }
+
+        if(v.getOutputOfOp() != null){
+            SameDiffOp op = ops.get(v.getOutputOfOp());
+            List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
+            while(newOuts.contains(from)){
+                newOuts.set(newOuts.indexOf(from), to);
+            }
+            op.setOutputsOfOp(newOuts);
+        }
+
+        variables.remove(from);
+        variables.put(to, v);
+
+        if(trainingConfig != null){
+            if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMapping(l);
+            }
+
+            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMaskMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMaskMapping(l);
+            }
+
+            if(trainingConfig.getTrainableParams() != null && trainingConfig.getTrainableParams().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getTrainableParams());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setTrainableParams(l);
+            }
+
+            if(trainingConfig.getLossVariables() != null && trainingConfig.getLossVariables().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getLossVariables());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setLossVariables(l);
+            }
+        }
+
+        for(SameDiff sd : sameDiffFunctionInstances.values()){
+            if(sd.hasVariable(from)){
+                sd.renameVariable(from, to);
+            }
+        }
+    }
+
 
     /**
      * Remove an argument for a function. Note that if this function does not contain the argument, it will just be a no op.
@@ -2839,7 +3059,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.getSameDiff() == this, "Samediff instance must be the same.");
 
         if (variables.containsKey(variable.getVarName()) && !variables.get(variable.getVarName()).getVariable().equals(variable)) {
-            throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
+            throw new IllegalArgumentException("Variable with name \"" + variable.getVarName() + "\" already exists");
         }
 
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");

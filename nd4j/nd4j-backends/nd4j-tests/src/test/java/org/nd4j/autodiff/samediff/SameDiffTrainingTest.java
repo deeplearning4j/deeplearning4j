@@ -18,6 +18,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -104,6 +105,8 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
                     .build();
 
             sd.setTrainingConfig(conf);
+
+            sd.setListeners(new ScoreListener(1));
 
             sd.fit(iter, 100);
 
