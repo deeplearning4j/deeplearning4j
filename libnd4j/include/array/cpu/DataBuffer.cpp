@@ -42,7 +42,7 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate p
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
+void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
 
     if(sizeToCopyinBytes == 0)
         sizeToCopyinBytes = other.getLenInBytes();

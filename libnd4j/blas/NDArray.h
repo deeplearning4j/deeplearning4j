@@ -415,7 +415,7 @@ namespace nd4j {
         bool hasNaNs();
         bool hasInfs();
 
-        void copyBuffersContinuously(const NDArray& other, size_t sizeToCopyInBytes = 0, Nd4jLong offsetThis = 0, Nd4jLong offsetOther = 0);
+        void copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCopyInBytes = 0, Nd4jLong offsetThis = 0, Nd4jLong offsetOther = 0);
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array

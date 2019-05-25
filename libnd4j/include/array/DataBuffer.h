@@ -107,7 +107,7 @@ class ND4J_EXPORT DataBuffer {
 
         void setToZeroBuffers(const bool both = false);
 
-        void copyBuffers(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
+        void copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
 };
 
 
@@ -144,7 +144,7 @@ DataBuffer::DataBuffer(const DataBuffer &other) {
     _specialBuffer = nullptr;
 
     allocateBuffers();
-    copyBuffers(other);
+    copyBuffersFrom(other);
 
     writeSpecial();
 }
@@ -232,7 +232,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
     _workspace     = other._workspace;
 
     allocateBuffers();
-    copyBuffers(other);
+    copyBuffersFrom(other);
 
     writeSpecial();
 }

@@ -547,14 +547,14 @@ template ND4J_EXPORT NDArray& NDArray::operator=(const int16_t scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const bool scalar);
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::copyBuffersContinuously(const NDArray& other, size_t sizeToCopyInBytes, Nd4jLong offsetThis, Nd4jLong offsetOther) {
+void NDArray::copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCopyInBytes, Nd4jLong offsetThis, Nd4jLong offsetOther) {
 
     if(offsetThis == 0)
         offsetThis = bufferOffset();
     if(offsetOther == 0)
         offsetOther = other.getBufferOffset();
 
-    dataBuffer()->copyBuffers(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
+    dataBuffer()->copyBuffersFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
 }
 
 
@@ -3027,7 +3027,7 @@ void NDArray::assign(const NDArray& other) {
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
-            copyBuffersContinuously(other);
+            copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
         else {
             prepareSpecialUse({this}, {&other});
             NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr);
@@ -3210,7 +3210,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
     NDArray scalar(dataType(), getContext());
 
-    scalar.copyBuffersContinuously(*this, sizeOfT(), 0, getBufferOffset() + offset);
+    scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, getBufferOffset() + offset);
 
     return scalar;
 }
@@ -3527,7 +3527,6 @@ NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, cons
 
     return result;
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 (execAll) operations to this and other array, return result in new output array
@@ -4012,7 +4011,7 @@ ResultSet* NDArray::multipleTensorsAlongDimension(const std::vector<int> &indice
             throw std::runtime_error("Bad index");
         }
 
-        auto array = new NDArray(getDataBuffer(), ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx]);
+        auto array = new NDArray(getDataBuffer(), ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());
         result->push_back(array);
     }
 
@@ -4112,7 +4111,7 @@ ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions)
     auto numTads = lengthOf() / shape::length(pack.primaryShapeInfo());
 
     for (int idx = 0; idx < numTads; idx++ ) {
-        auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx]);
+        auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());
         array->_isView = true;
         result->push_back(array);
     }
@@ -4133,7 +4132,7 @@ NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& d
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-    auto array = new NDArray(_buffer, ShapeDescriptor(packX.primaryShapeInfo()), getContext(), packX.primaryOffsets()[index]);
+    auto array = new NDArray(_buffer, ShapeDescriptor(packX.primaryShapeInfo()), getContext(), packX.primaryOffsets()[index] + getBufferOffset());
     array->_isView = true;
 
     return array;
@@ -4173,7 +4172,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
     // check if there is possibility to set ews = 1
     shape::setEws(newShapeInfo, subArrLen);
 
-    NDArray result(_buffer, ShapeDescriptor(newShapeInfo), getContext(), offset);
+    NDArray result(_buffer, ShapeDescriptor(newShapeInfo), getContext(), offset + getBufferOffset());
     result._isView = true;
 
     if(!keepUnitiesInShape) {
