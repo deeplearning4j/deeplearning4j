@@ -124,7 +124,7 @@ public class SameDiff extends SDBaseOps {
 
     private final List<String> lossVariables = new ArrayList<>();
 
-    private final List<Listener> listeners = new ArrayList<>();
+    private List<Listener> listeners = new ArrayList<>();
 
     ///////////////////////////////////////
     //Fields related to training
@@ -3511,7 +3511,9 @@ public class SameDiff extends SDBaseOps {
             return;
         }
 
-        sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
+        SameDiff sd = sameDiffFunctionInstances.get("grad");
+        sd.listeners = listeners;
+        sd.exec(placeholders, variableGradNamesList);
     }
 
     /**

@@ -264,7 +264,7 @@ public abstract class AbstractSession<T, O> {
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
                 O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, training);
 
 
                 //Post execution: work out what is now available for exec
@@ -792,7 +792,8 @@ public abstract class AbstractSession<T, O> {
      * @param inputs          The specific input arrays for the op
      * @return The outputs of the op
      */
-    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs);
+    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
+                                   List<Listener> listeners, boolean training);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.

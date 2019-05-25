@@ -289,6 +289,14 @@ public class LogFileWriter {
         return indexNameMap.containsKey(name);
     }
 
+    public long registerEventNameQuiet(String name) {
+        try {
+            return registerEventName(name);
+        } catch (IOException e){
+            throw new RuntimeException("Error writing to log file", e);
+        }
+    }
+
     /**
      * Register the event name - "accuracy", "loss", etc for later use in recording events.
      * @param name Name to register
