@@ -49,13 +49,31 @@ enum UIEventType:byte {
 	IMAGE,						//To be added later
 	SUMMARY_STATISTICS,
 	OP_TIMING,
-	HARDWARE_STATE,
-	GC_EVENT					//To be added later?
+	HARDWARE_STATE
+}
+
+/*
+UIEventSubtype relates to what the metric is about. This determines where the value should be presented in the UI
+For example, we can have scalars for: evaluation, tuning (mean magnitudes), performance (op runtime) etc.
+But these should be presented in different sections of the UI.
+It can also be thought of as the "semantic type of event" whereas UIEventType is the "data type of event"
+*/
+enum UIEventSubtype:byte {
+	NONE,						//Not applicable (for example, ADD_NAME event type)
+	EVALUATION,					//Train/test accuracy, etc
+	LOSS,						//Value of the loss function (or any sub-component there-of, such as L2)
+	TUNING_METRIC,				//Metrics like: parameter:update ratio, or parameter and gradient histograms, etc
+	PERFORMANCE,				//Global performance metrics - batches/sec, epoch time, etc
+	PROFILING,					//Op profiling/performance metrics - how long to run each op, etc
+	FEATURE_LABEL,				//Feature/input - for visualization, debugging, etc
+	PREDICTION,					//Network prediction/output
+	USER_CUSTOM					//Custom, user-defined metric or value
 }
 
 table UIEvent {
     eventType:UIEventType;		//Type of the event that follows
-	nameIdx:int;				//Integer representing the previously registered name of the event - 0=="accuracy", 1=="score", 2=="weights" etc
+	eventSubType:UIEventSubtype;//Subtype of event that follows
+	nameIdx:int;				//Integer representing the previously registered name of the event - for example, 0=="accuracy", 1=="score", 2=="weights" etc as previously registered
 	timestamp:long;
 	iteration:int;
 	epoch:int;

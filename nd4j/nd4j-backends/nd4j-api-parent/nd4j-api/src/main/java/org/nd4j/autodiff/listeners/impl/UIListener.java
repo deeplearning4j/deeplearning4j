@@ -1,11 +1,18 @@
 package org.nd4j.autodiff.listeners.impl;
 
 import lombok.NonNull;
+import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.graph.ui.LogFileWriter;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +35,8 @@ public class UIListener extends BaseListener {
     private Map<Pair<String,Integer>, List<Evaluation.Metric>> trainEvalMetrics;
     private TestEvaluation testEvaluation;
 
+    private LogFileWriter writer;
+
 
     private UIListener(Builder b){
         logFile = b.logFile;
@@ -40,9 +49,38 @@ public class UIListener extends BaseListener {
         opProfileFrequency = b.opProfileFrequency;
         trainEvalMetrics = b.trainEvalMetrics;
         testEvaluation = b.testEvaluation;
+
+        Preconditions.checkState(!logFile.exists(), "Log file already exists: %s", logFile);
     }
 
+    protected void initalizeWriter(SameDiff sd) {
+        try{
+            initializeHelper(sd);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
 
+    protected void initializeHelper(SameDiff sd) throws IOException {
+        writer = new LogFileWriter(logFile);
+
+        //Write graph structure:
+        writer.writeGraphStructure(sd);
+
+        //Write system info:
+        //TODO
+
+        //All static info completed
+        writer.writeFinishStaticMarker();
+    }
+
+    @Override
+    public void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss) {
+        if(writer == null)
+            initalizeWriter(sd);
+
+
+    }
 
 
 
@@ -170,6 +208,6 @@ public class UIListener extends BaseListener {
     }
 
     public static class TestEvaluation {
-
+        //TODO
     }
 }
