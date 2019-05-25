@@ -76,6 +76,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -1592,6 +1593,11 @@ public class SameDiff extends SDBaseOps {
                 if (!initializedTraining)
                     initializeTraining();
 
+                Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
+                if(hasListeners){
+                    regScore = new HashMap<>();
+                }
+
                 int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
                 for (String s : trainingConfig.getTrainableParams()) {
@@ -1639,6 +1645,13 @@ public class SameDiff extends SDBaseOps {
                         for(Regularization reg : r){
                             if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
                                 reg.apply(param, grad, lr, iterCount, epochCount);
+                                if(hasListeners){
+                                    double score = reg.score(param, iterCount, epochCount);
+                                    if(!regScore.containsKey(reg.getClass())){
+                                        regScore.put(reg.getClass(), new AtomicDouble());
+                                    }
+                                    regScore.get(reg.getClass()).addAndGet(score);
+                                }
                             }
                         }
                     }
@@ -1651,8 +1664,21 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 if(hasListeners){
-                    double[] d = new double[lossVariables.size()];
-                    Loss loss = new Loss(lossVariables, d);
+                    double[] d = new double[lossVariables.size() + regScore.size()];
+                    List<String> lossVars;
+                    if(regScore.size() > 0){
+                        lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
+                        lossVars.addAll(lossVariables);
+                        int s=regScore.size();
+                        //Collect regularization losses
+                        for(Map.Entry<Class<?>,AtomicDouble> entry : regScore.entrySet()){
+                            lossVars.add(entry.getKey().getSimpleName());
+                            d[s] = entry.getValue().get();
+                        }
+                    } else {
+                        lossVars = lossVariables;
+                    }
+
 
                     //Collect the losses...
                     SameDiff gradFn = sameDiffFunctionInstances.get("grad");
@@ -1663,6 +1689,7 @@ public class SameDiff extends SDBaseOps {
                         d[count++] = l;
                     }
 
+                    Loss loss = new Loss(lossVars, d);
                     for(Listener l : listeners){
                         l.iterationDone(this, at, ds, loss);
                     }

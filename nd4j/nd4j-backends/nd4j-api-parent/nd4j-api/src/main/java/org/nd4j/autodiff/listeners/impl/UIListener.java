@@ -36,6 +36,7 @@ public class UIListener extends BaseListener {
     private TestEvaluation testEvaluation;
 
     private LogFileWriter writer;
+    private boolean wroteLossNames;
 
 
     private UIListener(Builder b){
@@ -78,8 +79,49 @@ public class UIListener extends BaseListener {
     public void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss) {
         if(writer == null)
             initalizeWriter(sd);
+        long time = System.currentTimeMillis();
 
+        if(!wroteLossNames){
+            for(String s : loss.getLossNames()){
+                try {
+                    String eventName = "losses/" + s;
+                    writer.registerEventName(eventName);
+                } catch (IOException e){
+                    throw new RuntimeException("Error writing to log file", e);
+                }
+            }
 
+            if(loss.numLosses() > 1){
+                try {
+                    writer.registerEventName("losses/totalLoss");
+                } catch (IOException e){
+                    throw new RuntimeException("Error writing to log file", e);
+                }
+            }
+
+            wroteLossNames = true;
+        }
+
+        List<String> lossNames = loss.getLossNames();
+        double[] lossVals = loss.getLosses();
+        for( int i=0; i<lossVals.length; i++ ){
+            try{
+                String eventName = "losses/" + lossNames.get(i);
+                writer.writeScalarEvent(eventName, LogFileWriter.EventSubtype.LOSS, time, at.iteration(), at.epoch(), lossVals[i]);
+            } catch (IOException e){
+                throw new RuntimeException("Error writing to log file", e);
+            }
+        }
+
+        if(lossVals.length > 1){
+            double total = loss.totalLoss();
+            try{
+                String eventName = "losses/totalLoss";
+                writer.writeScalarEvent(eventName, LogFileWriter.EventSubtype.LOSS, time, at.iteration(), at.epoch(), total);
+            } catch (IOException e){
+                throw new RuntimeException("Error writing to log file", e);
+            }
+        }
     }
 
 
