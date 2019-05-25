@@ -1540,7 +1540,6 @@ public class SameDiff extends SDBaseOps {
         At at = At.builder()
                 .epoch(trainingConfig.getEpochCount())
                 .iteration(trainingConfig.getIterationCount())
-                .device(null)   //TODO
                 .trainingThreadNum(trainThreadNum)
                 .javaThreadNum(jThreadId)
                 .build();
