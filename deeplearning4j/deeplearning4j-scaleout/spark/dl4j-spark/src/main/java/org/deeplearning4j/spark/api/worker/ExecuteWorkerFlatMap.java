@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.api.worker;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
-import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;

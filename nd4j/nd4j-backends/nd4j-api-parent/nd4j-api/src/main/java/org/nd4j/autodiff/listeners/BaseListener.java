@@ -7,6 +7,12 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
+/**
+ * A base/abstract {@link Listener} with all methods implemented as no-op.
+ * Extend this for custom listeners to selectively override only the required methods
+ *
+ * @author Alex Black
+ */
 public abstract class BaseListener implements Listener {
 
     @Override
@@ -30,12 +36,12 @@ public abstract class BaseListener implements Listener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, SameDiffOp op, DifferentialFunction df, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, SameDiffOp op, INDArray[] outputs) {
         //No op
     }
 
     @Override
-    public void postUpdate(SameDiff sd, At at, Variable v, INDArray update) {
+    public void preUpdate(SameDiff sd, At at, Variable v, INDArray update) {
         //No op
     }
 }
