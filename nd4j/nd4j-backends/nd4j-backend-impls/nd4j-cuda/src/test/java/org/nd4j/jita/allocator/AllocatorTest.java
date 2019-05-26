@@ -39,6 +39,8 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import static org.junit.Assert.*;
 
@@ -46,6 +48,7 @@ import static org.junit.Assert.*;
 public class AllocatorTest {
     private static final long SAFETY_OFFSET = 1024L;
 
+    @Ignore
     @Test
     public void testCounters() {
         int deviceId = 0;
@@ -76,6 +79,7 @@ public class AllocatorTest {
         }
     }
 
+    @Ignore
     @Test
     public void testWorkspaceInitSize() {
 
@@ -98,6 +102,7 @@ public class AllocatorTest {
     }
 
 
+    @Ignore
     @Test
     public void testWorkspaceSpilledSize() {
 
@@ -123,6 +128,7 @@ public class AllocatorTest {
         assertEquals(0, tracker.getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));
     }
 
+    @Ignore
     @Test
     public void testWorkspaceSpilledSizeHost() {
 
@@ -176,6 +182,7 @@ public class AllocatorTest {
                 MemoryTracker.getInstance().getWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread()));*/
     }
 
+    @Ignore
     @Test
     public void testDirectProvider() {
         INDArray input = Nd4j.zeros(1024);
@@ -211,6 +218,7 @@ public class AllocatorTest {
         assertEquals(cachedBefore, cachedAfter);
     }
 
+    @Ignore
     @Test
     public void testZeroCachingProvider() {
         INDArray input = Nd4j.zeros(1024);
@@ -246,6 +254,7 @@ public class AllocatorTest {
         assertEquals(cachedBefore, cachedAfter);
     }
 
+    @Ignore
     @Test
     public void testFullCachingProvider() {
         INDArray input = Nd4j.zeros(1024);
@@ -285,6 +294,7 @@ public class AllocatorTest {
         assertTrue(cachedBefore < cachedAfter);
     }
 
+    @Ignore
     @Test
     public void testCyclicCreation() throws Exception {
         Nd4j.create(100);
@@ -317,25 +327,65 @@ public class AllocatorTest {
     }
 
     @Test
-    public void testReallocations() {
+    public void testAllocations() {
         INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
         assertArrayEquals(new long[]{10, 5}, x.shape());
 
-        for (int i = 0; i < 10; ++i) {
+        for (DataType dataType : DataType.values()) {
+            for (int i = 0; i < 10; ++i) {
 
-            x = Nd4j.create(DataType.FLOAT, 10*i+1, 5*i+2);
-            System.out.println(x.shape());
+                x = Nd4j.create(DataType.FLOAT, 10 * i + 1, 5 * i + 2);
+                assertArrayEquals(new long[]{10 * i + 1, 5 * i + 2}, x.shape());
 
-            System.out.println("deviceId = " + AtomicAllocator.getInstance().getDeviceId(x));
+                val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+                assertNotNull(pointX);
+		assertTrue(x.shapeInfoDataBuffer().isConstant());
 
-            val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
-            assertNotNull(pointX);
+                assertNotNull(pointX.getHostPointer());
+                assertNotNull(pointX.getDevicePointer());
 
-            System.out.println(pointX.getHostPointer());
-            System.out.println(pointX.getHostPointer().address());
-            System.out.println(pointX.getDevicePointer());
-            System.out.println(pointX.getDevicePointer().address());
+                assertEquals(64, pointX.getShape().getNumberOfBytes());
+            }
         }
     }
 
+    @Test
+    public void testAllocations1() {
+        INDArray x = Nd4j.zeros(1,10);
+
+        for (int i = 0; i < 100000; ++i) {
+            INDArray toAdd = Nd4j.ones(1,10);
+            x.putRow(i+1, toAdd);
+        }
+
+        assertTrue(x.shapeInfoDataBuffer().isConstant());
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertNotNull(pointX);
+
+	assertNotNull(pointX);
+        assertTrue(x.shapeInfoDataBuffer().isConstant());
+
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+       assertEquals(64, pointX.getShape().getNumberOfBytes());
+    }
+
+    @Test
+    public void testRelocate() {
+	INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
+        INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
+
+        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3, Conditions.equals(0)));
+	val pointX = AtomicAllocator.getInstance().getAllocationPoint(array.shapeInfoDataBuffer());
+        assertNotNull(pointX);
+
+        assertNotNull(pointX);
+        assertTrue(array.shapeInfoDataBuffer().isConstant());
+
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+    }
 }
