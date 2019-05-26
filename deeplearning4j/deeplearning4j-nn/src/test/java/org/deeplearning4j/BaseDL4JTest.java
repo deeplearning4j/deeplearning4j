@@ -17,16 +17,26 @@
 package org.deeplearning4j;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 @Slf4j
 public class BaseDL4JTest {
+
+    @Rule
+    public TestName name = new TestName();
 
     /**
      * Override this to set the profiling mode for the tests defined in the child class
@@ -60,6 +70,55 @@ public class BaseDL4JTest {
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
             System.exit(1);
         }
+
+        StringBuilder sb = new StringBuilder();
+        long maxPhys = Pointer.maxPhysicalBytes();
+        long maxBytes = Pointer.maxBytes();
+        long currPhys = Pointer.physicalBytes();
+        long currBytes = Pointer.totalBytes();
+
+        long jvmTotal = Runtime.getRuntime().totalMemory();
+        long jvmMax = Runtime.getRuntime().maxMemory();
+
+        sb.append(getClass().getSimpleName()).append(".").append(name.getMethodName())
+                .append(": jvmTotal=").append(jvmTotal)
+                .append(", jvmMax=").append(jvmMax)
+                .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)
+                .append(", currPhys=").append(currPhys).append(", maxPhys=").append(maxPhys);
+
+        List<MemoryWorkspace> ws = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
+        if(ws != null && ws.size() > 0){
+            long currSize = 0;
+            for(MemoryWorkspace w : ws){
+                currSize += w.getCurrentSize();
+            }
+            if(currSize > 0){
+                sb.append(", threadWSSize=").append(currSize)
+                        .append(" (").append(ws.size()).append(" WSs)");
+            }
+        }
+
+
+        Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+        Object o = p.get("cuda.devicesInformation");
+        if(o instanceof List){
+            List<Map<String,Object>> l = (List<Map<String, Object>>) o;
+            if(l.size() > 0) {
+
+                sb.append(" [").append(l.size())
+                        .append(" GPUs: ");
+
+                for (int i = 0; i < l.size(); i++) {
+                    Map<String,Object> m = l.get(i);
+                    if(i > 0)
+                        sb.append(",");
+                    sb.append("(").append(m.get("cuda.freeMemory")).append(" free, ")
+                            .append(m.get("cuda.totalMemory")).append(" total)");
+                }
+                sb.append("]");
+            }
+        }
+        log.info(sb.toString());
     }
 
 }
