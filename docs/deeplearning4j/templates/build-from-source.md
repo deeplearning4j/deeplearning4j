@@ -143,11 +143,10 @@ For more complete instructions, [go here](http://www.cyberciti.biz/faq/centos-li
 
 ##### OS X
 
-You can install OpenBLAS on OS X with Home
-Science:
+You can install OpenBLAS on OS X with Homebrew:
 
 ```
-brew install homebrew/science/openblas
+brew install openblas
 ```
 
 ##### Windows

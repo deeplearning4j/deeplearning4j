@@ -41,9 +41,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,14 +66,15 @@ public class FullModelComparisons {
         String modelPath = "modelimport/keras/fullconfigs/lstm/lstm_th_keras_2_config.json";
         String weightsPath = "modelimport/keras/fullconfigs/lstm/lstm_th_keras_2_weights.h5";
 
-        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
-        ClassPathResource weightsResource = new ClassPathResource(weightsPath, classLoader);
+        KerasSequentialModel kerasModel;
+        try(InputStream modelIS = Resources.asStream(modelPath)) {
 
-        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
-                .modelJsonInputStream(modelResource.getInputStream())
-                .weightsHdf5FilenameNoRoot(weightsResource.getFile().getAbsolutePath())
-                .enforceTrainingConfig(false)
-                .buildSequential();
+             kerasModel = new KerasModel().modelBuilder()
+                    .modelJsonInputStream(modelIS)
+                    .weightsHdf5FilenameNoRoot(Resources.asFile(weightsPath).getAbsolutePath())
+                    .enforceTrainingConfig(false)
+                    .buildSequential();
+        }
 
         MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
         model.init();
@@ -166,9 +169,7 @@ public class FullModelComparisons {
         }
         INDArray dl4jPredictions = Nd4j.create(preds);
 
-        ClassPathResource predResource = new ClassPathResource(
-                "modelimport/keras/fullconfigs/lstm/predictions.npy", classLoader);
-        INDArray kerasPredictions = Nd4j.createFromNpyFile(predResource.getFile());
+        INDArray kerasPredictions = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/lstm/predictions.npy"));
 
         for (int i = 0; i < 283; i++) {
             TestCase.assertEquals(kerasPredictions.getDouble(i), dl4jPredictions.getDouble(i), 1e-7);
@@ -188,11 +189,8 @@ public class FullModelComparisons {
 
         String modelPath = "modelimport/keras/fullconfigs/cnn/cnn_batch_norm.h5";
 
-
-        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
-
         KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
-                .modelHdf5Filename(modelResource.getFile().getAbsolutePath())
+                .modelHdf5Filename(Resources.asFile(modelPath).getAbsolutePath())
                 .enforceTrainingConfig(false)
                 .buildSequential();
 
@@ -201,17 +199,13 @@ public class FullModelComparisons {
 
         System.out.println(model.summary());
 
-        ClassPathResource inputResource = new ClassPathResource(
-                "modelimport/keras/fullconfigs/cnn/input.npy", classLoader);
-        INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
+        INDArray input = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn/input.npy"));
         input = input.permute(0, 3, 1, 2);
         assertTrue(Arrays.equals(input.shape(), new long[] {5, 3, 10, 10}));
 
         INDArray output = model.output(input);
 
-        ClassPathResource outputResource = new ClassPathResource(
-                "modelimport/keras/fullconfigs/cnn/predictions.npy", classLoader);
-        INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
+        INDArray kerasOutput = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn/predictions.npy"));
 
         for (int i = 0; i < 5; i++) {
             TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
@@ -225,11 +219,8 @@ public class FullModelComparisons {
 
         String modelPath = "modelimport/keras/fullconfigs/cnn_batch_norm/cnn_batch_norm_medium.h5";
 
-
-        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
-
         KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
-                .modelHdf5Filename(modelResource.getFile().getAbsolutePath())
+                .modelHdf5Filename(Resources.asFile(modelPath).getAbsolutePath())
                 .enforceTrainingConfig(false)
                 .buildSequential();
 
@@ -238,17 +229,13 @@ public class FullModelComparisons {
 
         System.out.println(model.summary());
 
-        ClassPathResource inputResource = new ClassPathResource(
-                "modelimport/keras/fullconfigs/cnn_batch_norm/input.npy", classLoader);
-        INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
+        INDArray input = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn_batch_norm/input.npy"));
         input = input.permute(0, 3, 1, 2);
         assertTrue(Arrays.equals(input.shape(), new long[] {5, 1, 48, 48}));
 
         INDArray output = model.output(input);
 
-        ClassPathResource outputResource = new ClassPathResource(
-                "modelimport/keras/fullconfigs/cnn_batch_norm/predictions.npy", classLoader);
-        INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
+        INDArray kerasOutput = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn_batch_norm/predictions.npy"));
 
         for (int i = 0; i < 5; i++) {
             // TODO this should be a little closer

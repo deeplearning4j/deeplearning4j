@@ -25,7 +25,6 @@
 #include <ops.h>
 #include <types/types.h>
 #include <op_boilerplate.h>
-#include <helpers/sharedmem.h>
 #include <shape.h>
 
 using namespace simdOps;

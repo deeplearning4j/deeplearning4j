@@ -14,14 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-/*
-
- Half-precision data type, based on NVIDIA code: https://github.com/NVIDIA/caffe/tree/experimental/fp16
-
- */
-
-#ifndef CAFFE_UTIL_FP16_H_
-#define CAFFE_UTIL_FP16_H_
+#ifndef LIBND4J_FLOAT16_H
+#define LIBND4J_FLOAT16_H
 
 #include <cfloat>
 #include <iosfwd>
@@ -31,28 +25,21 @@
     #include <immintrin.h>
 #endif
 
-// support for half precision conversion
-#ifdef __INTEL_COMPILER
-#include <emmintrin.h>
-#endif
 
 struct bfloat16;
 
 #ifdef __CUDACC__
-#include <fp16_conversion.hpp>
+#include <cuda_fp16.h>
 
 #ifndef CUDA_8
+// CUDA_9 and above
 
 struct ihalf : public __half {
     public:
         ihalf() : half() {
             //
         }
-/*
-        inline void assign(__half f) {
-            this->__x = ((__half_raw *) &f)->x;
-        }
-*/
+
         inline unsigned short * getXP() {
            return &this->__x;
         }
@@ -85,7 +72,7 @@ struct ihalf : public __half {
             this->x = ((__half *) &f)->x;
         }
 };
-#endif // CUDA_9
+#endif // CUDA_8
 
 #else
 struct __half {
@@ -116,7 +103,23 @@ typedef __half ihalf;
 #define local_def inline
 #endif
 
-#include <fp16_emu.h>
+
+static local_def int ishnan_(unsigned short h) {
+     return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) != 0;
+}
+
+static local_def int ishinf_(unsigned short h) {
+    return (h & 0x7c00U) == 0x7c00U && (h & 0x03ffU) == 0;
+}
+
+static local_def int ishequ_(unsigned short x, unsigned short y) {
+    return ishnan_(x) == 0 && ishnan_(y) == 0 && x == y;
+}
+
+static local_def unsigned short hneg(unsigned short h) {
+    h ^= 0x8000U;
+    return h;
+}
 
 
 #if defined(__INTEL_COMPILER) || defined(__F16C__)
@@ -159,7 +162,6 @@ local_def float cpu_ihalf2float(ihalf h) {
 local_def ihalf cpu_float2ihalf_rn(float f) {
     ihalf ret;
     ret.x = _cvtss_sh(f, 0);
-
     return ret;
 }
 
@@ -222,27 +224,16 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 }
 #endif
 
-//namespace nd4j
-//{
-
   struct float16
   {
   public:
     ihalf data;
-    /* constexpr */ local_def float16() { *data.getXP() = 0; }
+    local_def float16() { *data.getXP() = 0; }
 
     template <class T>
-    local_def /*explicit*/ float16(const T& rhs) {
+    local_def float16(const T& rhs) {
       assign(rhs);
     }
-
-//    local_def float16(float rhs) {
-//      assign(rhs);
-//    }
-//
-//    local_def float16(double rhs) {
-//      assign(rhs);
-//    }
 
     local_def operator float() const {
 #ifdef __CUDA_ARCH__
@@ -284,23 +275,16 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         return static_cast<int8_t>(static_cast<float>(*this));
     }
 
-    //    local_def operator double() const { return (float)*this; }
-
     local_def operator half() const { return data; }
-/*
-    local_def unsigned short getx() const { return (const unsigned short)data.getX(); }
-    local_def float16& setx(unsigned short x) { *data.getXP() = x; return *this; }
-*/
+
     template <class T>
     local_def float16& operator=(const T& rhs) { assign(rhs); return *this; }
 
     local_def void assign(unsigned int rhs) {
-      // may be a better way ?
       assign((float)rhs);
     }
 
     local_def void assign(int rhs) {
-      // may be a better way ?
       assign((float)rhs);
     }
 
@@ -344,13 +328,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
 
 #else
-  #if defined(DEBUG) && defined (CPU_ONLY)
-      if (rhs > HLF_MAX || rhs < -HLF_MAX) {
-        LOG(WARNING) << "Overflow: " << rhs;
-      } else if (rhs != 0.F && rhs < HLF_MIN && rhs > -HLF_MIN) {
-        LOG(WARNING) << "Underflow: " << rhs;
-      }
-  #endif
       data = cpu_float2ihalf_rn(rhs);
 #endif
     }
@@ -363,7 +340,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
 #ifdef __CUDACC__
     local_def void assign(const half& rhs) {
-      //data = rhs;
       data.assign(rhs);
     }
 #endif
@@ -400,11 +376,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         os << static_cast<float>(*this);
         return os;
     }
-
-    // Utility contants
-    static const float16 zero;
-    static const float16 one;
-    static const float16 minus_one;
   };
 
 
@@ -413,15 +384,13 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #else
     local_def bool  operator==(const float16& a, const float16& b) { return ishequ_(((ihalf) a.data).getX(), ((ihalf)b.data).getX()); }
 #endif
-//    template <class T>
-//    local_def bool  operator==(const float16& a, const T& b) { return (a == (float16) b); }
 
 #ifdef NATIVE_HALFS
     local_def bool  operator!=(const float16& a, const float16& b) { return !(__hequ(a.data, b.data)); }
 #else
     local_def bool  operator!=(const float16& a, const float16& b) { return !(a == b); }
 #endif
-//
+
 #ifdef NATIVE_HALFS
     local_def bool  operator<(const float16& a, const float16& b) { return __hlt(a.data, b.data); }
 #else
@@ -471,7 +440,6 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def float16 operator*(const float16& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator/(const float16& a, const float16& b) { return float16((float)a / (float)b); }    
 #endif
-//
 
     local_def float16 operator+(const float16& a,            const double& b)             { return a + static_cast<float16>(b); }
     local_def float16 operator+(const float16& a,            const float& b)              { return a + static_cast<float16>(b); }
@@ -729,34 +697,7 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         return os;
     }
 
-
-  //template <class T>
-  //local_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
-
-  //template <class T>
-  //local_def float16 operator+(const T& a, const float16& b) { return float16((float)a + (float)b); }
-
-
-  //template <class T>
-  //local_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
-
-
-//  template <class T>
-//  local_def int operator&(const T& a, const float16& b) { return a & (float)b; }
-
-  //template <class T>
-  //local_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
-
-  //template <class T>
-  //local_def float16 operator*(const T& a, const float16& b) { return float16((float)a * (float)b); }
-
-
-  // this operator is special case, for division by larger types, like int, long long etc
-  //template <class T>
-  //local_def float16 operator/(const float16& a, const T& b) { return float16((float)a / (float)b); }
-
-
-  local_def float16 /* constexpr */ operator+(const float16& h) { return h; }
+  local_def float16 operator+(const float16& h) { return h; }
 
   local_def float16 operator - (const float16& h) {
     const ihalf * tmp = &h.data;
@@ -770,8 +711,5 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
 
   std::ostream& operator << (std::ostream& s, const float16&);
-
-
-//}   // namespace caffe
 
 #endif

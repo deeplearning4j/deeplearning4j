@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.junit.Ignore;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -67,7 +69,7 @@ public class ParallelInferenceTest {
     @Before
     public void setUp() throws Exception {
         if (model == null) {
-            File file = new ClassPathResource("models/LenetMnistMLN.zip").getFile();
+            File file = Resources.asFile("models/LenetMnistMLN.zip");
             model = ModelSerializer.restoreMultiLayerNetwork(file, true);
 
             iterator = new MnistDataSetIterator(1, false, 12345);
@@ -389,7 +391,7 @@ public class ParallelInferenceTest {
     }
 
 
-    @Test(timeout = 30000L)
+    @Test(timeout = 120000L)
     public void testParallelInferenceVariableLengthTS() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 

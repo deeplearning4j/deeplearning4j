@@ -21,6 +21,7 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.Location;
 import com.maxmind.geoip2.record.Subdivision;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.transform.geo.LocationType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
@@ -43,7 +44,14 @@ import java.net.InetAddress;
  *
  * @author saudet
  */
+@Slf4j
 public class IPAddressToLocationTransform extends BaseColumnTransform {
+    /**
+     * Name of the system property to use when configuring the GeoIP database file.<br>
+     * Most users don't need to set this - typically used for testing purposes.<br>
+     * Set with the full local path, like: "C:/datavec-geo/GeoIP2-City-Test.mmdb"
+     */
+    public static final String GEOIP_FILE_PROPERTY = "org.datavec.geoip.file";
 
     private static File database;
     private static DatabaseReader reader;
@@ -56,7 +64,19 @@ public class IPAddressToLocationTransform extends BaseColumnTransform {
         // A File object pointing to your GeoIP2 or GeoLite2 database:
         // http://dev.maxmind.com/geoip/geoip2/geolite2/
         if (database == null) {
-            database = GeoIPFetcher.fetchCityDB();
+            String s = System.getProperty(GEOIP_FILE_PROPERTY);
+            if(s != null && !s.isEmpty()){
+                //Use user-specified GEOIP file - mainly for testing purposes
+                File f = new File(s);
+                if(f.exists() && f.isFile()){
+                    database = f;
+                } else {
+                    log.warn("GeoIP file (system property {}) is set to \"{}\" but this is not a valid file, using default database", GEOIP_FILE_PROPERTY, s);
+                    database = GeoIPFetcher.fetchCityDB();
+                }
+            } else {
+                database = GeoIPFetcher.fetchCityDB();
+            }
         }
 
         // This creates the DatabaseReader object, which should be reused across lookups.
@@ -138,6 +158,8 @@ public class IPAddressToLocationTransform extends BaseColumnTransform {
                 default:
                     assert false;
             }
+            if(text == null)
+                text = "";
             return new Text(text);
         } catch (GeoIp2Exception | IOException e) {
             throw new RuntimeException(e);

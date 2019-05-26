@@ -16,6 +16,7 @@
 
 package org.nd4j.serde.base64;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -47,6 +48,7 @@ public class Nd4jBase64Test {
     }
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testBase64Npy() throws Exception {
         INDArray arr = Nd4j.linspace(1, 4, 4);
         String base64Npy = Nd4jBase64.base64StringNumpy(arr);

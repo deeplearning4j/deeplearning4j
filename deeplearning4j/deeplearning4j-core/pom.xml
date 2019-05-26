@@ -22,24 +22,6 @@
         <artifactId>deeplearning4j-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <argLine>-Ddtype=float</argLine>
-                        <includes>
-                            <!-- Default setting only runs tests that start/end with Test -->
-                            <include>*.java</include>
-                            <include>**/*.java</include>
-                        </includes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
     <dependencyManagement>
         <dependencies>
             <dependency>

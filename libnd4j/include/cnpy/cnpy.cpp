@@ -1,17 +1,25 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * The MIT License
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * Copyright (c) Carl Rogers, 2011
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  ******************************************************************************/
 
 //Copyright (C) 2011  Carl Rogers
@@ -629,15 +637,19 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata,
     dict += mapType<T>();
     dict += tostring(wordSize);
     dict += "', 'fortran_order': False, 'shape': (";
-    dict += tostring(shape[0]);
-    for(int i = 1; i < ndims;i++) {
-        dict += ", ";
-        dict += tostring(shape[i]);
-    }
+    if (ndims > 0) {
+        dict += tostring(shape[0]);
+        for (int i = 1; i < ndims; i++) {
+            dict += ", ";
+            dict += tostring(shape[i]);
+        }
 
-    if(ndims == 1)
-        dict += ",";
+        if (ndims == 1)
+            dict += ",";
+    }
+    // 0D case still requires close
     dict += "), }";
+
     //pad with spaces so that preamble+dict is modulo 16 bytes. preamble is 10 bytes. dict needs to end with \n
     int remainder = 64 - (10 + dict.size()) % 64;
     dict.insert(dict.end(),remainder,' ');

@@ -18,6 +18,7 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,7 @@ public class PrefetchingSentenceIteratorTest {
 
     @Test
     public void testHasMoreLinesFile() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);
 
         PrefetchingSentenceIterator fetcher =
@@ -68,8 +68,7 @@ public class PrefetchingSentenceIteratorTest {
 
     @Test
     public void testLoadedIterator1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);
 
         PrefetchingSentenceIterator fetcher =
@@ -94,8 +93,7 @@ public class PrefetchingSentenceIteratorTest {
 
     @Test
     public void testPerformance1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
 
         BasicLineIterator iterator = new BasicLineIterator(file);
 

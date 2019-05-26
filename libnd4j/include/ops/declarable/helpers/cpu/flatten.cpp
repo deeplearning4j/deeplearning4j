@@ -49,20 +49,12 @@ namespace nd4j {
                     auto xStride = shape::stride(xShapeInfo);
                     auto xRank = shape::rank(xShapeInfo);
                     auto xLength = inputs[e]->lengthOf();
-
-                    if (order == 'c') {
-                        for (uint i = 0; i < xLength; i++) {
-                            shape::ind2subC(xRank, xShape, i, xLength, xCoord);
-                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            z[i] = xBuffer[xOffset];
-                        }
-                    } else if (order == 'f') {
-                        for (uint i = 0; i < xLength; i++) {
-                            shape::ind2sub(xRank, xShape, i, xLength, xCoord);
-                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            z[i] = xBuffer[xOffset];
-                        }
-                    }
+                    
+                    for (uint i = 0; i < xLength; i++) {
+                        shape::index2coords(xRank, xShape, i, xLength, xCoord, order);
+                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                        z[i] = xBuffer[xOffset];
+                    }                    
                 }
             }
 

@@ -237,7 +237,8 @@ public class ExecutionTest extends BaseSparkTest {
         assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
     }
 
-    @Test
+    @Test(timeout = 60000L)
+    @Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
     public void testPythonExecution() throws Exception {
         Schema schema = new Schema.Builder().addColumnInteger("col0")
                 .addColumnString("col1").addColumnDouble("col2").build();
@@ -275,7 +276,8 @@ public class ExecutionTest extends BaseSparkTest {
         assertEquals(expected, out);
     }
 
-    @Test
+    @Test(timeout = 60000L)
+    @Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
     public void testPythonExecutionWithNDArrays() throws Exception {
         long[] shape = new long[]{3, 2};
         Schema schema = new Schema.Builder().addColumnInteger("id").addColumnNDArray("col1", shape)

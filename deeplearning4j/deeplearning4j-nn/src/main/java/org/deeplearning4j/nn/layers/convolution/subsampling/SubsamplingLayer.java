@@ -114,6 +114,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         assertInputSet(true);
 
         INDArray input = this.input.castTo(dataType);
+        if(epsilon.dataType() != dataType)
+            epsilon = epsilon.castTo(dataType);
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
