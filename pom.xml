@@ -307,7 +307,7 @@
         <tensorflow.version>1.13.1</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
-        <commons-compress.version>1.16.1</commons-compress.version>
+        <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
         <commonsio.version>2.5</commonsio.version>
@@ -342,7 +342,7 @@
         </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <spark.version>2.1.0</spark.version>
         <camel.version>2.16.3</camel.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.5.5</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
