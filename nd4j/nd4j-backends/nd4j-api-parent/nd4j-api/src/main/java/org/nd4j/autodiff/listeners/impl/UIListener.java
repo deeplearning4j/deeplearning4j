@@ -34,6 +34,7 @@ public class UIListener extends BaseListener {
     private HistogramType[] histogramTypes;
     private int opProfileFrequency;
     private Map<Pair<String,Integer>, List<Evaluation.Metric>> trainEvalMetrics;
+    private int trainEvalFrequency;
     private TestEvaluation testEvaluation;
     private int learningRateFrequency;
 
@@ -46,6 +47,8 @@ public class UIListener extends BaseListener {
     private Set<String> relevantOpsForEval;
     private Map<Pair<String,Integer>,Evaluation> epochTrainEval;
     private boolean wroteEvalNames;
+    private boolean wroteEvalNamesIter;
+
     private int firstUpdateRatioIter = -1;
 
 
@@ -60,6 +63,7 @@ public class UIListener extends BaseListener {
         histogramTypes = b.histogramTypes;
         opProfileFrequency = b.opProfileFrequency;
         trainEvalMetrics = b.trainEvalMetrics;
+        trainEvalFrequency = b.trainEvalFrequency;
         testEvaluation = b.testEvaluation;
         learningRateFrequency = b.learningRateFrequency;
 
@@ -203,6 +207,8 @@ public class UIListener extends BaseListener {
         //Note we'll do it in opExecution not iterationDone because we can't be sure arrays will be stil be around in the future
         //i.e., we'll eventually add workspaces and clear activation arrays once they have been consumed
         if(trainEvalMetrics != null && trainEvalMetrics.size() > 0){
+            long time = System.currentTimeMillis();
+
             //First: check if this op is relevant at all to evaluation...
             if(relevantOpsForEval == null){
                 //Build list for quick lookups to know if we should do anything for this op
@@ -230,6 +236,7 @@ public class UIListener extends BaseListener {
             }
 
             //Perform evaluation:
+            boolean wrote = false;
             for (Pair<String, Integer> p : trainEvalMetrics.keySet()) {
                 int idx = op.getOutputsOfOp().indexOf(p.getFirst());
                 INDArray out = outputs[idx];
@@ -237,7 +244,26 @@ public class UIListener extends BaseListener {
                 INDArray mask = currentIterDataSet.getLabelsMaskArray(p.getSecond());
 
                 epochTrainEval.get(p).eval(label, out, mask);
+
+                if(trainEvalFrequency > 0 && at.iteration() > 0 && at.iteration() % trainEvalFrequency == 0){
+                    for(Evaluation.Metric m : trainEvalMetrics.get(p)) {
+                        String n = "evaluation/train_iter/" + p.getKey() + "/" + m.toString().toLowerCase();
+                        if (!wroteEvalNamesIter) {
+                            writer.registerEventNameQuiet(n);
+                            wrote = true;
+                        }
+
+                        double score = epochTrainEval.get(p).scoreForMetric(m);
+
+                        try {
+                            writer.writeScalarEvent(n, LogFileWriter.EventSubtype.EVALUATION, time, at.iteration(), at.epoch(), score);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Error writing to log file");
+                        }
+                    }
+                }
             }
+            wroteEvalNamesIter = wrote;
         }
     }
 
@@ -260,8 +286,8 @@ public class UIListener extends BaseListener {
             double params;
             double updates;
             if(updateRatioType == UpdateRatio.L2){
-                params = v.getVariable().getArr().norm1Number().doubleValue();
-                updates = update.norm1Number().doubleValue();
+                params = v.getVariable().getArr().norm2Number().doubleValue();
+                updates = update.norm2Number().doubleValue();
             } else {
                 //Mean magnitude - L1 norm divided by N. But in the ratio later, N cancels out...
                 params = v.getVariable().getArr().norm1Number().doubleValue();
@@ -309,6 +335,7 @@ public class UIListener extends BaseListener {
         private int opProfileFrequency = -1;            //Disabled by default
 
         private Map<Pair<String,Integer>, List<Evaluation.Metric>> trainEvalMetrics;
+        private int trainEvalFrequency = 10;            //Report evaluation metrics every 10 iterations by default
 
         private TestEvaluation testEvaluation = null;
 
@@ -351,6 +378,11 @@ public class UIListener extends BaseListener {
 
         public Builder trainF1(String name, int labelIdx){
             return trainEvaluationMetrics(name, labelIdx, Evaluation.Metric.F1);
+        }
+
+        public Builder trainEvalFrequency(int trainEvalFrequency){
+            this.trainEvalFrequency = trainEvalFrequency;
+            return this;
         }
 
         public Builder updateRatios(int frequency){

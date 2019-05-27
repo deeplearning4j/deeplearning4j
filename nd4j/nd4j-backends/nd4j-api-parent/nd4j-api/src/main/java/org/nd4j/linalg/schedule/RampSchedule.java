@@ -23,7 +23,7 @@ public class RampSchedule implements ISchedule {
         if(iteration >= numIter - 1){
             return base;
         }
-        double frac = (numIter+1) / (double)numIter;
+        double frac = (iteration+1) / (double)numIter;
         return frac * base;
     }
 

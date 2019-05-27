@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -138,7 +139,7 @@ public abstract class AbstractSession<T, O> {
      * @param placeholderValues The placeholder values (if any).
      * @return The specified variable values, optionally in the specified workspace
      */
-    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, List<Listener> listeners, boolean training) {
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, List<Listener> listeners, boolean training, At at) {
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
         List<String> sdPlaceholders = sameDiff.inputs();
         Preconditions.checkState(sdPlaceholders == null || sdPlaceholders.isEmpty()
@@ -264,7 +265,7 @@ public abstract class AbstractSession<T, O> {
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
                 O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, training);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, training, at);
 
 
                 //Post execution: work out what is now available for exec
@@ -793,7 +794,7 @@ public abstract class AbstractSession<T, O> {
      * @return The outputs of the op
      */
     public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                   List<Listener> listeners, boolean training);
+                                   List<Listener> listeners, boolean training, At at);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.

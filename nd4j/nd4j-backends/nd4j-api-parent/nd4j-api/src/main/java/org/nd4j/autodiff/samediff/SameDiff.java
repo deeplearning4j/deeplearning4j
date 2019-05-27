@@ -1631,12 +1631,6 @@ public class SameDiff extends SDBaseOps {
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
                     GradientUpdater u = updaterMap.get(s);
-                    if(hasListeners){
-                        for(Listener l : listeners){
-                            l.preUpdate(this, at, variables.get(s), reshapedView);
-                        }
-                    }
-
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
                     } catch (Throwable t) {
@@ -1659,6 +1653,13 @@ public class SameDiff extends SDBaseOps {
                             }
                         }
                     }
+
+                    if(hasListeners){
+                        for(Listener l : listeners){
+                            l.preUpdate(this, at, variables.get(s), reshapedView);
+                        }
+                    }
+
 
                     if (trainingConfig.isMinimize()) {
                         param.subi(grad);
@@ -3517,7 +3518,15 @@ public class SameDiff extends SDBaseOps {
 
         SameDiff sd = sameDiffFunctionInstances.get("grad");
         sd.listeners = listeners;
-        sd.exec(placeholders, variableGradNamesList);
+
+        At at = new At(0, 0, 0, Thread.currentThread().getId());
+        if(trainingConfig != null){
+            at.setIteration(trainingConfig.getIterationCount());
+            at.setEpoch(trainingConfig.getEpochCount());
+        }
+
+        //TODO is this 'train' flag the best approach?
+        sd.exec(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
     }
 
     /**
@@ -4164,7 +4173,11 @@ public class SameDiff extends SDBaseOps {
         return exec(placeholders, outputs.toArray(new String[outputs.size()]));
     }
 
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs){
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
+        return exec(placeholders, false, null, outputs);
+    }
+
+    protected Map<String,INDArray> exec(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if(!sessions.containsKey(threadId)){
@@ -4188,7 +4201,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, false);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
         return ret;
     }
 
@@ -5231,7 +5244,7 @@ public class SameDiff extends SDBaseOps {
                 phValues.put(v.getName(), dt);
             }
         }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false, null);
         return out;
     }
 

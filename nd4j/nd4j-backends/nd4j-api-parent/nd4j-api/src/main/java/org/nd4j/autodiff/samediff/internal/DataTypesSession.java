@@ -19,6 +19,7 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -72,7 +73,7 @@ public class DataTypesSession extends AbstractSession<DataType, DataTypesSession
 
     @Override
     public DataType[] getOutputs(DataTypeCalc op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training) {
+                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
         List<DataType> outTypes = op.getFn().calculateOutputDataTypes(op.getInputTypes());
         return outTypes.toArray(new DataType[outTypes.size()]);
     }
