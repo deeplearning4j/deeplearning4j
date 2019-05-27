@@ -12,6 +12,7 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
@@ -34,11 +35,13 @@ public class UIListener extends BaseListener {
     private int opProfileFrequency;
     private Map<Pair<String,Integer>, List<Evaluation.Metric>> trainEvalMetrics;
     private TestEvaluation testEvaluation;
+    private int learningRateFrequency;
 
     private MultiDataSet currentIterDataSet;
 
     private LogFileWriter writer;
     private boolean wroteLossNames;
+    private boolean wroteLearningRateName;
 
     private Set<String> relevantOpsForEval;
     private Map<Pair<String,Integer>,Evaluation> epochTrainEval;
@@ -58,6 +61,7 @@ public class UIListener extends BaseListener {
         opProfileFrequency = b.opProfileFrequency;
         trainEvalMetrics = b.trainEvalMetrics;
         testEvaluation = b.testEvaluation;
+        learningRateFrequency = b.learningRateFrequency;
 
         Preconditions.checkState(!logFile.exists(), "Log file already exists: %s", logFile);
     }
@@ -166,6 +170,27 @@ public class UIListener extends BaseListener {
         }
 
         currentIterDataSet = null;
+
+        if(learningRateFrequency > 0){
+            //Collect + report learning rate
+            if(!wroteLearningRateName){
+                String name = "learningRate";
+                writer.registerEventNameQuiet(name);
+                wroteLearningRateName = true;
+            }
+
+            if(at.iteration() % learningRateFrequency == 0) {
+                IUpdater u = sd.getTrainingConfig().getUpdater();
+                if (u.hasLearningRate()) {
+                    double lr = u.getLearningRate(at.iteration(), at.epoch());
+                    try {
+                        writer.writeScalarEvent("learningRate", LogFileWriter.EventSubtype.LEARNING_RATE, time, at.iteration(), at.epoch(), lr);
+                    } catch (IOException e){
+                        throw new RuntimeException("Error writing to log file");
+                    }
+                }
+            }
+        }
     }
 
 
@@ -287,6 +312,8 @@ public class UIListener extends BaseListener {
 
         private TestEvaluation testEvaluation = null;
 
+        private int learningRateFrequency = 10;         //Whether to plot learning rate or not
+
         public Builder(@NonNull File logFile){
             this.logFile = logFile;
         }
@@ -349,6 +376,11 @@ public class UIListener extends BaseListener {
 
         public Builder testEvaluation(TestEvaluation testEvalConfig){
             this.testEvaluation = testEvalConfig;
+            return this;
+        }
+
+        public Builder learningRate(int frequency){
+            this.learningRateFrequency = frequency;
             return this;
         }
 

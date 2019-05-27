@@ -6,10 +6,11 @@ class UIEventSubtype(object):
     NONE = 0
     EVALUATION = 1
     LOSS = 2
-    TUNING_METRIC = 3
-    PERFORMANCE = 4
-    PROFILING = 5
-    FEATURE_LABEL = 6
-    PREDICTION = 7
-    USER_CUSTOM = 8
+    LEARNING_RATE = 3
+    TUNING_METRIC = 4
+    PERFORMANCE = 5
+    PROFILING = 6
+    FEATURE_LABEL = 7
+    PREDICTION = 8
+    USER_CUSTOM = 9
 

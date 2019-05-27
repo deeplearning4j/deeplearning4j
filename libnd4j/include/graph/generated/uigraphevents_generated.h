@@ -79,21 +79,23 @@ enum UIEventSubtype {
   UIEventSubtype_NONE = 0,
   UIEventSubtype_EVALUATION = 1,
   UIEventSubtype_LOSS = 2,
-  UIEventSubtype_TUNING_METRIC = 3,
-  UIEventSubtype_PERFORMANCE = 4,
-  UIEventSubtype_PROFILING = 5,
-  UIEventSubtype_FEATURE_LABEL = 6,
-  UIEventSubtype_PREDICTION = 7,
-  UIEventSubtype_USER_CUSTOM = 8,
+  UIEventSubtype_LEARNING_RATE = 3,
+  UIEventSubtype_TUNING_METRIC = 4,
+  UIEventSubtype_PERFORMANCE = 5,
+  UIEventSubtype_PROFILING = 6,
+  UIEventSubtype_FEATURE_LABEL = 7,
+  UIEventSubtype_PREDICTION = 8,
+  UIEventSubtype_USER_CUSTOM = 9,
   UIEventSubtype_MIN = UIEventSubtype_NONE,
   UIEventSubtype_MAX = UIEventSubtype_USER_CUSTOM
 };
 
-inline const UIEventSubtype (&EnumValuesUIEventSubtype())[9] {
+inline const UIEventSubtype (&EnumValuesUIEventSubtype())[10] {
   static const UIEventSubtype values[] = {
     UIEventSubtype_NONE,
     UIEventSubtype_EVALUATION,
     UIEventSubtype_LOSS,
+    UIEventSubtype_LEARNING_RATE,
     UIEventSubtype_TUNING_METRIC,
     UIEventSubtype_PERFORMANCE,
     UIEventSubtype_PROFILING,
@@ -109,6 +111,7 @@ inline const char * const *EnumNamesUIEventSubtype() {
     "NONE",
     "EVALUATION",
     "LOSS",
+    "LEARNING_RATE",
     "TUNING_METRIC",
     "PERFORMANCE",
     "PROFILING",

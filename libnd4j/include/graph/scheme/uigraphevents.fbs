@@ -62,6 +62,7 @@ enum UIEventSubtype:byte {
 	NONE,						//Not applicable (for example, ADD_NAME event type)
 	EVALUATION,					//Train/test accuracy, etc
 	LOSS,						//Value of the loss function (or any sub-component there-of, such as L2)
+	LEARNING_RATE,				//Learning rate
 	TUNING_METRIC,				//Metrics like: parameter:update ratio, or parameter and gradient histograms, etc
 	PERFORMANCE,				//Global performance metrics - batches/sec, epoch time, etc
 	PROFILING,					//Op profiling/performance metrics - how long to run each op, etc
