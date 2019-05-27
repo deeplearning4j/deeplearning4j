@@ -767,15 +767,12 @@ template <>
 inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
     unsigned long long int* address_as_ull = (unsigned long long int*)address;
     unsigned long long int old = __double_as_longlong(val);
-    if (val >= 0 && *address >= 0)
-        return __longlong_as_double(atomicMin(address_as_ull, old));
-    else if (val < 0 && *address < 0)
-        return __longlong_as_double(atomicMax(address_as_ull, old));
-    else if (val < 0 && *address >= 0) {
-        *address = val;
-    }
-    return *address;
+    bool sw = ((old & 0x8000000000000000LL) == 0) && ((*address_as_ull & 0x8000000000000000LL) == 0);
+    printf("atomicMin: %lf, %lf, (%llx, %llx) [%s]\n", *address, val, *address_as_ull, old, sw?"Positive":"Negative");
 
+    return sw?
+         __longlong_as_double(atomicMin(address_as_ull, old)):
+         __longlong_as_double(atomicMax(address_as_ull, old));
 }
 template <>
 inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val)  {
@@ -785,13 +782,10 @@ template <>
 inline __device__ Nd4jLong nd4j_atomicMin<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
     if (val >= 0 && *address >= 0)
         return (Nd4jLong)atomicMin((unsigned long long*)address, (unsigned long long)val);
-    else if (val < 0 && *address < 0)
+    else
         return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
-    else if (val < 0 && *address >= 0)
-        *address = val;
-    return *address;
-}
 
+}
 template <>
 inline __device__ int16_t nd4j_atomicMin<int16_t>(int16_t* address, int16_t val)  {
     int32_t temp = *address;
