@@ -271,7 +271,7 @@
         <play.version>2.4.8</play.version>
         <jodah.typetools.version>0.5.0</jodah.typetools.version>
         <freemarker.version>2.3.23</freemarker.version>
-        <geoip2.version>2.8.1</geoip2.version>
+        <geoip2.version>2.12.0</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <opencsv.version>2.3</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
@@ -331,7 +331,7 @@
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>${jackson.version}</spark.jackson.version>
         <spark2.jackson.version>2.6.5</spark2.jackson.version>
-        <geo.jackson.version>2.8.7</geo.jackson.version>
+        <geo.jackson.version>2.9.9</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
@@ -644,7 +644,7 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.tests></libnd4j.tests>
+                <libnd4j.tests/>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
@@ -661,7 +661,7 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.tests></libnd4j.tests>
+                <libnd4j.tests/>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
