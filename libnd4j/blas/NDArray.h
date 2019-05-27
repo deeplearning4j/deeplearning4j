@@ -213,7 +213,7 @@ namespace nd4j {
         *  this constructor creates new NDArray with shape matching "other" array,
         *  doesn't copy "other" elements into new array !!!
         */
-        explicit NDArray(const NDArray *other, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        explicit NDArray(const NDArray* other, const bool copyStrides = false, nd4j::LaunchContext* context = nd4j::LaunchContext ::defaultContext());
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar

@@ -325,14 +325,11 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         auto res = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
 
-        if (startingValue == (T)0.0f) {
-            memset(res->getBuffer(), 0, length);
-            res->tickWriteHost();
-            res->syncToDevice();
-        }
-        else {
+        if (startingValue == (T)0.0f)
+            res->nullify();
+        else
             res->assign(startingValue);
-        }
+
         return res;
     }
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, nd4j::LaunchContext * context);
@@ -373,9 +370,8 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     NDArray result(buffer, descriptor, context);
 
-    memset(result.getBuffer(), 0, buffer->getLenInBytes());
+    result.nullify();
     result.setAttached(context->getWorkspace() != nullptr);
-    result.tickBothActual();
 
     return result;
 }
@@ -388,10 +384,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
 
     NDArray res(buffer, ShapeDescriptor::scalarDescriptor(dtype), context);
 
-    memset(res.getBuffer(), 0, buffer->getLenInBytes());
-
-    res.tickWriteHost();
-    res.syncToDevice();
+    res.nullify();
 
     return res;
 }

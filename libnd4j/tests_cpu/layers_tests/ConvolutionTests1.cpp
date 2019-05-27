@@ -759,7 +759,7 @@ TEST_F(ConvolutionTests1, TestDeconv_bp_1) {
 
     double _expbb[] = {1944.f,  2712.f};
     std::shared_ptr<DataBuffer> pBuffer3 = std::make_shared<DataBuffer>(_expbb, sizeof(_expbb), nd4j::DataType::DOUBLE, false);
-    NDArray expGradB(pBuffer1, 'c', {1, 2});
+    NDArray expGradB(pBuffer3, 'c', {1, 2});
 
     auto input = NDArrayFactory::create<double>('c', {3, 3, 4, 4});
     auto bias = NDArrayFactory::create<double>('c', {1, 2});

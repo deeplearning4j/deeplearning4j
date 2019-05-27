@@ -300,16 +300,17 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
 // assignment operator
     NDArray& NDArray::operator=(const NDArray& other) {
 
-    if (this == &other)
+    if (this == &other || (_shapeInfo == other._shapeInfo && _shapeInfo == nullptr))
         return *this;
 
-    if (shape::equalsTypesAndShapesSoft(_shapeInfo, other._shapeInfo)) {
+    if (_shapeInfo != nullptr && shape::equalsTypesAndShapesSoft(_shapeInfo, other._shapeInfo)) {
         if(!other.isEmpty())
             this->assign(&other);
     }
     else {
         _context = other._context;
         _offset  = 0;
+        setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
         if(!other.isEmpty()) {
             _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(), other.getContext()->getWorkspace());
@@ -471,12 +472,12 @@ std::vector<int8_t> NDArray::asByteVector() {
     if (this->isView()) {
         auto tmp = this->dup(this->ordering());
 
-        memcpy(result.data(), tmp->getBuffer(), _buffer->getLenInBytes());
+        memcpy(result.data(), tmp->getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
 
         delete tmp;
     }
     else {
-        memcpy(result.data(), getBuffer(), (unsigned long long) _buffer->getLenInBytes());
+        memcpy(result.data(), getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
     }
     return result;
 }

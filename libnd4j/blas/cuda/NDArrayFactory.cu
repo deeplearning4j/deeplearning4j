@@ -316,14 +316,11 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         auto result = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
 
-        if (value == (T)0.0f) {
-            memset(result->buffer(), 0, length);
-            res->tickWriteHost();
-            res->syncToDevice();
-        }
-        else {
+        if (value == (T)0.0f)
+            res->nullify();
+        else
             res->assign(value);
-        }
+
         return res;
     }
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, nd4j::LaunchContext * context);
@@ -364,9 +361,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     NDArray result(buffer, descriptor, context);
 
-    cudaMemset(result->getSpecialBuffer(), 0, buffer->getLenInBytes());
-
-    res.tickWriteDevice();
+    result.nullify();
 
     return res;
 }
@@ -379,10 +374,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
 
     NDArray res(buffer, ShapeDescriptor::scalarDescriptor(dtype), context);
 
-    memset(res.getBuffer(), 0, buffer->getLenInBytes());
-
-    res.tickWriteHost();
-    res.syncToDevice();
+    res.nullify();
 
     return res;
 }
