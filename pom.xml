@@ -230,7 +230,7 @@
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>0.11.0</arrow.version>
+        <arrow.version>0.13.0</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -330,7 +330,7 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>${jackson.version}</spark.jackson.version>
-        <spark2.jackson.version>2.6.5</spark2.jackson.version>
+        <spark2.jackson.version>2.9.9</spark2.jackson.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
@@ -349,7 +349,7 @@
         <playframework.version>2.4.8
         </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
-        <guava.version>20.0</guava.version>
+        <guava.version>24.1.1-jre</guava.version>
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
@@ -644,7 +644,7 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.tests></libnd4j.tests>
+                <libnd4j.tests/>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
@@ -661,7 +661,7 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.tests></libnd4j.tests>
+                <libnd4j.tests/>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
