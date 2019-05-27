@@ -20,6 +20,7 @@ package org.nd4j.linalg;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -214,6 +215,8 @@ public abstract class BaseNd4jTest {
 
     @After
     public void after() throws Exception {
+        Nd4j.getMemoryManager().purgeCaches();
+
         logTestCompletion();
         if (System.getProperties().getProperty("backends") != null
                         && !System.getProperty("backends").contains(backend.getClass().getName()))
