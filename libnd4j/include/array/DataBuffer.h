@@ -184,19 +184,21 @@ DataBuffer::DataBuffer(Nd4jPointer primary, const size_t lenInBytes, const DataT
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) {
 
-    if(lenInBytes == 0)
-        throw std::runtime_error("DataBuffer constructor: can't create buffer of zero length !");
-
-    _lenInBytes    = lenInBytes;
-    _dataType      = dataType;
-    _workspace     = workspace;
+    _dataType   = dataType;
+    _workspace  = workspace;
+    _lenInBytes = lenInBytes;
 
     _primaryBuffer = nullptr;
     _specialBuffer = nullptr;
 
-    allocateBuffers(allocBoth);
+    if(lenInBytes == 0) {
+        setCountersToZero();
+    }
+    else {
 
-    writeSpecial();
+        allocateBuffers(allocBoth);
+        writeSpecial();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
