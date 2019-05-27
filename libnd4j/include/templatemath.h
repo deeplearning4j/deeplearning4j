@@ -767,12 +767,12 @@ template <>
 inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
     unsigned long long int* address_as_ull = (unsigned long long int*)address;
     unsigned long long int old = __double_as_longlong(val);
-    bool sw = ((old & 0x8000000000000000LL) == 0) && ((*address_as_ull & 0x8000000000000000LL) == 0);
-    printf("atomicMin: %lf, %lf, (%llx, %llx) [%s]\n", *address, val, *address_as_ull, old, sw?"Positive":"Negative");
+    bool sw = ((old & 0x8000000000000000LL) || (*address_as_ull & 0x8000000000000000LL));
+    //printf("atomicMin: %lf, %lf, (%llx, %llx) [%s]\n", *address, val, *address_as_ull, old, sw?"Positive":"Negative");
 
     return sw?
-         __longlong_as_double(atomicMin(address_as_ull, old)):
-         __longlong_as_double(atomicMax(address_as_ull, old));
+         __longlong_as_double(atomicMax(address_as_ull, old)):
+         __longlong_as_double(atomicMin(address_as_ull, old));
 }
 template <>
 inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val)  {
