@@ -402,29 +402,34 @@ public class AllocatorTest {
 
         Thread[] threads = new Thread[4];
         List<INDArray> lst = new ArrayList<>();
+        List<INDArray> sums = new ArrayList<>();
 
         for (int i = 0; i < 4; ++i) {
             threads[i] = new Thread() {
                 @Override
                 public void run () {
-                    lst.add(Nd4j.rand(1, 10));
+                    INDArray x = Nd4j.rand(1, 10);
+                    lst.add(x);
+                    sums.add(Nd4j.sum(x));
                 }
             };
+            threads[i].start();
         }
 
-	try {
-        for(val thread :threads) {
-		thread.start();
-            thread.join();
-        }
-	} catch (InterruptedException e) {
-	}
+	    try {
+            for(val thread :threads) {
+                thread.join();
+            }
+	    } catch (InterruptedException e) {
+	        log.info("Interrupted");
+	    }
 
         Collections.shuffle(lst);
+
         for (int  i = 0 ; i < lst.size(); ++i) {
-            assertTrue(lst.get(i).columns() == 10);
-	    assertTrue(lst.get(i).rows() == 1);
-	}
+            INDArray sum = Nd4j.sum(lst.get(i));
+            assertTrue(sums.contains(sum));
+	    }
     }
 
 }
