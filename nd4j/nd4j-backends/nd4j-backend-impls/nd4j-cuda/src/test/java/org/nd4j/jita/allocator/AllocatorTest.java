@@ -47,6 +47,10 @@ import static org.junit.Assert.*;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 @Slf4j
 public class AllocatorTest {
     private static final long SAFETY_OFFSET = 1024L;
@@ -383,14 +387,44 @@ public class AllocatorTest {
 	val hostP = pointX.getHostPointer();
 	val deviceP = pointX.getDevicePointer();
 
-	System.out.println(x.shapeInfoDataBuffer().capacity());
+	assertEquals(50, x.data().capacity());
 	x.data().reallocate(500);
-	System.out.println("Reallocated:" + x.shapeInfoDataBuffer().capacity());
+	assertEquals(500, x.data().capacity());
 	assertEquals(64, pointX.getShape().getNumberOfBytes());
 
 	assertEquals(hostP, pointX.getHostPointer());
         assertEquals(deviceP, pointX.getDevicePointer());
 
+    }
+
+    @Test
+    public void testDataMigration() {
+
+        Thread[] threads = new Thread[4];
+        List<INDArray> lst = new ArrayList<>();
+
+        for (int i = 0; i < 4; ++i) {
+            threads[i] = new Thread() {
+                @Override
+                public void run () {
+                    lst.add(Nd4j.rand(1, 10));
+                }
+            };
+        }
+
+	try {
+        for(val thread :threads) {
+		thread.start();
+            thread.join();
+        }
+	} catch (InterruptedException e) {
+	}
+
+        Collections.shuffle(lst);
+        for (int  i = 0 ; i < lst.size(); ++i) {
+            assertTrue(lst.get(i).columns() == 10);
+	    assertTrue(lst.get(i).rows() == 1);
+	}
     }
 
 }
