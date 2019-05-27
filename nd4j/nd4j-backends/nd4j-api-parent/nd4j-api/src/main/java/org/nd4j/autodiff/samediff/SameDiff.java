@@ -76,6 +76,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -123,7 +124,7 @@ public class SameDiff extends SDBaseOps {
 
     private final List<String> lossVariables = new ArrayList<>();
 
-    private final List<Listener> listeners = new ArrayList<>();
+    private List<Listener> listeners = new ArrayList<>();
 
     ///////////////////////////////////////
     //Fields related to training
@@ -1592,6 +1593,11 @@ public class SameDiff extends SDBaseOps {
                 if (!initializedTraining)
                     initializeTraining();
 
+                Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
+                if(hasListeners){
+                    regScore = new HashMap<>();
+                }
+
                 int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
                 for (String s : trainingConfig.getTrainableParams()) {
@@ -1627,8 +1633,6 @@ public class SameDiff extends SDBaseOps {
                     GradientUpdater u = updaterMap.get(s);
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
-
-                        //TODO listener call
                     } catch (Throwable t) {
                         throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
@@ -1639,9 +1643,23 @@ public class SameDiff extends SDBaseOps {
                         for(Regularization reg : r){
                             if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
                                 reg.apply(param, grad, lr, iterCount, epochCount);
+                                if(hasListeners){
+                                    double score = reg.score(param, iterCount, epochCount);
+                                    if(!regScore.containsKey(reg.getClass())){
+                                        regScore.put(reg.getClass(), new AtomicDouble());
+                                    }
+                                    regScore.get(reg.getClass()).addAndGet(score);
+                                }
                             }
                         }
                     }
+
+                    if(hasListeners){
+                        for(Listener l : listeners){
+                            l.preUpdate(this, at, variables.get(s), reshapedView);
+                        }
+                    }
+
 
                     if (trainingConfig.isMinimize()) {
                         param.subi(grad);
@@ -1651,8 +1669,21 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 if(hasListeners){
-                    double[] d = new double[lossVariables.size()];
-                    Loss loss = new Loss(lossVariables, d);
+                    double[] d = new double[lossVariables.size() + regScore.size()];
+                    List<String> lossVars;
+                    if(regScore.size() > 0){
+                        lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
+                        lossVars.addAll(lossVariables);
+                        int s=regScore.size();
+                        //Collect regularization losses
+                        for(Map.Entry<Class<?>,AtomicDouble> entry : regScore.entrySet()){
+                            lossVars.add(entry.getKey().getSimpleName());
+                            d[s] = entry.getValue().get();
+                        }
+                    } else {
+                        lossVars = lossVariables;
+                    }
+
 
                     //Collect the losses...
                     SameDiff gradFn = sameDiffFunctionInstances.get("grad");
@@ -1663,6 +1694,7 @@ public class SameDiff extends SDBaseOps {
                         d[count++] = l;
                     }
 
+                    Loss loss = new Loss(lossVars, d);
                     for(Listener l : listeners){
                         l.iterationDone(this, at, ds, loss);
                     }
@@ -3425,7 +3457,7 @@ public class SameDiff extends SDBaseOps {
      *
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
-    public void execBackwards(Map<String,INDArray> placeholders){
+    public void execBackwards(Map<String,INDArray> placeholders) {
         if (getFunction("grad") == null) {
             createGradFunction();
         }
@@ -3441,6 +3473,11 @@ public class SameDiff extends SDBaseOps {
                     varGradNames.add(g.getVarName());
                 }
             }
+        }
+
+        //Also add loss values - we need these so we can report them to listeners...
+        if(!listeners.isEmpty()){
+            varGradNames.addAll(lossVariables);
         }
 
         //Edge case: if no variables, no variable gradients to calculate...
@@ -3479,7 +3516,17 @@ public class SameDiff extends SDBaseOps {
             return;
         }
 
-        sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
+        SameDiff sd = sameDiffFunctionInstances.get("grad");
+        sd.listeners = listeners;
+
+        At at = new At(0, 0, 0, Thread.currentThread().getId());
+        if(trainingConfig != null){
+            at.setIteration(trainingConfig.getIterationCount());
+            at.setEpoch(trainingConfig.getEpochCount());
+        }
+
+        //TODO is this 'train' flag the best approach?
+        sd.exec(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
     }
 
     /**
@@ -4126,7 +4173,11 @@ public class SameDiff extends SDBaseOps {
         return exec(placeholders, outputs.toArray(new String[outputs.size()]));
     }
 
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs){
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
+        return exec(placeholders, false, null, outputs);
+    }
+
+    protected Map<String,INDArray> exec(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if(!sessions.containsKey(threadId)){
@@ -4150,7 +4201,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
         return ret;
     }
 
@@ -5193,7 +5244,7 @@ public class SameDiff extends SDBaseOps {
                 phValues.put(v.getName(), dt);
             }
         }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false, null);
         return out;
     }
 

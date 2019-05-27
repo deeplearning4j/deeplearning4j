@@ -13,9 +13,8 @@ public final class UIEventType {
   public static final byte SUMMARY_STATISTICS = 6;
   public static final byte OP_TIMING = 7;
   public static final byte HARDWARE_STATE = 8;
-  public static final byte GC_EVENT = 9;
 
-  public static final String[] names = { "ADD_NAME", "SCALAR", "ARRAY", "ARRAY_LIST", "HISTOGRAM", "IMAGE", "SUMMARY_STATISTICS", "OP_TIMING", "HARDWARE_STATE", "GC_EVENT", };
+  public static final String[] names = { "ADD_NAME", "SCALAR", "ARRAY", "ARRAY_LIST", "HISTOGRAM", "IMAGE", "SUMMARY_STATISTICS", "OP_TIMING", "HARDWARE_STATE", };
 
   public static String name(int e) { return names[e]; }
 }

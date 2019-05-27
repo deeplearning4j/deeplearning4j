@@ -15,17 +15,19 @@ public final class UIEvent extends Table {
   public UIEvent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte eventType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public int nameIdx() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public long timestamp() { int o = __offset(8); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public int iteration() { int o = __offset(10); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public int epoch() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public short variableId() { int o = __offset(14); return o != 0 ? bb.getShort(o + bb_pos) : 0; }
+  public byte eventSubType() { int o = __offset(6); return o != 0 ? bb.get(o + bb_pos) : 0; }
+  public int nameIdx() { int o = __offset(8); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public long timestamp() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public int iteration() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public int epoch() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public short variableId() { int o = __offset(16); return o != 0 ? bb.getShort(o + bb_pos) : 0; }
   public FrameIteration frameIter() { return frameIter(new FrameIteration()); }
-  public FrameIteration frameIter(FrameIteration obj) { int o = __offset(16); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public int plugin() { int o = __offset(18); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
+  public FrameIteration frameIter(FrameIteration obj) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public int plugin() { int o = __offset(20); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
 
   public static int createUIEvent(FlatBufferBuilder builder,
       byte eventType,
+      byte eventSubType,
       int nameIdx,
       long timestamp,
       int iteration,
@@ -33,7 +35,7 @@ public final class UIEvent extends Table {
       short variableId,
       int frameIterOffset,
       int plugin) {
-    builder.startObject(8);
+    builder.startObject(9);
     UIEvent.addTimestamp(builder, timestamp);
     UIEvent.addFrameIter(builder, frameIterOffset);
     UIEvent.addEpoch(builder, epoch);
@@ -41,19 +43,21 @@ public final class UIEvent extends Table {
     UIEvent.addNameIdx(builder, nameIdx);
     UIEvent.addPlugin(builder, plugin);
     UIEvent.addVariableId(builder, variableId);
+    UIEvent.addEventSubType(builder, eventSubType);
     UIEvent.addEventType(builder, eventType);
     return UIEvent.endUIEvent(builder);
   }
 
-  public static void startUIEvent(FlatBufferBuilder builder) { builder.startObject(8); }
+  public static void startUIEvent(FlatBufferBuilder builder) { builder.startObject(9); }
   public static void addEventType(FlatBufferBuilder builder, byte eventType) { builder.addByte(0, eventType, 0); }
-  public static void addNameIdx(FlatBufferBuilder builder, int nameIdx) { builder.addInt(1, nameIdx, 0); }
-  public static void addTimestamp(FlatBufferBuilder builder, long timestamp) { builder.addLong(2, timestamp, 0L); }
-  public static void addIteration(FlatBufferBuilder builder, int iteration) { builder.addInt(3, iteration, 0); }
-  public static void addEpoch(FlatBufferBuilder builder, int epoch) { builder.addInt(4, epoch, 0); }
-  public static void addVariableId(FlatBufferBuilder builder, short variableId) { builder.addShort(5, variableId, 0); }
-  public static void addFrameIter(FlatBufferBuilder builder, int frameIterOffset) { builder.addOffset(6, frameIterOffset, 0); }
-  public static void addPlugin(FlatBufferBuilder builder, int plugin) { builder.addShort(7, (short)plugin, (short)0); }
+  public static void addEventSubType(FlatBufferBuilder builder, byte eventSubType) { builder.addByte(1, eventSubType, 0); }
+  public static void addNameIdx(FlatBufferBuilder builder, int nameIdx) { builder.addInt(2, nameIdx, 0); }
+  public static void addTimestamp(FlatBufferBuilder builder, long timestamp) { builder.addLong(3, timestamp, 0L); }
+  public static void addIteration(FlatBufferBuilder builder, int iteration) { builder.addInt(4, iteration, 0); }
+  public static void addEpoch(FlatBufferBuilder builder, int epoch) { builder.addInt(5, epoch, 0); }
+  public static void addVariableId(FlatBufferBuilder builder, short variableId) { builder.addShort(6, variableId, 0); }
+  public static void addFrameIter(FlatBufferBuilder builder, int frameIterOffset) { builder.addOffset(7, frameIterOffset, 0); }
+  public static void addPlugin(FlatBufferBuilder builder, int plugin) { builder.addShort(8, (short)plugin, (short)0); }
   public static int endUIEvent(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

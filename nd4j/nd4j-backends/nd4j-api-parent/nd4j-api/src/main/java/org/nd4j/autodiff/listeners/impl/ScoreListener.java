@@ -30,6 +30,7 @@ public class ScoreListener extends BaseListener {
 
     private final int frequency;
     private final boolean reportEpochs;
+    private final boolean reportIterPerformance;
 
     private long epochStart;
     private long epochExampleCount;
@@ -40,6 +41,7 @@ public class ScoreListener extends BaseListener {
     private long etlTimeSumSinceLastReport;
     private long iterTimeSumSinceLastReport;
     private int examplesSinceLastReportIter;
+    private long lastReportTime = -1;
 
     /**
      * Create a ScoreListener reporting every 10 iterations, and at the end of each epoch
@@ -59,9 +61,14 @@ public class ScoreListener extends BaseListener {
      * Create a ScoreListener reporting every N iterations, and optionally at the end of each epoch
      */
     public ScoreListener(int frequency, boolean reportEpochs) {
+        this(frequency, reportEpochs, true);
+    }
+
+    public ScoreListener(int frequency, boolean reportEpochs, boolean reportIterPerformance) {
         Preconditions.checkArgument(frequency > 0, "ScoreListener frequency must be > 0, got %s", frequency);
         this.frequency = frequency;
         this.reportEpochs = reportEpochs;
+        this.reportIterPerformance = reportIterPerformance;
     }
 
 
@@ -73,6 +80,8 @@ public class ScoreListener extends BaseListener {
             epochBatchCount = 0;
             etlTotalTimeEpoch = 0;
         }
+        lastReportTime = -1;
+        examplesSinceLastReportIter = 0;
     }
 
     @Override
@@ -118,9 +127,25 @@ public class ScoreListener extends BaseListener {
                 }
             }
 
-            log.info("Loss at epoch {}, iteration {}: {}{}", at.epoch(), at.iteration(), format5dp(l), etl);
+            if(!reportIterPerformance) {
+                log.info("Loss at epoch {}, iteration {}: {}{}", at.epoch(), at.iteration(), format5dp(l), etl);
+            } else {
+                long time = System.currentTimeMillis();
+                if(lastReportTime > 0){
+                    double batchPerSec = 1000 * frequency / (double)(time - lastReportTime);
+                    double exPerSec = 1000 * examplesSinceLastReportIter / (double)(time - lastReportTime);
+                    log.info("Loss at epoch {}, iteration {}: {}{}, batches/sec: {}, examples/sec: {}", at.epoch(), at.iteration(), format5dp(l),
+                            etl, format5dp(batchPerSec), format5dp(exPerSec));
+                } else {
+                    log.info("Loss at epoch {}, iteration {}: {}{}", at.epoch(), at.iteration(), format5dp(l), etl);
+                }
+
+                lastReportTime = time;
+            }
+
             iterTimeSumSinceLastReport = 0;
             etlTimeSumSinceLastReport = 0;
+            examplesSinceLastReportIter = 0;
         }
     }
 
