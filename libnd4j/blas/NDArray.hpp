@@ -34,7 +34,8 @@ std::string NDArray::e(const Nd4jLong i) const;
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArray::asT() const{
-    auto result = new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>());
+
+    auto result = new NDArray(ordering(), isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), DataTypeUtils::fromT<T>());
     auto l = this->lengthOf();
 
     prepareSpecialUse({result}, {this});
@@ -438,9 +439,6 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<Nd4jLong> NDArray::getShapeAsVector() const {
-
-    if(rankOf() == 0)
-        return std::vector<Nd4jLong>(1,0);
 
     std::vector<Nd4jLong> vector(this->rankOf());
     for (int e = 0; e < this->rankOf(); e++)
@@ -3067,7 +3065,7 @@ NDArray* NDArray::dup(const char newOrder) {
         return result;
     }
 
-    auto result = new NDArray(order, getShapeAsVector(), dataType(), getContext());
+    auto result = new NDArray(order, isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), dataType(), getContext());
     result->assign(*this);
 
     return result;
