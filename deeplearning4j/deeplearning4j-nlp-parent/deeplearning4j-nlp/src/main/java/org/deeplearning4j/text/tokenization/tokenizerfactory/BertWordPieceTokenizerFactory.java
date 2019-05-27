@@ -51,7 +51,7 @@ public class BertWordPieceTokenizerFactory implements TokenizerFactory {
      * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
      */
     public BertWordPieceTokenizerFactory(NavigableMap<String, Integer> vocab, boolean lowerCaseOnly, boolean stripAccents) {
-        this(vocab, new BertWordPiecePreProcessor(lowerCaseOnly, stripAccents));
+        this(vocab, new BertWordPiecePreProcessor(lowerCaseOnly, stripAccents, vocab));
     }
 
     /**

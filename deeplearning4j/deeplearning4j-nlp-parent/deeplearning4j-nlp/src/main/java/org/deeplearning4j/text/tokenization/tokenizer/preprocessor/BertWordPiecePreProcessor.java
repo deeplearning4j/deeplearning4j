@@ -1,8 +1,11 @@
 package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 
 import java.text.Normalizer;
+import java.util.Map;
 
 /**
  * A preprocessor for cleaning/normaling text. Does the following:
@@ -18,9 +21,10 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     protected final boolean lowerCase;
     protected final boolean stripAccents;
+    protected final IntSet charSet;
 
     public BertWordPiecePreProcessor(){
-        this(false, false);
+        this(false, false, null);
     }
 
     /**
@@ -28,9 +32,24 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
      * @param lowerCase If true: tokenization should convert all characters to lower case
      * @param stripAccents  If true: strip accents off characters. Usually same as lower case. Should be true when using "uncased" official BERT TensorFlow models
      */
-    public BertWordPiecePreProcessor(boolean lowerCase, boolean stripAccents){
+    public BertWordPiecePreProcessor(boolean lowerCase, boolean stripAccents, Map<String,Integer> vocab){
         this.lowerCase = lowerCase;
         this.stripAccents = stripAccents;
+        if(vocab != null) {
+            charSet = new IntOpenHashSet();
+            for (String s : vocab.keySet()) {
+                int cpNum = 0;
+                int n = s.codePointCount(0, s.length());
+                int charOffset = 0;
+                while (cpNum++ < n) {
+                    int cp = s.codePointAt(charOffset);
+                    charOffset += Character.charCount(cp);
+                    charSet.add(cp);
+                }
+            }
+        } else {
+            charSet = null;
+        }
     }
 
     @Override
@@ -50,6 +69,11 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
             //Remove control characters and accents
             if(cp == 0 || cp == REPLACEMENT_CHAR || isControlCharacter(cp) || (stripAccents && Character.getType(cp) == Character.NON_SPACING_MARK))
                 continue;
+
+            if(charSet != null && !charSet.contains(cp)){
+                //Skip unknown character (out-of-vocab - though this should rarely happen)
+                continue;
+            }
 
             //Replace whitespace chars with space
             if(isWhiteSpace(cp)) {
