@@ -2249,7 +2249,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Cropped and Resized");
+    // result->printIndexedBuffer("Cropped and Resized");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2270,7 +2270,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Quantized");
+    // result->printIndexedBuffer("Quantized");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -2290,7 +2290,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Quantized2");
+    // result->printIndexedBuffer("Quantized2");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -2419,7 +2419,7 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
 
 //    ASSERT_TRUE(expd.isSameShape(result));
 //    ASSERT_TRUE(expd.equalsTo(result));
-    arr.printIndexedBuffer("Test Print"); // output as [1, 2, 3, 4, 5, 6, 7, 8]
+    // arr.printIndexedBuffer("Test Print"); // output as [1, 2, 3, 4, 5, 6, 7, 8]
 //
 // we want output as
 //  [[[1 2]

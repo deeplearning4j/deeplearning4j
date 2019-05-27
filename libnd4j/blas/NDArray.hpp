@@ -438,9 +438,14 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<Nd4jLong> NDArray::getShapeAsVector() const {
+
+    if(rankOf() == 0)
+        return std::vector<Nd4jLong>(1,0);
+
     std::vector<Nd4jLong> vector(this->rankOf());
     for (int e = 0; e < this->rankOf(); e++)
         vector[e] = this->sizeAt(e);
+
     return vector;
 }
 
@@ -2120,7 +2125,7 @@ void NDArray::operator/=(const NDArray& other) {
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         prepareSpecialUse({this}, {this, &other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Multiply, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
+        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Divide, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
         registerSpecialUse({this}, {this, &other});
     }
     else{
