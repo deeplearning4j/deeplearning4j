@@ -246,7 +246,7 @@ public class UIListener extends BaseListener {
         if(writer == null)
             initalizeWriter(sd);
 
-        if(updateRatioFrequency > 0){
+        if(updateRatioFrequency > 0 && at.iteration() % updateRatioFrequency == 0){
             if(firstUpdateRatioIter < 0){
                 firstUpdateRatioIter = at.iteration();
             }
