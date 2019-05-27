@@ -44,6 +44,9 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import static org.junit.Assert.*;
 
+import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+
 @Slf4j
 public class AllocatorTest {
     private static final long SAFETY_OFFSET = 1024L;
@@ -373,19 +376,21 @@ public class AllocatorTest {
     }
 
     @Test
-    public void testRelocate() {
-	INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
-        INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
+    public void testReallocate() {
+	INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+	val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+	assertEquals(64, pointX.getShape().getNumberOfBytes());
+	val hostP = pointX.getHostPointer();
+	val deviceP = pointX.getDevicePointer();
 
-        Nd4j.getExecutioner().exec(new CompareAndSet(array, 3, Conditions.equals(0)));
-	val pointX = AtomicAllocator.getInstance().getAllocationPoint(array.shapeInfoDataBuffer());
-        assertNotNull(pointX);
+	System.out.println(x.shapeInfoDataBuffer().capacity());
+	x.data().reallocate(500);
+	System.out.println("Reallocated:" + x.shapeInfoDataBuffer().capacity());
+	assertEquals(64, pointX.getShape().getNumberOfBytes());
 
-        assertNotNull(pointX);
-        assertTrue(array.shapeInfoDataBuffer().isConstant());
-
-        assertNotNull(pointX.getHostPointer());
-        assertNotNull(pointX.getDevicePointer());
+	assertEquals(hostP, pointX.getHostPointer());
+        assertEquals(deviceP, pointX.getDevicePointer());
 
     }
+
 }
