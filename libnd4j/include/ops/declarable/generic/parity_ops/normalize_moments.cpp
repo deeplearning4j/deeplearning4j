@@ -35,7 +35,7 @@ namespace nd4j {
 
             // FIXME: double?
             NDArray shift = NDArrayFactory::create<double>(0.);
-            
+
             if (block.getTArguments()->size() > 0) {
                 shift.assign(T_ARG(0));
             }
@@ -66,7 +66,7 @@ namespace nd4j {
             COPY_SHAPE_EX(in, meanShape, block.getWorkspace());
             COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());
 
-            auto shapeList = SHAPELIST(); 
+            auto shapeList = SHAPELIST();
             shapeList->push_back(CONSTANT(meanShape));
             shapeList->push_back(CONSTANT(varianceShape));
 

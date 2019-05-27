@@ -519,7 +519,7 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength, 
+                            int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);

@@ -50,7 +50,7 @@ BUILD_SINGLE_TEMPLATE(template NDArray* NDArray::asT, () const, LIBND4J_TYPES);
 NDArray::NDArray(const NDArray& other) {
 
     _context = other._context;
-    _offset  = other._offset;
+    _offset  = 0;
 
     setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
 
@@ -309,7 +309,7 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
     }
     else {
         _context = other._context;
-        _offset  = other._offset;
+        _offset  = 0;
 
         if(!other.isEmpty()) {
             _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(), other.getContext()->getWorkspace());
@@ -504,6 +504,7 @@ void NDArray::streamline(char o) {
     NativeOpExecutioner::execTransformSame(getContext(), transform::Copy, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), newBuffer->primary(), static_cast<Nd4jLong*>(shapeBuffer.primary()), newBuffer->special(), static_cast<Nd4jLong*>(shapeBuffer.special()), nullptr, nullptr, nullptr);
     setShapeInfo(static_cast<Nd4jLong*>(shapeBuffer.primary()));
     _buffer = newBuffer;
+    _offset = 0;
     tickWriteDevice();
 }
 
@@ -1223,6 +1224,7 @@ void NDArray::transpose(NDArray& target) const {
         throw std::runtime_error("NDArray::transpose method: the shapeInfo of target array is wrong !");
 
     target._buffer = _buffer;
+    target._offset = _offset;
     target._isView = true;
 }
 
@@ -1382,7 +1384,7 @@ NDArray* NDArray::permute(const int* dimensions, const int rank) const {
 
     // evaluate shapeInfo for output (permuted) array ret
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-    auto ret = new NDArray(_buffer, ShapeDescriptor(shapeInfoPermuted), getContext());
+    auto ret = new NDArray(_buffer, ShapeDescriptor(shapeInfoPermuted), getContext(), getBufferOffset());
 	ret->_isView = true;
     return ret;
 }
@@ -1427,7 +1429,8 @@ void NDArray::permute(const int* dimensions, const int rank, NDArray& target) co
     auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target.getContext()->getWorkspace());
 
     target.setShapeInfo(shapeInfoNew);
-    target._buffer  = _buffer;
+    target._buffer = _buffer;
+    target._offset = _offset;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1438,7 +1441,8 @@ void NDArray::permute(const Nd4jLong *dimensions, const int rank, NDArray& targe
     auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target.getContext()->getWorkspace());
 
     target.setShapeInfo(shapeInfoNew);
-    target._buffer  = _buffer;
+    target._buffer = _buffer;
+    target._offset = _offset;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2986,6 +2990,7 @@ void NDArray::assign(const NDArray& other) {
              ArrayOptions::setPropertyBit(shapeInfo(), ARRAY_EMPTY);
              syncShape();
              _buffer = std::make_shared<DataBuffer>();
+             _offset = 0;
         }
         return;
     }
@@ -4090,7 +4095,7 @@ NDArray* NDArray::diagonal(const char type) const {
 
     ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-    auto result = new NDArray(_buffer, ShapeDescriptor(outShapeInfo), getContext());
+    auto result = new NDArray(_buffer, ShapeDescriptor(outShapeInfo), getContext(), getBufferOffset());
 
     return result;
 }
