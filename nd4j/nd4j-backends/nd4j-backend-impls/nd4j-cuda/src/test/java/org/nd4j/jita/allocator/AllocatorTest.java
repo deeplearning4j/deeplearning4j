@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
@@ -370,7 +371,7 @@ public class AllocatorTest {
         val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
         assertNotNull(pointX);
 
-	assertNotNull(pointX);
+	    assertNotNull(pointX);
         assertTrue(x.shapeInfoDataBuffer().isConstant());
 
         assertNotNull(pointX.getHostPointer());
@@ -381,20 +382,19 @@ public class AllocatorTest {
 
     @Test
     public void testReallocate() {
-	INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
-	val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
-	assertEquals(64, pointX.getShape().getNumberOfBytes());
-	val hostP = pointX.getHostPointer();
-	val deviceP = pointX.getDevicePointer();
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertEquals(64, pointX.getShape().getNumberOfBytes());
+        val hostP = pointX.getHostPointer();
+        val deviceP = pointX.getDevicePointer();
 
-	assertEquals(50, x.data().capacity());
-	x.data().reallocate(500);
-	assertEquals(500, x.data().capacity());
-	assertEquals(64, pointX.getShape().getNumberOfBytes());
+        assertEquals(50, x.data().capacity());
+        x.data().reallocate(500);
+        assertEquals(500, x.data().capacity());
+        assertEquals(64, pointX.getShape().getNumberOfBytes());
 
-	assertEquals(hostP, pointX.getHostPointer());
+        assertEquals(hostP, pointX.getHostPointer());
         assertEquals(deviceP, pointX.getDevicePointer());
-
     }
 
     @Test
@@ -430,6 +430,19 @@ public class AllocatorTest {
             INDArray sum = Nd4j.sum(lst.get(i));
             assertTrue(sums.contains(sum));
 	    }
+    }
+
+
+    @Test
+    public void testHostFallback() {
+        long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
+        INDArray x  = Nd4j.create(1, bytesFree);
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        
+        assertNotNull(pointX);
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
     }
 
 }
