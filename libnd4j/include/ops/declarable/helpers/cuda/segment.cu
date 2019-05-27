@@ -93,8 +93,8 @@ namespace helpers {
             segment = blockIdx.x / threadsPerSegment;
             x = reinterpret_cast<T*>(input);
             z = reinterpret_cast<T*>(output);
-            extern __shared__ unsigned char shmem[];
-            val = reinterpret_cast<T*>(shmem);
+            //extern __shared__ unsigned char shmem[];
+            //val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
 
@@ -105,7 +105,7 @@ namespace helpers {
                 finish = start + lengths[segment];
                 //val[segment] = ;
                 z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
-                val[segment] = z[zIndex];
+                //val[segment] = z[zIndex];
             }
 
         }
@@ -116,22 +116,23 @@ namespace helpers {
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
             //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-            if (val[segment] > x[xIndex])
-                val[segment] = x[xIndex];
+            nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
+//            if (val[segment] > x[xIndex])
+//                val[segment] = x[xIndex];
 
         }
-        __syncthreads();
-        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-            if (val[segment] > x[xIndex])
-                val[segment] = x[xIndex];
-        }
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment];
-        }
+//        __syncthreads();
+//        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
+//            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+//            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
+//            if (val[segment] > x[xIndex])
+//                val[segment] = x[xIndex];
+//        }
+//        __syncthreads();
+//
+//        if (threadIdx.x == 0) {
+//            z[zIndex] = val[segment];
+//        }
 
     }
     template <typename T, typename I>
@@ -147,8 +148,8 @@ namespace helpers {
             segment = blockIdx.x / threadsPerSegment;
             x = reinterpret_cast<T*>(input);
             z = reinterpret_cast<T*>(output);
-            extern __shared__ unsigned char shmem[];
-            val = reinterpret_cast<T*>(shmem);
+//            extern __shared__ unsigned char shmem[];
+//            val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
 
@@ -159,7 +160,7 @@ namespace helpers {
                 finish = start + lengths[segment];
                 //val[segment] = ;
                 z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
-                val[segment] = z[zIndex];
+//                val[segment] = z[zIndex];
             }
 
         }
@@ -170,7 +171,8 @@ namespace helpers {
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
             //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-            nd4j::math::atomics::nd4j_atomicAdd(&val[segment], x[xIndex]);
+//            nd4j::math::atomics::nd4j_atomicAdd(&val[segment], x[xIndex]);
+            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
             //atomicAdd(&val[segment], x[xIndex]);
 
         }
@@ -180,11 +182,11 @@ namespace helpers {
 //            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
 //            val[segment] += x[xIndex];
 //        }
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment];
-        }
+//        __syncthreads();
+//
+//        if (threadIdx.x == 0) {
+//            z[zIndex] = val[segment];
+//        }
 
     }
     template <typename T, typename I>
@@ -300,9 +302,9 @@ namespace helpers {
         if (threadIdx.x == 0) {
             idxBuf = reinterpret_cast<I*>(indices);
             idxLen = shape::length(indexShape);
-            extern __shared__ unsigned char shmem[];
-            result = reinterpret_cast<int*>(shmem);
-            result[0] = 0; //idxBuf[0];
+            //extern __shared__ unsigned char shmem[];
+            //result = reinterpret_cast<int*>(shmem);
+            //result[0] = 0; //idxBuf[0];
         }
         __syncthreads();
 
@@ -314,7 +316,8 @@ namespace helpers {
 //             if (classesRangesStart[pos] == idxLen)
 //                 classesRangesStart[pos] = j;
 //            result[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], j);
-            atomicMin(&classesRangesStart[pos], j);
+            //atomicMin(&classesRangesStart[pos], j);
+            nd4j::math::atomics::nd4j_atomicMin(&classesRangesStart[pos], (int)j);
 //             = nd4j::math::nd4j_min<int>(classesRangesStart[pos], result[pos]);
             nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
         }

@@ -745,6 +745,90 @@ inline __device__ T nd4j_atomicMul(T* address, T val);
 template <typename T>
 inline __device__ T nd4j_atomicDiv(T* address, T val);
 
+template <typename T>
+inline __device__ T nd4j_atomicMin(T* address, T val);
+template <typename T>
+inline __device__ T nd4j_atomicMax(T* address, T val);
+
+template <>
+inline __device__ int32_t nd4j_atomicMin<int32_t>(int32_t* address, int32_t val)  {
+     return atomicMin(address, val);
+}
+
+template <>
+inline __device__ uint32_t nd4j_atomicMin<uint32_t>(uint32_t* address, uint32_t val)  {
+     return atomicMin(address, val);
+}
+template <>
+inline __device__ float nd4j_atomicMin<float>(float* address, float val)  {
+     return __int_as_float(atomicMin(reinterpret_cast<int*>(address), __float_as_int(val)));
+}
+template <>
+inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val);
+    if (val >= 0 && *address >= 0)
+        return __longlong_as_double(atomicMin(address_as_ull, old));
+    else if (val < 0 && *address < 0)
+        return __longlong_as_double(atomicMax(address_as_ull, old));
+    else if (val < 0 && *address >= 0) {
+        *address = val;
+    }
+    return *address;
+
+}
+template <>
+inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val)  {
+     return atomicMin(address, val);
+}
+template <>
+inline __device__ Nd4jLong nd4j_atomicMin<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
+    if (val >= 0 && *address >= 0)
+        return (Nd4jLong)atomicMin((unsigned long long*)address, (unsigned long long)val);
+    else if (val < 0 && *address < 0)
+        return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
+    else if (val < 0 && *address >= 0)
+        *address = val;
+    return *address;
+}
+
+template <>
+inline __device__ int16_t nd4j_atomicMin<int16_t>(int16_t* address, int16_t val)  {
+    int32_t temp = *address;
+    *address = atomicMin(&temp, (int)val);
+    return *address;
+}
+template <>
+inline __device__ bfloat16 nd4j_atomicMin<bfloat16>(bfloat16* address, bfloat16 val)  {
+     return bfloat16(nd4j_atomicMin<int16_t>(&address->_data, val._data));
+}
+template <>
+inline __device__ float16 nd4j_atomicMin<float16>(float16* address, float16 val)  {
+     return float16(nd4j_atomicMin<int16_t>(reinterpret_cast<int16_t*>(&address->data), (int16_t)val.data));
+}
+template <>
+inline __device__ int32_t nd4j_atomicMax<int32_t>(int32_t* address, int32_t val)  {
+     return atomicMax(address, val);
+}
+
+template <>
+inline __device__ uint8_t nd4j_atomicMin<uint8_t>(uint8_t* address, uint8_t val)  {
+    uint32_t temp = *address;
+    *address = atomicMin(&temp, (uint32_t)val);
+    return *address;
+}
+template <>
+inline __device__ int8_t nd4j_atomicMin<int8_t>(int8_t* address, int8_t val)  {
+    int32_t temp = *address;
+    *address = atomicMin(&temp, (int)val);
+    return *address;
+}
+template <>
+inline __device__ uint16_t nd4j_atomicMin<uint16_t>(uint16_t* address, uint16_t val)  {
+    uint32_t temp = *address;
+    *address = atomicMin(&temp, (uint32_t)val);
+    return *address;
+}
 template <>
 inline __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
