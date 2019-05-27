@@ -202,9 +202,33 @@ public class TFGraphTestZooModels {
         this.localTestDir = localTestDir;
     }
 
+    private static Boolean isPPC = null;
+
+    private static boolean isPPC(){
+        if(isPPC == null){
+            ///mnt/jenkins/workspace/deeplearning4j-bugfix-tests-linux-ppc64le-cpu/
+            File f = new File("");
+            String path = f.getAbsolutePath();
+            log.info("Current directory: {}", path);
+            isPPC = path.contains("ppc64le");
+        }
+        return isPPC;
+    }
+
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("deeplab_mobilenetv2_coco_voc_trainval")){
+        if(isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
+//        if(!modelName.startsWith("ssd")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();

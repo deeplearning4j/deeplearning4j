@@ -41,6 +41,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -82,7 +83,7 @@ public class Word2VecTestsSmall {
 
     @Test
     public void testUnkSerialization_1() throws Exception {
-        val inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        val inputFile = Resources.asFile("big/raw_sentences.txt");
 
         val iter = new BasicLineIterator(inputFile);
         val t = new DefaultTokenizerFactory();
@@ -144,7 +145,7 @@ public class Word2VecTestsSmall {
     public void testW2VEmbeddingLayerInit() throws Exception {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
 
-        val inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        val inputFile = Resources.asFile("big/raw_sentences.txt");
 
         val iter = new BasicLineIterator(inputFile);
         val t = new DefaultTokenizerFactory();

@@ -40,7 +40,16 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ValidateZooModelPredictions {
+public class ValidateZooModelPredictions extends BaseNd4jTest {
+
+    public ValidateZooModelPredictions(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

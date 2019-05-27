@@ -36,9 +36,11 @@ import com.atilika.kuromoji.CommonCornerCasesTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -235,8 +237,10 @@ public class TokenizerTest {
 
     @Test
     public void testNewBocchan() throws IOException {
-        assertTokenizedStreamEquals(new ClassPathResource("deeplearning4j-nlp-japanese/bocchan-ipadic-features.txt").getInputStream(),
-                        new ClassPathResource("deeplearning4j-nlp-japanese/bocchan.txt").getInputStream(), tokenizer);
+        try(InputStream s1 = Resources.asStream("deeplearning4j-nlp-japanese/bocchan-ipadic-features.txt");
+            InputStream s2 = Resources.asStream("deeplearning4j-nlp-japanese/bocchan.txt")) {
+            assertTokenizedStreamEquals(s1, s2, tokenizer);
+        }
     }
 
     @Test

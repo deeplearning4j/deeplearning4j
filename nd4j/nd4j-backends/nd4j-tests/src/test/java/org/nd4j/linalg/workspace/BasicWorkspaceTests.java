@@ -77,6 +77,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @After
     public void shutdown() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
 
         Nd4j.setDataType(initialType);
     }

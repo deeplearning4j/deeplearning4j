@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
@@ -49,7 +48,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
-import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
 import java.io.File;

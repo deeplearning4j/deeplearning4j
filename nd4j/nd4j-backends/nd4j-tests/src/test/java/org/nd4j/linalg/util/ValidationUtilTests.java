@@ -1,6 +1,7 @@
 package org.nd4j.linalg.util;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -192,6 +193,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
 
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testNpyValidation() throws Exception {
 
         File f = testDir.newFolder();
