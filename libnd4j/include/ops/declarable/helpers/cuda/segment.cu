@@ -311,11 +311,11 @@ namespace helpers {
 
         for (auto j = tid; j < idxLen; j += step) {
             auto pos = idxBuf[j];
-             if (classesRangesStart[pos] == idxLen)
-                 classesRangesStart[pos] = j;
-            result[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], j);
-
-            classesRangesStart[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], result[pos]);
+//             if (classesRangesStart[pos] == idxLen)
+//                 classesRangesStart[pos] = j;
+//            result[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], j);
+            atomicMin(&classesRangesStart[pos], j);
+//             = nd4j::math::nd4j_min<int>(classesRangesStart[pos], result[pos]);
             nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
         }
     }
