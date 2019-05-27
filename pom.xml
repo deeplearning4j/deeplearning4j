@@ -230,7 +230,7 @@
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>0.11.0</arrow.version>
+        <arrow.version>0.13.0</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -307,7 +307,7 @@
         <tensorflow.version>1.13.1</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
-        <commons-compress.version>1.16.1</commons-compress.version>
+        <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
         <commonsio.version>2.5</commonsio.version>
@@ -330,7 +330,7 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.5.1</jackson.version>
         <spark.jackson.version>${jackson.version}</spark.jackson.version>
-        <spark2.jackson.version>2.6.5</spark2.jackson.version>
+        <spark2.jackson.version>2.9.9</spark2.jackson.version>
         <geo.jackson.version>2.9.9</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
@@ -342,14 +342,14 @@
         </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <spark.version>2.1.0</spark.version>
         <camel.version>2.16.3</camel.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.5.5</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
         <playframework.version>2.4.8
         </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
-        <guava.version>20.0</guava.version>
+        <guava.version>24.1.1-jre</guava.version>
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
