@@ -450,10 +450,10 @@ public class AllocatorTest {
     @Test
     public void testEventsRelease() {
         FlowController controller = AtomicAllocator.getInstance().getFlowController();
-        assertEquals(0, controller.getEventsProvider().getEventsNumber());
+        long currEventsNumber = controller.getEventsProvider().getEventsNumber();
 
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
-        assertEquals(1, controller.getEventsProvider().getEventsNumber());
+        assertEquals(currEventsNumber+1, controller.getEventsProvider().getEventsNumber());
     }
 }
