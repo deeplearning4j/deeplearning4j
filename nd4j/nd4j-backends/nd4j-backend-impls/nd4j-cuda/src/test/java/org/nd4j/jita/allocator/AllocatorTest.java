@@ -25,6 +25,7 @@ import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import lombok.val;
 
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -433,16 +434,26 @@ public class AllocatorTest {
     }
 
 
+    @Ignore
     @Test
     public void testHostFallback() {
         long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
         INDArray x  = Nd4j.create(1, bytesFree);
 
         val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
-        
+
         assertNotNull(pointX);
         assertNotNull(pointX.getHostPointer());
         assertNotNull(pointX.getDevicePointer());
     }
 
+    @Test
+    public void testEventsRelease() {
+        FlowController controller = AtomicAllocator.getInstance().getFlowController();
+        assertEquals(0, controller.getEventsProvider().getEventsNumber());
+
+        INDArray x = Nd4j.rand(1,10);
+        controller.prepareAction(x);
+        assertEquals(1, controller.getEventsProvider().getEventsNumber());
+    }
 }
