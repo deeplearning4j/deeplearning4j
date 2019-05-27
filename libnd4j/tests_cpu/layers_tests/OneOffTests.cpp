@@ -41,7 +41,7 @@ TEST_F(OneOffTests, test_avg_pool_3d_1) {
 
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -53,7 +53,7 @@ TEST_F(OneOffTests, test_non2d_0A_1) {
 
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -84,7 +84,7 @@ TEST_F(OneOffTests, test_assert_scalar_float32_2) {
 
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -98,7 +98,7 @@ TEST_F(OneOffTests, test_pad_1D_1) {
 
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -108,7 +108,7 @@ TEST_F(OneOffTests, test_pad_1D_1) {
     auto z = graph->getVariableSpace()->getVariable(4)->getNDArray();
     ASSERT_TRUE(z != nullptr);
 
-    z->printIndexedBuffer("z");
+    // z->printIndexedBuffer("z");
 
     ASSERT_EQ(e, *z);
     delete graph;
@@ -149,7 +149,7 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/channels_last_b1_k2_s1_d1_SAME_crelu.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -159,7 +159,7 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
     auto z = graph->getVariableSpace()->getVariable(9)->getNDArray();
     ASSERT_TRUE(z != nullptr);
 
-    z->printIndexedBuffer("z");
+    // z->printIndexedBuffer("z");
 
     ASSERT_EQ(e, *z);
 
@@ -172,7 +172,7 @@ TEST_F(OneOffTests, test_tensor_array_1) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_close_sz1_float32_nodynamic_noname_noshape.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -192,7 +192,7 @@ TEST_F(OneOffTests, test_tensor_array_2) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_split_sz1_float32_nodynamic_noname_noshape.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -212,7 +212,7 @@ TEST_F(OneOffTests, test_tensor_array_3) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_stack_sz3-1_int32_dynamic_name_shape.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
@@ -233,7 +233,7 @@ TEST_F(OneOffTests, test_tensor_array_4) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_unstack_sz1_int64_nodynamic_noname_shape2-3.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
@@ -254,7 +254,7 @@ TEST_F(OneOffTests, test_assert_4) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assert_type_rank2_int64.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
@@ -325,7 +325,7 @@ TEST_F(OneOffTests, test_identity_n_2) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/identity_n_2.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
@@ -347,7 +347,7 @@ TEST_F(OneOffTests, test_non2d_1) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/non2d_1.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
@@ -369,7 +369,7 @@ TEST_F(OneOffTests, test_reduce_all_1) {
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_all_rank2_d0_keep.fb");
     ASSERT_TRUE(graph != nullptr);
 
-    graph->printOut();
+    // graph->printOut();
 
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);

@@ -39,12 +39,15 @@ public:
 
 TEST_F(TadTests, Test4DTad1) {
 
-    std::unique_ptr<NDArray> arraySource(nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000));
+    NDArray*  arraySource = nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000);
 
-    Nd4jLong badShape[] = {4, 2, 1, 4, 4, 80, 16, 4, 1, 8192, -1, 99};
+    Nd4jLong badShape[]  = {4, 2, 1, 4, 4, 80, 16, 4, 1, 8192, -1, 99};
+    Nd4jLong goodShape[] = {4, 2, 1, 4, 4, 16, 16, 4, 1, 8192,  1, 99};
 
-    std::unique_ptr<NDArray> arrayExp(new NDArray('c', {2, 1, 4, 4}, arraySource->getBufferAsVector<double>(), nd4j::DataType::FLOAT32));
-    std::unique_ptr<NDArray> arrayBad(new NDArray(arraySource->getBufferAsVector<float>().data(),  badShape));
+    std::vector<float> buff = arraySource->getBufferAsVector<float>();
+
+    NDArray* arrayExp = new NDArray(buff.data(), goodShape);
+    NDArray* arrayBad = new NDArray(buff.data(), badShape);
 
     int dim = 1;
     shape::TAD tad;
@@ -52,12 +55,13 @@ TEST_F(TadTests, Test4DTad1) {
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
-
-
     int exp[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95 };
-    for (int e = 0; e < 32; e++) {
+    for (int e = 0; e < 32; e++)
         ASSERT_EQ((int) tad.tadOffsets[e],  exp[e]);
-    }
+
+    delete arrayExp;
+    delete arrayBad;
+    delete arraySource;
 }
 
 TEST_F(TadTests, TestNumTads1) {

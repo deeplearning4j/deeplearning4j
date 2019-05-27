@@ -3585,8 +3585,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
-    if (copy.size())
-        shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
@@ -3618,8 +3616,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
     std::vector<int> copy(dimensions);
-    if (copy.size())
-        shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
@@ -3651,7 +3647,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         throw std::runtime_error("NDArray::reduceAlongDimension LongOps: requires target array to be present and have type of INT64");
 
     std::vector<int> copy(dimensions);
-    shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
@@ -3683,7 +3678,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
         throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");
 
     std::vector<int> copy(dimensions);
-    shape::checkDimensions(rankOf(), copy);
 
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
