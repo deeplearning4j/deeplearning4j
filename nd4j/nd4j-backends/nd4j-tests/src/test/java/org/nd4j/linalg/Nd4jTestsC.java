@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -5748,8 +5749,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         Nd4j.getExecutioner().exec(im2colOp);
-
-        log.info("result: {}", output);
     }
 
 
@@ -7354,27 +7353,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testRollingMean() {
         val wsconf = WorkspaceConfiguration.builder()
-                .initialSize(1500L * 1024L * 1024L)
+                .initialSize(4L * (32*128*256*256 + 32*128 + 10*1024*1024))
                 .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policySpill(SpillPolicy.FAIL)
                 .build();
 
-        for (int e = 0; e < 5; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+        String wsName = "testRollingMeanWs";
+        try {
+            System.gc();
+            for (int e = 0; e < 5; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
-        }
 
-        int iterations = 100;
-        val timeStart = System.nanoTime();
-        for (int e = 0; e < iterations; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+            int iterations = 100;
+            val timeStart = System.nanoTime();
+            for (int e = 0; e < iterations; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
+            val timeEnd = System.nanoTime();
+            log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
+        } finally {
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
-        val timeEnd = System.nanoTime();
-        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     @Test
