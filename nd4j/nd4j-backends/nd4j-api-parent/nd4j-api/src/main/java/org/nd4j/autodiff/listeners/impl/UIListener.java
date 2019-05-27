@@ -42,7 +42,8 @@ public class UIListener extends BaseListener {
 
     private Set<String> relevantOpsForEval;
     private Map<Pair<String,Integer>,Evaluation> epochTrainEval;
-    boolean wroteEvalNames;
+    private boolean wroteEvalNames;
+    private int firstUpdateRatioIter = -1;
 
 
 
@@ -90,7 +91,7 @@ public class UIListener extends BaseListener {
     @Override
     public void epochEnd(SameDiff sd, At at) {
 
-        //If any evaluation, report it here:
+        //If any training evaluation, report it here:
         if(epochTrainEval != null){
             long time = System.currentTimeMillis();
             for(Map.Entry<Pair<String,Integer>,Evaluation> e : epochTrainEval.entrySet()){
@@ -215,8 +216,49 @@ public class UIListener extends BaseListener {
         }
     }
 
+    @Override
+    public void preUpdate(SameDiff sd, At at, Variable v, INDArray update) {
+        if(writer == null)
+            initalizeWriter(sd);
+
+        if(updateRatioFrequency > 0){
+            if(firstUpdateRatioIter < 0){
+                firstUpdateRatioIter = at.iteration();
+            }
+
+            if(firstUpdateRatioIter == at.iteration()){
+                //Register name
+                String name = "logUpdateRatio/" + v.getName();
+                writer.registerEventNameQuiet(name);
+            }
+
+            double params;
+            double updates;
+            if(updateRatioType == UpdateRatio.L2){
+                params = v.getVariable().getArr().norm1Number().doubleValue();
+                updates = update.norm1Number().doubleValue();
+            } else {
+                //Mean magnitude - L1 norm divided by N. But in the ratio later, N cancels out...
+                params = v.getVariable().getArr().norm1Number().doubleValue();
+                updates = update.norm1Number().doubleValue();
+            }
+
+            double ratio = updates / params;
+            if(params == 0.0){
+                ratio = 0.0;
+            } else {
+                ratio = Math.max(-10, Math.log10(ratio));   //Clip to -10, when updates are too small
+            }
 
 
+            try{
+                String name = "logUpdateRatio/" + v.getName();
+                writer.writeScalarEvent(name, LogFileWriter.EventSubtype.LOSS, System.currentTimeMillis(), at.iteration(), at.epoch(), ratio);
+            } catch (IOException e){
+                throw new RuntimeException("Error writing to log file", e);
+            }
+        }
+    }
 
 
 

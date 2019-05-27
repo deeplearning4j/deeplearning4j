@@ -1631,10 +1631,14 @@ public class SameDiff extends SDBaseOps {
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
                     Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
                     GradientUpdater u = updaterMap.get(s);
+                    if(hasListeners){
+                        for(Listener l : listeners){
+                            l.preUpdate(this, at, variables.get(s), reshapedView);
+                        }
+                    }
+
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
-
-                        //TODO listener call
                     } catch (Throwable t) {
                         throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
                                 + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);

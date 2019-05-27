@@ -39,9 +39,11 @@ public class UIListenerTest {
 //        File dir = testDir.newFolder();
         File dir = new File("C:/Temp/SameDiffUI/");
         File f = new File(dir, "logFile.bin");
+        f.delete();
         UIListener l = UIListener.builder(f)
                 .plotLosses(1)
                 .trainEvaluationMetrics("softmax", 0, Evaluation.Metric.ACCURACY, Evaluation.Metric.F1)
+                .updateRatios(1)
                 .build();
 
         sd.setListeners(l, new ScoreListener(1));
