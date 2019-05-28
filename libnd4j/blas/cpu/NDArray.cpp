@@ -344,6 +344,7 @@ NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) co
     }
 
     delete retArrs;
+    delete thisArrs;
     return ret;
 }
 

@@ -70,7 +70,7 @@ LaunchContext::~LaunchContext() {
 #endif
 }
 
-    std::vector<LaunchContext*> LaunchContext::_contexts = std::vector<LaunchContext*>();
+    std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
 
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
@@ -129,9 +129,9 @@ LaunchContext::LaunchContext() {
 LaunchContext* LaunchContext::defaultContext() {
     // TODO: we need it to be device-aware
     if (LaunchContext::_contexts.empty()) {
-           LaunchContext::_contexts.emplace_back(new LaunchContext());
+           LaunchContext::_contexts.emplace_back(std::make_shared<LaunchContext>());
     }
-    return LaunchContext::_contexts[0];
+    return LaunchContext::_contexts[0].get();
 }
 
 }

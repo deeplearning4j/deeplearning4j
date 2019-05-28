@@ -3487,6 +3487,7 @@ NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, cons
     auto newShape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), getContext()->getWorkspace());
     // create output array (scalar)
     auto result = new NDArray(newShape, true, getContext());
+    RELEASE(newShape, getContext()->getWorkspace());
     // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
@@ -4094,6 +4095,8 @@ NDArray* NDArray::diagonal(const char type) const {
     ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
     auto result = new NDArray(_buffer, ShapeDescriptor(outShapeInfo), getContext(), getBufferOffset());
+
+    RELEASE(outShapeInfo, getContext()->getWorkspace());
 
     return result;
 }
