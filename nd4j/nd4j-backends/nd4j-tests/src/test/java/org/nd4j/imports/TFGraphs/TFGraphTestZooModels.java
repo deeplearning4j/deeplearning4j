@@ -204,7 +204,7 @@ public class TFGraphTestZooModels {
 
     private static Boolean isPPC = null;
 
-    private static boolean isPPC(){
+    public static boolean isPPC(){
         if(isPPC == null){
             ///mnt/jenkins/workspace/deeplearning4j-bugfix-tests-linux-ppc64le-cpu/
             File f = new File("");
