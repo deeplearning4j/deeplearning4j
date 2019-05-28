@@ -80,12 +80,7 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val lastNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(nodeDef.getInputCount() - 1));
-        val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",lastNode,graph);
-        if(arr != null) {
-            this.jaxis = arr.data().asInt();
-            addArguments();
-        }
+
     }
 
 

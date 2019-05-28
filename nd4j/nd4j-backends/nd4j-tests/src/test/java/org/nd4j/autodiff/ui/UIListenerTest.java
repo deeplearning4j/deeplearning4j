@@ -36,8 +36,8 @@ public class UIListenerTest {
         SDVariable softmax = sd.nn.softmax("softmax", mmul);
         SDVariable loss = sd.loss().logLoss("loss", label, softmax);
 
-//        File dir = testDir.newFolder();
-        File dir = new File("C:/Temp/SameDiffUI/");
+        File dir = testDir.newFolder();
+//        File dir = new File("C:/Temp/SameDiffUI/");
         File f = new File(dir, "logFile.bin");
         f.delete();
         UIListener l = UIListener.builder(f)

@@ -7650,6 +7650,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testOnes(){
+        INDArray arr = Nd4j.ones();
+        INDArray arr2 = Nd4j.ones(DataType.LONG);
+        assertEquals(0, arr.rank());
+        assertEquals(1, arr.length());
+        assertEquals(0, arr2.rank());
+        assertEquals(1, arr2.length());
+    }
+
+    @Test
+    public void testZeros(){
+        INDArray arr = Nd4j.zeros();
+        INDArray arr2 = Nd4j.zeros(DataType.LONG);
+        assertEquals(0, arr.rank());
+        assertEquals(1, arr.length());
+        assertEquals(0, arr2.rank());
+        assertEquals(1, arr2.length());
+    }
+
+    @Test
     public void testType2() throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT16);

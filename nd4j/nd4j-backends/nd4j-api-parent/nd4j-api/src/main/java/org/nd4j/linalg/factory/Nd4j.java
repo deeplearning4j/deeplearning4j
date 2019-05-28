@@ -5214,14 +5214,16 @@ public class Nd4j {
     }
 
     /**
-     * Creates a row vector with the specified number of columns
+     * Creates an array with the specified datatype and shape, with values all set to 1
      *
-     * @param columns the columns of the ndarray
+     * @param shape Shape fo the array
      * @return the created ndarray
      */
 
-    public static INDArray ones(DataType dataType, long... columns) {
-        INDArray ret = INSTANCE.createUninitialized(dataType, columns, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+    public static INDArray ones(DataType dataType, long... shape) {
+        if(shape.length == 0)
+            return Nd4j.scalar(dataType, 1.0);
+        INDArray ret = INSTANCE.createUninitialized(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
         return ret;
     }
