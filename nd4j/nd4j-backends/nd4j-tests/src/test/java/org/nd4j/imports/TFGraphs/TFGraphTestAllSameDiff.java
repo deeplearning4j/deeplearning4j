@@ -165,6 +165,18 @@ public class TFGraphTestAllSameDiff {
 
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
+
         Nd4j.create(1);
 
         for(String s : IGNORE_REGEXES){
