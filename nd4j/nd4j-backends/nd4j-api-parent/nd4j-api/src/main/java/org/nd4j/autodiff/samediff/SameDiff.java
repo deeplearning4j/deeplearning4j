@@ -74,6 +74,7 @@ import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
@@ -133,9 +134,7 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private boolean initializedTraining;                            //True if training setup has been done
     @Getter
-    private INDArray updaterState;                                  //Updater state array (1d, length equal to number of trainable parameters)
-    @Getter
-    private Map<String,INDArray> updaterViews;                      //Views of updaterState array for each trainable parameter
+    private Map<String,INDArray> updaterStates;                     //Updater state array (as vector, before splitting/reshaping) for each trainable parameter
     @Getter
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
@@ -1780,39 +1779,24 @@ public class SameDiff extends SDBaseOps {
                 log.info("Inferred trainable variables: {}", trainVarList);
             }
 
-            //Allocate updater state
-            long numTrainableParams = 0;
-            DataType dt = null;             //TODO support mixed precision variables - https://github.com/deeplearning4j/deeplearning4j/issues/6992
-            for(String s : trainingConfig.getTrainableParams()) {
-                SDVariable v = variables.get(s).getVariable();
-                Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
-
-                INDArray arr = v.getArr();
-                Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
-                numTrainableParams += arr.length();
-                if(dt == null)
-                    dt = arr.dataType();
-            }
-
-            long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
-
-            if(updaterStateSize > 0) {
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
-                }
-            }
-
-            long viewSoFar = 0;
-            updaterViews = new HashMap<>();
+            updaterStates = new HashMap<>();
             updaterMap = new HashMap<>();
-            for(String s : trainingConfig.getTrainableParams()) {
-                long thisSize = trainingConfig.getUpdater().stateSize(variables.get(s).getVariable().getArr().length());
-                INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
-                        updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+            for(Variable v : variables.values()){
+                if(v.getVariable().getVariableType() != VariableType.VARIABLE || !v.getVariable().dataType().isFPType()){
+                    //Skip non-trainable parameters
+                    continue;
+                }
 
-                updaterViews.put(s, view);
-                updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, true));
-                viewSoFar += thisSize;
+                INDArray arr = v.getVariable().getArr();
+                long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
+                if(stateSize == 0){
+                    //Updater has no state array (such as SGD or No-Op updaters
+                    continue;
+                }
+                INDArray view = Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
+
+                updaterStates.put(v.getName(), view);
+                updaterMap.put(v.getName(), trainingConfig.getUpdater().instantiate(view, true));
             }
 
             initializedTraining = true;
@@ -2512,50 +2496,22 @@ public class SameDiff extends SDBaseOps {
 
 
         if(trainingConfig != null){
-            Set<String> toRemove = new HashSet<>();
             boolean anyTrainableParmsModified = false;
             List<String> origTrainableParams = trainingConfig.getTrainableParams();
+            List<String> l = new ArrayList<>();
             for(SDVariable v : variables){
-                toRemove.add(v.getVarName());
-                if(!anyTrainableParmsModified && origTrainableParams.contains(v.getVarName())){
-                    anyTrainableParmsModified = true;
-                }
+                l.add(v.getVarName());
             }
-
-
-            //Remove updater state for this variable: updaterState, updaterViews, updaterMap
-            if(anyTrainableParmsModified) {
-                List<String> newTrainableParams = new ArrayList<>();
-                for (String s : origTrainableParams) {
-                    if (!toRemove.contains(s)) {
-                        newTrainableParams.add(s);
-                    }
-                }
-                trainingConfig.setTrainableParams(newTrainableParams);
-            }
+            origTrainableParams.removeAll(l);
 
             if(initializedTraining){
-                List<INDArray> newUpdaterState = new ArrayList<>();
-                for (String s : origTrainableParams) {
-                    INDArray stateArr = updaterViews.get(s);
-                    if (!toRemove.contains(s)) {
-                        newUpdaterState.add(stateArr);
+                //Remove updater state for now constant variables
+                for(SDVariable v : variables){
+                    INDArray state = updaterStates.remove(v.getVarName());
+                    if(state != null){  //Already null for constants
+                        state.close();  //Deallocate now, instead of waiting for GC
                     }
-                }
-
-                updaterState = newUpdaterState.isEmpty() ? null : Nd4j.concat(0, newUpdaterState.toArray(new INDArray[newUpdaterState.size()]));
-                //Now, update updaterViews map:
-                long viewSoFar = 0;
-                updaterViews = new HashMap<>();
-                updaterMap = new HashMap<>();
-                for(String s : trainingConfig.getTrainableParams()) {
-                    long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
-                    INDArray view = (updaterState == null || thisSize == 0 ? null :
-                            updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
-
-                    updaterViews.put(s, view);
-                    updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, false));
-                    viewSoFar += thisSize;
+                    updaterMap.remove(v.getVarName());
                 }
             }
         }
@@ -2632,29 +2588,20 @@ public class SameDiff extends SDBaseOps {
 
             //Add updater state for this variable: updaterState, updaterViews, updaterMap
             if(initializedTraining){
-                long extraStateSize = 0;
-                for (String s : convertedToVars) {
-                    INDArray arr = getVariable(s).getArr();
-                    long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
-                    extraStateSize += stateSize;
-                }
-                if(extraStateSize > 0) {
-                    INDArray newState = Nd4j.createUninitialized(updaterState.dataType(), 1, extraStateSize);
-
-                    updaterState = (updaterState == null ? newState : Nd4j.concat(1, updaterState, newState));
-                    //Now, update updaterViews map:
-                    long viewSoFar = 0;
-                    updaterViews = new HashMap<>();
-                    updaterMap = new HashMap<>();
-                    for (String s : trainingConfig.getTrainableParams()) {
-                        long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
-                        INDArray view = (updaterState == null || thisSize == 0 ? null :
-                                updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
-
-                        updaterViews.put(s, view);
-                        boolean init = convertedToVars.contains(s); //Only initialize/zero the states for the new variables
-                        updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, init));
-                        viewSoFar += thisSize;
+                for(SDVariable v : constants){
+                    if(!updaterStates.containsKey(v.getOwnName())){
+                        //Create new updater state
+                        INDArray arr = v.getArr();
+                        long thisSize = trainingConfig.getUpdater().stateSize(arr.length());
+                        if(thisSize > 0){
+                            INDArray stateArr = Nd4j.create(arr.dataType(), 1, thisSize);
+                            updaterStates.put(v.getVarName(), stateArr);
+                            GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
+                            updaterMap.put(v.getVarName(), u);
+                        } else {
+                            GradientUpdater u = trainingConfig.getUpdater().instantiate(null, true);
+                            updaterMap.put(v.getVarName(), u);
+                        }
                     }
                 }
             }
@@ -4024,7 +3971,8 @@ public class SameDiff extends SDBaseOps {
         for (Map.Entry<String,INDArray> e : arrays.entrySet()) {
             SDVariable varForName = getVariable(e.getKey());
             if (varForName == null) {
-                throw new ND4JIllegalStateException("No variable name found for " + e.getKey());
+                throw new ND4JIllegalStateException("A placeholder array was provided for variable with name \"" + e.getKey() +
+                        "\" but no variable with this name exists");
             }
 
             Variable v = variables.get(e.getKey());
