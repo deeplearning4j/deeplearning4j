@@ -473,6 +473,7 @@ public class AllocatorTest {
     public void testAffinityGuarantees() {
         ExecutorService service = ExecutorServiceProvider.getExecutorService();
         final INDArray steady = Nd4j.rand(1,100);
+        Map<INDArray, Integer> deviceData = new HashMap<>();
 
         Future<List<INDArray>>[] results = new Future[10];
         for (int i = 0; i < results.length; ++i) {
@@ -484,19 +485,25 @@ public class AllocatorTest {
                     	INDArray x = Nd4j.rand(1, 100);
                     	System.out.println("Device for x:" + Nd4j.getAffinityManager().getDeviceForArray(x));
                     	System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+                    	deviceData.put(x, Nd4j.getAffinityManager().getDeviceForArray(x));
+                        deviceData.put(steady, Nd4j.getAffinityManager().getDeviceForArray(steady));
 			            retVal.add(x);
 		            }
     		        Thread innerThread = new Thread() {
     		            @Override
                         public void run() {
                             for (val res : retVal) {
-                                System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
-                                System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+                                assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
+                                assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
                             }
                         }
                     };
     		        innerThread.start();
-    		        innerThread.join();
+                    try {
+                        innerThread.join();
+                    } catch (InterruptedException e) {
+                        log.info(e.getMessage());
+                    }
                     return retVal;
                 }
             });
@@ -504,8 +511,8 @@ public class AllocatorTest {
             try {
                 List<INDArray> resArray = results[i].get();
 		        for (val res : resArray) {
-                    System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
-		            System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+                    assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
+		            assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
 		        }
             } catch (Exception e) {
                 log.info(e.getMessage());
