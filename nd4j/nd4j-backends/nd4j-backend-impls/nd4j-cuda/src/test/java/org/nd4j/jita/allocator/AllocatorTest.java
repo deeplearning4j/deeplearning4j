@@ -528,9 +528,14 @@ public class AllocatorTest {
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
         assertEquals(currEventsNumber+1, controller.getEventsProvider().getEventsNumber());
+
+        INDArray arg1 = Nd4j.rand(1,100);
+        INDArray arg2 = Nd4j.rand(1,200);
+        INDArray arg3 = Nd4j.rand(1,300);
+        controller.prepareAction(x, arg1, arg2, arg3);
+        assertEquals(currEventsNumber+5, controller.getEventsProvider().getEventsNumber());
     }
 
-    @Ignore
     @Test
     public void testReleaseContext() {
         LimitedContextPool pool = (LimitedContextPool) AtomicAllocator.getInstance().getContextPool();
@@ -540,7 +545,6 @@ public class AllocatorTest {
         System.out.println(pool.getContextForDevice(0));
     }
 
-    @Ignore
     @Test
     public void testDataBuffers() {
         INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
