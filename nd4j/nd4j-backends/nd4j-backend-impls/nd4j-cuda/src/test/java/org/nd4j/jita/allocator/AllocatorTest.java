@@ -437,12 +437,15 @@ public class AllocatorTest {
 
     @Test
     public void testHostFallback() {
+        // Take device memory
         long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
         INDArray x  = Nd4j.create(1, bytesFree);
         AtomicAllocator.getInstance().allocateMemory(x.shapeInfoDataBuffer(),
                 new AllocationShape(bytesFree, 8, DataType.DOUBLE), true);
 
-        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        // Fallback to host
+        INDArray x1  = Nd4j.create(1, 100);
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x1.shapeInfoDataBuffer());
 
         assertNotNull(pointX);
         assertNotNull(pointX.getHostPointer());
