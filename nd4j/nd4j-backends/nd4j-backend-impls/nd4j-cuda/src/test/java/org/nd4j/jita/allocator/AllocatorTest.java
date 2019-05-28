@@ -479,23 +479,34 @@ public class AllocatorTest {
             results[i] = service.submit(new Callable<List<INDArray>>() {
                 @Override
                 public List<INDArray> call() {
-		    List<INDArray> retVal = new ArrayList<>();
-    		    for (int i = 0; i < 100; ++i) {		    
+		            List<INDArray> retVal = new ArrayList<>();
+    		        for (int i = 0; i < 100; ++i) {
                     	INDArray x = Nd4j.rand(1, 100);
                     	System.out.println("Device for x:" + Nd4j.getAffinityManager().getDeviceForArray(x));
                     	System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
-			retVal.add(x);
-		    }
+			            retVal.add(x);
+		            }
+    		        Thread innerThread = new Thread() {
+    		            @Override
+                        public void run() {
+                            for (val res : retVal) {
+                                System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
+                                System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+                            }
+                        }
+                    };
+    		        innerThread.start();
+    		        innerThread.join();
                     return retVal;
                 }
             });
 
             try {
                 List<INDArray> resArray = results[i].get();
-		for (val res : resArray) {
-                System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
-		System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
-		}
+		        for (val res : resArray) {
+                    System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
+		            System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+		        }
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
