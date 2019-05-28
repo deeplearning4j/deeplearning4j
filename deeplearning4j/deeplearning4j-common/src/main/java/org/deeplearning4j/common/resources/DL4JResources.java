@@ -44,7 +44,7 @@ public class DL4JResources {
      */
     @Deprecated
     public static final String DL4J_BASE_URL_PROPERTY = DL4JSystemProperties.DL4J_RESOURCES_BASE_URL_PROPERTY;
-    private static final String DL4J_DEFAULT_URL = "http://blob.deeplearning4j.org/";
+    private static final String DL4J_DEFAULT_URL = "https://blob.deeplearning4j.org/";
 
     private static File baseDirectory;
     private static String baseURL;
@@ -79,8 +79,8 @@ public class DL4JResources {
 
     /**
      * Get the URL relative to the base URL.<br>
-     * For example, if baseURL is "http://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
-     * this simply returns "http://blob.deeplearning4j.org/datasets/iris.dat"
+     * For example, if baseURL is "https://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
+     * this simply returns "https://blob.deeplearning4j.org/datasets/iris.dat"
      *
      * @param relativeToBase Relative URL
      * @return URL
@@ -92,8 +92,8 @@ public class DL4JResources {
 
     /**
      * Get the URL relative to the base URL as a String.<br>
-     * For example, if baseURL is "http://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
-     * this simply returns "http://blob.deeplearning4j.org/datasets/iris.dat"
+     * For example, if baseURL is "https://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
+     * this simply returns "https://blob.deeplearning4j.org/datasets/iris.dat"
      *
      * @param relativeToBase Relative URL
      * @return URL
