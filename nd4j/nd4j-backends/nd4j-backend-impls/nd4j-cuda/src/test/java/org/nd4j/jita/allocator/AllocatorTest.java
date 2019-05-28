@@ -18,6 +18,7 @@ package org.nd4j.jita.allocator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.jita.allocator.context.ContextPool;
@@ -27,12 +28,14 @@ import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import lombok.val;
 
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
@@ -43,13 +46,14 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.linalg.jcublas.buffer.CudaByteDataBuffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.primitives.Pair;
 
 import static org.junit.Assert.*;
 ;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class AllocatorTest {
@@ -399,36 +403,41 @@ public class AllocatorTest {
     @Test
     public void testDataMigration() {
 
-        Thread[] threads = new Thread[4];
-        List<INDArray> lst = new ArrayList<>();
-        List<INDArray> sums = new ArrayList<>();
+        for (boolean p2pEnabled : new boolean[]{true, false}) {
 
-        for (int i = 0; i < 4; ++i) {
-            threads[i] = new Thread() {
-                @Override
-                public void run () {
-                    INDArray x = Nd4j.rand(1, 10);
-                    lst.add(x);
-                    sums.add(Nd4j.sum(x));
-                }
-            };
-            threads[i].start();
-        }
+            CudaEnvironment.getInstance().getConfiguration().allowCrossDeviceAccess(p2pEnabled);
 
-	    try {
-            for(val thread :threads) {
-                thread.join();
+            Thread[] threads = new Thread[4];
+            Map<INDArray, INDArray> sumsPerList = new HashMap<>();
+            List<INDArray> lst = new ArrayList<>();
+
+            for (int i = 0; i < 4; ++i) {
+                threads[i] = new Thread() {
+                    @Override
+                    public void run() {
+                        INDArray x = Nd4j.rand(1, 10);
+                        sumsPerList.put(Nd4j.sum(x), x);
+                        lst.add(x);
+                    }
+                };
+                threads[i].start();
             }
-	    } catch (InterruptedException e) {
-	        log.info("Interrupted");
-	    }
 
-        Collections.shuffle(lst);
+            try {
+                for (val thread : threads) {
+                    thread.join();
+                }
+            } catch (InterruptedException e) {
+                log.info("Interrupted");
+            }
 
-        for (int  i = 0 ; i < lst.size(); ++i) {
-            INDArray sum = Nd4j.sum(lst.get(i));
-            assertTrue(sums.contains(sum));
-	    }
+            Collections.shuffle(lst);
+
+            for (int i = 0; i < lst.size(); ++i) {
+                INDArray sum = Nd4j.sum(lst.get(i));
+                assertEquals(sumsPerList.get(sum), lst.get(i));
+            }
+        }
     }
 
 
@@ -436,7 +445,7 @@ public class AllocatorTest {
     public void testHostFallback() {
         // Take device memory
         long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
-	Nd4j.getMemoryManager().allocate((long)(bytesFree*0.75), MemoryKind.DEVICE, true);
+	    Pointer p = Nd4j.getMemoryManager().allocate((long)(bytesFree*0.75), MemoryKind.DEVICE, true);
 
         // Fallback to host
         INDArray x1  = Nd4j.create(1, (long)(bytesFree*0.15));
@@ -445,6 +454,19 @@ public class AllocatorTest {
         assertNotNull(pointX);
         assertNotNull(pointX.getHostPointer());
         assertNotNull(pointX.getDevicePointer());
+
+        Nd4j.getMemoryManager().release(p, MemoryKind.DEVICE);
+    }
+
+    @Test
+    public void testAffinityGuarantees() {
+        ExecutorService service = ExecutorServiceProvider.getExecutorService();
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                INDArray x = Nd4j.rand(1,100);
+            }
+        });
     }
 
     @Test
@@ -454,7 +476,8 @@ public class AllocatorTest {
 
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
-        assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
+        //assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
+        System.out.println(controller.getEventsProvider().getEventsNumber() - currEventsNumber);
     }
 
     @Ignore
