@@ -66,7 +66,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         int[] shape = mdp.getObservationSpace().getShape();
 
         // Review: Why is shape.length == 1 a special case?
-        // -> HistoryProcessor expects at least a 2D array
+        // Is it because HistoryProcessor expects at least a 2D array?
         if (shape.length == 1)
             return arr.reshape(new long[] {1, arr.length()});
         else

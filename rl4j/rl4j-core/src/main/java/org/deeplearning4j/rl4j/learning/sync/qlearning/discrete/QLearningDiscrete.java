@@ -218,7 +218,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             if (isHistoryProcessor) {
                 // HistoryProcessor requirement: an observation must be 2D grayscale image.
                 // The history processor will keep the (IHistoryProcessor.Configuration.historyLength) previous images
-                // and feed them to the NN
+                // in the "depth" dimension and feed them to the NN
                 for (int j = 0; j < obsArray.length; j++) {
                     obs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, obsArray[j]);
                 }
@@ -230,7 +230,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             if (isHistoryProcessor) {
                 // HistoryProcessor requirement: an observation must be 2D grayscale image.
                 // The history processor will keep the (IHistoryProcessor.Configuration.historyLength) previous images
-                // and feed them to the NN
+                // in the "depth" dimension and feed them to the NN
                 for (int j = 0; j < nextObsArray.length; j++) {
                     nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
                 }
