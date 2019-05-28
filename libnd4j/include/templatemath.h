@@ -761,18 +761,23 @@ inline __device__ uint32_t nd4j_atomicMin<uint32_t>(uint32_t* address, uint32_t 
 }
 template <>
 inline __device__ float nd4j_atomicMin<float>(float* address, float val)  {
-     return __int_as_float(atomicMin(reinterpret_cast<int*>(address), __float_as_int(val)));
+     int* address_as_ull = (int*)address;
+    int old = __float_as_int(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(math::nd4j_min(val, __int_as_float(assumed))));
+	} while (assumed != old);
+	return __int_as_float(old);
 }
 template <>
 inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
     unsigned long long int* address_as_ull = (unsigned long long int*)address;
-    unsigned long long int old = __double_as_longlong(val);
-    bool sw = ((old & 0x8000000000000000LL) || (*address_as_ull & 0x8000000000000000LL));
-    //printf("atomicMin: %lf, %lf, (%llx, %llx) [%s]\n", *address, val, *address_as_ull, old, sw?"Positive":"Negative");
-
-    return sw?
-         __longlong_as_double(atomicMax(address_as_ull, old)):
-         __longlong_as_double(atomicMin(address_as_ull, old));
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __double_as_longlong(math::nd4j_min(val, __longlong_as_double(assumed))));
+	} while (assumed != old);
+	return __longlong_as_double(old);
 }
 template <>
 inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val)  {
@@ -780,10 +785,10 @@ inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned
 }
 template <>
 inline __device__ Nd4jLong nd4j_atomicMin<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
-    if (val >= 0 && *address >= 0)
+
         return (Nd4jLong)atomicMin((unsigned long long*)address, (unsigned long long)val);
-    else
-        return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
+//    else
+//        return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
 
 }
 template <>
@@ -803,6 +808,17 @@ inline __device__ float16 nd4j_atomicMin<float16>(float16* address, float16 val)
 template <>
 inline __device__ int32_t nd4j_atomicMax<int32_t>(int32_t* address, int32_t val)  {
      return atomicMax(address, val);
+}
+
+template <>
+inline __device__ double nd4j_atomicMax<double>(double* address, double val)  {
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __double_as_longlong(math::nd4j_max(val, __longlong_as_double(assumed))));
+	} while (assumed != old);
+	return __longlong_as_double(old);
 }
 
 template <>

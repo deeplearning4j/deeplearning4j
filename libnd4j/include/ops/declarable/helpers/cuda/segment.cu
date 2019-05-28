@@ -119,7 +119,7 @@ namespace helpers {
            nd4j::math::atomics::nd4j_atomicMin(&val[segment], x[xIndex]);
 //            if (val[segment] > x[xIndex])
 //                val[segment] = x[xIndex];
-            printf("%d(%lld): %lf > %lf\n", e, segment, x[xIndex], val[segment]);
+//            printf("%d(%lld): %lf > %lf\n", e, segment, x[xIndex], val[segment]);
         }
 //        __syncthreads();
 //        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
