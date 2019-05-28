@@ -1684,6 +1684,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UByteIndexer) indexer).put(offset() + i,  (int) element);
                 break;
             case UINT16:
+                ((UShortIndexer) indexer).put(offset() + i,  (int)element);
+                break;
             case SHORT:
                 ((ShortIndexer) indexer).put(offset() + i,  (short) element);
                 break;
@@ -1829,6 +1831,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ShortIndexer) indexer).put(offset() + i, element ? (short) 1 : (short) 0);
                 break;
             case INT:
+            case UINT32:
                 ((IntIndexer) indexer).put(offset() + i, element ? 1 : 0);
                 break;
             case UINT64:

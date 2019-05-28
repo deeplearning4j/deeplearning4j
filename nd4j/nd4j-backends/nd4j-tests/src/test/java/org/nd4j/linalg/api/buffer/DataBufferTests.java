@@ -254,7 +254,7 @@ public class DataBufferTests extends BaseNd4jTest {
         testGet(db, 0, 5.0);
         testGet(db, 2, 5.0);
 
-        if (db.dataType() != DataType.UBYTE) {
+        if (db.dataType().isSigned()) {
             db.assign(-3.0f);
             testGet(db, 0, -3.0);
             testGet(db, 2, -3.0);
