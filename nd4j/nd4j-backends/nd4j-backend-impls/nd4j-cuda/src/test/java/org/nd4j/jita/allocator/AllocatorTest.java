@@ -474,21 +474,28 @@ public class AllocatorTest {
         ExecutorService service = ExecutorServiceProvider.getExecutorService();
         final INDArray steady = Nd4j.rand(1,100);
 
-        Future<INDArray>[] results = new Future[10];
+        Future<List<INDArray>>[] results = new Future[10];
         for (int i = 0; i < results.length; ++i) {
-            results[i] = service.submit(new Callable<INDArray>() {
+            results[i] = service.submit(new Callable<List<INDArray>>() {
                 @Override
-                public INDArray call() {
-                    INDArray x = Nd4j.rand(1, 100);
-                    System.out.println(Nd4j.getAffinityManager().getDeviceForArray(x));
-                    System.out.println(Nd4j.getAffinityManager().getDeviceForArray(steady));
-                    return x;
+                public List<INDArray> call() {
+		    List<INDArray> retVal = new ArrayList<>();
+    		    for (int i = 0; i < 100; ++i) {		    
+                    	INDArray x = Nd4j.rand(1, 100);
+                    	System.out.println("Device for x:" + Nd4j.getAffinityManager().getDeviceForArray(x));
+                    	System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+			retVal.add(x);
+		    }
+                    return retVal;
                 }
             });
 
             try {
-                INDArray resArray = results[i].get();
-                System.out.println(Nd4j.getAffinityManager().getDeviceForArray(resArray));
+                List<INDArray> resArray = results[i].get();
+		for (val res : resArray) {
+                System.out.println("Device for res: " + Nd4j.getAffinityManager().getDeviceForArray(res));
+		System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+		}
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
@@ -502,8 +509,7 @@ public class AllocatorTest {
 
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
-        //assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
-        System.out.println(controller.getEventsProvider().getEventsNumber() - currEventsNumber);
+        assertEquals(currEventsNumber+1, controller.getEventsProvider().getEventsNumber());
     }
 
     @Ignore
