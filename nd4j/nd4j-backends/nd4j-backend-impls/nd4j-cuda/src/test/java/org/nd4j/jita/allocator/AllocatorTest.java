@@ -408,7 +408,7 @@ public class AllocatorTest {
             CudaEnvironment.getInstance().getConfiguration().allowCrossDeviceAccess(p2pEnabled);
 
             Thread[] threads = new Thread[4];
-            Map<Double, INDArray> sumsPerList = new HashMap<>();
+            List<Pair<INDArray, INDArray>> sumsPerList = new ArrayList<>();
             List<INDArray> lst = new ArrayList<>();
 
             for (int i = 0; i < 4; ++i) {
@@ -416,8 +416,10 @@ public class AllocatorTest {
                     @Override
                     public void run() {
                         INDArray x = Nd4j.rand(1, 10);
-                        Double key = Nd4j.sum(x).getDouble(0);
-                        sumsPerList.put(key, x);
+			Pair<INDArray, INDArray> pair = new Pair<>();
+			pair.setFirst(Nd4j.sum(x));
+			pair.setSecond(x);
+                        sumsPerList.add(pair);
                         lst.add(x);
                     }
                 };
@@ -436,13 +438,18 @@ public class AllocatorTest {
 
             for (int i = 0; i < lst.size(); ++i) {
                 INDArray data = lst.get(i);
-                Double key = Nd4j.sum(data).getDouble(0);
-                assertEquals(sumsPerList.get(key), data);
+		INDArray sum = Nd4j.sum(data);
+		for (int j = 0; j < sumsPerList.size(); ++j) {
+			if (sumsPerList.get(j).getFirst().equals(data))
+				assertEquals(sumsPerList.get(j).getSecond(), data);
+
+		}
             }
         }
     }
 
 
+    @Ignore
     @Test
     public void testHostFallback() {
         // Take device memory
