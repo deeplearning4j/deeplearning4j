@@ -466,8 +466,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             voidConfiguration.setControllerAddress(s);
         }
 
-        if (voidConfiguration.getControllerAddress() == null)
-            voidConfiguration.setControllerAddress(DL4JEnvironmentVars.DL4J_VOID_IP);
+        if (voidConfiguration.getControllerAddress() == null) {
+            String envVar = System.getenv(DL4JEnvironmentVars.DL4J_VOID_IP);
+            if(envVar != null && !envVar.isEmpty()) {
+                voidConfiguration.setControllerAddress(envVar);
+            }
+        }
 
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(

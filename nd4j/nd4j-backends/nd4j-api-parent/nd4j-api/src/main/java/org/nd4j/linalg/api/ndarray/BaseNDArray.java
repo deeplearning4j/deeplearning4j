@@ -6495,9 +6495,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray castTo(DataType dataType) {
+        if(dataType == dataType())  //No-op if correct datatype
+            return this;
         if(isEmpty()){
-            if(dataType == dataType())
-                return this;
             return Nd4j.empty(dataType);
         }
         val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());

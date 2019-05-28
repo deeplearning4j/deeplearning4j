@@ -571,72 +571,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return bArguments.get(index);
     }
 
-    public static class SameDiffBuilder extends DynamicCustomOpsBuilder {
-        private SameDiff sameDiff;
-        private List<DifferentialFunction> args = new ArrayList<>();
-        private List<DifferentialFunction> outputs = new ArrayList<>();
-
-        private SameDiffBuilder(String opName, SameDiff sameDiff) {
-            this(opName, sameDiff, 0, 0, 0, false, 0, 0);
-        }
-
-        protected SameDiffBuilder(String opName, SameDiff sameDiff, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
-            super(opName, hash, numInputs, numOutputs, inplaceAllowed, numTArguments, numIArguments);
-            this.sameDiff = sameDiff;
-        }
-
-        public SameDiffBuilder sameDiff(SameDiff sameDiff) {
-            this.sameDiff = sameDiff;
-            return this;
-        }
-
-        @Override
-        public DynamicCustomOpsBuilder addInputs(INDArray... inputs) {
-            throw new UnsupportedOperationException("Unable to add direct ndarrays. Please use the normal builder for that.");
-        }
-
-        @Override
-        public DynamicCustomOpsBuilder addOutputs(INDArray... outputs) {
-            throw new UnsupportedOperationException("Unable to add direct ndarrays. Please use the normal builder for that.");
-
-        }
-
-
-        public DynamicCustomOpsBuilder addInputs(DifferentialFunction... inputs) {
-            for (DifferentialFunction function : inputs) {
-                args.add(function);
-            }
-
-            return this;
-        }
-
-        public DynamicCustomOpsBuilder addOutputs(DifferentialFunction... outputs) {
-            this.outputs.addAll(Arrays.asList(outputs));
-            return this;
-
-        }
-
-
-        @Override
-        public DynamicCustomOp build() {
-            DynamicCustomOp ret = super.build();
-            ret.setSameDiff(sameDiff);
-            ret.outputShapes = outputShapes;
-            sameDiff.putFunctionForId(ret.getOwnName(), ret);
-            if (outputs.isEmpty() && !outputShapes.isEmpty()) {
-                for (int i = 0; i < outputShapes.size(); i++) {
-                    outputs.add(sameDiff.var(sameDiff.generateNewVarName("dynamiccustomop", i), outputShapes.get(i)));
-                }
-
-            }
-
-            sameDiff.putFunctionForId(ret.getOwnName(), ret);
-            ret.outputVariables = outputs.toArray(new SDVariable[outputs.size()]);
-
-            return ret;
-        }
-    }
-
 
     @Override
     public String onnxName() {
@@ -662,11 +596,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
-    }
-
-
-    public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {
-        return new SameDiffBuilder(opName, sameDiff);
     }
 
     public static class DynamicCustomOpsBuilder {

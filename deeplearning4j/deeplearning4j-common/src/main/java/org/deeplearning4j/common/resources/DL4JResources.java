@@ -44,7 +44,7 @@ public class DL4JResources {
      */
     @Deprecated
     public static final String DL4J_BASE_URL_PROPERTY = DL4JSystemProperties.DL4J_RESOURCES_BASE_URL_PROPERTY;
-    private static final String DL4J_DEFAULT_URL = "http://blob.deeplearning4j.org/";
+    private static final String DL4J_DEFAULT_URL = "https://deeplearning4jblob.blob.core.windows.net/";
 
     private static File baseDirectory;
     private static String baseURL;
