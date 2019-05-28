@@ -71,7 +71,7 @@ public class TestInstantiation extends BaseDL4JTest {
         runTest(TinyYOLO.builder().numClasses(10).build(), "TinyYOLO", 10);
     }
 
-    @Test
+    @Test @Ignore("AB 2019/05/28 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
     public void testCnnTrainingYOLO2() throws Exception {
         runTest(YOLO2.builder().numClasses(10).build(), "YOLO2", 10);
     }
