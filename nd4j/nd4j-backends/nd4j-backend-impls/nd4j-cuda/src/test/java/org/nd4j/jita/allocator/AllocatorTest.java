@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.context.ContextPool;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 
@@ -31,7 +33,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
@@ -39,16 +40,10 @@ import org.nd4j.jita.memory.impl.CudaCachingZeroProvider;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import static org.junit.Assert.*;
-
-import org.nd4j.linalg.api.ops.BroadcastOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.memory.MemoryManager;
+;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -460,5 +455,26 @@ public class AllocatorTest {
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
         assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
+    }
+
+    @Test
+    public void testReleaseContext() {
+        LimitedContextPool pool = (LimitedContextPool) AtomicAllocator.getInstance().getContextPool();
+        System.out.println(pool.acquireContextForDevice(0));
+        INDArray x = Nd4j.rand(1,10);
+        pool.releaseContext(pool.getContextForDevice(0));
+        System.out.println(pool.getContextForDevice(0));
+    }
+
+    @Test
+    public void testDataBuffers() {
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertEquals(50, x.data().capacity());
+        x.data().destroy();
+        assertNull(x.data());
+        assertEquals(64, pointX.getShape().getNumberOfBytes());
+        System.out.println(pointX.getHostPointer());
+        System.out.println(pointX.getDevicePointer());
     }
 }
