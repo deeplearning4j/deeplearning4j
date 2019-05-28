@@ -61,22 +61,22 @@ namespace helpers {
          for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
              auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
              //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-             if (val[segment] < x[xIndex])
-                 val[segment] = x[xIndex];
-
+//             if (val[segment] < x[xIndex])
+//                 val[segment] = x[xIndex];
+             nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
          }
-        __syncthreads();
-        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-            if (val[segment] < x[xIndex])
-                val[segment] = x[xIndex];
-        }
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment];
-        }
+//        __syncthreads();
+//        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
+//            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+//            //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
+//            if (val[segment] < x[xIndex])
+//                val[segment] = x[xIndex];
+//        }
+//        __syncthreads();
+//
+//        if (threadIdx.x == 0) {
+//            z[zIndex] = val[segment];
+//        }
 
     }
 
@@ -116,7 +116,7 @@ namespace helpers {
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
             //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-           nd4j::math::atomics::nd4j_atomicMin(&val[segment], x[xIndex]);
+           nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
 //            if (val[segment] > x[xIndex])
 //                val[segment] = x[xIndex];
 //            printf("%d(%lld): %lf > %lf\n", e, segment, x[xIndex], val[segment]);
@@ -128,11 +128,11 @@ namespace helpers {
 //            if (val[segment] > x[xIndex])
 //                val[segment] = x[xIndex];
 //        }
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment];
-        }
+//        __syncthreads();
+//
+//        if (threadIdx.x == 0) {
+//            z[zIndex] = val[segment];
+//        }
 
     }
     template <typename T, typename I>

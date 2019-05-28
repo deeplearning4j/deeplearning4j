@@ -820,25 +820,150 @@ inline __device__ double nd4j_atomicMax<double>(double* address, double val)  {
 	} while (assumed != old);
 	return __longlong_as_double(old);
 }
-
+template <>
+inline __device__ float nd4j_atomicMax<float>(float* address, float val)  {
+     int* address_as_ull = (int*)address;
+    int old = __float_as_int(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(math::nd4j_max(val, __int_as_float(assumed))));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
 template <>
 inline __device__ uint8_t nd4j_atomicMin<uint8_t>(uint8_t* address, uint8_t val)  {
     uint32_t temp = *address;
     *address = atomicMin(&temp, (uint32_t)val);
     return *address;
 }
+
 template <>
 inline __device__ int8_t nd4j_atomicMin<int8_t>(int8_t* address, int8_t val)  {
     int32_t temp = *address;
     *address = atomicMin(&temp, (int)val);
     return *address;
 }
+
 template <>
 inline __device__ uint16_t nd4j_atomicMin<uint16_t>(uint16_t* address, uint16_t val)  {
     uint32_t temp = *address;
     *address = atomicMin(&temp, (uint32_t)val);
     return *address;
 }
+
+template <>
+inline __device__ uint8_t nd4j_atomicMax<uint8_t>(uint8_t* address, uint8_t val)  {
+    uint32_t temp = *address;
+    *address = atomicMax(&temp, (uint32_t)val);
+    return *address;
+}
+
+template <>
+inline __device__ int8_t nd4j_atomicMax<int8_t>(int8_t* address, int8_t val)  {
+    int32_t temp = *address;
+    *address = atomicMax(&temp, (int)val);
+    return *address;
+}
+
+template <>
+inline __device__ uint16_t nd4j_atomicMax<uint16_t>(uint16_t* address, uint16_t val)  {
+    uint32_t temp = *address;
+    *address = atomicMax(&temp, (uint32_t)val);
+    return *address;
+}
+
+template <>
+inline __device__ int16_t nd4j_atomicMax<int16_t>(int16_t* address, int16_t val)  {
+    int32_t temp = *address;
+    *address = atomicMax(&temp, (int32_t)val);
+    return *address;
+}
+
+template <>
+inline __device__ float16 nd4j_atomicMax<float16>(float16* address, float16 val)  {
+	int* address_as_ull = (int*) address;
+
+	long addr = (long) address;
+	bool misaligned = addr & 0x3;
+
+	if (misaligned)
+		address_as_ull = (int *) (addr - 2);
+
+	PAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
+	do {
+
+		if (!misaligned) {
+			float16 res = nd4j_max((float16) old.B.H, val);
+			fresh.B.H = res.data;
+			fresh.B.L = old.B.L;
+		} else {
+			float16 res = nd4j_max((float16) old.B.L, val);
+			fresh.B.L = res.data;
+			fresh.B.H = old.B.H;
+		}
+
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+
+	if (!misaligned) return old.B.H;
+	else return old.B.L;
+}
+
+template <>
+inline __device__ bfloat16 nd4j_atomicMax<bfloat16>(bfloat16* address, bfloat16 val)  {
+	int* address_as_ull = (int*) address;
+
+	long addr = (long)(address);
+	bool misaligned = addr & 0x3;
+
+	if (misaligned)
+		address_as_ull = (int *) (addr - 2);
+
+	BPAIR old, assumed, fresh;
+
+	old.W = *address_as_ull;
+	do {
+
+		if (!misaligned) {
+			bfloat16 res = nd4j_max(old.B.H, val);
+			fresh.B.H = res;
+			fresh.B.L = old.B.L;
+		} else {
+			bfloat16 res = nd4j_max(old.B.L, val);
+			fresh.B.L = res;
+			fresh.B.H = old.B.H;
+		}
+
+		assumed.W = old.W;
+		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+	} while (assumed.W != old.W);
+
+	if (!misaligned) return old.B.H;
+	else return old.B.L;
+}
+
+template <>
+inline __device__ unsigned long long nd4j_atomicMax<unsigned long long>(unsigned long long* address, unsigned long long val)  {
+    return atomicMax(address, val);
+}
+
+template <>
+inline __device__ Nd4jLong nd4j_atomicMax<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
+	unsigned long long int* address_as_ull = (unsigned long long int *) address;
+
+	//return (Nd4jLong) atomicAdd(address_as_ull, (unsigned long long int) val);
+	unsigned long long int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, (unsigned long long)nd4j_max(val, (Nd4jLong)assumed));
+	} while (assumed != old);
+	return old;
+}
+
+
 template <>
 inline __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
