@@ -826,7 +826,6 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable \"%s\" has datatype %s: cannot associate array with type %s with this variable",
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
-        // FIXME: remove this before release
         if (sessions.get(Thread.currentThread().getId()) == null) {
             sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
         }
@@ -864,6 +863,13 @@ public class SameDiff extends SDBaseOps {
                 session.getNodeOutputs().put(varId, arr);
                 //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
             case PLACEHOLDER:
+                //Validate placeholder shapes:
+                long[] phShape = variable.placeholderShape();
+                Preconditions.checkState(Shape.shapeMatchesPlaceholder(phShape, arr.shape()),
+                        "Invalid array shape: cannot associate an array with shape %ndShape with a placeholder of shape %s:" +
+                                "shape is wrong rank or does not match on one or more dimensions", arr, phShape);
+
+
                 long tid = Thread.currentThread().getId();
                 if(!placeholdersPerThread.containsKey(tid)){
                     placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
