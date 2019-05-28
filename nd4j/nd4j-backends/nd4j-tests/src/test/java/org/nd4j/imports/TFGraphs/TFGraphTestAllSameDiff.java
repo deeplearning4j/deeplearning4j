@@ -118,6 +118,10 @@ public class TFGraphTestAllSameDiff {
             "conv_4",
             "g_09",
             "unsorted_segment/unsorted_segment_mean_rank2"
+
+            //2019/05/28 - JVM crash on ppc64le only - See issue 7657
+            "g_11"
+
     };
 
     @BeforeClass

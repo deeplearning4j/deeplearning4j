@@ -54,6 +54,7 @@ public class BaseDL4JTest {
 
     @Before
     public void beforeTest(){
+        log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
         Nd4j.setDataType(getDataType());
     }
