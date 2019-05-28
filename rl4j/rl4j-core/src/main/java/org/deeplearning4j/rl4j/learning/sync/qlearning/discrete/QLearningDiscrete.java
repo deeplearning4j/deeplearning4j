@@ -146,9 +146,11 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 hstack.muli(1.0 / getHistoryProcessor().getScale());
             }
 
-            //if input is not 2d, you have to append that the batch is 1 length high
-            if (hstack.shape().length > 2)
+            // Reshape hstack to make a 1-element batch
+            // Special case: the method Learning.getInput(MDP<O, A, AS> mdp, O obs) will output 2D array when observations are 1D
+            if (hstack.shape().length > 2) {
                 hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
+            }
 
             INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
@@ -194,10 +196,13 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
 
+        boolean isHistoryProcessor = getHistoryProcessor() != null;
+
         int size = transitions.size();
 
-        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                        : getHistoryProcessor().getConf().getShape();
+        int[] shape = isHistoryProcessor
+                ? getMdp().getObservationSpace().getShape()
+                : getHistoryProcessor().getConf().getShape();
         int[] nshape = makeShape(size, shape);
         INDArray obs = Nd4j.create(nshape);
         INDArray nextObs = Nd4j.create(nshape);
@@ -210,21 +215,27 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             actions[i] = trans.getAction();
 
             INDArray[] obsArray = trans.getObservation();
-            if (obs.rank() == 2) {
-                obs.putRow(i, obsArray[0]);
-            } else {
+            if (isHistoryProcessor) {
+                // HistoryProcessor requirement: an observation must be 2D grayscale image.
+                // The history processor will keep the (IHistoryProcessor.Configuration.historyLength) previous images
+                // and feed them to the NN
                 for (int j = 0; j < obsArray.length; j++) {
                     obs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, obsArray[j]);
                 }
+            } else {
+                obs.putRow(i, obsArray[0]);
             }
 
             INDArray[] nextObsArray = Transition.append(trans.getObservation(), trans.getNextObservation());
-            if (nextObs.rank() == 2) {
-                nextObs.putRow(i, nextObsArray[0]);
-            } else {
+            if (isHistoryProcessor) {
+                // HistoryProcessor requirement: an observation must be 2D grayscale image.
+                // The history processor will keep the (IHistoryProcessor.Configuration.historyLength) previous images
+                // and feed them to the NN
                 for (int j = 0; j < nextObsArray.length; j++) {
                     nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
                 }
+            } else {
+                nextObs.putRow(i, nextObsArray[0]);
             }
         }
         if (getHistoryProcessor() != null) {
