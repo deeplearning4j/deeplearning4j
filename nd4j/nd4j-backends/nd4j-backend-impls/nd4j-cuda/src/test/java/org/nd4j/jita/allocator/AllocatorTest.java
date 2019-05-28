@@ -52,7 +52,9 @@ import static org.junit.Assert.*;
 ;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
@@ -416,9 +418,9 @@ public class AllocatorTest {
                     @Override
                     public void run() {
                         INDArray x = Nd4j.rand(1, 10);
-			Pair<INDArray, INDArray> pair = new Pair<>();
-			pair.setFirst(Nd4j.sum(x));
-			pair.setSecond(x);
+			            Pair<INDArray, INDArray> pair = new Pair<>();
+			            pair.setFirst(Nd4j.sum(x));
+			            pair.setSecond(x);
                         sumsPerList.add(pair);
                         lst.add(x);
                     }
@@ -438,12 +440,12 @@ public class AllocatorTest {
 
             for (int i = 0; i < lst.size(); ++i) {
                 INDArray data = lst.get(i);
-		INDArray sum = Nd4j.sum(data);
-		for (int j = 0; j < sumsPerList.size(); ++j) {
-			if (sumsPerList.get(j).getFirst().equals(data))
-				assertEquals(sumsPerList.get(j).getSecond(), data);
 
-		}
+		        for (int j = 0; j < sumsPerList.size(); ++j) {
+			        if (sumsPerList.get(j).getFirst().equals(data))
+				        assertEquals(sumsPerList.get(j).getSecond(), data);
+
+		        }
             }
         }
     }
@@ -470,12 +472,27 @@ public class AllocatorTest {
     @Test
     public void testAffinityGuarantees() {
         ExecutorService service = ExecutorServiceProvider.getExecutorService();
-        service.submit(new Runnable() {
-            @Override
-            public void run() {
-                INDArray x = Nd4j.rand(1,100);
+        final INDArray steady = Nd4j.rand(1,100);
+
+        Future<INDArray>[] results = new Future[10];
+        for (int i = 0; i < results.length; ++i) {
+            results[i] = service.submit(new Callable<INDArray>() {
+                @Override
+                public INDArray call() {
+                    INDArray x = Nd4j.rand(1, 100);
+                    System.out.println(Nd4j.getAffinityManager().getDeviceForArray(x));
+                    System.out.println(Nd4j.getAffinityManager().getDeviceForArray(steady));
+                    return x;
+                }
+            });
+
+            try {
+                INDArray resArray = results[i].get();
+                System.out.println(Nd4j.getAffinityManager().getDeviceForArray(resArray));
+            } catch (Exception e) {
+                log.info(e.getMessage());
             }
-        });
+        }
     }
 
     @Test
