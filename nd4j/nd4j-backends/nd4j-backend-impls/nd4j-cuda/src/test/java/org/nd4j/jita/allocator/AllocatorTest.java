@@ -48,6 +48,7 @@ import static org.junit.Assert.*;
 
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.memory.MemoryManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -434,11 +435,12 @@ public class AllocatorTest {
     }
 
 
-    @Ignore
     @Test
     public void testHostFallback() {
         long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
         INDArray x  = Nd4j.create(1, bytesFree);
+        AtomicAllocator.getInstance().allocateMemory(x.shapeInfoDataBuffer(),
+                new AllocationShape(bytesFree, 8, DataType.DOUBLE), true);
 
         val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
 
@@ -454,6 +456,6 @@ public class AllocatorTest {
 
         INDArray x = Nd4j.rand(1,10);
         controller.prepareAction(x);
-        assertEquals(currEventsNumber+1, controller.getEventsProvider().getEventsNumber());
+        assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
     }
 }
