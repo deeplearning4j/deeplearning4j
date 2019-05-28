@@ -18,10 +18,6 @@ package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.nn.api.Model;
