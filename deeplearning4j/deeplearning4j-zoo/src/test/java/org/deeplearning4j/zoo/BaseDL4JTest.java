@@ -38,6 +38,8 @@ public class BaseDL4JTest {
     @Rule
     public TestName name = new TestName();
 
+    protected long startTime;
+
     /**
      * Override this to set the profiling mode for the tests defined in the child class
      */
@@ -57,6 +59,7 @@ public class BaseDL4JTest {
         log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
         Nd4j.setDataType(getDataType());
+        startTime = System.currentTimeMillis();
     }
 
     @After
@@ -81,8 +84,10 @@ public class BaseDL4JTest {
         long jvmTotal = Runtime.getRuntime().totalMemory();
         long jvmMax = Runtime.getRuntime().maxMemory();
 
+        long duration = System.currentTimeMillis() - startTime;
         sb.append(getClass().getSimpleName()).append(".").append(name.getMethodName())
-                .append(": jvmTotal=").append(jvmTotal)
+                .append(": ").append(duration).append(" ms")
+                .append(", jvmTotal=").append(jvmTotal)
                 .append(", jvmMax=").append(jvmMax)
                 .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)
                 .append(", currPhys=").append(currPhys).append(", maxPhys=").append(maxPhys);

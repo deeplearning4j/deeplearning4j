@@ -54,6 +54,8 @@ public abstract class BaseNd4jTest {
     @Rule
     public TestName testName = new TestName();
 
+    protected long startTime;
+
     protected Nd4jBackend backend;
     protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
@@ -64,11 +66,6 @@ public abstract class BaseNd4jTest {
 
     public BaseNd4jTest(String name) {
         this(name, getDefaultBackend());
-    }
-
-    @Before
-    public void beforeTest() {
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
@@ -204,6 +201,7 @@ public abstract class BaseNd4jTest {
     @Before
     public void before() throws Exception {
         log.info("Running " + getClass().getName() + " on backend " + backend.getClass().getName());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -211,13 +209,15 @@ public abstract class BaseNd4jTest {
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        startTime = System.currentTimeMillis();
     }
 
     @After
     public void after() throws Exception {
+        long totalTime = System.currentTimeMillis() - startTime;
         Nd4j.getMemoryManager().purgeCaches();
 
-        logTestCompletion();
+        logTestCompletion(totalTime);
         if (System.getProperties().getProperty("backends") != null
                         && !System.getProperty("backends").contains(backend.getClass().getName()))
             return;
@@ -240,7 +240,7 @@ public abstract class BaseNd4jTest {
         }
     }
 
-    public void logTestCompletion(){
+    public void logTestCompletion( long totalTime){
         StringBuilder sb = new StringBuilder();
         long maxPhys = Pointer.maxPhysicalBytes();
         long maxBytes = Pointer.maxBytes();
@@ -251,7 +251,8 @@ public abstract class BaseNd4jTest {
         long jvmMax = Runtime.getRuntime().maxMemory();
 
         sb.append(getClass().getSimpleName()).append(".").append(testName.getMethodName())
-                .append(": jvmTotal=").append(jvmTotal)
+                .append(": ").append(totalTime).append(" ms")
+                .append(", jvmTotal=").append(jvmTotal)
                 .append(", jvmMax=").append(jvmMax)
                 .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)
                 .append(", currPhys=").append(currPhys).append(", maxPhys=").append(maxPhys);
