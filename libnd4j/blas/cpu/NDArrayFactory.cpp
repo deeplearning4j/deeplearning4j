@@ -234,14 +234,17 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
         throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
     }
 
-    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+    // std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+
+    const void* dataBuff = data.data();
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(nullptr, DataTypeUtils::fromT<T>(), descriptor.arrLength() * sizeof(T), context->getWorkspace());
 
     auto result = new NDArray(buffer, descriptor, context);
 
-    memcpyFromVector(result->getBuffer(), data);
+    // memcpyFromVector(result->getBuffer(), data);
 
-    result->tickWriteHost();
-    result->syncToDevice();
+    // result->tickWriteHost();
+    // result->syncToDevice();
 
     return result;
 }
@@ -254,7 +257,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::LaunchContext * context);
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::LaunchContext * context);
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::LaunchContext * context);
-template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
+// template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
 
 
     ////////////////////////////////////////////////////////////////////////

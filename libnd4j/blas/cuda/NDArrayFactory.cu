@@ -77,11 +77,7 @@ BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char ord
 template <typename T>
 void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
 
-    #ifdef __CUDABLAS__
-    cudaMemcpy(ptr, vector.data() * sizeof(T), cudaMemcpyHostToDevice);
-    #else
     memcpy(ptr, vector.data(), vector.size() * sizeof(T));
-    #endif
 }
 
 template <>
@@ -227,14 +223,9 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
         throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
     }
 
-    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(&data[0], DataTypeUtils::fromT<T>(), descriptor.arrLength() * sizeof(T), context->getWorkspace());
 
     auto result = new NDArray(buffer, descriptor, context);
-
-    memcpyFromVector(result->getBuffer(), data);
-
-    result->tickWriteHost();
-    result->syncToDevice();
 
     return result;
 }
@@ -314,7 +305,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-        auto result = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
+        auto res = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
 
         if (value == (T)0.0f)
             res->nullify();
@@ -363,7 +354,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     result.nullify();
 
-    return res;
+    return result;
 }
 
 
@@ -391,7 +382,7 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::LaunchContext
     memcpyFromVector<T>(res.getBuffer(), values);
 
     res.tickWriteHost();
-    res.syncToDevice()
+    res.syncToDevice();
 
     return res;
 }
@@ -488,7 +479,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     std::vector<Nd4jLong> shp(shape);
     ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
 
-    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), context->getWorkspace()):
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), context->getWorkspace());
 
     NDArray result(pBuffer, descriptor, context);
 
@@ -572,7 +563,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         memcpy(res.buffer(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
 
-        auto data = auto data = static_cast<int8_t*>(res.buffer()) + headerLength;
+        auto data = static_cast<int8_t*>(res.buffer()) + headerLength;
         int resLen = res.lengthOf();
         for (int e = 0; e < resLen; e++) {
             auto length = offsets[e+1] - offsets[e];

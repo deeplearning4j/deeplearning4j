@@ -49,6 +49,19 @@
 
 namespace nd4j {
 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::platformBuffer()             { return buffer(); }
+void* NDArray::getPlatformBuffer() const    { return getBuffer(); }
+void NDArray::syncToDevice() const          { }
+void NDArray::syncToHost() const            { }
+void NDArray::tickWriteHost() const         { }
+void NDArray::tickWriteDevice() const       { }
+void NDArray::tickReadHost() const          { }
+void NDArray::tickReadDevice() const        { }
+void NDArray::tickBothActual() const        { }
+bool NDArray::isActualOnHostSide() const    { }
+bool NDArray::isActualOnDeviceSide() const  { }
+void NDArray::makeBothBuffersActual() const { }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>

@@ -231,17 +231,17 @@ namespace nd4j {
          */
         void setAttached(bool reallyAttached);
 
-        FORCEINLINE void tickWriteHost() const;
-        FORCEINLINE void tickWriteDevice() const;
-        FORCEINLINE void tickReadHost() const;
-        FORCEINLINE void tickReadDevice() const;
-        FORCEINLINE void tickBothActual() const;
-        FORCEINLINE bool isActualOnHostSide() const;
-        FORCEINLINE bool isActualOnDeviceSide() const;
-        FORCEINLINE void makeBothBuffersActual() const;
+        void tickWriteHost() const;
+        void tickWriteDevice() const;
+        void tickReadHost() const;
+        void tickReadDevice() const;
+        void tickBothActual() const;
+        bool isActualOnHostSide() const;
+        bool isActualOnDeviceSide() const;
+        void makeBothBuffersActual() const;
 
-        FORCEINLINE void syncToHost() const;
-        FORCEINLINE void syncToDevice() const;
+        void syncToHost() const;
+        void syncToDevice() const;
         void syncShape() const;
 
         /**
@@ -373,8 +373,8 @@ namespace nd4j {
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
         */
-        FORCEINLINE void* getPlatformBuffer() const;
-        FORCEINLINE void* platformBuffer();
+        void* getPlatformBuffer() const;
+        void* platformBuffer();
 
 
 
@@ -2113,69 +2113,12 @@ Nd4jLong NDArray::bufferOffset() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::getPlatformBuffer() const {
-
-    #ifdef __CUDABLAS__
-    return getBuffer();
-    #else
-    return getSpecialBuffer();
-    #endif
-}
-
-////////////////////////////////////////////////////////////////////////
-void* NDArray::platformBuffer() {
-
-    #ifdef __CUDABLAS__
-    return buffer();
-    #else
-    return specialBuffer();
-    #endif
-}
-
-////////////////////////////////////////////////////////////////////////
 Nd4jLong* NDArray::getSpecialShapeInfo() const{
     if (_shapeInfoD == nullptr)
         return _shapeInfo;
     // FIXME: this should be fixed once CUDA backend added
     return _shapeInfoD;
 }
-
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::syncToDevice() const {
-
-    #ifdef __CUDABLAS__
-    _buffer->syncToSpecial();
-    #endif
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::syncToHost() const {
-
-    #ifdef __CUDABLAS__
-    _buffer->syncToPrimary();
-    #endif
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::tickWriteHost() const         { _buffer->writePrimary(); }
-void NDArray::tickWriteDevice() const       { _buffer->writeSpecial(); }
-void NDArray::tickReadHost() const          { _buffer->readPrimary(); }
-void NDArray::tickReadDevice() const        { _buffer->readSpecial(); }
-void NDArray::tickBothActual() const        { _buffer->writePrimary(); _buffer->readSpecial(); }
-bool NDArray::isActualOnHostSide() const    { return _buffer->isPrimaryActual(); }
-bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual(); }
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::makeBothBuffersActual() const {
-    #ifdef __CUDABLAS__
-    if(!isActualOnHostSide())
-        syncToHost();
-    if(!isActualOnDeviceSide())
-        syncToDevice();
-    #endif
-}
-
 
 
 #ifdef __CUDACC__

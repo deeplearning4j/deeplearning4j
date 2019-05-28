@@ -256,7 +256,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::LaunchContext * contex
         tickReadHost();
     }
     else {
-        _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), isBuffAlloc, _context->getWorkspace());
+        _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), isBuffAlloc, getContext()->getWorkspace());
     }
 }
 
@@ -559,7 +559,7 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCop
     if(offsetOther == 0)
         offsetOther = other.getBufferOffset();
 
-    dataBuffer()->copyBuffersFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
+    dataBuffer()->copyBufferFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
 }
 
 

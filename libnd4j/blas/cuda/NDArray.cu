@@ -49,9 +49,18 @@
 
 namespace nd4j {
 
-    prepareSpecialUse({target}, {this, other});
-
-        registerSpecialUse({target}, {this, other});
+void* NDArray::platformBuffer()             { return specialBuffer();    }
+void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
+void NDArray::syncToDevice() const          { _buffer->syncToSpecial();  }
+void NDArray::syncToHost() const            { _buffer->syncToPrimary(getContext()); }
+void NDArray::tickWriteHost() const         { _buffer->writePrimary();   }
+void NDArray::tickWriteDevice() const       { _buffer->writeSpecial();   }
+void NDArray::tickReadHost() const          { _buffer->readPrimary();    }
+void NDArray::tickReadDevice() const        { _buffer->readSpecial();    }
+void NDArray::tickBothActual() const        { _buffer->writePrimary(); _buffer->readSpecial(); }
+bool NDArray::isActualOnHostSide() const    { return _buffer->isPrimaryActual(); }
+bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual(); }
+void NDArray::makeBothBuffersActual() const { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -118,7 +127,7 @@ void NDArray::swapUnsafe(NDArray& other) {
     if(lengthOf() != other.lengthOf())
         throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
-    BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (specialBuffer(), shapeInfo(), other.specialBuffer(), other.platformShapeInfo(), getContext()->getCudaStream()), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (specialBuffer(), specialShapeInfo(), other.specialBuffer(), other.specialShapeInfo(), getContext()->getCudaStream()), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -176,7 +185,7 @@ void NDArray::syncShape() const {
 
 //////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
-    return getSpecialBuffer() != nullptr ? getSpecialBuffer() + (offset * sizeOfT()) : nullptr;
+    return getSpecialBuffer() != nullptr ? static_cast<int8_t*>(getSpecialBuffer()) + (offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -24,7 +24,6 @@
 
 namespace nd4j {
 
-
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
 
@@ -42,7 +41,7 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate p
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
+void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
 
     if(sizeToCopyinBytes == 0)
         sizeToCopyinBytes = other.getLenInBytes();
@@ -52,6 +51,19 @@ void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinByt
     if(other._primaryBuffer != nullptr)
         memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes);
 }
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetHostBuffer) {
+
+	if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
+    if(hostBuffer != nullptr)
+        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {

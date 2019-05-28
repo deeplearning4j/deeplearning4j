@@ -20,6 +20,7 @@
 //
 
 #include "../DataBuffer.h"
+#include <DataTypeUtils.h>
 #include <op_boilerplate.h>
 #include <exceptions/cuda_exception.h>
 
@@ -99,7 +100,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {     // always copies only to special buffer
+void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {     // copies only to special buffer
 
     if(other._primaryBuffer == nullptr && other._specialBuffer == nullptr)
         return;
@@ -112,13 +113,13 @@ void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinByt
     if(other.isPrimaryActual()) {
         auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyHostToDevice);
         if (res != 0)
-            throw cuda_exception::build("DataBuffer::copyBuffersFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+            throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
         other.readPrimary();
     }
     else {
         auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
-            throw cuda_exception::build("DataBuffer::copyBuffersFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+            throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
         other.readSpecial();
     }
 
@@ -126,7 +127,25 @@ void DataBuffer::copyBuffersFrom(const DataBuffer& other, size_t sizeToCopyinByt
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
+void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetHostBuffer) {     // copies only to special buffer
+
+    if(hostBuffer == nullptr)
+        return;
+
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
+    auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes, cudaMemcpyHostToDevice);
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::copyBufferFromHost: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+
+    writeSpecial();
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
 
     deleteSpecial();
     _specialBuffer = special;

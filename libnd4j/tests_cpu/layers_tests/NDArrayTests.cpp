@@ -55,9 +55,6 @@ TEST_F(NDArrayTest, TestDup1) {
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
 
-    //arrC->printShapeInfo("C shape");
-    //arrF->printShapeInfo("F shape");
-
     ASSERT_TRUE(array.equalsTo(arrF));
     ASSERT_TRUE(array.equalsTo(arrC));
 
@@ -1644,7 +1641,7 @@ TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
 
     auto result = x.applyAllReduce3(reduce3::EuclideanDistance, &y,{1});
 
-    result->printIndexedBuffer("result");
+    // result->printIndexedBuffer("result");
 
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
