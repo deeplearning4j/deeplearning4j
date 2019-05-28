@@ -41,6 +41,8 @@ import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.linalg.jcublas.buffer.CudaByteDataBuffer;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 
 import static org.junit.Assert.*;
 ;
@@ -434,12 +436,10 @@ public class AllocatorTest {
     public void testHostFallback() {
         // Take device memory
         long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
-        INDArray x  = Nd4j.create(1, bytesFree);
-        AtomicAllocator.getInstance().allocateMemory(x.shapeInfoDataBuffer(),
-                new AllocationShape(bytesFree, 8, DataType.DOUBLE), true);
+	Nd4j.getMemoryManager().allocate((long)(bytesFree*0.75), MemoryKind.DEVICE, true);
 
         // Fallback to host
-        INDArray x1  = Nd4j.create(1, 100);
+        INDArray x1  = Nd4j.create(1, (long)(bytesFree*0.15));
         val pointX = AtomicAllocator.getInstance().getAllocationPoint(x1.shapeInfoDataBuffer());
 
         assertNotNull(pointX);
@@ -457,6 +457,7 @@ public class AllocatorTest {
         assertEquals(currEventsNumber+7, controller.getEventsProvider().getEventsNumber());
     }
 
+    @Ignore
     @Test
     public void testReleaseContext() {
         LimitedContextPool pool = (LimitedContextPool) AtomicAllocator.getInstance().getContextPool();
@@ -466,6 +467,7 @@ public class AllocatorTest {
         System.out.println(pool.getContextForDevice(0));
     }
 
+    @Ignore
     @Test
     public void testDataBuffers() {
         INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
