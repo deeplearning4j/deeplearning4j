@@ -16,12 +16,14 @@
 
 package org.nd4j.imports.TFGraphs;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -40,6 +42,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 public class ValidateZooModelPredictions extends BaseNd4jTest {
 
     public ValidateZooModelPredictions(Nd4jBackend backend) {
@@ -64,6 +67,17 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
 
     @Test
     public void testMobilenetV1() throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
         TFGraphTestZooModels.currentTestDir = testDir.newFolder();
 
         //Load model
@@ -120,6 +134,17 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
 
     @Test
     public void testResnetV2() throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
         TFGraphTestZooModels.currentTestDir = testDir.newFolder();
 
         //Load model

@@ -44,6 +44,7 @@ import java.io.IOException;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests workflow for zoo model instantiation.
@@ -52,6 +53,14 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @Slf4j
 public class TestInstantiation extends BaseDL4JTest {
+
+    protected static void ignoreIfCuda(){
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            log.warn("IGNORING TEST ON CUDA DUE TO CI CRASHES - SEE ISSUE #7657");
+            assumeTrue(false);
+        }
+    }
 
     @After
     public void after() throws Exception {
@@ -77,6 +86,7 @@ public class TestInstantiation extends BaseDL4JTest {
     }
 
     public static void runTest(ZooModel model, String modelName, int numClasses) throws Exception {
+        ignoreIfCuda();
         int gridWidth = -1;
         int gridHeight = -1;
         if (modelName.equals("TinyYOLO") || modelName.equals("YOLO2")) {
@@ -115,6 +125,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testInitPretrained() throws IOException {
+        ignoreIfCuda();
         ZooModel model = ResNet50.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
@@ -176,6 +187,7 @@ public class TestInstantiation extends BaseDL4JTest {
     }
 
     public void testInitPretrained(ZooModel model, long[] inShape, long[] outShape) throws Exception {
+        ignoreIfCuda();
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
@@ -239,6 +251,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
 
     public void testInitRandomModel(ZooModel model, long[] inShape, long[] outShape){
+        ignoreIfCuda();
         //Test initialization of NON-PRETRAINED models
 
         log.info("Testing {}", model.getClass().getSimpleName());
@@ -261,6 +274,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testYolo4635() throws Exception {
+        ignoreIfCuda();
         //https://github.com/deeplearning4j/deeplearning4j/issues/4635
 
         int nClasses = 10;
@@ -271,6 +285,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testTransferLearning() throws Exception {
+        ignoreIfCuda();
         //https://github.com/deeplearning4j/deeplearning4j/issues/7193
 
         ComputationGraph cg = (ComputationGraph) ResNet50.builder().build().initPretrained();
