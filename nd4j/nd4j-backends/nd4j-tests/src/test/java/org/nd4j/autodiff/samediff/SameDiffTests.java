@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -211,13 +212,13 @@ public class SameDiffTests {
         SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterState(), sameDiff1.getUpdaterState());
+        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
 
         sameDiff.saveWithTrainingConfig(newFile);
         sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterState(), sameDiff1.getUpdaterState());
+        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
 
     }
 
@@ -2745,11 +2746,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
 
-        List<String> tp = c.getTrainableParams();
-        assertEquals(2, tp.size());
-        assertTrue(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToConstant();
 
         INDArray out2 = tanh.eval();
@@ -2790,11 +2786,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
-        List<String> tp = c.getTrainableParams();
-        assertEquals(1, tp.size());
-        assertFalse(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToVariable();
 
         INDArray out2 = tanh.eval();
@@ -3154,5 +3145,65 @@ public class SameDiffTests {
         sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
         v3.rename("newName");
         sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
+    }
+
+    @Test
+    public void testPlaceholderShapeValidation(){
+        SameDiff sd = SameDiff.create();
+        SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, 3, 4);
+        SDVariable ph2 = sd.placeHolder("ph2", DataType.FLOAT, -1, 4);
+        SDVariable ph3 = sd.placeHolder("ph3", DataType.FLOAT, 3, -1);
+        SDVariable ph4 = sd.placeHolder("ph4", DataType.FLOAT, -1, -1);
+
+        INDArray correctShape = Nd4j.create(DataType.FLOAT, 3, 4);
+        INDArray wrongShape = Nd4j.create(DataType.FLOAT, 2, 3);
+        INDArray wrongRank1 = Nd4j.create(DataType.FLOAT, 1);
+        INDArray wrongRank2 = Nd4j.create(DataType.FLOAT, 3, 4, 5);
+        for(SDVariable v : new SDVariable[]{ph1, ph2, ph3, ph4}){
+            v.setArray(correctShape);
+
+            if(v != ph4) {
+                try {
+                    v.setArray(wrongShape);
+                    fail("Expected exception");
+                } catch (Exception t) {
+                    String msg = t.getMessage();
+                    assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]") && msg.contains(Arrays.toString(v.placeholderShape())));
+                }
+            }
+
+            try{
+                v.setArray(wrongRank1);
+                fail("Expected exception");
+            } catch (Exception t){
+                String msg = t.getMessage();
+                assertTrue(msg, msg.contains("shape") && msg.contains("[1]") && msg.contains(Arrays.toString(v.placeholderShape())));
+            }
+
+            try{
+                v.setArray(wrongRank2);
+                fail("Expected exception");
+            } catch (Exception t){
+                String msg = t.getMessage();
+                assertTrue(msg, msg.contains("shape") && msg.contains("[3, 4, 5]") && msg.contains(Arrays.toString(v.placeholderShape())));
+            }
+        }
+
+        //Also try training:
+        SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
+        SDVariable mean = sum.mean();
+        MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
+
+        sd.setTrainingConfig(TrainingConfig.builder()
+                .dataSetFeatureMapping("ph1", "ph2", "ph3", "ph4")
+                .markLabelsUnused()
+                .updater(new Adam(1e-3)).build());
+
+        try{
+            sd.fit(mds);
+        } catch (Exception t){
+            String msg = t.getMessage();
+            assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]"));
+        }
     }
 }

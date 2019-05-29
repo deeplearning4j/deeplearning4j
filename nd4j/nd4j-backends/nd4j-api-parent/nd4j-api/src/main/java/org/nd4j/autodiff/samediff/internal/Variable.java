@@ -31,7 +31,6 @@ import java.util.List;
 public class Variable {
     protected String name;
     protected SDVariable variable;
-    protected Object shapeInfo;         //TODO decide type, or if even to include (Variable class should ideally be immutable)
     protected List<String> inputsForOp;
     protected List<String> controlDepsForOp;    //if a op control dependency (x -> opY) exists, then "opY" will be in this list
     protected List<String> controlDepsForVar;   //if a variable control dependency (x -> varY) exists, then "varY" will be in this list

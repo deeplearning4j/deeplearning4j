@@ -90,6 +90,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
         Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
+        String nameScope = sameDiff.currentNameScope();
+        if(nameScope != null){
+            varName = nameScope + "/" + varName;
+        }
+
         this.varName = varName;
         this.variableType = varType;
         this.dataType = dataType;

@@ -18,9 +18,9 @@ package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.*;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
@@ -36,6 +36,13 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 public class EvaluationScoreFunction extends BaseNetScoreFunction {
 
     protected Evaluation.Metric metric;
+
+    /**
+     * @param metric Evaluation metric to calculate
+     */
+    public EvaluationScoreFunction(@NonNull org.deeplearning4j.eval.Evaluation.Metric metric) {
+        this(metric.toNd4j());
+    }
 
     /**
      * @param metric Evaluation metric to calculate
