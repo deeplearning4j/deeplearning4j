@@ -42,16 +42,7 @@ import java.util.*;
  */
 @Slf4j
 @RunWith(Parameterized.class)
-public class TFGraphTestAllSameDiff extends BaseNd4jTest {
-
-    public TFGraphTestAllSameDiff(Nd4jBackend b){
-        super(b);
-    }
-
-    @Override
-    public char ordering(){
-        return 'c';
-    }
+public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {

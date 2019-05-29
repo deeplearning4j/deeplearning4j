@@ -71,17 +71,8 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  * Created by susaneraly on 11/6/17.
  */
 @Slf4j
-public class TFGraphTestAllHelper extends BaseNd4jTest {
+public class TFGraphTestAllHelper {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
-
-    public TFGraphTestAllHelper(Nd4jBackend b){
-        super(b);
-    }
-
-    @Override
-    public char ordering(){
-        return 'c';
-    }
 
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT

@@ -43,16 +43,7 @@ import java.util.*;
 @RunWith(Parameterized.class)
 @Slf4j
 @Ignore("AB 2019/05/21 - JVM Crashes - Issue #7657")
-public class TFGraphTestAllLibnd4j extends BaseNd4jTest {
-
-    public TFGraphTestAllLibnd4j(Nd4jBackend b){
-        super(b);
-    }
-
-    @Override
-    public char ordering(){
-        return 'c';
-    }
+public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {

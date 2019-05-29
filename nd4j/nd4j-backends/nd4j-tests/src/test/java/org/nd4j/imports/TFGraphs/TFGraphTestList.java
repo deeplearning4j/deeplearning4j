@@ -45,17 +45,8 @@ import java.util.Map;
  * <p>
  */
 @RunWith(Parameterized.class)
-//@Ignore
-public class TFGraphTestList extends BaseNd4jTest {
-
-    public TFGraphTestList(Nd4jBackend b){
-        super(b);
-    }
-
-    @Override
-    public char ordering(){
-        return 'c';
-    }
+@Ignore
+public class TFGraphTestList {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
