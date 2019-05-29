@@ -489,18 +489,23 @@ public class AllocatorTest {
                         deviceData.put(steady, Nd4j.getAffinityManager().getDeviceForArray(steady));
 			            retVal.add(x);
 		            }
-    		        Thread innerThread = new Thread() {
-    		            @Override
-                        public void run() {
-                            for (val res : retVal) {
-                                assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
-                                assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
+                    Thread[] innerThreads = new Thread[4];
+    		        for (int k = 0; k < 4; ++k) {
+                        innerThreads[k] = new Thread() {
+                            @Override
+                            public void run() {
+                                for (val res : retVal) {
+                                    assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
+                                    assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
+                                }
                             }
-                        }
-                    };
-    		        innerThread.start();
+                        };
+                        innerThreads[k].start();
+                    }
                     try {
-                        innerThread.join();
+                        for (int k = 0; k < 4; ++k) {
+                            innerThreads[k].join();
+                        }
                     } catch (InterruptedException e) {
                         log.info(e.getMessage());
                     }
