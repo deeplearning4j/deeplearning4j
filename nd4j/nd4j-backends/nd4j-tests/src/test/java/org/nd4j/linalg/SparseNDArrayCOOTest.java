@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -33,7 +34,16 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 @Ignore // temporary ignored
-public class SparseNDArrayCOOTest {
+public class SparseNDArrayCOOTest extends BaseNd4jTest {
+
+    public SparseNDArrayCOOTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
 
 

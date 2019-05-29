@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.parallelism.BaseDL4JTest;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
 
-public class SymmetricTrainerContextTest {
+public class SymmetricTrainerContextTest extends BaseDL4JTest {
     int nChannels = 1;
     int outputNum = 10;
 

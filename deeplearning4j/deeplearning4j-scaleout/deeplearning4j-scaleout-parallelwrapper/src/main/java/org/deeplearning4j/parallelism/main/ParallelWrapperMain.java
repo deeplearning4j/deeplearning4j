@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
@@ -42,6 +43,7 @@ import java.io.File;
  * @author Adam Gibson
  */
 @Data
+@Slf4j
 public class ParallelWrapperMain {
     @Parameter(names = {"--modelPath"}, description = "Path to the model", arity = 1, required = true)
     private String modelPath = null;
@@ -73,6 +75,8 @@ public class ParallelWrapperMain {
     private String uiUrl = null;
 
 
+    private RemoteUIStatsStorageRouter remoteUIRouter;
+    private ParallelWrapper wrapper;
 
     public static void main(String[] args) throws Exception {
         new ParallelWrapperMain().runMain(args);
@@ -103,7 +107,7 @@ public class ParallelWrapperMain {
 
         Model model = ModelGuesser.loadModelGuess(modelPath);
         // ParallelWrapper will take care of load balancing between GPUs.
-        ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
+        wrapper = new ParallelWrapper.Builder(model)
                         // DataSets prefetching options. Set this value with respect to number of actual devices
                         .prefetchBuffer(prefetchSize)
 
@@ -150,7 +154,7 @@ public class ParallelWrapperMain {
             if (uiUrl != null) {
                 // it's important that the UI can report results from parallel training
                 // there's potential for StatsListener to fail if certain properties aren't set in the model
-                StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
+                remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
                 TrainingListener l;
                 try {
                     l = (TrainingListener) Class.forName("org.deeplearning4j.ui.stats.StatsListener").getConstructor(StatsStorageRouter.class)
@@ -167,7 +171,23 @@ public class ParallelWrapperMain {
         } else {
             throw new IllegalStateException("Please provide a datasetiteraator or multi datasetiterator class");
         }
+    }
 
+    /**
+     * Stop the ParallelWrapper main. Mainly used for testing purposes
+     */
+    public void stop(){
+        if(remoteUIRouter != null){
+            remoteUIRouter.shutdown();
+        }
 
+        if(wrapper != null){
+            try {
+                wrapper.close();
+            } catch (Throwable t){
+                log.warn("ParallelWrapperMain.close(): Exception encountered trying to close ParallelWrapper instance", t);
+                throw new RuntimeException(t);
+            }
+        }
     }
 }
