@@ -48,7 +48,8 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
-            int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
+            idxVector->syncToHost();
+            int val = (*idxVector).e<Nd4jLong>(idxVector->lengthOf() - 1);
 
             int numOfClasses = val + 1;
 
@@ -66,8 +67,10 @@ namespace nd4j {
 
         DECLARE_TYPES(segment_max) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setSameMode(false);
         }
         CUSTOM_OP_IMPL(segment_max_bp, 3, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

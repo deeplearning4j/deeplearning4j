@@ -23,11 +23,7 @@
 #include <stdexcept>
 
 namespace nd4j {
-    ConstantDescriptor::ConstantDescriptor(std::initializer_list<Nd4jLong> &values) {
-        _integerValues = values;
-    }
-
-    ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> &values) {
+    ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> values) {
         _floatValues = values;
     }
 
@@ -49,36 +45,23 @@ namespace nd4j {
         return std::tie(_floatValues, _integerValues) < std::tie(other._floatValues, other._integerValues);
     }
 
-    bool ConstantDescriptor::hasPointer(nd4j::DataType dataType) {
-        return _references.count(dataType) > 0;
+    bool ConstantDescriptor::isInteger() {
+        return !_integerValues.empty();
     }
 
-    template <typename T>
-    bool ConstantDescriptor::hasPointer() {
-        return hasPointer(DataTypeUtils::fromT<T>());
-    }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT bool ConstantDescriptor::hasPointer, (), LIBND4J_TYPES);
-
-    void ConstantDescriptor::addPointer(Nd4jPointer pointer, nd4j::DataType dataType) {
-        _references[dataType] = pointer;
+    bool ConstantDescriptor::isFloat() {
+        return !_floatValues.empty();
     }
 
-    template <typename T>
-    void ConstantDescriptor::addPointer(Nd4jPointer pointer) {
-        addPointer(pointer, DataTypeUtils::fromT<T>());
-    }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void ConstantDescriptor::addPointer, (Nd4jPointer), LIBND4J_TYPES);
-
-    Nd4jPointer ConstantDescriptor::getPointer(nd4j::DataType dataType) {
-        if (!hasPointer(dataType))
-            throw std::runtime_error("Requested dataType is absent in storage");
-
-        return _references[dataType];
+    std::vector<Nd4jLong>& ConstantDescriptor::integerValues() {
+        return _integerValues;
     }
 
-    template <typename T>
-    void* ConstantDescriptor::getPointer() {
-        return reinterpret_cast<T*>(getPointer(DataTypeUtils::fromT<T>()));
+    std::vector<double>& ConstantDescriptor::floatValues() {
+        return _floatValues;
     }
-    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void* ConstantDescriptor::getPointer, (), LIBND4J_TYPES);
+
+    Nd4jLong ConstantDescriptor::length() {
+        return isInteger() ? _integerValues.size() : isFloat() ? _floatValues.size() : 0L;
+    }
 }

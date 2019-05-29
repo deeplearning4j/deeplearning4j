@@ -65,7 +65,8 @@ namespace nd4j {
         auto initialDevice = getCurrentDevice();
 
         auto numDevices = getNumberOfDevices();
-
+        _devicePointers.resize(numDevices);
+        _deviceOffsets.resize(numDevices);
         // filling all pointers
         for (int e = 0; e < numDevices; e++) {
             auto res = cudaSetDevice(e);
@@ -96,7 +97,7 @@ namespace nd4j {
         auto deviceId = getCurrentDevice();
         Nd4jPointer constantPtr = nullptr;
         Nd4jLong constantOffset = 0L;
-        if (_devicePointers.count(deviceId) == 0) {
+        if (_devicePointers[deviceId] == 0) {
             auto constant = getConstantSpace();
 
             // filling default ptr, which will be 0 probably
@@ -139,6 +140,19 @@ namespace nd4j {
             _mutex.unlock();
             return reinterpret_cast<int8_t *>(constantPtr) + constantOffset;
         }
+    }
+
+    ConstantDataBuffer* ConstantHelper::constantBuffer(ConstantDescriptor &descriptor, nd4j::DataType dataType) {
+        const auto deviceId = getCurrentDevice();
+
+//        if (_cache[deviceId].count(descriptor) == 0)
+//            _cache[deviceId].[descriptor]
+
+//        auto constant = _cache[deviceId][descriptor];
+
+
+
+        return nullptr;
     }
 
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;

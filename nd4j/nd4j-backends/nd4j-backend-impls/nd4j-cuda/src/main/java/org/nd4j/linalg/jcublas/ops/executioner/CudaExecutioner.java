@@ -2699,7 +2699,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
-        val dbf = (Nd4jCuda.DataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, false);
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, false);
 
         return new CudaLongDataBuffer(dbf.primary(), dbf.special(), Shape.shapeInfoLength(shape.length));
     }
@@ -2712,6 +2712,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val tadOffsets = new CudaLongDataBuffer(pack.primaryOffsets(), pack.specialOffsets(), pack.numberOfTads());
 
         return new TadPack(tadShape, tadOffsets);
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
+        throw new UnsupportedOperationException();
     }
 }
 

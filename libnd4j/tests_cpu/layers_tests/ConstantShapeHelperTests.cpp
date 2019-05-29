@@ -34,6 +34,11 @@ public:
 
 };
 
+class ConstantHelperTests : public testing::Test {
+public:
+
+};
+
 TEST_F(ConstantShapeHelperTests, basic_test_1) {
     auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::BFLOAT16, 'f', {5, 10, 15});
     ShapeDescriptor descriptor(ptr);
@@ -130,6 +135,25 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 
     delete array;
     delete strided;
+}
+
+TEST_F(ConstantHelperTests, basic_test_1) {
+
+    ConstantDescriptor descriptor({1, 2, 3});
+
+    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
+    auto fPtr = fBuffer->primaryAsT<float>();
+
+    ASSERT_NEAR(1.f, fPtr[0], 1e-5);
+    ASSERT_NEAR(2.f, fPtr[1], 1e-5);
+    ASSERT_NEAR(3.f, fPtr[2], 1e-5);
+
+    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::INT32);
+    auto iPtr = iBuffer->primaryAsT<int>();
+
+    ASSERT_EQ(1, iPtr[0]);
+    ASSERT_EQ(2, iPtr[1]);
+    ASSERT_EQ(3, iPtr[2]);
 }
 
 //////////////////////////////////////////////////////////////////////

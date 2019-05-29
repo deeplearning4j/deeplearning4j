@@ -3873,8 +3873,9 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test8) {
 
     nd4j::ops::mirror_pad op;
     auto result = op.execute({&input, &paddings}, {}, {1});
-    auto output = result->at(0);
+    ASSERT_EQ(result->status(), Status::OK());
 
+    auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -4022,7 +4023,10 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test16) {
 
     nd4j::ops::mirror_pad op;
     auto result = op.execute({&input, &paddings}, {}, {0});
+    ASSERT_EQ(result->status(), Status::OK());
     auto output = result->at(0);
+    //output->printBuffer("VVV");
+    //exp.printBuffer("EXP");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
