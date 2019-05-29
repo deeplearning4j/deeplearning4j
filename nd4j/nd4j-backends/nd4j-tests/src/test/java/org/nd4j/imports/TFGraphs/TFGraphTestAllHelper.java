@@ -34,12 +34,14 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -69,8 +71,17 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  * Created by susaneraly on 11/6/17.
  */
 @Slf4j
-public class TFGraphTestAllHelper {
+public class TFGraphTestAllHelper extends BaseNd4jTest {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
+
+    public TFGraphTestAllHelper(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT

@@ -22,6 +22,7 @@ import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.graph.FlatArray;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldEqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -48,7 +50,16 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class MixedDataTypesTests {
+public class MixedDataTypesTests extends BaseNd4jTest {
+
+    public MixedDataTypesTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBasicCreation_1() {

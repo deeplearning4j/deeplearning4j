@@ -29,10 +29,12 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
@@ -47,7 +49,16 @@ import java.util.Map;
 
 @RunWith(Parameterized.class)
 @Slf4j
-public class TFGraphTestZooModels {
+public class TFGraphTestZooModels extends BaseNd4jTest {
+
+    public TFGraphTestZooModels(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @ClassRule
     public static TemporaryFolder classTestDir = new TemporaryFolder();

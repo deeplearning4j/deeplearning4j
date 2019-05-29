@@ -22,6 +22,8 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.ImportClassMapping;
+import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.reflections.Reflections;
 
@@ -31,7 +33,16 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestOpMapping {
+public class TestOpMapping extends BaseNd4jTest {
+
+    public TestOpMapping(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testOpMappingCoverage() throws Exception {

@@ -24,10 +24,12 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -41,7 +43,16 @@ import java.util.*;
 @RunWith(Parameterized.class)
 @Slf4j
 @Ignore("AB 2019/05/21 - JVM Crashes - Issue #7657")
-public class TFGraphTestAllLibnd4j {
+public class TFGraphTestAllLibnd4j extends BaseNd4jTest {
+
+    public TFGraphTestAllLibnd4j(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {

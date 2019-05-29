@@ -23,9 +23,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -38,7 +40,16 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
-public class FlatBufferSerdeTest {
+public class FlatBufferSerdeTest extends BaseNd4jTest {
+
+    public FlatBufferSerdeTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
