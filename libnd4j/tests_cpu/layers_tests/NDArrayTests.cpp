@@ -1671,14 +1671,13 @@ TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
 }
 
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
+
     float xBuff[] =   {1, 2, 3, 4, 5, 6};
     float expBuff[] = {0.816497, 0.816497};
     Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
     Nd4jLong expShapeInfo[] = {1, 2, 1, 8192, 1, 99};
-
 
     NDArray x(xBuff, xShapeInfo);
     NDArray exp(expBuff, expShapeInfo);

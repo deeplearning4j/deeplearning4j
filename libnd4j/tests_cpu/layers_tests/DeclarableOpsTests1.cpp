@@ -210,17 +210,10 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
 
 TEST_F(DeclarableOpsTests1, TestTensorDot2) {
 
-    NDArray x('f', {2, 3, 4}, nd4j::DataType::FLOAT32);
-    NDArray y('f', {2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray x('f', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
+    NDArray y('f', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
 
     NDArray exp('c', {2, 2}, {2300.0, 2444.0, 2444.0, 2600.0}, nd4j::DataType::FLOAT32);
-
-    for (int i = 0; i < x.lengthOf(); i++) {
-        reinterpret_cast<float*>(x.buffer())[i] = i + 1;
-        reinterpret_cast<float*>(y.buffer())[i] = i + 1;
-    }
-    x.tickWriteHost();
-    y.tickWriteHost();
 
     nd4j::ops::tensormmul op;
     auto results = op.execute({&x, &y}, {}, {2,1,2,2,1,2});
@@ -238,97 +231,47 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
 }
 
 TEST_F(DeclarableOpsTests1, TestTensorDot3) {
-    auto x = NDArrayFactory::create_<float>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create_<float>('f', {2, 3, 4});
 
-    for (int i = 0; i < x->lengthOf(); i++) {
-        x->p(i, i + 1);
-        // y->p(i, i + 1);
-        reinterpret_cast<float*>(y->getBuffer())[i] = i + 1;
-    }
+    NDArray x('c', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
+    NDArray y('f', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
+    NDArray exp('f', {2, 2}, {1090.0, 2818.0, 1168.0, 3040.0}, nd4j::DataType::FLOAT32);
 
-    reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
-    reinterpret_cast<float*>(exp->getBuffer())[1] = 2818.0;
-    reinterpret_cast<float*>(exp->getBuffer())[2] = 1168.0;
-    reinterpret_cast<float*>(exp->getBuffer())[3] = 3040.0;
+    nd4j::ops::tensormmul op;
+    auto results = op.execute({&x, &y}, {}, {2,1,2,2,1,2});
 
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    nd4j::ops::tensormmul tm;
+    auto *out = results->at(0);
+    // out->printBuffer();
+    // out->printShapeInfo();
 
-    tm.execute(block);
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
 
-    auto z = variableSpace->getVariable(1)->getNDArray();
-
-    // z->printIndexedBuffer("Result: ");
-
-    ASSERT_TRUE(exp->equalsTo(z));
-
-    delete exp;
-    delete block;
-    delete variableSpace;
+    delete results;
 }
 
 TEST_F(DeclarableOpsTests1, TestTensorDot4) {
-    auto x =  NDArrayFactory::create_<float>('f', {2, 3, 4});
-    auto y =  NDArrayFactory::create_<float>('c', {2, 3, 4});
 
-    for (int i = 0; i < x->lengthOf(); i++) {
-        // x->p(i, i + 1);
-        reinterpret_cast<float*>(x->getBuffer())[i] = i + 1;
-        y->p(i, i + 1);
-    }
+    NDArray x('f', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2, 3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.}, nd4j::DataType::FLOAT32);
 
-    auto exp = NDArrayFactory::create_<float>('f', {2, 2});
+    NDArray exp('f', {2, 2}, {1090.0, 1168.0, 2818.0, 3040.0}, nd4j::DataType::FLOAT32);
 
-    // exp->p(0, 1090.0);
-    // exp->p(1, 1168.0);
-    // exp->p(2, 2818.0);
-    // exp->p(3, 3040.0);
-    reinterpret_cast<float*>(exp->getBuffer())[0] = 1090.0;
-    reinterpret_cast<float*>(exp->getBuffer())[1] = 1168.0;
-    reinterpret_cast<float*>(exp->getBuffer())[2] = 2818.0;
-    reinterpret_cast<float*>(exp->getBuffer())[3] = 3040.0;
+    nd4j::ops::tensormmul op;
+    auto results = op.execute({&x, &y}, {}, {2,1,2,2,1,2});
 
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(2);
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(2);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    nd4j::ops::tensormmul tm;
+    auto *out = results->at(0);
+    // out->printBuffer();
+    // out->printShapeInfo();
 
-    tm.execute(block);
+    ASSERT_TRUE(exp.isSameShape(out));
+    ASSERT_TRUE(exp.equalsTo(out));
 
-    auto z = variableSpace->getVariable(1)->getNDArray();
-
-    //z->printBuffer("Result: ");
-
-    ASSERT_TRUE(exp->equalsTo(z));
-
-    delete exp;
-    delete block;
-    delete variableSpace;
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3255,6 +3198,7 @@ TEST_F(DeclarableOpsTests1, SquareTests1) {
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_1) {
+
     auto indices = NDArrayFactory::create<float>('c', {1, 4}, {0.0f, 2.0f, -1.0f, 1.0f});
 
     auto exp = NDArrayFactory::create<float>('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
@@ -3265,6 +3209,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+    z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

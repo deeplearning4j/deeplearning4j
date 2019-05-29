@@ -224,29 +224,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
 
-   if ((int) shape.size() > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-    ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shape);
-
-    if (descriptor.arrLength() != data.size()) {
-        nd4j_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(), descriptor.arrLength());
-        throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
-    }
-
-    // std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(descriptor.arrLength() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
-
-    const void* dataBuff = data.data();
-    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(nullptr, DataTypeUtils::fromT<T>(), descriptor.arrLength() * sizeof(T), context->getWorkspace());
-
-    auto result = new NDArray(buffer, descriptor, context);
-
-    // memcpyFromVector(result->getBuffer(), data);
-
-    // result->tickWriteHost();
-    // result->syncToDevice();
-
-    return result;
+    return new NDArray(NDArrayFactory::create<T>(order, shape, data, context));
 }
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::LaunchContext * context);
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::LaunchContext * context);
@@ -257,8 +235,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::LaunchContext * context);
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::LaunchContext * context);
 template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::LaunchContext * context);
-// template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
-
+template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
 
     ////////////////////////////////////////////////////////////////////////
     template <>
@@ -467,22 +444,49 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::L
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::LaunchContext * context) {
-        auto res = create<T>(order, shape, context);
-        //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
-        memcpyFromVector<T>(res.getBuffer(), data);
-        return res;
-    }
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<float16> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bfloat16> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int16_t> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t> &data, nd4j::LaunchContext * context);
-    template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context);
 
+        if ((int) shape.size() > MAX_RANK)
+            throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
+
+        ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shape);
+
+        if (descriptor.arrLength() != data.size()) {
+            nd4j_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(), descriptor.arrLength());
+            throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
+        }
+
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(data.data(), DataTypeUtils::fromT<T>(), descriptor.arrLength() * sizeof(T), context->getWorkspace());
+
+        NDArray result(buffer, descriptor, context);
+
+        return result;
+
+    }
+    ////////////////////////////////////////////////////////////////////////
+    template <>
+    NDArray NDArrayFactory::create<bool>(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, nd4j::LaunchContext * context) {
+
+        if ((int) shape.size() > MAX_RANK)
+            throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
+
+        ShapeDescriptor descriptor(nd4j::DataType::BOOL, order, shape);
+
+        if (descriptor.arrLength() != data.size()) {
+            nd4j_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(), descriptor.arrLength());
+            throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
+        }
+
+        bool* hostBuffer = nullptr;
+        ALLOCATE(hostBuffer, context->getWorkspace(), data.size(), bool);
+        std::copy(data.begin(), data.end(), hostBuffer);
+
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(hostBuffer, data.size() * sizeof(bool), nd4j::DataType::BOOL, true, context->getWorkspace());
+
+        NDArray result(buffer, descriptor, context);
+
+        return result;
+
+    }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
