@@ -1349,6 +1349,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     throw new RuntimeException(e);
                 }
                 break;
+            case UTF8:
+                byte[] temp4 = new byte[(int)length];
+                asNio().get(temp4);
+                try {
+                    dos.write(temp4);
+                } catch (IOException e){
+                    throw new RuntimeException(e);
+                }
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
         }

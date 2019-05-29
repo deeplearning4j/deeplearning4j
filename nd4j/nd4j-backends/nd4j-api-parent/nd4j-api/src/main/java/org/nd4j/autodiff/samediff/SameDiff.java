@@ -4515,13 +4515,17 @@ public class SameDiff extends SDBaseOps {
 
 
             reverseMap.put(variable.getVarName(), varIdx);
-            log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
+            log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
             int shape = 0;
             int name = bufferBuilder.createString(variable.getVarName());
-            int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
+            int array = 0;
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
-            byte varType = (byte)variable.getVariableType().ordinal();
+            byte varType = (byte) variable.getVariableType().ordinal();
+            if(variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE) {
+                //Don't export array type (i.e., activations), these are always replaced/re-calculated on each step
+                array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
+            }
 
             if (variable.getVariableType() == VariableType.PLACEHOLDER) {
                 val shp = variable.getShape();
@@ -4614,7 +4618,6 @@ public class SameDiff extends SDBaseOps {
                 this.variables.get(e.getKey()).setVariableIndex(e.getValue());
             }
         }
-
         return bufferBuilder.dataBuffer();
     }
 
