@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Alex Black
  */
 @Slf4j
-public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable {
+public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable, Closeable {
 
     /**
      * Default path for posting data to the UI - i.e., http://localhost:9000/remoteReceive or similar
@@ -129,6 +129,15 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void close(){
+        shutdown();
+    }
+
+    public void shutdown(){
+        this.shutdown.set(true);
     }
 
     private synchronized void checkThread(){

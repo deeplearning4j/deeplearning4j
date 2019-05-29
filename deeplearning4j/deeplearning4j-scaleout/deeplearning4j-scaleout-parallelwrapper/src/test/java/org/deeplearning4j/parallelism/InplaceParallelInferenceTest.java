@@ -29,7 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
-public class InplaceParallelInferenceTest {
+public class InplaceParallelInferenceTest extends BaseDL4JTest {
 
     @Test
     public void testUpdateModel() {

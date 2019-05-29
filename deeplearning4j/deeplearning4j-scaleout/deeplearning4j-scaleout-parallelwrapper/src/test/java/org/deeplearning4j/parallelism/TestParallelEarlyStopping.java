@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class TestParallelEarlyStopping {
+public class TestParallelEarlyStopping extends BaseDL4JTest {
 
     // parallel training results vary wildly with expected result
     // need to determine if this test is feasible, and how it should
