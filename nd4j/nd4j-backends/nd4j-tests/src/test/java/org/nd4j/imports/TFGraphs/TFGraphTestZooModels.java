@@ -49,16 +49,7 @@ import java.util.Map;
 
 @RunWith(Parameterized.class)
 @Slf4j
-public class TFGraphTestZooModels extends BaseNd4jTest {
-
-    public TFGraphTestZooModels(Nd4jBackend b){
-        super(b);
-    }
-
-    @Override
-    public char ordering(){
-        return 'c';
-    }
+public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @ClassRule
     public static TemporaryFolder classTestDir = new TemporaryFolder();
