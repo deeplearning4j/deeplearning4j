@@ -143,7 +143,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
 
     @Override
     public void epochEnd(SameDiff sameDiff, At at) {
-        if(saveEveryNEpochs != null && at.epoch() > 0 && at.epoch() % saveEveryNEpochs == 0){
+        if(saveEveryNEpochs != null && (at.epoch()+1) % saveEveryNEpochs == 0){
             //Save:
             saveCheckpoint(sameDiff, at);
         }
@@ -169,7 +169,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
                 }
             } else {
                 //Same every N iterations, regardless of saving time
-                if(at.iteration() > 0 && at.iteration() % saveEveryNIterations == 0){
+                if((at.iteration()+1) % saveEveryNIterations == 0){
                     saveCheckpoint(sd, at);
                     return;
                 }
@@ -214,6 +214,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
 
         Checkpoint c = new Checkpoint(++lastCheckpointNum, System.currentTimeMillis(), at.iteration(), at.epoch(),null);
         String filename = getFileName(lastCheckpointNum, at, c.getTimestamp());
+        c.setFilename(filename);
 
         File saveFile = new File(rootDir, c.getFilename());
         model.asFlatFile(saveFile);
@@ -431,6 +432,10 @@ public class CheckpointListener extends BaseListener implements Serializable {
     public static SameDiff loadLastCheckpoint(File rootDir){
         Checkpoint last = lastCheckpoint(rootDir);
         return loadCheckpoint(rootDir, last.getCheckpointNum());
+    }
+
+    public static Builder builder(@NonNull File rootDir){
+        return new Builder(rootDir);
     }
 
     public static class Builder {

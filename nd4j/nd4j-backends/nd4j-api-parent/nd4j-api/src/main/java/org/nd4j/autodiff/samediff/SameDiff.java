@@ -1708,10 +1708,6 @@ public class SameDiff extends SDBaseOps {
                 trainingConfig.incrementIterationCount();
             }
 
-            if(i < numEpochs - 1) {
-                iter.reset();
-            }
-
             if(incrementEpochCount) {
                 if(hasListeners){
                     for(Listener l : listeners){
@@ -1719,6 +1715,10 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
                 trainingConfig.incrementEpochCount();
+            }
+
+            if(i < numEpochs - 1) {
+                iter.reset();
             }
         }
     }
