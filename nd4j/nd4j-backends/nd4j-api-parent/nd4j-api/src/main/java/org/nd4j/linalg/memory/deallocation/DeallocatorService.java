@@ -125,6 +125,7 @@ public class DeallocatorService {
                         referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;
+                        Thread.currentThread().interrupt();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
