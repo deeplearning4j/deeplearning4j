@@ -50,41 +50,45 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .inferenceMode(InferenceMode.INPLACE)
                 .workers(2)
                 .build();
+        try {
 
-        assertTrue(pi instanceof InplaceParallelInference);
+            assertTrue(pi instanceof InplaceParallelInference);
 
-        val models = pi.getCurrentModelsFromWorkers();
+            val models = pi.getCurrentModelsFromWorkers();
 
-        assertTrue(models.length > 0);
+            assertTrue(models.length > 0);
 
-        for (val m:models) {
-            assertNotNull(m);
-            assertEquals(net.params(), m.params());
-        }
+            for (val m : models) {
+                assertNotNull(m);
+                assertEquals(net.params(), m.params());
+            }
 
-        val conf2 = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
-                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
-                .layer("out2", new OutputLayer.Builder().nIn(nIn).nOut(8).activation(Activation.SOFTMAX).build(), "in")
-                .setOutputs("out0", "out1", "out2")
-                .build();
+            val conf2 = new NeuralNetConfiguration.Builder()
+                    .graphBuilder()
+                    .addInputs("in")
+                    .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                    .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
+                    .layer("out2", new OutputLayer.Builder().nIn(nIn).nOut(8).activation(Activation.SOFTMAX).build(), "in")
+                    .setOutputs("out0", "out1", "out2")
+                    .build();
 
-        val net2 = new ComputationGraph(conf2);
-        net2.init();
+            val net2 = new ComputationGraph(conf2);
+            net2.init();
 
-        assertNotEquals(net.params(), net2.params());
+            assertNotEquals(net.params(), net2.params());
 
-        pi.updateModel(net2);
+            pi.updateModel(net2);
 
-        val models2 = pi.getCurrentModelsFromWorkers();
+            val models2 = pi.getCurrentModelsFromWorkers();
 
-        assertTrue(models2.length > 0);
+            assertTrue(models2.length > 0);
 
-        for (val m:models2) {
-            assertNotNull(m);
-            assertEquals(net2.params(), m.params());
+            for (val m : models2) {
+                assertNotNull(m);
+                assertEquals(net2.params(), m.params());
+            }
+        } finally {
+            pi.shutdown();
         }
     }
 
@@ -109,11 +113,16 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .workers(2)
                 .build();
 
-        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
-        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
+        try {
 
-        assertNotNull(result0);
-        assertEquals(result0, result1);
+            val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+
+            assertNotNull(result0);
+            assertEquals(result0, result1);
+        } finally {
+            pi.shutdown();
+        }
     }
 
     @Test
@@ -137,10 +146,15 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .workers(2)
                 .build();
 
-        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
-        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
+        try {
 
-        assertNotNull(result0);
-        assertEquals(result0, result1);
+            val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+
+            assertNotNull(result0);
+            assertEquals(result0, result1);
+        } finally {
+            pi.shutdown();
+        }
     }
 }
