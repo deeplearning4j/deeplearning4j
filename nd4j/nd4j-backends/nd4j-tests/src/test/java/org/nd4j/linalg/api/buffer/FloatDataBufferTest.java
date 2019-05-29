@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -49,6 +50,9 @@ import static org.junit.Assert.assertTrue;
  */
 @Ignore("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
 public class FloatDataBufferTest extends BaseNd4jTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     DataType initialType;
 
@@ -90,10 +94,11 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSerialization() {
+    public void testSerialization() throws Exception {
+        File dir = testDir.newFolder();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
-        File file = new File(fileName);
+        File file = new File(dir, fileName);
         file.deleteOnExit();
         SerializationUtils.saveObject(buf, file);
         DataBuffer buf2 = SerializationUtils.readObject(file);

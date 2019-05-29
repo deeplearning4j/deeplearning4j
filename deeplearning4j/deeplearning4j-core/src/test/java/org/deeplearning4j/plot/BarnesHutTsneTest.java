@@ -18,11 +18,13 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -54,14 +56,9 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
                         .useAdaGrad(false).build();
 
-        File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
-        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
-                        NDArrayIndex.interval(0, 784));
+        DataSetIterator iter = new MnistDataSetIterator(100, true, 12345);
+        INDArray data = iter.next().getFeatures();
 
-
-
-        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
-        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
     }
 
