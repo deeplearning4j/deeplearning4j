@@ -232,7 +232,7 @@ public class TestInstantiation extends BaseDL4JTest {
         testInitRandomModel(FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build(), new long[]{1,3,64,64}, new long[]{1,10});
     }
 
-    @Test
+    @Test @Ignore("AB 2019/05/29 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
     public void testInitRandomModelUNet() throws IOException {
         testInitRandomModel(UNet.builder().build(), new long[]{1,3,512,512}, new long[]{1,1,512,512});
     }
