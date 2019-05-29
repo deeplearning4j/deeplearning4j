@@ -2746,11 +2746,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
 
-        List<String> tp = c.getTrainableParams();
-        assertEquals(2, tp.size());
-        assertTrue(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToConstant();
 
         INDArray out2 = tanh.eval();
@@ -2791,11 +2786,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
-        List<String> tp = c.getTrainableParams();
-        assertEquals(1, tp.size());
-        assertFalse(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToVariable();
 
         INDArray out2 = tanh.eval();

@@ -39,9 +39,6 @@ import java.util.*;
  *     <li>The L1 and L2 regularization coefficients (set to 0.0 by default)</li>
  *     <li>The DataSet feature and label mapping - which defines how the feature/label arrays from the DataSet/MultiDataSet
  *     should be associated with SameDiff variables (usually placeholders)</li>
- *     <li>Optional: The names of the trainable parameters. The trainable parameters are inferred automatically if not set here, though
- *     can be overridden if some parameters should not be modified during training (or if the automatic inference of the trainable
- *     parameters is not suitable/correct)</li>
  * </ul>
  * The TrainingConfig instance also stores the iteration count and the epoch count - these values are updated during training
  * and are used for example in learning rate schedules.
@@ -62,7 +59,6 @@ public class TrainingConfig {
     private List<String> dataSetLabelMapping;
     private List<String> dataSetFeatureMaskMapping;
     private List<String> dataSetLabelMaskMapping;
-    private List<String> trainableParams;   //Will be inferred automatically if null
     private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
@@ -81,7 +77,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), Collections.<String>emptyList(), null, null);
+                Collections.<String>emptyList(), Collections.<String>emptyList(), null);
     }
 
     /**
@@ -98,11 +94,9 @@ public class TrainingConfig {
      * @param dataSetLabelMapping       As per dataSetFeatureMapping, but for the DataSet/MultiDataSet labels
      * @param dataSetFeatureMaskMapping May be null. If non-null, the variables that the MultiDataSet feature mask arrays should be associated with.
      * @param dataSetLabelMaskMapping   May be null. If non-null, the variables that the MultiDataSet label mask arrays should be associated with.
-     * @param trainableParams           May be null. If null: the set of trainable parameters will automatically be inferred from the SameDiff structure.
-     *                                  If non-null, this defines the set of parameters that should be modified during training
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> trainableParams, List<String> lossVariables) {
+                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables) {
         this.updater = updater;
         this.regularization = regularization;
         this.minimize = minimize;
@@ -110,7 +104,6 @@ public class TrainingConfig {
         this.dataSetLabelMapping = dataSetLabelMapping;
         this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
         this.dataSetLabelMaskMapping = dataSetLabelMaskMapping;
-        this.trainableParams = trainableParams;
         this.lossVariables = lossVariables;
     }
 
@@ -150,7 +143,6 @@ public class TrainingConfig {
         private List<String> dataSetLabelMapping;
         private List<String> dataSetFeatureMaskMapping;
         private List<String> dataSetLabelMaskMapping;
-        private List<String> trainableParams;   //Will be inferred automatically if null
         private List<String> lossVariables;
         private boolean skipValidation = false;
         private boolean markLabelsUnused = false;
@@ -365,29 +357,6 @@ public class TrainingConfig {
             return this;
         }
 
-        /**
-         * Define the set of trainable parameters for the network.<br>
-         * The trainable parameters are not set by default, which means they will be inferred automatically.<br>
-         * The set of trainable parameters (variables) can be set here - any excluded from being set here won't be
-         * modified during training
-         * @param trainableParams Set of parameters/variables to train
-         */
-        public Builder trainableParams(String... trainableParams){
-            return trainableParams(Arrays.asList(trainableParams));
-        }
-
-        /**
-         * Define the set of trainable parameters for the network.<br>
-         * The trainable parameters are not set by default, which means they will be inferred automatically.<br>
-         * The set of trainable parameters (variables) can be set here - any excluded from being set here won't be
-         * modified during training
-         * @param trainableParams Set of parameters/variables to train
-         */
-        public Builder trainableParams(List<String> trainableParams) {
-            this.trainableParams = trainableParams;
-            return this;
-        }
-
         public Builder skipBuilderValidation(boolean skip){
             this.skipValidation = skip;
             return this;
@@ -409,7 +378,7 @@ public class TrainingConfig {
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
-                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, trainableParams, lossVariables);
+                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables);
         }
     }
 
