@@ -72,9 +72,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
@@ -126,6 +124,8 @@ public class SameDiff extends SDBaseOps {
     private final List<String> lossVariables = new ArrayList<>();
 
     private List<Listener> listeners = new ArrayList<>();
+
+    private final List<NameScope> nameScopes = new ArrayList<>();  //Used as a stack
 
     ///////////////////////////////////////
     //Fields related to training
@@ -435,6 +435,53 @@ public class SameDiff extends SDBaseOps {
 
     public void addListeners(Collection<? extends Listener> listeners){
         this.listeners.addAll(listeners);
+    }
+
+
+    public String currentNameScope(){
+        if(nameScopes.isEmpty())
+            return null;
+
+        //Would use String.join but that is Java 8+
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(NameScope ns : nameScopes){
+            if(!first){
+                sb.append("/");
+            }
+            sb.append(ns.getName());
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    protected String nameWithScope(String name){
+        String scope = currentNameScope();
+        if(scope == null){
+            return name;
+        }
+        return scope + "/" + name;
+    }
+
+    //Intentionally package private
+    void addNameScope(NameScope nameScope){
+        nameScopes.add(nameScope);
+    }
+
+    //Intentionally package private
+    void closeNameScope(NameScope nameScope){
+        //Check that the name scope is closed correctly/in order
+        Preconditions.checkState(!nameScopes.isEmpty(), "Cannot close name scope: no name scopes are currently defined");
+        Preconditions.checkState(nameScopes.get(nameScopes.size()-1).equals(nameScope),
+                "Cannot close name scope %s: Name scopes must be closed in order. Current name scopes: \"%s\"", nameScope, currentNameScope());
+
+        nameScopes.remove(nameScopes.size()-1);
+    }
+
+    public NameScope withNameScope(String nameScope){
+        NameScope ns = new NameScope(this, nameScope);
+        addNameScope(ns);
+        return ns;
     }
 
 
@@ -2176,8 +2223,15 @@ public class SameDiff extends SDBaseOps {
     //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                              org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+        String withScope = nameWithScope(name);
+        if (variables.containsKey(withScope)) {
+            if(nameScopes.isEmpty()){
+                throw new IllegalArgumentException("Another variable with the name " + name + " already exists (current name scope: \""
+                        + currentNameScope() + "\"");
+            } else {
+                throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+            }
+        }
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
@@ -3994,6 +4048,13 @@ public class SameDiff extends SDBaseOps {
 
         if (newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
             return varToUpdate;
+        }
+
+        String nameScope = currentNameScope();
+        if(nameScope != null){
+            if(!newVarName.startsWith(nameScope)){
+                newVarName = nameScope + "/" + newVarName;
+            }
         }
 
         val oldVarName = varToUpdate.getVarName();
