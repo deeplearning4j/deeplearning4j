@@ -437,7 +437,9 @@ public class SameDiff extends SDBaseOps {
         this.listeners.addAll(listeners);
     }
 
-
+    /**
+     * @return The current name scope, if any (null otherwise). See {@link #withNameScope(String)} for more details.
+     */
     public String currentNameScope(){
         if(nameScopes.isEmpty())
             return null;
@@ -455,6 +457,9 @@ public class SameDiff extends SDBaseOps {
         return sb.toString();
     }
 
+    /**
+     * @return The name with the current name scope (if any) appended. See {@link #withNameScope(String)}
+     */
     protected String nameWithScope(String name){
         String scope = currentNameScope();
         if(scope == null){
@@ -478,6 +483,42 @@ public class SameDiff extends SDBaseOps {
         nameScopes.remove(nameScopes.size()-1);
     }
 
+    /**
+     * Create a name scope. Name scopes append a prefix to the names of any variables and ops created while they are open.
+     * <pre>
+     *  {@code
+     *  SameDiff sd = SameDiff.create();
+     *  SDVariable x = sd.var("x", DataType.FLOAT, 5);
+     *  SDVariable y;
+     *  try(NameScope ns = sd.withNameScope("myScope"){
+     *      y = sd.var("y", DataType.FLOAT, 5);
+     *  }
+     *  SDVariable z = sd.var("z", DataType.FLOAT, 5);
+     *
+     *  String xName = x.getVarName();      //RESULT: "x"
+     *  String yName = y.getVarName();      //RESULT: "myScope/y"
+     *  String zName = z.getVarName();      //RESULT: "z"
+     *  }
+     * </pre>
+     *
+     * Note that name scopes can also be nested:
+     * <pre>
+     *  {@code
+     *  SameDiff sd = SameDiff.create();
+     *  SDVariable x;
+     *  try(NameScope ns = sd.withNameScope("first"){
+     *      try(NameScope ns2 = sd.withNameScope("second"){
+     *          x = sd.var("x", DataType.FLOAT, 5);
+     *      }
+     *  }
+     *  String xName = x.getVarName();      //RESULT: "first/second/x"
+     *  }
+     * </pre>
+     *
+     *
+     * @param nameScope Name of the name scope to open/create
+     * @return The NameScope object
+     */
     public NameScope withNameScope(String nameScope){
         NameScope ns = new NameScope(this, nameScope);
         addNameScope(ns);

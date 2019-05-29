@@ -4,7 +4,11 @@ import lombok.Data;
 
 import java.io.Closeable;
 
-
+/**
+ * Used with {@link SameDiff#withNameScope(String)}
+ *
+ * @author Alex Black
+ */
 @Data
 public class NameScope implements Closeable {
     private final SameDiff sameDiff;
