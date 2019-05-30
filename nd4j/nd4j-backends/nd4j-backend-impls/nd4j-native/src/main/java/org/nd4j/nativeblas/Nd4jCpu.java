@@ -11589,6 +11589,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
 // #include <ops/declarable/headers/tests.h>
+// #include <ops/declarable/headers/BarnesHutTsne.h>
 // #include <dll.h>
 // #include <helpers/shape.h>
 // #include <helpers/TAD.h>

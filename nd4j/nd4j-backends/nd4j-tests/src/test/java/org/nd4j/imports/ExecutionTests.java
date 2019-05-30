@@ -22,6 +22,11 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.OpValidationSuite;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllHelper;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
+import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
+import org.nd4j.imports.TFGraphs.TFGraphTestZooModels;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -58,6 +63,16 @@ public class ExecutionTests extends BaseNd4jTest {
 
     @Test
     public void testStoredGraph_1()  throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
         Nd4j.create(1);
 
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());

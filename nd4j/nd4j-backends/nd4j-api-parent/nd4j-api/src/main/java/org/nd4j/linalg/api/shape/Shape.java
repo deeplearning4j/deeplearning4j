@@ -677,17 +677,17 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr, int[] indices) {
-        long offset = getOffset(arr.shapeInfo(), ArrayUtil.toLongArray(indices));
+        long offset = getOffset(arr.shapeInfoJava(), ArrayUtil.toLongArray(indices));
         return arr.data().getDouble(offset);
     }
 
     public static double getDouble(INDArray arr, long... indices) {
-        long offset = getOffset(arr.shapeInfo(), indices);
+        long offset = getOffset(arr.shapeInfoJava(), indices);
         return arr.data().getDouble(offset);
     }
 
     public static long getLong(INDArray arr, long... indices) {
-        long offset = getOffset(arr.shapeInfo(), indices);
+        long offset = getOffset(arr.shapeInfoJava(), indices);
         return arr.data().getLong(offset);
     }
 
