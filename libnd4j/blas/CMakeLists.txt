@@ -268,7 +268,7 @@ if(CUDA_BLAS)
 			CUDA_ADD_LIBRARY(${LIBND4J_NAME} STATIC cuda/NativeOps.cu ${LOOPS_SOURCES_CUDA}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-                cpu/GraphExecutioner.cpp cuda/NativeOpExecutioner.cu cuda/NDArray.cu cuda/NDArrayFactory.cu
+                cpu/GraphExecutioner.cpp cuda/NativeOpExecutioner.cu cuda/NDArray.cu cpu/NDArrayFactory.cpp
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES}  ${OPS_SOURCES})
 		endif()
