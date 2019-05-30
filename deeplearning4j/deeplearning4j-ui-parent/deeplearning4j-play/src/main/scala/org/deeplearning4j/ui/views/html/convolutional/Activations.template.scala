@@ -1,4 +1,20 @@
 
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.ui.views.html.convolutional
 
 import play.twirl.api._
@@ -133,7 +149,7 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Wed Mar 13 15:34:54 AEDT 2019
+                  DATE: Tue May 07 21:39:40 AEST 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
                   HASH: fb7b9cdfdd31f76d21208213b839aeebac3dabe2
                   MATRIX: 657->0|1724->1098|1766->1112|2133->1451|2162->1452|2204->1466|2362->1597|2391->1598|2430->1610|2462->1614|2491->1615|2533->1629|2655->1724|2684->1725|2723->1737|2758->1744|2787->1745|2829->1759|3016->1919|3045->1920|3084->1932|3122->1942|3151->1943|3193->1957|3315->2052|3344->2053|3381->2063|3494->2148|3523->2149|3565->2163|3730->2301|3759->2302

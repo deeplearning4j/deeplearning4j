@@ -27,6 +27,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,7 +42,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
@@ -58,7 +59,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        rr.initialize(new FileSplit(Resources.asFile("iris.txt")));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         DataSet ds = iter.next(50);
 

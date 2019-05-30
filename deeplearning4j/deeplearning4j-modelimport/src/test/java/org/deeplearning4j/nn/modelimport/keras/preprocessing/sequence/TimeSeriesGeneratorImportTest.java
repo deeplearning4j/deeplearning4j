@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.preprocessing.text.KerasTokenizer;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.IOException;
 
@@ -30,15 +31,10 @@ import java.io.IOException;
  */
 public class TimeSeriesGeneratorImportTest {
 
-    ClassLoader classLoader = getClass().getClassLoader();
-
-
     @Test
     public void importTimeSeriesTest() throws IOException, InvalidKerasConfigurationException {
-
         String path = "modelimport/keras/preprocessing/timeseries_generator.json";
 
-        ClassPathResource configResource = new ClassPathResource(path, classLoader);
-        TimeSeriesGenerator gen = TimeSeriesGenerator.fromJson(configResource.getFile().getAbsolutePath());
+        TimeSeriesGenerator gen = TimeSeriesGenerator.fromJson(Resources.asFile(path).getAbsolutePath());
     }
 }

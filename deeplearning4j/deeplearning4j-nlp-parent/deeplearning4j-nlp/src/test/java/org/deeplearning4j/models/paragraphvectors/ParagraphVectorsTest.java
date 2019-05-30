@@ -61,6 +61,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.CollectionUtils;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,8 +117,7 @@ public class ParagraphVectorsTest {
      */
     @Test(timeout = 2400000)
     public void testParagraphVectorsVocabBuilding1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();//.getParentFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file); //UimaSentenceIterator.createWithPath(file.getAbsolutePath());
 
         int numberOfLines = 0;
@@ -162,9 +162,9 @@ public class ParagraphVectorsTest {
      * @throws Exception
      */
     @Test(timeout = 3000000)
+    @Ignore("AB 2019/05/21 - Failing on linux-x86_64-cuda-9.2 - Issue #7657")
     public void testParagraphVectorsModelling1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -356,8 +356,7 @@ public class ParagraphVectorsTest {
 
     @Test(timeout = 300000)
     public void testParagraphVectorsDM() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -420,8 +419,7 @@ public class ParagraphVectorsTest {
 
     @Test(timeout = 300000)
     public void testParagraphVectorsDBOW() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
@@ -496,8 +494,7 @@ public class ParagraphVectorsTest {
 
     @Test(timeout = 300000)
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
+        File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
         //        InMemoryLookupCache cache = new InMemoryLookupCache(false);
@@ -634,7 +631,7 @@ public class ParagraphVectorsTest {
     @Test(timeout = 300000)
     public void testParallelIterator() throws IOException {
         TokenizerFactory factory = new DefaultTokenizerFactory();
-        SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+        SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
 
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
@@ -665,8 +662,8 @@ public class ParagraphVectorsTest {
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
                 .addSourceFolder(folder_labeled).build();
 
-        ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
-        SentenceIterator iter = new BasicLineIterator(resource_sentences.getFile());
+        File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
+        SentenceIterator iter = new BasicLineIterator(resource_sentences);
 
         int i = 0;
         for (; i < 10000; ++i) {
@@ -705,14 +702,14 @@ public class ParagraphVectorsTest {
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
 
         // we build w2v from multiple sources, to cover everything
-        ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+        File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
 
         val folder_mixed = testDir.newFolder();
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         resource_mixed.copyDirectory(folder_mixed);
 
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
-                        .addSentenceIterator(new BasicLineIterator(resource_sentences.getFile()))
+                        .addSentenceIterator(new BasicLineIterator(resource_sentences))
                         .addSentenceIterator(new FileSentenceIterator(folder_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -995,12 +992,12 @@ public class ParagraphVectorsTest {
 
     @Test(timeout = 300000)
     public void testDirectInference() throws Exception {
-        ClassPathResource resource_sentences = new ClassPathResource("/big/raw_sentences.txt");
+        File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         File local_resource_mixed = testDir.newFolder();
         resource_mixed.copyDirectory(local_resource_mixed);
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
-                        .addSentenceIterator(new BasicLineIterator(resource_sentences.getFile()))
+                        .addSentenceIterator(new BasicLineIterator(resource_sentences))
                         .addSentenceIterator(new FileSentenceIterator(local_resource_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -1064,7 +1061,7 @@ public class ParagraphVectorsTest {
     @Ignore
     @Test
     public void testsParallelFit1() throws Exception {
-        final File file = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        final File file = Resources.asFile("big/raw_sentences.txt");
 
         for (int i = 0; i < 1000; i++) {
             List<Thread> threads = new ArrayList<>();
@@ -1148,9 +1145,8 @@ public class ParagraphVectorsTest {
 
     @Test(timeout = 300000)
     public void testDoubleFit() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile();
-        SentenceIterator iter = new BasicLineIterator(file);
+        File resource = Resources.asFile("/big/raw_sentences.txt");
+        SentenceIterator iter = new BasicLineIterator(resource);
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

@@ -30,9 +30,9 @@ This example application uses a neural network trained on the standard MNIST dat
 Deeplearning4J applications requires application specific dependencies in the build.gradle file. The Deeplearning library in turn depends on the libraries of ND4J and OpenBLAS, thus these must also be added to the dependencies declaration. Starting with Android Studio 3.0, annotationProcessors need to be defined as well, thus dependencies for either -x86 or -arm processors should be included, depending on your device, if you are working in Android Studio 3.0 or later. Note that both can be include without conflict as is done in the example app.
 ```groovy
 compile (group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '{{page.version}}') {
-    exclude group: 'org.bytedeco.javacpp-presets', module: 'opencv-platform'
-    exclude group: 'org.bytedeco.javacpp-presets', module: 'leptonica-platform'
-    exclude group: 'org.bytedeco.javacpp-presets', module: 'hdf5-platform'
+    exclude group: 'org.bytedeco', module: 'opencv-platform'
+    exclude group: 'org.bytedeco', module: 'leptonica-platform'
+    exclude group: 'org.bytedeco', module: 'hdf5-platform'
     exclude group: 'org.nd4j', module: 'nd4j-base64'
 }
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}'
@@ -40,21 +40,21 @@ compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', cla
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3'
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'openblas', version: '0.3.3-1.4.3', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3'
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '3.4.3-1.4.3', classifier: "android-x86_64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3'
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-arm"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-arm64"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-x86"
-compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76.0-1.4.3', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5'
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5'
+compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5'
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86_64"
 
 implementation 'com.google.code.gson:gson:2.8.2'
 annotationProcessor 'org.projectlombok:lombok:1.16.16'

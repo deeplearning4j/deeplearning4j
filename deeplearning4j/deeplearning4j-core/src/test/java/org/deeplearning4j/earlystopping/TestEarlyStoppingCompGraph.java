@@ -180,7 +180,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
         int durationSeconds = (int) (endTime - startTime) / 1000;
 
         assertTrue(durationSeconds >= 3);
-        assertTrue(durationSeconds <= 9);
+        assertTrue(durationSeconds <= 20);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         result.getTerminationReason());
@@ -211,7 +211,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
                                         new ScoreImprovementEpochTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(10, TimeUnit.SECONDS),
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
                                         new MaxScoreIterationTerminationCondition(50)) //Initial score is ~8
                         .scoreCalculator(new DataSetLossCalculatorCG(irisIter, true)).modelSaver(saver).build();
 

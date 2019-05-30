@@ -43,7 +43,7 @@ public class FileLabelAwareIteratorTest {
     @Test
     public void testExtractLabelFromPath1() throws Exception {
         val dir = testDir.newFolder();
-        val resource = new ClassPathResource("/labeled");
+        val resource = new ClassPathResource("/labeled/");
         resource.copyDirectory(dir);
 
         val iterator = new FileLabelAwareIterator.Builder().addSourceFolder(dir).build();
@@ -72,8 +72,8 @@ public class FileLabelAwareIteratorTest {
     public void testExtractLabelFromPath2() throws Exception {
         val dir0 = testDir.newFolder();
         val dir1 = testDir.newFolder();
-        val resource = new ClassPathResource("/labeled");
-        val resource2 = new ClassPathResource("/rootdir");
+        val resource = new ClassPathResource("/labeled/");
+        val resource2 = new ClassPathResource("/rootdir/");
         resource.copyDirectory(dir0);
         resource2.copyDirectory(dir1);
 

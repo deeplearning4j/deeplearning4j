@@ -21,15 +21,6 @@
     <artifactId>deeplearning4j-nlp-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
 
   <artifactId>deeplearning4j-nlp</artifactId>
 

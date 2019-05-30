@@ -294,9 +294,9 @@ TEST_F(PlaygroundTests, test_reduce_3) {
     // auto y = NDArrayFactory::create<float>('c', {8192});
     // auto z = NDArrayFactory::create<float>('c', {4096});
 
-    auto x = NDArrayFactory::create<float>('c', {2048, 4096});
-    auto y = NDArrayFactory::create<float>('c', {4096});
-    auto z = NDArrayFactory::create<float>('c', {2048});
+    auto x = NDArrayFactory::create<float>('c', {16, 32});
+    auto y = NDArrayFactory::create<float>('c', {32});
+    auto z = NDArrayFactory::create<float>('c', {16});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     auto iterations = 100;

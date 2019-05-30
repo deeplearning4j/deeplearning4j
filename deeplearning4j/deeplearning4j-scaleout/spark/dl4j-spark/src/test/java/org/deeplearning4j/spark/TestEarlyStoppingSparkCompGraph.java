@@ -77,7 +77,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
                         .scoreCalculator(new SparkLossCalculatorComputationGraph(
                                         irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
                         .modelSaver(saver).build();
@@ -126,7 +126,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES),
                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
                         .scoreCalculator(new SparkLossCalculatorComputationGraph(
                                         irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
@@ -181,7 +181,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         int durationSeconds = (int) (endTime - startTime) / 1000;
 
         assertTrue(durationSeconds >= 3);
-        assertTrue(durationSeconds <= 9);
+        assertTrue(durationSeconds <= 20);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         result.getTerminationReason());
@@ -246,7 +246,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
                         .scoreCalculator(new SparkLossCalculatorComputationGraph(
                                         irisData.map(new DataSetToMultiDataSetFn()), true, sc.sc()))
                         .modelSaver(saver).build();

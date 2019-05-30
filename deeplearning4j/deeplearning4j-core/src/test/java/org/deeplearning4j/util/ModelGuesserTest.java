@@ -37,6 +37,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.resources.Resources;
 
 import java.io.*;
 import java.util.UUID;
@@ -56,39 +57,31 @@ public class ModelGuesserTest extends BaseDL4JTest {
 
     @Test
     public void testModelGuessFile() throws Exception {
-        ClassPathResource sequenceResource =
-                        new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
-        assertTrue(sequenceResource.exists());
-        File f = getTempFile(sequenceResource);
+        File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
+        assertTrue(f.exists());
         Model guess1 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
         assumeNotNull(guess1);
-        ClassPathResource sequenceResource2 =
-                        new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
-        assertTrue(sequenceResource2.exists());
-        File f2 = getTempFile(sequenceResource);
-        Model guess2 = ModelGuesser.loadModelGuess(f2.getAbsolutePath());
+        f = Resources.asFile("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
+        assertTrue(f.exists());
+        Model guess2 = ModelGuesser.loadModelGuess(f.getAbsolutePath());
         assumeNotNull(guess2);
 
     }
 
     @Test
     public void testModelGuessInputStream() throws Exception {
-        ClassPathResource sequenceResource =
-                new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
-        assertTrue(sequenceResource.exists());
-        File f = getTempFile(sequenceResource);
+        File f = Resources.asFile("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
+        assertTrue(f.exists());
 
         try (InputStream inputStream = new FileInputStream(f)) {
             Model guess1 = ModelGuesser.loadModelGuess(inputStream);
             assumeNotNull(guess1);
         }
 
-        ClassPathResource sequenceResource2 =
-                new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
-        assertTrue(sequenceResource2.exists());
-        File f2 = getTempFile(sequenceResource);
+        f = Resources.asFile("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
+        assertTrue(f.exists());
 
-        try (InputStream inputStream = new FileInputStream(f2)) {
+        try (InputStream inputStream = new FileInputStream(f)) {
             Model guess1 = ModelGuesser.loadModelGuess(inputStream);
             assumeNotNull(guess1);
         }

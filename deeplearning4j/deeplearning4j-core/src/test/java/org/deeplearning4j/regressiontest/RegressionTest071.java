@@ -45,6 +45,7 @@ import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 
@@ -67,8 +68,7 @@ public class RegressionTest071 extends BaseDL4JTest {
     @Test
     public void regressionTestMLP1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_MLP_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_MLP_1.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -102,8 +102,7 @@ public class RegressionTest071 extends BaseDL4JTest {
     @Test
     public void regressionTestMLP2() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_MLP_2.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_MLP_2.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -146,8 +145,7 @@ public class RegressionTest071 extends BaseDL4JTest {
     @Test
     public void regressionTestCNN1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_CNN_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_CNN_1.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -193,8 +191,7 @@ public class RegressionTest071 extends BaseDL4JTest {
     @Test
     public void regressionTestLSTM1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_LSTM_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_LSTM_1.zip");
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
 
@@ -224,8 +221,7 @@ public class RegressionTest071 extends BaseDL4JTest {
 
     @Test
     public void regressionTestCGLSTM1() throws Exception {
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_CG_LSTM_1.zip")
-                        .getTempFileFromArchive();
+        File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_CG_LSTM_1.zip");
 
         ComputationGraph net = ModelSerializer.restoreComputationGraph(f, true);
 
