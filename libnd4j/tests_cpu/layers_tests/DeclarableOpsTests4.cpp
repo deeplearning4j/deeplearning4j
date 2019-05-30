@@ -947,8 +947,8 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_4) {
     auto begin = NDArrayFactory::create<double>('c', {2}, {0, 1});
     auto end = NDArrayFactory::create<double>('c', {2}, {1,1});
     auto stride = NDArrayFactory::create<double>('c', {2}, {1,1});
-    //x.linspace(1);
-    //auto exp = NDArrayFactory::create<double>('c', {1,3,4,5});
+//    x.linspace(1);
+    auto exp = NDArrayFactory::create<double>('c', {1}, {1});
     //exp.linspace(1);
 
     nd4j::ops::strided_slice op;
@@ -957,10 +957,11 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_4) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    //z->printBuffer("Strided Slice");
-    z->printShapeInfo("Scalar (vector size 1) shape expected");
+    z->printBuffer("Strided Slice");
+    z->printShapeInfo("Vector size 1 shape expected");
+    exp.printShapeInfo("Expected shape");
     ASSERT_TRUE(z->lengthOf() == 1);
-
+    ASSERT_TRUE(exp.equalsTo(z));
     delete result;
 }
 

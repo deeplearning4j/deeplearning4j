@@ -223,7 +223,7 @@ namespace nd4j {
                     (*slice_dim0) &= (e == 0 && stride_idx == 1) || begin_and_end_masked;
                 }
 
-                int interval_length;
+                int interval_length = 1;
                 bool known_interval = false;
                 if (dense_spec.begin_valid && dense_spec.end_valid) {
                     interval_length = end_idx - begin_idx;
@@ -246,7 +246,7 @@ namespace nd4j {
                 if (known_interval) {
                     int size_i;
                     if (interval_length == 0 || ((interval_length < 0) != (stride_idx < 0))) {
-                        size_i = 0;
+                        size_i = input_shape.size() == 2 && input_shape[0] == 1? 1: 0;
                     } else {
                         size_i = interval_length / stride_idx + (interval_length % stride_idx != 0 ? 1 : 0);
                     }
@@ -282,13 +282,14 @@ namespace nd4j {
 
             final_shape->clear();
             for (auto gather_index : dense_spec.final_shape_gather_indices) {
-                if (gather_index > 0) {
-                    final_shape->emplace_back(preshape.at(gather_index));
+                if (gather_index >= 0) {
+                    if (preshape.size() > gather_index)
+                        final_shape->emplace_back(preshape.at(gather_index));
+                    else
+                        final_shape->emplace_back(1);
                 } else if (gather_index == kNewAxis) {
                     final_shape->emplace_back(1);
                 }
-                else if (gather_index == 0)
-                    final_shape->emplace_back(1);
             }
 
             //nd4j_printv("Preshape: ", preshape);
@@ -401,10 +402,9 @@ namespace nd4j {
             bool is_dim0;
 
             // FIXME: remove this method once we get 1D vectors supported
-            vectorize(input_shape);
+            //vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
-
-            if(indices.size() == 3 && (indices[1] - indices[0] == 1 + shrink_axis_mask)) {
+            if((indices.size() == 6) && (indices[2] - indices[0] == 1)) {
                 z->assign(x->e<float>(indices[0]));
             }
             else {
@@ -481,19 +481,21 @@ namespace nd4j {
             }
 
             Nd4jLong *newShape;
-            std::vector<Nd4jLong> input_shape(shape::rank(inShape));
+            std::vector<Nd4jLong> input_shape; //(shape::rank(inShape));
             auto inputLen = shape::length(inShape);
             std::vector<Nd4jLong> shape;
-            
-            for (int e = 0; e < shape::rank(inShape); e++)
-                input_shape[e] = shape::shapeOf(inShape)[e];
+
+            auto rank = shape::rank(inShape);
+            auto shortShape = shape::shapeOf(inShape);
+            for (auto e = 0; e < rank; e++)
+                input_shape.emplace_back(shortShape[e]);
 
             bool is_identity;
             bool is_simple_slice;
             bool is_dim0;
 
             // FIXME: remove this, once we bring in 1D NDArrays 
-            vectorize(input_shape);
+            //vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
             bool nonEmpty = shape.size() > 0;
             if (nonEmpty)
