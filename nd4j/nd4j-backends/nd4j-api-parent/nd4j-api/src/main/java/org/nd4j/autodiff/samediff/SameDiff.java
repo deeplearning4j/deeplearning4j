@@ -1434,8 +1434,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Returns the inputs (placeholders)
-     * for the samediff graph
+     * Returns the inputs (placeholders) for the SameDiff graph
      * @return the inputs for this graph
      */
     public List<String> inputs() {
@@ -1492,6 +1491,7 @@ public class SameDiff extends SDBaseOps {
     public List<SDVariable> variables() {
         return new ArrayList<>(variableMap().values());
     }
+
 
     /**
      * Get the names of variables (if any) that have been marked as loss variables to be minimized.<br>
@@ -4202,14 +4202,7 @@ public class SameDiff extends SDBaseOps {
             placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
         }
 
-        //Check that all placeholders are provided
-        if(phNames != null && phNames.size() > 0) {
-            Preconditions.checkNotNull(placeholders, "No placeholders were provided. Network has placeholders: %s", phNames);
-            for (String s : phNames) {
-                Preconditions.checkState(placeholders.containsKey(s), "No placeholder variable was provided for variable \"%s\"." +
-                        " Cannot execute without all placeholders set", s);
-            }
-        }
+        //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
         Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
