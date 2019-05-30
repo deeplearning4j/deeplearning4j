@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.sptree;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -281,7 +282,7 @@ public class SpTree implements Serializable {
             // Compute distance between point and center-of-mass
             data.slice(pointIndex).subi(centerOfMass, buf);
 
-            double D = dot(buf, buf);
+            double D = dot(buf, buf, 0.0);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().maxNumber().doubleValue();
             // Check whether we can use this node as a "summary"
@@ -328,7 +329,7 @@ public class SpTree implements Serializable {
         Nd4j.getExecutioner().exec(computeEdgeForces);*/
 
         // Loop over all edges in the graph
-        INDArray buf = Nd4j.create(this.D);
+        INDArray buf = Nd4j.create(data.dataType(), this.D);
         double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
@@ -337,9 +338,10 @@ public class SpTree implements Serializable {
                 // Compute pairwise distance and Q-value
                 slice.subi(data.slice(colP.getInt(i)), buf);
 
-                D = 1.0 + dot(buf, buf);
+                D = dot(buf, buf, 1.0D);
                 D = valP.getDouble(i) / D;
 
+                val jBuf = buf.data().asDouble();
                 // Sum positive force
                 posF.slice(n).addi(buf.muli(D));
 
@@ -348,8 +350,8 @@ public class SpTree implements Serializable {
     }
 
 
-    static double dot(INDArray x, INDArray y) {
-        double dd = 0.0;
+    strictfp static double dot(INDArray x, INDArray y, double initialValue) {
+        double dd = initialValue;
         for (int e = 0; e < x.length(); e++)
             dd += x.getDouble(e) * y.getDouble(e);
 

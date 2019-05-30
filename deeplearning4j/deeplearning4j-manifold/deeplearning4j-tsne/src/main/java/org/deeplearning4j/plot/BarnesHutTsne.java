@@ -601,6 +601,14 @@ public class BarnesHutTsne implements Model {
                 cols = result.cols;
                 //lie about gradient
                 vals.muli(12);
+
+                val jVals = vals.data().asDouble();
+                val jRows = rows.data().asInt();
+                val jCols = cols.data().asInt();
+
+                val jX = x.data().asDouble();
+                val jY = Y.data().asDouble();
+
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
                     zeroMean(Y);
@@ -889,14 +897,14 @@ public class BarnesHutTsne implements Model {
 
 
             if (yIncs == null)
-                yIncs = zeros(DataType.DOUBLE, Y.shape());
+                yIncs = Y.like();
             if (gains == null)
-                gains = ones(DataType.DOUBLE, Y.shape());
+                gains = Y.ulike().assign(1.0);
 
             AtomicDouble sumQ = new AtomicDouble(0);
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
-            INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
-            INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
+            INDArray posF = Y.like();
+            INDArray negF = Y.like();
             /*if (tree == null)*/ {
                 tree = new SpTree(Y);
                 //tree.setWorkspaceMode(workspaceMode);
@@ -906,7 +914,13 @@ public class BarnesHutTsne implements Model {
                 INDArray temp = negF.slice(n);
                 tree.computeNonEdgeForces(n, theta, temp, sumQ);
             }
+
+            val jPosF = posF.data().asDouble();
+            val jNegF = negF.data().asDouble();
+
             INDArray dC = posF.subi(negF.divi(sumQ));
+
+            val jDC = dC.data().asDouble();
 
             Gradient ret = new DefaultGradient();
             ret.gradientForVariable().put(Y_GRAD, dC);
