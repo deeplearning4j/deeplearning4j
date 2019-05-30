@@ -3201,7 +3201,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
 
     auto indices = NDArrayFactory::create<float>('c', {1, 4}, {0.0f, 2.0f, -1.0f, 1.0f});
 
-    auto exp = NDArrayFactory::create<float>('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
 
     nd4j::ops::onehot op;
 
@@ -3209,7 +3209,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printBuffer();
+    // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

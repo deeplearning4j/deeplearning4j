@@ -31,19 +31,19 @@
 namespace nd4j {
 
 class PointersManager {
-    
+
     private:
 
         nd4j::LaunchContext  *_context;
         std::vector<void*> _pOnGlobMem;
         std::string _funcName;
-        
+
     public:
-        
-        PointersManager(nd4j::LaunchContext  *context, const std::string& funcName = "");
-        
+
+        PointersManager(const nd4j::LaunchContext* context, const std::string& funcName = "");
+
         ~PointersManager();
-        
+
         void* replicatePointer(const void* src, const size_t size);
 
         void synchronize() const;

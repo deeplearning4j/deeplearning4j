@@ -24,12 +24,14 @@
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
-namespace nd4j {
-    namespace ops {
-        namespace helpers {
-            void onehot(nd4j::LaunchContext * context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off);
-        }
-    }
+namespace nd4j 		{
+namespace ops 		{
+namespace helpers 	{
+
+	void onehot(const nd4j::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off);
+
+}
+}
 }
 
 #endif //DEV_TESTS_ONE_HOT_H
