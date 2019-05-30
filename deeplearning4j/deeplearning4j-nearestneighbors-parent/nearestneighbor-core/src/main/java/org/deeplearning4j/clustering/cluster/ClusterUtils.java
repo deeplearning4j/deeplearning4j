@@ -29,7 +29,6 @@ import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -501,7 +500,7 @@ public class ClusterUtils {
                 return new CosineSimilarity(x,y);
             case DOT:
                 return new Dot(x,y);
-            case EUCLIDIAN:
+            case EUCLIDEAN:
                 return new EuclideanDistance(x,y);
             case JACCARD:
                 return new JaccardDistance(x,y);

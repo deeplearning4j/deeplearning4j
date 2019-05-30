@@ -17,7 +17,7 @@
 package org.deeplearning4j.clustering.algorithm;
 
 public enum Distance {
-    EUCLIDIAN("euclidean"),
+    EUCLIDEAN("euclidean"),
     COSINE_DISTANCE("cosinedistance"),
     COSINE_SIMILARITY("cosinesimilarity"),
     MANHATTAN("manhattan"),
