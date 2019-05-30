@@ -1311,7 +1311,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public Number maxNumber() {
         if(isScalar())
             return getNumber(0);
-        return max(Integer.MAX_VALUE).getDouble(0);
+
+        double sum = -Double.MAX_VALUE;
+        for (int e = 0; e < length(); e++)
+            sum = Math.max(sum, this.getDouble(e));
+
+        return sum;
+
+        //return max(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -1323,7 +1330,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public Number minNumber() {
         if(isScalar())
             return getNumber(0);
-        return min(Integer.MAX_VALUE).getDouble(0);
+
+        double sum = Double.MAX_VALUE;
+        for (int e = 0; e < length(); e++)
+            sum = Math.min(sum, this.getDouble(e));
+
+        return sum;
+
+        //return min(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -1342,9 +1356,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("sum", false);
         if(isScalar())
             return getNumber(0);
-        val scalar = sum(Integer.MAX_VALUE);
-        Nd4j.getExecutioner().commit();
-        return scalar.getDouble(0);
+
+        double sum = 0.0f;
+        for (int e = 0; e < length(); e++)
+            sum += this.getDouble(e);
+
+        return sum;
+
+        //val scalar = sum(Integer.MAX_VALUE);
+        //Nd4j.getExecutioner().commit();
+        //return scalar.getDouble(0);
     }
 
     /**
@@ -1748,7 +1769,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, n));
+
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) / n.doubleValue());
+
+        //Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, n));
         return result;
     }
 
@@ -1762,7 +1787,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("muli", false);
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, n));
+
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) * n.doubleValue());
+
+        //Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, n));
         return result;
     }
 
@@ -1778,7 +1807,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, n));
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) - n.doubleValue());
+
+        //Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, n));
         return result;
     }
 
@@ -1793,7 +1825,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, n));
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) + n.doubleValue());
+
+        //Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, n));
         return result;
     }
 
@@ -3688,7 +3723,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
+
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) / other.getDouble(e));
+
+        //Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
         return result;
     }
 
@@ -3731,7 +3770,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) * other.getDouble(e));
+
+        //Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
         return result;
     }
 
@@ -3773,8 +3815,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) - other.getDouble(e));
 
-        Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
+        //Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
         return result;
     }
 
@@ -3816,7 +3860,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(this, other, result);
 
-        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
+        for (int e = 0; e < length(); e++)
+            result.putScalar(e, this.getDouble(e) + other.getDouble(e));
+
+       // Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
         return result;
     }
 
@@ -4530,7 +4577,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mean(int... dimension) {
         validateNumericalArray("mean", false);
-        return Nd4j.getExecutioner().exec(new Mean(this, dimension));
+
+        if (dimension.length == 1 && dimension[0] == 0) {
+            val result = Nd4j.createUninitialized(this.dataType(), this.columns());
+
+            for (int e = 0; e < this.columns(); e++) {
+                val column = this.getColumn(e);
+
+                double sum = 0.0;
+                for (int i = 0; i < column.length(); i++) {
+                    sum += column.getDouble(i);
+                }
+
+                result.putScalar(e, sum / column.length());
+            }
+
+            return result;
+        } else {
+            return Nd4j.getExecutioner().exec(new Mean(this, dimension));
+        }
     }
 
     @Override

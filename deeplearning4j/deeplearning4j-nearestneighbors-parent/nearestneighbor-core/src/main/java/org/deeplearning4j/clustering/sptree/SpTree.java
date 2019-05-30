@@ -279,9 +279,9 @@ public class SpTree implements Serializable {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             // Compute distance between point and center-of-mass
-            buf.assign(data.slice(pointIndex)).subi(centerOfMass);
+            data.slice(pointIndex).subi(centerOfMass, buf);
 
-            double D = Nd4j.getBlasWrapper().dot(buf, buf);
+            double D = dot(buf, buf);
             // Check whether we can use this node as a "summary"
             double maxWidth = boundary.width().maxNumber().doubleValue();
             // Check whether we can use this node as a "summary"
@@ -335,9 +335,9 @@ public class SpTree implements Serializable {
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
                 // Compute pairwise distance and Q-value
-                buf.assign(slice).subi(data.slice(colP.getInt(i)));
+                slice.subi(data.slice(colP.getInt(i)), buf);
 
-                D = 1.0 + Nd4j.getBlasWrapper().dot(buf, buf);
+                D = 1.0 + dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
@@ -348,6 +348,13 @@ public class SpTree implements Serializable {
     }
 
 
+    static double dot(INDArray x, INDArray y) {
+        double dd = 0.0;
+        for (int e = 0; e < x.length(); e++)
+            dd += x.getDouble(e) * y.getDouble(e);
+
+        return dd;
+    }
 
     public boolean isLeaf() {
         return isLeaf;

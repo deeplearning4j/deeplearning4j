@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.vptree;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapObject;
 import org.deeplearning4j.clustering.util.MathUtils;
@@ -197,6 +198,16 @@ public class VPTree implements Serializable {
     }
 
 
+    public static double javaEuclideanDistance(INDArray x, INDArray y) {
+        var dd = 0.0D;
+        for (int e = 0; e < y.length(); e++) {
+            val delta = x.getDouble(e) - y.getDouble(e);
+            dd += delta * delta;
+        }
+
+        return Math.sqrt(dd);
+    }
+
 
     /**
      *
@@ -205,8 +216,17 @@ public class VPTree implements Serializable {
      */
     public void calcDistancesRelativeTo(INDArray items, INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
-            case "euclidean":
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, true,-1));
+            case "euclidean": {
+                    //Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, true, -1));
+
+
+                    for (int i = 0; i < items.rows(); i++) {
+                        val row = items.getRow(i);
+
+                        distancesArr.putScalar(i, javaEuclideanDistance(row, basePoint));
+                    }
+
+                }
                 break;
             case "cosinedistance":
                 Nd4j.getExecutioner().exec(new CosineDistance(items, basePoint, distancesArr, true, -1));
@@ -265,9 +285,9 @@ public class VPTree implements Serializable {
                         .getFinalResult().doubleValue();
                 return invert ? -ret8 : ret8;
             case "euclidean":
-                double ret = Nd4j.getExecutioner()
-                        .execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
-                        .getFinalResult().doubleValue();
+                double ret = javaEuclideanDistance(arr1, arr2); //Nd4j.getExecutioner()
+                        //.execAndReturn(new EuclideanDistance(arr1, arr2, scalars.get()))
+                        //.getFinalResult().doubleValue();
                 return invert ? -ret : ret;
             case "cosinesimilarity":
                 double ret2 = Nd4j.getExecutioner()
@@ -335,7 +355,9 @@ public class VPTree implements Serializable {
 
         calcDistancesRelativeTo(items, basePoint, distancesArr);
 
-        double medianDistance = distancesArr.medianNumber().doubleValue();
+        val median = new Median();
+
+        double medianDistance =  median.evaluate(distancesArr.data().asDouble());
 
         ret.threshold = (float) medianDistance;
 
@@ -419,7 +441,10 @@ public class VPTree implements Serializable {
 
         calcDistancesRelativeTo(items, basePoint, distancesArr);
 
-        double medianDistance = distancesArr.medianNumber().doubleValue();
+
+        val median = new Median();
+
+        double medianDistance =  median.evaluate(distancesArr.data().asDouble()); //distancesArr.medianNumber().doubleValue();
 
         ret.threshold = (float) medianDistance;
 

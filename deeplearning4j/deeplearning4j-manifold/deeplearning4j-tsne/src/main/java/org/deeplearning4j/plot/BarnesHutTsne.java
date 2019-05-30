@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -401,7 +402,7 @@ public class BarnesHutTsne implements Model {
                 }
             }
 
-            int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+            int numElements = rowCounts.sumNumber().intValue();
             INDArray offset = Nd4j.create(DataType.INT, N);
             INDArray symRowP = Nd4j.zeros(DataType.INT, N + 1);
             INDArray symColP = Nd4j.create(DataType.INT, numElements);
@@ -663,7 +664,12 @@ public class BarnesHutTsne implements Model {
             // Legacy implementation
             /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
                     .addi(gains.mul(0.8).muli(sign(yGrads)).eq(sign(yIncs)).castTo(gains.dataType()));*/
-            BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
+            //BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
+            for (int e = 0; e < gains.length(); e++) {
+                val g = gains.getDouble(e);
+                if (g < 0.01)
+                    gains.putScalar(e, 0.01);
+            }
 
             Y.addi(yIncs);
             INDArray gradChange = gains.mul(yGrads);
