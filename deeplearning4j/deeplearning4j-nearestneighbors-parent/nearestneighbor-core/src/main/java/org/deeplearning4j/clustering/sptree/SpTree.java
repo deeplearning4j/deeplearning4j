@@ -17,10 +17,12 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.val;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.slf4j.Logger;
@@ -294,6 +296,10 @@ public class SpTree implements Serializable {
             throw new IllegalArgumentException("RowP must be a vector");
 
         // Loop over all edges in the graph
+        // just execute native op
+        Nd4j.exec(new BarnesEdgeForces(rowP, colP, valP, data, N, posF));
+
+        /*
         INDArray buf = Nd4j.create(data.dataType(), this.D);
         double D;
         for (int n = 0; n < N; n++) {
@@ -310,6 +316,7 @@ public class SpTree implements Serializable {
                 posF.slice(n).addi(buf.muli(D));
             }
         }
+        */
     }
 
 
