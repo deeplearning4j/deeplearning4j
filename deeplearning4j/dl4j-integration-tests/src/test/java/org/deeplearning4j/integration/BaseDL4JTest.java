@@ -27,7 +27,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -39,6 +41,7 @@ public class BaseDL4JTest {
     public TestName name = new TestName();
 
     protected long startTime;
+    protected int threadCountBefore;
 
     /**
      * Override this to set the profiling mode for the tests defined in the child class
@@ -51,14 +54,21 @@ public class BaseDL4JTest {
      * Override this to set the datatype of the tests defined in the child class
      */
     public DataType getDataType(){
-        return DataType.FLOAT;
+        return DataType.DOUBLE;
+    }
+
+    public DataType getDefaultFPDataType(){
+        return getDataType();
     }
 
     @Before
     public void beforeTest(){
         log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
-        Nd4j.setDataType(getDataType());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
+        Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
+        startTime = System.currentTimeMillis();
+        threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
     @After
@@ -83,9 +93,12 @@ public class BaseDL4JTest {
         long jvmTotal = Runtime.getRuntime().totalMemory();
         long jvmMax = Runtime.getRuntime().maxMemory();
 
+        int threadsAfter = ManagementFactory.getThreadMXBean().getThreadCount();
+
         long duration = System.currentTimeMillis() - startTime;
         sb.append(getClass().getSimpleName()).append(".").append(name.getMethodName())
                 .append(": ").append(duration).append(" ms")
+                .append(", threadCount: (").append(threadCountBefore).append("->").append(threadsAfter).append(")")
                 .append(", jvmTotal=").append(jvmTotal)
                 .append(", jvmMax=").append(jvmMax)
                 .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)
@@ -125,5 +138,4 @@ public class BaseDL4JTest {
         }
         log.info(sb.toString());
     }
-
 }

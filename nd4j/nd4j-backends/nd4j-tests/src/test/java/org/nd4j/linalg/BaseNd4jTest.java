@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.collection.mutable.StringBuilder;
 
+import java.lang.management.ManagementFactory;
 import java.util.*;
 
 
@@ -55,6 +56,7 @@ public abstract class BaseNd4jTest {
     public TestName testName = new TestName();
 
     protected long startTime;
+    protected int threadCountBefore;
 
     protected Nd4jBackend backend;
     protected String name;
@@ -210,6 +212,7 @@ public abstract class BaseNd4jTest {
         Nd4j.getExecutioner().enableVerboseMode(false);
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         startTime = System.currentTimeMillis();
+        threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
     @After
@@ -250,8 +253,10 @@ public abstract class BaseNd4jTest {
         long jvmTotal = Runtime.getRuntime().totalMemory();
         long jvmMax = Runtime.getRuntime().maxMemory();
 
+        int threadsAfter = ManagementFactory.getThreadMXBean().getThreadCount();
         sb.append(getClass().getSimpleName()).append(".").append(testName.getMethodName())
                 .append(": ").append(totalTime).append(" ms")
+                .append(", threadCount: (").append(threadCountBefore).append("->").append(threadsAfter).append(")")
                 .append(", jvmTotal=").append(jvmTotal)
                 .append(", jvmMax=").append(jvmMax)
                 .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)

@@ -20,9 +20,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
@@ -34,7 +36,16 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import static org.junit.Assert.assertEquals;
 
-public class JsonSerdeTests {
+public class JsonSerdeTests extends BaseNd4jTest {
+
+    public JsonSerdeTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
 
     @Test

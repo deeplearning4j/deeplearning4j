@@ -17,12 +17,14 @@
 package org.nd4j.autodiff.samediff;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
 import java.util.Collections;
@@ -36,7 +38,16 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 04/04/2019.
  */
-public class SameDiffSpecifiedLossVarsTests {
+public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
+
+    public SameDiffSpecifiedLossVarsTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testSpecifiedLoss1(){

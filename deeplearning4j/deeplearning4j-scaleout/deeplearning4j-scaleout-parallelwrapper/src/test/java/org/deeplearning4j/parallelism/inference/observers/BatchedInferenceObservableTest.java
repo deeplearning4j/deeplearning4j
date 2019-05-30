@@ -17,6 +17,7 @@
 package org.deeplearning4j.parallelism.inference.observers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.parallelism.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class BatchedInferenceObservableTest {
+public class BatchedInferenceObservableTest extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {}
 

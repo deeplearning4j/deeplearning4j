@@ -20,9 +20,11 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -43,8 +45,9 @@ import java.util.Map;
  * <p>
  */
 @RunWith(Parameterized.class)
-//@Ignore
+@Ignore
 public class TFGraphTestList {
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
