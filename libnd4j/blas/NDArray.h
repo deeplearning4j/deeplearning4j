@@ -152,14 +152,17 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
+#ifndef __JAVACPP_HACK__
         NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const Nd4jLong offset = 0);
+
+        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+
+#endif
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
         NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
-
-        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
         *  do not allocate memory, memory for array is passed from outside
@@ -348,8 +351,10 @@ namespace nd4j {
             return _context;
         }
 
+#ifndef __JAVACPP_HACK__
         FORCEINLINE std::shared_ptr<DataBuffer> getDataBuffer() const;
         FORCEINLINE std::shared_ptr<DataBuffer> dataBuffer();
+#endif
 
         /**
         *   returns host buffer
@@ -2046,6 +2051,7 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
 
+#ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
 std::shared_ptr<DataBuffer> NDArray::getDataBuffer() const {
     return _buffer;
@@ -2055,6 +2061,7 @@ std::shared_ptr<DataBuffer> NDArray::getDataBuffer() const {
 std::shared_ptr<DataBuffer> NDArray::dataBuffer() {
     return _buffer;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::getBuffer() const {
