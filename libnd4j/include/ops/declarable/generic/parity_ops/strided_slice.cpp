@@ -282,11 +282,13 @@ namespace nd4j {
 
             final_shape->clear();
             for (auto gather_index : dense_spec.final_shape_gather_indices) {
-                if (gather_index >= 0) {
+                if (gather_index > 0) {
                     final_shape->emplace_back(preshape.at(gather_index));
                 } else if (gather_index == kNewAxis) {
                     final_shape->emplace_back(1);
                 }
+                else if (gather_index == 0)
+                    final_shape->emplace_back(1);
             }
 
             //nd4j_printv("Preshape: ", preshape);
@@ -402,7 +404,7 @@ namespace nd4j {
             vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
 
-            if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
+            if(indices.size() == 3 && (indices[1] - indices[0] == 1 + shrink_axis_mask)) {
                 z->assign(x->e<float>(indices[0]));
             }
             else {
