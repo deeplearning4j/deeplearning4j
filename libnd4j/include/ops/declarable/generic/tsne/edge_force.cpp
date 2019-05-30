@@ -32,17 +32,14 @@ namespace ops  {
         auto colP  = INPUT_VARIABLE(1);
         auto valP  = INPUT_VARIABLE(2);
         auto dataP  = INPUT_VARIABLE(3);
-//        auto bufP  = INPUT_VARIABLE(4);
         auto N = INT_ARG(0);
 
         auto output = OUTPUT_VARIABLE(0);
-//        auto outputData = OUTPUT_VARIABLE(1);
-//        auto outputBuf = OUTPUT_VARIABLE(1);
 
-            REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force op: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
-            REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force op: col input must be a vector, but its rank is %i instead !", colP->rankOf());
-//        outputBuf->assign(bufP);
-//        outputData->assign(dataP);
+        REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
+        REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force: col input must be a vector, but its rank is %i instead !", colP->rankOf());
+        REQUIRE_TRUE(dataP->dataType() == output->dataType() && dataP->dataType() == valP->dataType(), 0, "barnes_edge_force: data type of dataP, valP and output must be the same");
+
         helpers::barnes_edge_forces(rowP, colP, valP, N, output, *dataP);
 
         return Status::OK();
@@ -52,17 +49,15 @@ namespace ops  {
         getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_INTS})
         ->setAllowedInputTypes(1, {ALL_INTS})
-        ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-        ->setAllowedInputTypes(3, {ALL_INTS, ALL_FLOATS})
-        ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedInputTypes(2, {ALL_FLOATS})
+        ->setAllowedInputTypes(3, {ALL_FLOATS})
+        ->setAllowedOutputTypes(0, {ALL_FLOATS})
         ->setSameMode(false);
     }
 
     DECLARE_SHAPE_FN(barnes_edge_forces) {
         Nd4jLong* bufShape;
         Nd4jLong* outShapeInfo;
-        //COPY_SHAPE(inputShape->at(3), dataShape);
-        //COPY_SHAPE(inputShape->at(4), bufShape);
         outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
         return SHAPELIST(outShapeInfo);
     }

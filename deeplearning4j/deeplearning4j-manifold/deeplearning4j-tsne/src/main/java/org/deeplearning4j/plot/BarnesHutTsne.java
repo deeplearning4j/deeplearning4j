@@ -249,7 +249,7 @@ public class BarnesHutTsne implements Model {
 
                 Double[] dists = new Double[distances.size()];
                 distances.toArray(dists);
-                INDArray cArr = Nd4j.createFromArray(dists); //VPTree.buildFromData(results);
+                INDArray cArr = Nd4j.createFromArray(dists).castTo(d.dataType()); //VPTree.buildFromData(results);
 
                 INDArray currP = null;
                 int tries = 0;
@@ -547,7 +547,7 @@ public class BarnesHutTsne implements Model {
         public INDArray initData() {
             if (staticData != null)
                 return staticData.dup();
-            return randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+            return randn(x.dataType(), x.rows(), numDimensions).muli(1e-3f);
         }
     }
 
