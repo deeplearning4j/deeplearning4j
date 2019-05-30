@@ -18,9 +18,12 @@ package org.deeplearning4j.plot;
 
 
 import com.google.common.util.concurrent.AtomicDouble;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
@@ -32,7 +35,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,7 +43,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -48,10 +50,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.nd4j.linalg.factory.Nd4j.*;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
@@ -70,7 +69,6 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 public class BarnesHutTsne implements Model {
 
 
-
     public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
 
@@ -81,7 +79,7 @@ public class BarnesHutTsne implements Model {
     protected double finalMomentum = 0.8;
     protected double minGain = 1e-2;
     protected double momentum = initialMomentum;
-    protected int switchMomentumIteration = 100;
+    protected int switchMomentumIteration = 250;
     protected boolean normalize = true;
     protected boolean usePca = false;
     protected int stopLyingIteration = 250;
@@ -104,10 +102,13 @@ public class BarnesHutTsne implements Model {
     public final static String Y_GRAD = "yIncs";
     private SpTree tree;
     private INDArray gains;
+    @Setter
     private INDArray yIncs;
     private int vpTreeWorkers;
     protected transient TrainingListener trainingListener;
     protected WorkspaceMode workspaceMode;
+    private Initializer initializer;
+
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
             .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
@@ -131,14 +132,14 @@ public class BarnesHutTsne implements Model {
                          double minGain,int vpTreeWorkers) {
         this(numDimensions, simiarlityFunction, theta, invert, maxIter, realMin, initialMomentum, finalMomentum,
                 momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance, learningRate,
-                useAdaGrad, perplexity, TrainingListener, minGain, vpTreeWorkers, WorkspaceMode.NONE);
+                useAdaGrad, perplexity, TrainingListener, minGain, vpTreeWorkers, WorkspaceMode.NONE, null);
     }
 
     public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
                          double realMin, double initialMomentum, double finalMomentum, double momentum,
                          int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
                          double learningRate, boolean useAdaGrad, double perplexity, TrainingListener TrainingListener,
-                         double minGain,int vpTreeWorkers, WorkspaceMode workspaceMode) {
+                         double minGain,int vpTreeWorkers, WorkspaceMode workspaceMode, INDArray staticInput) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -161,6 +162,7 @@ public class BarnesHutTsne implements Model {
         this.workspaceMode = workspaceMode;
         if(this.workspaceMode == null)
             this.workspaceMode = WorkspaceMode.NONE;
+        initializer = (staticInput != null) ? new Initializer(staticInput) : new Initializer();
     }
 
 
@@ -200,36 +202,33 @@ public class BarnesHutTsne implements Model {
      * Convert data to probability
      * co-occurrences (aka calculating the kernel)
      * @param d the data to convert
-     * @param u the perplexity of the model
+     * @param perplexity the perplexity of the model
      * @return the probabilities of co-occurrence
      */
-    public INDArray computeGaussianPerplexity(final INDArray d, double u) {
+    public INDArray computeGaussianPerplexity(final INDArray d, double perplexity) {
         N = d.rows();
 
-        final int k = (int) (3 * u);
-        if (u > k)
-            throw new IllegalStateException("Illegal k value " + k + "greater than " + u);
+        final int k = (int) (3 * perplexity);
+        if (N - 1 < 3 * perplexity)
+            throw new IllegalStateException("Perplexity " + perplexity + "is too large for number of samples " + N);
 
 
-        rows = zeros(1, N + 1);
-        cols = zeros(1, N * k);
-        vals = zeros(1, N * k);
+        rows = zeros(DataType.INT, 1, N + 1);
+        cols = zeros(DataType.INT, 1, N * k);
+        vals = zeros(d.dataType(),  N * k);
 
         for (int n = 0; n < N; n++)
             rows.putScalar(n + 1, rows.getDouble(n) + k);
 
-
-        final INDArray beta = ones(N, 1);
-
-        final double logU = FastMath.log(u);
+        final double enthropy = Math.log(perplexity);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
             log.info("Calculating probabilities of data similarities...");
             for (int i = 0; i < N; i++) {
                 if (i % 500 == 0)
@@ -238,8 +237,9 @@ public class BarnesHutTsne implements Model {
                 double betaMin = -Double.MAX_VALUE;
                 double betaMax = Double.MAX_VALUE;
                 List<DataPoint> results = new ArrayList<>();
-                tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
-                double betas = beta.getDouble(i);
+                List<Double> distances = new ArrayList<>();
+                tree.search(d.getRow(i), k + 1, results, distances, false, true);
+                double betas = 1.0;
 
                 if(results.size() == 0){
                     throw new IllegalStateException("Search returned no values for vector " + i +
@@ -247,14 +247,19 @@ public class BarnesHutTsne implements Model {
                             " all zeros with cosine similarity)");
                 }
 
-                INDArray cArr = VPTree.buildFromData(results);
-                Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
-                INDArray currP = pair.getFirst();
-                double hDiff = pair.getSecond() - logU;
+                Double[] dists = new Double[distances.size()];
+                distances.toArray(dists);
+                INDArray cArr = Nd4j.createFromArray(dists).castTo(d.dataType()); //VPTree.buildFromData(results);
+
+                INDArray currP = null;
                 int tries = 0;
                 boolean found = false;
                 //binary search
                 while (!found && tries < 200) {
+                    Pair<INDArray, Double> pair = computeGaussianKernel(cArr, betas, k);
+                    currP = pair.getFirst();
+                    double hDiff = pair.getSecond() - enthropy;
+
                     if (hDiff < tolerance && -hDiff < tolerance)
                         found = true;
                     else {
@@ -273,15 +278,11 @@ public class BarnesHutTsne implements Model {
                                 betas = (betas + betaMin) / 2.0;
                         }
 
-                        pair = computeGaussianKernel(cArr, betas, k);
-                        hDiff = pair.getSecond() - logU;
                         tries++;
                     }
-
                 }
 
-
-                currP.divi(currP.sum(Integer.MAX_VALUE));
+                currP.divi(currP.sumNumber().doubleValue() + Double.MIN_VALUE);
                 INDArray indices = Nd4j.create(1, k + 1);
                 for (int j = 0; j < indices.length(); j++) {
                     if (j >= results.size())
@@ -296,7 +297,6 @@ public class BarnesHutTsne implements Model {
             }
         }
         return vals;
-
     }
 
     @Override
@@ -353,6 +353,13 @@ public class BarnesHutTsne implements Model {
     }
 
 
+    @Data
+    @AllArgsConstructor
+    static class SymResult {
+        INDArray rows;
+        INDArray cols;
+        INDArray vals;
+    }
 
     /**
      * Symmetrize the value matrix
@@ -361,16 +368,16 @@ public class BarnesHutTsne implements Model {
      * @param valP
      * @return
      */
-    public INDArray symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
-        INDArray rowCounts = Nd4j.create(N);
+    public SymResult symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
+        INDArray rowCounts = Nd4j.create(DataType.INT, N);
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
             for (int n = 0; n < N; n++) {
                 int begin = rowP.getInt(n);
                 int end = rowP.getInt(n + 1);
@@ -381,35 +388,32 @@ public class BarnesHutTsne implements Model {
                             present = true;
                         }
 
-
                     if (present)
-                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                        rowCounts.putScalar(n, rowCounts.getInt(n) + 1);
 
                     else {
-                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
-                        rowCounts.putScalar(colP.getInt(i), rowCounts.getDouble(colP.getInt(i)) + 1);
+                        rowCounts.putScalar(n, rowCounts.getInt(n) + 1);
+                        rowCounts.putScalar(colP.getInt(i), rowCounts.getInt(colP.getInt(i)) + 1);
                     }
                 }
             }
 
-
-            int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
-            INDArray offset = Nd4j.create(N);
-            INDArray symRowP = Nd4j.create(N + 1);
-            INDArray symColP = Nd4j.create(numElements);
-            INDArray symValP = Nd4j.create(numElements);
+            int numElements = rowCounts.sumNumber().intValue();
+            INDArray offset = Nd4j.create(DataType.INT, N);
+            INDArray symRowP = Nd4j.zeros(DataType.INT, N + 1);
+            INDArray symColP = Nd4j.create(DataType.INT, numElements);
+            INDArray symValP = Nd4j.create(valP.dataType(), numElements);
 
             for (int n = 0; n < N; n++)
-                symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
-
+                symRowP.putScalar(n + 1, symRowP.getInt(n) + rowCounts.getInt(n));
 
             for (int n = 0; n < N; n++) {
                 for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
                     boolean present = false;
-                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
+                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)+1); m++) {
                         if (colP.getInt(m) == n) {
                             present = true;
-                            if (n < colP.getInt(i)) {
+                            if (n <= colP.getInt(i)) {
                                 // make sure we do not add elements twice
                                 symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
                                 symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
@@ -424,28 +428,25 @@ public class BarnesHutTsne implements Model {
                     // If (colP[i], n) is not present, there is no addition involved
                     if (!present) {
                         int colPI = colP.getInt(i);
-                        if (n < colPI) {
-                            symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
-                            symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
-                            symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
-                            symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
-                        }
-
+                        symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
+                        symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
+                        symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
+                        symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
                     }
 
                     // Update offsets
-                    if (!present || (present && n < colP.getInt(i))) {
+                    if (!present || (present && n <= colP.getInt(i))) {
                         offset.putScalar(n, offset.getInt(n) + 1);
                         int colPI = colP.getInt(i);
                         if (colPI != n)
-                            offset.putScalar(colPI, offset.getDouble(colPI) + 1);
+                            offset.putScalar(colPI, offset.getInt(colPI) + 1);
                     }
                 }
             }
 
             // Divide the result by two
-            symValP.divi(2.0);
-            return symValP;
+            symValP.divi(2.0D);
+            return new SymResult(symRowP, symColP, symValP);
 
         }
 
@@ -462,16 +463,17 @@ public class BarnesHutTsne implements Model {
      */
     public Pair<INDArray, Double> computeGaussianKernel(INDArray distances, double beta, int k) {
         // Compute Gaussian kernel row
-        INDArray currP = Nd4j.create(k);
-        for (int m = 0; m < k; m++)
-            currP.putScalar(m, FastMath.exp(-beta * distances.getDouble(m + 1)));
+        INDArray currP = Nd4j.create(distances.dataType(), k);
+        for (int m = 0; m < k; m++) {
+            currP.putScalar(m, Math.exp(-beta * distances.getDouble(m + 1)));
+        }
 
-        double sum = currP.sum(Integer.MAX_VALUE).getDouble(0);
+        double sum = currP.sumNumber().doubleValue() + Double.MIN_VALUE;
         double h = 0.0;
         for (int m = 0; m < k; m++)
             h += beta * (distances.getDouble(m + 1) * currP.getDouble(m));
 
-        h = (h / sum) + FastMath.log(sum);
+        h = (h / sum) + Math.log(sum);
 
         return new Pair<>(currP, h);
     }
@@ -505,6 +507,55 @@ public class BarnesHutTsne implements Model {
 
     }
 
+    private int calculateOutputLength() {
+        int ret = 0;
+
+        INDArray rowCounts = Nd4j.create(N);
+        for (int n = 0; n < N; n++) {
+            int begin = rows.getInt(n);
+            int end = rows.getInt(n + 1);
+            for (int i = begin; i < end; i++) {
+                boolean present = false;
+                for (int m = rows.getInt(cols.getInt(i)); m < rows.getInt(cols.getInt(i) + 1); m++) {
+                    if (cols.getInt(m) == n) {
+                        present = true;
+                    }
+                }
+                if (present)
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+
+                else {
+                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                    rowCounts.putScalar(cols.getInt(i), rowCounts.getDouble(cols.getInt(i)) + 1);
+                }
+            }
+        }
+        ret = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+        return ret;
+    }
+
+    public class Initializer {
+
+        private INDArray staticData;
+
+        public Initializer() {}
+
+        public Initializer(INDArray input) {
+            this.staticData = input;
+        }
+
+        public INDArray initData() {
+            if (staticData != null)
+                return staticData.dup();
+            return randn(x.dataType(), x.rows(), numDimensions).muli(1e-3f);
+        }
+    }
+
+    public static void zeroMean(INDArray input) {
+        INDArray means = input.mean(0);
+        input.subiRowVector(means);
+    }
+
     @Override
     public void fit() {
         if (theta == 0.0) {
@@ -516,26 +567,39 @@ public class BarnesHutTsne implements Model {
         } else {
             //output
             if (Y == null) {
-                Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
+                Y = initializer.initData();
             }
 
-            MemoryWorkspace workspace =
+            /*MemoryWorkspace workspace =
                     workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                             : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                             workspaceConfigurationExternal,
                             workspaceExternal);
 
 
-            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
+
+                x.divi(x.maxNumber());
 
                 computeGaussianPerplexity(x, perplexity);
-                vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                /*INDArray outRows = Nd4j.create(new int[]{rows.rows(), rows.columns()}, DataType.INT);
+                BarnesHutSymmetrize op = new BarnesHutSymmetrize(rows, cols, vals, N, outRows);
+                Nd4j.getExecutioner().exec(op);
+                INDArray output = op.getSymmetrizedValues();
+                INDArray outCols = op.getSymmetrizedCols();
+                vals = output.divi(vals.sum(Integer.MAX_VALUE));
+                rows = outRows;
+                cols = outCols;*/
+
+                SymResult result = symmetrized(rows, cols, vals);
+                vals = result.vals.divi(result.vals.sumNumber().doubleValue());
+                rows = result.rows;
+                cols = result.cols;
                 //lie about gradient
                 vals.muli(12);
-
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
-
+                    zeroMean(Y);
                     if (i == switchMomentumIteration)
                         momentum = finalMomentum;
                     if (i == stopLyingIteration)
@@ -552,7 +616,6 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public void update(Gradient gradient) {
-
     }
 
     /**
@@ -565,28 +628,39 @@ public class BarnesHutTsne implements Model {
         update(gradient().getGradientFor(Y_GRAD), Y_GRAD);
     }
 
+    static double sign_tsne(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
+
 
     @Override
     public void update(INDArray gradient, String paramType) {
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
-
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray yGrads = gradient;
+;            if (gains == null)
+                gains = Y.ulike().assign(1.0);
 
-            // TODO: make this single op
-            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType()));
-
+            //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
+            // Copied from Reference
+            for (int i = 0; i < yGrads.rows(); ++i) {
+                for (int  j = 0; j < yGrads.columns(); ++j) {
+                    if (sign_tsne(yGrads.getDouble(i,j)) == sign_tsne(yIncs.getDouble(i,j))) {
+                        gains.putScalar(new int[]{i,j}, gains.getDouble(i,j)*0.8);
+                    }
+                    else {
+                        gains.putScalar(new int[]{i,j}, gains.getDouble(i,j)+0.2);
+                    }
+                }
+            }
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
+            Y.addi(yIncs);
             INDArray gradChange = gains.mul(yGrads);
 
             if (useAdaGrad) {
@@ -602,9 +676,7 @@ public class BarnesHutTsne implements Model {
             } else {
                 gradChange.muli(learningRate);
             }
-
             yIncs.muli(momentum).subi(gradChange);
-            Y.addi(yIncs);
         }
     }
 
@@ -647,6 +719,28 @@ public class BarnesHutTsne implements Model {
         }
     }
 
+    public void saveAsFile(String path) throws IOException {
+        BufferedWriter write = null;
+        try {
+            write = new BufferedWriter(new FileWriter(new File(path)));
+            for (int i = 0; i < Y.rows(); i++) {
+                StringBuilder sb = new StringBuilder();
+                INDArray wordVector = Y.getRow(i);
+                for (int j = 0; j < wordVector.length(); j++) {
+                    sb.append(wordVector.getDouble(j));
+                    if (j < wordVector.length() - 1)
+                        sb.append(",");
+                }
+                sb.append("\n");
+                write.write(sb.toString());
+            }
+            write.flush();
+            write.close();
+        } finally {
+            if (write != null)
+                write.close();
+        }
+    }
     /**
      * Plot tsne
      *
@@ -667,14 +761,14 @@ public class BarnesHutTsne implements Model {
     @Override
     public double score() {
 
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
 
             // Get estimate of normalization term
@@ -692,12 +786,11 @@ public class BarnesHutTsne implements Model {
                 int ind1 = n;
                 for (int i = begin; i < end; i++) {
                     int ind2 = cols.getInt(i);
-                    buff.assign(linear.slice(ind1));
-                    buff.subi(linear.slice(ind2));
+                    linear.slice(ind1).subi(linear.slice(ind2), buff);
 
-                    double Q = pow(buff, 2).sum(Integer.MAX_VALUE).getDouble(0);
+                    double Q = pow(buff, 2).sumNumber().doubleValue();
                     Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
-                    C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
+                    C += vals.getDouble(i) * Math.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
                             / (Q + Nd4j.EPS_THRESHOLD);
                 }
             }
@@ -773,35 +866,33 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public Gradient gradient() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
 
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
 
             if (yIncs == null)
-                yIncs = zeros(Y.shape());
+                yIncs = Y.like();
             if (gains == null)
-                gains = ones(Y.shape());
+                gains = Y.ulike().assign(1.0D);
 
             AtomicDouble sumQ = new AtomicDouble(0);
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
-            INDArray posF = Nd4j.create(Y.shape());
-            INDArray negF = Nd4j.create(Y.shape());
-            if (tree == null) {
-                tree = new SpTree(Y);
-                tree.setWorkspaceMode(workspaceMode);
-            }
+            INDArray posF = Y.like();
+            INDArray negF = Y.like();
+
+            tree = new SpTree(Y);
+
             tree.computeEdgeForces(rows, cols, vals, N, posF);
-
-            for (int n = 0; n < N; n++)
-                tree.computeNonEdgeForces(n, theta, negF.slice(n), sumQ);
-
-
+            for (int n = 0; n < N; n++) {
+                INDArray temp = negF.slice(n);
+                tree.computeNonEdgeForces(n, theta, temp, sumQ);
+            }
             INDArray dC = posF.subi(negF.divi(sumQ));
 
             Gradient ret = new DefaultGradient();
@@ -841,6 +932,11 @@ public class BarnesHutTsne implements Model {
         this.Y = data;
     }
 
+    // TODO: find better solution for test
+    public void setN(int N) {
+        this.N = N;
+    }
+
     public static class Builder {
         private int maxIter = 1000;
         private double realMin = 1e-12f;
@@ -854,16 +950,23 @@ public class BarnesHutTsne implements Model {
         private double learningRate = 1e-1f;
         private boolean useAdaGrad = false;
         private double perplexity = 30;
-        private double minGain = 1e-1f;
+        private double minGain = 1e-2f;
         private double theta = 0.5;
         private boolean invert = true;
         private int numDim = 2;
-        private String similarityFunction = "cosinesimilarity";
+        private String similarityFunction = Distance.EUCLIDEAN.toString();
         private int vpTreeWorkers = 1;
         protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
+        private INDArray staticInput;
+
         public Builder vpTreeWorkers(int vpTreeWorkers) {
             this.vpTreeWorkers = vpTreeWorkers;
+            return this;
+        }
+
+        public Builder staticInit(INDArray staticInput) {
+            this.staticInput = staticInput;
             return this;
         }
 
@@ -962,7 +1065,7 @@ public class BarnesHutTsne implements Model {
         public BarnesHutTsne build() {
             return new BarnesHutTsne(numDim, similarityFunction, theta, invert, maxIter, realMin, initialMomentum,
                     finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
-                    learningRate, useAdaGrad, perplexity, null, minGain, vpTreeWorkers, workspaceMode);
+                    learningRate, useAdaGrad, perplexity, null, minGain, vpTreeWorkers, workspaceMode, staticInput);
         }
 
     }
