@@ -3681,8 +3681,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
 template <typename T>
 void NDArray::p(const Nd4jLong i, const T value) {
 
-
-
     if (i >= lengthOf())
         throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
