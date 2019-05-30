@@ -21,9 +21,11 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.tools.SIS;
 
 import static org.junit.Assert.assertTrue;
@@ -36,7 +38,17 @@ import static org.junit.Assert.assertTrue;
  * @author clavvis
  */
 @Slf4j
-public class DataSetUtilsTest {
+public class DataSetUtilsTest extends BaseNd4jTest {
+
+	public DataSetUtilsTest(Nd4jBackend b){
+		super(b);
+	}
+
+	@Override
+	public char ordering(){
+		return 'c';
+	}
+
 	//
 	@Rule
 	public TemporaryFolder tmpFld = new TemporaryFolder();

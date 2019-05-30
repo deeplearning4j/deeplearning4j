@@ -89,7 +89,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
         } else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNConvHelper(dataType);
-            log.debug("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
+            log.trace("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported()) {
             log.debug("Removed helper {} as not supported", helper.getClass());

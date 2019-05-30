@@ -18,8 +18,10 @@ package org.nd4j.serde.base64;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.IOException;
 
@@ -29,7 +31,17 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 6/17/16.
  */
-public class Nd4jBase64Test {
+public class Nd4jBase64Test extends BaseNd4jTest {
+
+    public Nd4jBase64Test(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
+
     @Test
     public void testBase64Several() throws IOException {
         INDArray[] arrs = new INDArray[2];

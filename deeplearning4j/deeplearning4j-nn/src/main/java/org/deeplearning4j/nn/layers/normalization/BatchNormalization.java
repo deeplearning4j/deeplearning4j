@@ -90,7 +90,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         } else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNBatchNormHelper(dataType);
-            log.debug("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
+            log.trace("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
         }
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());

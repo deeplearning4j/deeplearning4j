@@ -24,10 +24,12 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -41,7 +43,7 @@ import java.util.*;
 @RunWith(Parameterized.class)
 @Slf4j
 @Ignore("AB 2019/05/21 - JVM Crashes - Issue #7657")
-public class TFGraphTestAllLibnd4j {
+public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {
@@ -148,6 +150,17 @@ public class TFGraphTestAllLibnd4j {
 
     @Test//(timeout = 25000L)
     public void test() throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
         Nd4j.create(1);
         for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES){
             if(modelName.matches(s)){

@@ -20,10 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.transform.*;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +35,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class GraphTransformUtilTests {
+public class GraphTransformUtilTests extends BaseNd4jTest {
+
+    public GraphTransformUtilTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBasic(){

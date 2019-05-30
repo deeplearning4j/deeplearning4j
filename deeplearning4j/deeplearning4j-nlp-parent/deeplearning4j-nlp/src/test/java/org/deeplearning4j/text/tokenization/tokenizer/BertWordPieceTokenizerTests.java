@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resources;
@@ -75,6 +76,7 @@ public class BertWordPieceTokenizerTests {
     }
 
     @Test
+    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer3() throws Exception {
         String toTokenize = "Donaudampfschifffahrtskapitänsmützeninnenfuttersaum";
         TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
@@ -99,6 +101,7 @@ public class BertWordPieceTokenizerTests {
     }
 
     @Test
+    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer5() throws Exception {
         // Longest Token in Vocab is 22 chars long, so make sure splits on the edge are properly handled
         String toTokenize = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";

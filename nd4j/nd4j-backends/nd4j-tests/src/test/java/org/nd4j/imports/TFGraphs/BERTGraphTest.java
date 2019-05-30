@@ -28,10 +28,12 @@ import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Downloader;
@@ -46,7 +48,16 @@ import static org.junit.Assert.assertTrue;
 
 @Slf4j
 @Ignore("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
-public class BERTGraphTest {
+public class BERTGraphTest extends BaseNd4jTest {
+
+    public BERTGraphTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBert() throws Exception {

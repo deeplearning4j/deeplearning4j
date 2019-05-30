@@ -21,9 +21,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.profiler.data.StackAggregator;
@@ -36,7 +38,16 @@ import static org.junit.Assert.assertTrue;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class StackAggregatorTests {
+public class StackAggregatorTests extends BaseNd4jTest {
+
+    public StackAggregatorTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Before
     public void setUp() {

@@ -17,12 +17,23 @@
 package org.nd4j.imports;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class TestReverse {
+public class TestReverse extends BaseNd4jTest {
+
+    public TestReverse(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testReverse(){

@@ -24,10 +24,12 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -40,7 +42,7 @@ import java.util.*;
  */
 @Slf4j
 @RunWith(Parameterized.class)
-public class TFGraphTestAllSameDiff {
+public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {
@@ -111,13 +113,17 @@ public class TFGraphTestAllSameDiff {
             //2019/04/08 - Couple of tests failing (InferenceSession issues)
             "rnn/bstack/d_.*",
 
-            //2019/05/21 - Failing on AVX2/512, passing elsewhere
-            "unsorted_segment/unsorted_segment_sum_rank2",
+            //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
+            "unsorted_segment/.*",
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
             "conv_4",
             "g_09",
-            "unsorted_segment/unsorted_segment_mean_rank2"
+            "unsorted_segment/unsorted_segment_mean_rank2",
+
+            //2019/05/28 - JVM crash on ppc64le only - See issue 7657
+            "g_11"
+
     };
 
     @BeforeClass
@@ -161,6 +167,18 @@ public class TFGraphTestAllSameDiff {
 
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
+        if(TFGraphTestZooModels.isPPC()){
+            /*
+            Ugly hack to temporarily disable tests on PPC only on CI
+            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
+             */
+
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            OpValidationSuite.ignoreFailing();
+        }
+
+
         Nd4j.create(1);
 
         for(String s : IGNORE_REGEXES){
