@@ -49,13 +49,11 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestDup1) {
+
     NDArray array(arr1, shape1);
 
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
-
-    //arrC->printShapeInfo("C shape");
-    //arrF->printShapeInfo("F shape");
 
     ASSERT_TRUE(array.equalsTo(arrF));
     ASSERT_TRUE(array.equalsTo(arrC));
@@ -246,6 +244,7 @@ TEST_F(NDArrayTest, TestTad3) {
 
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
+
     NDArray array('c', {2, 2, 5, 5}, nd4j::DataType::FLOAT32);
     int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
     int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, 0, 99};
@@ -287,27 +286,27 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestRepeat1) {
+
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
-    auto array = NDArrayFactory::create_<float>('c', {2, 2});
+    NDArray array('c', {2, 2}, nd4j::DataType::FLOAT32);
     auto exp = new NDArray(eBuffer, eShape);
-    for (int e = 0; e < array->lengthOf(); e++)
-        array->p(e, e + 1);
+    for (int e = 0; e < array.lengthOf(); e++)
+        array.p(e, e + 1);
 
-    //array->printBuffer();
+    // array.printBuffer();
 
-    auto rep = array->repeat(0, {2});
+    auto rep = array.repeat(0, {2});
 
     ASSERT_EQ(4, rep->sizeAt(0));
     ASSERT_EQ(2, rep->sizeAt(1));
 
-    //rep->printIndexedBuffer("Repeated");
+    // rep->printIndexedBuffer("Repeated");
 
     ASSERT_TRUE(exp->equalsTo(rep));
 
     delete[] eBuffer;
     delete[] eShape;
-    delete array;
     delete exp;
     delete rep;
 }
@@ -355,6 +354,7 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSum1) {
+    // Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
     float *c = new float[4] {1, 2, 3, 4};
 
     auto array = new NDArray(c, cShape);
@@ -398,9 +398,9 @@ TEST_F(NDArrayTest, TestAddiColumnVector) {
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
-	
-    matrix.addiColumnVector(&column);	
-	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));		
+
+    matrix.addiColumnVector(&column);
+	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));
     ASSERT_TRUE(exp.equalsTo(&matrix));
 }
 
@@ -415,10 +415,10 @@ TEST_F(NDArrayTest, TestMuliColumnVector) {
 	NDArray matrix(arr1, shape1);
 	NDArray column(arr2, shape2);
 	NDArray exp(arr3, shape1);
-	
+
     matrix.muliColumnVector(&column);
 
-	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));	
+	ASSERT_TRUE(exp.isSameShapeStrict(&matrix));
     ASSERT_TRUE(exp.equalsTo(&matrix));
 }
 
@@ -480,7 +480,7 @@ TEST_F(NDArrayTest, TestTranspose2) {
 TEST_F(NDArrayTest, TestSumAlongDimension1) {
 
     NDArray array('c', {2,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-        
+
     auto res = array.reduceAlongDims(reduce::Sum, {0});
 
     ASSERT_EQ(2, res.lengthOf());
@@ -724,22 +724,27 @@ TEST_F(NDArrayTest, TestChecks5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTile1) {
 
-	NDArray array1(arr1,shape1);
-	NDArray array2(arr2,shape2);
+    // float arr1[6] = {1,2,3,4,5,6};
+    // Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
+    // float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
+    // Nd4jLong shape2[10] = {3,2,4,6,24,6,1,8192,1,99};
+
+	NDArray array1(arr1,shape1);   // {2,3}
+	NDArray array2(arr2,shape2);   // {2,4,6}
     auto expA = array1.dup('c');
 
     auto tiled = array1.tile(tileShape1);
 
-    //array2.printShapeInfo("Expct shape");
-    //tiled.printShapeInfo("Tiled shape");
-    //tiled.printBuffer();
+    // array2.printShapeInfo("Expct shape");
+    // tiled.printShapeInfo("Tiled shape");
+    // tiled.printBuffer();
 
 	ASSERT_TRUE(tiled.isSameShape(&array2));
 	ASSERT_TRUE(tiled.equalsTo(&array2));
 
     ASSERT_TRUE(expA->isSameShape(&array1));
     ASSERT_TRUE(expA->equalsTo(&array1));
-	
+
 	// delete tiled;
 	delete expA;
 }
@@ -806,7 +811,7 @@ TEST_F(NDArrayTest, TestTile6)
     auto x = NDArrayFactory::create<double>('c', {3, 1, 2});
     auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 4, 2});
 
-    x.linspace(10);    
+    x.linspace(10);
 
     auto result = x.tile({1,4,1});
 
@@ -1200,12 +1205,12 @@ TEST_F(NDArrayTest, TestNegSize1) {
 
 //////////////////////////////////////////////////////////////////////
 // not-in-place
-TEST_F(NDArrayTest, Permute1) {  
-    
+TEST_F(NDArrayTest, Permute1) {
+
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
 	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
-    const std::initializer_list<int> perm = {2, 0, 1};    
-    
+    const std::initializer_list<int> perm = {2, 0, 1};
+
     NDArray arr1(shape1,true);
     NDArray arr2(shape2,true);
 
@@ -1218,11 +1223,11 @@ TEST_F(NDArrayTest, Permute1) {
 //////////////////////////////////////////////////////////////////////
 // in-place
 TEST_F(NDArrayTest, Permute2) {
-    
+
     Nd4jLong shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
 	Nd4jLong shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
-    const std::initializer_list<int> perm = {2, 0, 1};    
-    
+    const std::initializer_list<int> perm = {2, 0, 1};
+
     NDArray arr1(shape1,true);
     NDArray arr2(shape2,true);
 
@@ -1232,11 +1237,11 @@ TEST_F(NDArrayTest, Permute2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Broadcast1) {
-    
+
     Nd4jLong shape1[10] = {3, 5, 1, 10, 10, 10, 1, 8192, 1, 99};
 	Nd4jLong shape2[8]  = {2,    7, 10, 10, 1, 8192, 1, 99};
 	Nd4jLong shape3[10] = {3, 5, 7, 10, 70, 10, 1, 8192, 1, 99};
-    
+
 	NDArray arr1(shape1);
     NDArray arr2(shape2);
 	NDArray arr3(shape3);
@@ -1332,8 +1337,8 @@ TEST_F(NDArrayTest, TestIndexing1) {
     auto matrix = NDArrayFactory::create<float>('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.p(e, (float) e);
-    
-    auto sub = matrix({2,4, 0,0}, true);    
+
+    auto sub = matrix({2,4, 0,0}, true);
 
     ASSERT_EQ(2, sub.rows());
     ASSERT_EQ(5, sub.columns());
@@ -1345,7 +1350,7 @@ TEST_F(NDArrayTest, TestIndexing1) {
 TEST_F(NDArrayTest, TestIndexing2) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
     matrix.linspace(0);
-    
+
     auto sub = matrix({0,0, 2,4, 0,0, 0,0}, true);
 
     ASSERT_EQ(2, sub.sizeAt(0));
@@ -1375,7 +1380,7 @@ TEST_F(NDArrayTest, TestIndexing4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 5, 4, 4});
     matrix.linspace(0);
 
-    auto sub = matrix({0,0, 2,4, 0,0, 0,0});    
+    auto sub = matrix({0,0, 2,4, 0,0, 0,0});
 
     ASSERT_EQ(2, sub.sizeAt(0));
     ASSERT_EQ(2, sub.sizeAt(1));
@@ -1408,32 +1413,32 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 
 //////////////////////////////////////////////////////////////////////
 // TEST_F(NDArrayTest, SVD1) {
-    
+
 //     double arrA[8]  = {1, 2, 3, 4, 5, 6, 7, 8};
 // 	double arrU[8]  = {-0.822647, 0.152483, -0.421375, 0.349918, -0.020103, 0.547354, 0.381169, 0.744789};
 // 	double arrS[2]  = {0.626828, 14.269095};
 // 	double arrVt[4] = {0.767187,-0.641423, 0.641423, 0.767187};
-		
+
 // 	int shapeA[8]  = {2, 4, 2, 2, 1, 0, 1, 99};
 // 	int shapeS[8]  = {2, 1, 2, 2, 1, 0, 1, 99};
 // 	int shapeVt[8] = {2, 2, 2, 2, 1, 0, 1, 99};
-   
+
 // 	auto a(arrA,   shapeA);
-//     auto u(arrU,   shapeA);    
-// 	auto s(arrS,   shapeS);    
-// 	auto vt(arrVt, shapeVt);    
+//     auto u(arrU,   shapeA);
+// 	auto s(arrS,   shapeS);
+// 	auto vt(arrVt, shapeVt);
 // 	auto expU, expS(shapeS), expVt(shapeVt);
-	
+
 // 	a.svd(expU, expS, expVt);
 // 	ASSERT_TRUE(u.equalsTo(&expU));
 // 	ASSERT_TRUE(s.equalsTo(&expS));
 // 	ASSERT_TRUE(vt.equalsTo(&expVt));
-	
+
 // }
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(NDArrayTest, SVD2) {
-    
+
 //     double arrA[6]  = {1, 2, 3, 4, 5, 6};
 // 	double arrU[6]  = {-0.386318, -0.922366, 0.000000, -0.922366, 0.386318, 0.000000};
 // 	double arrS[3]  = {9.508032, 0.77287, 0.000};
@@ -1442,38 +1447,38 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 // 	int shapeA[8]  = {2, 2, 3, 3, 1, 0, 1, 99};
 // 	int shapeS[8]  = {2, 1, 3, 3, 1, 0, 1, 99};
 // 	int shapeVt[8] = {2, 3, 3, 3, 1, 0, 1, 99};
-    
+
 // 	auto a(arrA,   shapeA);
-//     auto u(arrU,   shapeA);    
-// 	auto s(arrS,   shapeS);    
-// 	auto vt(arrVt, shapeVt);    
+//     auto u(arrU,   shapeA);
+// 	auto s(arrS,   shapeS);
+// 	auto vt(arrVt, shapeVt);
 // 	auto expU, expS(shapeS), expVt(shapeVt);
-	
+
 // 	a.svd(expU, expS, expVt);
 // 	ASSERT_TRUE(u.equalsTo	(&expU));
 // 	ASSERT_TRUE(s.equalsTo(&expS));
 // 	ASSERT_TRUE(vt.equalsTo(&expVt));
-	
+
 // }
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(NDArrayTest, SVD3) {
-   
+
 //    double arrA[8]  = {1, 2, 3, 4, 5, 6, 7, 8};
 // 	double arrU[8]  = {-0.822647, 0.152483, -0.421375, 0.349918, -0.020103, 0.547354, 0.381169, 0.744789};
 // 	double arrS[2]  = {0.626828, 14.269095};
 // 	double arrVt[4] = {0.767187,-0.641423, 0.641423, 0.767187};
-		
+
 // 	int shapeA[8]  = {2, 4, 2, 2, 1, 0, 1, 99};
 // 	int shapeS[8]  = {2, 1, 2, 2, 1, 0, 1, 99};
 // 	int shapeVt[8] = {2, 2, 2, 2, 1, 0, 1, 99};
-  
+
 // 	auto a(arrA,   shapeA);
-//    auto u(arrU,   shapeA);    
-// 	auto s(arrS,   shapeS);    
-// 	auto vt(arrVt, shapeVt);    
+//    auto u(arrU,   shapeA);
+// 	auto s(arrS,   shapeS);
+// 	auto vt(arrVt, shapeVt);
 // 	auto expU, expS(shapeS), expVt(shapeVt);
-	
+
 // 	a.svd(expU, expS, expVt);
 // 	ASSERT_TRUE(expU.hasOrthonormalBasis(1));
 // 	ASSERT_TRUE(expVt.hasOrthonormalBasis(0));
@@ -1483,7 +1488,7 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(NDArrayTest, SVD4) {
-    
+
 //     double arrA[6]  = {1, 2, 3, 4, 5, 6};
 // 	double arrU[6]  = {-0.386318, -0.922366, 0.000000, -0.922366, 0.386318, 0.000000};
 // 	double arrS[3]  = {9.508032, 0.77287, 0.000};
@@ -1492,18 +1497,18 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 // 	int shapeA[8]  = {2, 2, 3, 3, 1, 0, 1, 99};
 // 	int shapeS[8]  = {2, 1, 3, 3, 1, 0, 1, 99};
 // 	int shapeVt[8] = {2, 3, 3, 3, 1, 0, 1, 99};
-    
+
 // 	auto a(arrA,   shapeA);
-//     auto u(arrU,   shapeA);    
-// 	auto s(arrS,   shapeS);    
-// 	auto vt(arrVt, shapeVt);    
+//     auto u(arrU,   shapeA);
+// 	auto s(arrS,   shapeS);
+// 	auto vt(arrVt, shapeVt);
 // 	auto expU, expS(shapeS), expVt(shapeVt);
-	
+
 // 	a.svd(expU, expS, expVt);
 // 	ASSERT_TRUE(expU.hasOrthonormalBasis(1));
 // 	ASSERT_TRUE(expVt.hasOrthonormalBasis(0));
 // 	ASSERT_TRUE(expVt.hasOrthonormalBasis(1));
-// 	ASSERT_TRUE(expVt.isUnitary());	
+// 	ASSERT_TRUE(expVt.isUnitary());
 // }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1592,97 +1597,96 @@ TEST_F(NDArrayTest, TestStdDev5) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestApplyIndexReduce1) {
-    float xBuff[] = {1, 5, 2, 12, 9, 3, 10, 7, 4, 11, 6, 8};    
+    float xBuff[] = {1, 5, 2, 12, 9, 3, 10, 7, 4, 11, 6, 8};
     Nd4jLong xShapeInfo[] = {3, 2, 3, 2, 6, 2, 1, 8192, 1, 99};
     std::vector<int> dim = {0,1};
-    
+
     NDArray x(xBuff, xShapeInfo);
     auto exp = NDArrayFactory::create<Nd4jLong>({3, 1});
-    
+
     auto result = x.applyIndexReduce(indexreduce::IndexMax, dim);
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
-    
+
     delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, applyReduce3Dot) {
-    float xBuff[] = {1, 2, 3, 4, 5, 6};    
-    float yBuff[] = {2, 2, 2, 2, 2, 2};    
+    float xBuff[] = {1, 2, 3, 4, 5, 6};
+    float yBuff[] = {2, 2, 2, 2, 2, 2};
     Nd4jLong xShapeInfo[] = {2, 2, 3, 3, 1, 8192, 1, 99};
-        
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
-    
+
     auto result = x.applyReduce3(reduce3::Dot, &y);
     ASSERT_TRUE(result->lengthOf() == 1);
     ASSERT_NEAR(42, result->e<float>(0), 1e-5);
-    
+
     delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
-    float xBuff[] =   {1, 2, 3, 4, 5, 6};    
+    float xBuff[] =   {1, 2, 3, 4, 5, 6};
     float yBuff[] =   {2, 2, 2, 2, 2, 2};
     float expBuff[] = {1.414214, 1.414214, 5.385165, 5.385165};
     Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
     Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
-        
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1.414214f, 1.414214f, 5.385165f, 5.385165f});
-    
+
     auto result = x.applyAllReduce3(reduce3::EuclideanDistance, &y,{1});
 
-    result->printIndexedBuffer("result");
+    // result->printIndexedBuffer("result");
 
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
-    
+
     delete result;
 }
 
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
-    float xBuff[] =   {1, 2, 3, 4, 5, 6};    
+    float xBuff[] =   {1, 2, 3, 4, 5, 6};
     float yBuff[] =   {2, 2, 2, 2, 2, 2};
     float expBuff[] = {1.414214, 1.414214, 5.385165, 5.385165};
     Nd4jLong expShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
     Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
-        
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
     NDArray exp(expBuff, expShapeInfo);
-    
+
     auto result = x.applyAllReduce3(reduce3::EuclideanDistance, &y,{1});
 
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
-    
+
     delete result;
 }
 
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
-    float xBuff[] =   {1, 2, 3, 4, 5, 6};        
+
+    float xBuff[] =   {1, 2, 3, 4, 5, 6};
     float expBuff[] = {0.816497, 0.816497};
     Nd4jLong xShapeInfo[] =   {2, 2, 3, 3, 1, 8192, 1, 99};
     Nd4jLong expShapeInfo[] = {1, 2, 1, 8192, 1, 99};
-    
-        
+
     NDArray x(xBuff, xShapeInfo);
     NDArray exp(expBuff, expShapeInfo);
-    
+
     auto result = x.varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, {1});
 
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
-    
+
     delete result;
 }
 
@@ -1736,58 +1740,58 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension4) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestSubRowVector1) {    
+TEST_F(NDArrayTest, TestSubRowVector1) {
     float xBuff[] = {6, 7, 8, 9};
     float yBuff[] = {1, 2};
     float expBuff[] =  {5, 5, 7, 7};
     Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
     Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
-    
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
     NDArray target(x);
     NDArray exp(expBuff, xShapeInfo);
 
-    x.subRowVector(&y,&target);    
+    x.subRowVector(&y,&target);
 
     ASSERT_TRUE(exp.isSameShapeStrict(&target));
     ASSERT_TRUE(exp.equalsTo(&target));
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestDivRowVector1) {    
+TEST_F(NDArrayTest, TestDivRowVector1) {
     float xBuff[] = {6, 8, 10, 12};
     float yBuff[] = {2, 4};
     float expBuff[] =  {3, 2, 5, 3};
     Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
     Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
-    
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
     NDArray target(x);
     NDArray exp(expBuff, xShapeInfo);
 
-    x.divRowVector(&y,&target);    
+    x.divRowVector(&y,&target);
 
     ASSERT_TRUE(exp.isSameShapeStrict(&target));
     ASSERT_TRUE(exp.equalsTo(&target));
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestMulRowVector1) {    
+TEST_F(NDArrayTest, TestMulRowVector1) {
     float xBuff[] = {6, 8, 10, 12};
     float yBuff[] = {2, 4};
     float expBuff[] =  {12, 32, 20, 48};
     Nd4jLong xShapeInfo[] = {2, 2, 2, 2, 1, 8192, 1, 99};
     Nd4jLong yShapeInfo[] = {2, 1, 2, 2, 1, 8192, 1, 99};
-    
+
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, yShapeInfo);
     NDArray target(x);
     NDArray exp(expBuff, xShapeInfo);
 
-    x.mulRowVector(&y,&target);    
-    
+    x.mulRowVector(&y,&target);
+
     ASSERT_TRUE(exp.isSameShapeStrict(&target));
     ASSERT_TRUE(exp.equalsTo(&target));
 }
@@ -1883,15 +1887,10 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     const int bS=2;
     const int K=3;
     const int N=4;
-    Nd4jLong expShape[] = {3, 2, 9, 4, 36, 4, 1, 16384, 1, 99};
-    double expBuff[] = { 38,   44,   50,   56, 83,   98,  113,  128, 128,  152,  176,  200, 173,  206,  239,  272, 218,  260,  302,  344, 263,  314,  365,  416, 308,  368,  428,  488, 353,  422,  491,  560, 398,  476,  554,  632, 110,  116,  122,  128, 263,  278,  293,  308, 416,  440,  464,  488, 569,  602,  635,  668, 722,  764,  806,  848, 875,  926,  977, 1028, 1028, 1088, 1148, 1208, 1181, 1250, 1319, 1388, 1334, 1412, 1490, 1568};
 
     auto input   = NDArrayFactory::create<double>('c', {bS,  K, N});
     auto weights = NDArrayFactory::create<double>('c', {3*K, K});
-    //auto  result(nullptr);
-    auto expected  = NDArrayFactory::create<double>('c', {bS,  3*K, N});
-    expected.setBuffer(expBuff);
-    expected.triggerAllocationFlag(false);
+    auto expected  = NDArrayFactory::create<double>('c', {bS,  3*K, N}, { 38,   44,   50,   56, 83,   98,  113,  128, 128,  152,  176,  200, 173,  206,  239,  272, 218,  260,  302,  344, 263,  314,  365,  416, 308,  368,  428,  488, 353,  422,  491,  560, 398,  476,  554,  632, 110,  116,  122,  128, 263,  278,  293,  308, 416,  440,  464,  488, 569,  602,  635,  668, 722,  764,  806,  848, 875,  926,  977, 1028, 1028, 1088, 1148, 1208, 1181, 1250, 1319, 1388, 1334, 1412, 1490, 1568});
 
     input.linspace(1);
     weights.linspace(1);
@@ -2042,11 +2041,11 @@ TEST_F(NDArrayTest, Operator_Plus_Test_4)
     y.linspace(1);
 
     auto result = x + y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
- 
+
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Operator_Minus_Test_1)
@@ -2080,7 +2079,7 @@ TEST_F(NDArrayTest, Operator_Minus_Test_2)
     y.linspace(1);
 
     auto result = x - y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2098,7 +2097,7 @@ TEST_F(NDArrayTest, Operator_Minus_Test_3)
     y.linspace(1);
 
     auto result = x - y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2116,12 +2115,12 @@ TEST_F(NDArrayTest, Operator_Minus_Test_4)
     y.linspace(1);
 
     auto result = x - y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
- 
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Operator_Minus_Test_5)
 {
@@ -2134,7 +2133,7 @@ TEST_F(NDArrayTest, Operator_Minus_Test_5)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x - y;    
+    auto result = x - y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2153,7 +2152,7 @@ TEST_F(NDArrayTest, Operator_Minus_Test_6)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x - y;    
+    auto result = x - y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2190,7 +2189,7 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_2)
     y.linspace(1);
 
     auto result = x * y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2209,7 +2208,7 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_3)
     y.linspace(1);
 
     auto result = x * y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2228,13 +2227,13 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_4)
     y.linspace(1);
 
     auto result = x * y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
 
- 
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Operator_Multiply_Test_5)
 {
@@ -2247,7 +2246,7 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_5)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x * y;    
+    auto result = x * y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2267,7 +2266,7 @@ TEST_F(NDArrayTest, Operator_Multiply_Test_6)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x * y;    
+    auto result = x * y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2306,7 +2305,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_2)
     y.linspace(1);
 
     auto result = x / y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2325,7 +2324,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_3)
     y.linspace(1);
 
     auto result = x / y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2344,7 +2343,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_4)
     y.linspace(1);
 
     auto result = x / y;
-    
+
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -2362,7 +2361,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_5)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x / y;    
+    auto result = x / y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2381,7 +2380,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_6)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x / y;    
+    auto result = x / y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2400,7 +2399,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7)
     x.linspace(10);
     y.linspace(1);
 
-    auto result = x / y;    
+    auto result = x / y;
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2455,7 +2454,7 @@ TEST_F(NDArrayTest, Test_Lambda_3) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_swapUnsafe_1) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto y = NDArrayFactory::create<float>('c', {1, 4}, {5, 6, 7, 8});
     auto expX = NDArrayFactory::create<float>('c', {2, 2}, {5, 6, 7, 8});
@@ -2469,282 +2468,282 @@ TEST_F(NDArrayTest, Test_swapUnsafe_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_1) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    auto exp = NDArrayFactory::create<float>('c', {2, 1}, {1, 5});    
+    auto exp = NDArrayFactory::create<float>('c', {2, 1}, {1, 5});
 
     auto diag = x.diagonal('c');
-    
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_2) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {2, 3});
-    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 5});    
+    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 5});
     x.linspace(1);
 
-    auto diag = x.diagonal('c');            
+    auto diag = x.diagonal('c');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_3) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 4});    
+    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 4});
 
-    auto diag = x.diagonal('r');    
+    auto diag = x.diagonal('r');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_4) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {1, 2}, {1, 4});    
+    auto exp = NDArrayFactory::create<float>('f', {1, 2}, {1, 4});
 
-    auto diag = x.diagonal('r');    
+    auto diag = x.diagonal('r');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_5) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 8});    
+    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 8});
 
-    auto diag = x.diagonal('r');    
+    auto diag = x.diagonal('r');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_6) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {2, 2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {1, 2}, {1, 8});    
+    auto exp = NDArrayFactory::create<float>('f', {1, 2}, {1, 8});
 
-    auto diag = x.diagonal('r');    
+    auto diag = x.diagonal('r');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_7) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {2, 2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 8});    
+    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 8});
 
-    auto diag = x.diagonal('c');    
+    auto diag = x.diagonal('c');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_8) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 3});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 5});    
+    auto exp = NDArrayFactory::create<float>('c', {1, 2}, {1, 5});
 
     auto diag = x.diagonal('r');
-    
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_9) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {2, 2});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {2, 1}, {1, 4});    
+    auto exp = NDArrayFactory::create<float>('c', {2, 1}, {1, 4});
 
-    auto diag = x.diagonal('c');    
+    auto diag = x.diagonal('c');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_10) {
-    
-    auto x = NDArrayFactory::create<float>('f', {2, 2});
-    x.linspace(1);    
-    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 4});    
 
-    auto diag = x.diagonal('c');    
+    auto x = NDArrayFactory::create<float>('f', {2, 2});
+    x.linspace(1);
+    auto exp = NDArrayFactory::create<float>('f', {2, 1}, {1, 4});
+
+    auto diag = x.diagonal('c');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_11) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {3, 3});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {3, 1}, {1, 5, 9});    
+    auto exp = NDArrayFactory::create<float>('f', {3, 1}, {1, 5, 9});
 
-    auto diag = x.diagonal('c');        
+    auto diag = x.diagonal('c');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_12) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {3, 3});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 5, 9});    
+    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 5, 9});
 
-    auto diag = x.diagonal('r');        
+    auto diag = x.diagonal('r');
 
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_13) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {3, 3, 4});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {3, 1}, {1,18,35});        
-    
+    auto exp = NDArrayFactory::create<float>('c', {3, 1}, {1,18,35});
+
     auto diag = x.diagonal('c');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_14) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {3, 3, 4});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1,18,35});        
-    
+    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1,18,35});
+
     auto diag = x.diagonal('r');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_15) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {3, 3, 4});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {1, 3}, {1,18,35});        
-    
+    auto exp = NDArrayFactory::create<float>('f', {1, 3}, {1,18,35});
+
     auto diag = x.diagonal('r');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_16) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {1, 5});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('f', {1, 1}, {1});        
-    
+    auto exp = NDArrayFactory::create<float>('f', {1, 1}, {1});
+
     auto diag = x.diagonal('c');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_17) {
-    
+
     auto x = NDArrayFactory::create<float>('c', {5, 1});
     x.linspace(1);
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {1});
-    
+
     auto  diag = x.diagonal('r');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_diagonal_18) {
-    
+
     auto x = NDArrayFactory::create<float>('f', {1, 1});
     x.linspace(1);
     auto exp = NDArrayFactory::create<float>('f', {1, 1}, {1});
-    
+
     auto  diag = x.diagonal('r');
-        
+
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
-    
+
     delete diag;
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, assign_test1) {
-    
+
     NDArray x('c', {2, 3}, {1,2,3,4,5,6});
     NDArray y('c', {2, 3}, {10,20,30,40,50,60});
-    y.reshapei('c',{3, 2});    
-        
+    y.reshapei('c',{3, 2});
+
     x.assign(y);
-    x.reshapei('c',{3, 2});    
+    x.reshapei('c',{3, 2});
     ASSERT_TRUE(x.equalsTo(y));
 }

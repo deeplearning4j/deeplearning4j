@@ -300,7 +300,7 @@ namespace nd4j {
             std::pair<int,int> pair(nodeId, index);
             pushNDArrayListToVariableSpace(pair, list, track);
         }
-        
+
         void Context::pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList* list, bool track) {
             if (!_variableSpace->hasVariable(pair)) {
                 auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
@@ -395,7 +395,6 @@ namespace nd4j {
 
         void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
             auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
-            array->triggerAllocationFlag(false);
 
             if (_fastpath_in.size() < index + 1)
                 _fastpath_in.resize(index+1);
@@ -419,7 +418,6 @@ namespace nd4j {
                 _fastpath_out.resize(index+1);
 
             auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
-            array->triggerAllocationFlag(false);
 
             _fastpath_out[index] = array;
             _handles.emplace_back(array);

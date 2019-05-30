@@ -60,28 +60,28 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test1) {
     NDArray labels('c', {2,4}, {0,1,1,0,1,0,1,0});
     NDArray predictions('c', {2,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,4}, {-0. , -0.5, -0.5, -0., -0.5, -0. , -0.5, -0.});
     NDArray dLdwExp('c', {2,1}, {1.2, -0.2});
 
     predictions.linspace(-0.4, 0.2);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0, -1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-    
+
     delete results;
 }
 
@@ -91,23 +91,23 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test2) {
     NDArray labels('c', {2,4}, {-0.1, 0.3, 2, -1.4, 2.5, -3, 1.2, 2.2});
     NDArray predictions('c', {2,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,4}, {0.05, -0.15, -1.  ,  0.7 ,-1.25,  1.5 , -0.6 , -1.1 });
     NDArray dLdwExp('c', {1,4}, {-0.04,  2.86,  0.04, -0.92});
     NDArray dLdlExp('c', {2,4}, {0.2,  0.1,  0. , -0.1, -0.2, -0.3, -0.4, -0.5});
 
     predictions.linspace(-0.4, 0.2);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0, 0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -115,7 +115,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test2) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-    
+
     delete results;
 }
 
@@ -125,23 +125,23 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test3) {
     NDArray labels('c', {4}, {-0.1, 0.3, 2, -1.4});
     NDArray predictions('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.05, -0.15, -1.,  0.7});
     NDArray dLdwExp('c', {1}, {1.3});
     NDArray dLdlExp('c', {4}, {0.2,  0.1, -0. , -0.1});
-    
+
     predictions.linspace(-0.4, 0.2);
     weights.assign(0.5);
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0, 0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -151,7 +151,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test3) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test4) {
@@ -159,23 +159,23 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test4) {
     NDArray labels('c', {1,4}, {-0.1, 0.3, 2, -1.4});
     NDArray predictions('c', {1,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {0}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {1,4}, {0.05, -0.15, -1.,  0.7});
     NDArray dLdwExp('c', {0}, {1.3});
     NDArray dLdlExp('c', {1,4}, {0.2,  0.1, -0. , -0.1});
-    
+
     predictions.linspace(-0.4, 0.2);
     weights.assign(0.5);
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1, 1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -185,7 +185,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test4) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 
 /////////////////////////////////////////////////////////////////
@@ -194,23 +194,23 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test5) {
     NDArray labels('c', {4}, {-0.1, 0.3, 2, -1.4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.1, -0.3, -2. ,  1.4});
     NDArray dLdwExp('c', {1,1}, {0.});
     NDArray dLdlExp('c', {4}, {0.4,  0.2, -0. , -0.2});
 
     predictions.linspace(-0.4, 0.2);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2, 0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -220,7 +220,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test5) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test6) {
@@ -228,23 +228,23 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test6) {
     NDArray labels('c', {4,1}, {-0.1, 0.3, 2, -1.4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {4,1}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {4,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4,1}, {0.0125, -0.0375, -0.25  , 0.175});
     NDArray dLdwExp('c', {4,1}, {0.24 , 0.265, 0.25 , 0.32});
     NDArray dLdlExp('c', {4,1}, {0.05 , 0.025, -0.   , -0.025});
 
     predictions.linspace(-0.4, 0.2);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3, 1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -254,7 +254,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test6) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test7) {
@@ -262,7 +262,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test7) {
     NDArray labels('c', {2,3,4}, {-0.1, 0.3, 2, -1.4, 2.5, -3, 1.2, 2.2,-0.1, 0.3, 2, -3.4, 2.5, -3, 1.2, 2.2,-0.2, 0.3, 2, -1.4, 2.7, -3, 1.2, 4.2});
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.00833, -0.025  , -0.16667,  0.11667,-0.20833,  0.25   , -0.1    , -0.18333, 0.00833, -0.025  , -0.16667,  0.28333,
                                    -0.20833,  0.25   , -0.1    , -0.18333, 0.01667, -0.025  , -0.16667,  0.11667,-0.225  ,  0.25   , -0.1    , -0.35   });
     NDArray dLdwExp('c', {1,3,1}, {0.50444, 0.89778, -1.40222});
@@ -270,17 +270,17 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test7) {
                                    -0.16667, -0.18333, -0.2    , -0.21667,-0.23333, -0.25   , -0.26667, -0.28333,-0.3, -0.31667, -0.33333, -0.35   });
 
     predictions.linspace(-0.4, 0.2);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2, 0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -290,7 +290,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test7) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test8) {
@@ -298,7 +298,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test8) {
     NDArray labels('c', {2,3,4}, {-0.1, 0.3, 2, -1.4, 2.5, -3, 1.2, 2.2,-0.1, 0.3, 2, -3.4, 2.5, -3, 1.2, 2.2,-0.2, 0.3, 2, -1.4, 2.7, -3, 1.2, 4.2});
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.00625, -0.01875, -0.125  ,  0.0875,-0.15625,  0.1875 , -0.075  , -0.1375, 0.00625, -0.01875, -0.125  ,  0.2125,
                                   -0.15625,  0.1875 , -0.075  , -0.1375, 0.0125 , -0.01875, -0.125  ,  0.0875,-0.16875,  0.1875 , -0.075  , -0.2625});
     NDArray dLdwExp('c', {2,1,1}, {0.57, -3.2175});
@@ -306,17 +306,17 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test8) {
                                    -0.125, -0.1375, -0.15, -0.1625,-0.175, -0.1875, -0.2 , -0.2125,-0.225, -0.2375, -0.25, -0.2625});
 
     predictions.linspace(-0.4, 0.2);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3, 1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -326,7 +326,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test8) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
@@ -334,7 +334,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
     NDArray labels('c', {2,3,4}, {-0.1, 0.3, 2, -1.4, 2.5, -3, 1.2, 2.2,-0.1, 0.3, 2, -3.4, 2.5, -3, 1.2, 2.2,-0.2, 0.3, 2, -1.4, 2.7, -3, 1.2, 4.2});
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.05, -0.15, -1.  ,  0.7,-1.25,  1.5 , -0.6 , -1.1, 0.05, -0.15, -1.  ,  1.7,
                                     -1.25,  1.5 , -0.6 , -1.1, 0.1 , -0.15, -1.  ,  0.7,-1.35,  1.5 , -0.6 , -2.1});
     NDArray dLdwExp('c', {2,3,1}, {1.3 , -1.36,  3.62, -6.  , -0.98,-19.76});
@@ -342,17 +342,17 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
                                     -1. , -1.1, -1.2, -1.3,-1.4, -1.5, -1.6, -1.7,-1.8, -1.9, -2. , -2.1});
 
     predictions.linspace(-0.4, 0.2);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::cosine_distance_loss_grad op;
 
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0, 2});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -362,9 +362,9 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
     delete results;
-}   
+}
 
- 
+
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
@@ -375,7 +375,7 @@ TEST_F(DeclarableOpsTests12, hinge_loss_14) {
     NDArray output('c', {0}, nd4j::DataType::DOUBLE);
 
     logits.linspace(1.);
-    weights.assign(1.);    
+    weights.assign(1.);
 
     nd4j::ops::hinge_loss op;
     Nd4jStatus status = op.execute({&logits, &weights, &labels}, {&output}, {}, {1}, {});
@@ -1372,13 +1372,10 @@ TEST_F(DeclarableOpsTests12, cube_bp_1) {
 // CONSTANT mode 2D
 TEST_F(DeclarableOpsTests12, pad_tests1) {
 
-    float inBuff[]  = {1,2,3,4,5,6};
-    int padBuff[] = {1,1,2,2};
-    float expBuff[] = {0,0,0,0,0,0,0, 0,0,1,2,3,0,0, 0,0,4,5,6,0,0, 0,0,0,0,0,0,0};    
 
-    auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
-    auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
-    auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7});
+    NDArray input('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::FLOAT32);
+    NDArray paddings('c', {2,2}, {1,1,2,2}, nd4j::DataType::INT32);
+    NDArray expected('c', {4,7}, {0,0,0,0,0,0,0, 0,0,1,2,3,0,0, 0,0,4,5,6,0,0, 0,0,0,0,0,0,0}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::pad op;
     auto results = op.execute({&input, &paddings}, {}, {0});
@@ -1401,7 +1398,7 @@ TEST_F(DeclarableOpsTests12, pad_tests2) {
 
     float inBuff[]  = {1,2,3,4,5,6};
     int padBuff[] = {1,1,2,2};
-    float expBuff[] = {6,5,4,5,6,5,4, 3,2,1,2,3,2,1, 6,5,4,5,6,5,4, 3,2,1,2,3,2,1};    
+    float expBuff[] = {6,5,4,5,6,5,4, 3,2,1,2,3,2,1, 6,5,4,5,6,5,4, 3,2,1,2,3,2,1};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
     auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
@@ -1428,7 +1425,7 @@ TEST_F(DeclarableOpsTests12, pad_tests3) {
 
     float inBuff[]  = {1,2,3,4,5,6};
     int padBuff[] = {1,1,2,2};
-    float expBuff[] = {2,1,1,2,3,3,2, 2,1,1,2,3,3,2, 5,4,4,5,6,6,5, 5,4,4,5,6,6,5};    
+    float expBuff[] = {2,1,1,2,3,3,2, 2,1,1,2,3,3,2, 5,4,4,5,6,6,5, 5,4,4,5,6,6,5};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3});
     auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {2,2});
@@ -1455,10 +1452,10 @@ TEST_F(DeclarableOpsTests12, pad_tests4) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
     int padBuff[] = {1,1,2,2,2,2};
-    float expBuff[] = {0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 
-                        0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 1, 2, 3,0,0,0,0, 4, 5, 6,0,0,0,0, 
+    float expBuff[] = {0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0,
+                        0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 1, 2, 3,0,0,0,0, 4, 5, 6,0,0,0,0,
                         7, 8, 9,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0,10,11,12,0,
-                        0,0,0,13,14,15,0,0,0,0,16,17,18,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 
+                        0,0,0,13,14,15,0,0,0,0,16,17,18,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0,
                         0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0,0,0, 0, 0, 0,0,0};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
@@ -1494,7 +1491,7 @@ TEST_F(DeclarableOpsTests12, pad_tests5) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
     int padBuff[] = {1,1,2,2,2,2};
-    float expBuff[] = {18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1};                      
+    float expBuff[] = {18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 15,14,13,14,15,14,13, 18,17,16,17,18,17,16, 15,14,13,14,15,14,13, 12,11,10,11,12,11,10, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1, 6, 5, 4, 5, 6, 5, 4, 9, 8, 7, 8, 9, 8, 7, 6, 5, 4, 5, 6, 5, 4, 3, 2, 1, 2, 3, 2, 1};
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
     auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {3,2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4,7,7});
@@ -1573,7 +1570,7 @@ TEST_F(DeclarableOpsTests12, pad_tests8)
 
     float inBuff[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     int padBuff[] = {1, 1, 1, 1, 1, 1, 1, 1};
-    float expBuff[] = {16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1};    
+    float expBuff[] = {16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 16, 15, 16, 15, 14, 13, 14, 13, 16, 15, 16, 15, 14, 13, 14, 13, 12, 11, 12, 11, 10, 9, 10, 9, 12, 11, 12, 11, 10, 9, 10, 9, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1, 8, 7, 8, 7, 6, 5, 6, 5, 8, 7, 8, 7, 6, 5, 6, 5, 4, 3, 4, 3, 2, 1, 2, 1, 4, 3, 4, 3, 2, 1, 2, 1};
     auto input = NDArrayFactory::create<float>(inBuff, 'c', {2, 2, 2, 2});
     auto paddings = NDArrayFactory::create<int>(padBuff, 'c', {4, 2});
     auto expected = NDArrayFactory::create<float>(expBuff, 'c', {4, 4, 4, 4});
@@ -1593,7 +1590,7 @@ TEST_F(DeclarableOpsTests12, pad_tests8)
 }
 
 //////////////////////////////////////////////////////////////////
-// SYMMETRIC mode 4D 
+// SYMMETRIC mode 4D
 TEST_F(DeclarableOpsTests12, pad_tests9)
 {
 
@@ -1998,15 +1995,15 @@ TEST_F(DeclarableOpsTests12, pad_tests26) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, pad_tests27) {
-    
+
     NDArray input('c', {2,3}, nd4j::DataType::FLOAT32);
     NDArray paddings('c', {2,2}, {0,0,0,1}, nd4j::DataType::INT32);
-    NDArray exp('c', {2,4}, {1,1,1,0,1,1,1,0}, nd4j::DataType::FLOAT32);   
-    NDArray z('c', {2,4}, nd4j::DataType::FLOAT32);    
+    NDArray exp('c', {2,4}, {1,1,1,0,1,1,1,0}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {2,4}, nd4j::DataType::FLOAT32);
     input = 1.;
 
     nd4j::ops::pad op;
-    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant
     // z.printIndexedBuffer();
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -2016,14 +2013,14 @@ TEST_F(DeclarableOpsTests12, pad_tests27) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, pad_tests28) {
-    
+
     NDArray input('c', {1,111,111,32}, nd4j::DataType::FLOAT32);
-    NDArray paddings('c', {4,2}, {0,0,0,1,0,1,0,0}, nd4j::DataType::INT32);    
-    NDArray z('c', {1,112,112,32}, nd4j::DataType::FLOAT32);    
+    NDArray paddings('c', {4,2}, {0,0,0,1,0,1,0,0}, nd4j::DataType::INT32);
+    NDArray z('c', {1,112,112,32}, nd4j::DataType::FLOAT32);
     input = 1.;
 
     nd4j::ops::pad op;
-    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant 
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});      // constant
     // z.printIndexedBuffer();
 
     NDArray sum = z.reduceNumber(nd4j::reduce::Sum);
@@ -2092,7 +2089,7 @@ TEST_F(DeclarableOpsTests12, pad_tests32) {
     auto pad = NDArrayFactory::create<int>('c', {2,2}, {1, 2, 2, 3});
 
     auto exp = NDArrayFactory::create<double>('c', {6,8}, {2, 1, 1, 2, 3, 3, 2, 1, 2, 1, 1, 2, 3, 3, 2, 1, 5, 4, 4, 5, 6, 6, 5, 4, 8, 7, 7, 8, 9, 9, 8, 7, 8, 7, 7, 8, 9, 9, 8, 7, 5, 4, 4, 5, 6, 6, 5, 4});
-   
+
     nd4j::ops::pad op;
 
     auto res = op.execute({&in, &pad}, {10.0}, {2});
@@ -2119,7 +2116,7 @@ TEST_F(DeclarableOpsTests12, pad_tests33) {
     nd4j::ops::pad op;
 
     auto res = op.execute({&in, &pad}, {10.0}, {2});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);    
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }

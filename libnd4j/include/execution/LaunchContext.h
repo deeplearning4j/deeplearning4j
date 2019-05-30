@@ -31,6 +31,7 @@
 
 
 #include <dll.h>
+#include <memory>
 #include <op_boilerplate.h>
 #include <memory/Workspace.h>
 #include <vector>
@@ -42,7 +43,7 @@ namespace nd4j  {
 class ND4J_EXPORT LaunchContext {
 
 	private:
-        static std::vector<LaunchContext*> _contexts;
+        static std::vector<std::shared_ptr<LaunchContext>> _contexts;
 
 #ifdef __CUDABLAS__
 

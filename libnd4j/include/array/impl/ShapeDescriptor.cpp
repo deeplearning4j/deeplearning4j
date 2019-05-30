@@ -218,6 +218,14 @@ Nd4jLong ShapeDescriptor::ews() const {
     return _ews;
 }
 
+Nd4jLong ShapeDescriptor::arrLength() const {
+
+    Nd4jLong len = 1;
+    for(const auto& dim : const_cast<ShapeDescriptor*>(this)->shape())
+        len *= dim;
+    return len;
+}
+
 char ShapeDescriptor::order() const {
     return _order;
 }
