@@ -258,7 +258,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(20).perplexity(3.0).theta(0.5).numDimension(5).
                 invertDistanceMetric(false).similarityFunction(Distance.EUCLIDEAN.toString())
-                .setMomentum(0.5).learningRate(200).staticInit(data)
+                .setMomentum(0.5).learningRate(200).staticInit(data).setSwitchMomentumIteration(250)
                 .useAdaGrad(false).build();
 
         b.fit(data);

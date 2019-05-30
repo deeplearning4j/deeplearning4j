@@ -294,7 +294,7 @@ public class SpTree implements Serializable {
             throw new IllegalArgumentException("RowP must be a vector");
 
         // Loop over all edges in the graph
-        INDArray buf = Nd4j.create(valP.dataType(), this.D);
+        INDArray buf = Nd4j.create(data.dataType(), this.D);
         double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);

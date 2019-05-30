@@ -398,7 +398,7 @@ public class BarnesHutTsne implements Model {
                 }
             }
 
-            int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+            int numElements = rowCounts.sumNumber().intValue();
             INDArray offset = Nd4j.create(DataType.INT, N);
             INDArray symRowP = Nd4j.zeros(DataType.INT, N + 1);
             INDArray symColP = Nd4j.create(DataType.INT, numElements);
