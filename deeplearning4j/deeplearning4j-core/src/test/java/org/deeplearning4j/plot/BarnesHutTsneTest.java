@@ -82,7 +82,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         INDArray data = Nd4j.createFromArray(aData).reshape(11,5);
 
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(200).perplexity(3.0).theta(0.5).numDimension(5).
-                invertDistanceMetric(false).similarityFunction(Distance.EUCLIDIAN.toString())
+                invertDistanceMetric(false).similarityFunction(Distance.EUCLIDEAN.toString())
                 .setMomentum(0.5).learningRate(200).staticInit(data).setSwitchMomentumIteration(250)
                 .useAdaGrad(false).build();
 
@@ -90,7 +90,8 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         log.info("Result: {}", b.getData());
         
         val exp = Nd4j.createFromArray(new double[]{-3.5318212819287327, 35.40331834897696, 3.890809489531651, -1.291195609955519, -42.854099388207466, 7.8761368019456635, 28.798057251442877, 7.1456564000935225, 2.9518396278984786, -42.860181054199636, -34.989343304202, -108.99770355680282, 31.78123839126566, -29.322118879730205, 163.87558311206212, 2.9538984612478396, 31.419519824305546, 13.105400907817279, 25.46987139120746, -43.27317406736858, 32.455151773056144, 25.28067703547214, 0.005442008567682552, 21.005029233370358, -61.71390311950051, 5.218417653362599, 47.15762099517554, 8.834739256343404, 17.845790108867153, -54.31654219224107, -18.71285871476804, -16.446982180909007, -71.22568781913213, -12.339975548387091, 70.49096598213703, 25.022454385237456, -14.572652938207126, -5.320080866729078, 1.5874449933639676, -40.60960510287835, -31.98564381157643, -95.40875746933808, 19.196346639002364, -38.80930682421929, 135.00454225923906, 5.277879540549592, 30.79963767087089, -0.007276462027131683, 31.278796123365815, -38.47381680049993, 10.415728497075905, 36.567265019013085, -7.406587944733211, -18.376174615781114, -45.26976962854271}).reshape(-1, 5);
-        assertEquals(exp, b.getData());
+
+        assertArrayEquals(exp.data().asDouble(), b.getData().data().asDouble(), 5e-2);
     }
 
     @Test
@@ -183,8 +184,8 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         BarnesHutTsne b1 = new BarnesHutTsne.Builder().perplexity(1.0).build(),
                 b2 = new BarnesHutTsne.Builder().perplexity(1.0).build();
-        b1.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
-        b2.setSimiarlityFunction(Distance.EUCLIDIAN.toString());
+        b1.setSimiarlityFunction(Distance.EUCLIDEAN.toString());
+        b2.setSimiarlityFunction(Distance.EUCLIDEAN.toString());
 
         b1.fit(input);
         INDArray ret1 = b1.getData();
@@ -256,7 +257,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         INDArray data = Nd4j.createFromArray(aData).reshape(11,5);
 
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).setMaxIter(20).perplexity(3.0).theta(0.5).numDimension(5).
-                invertDistanceMetric(false).similarityFunction(Distance.EUCLIDIAN.toString())
+                invertDistanceMetric(false).similarityFunction(Distance.EUCLIDEAN.toString())
                 .setMomentum(0.5).learningRate(200).staticInit(data)
                 .useAdaGrad(false).build();
 
@@ -301,7 +302,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                 0.4093918718557811, 0.9563909195720572, 0.5994144944480242, 0.8278927844215804, 0.38586830957105667, 0.6201844716257464, 0.7603829079070265, 0.07875691596842949,
                 0.08651136699915507, 0.7445210640026082, 0.6547649514127559, 0.3384719042666908, 0.05816723105860, 0.6248951423054205, 0.7431868493349041};
         INDArray ndinput = Nd4j.createFromArray(input).reshape(11, 5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDEAN.toString()).invertDistanceMetric(false).theta(0.5)
                 .useAdaGrad(false).build();
         b.computeGaussianPerplexity(ndinput, 3.0);
         INDArray expectedRows = Nd4j.createFromArray(new int[]{0, 9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99});
@@ -326,7 +327,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                                     0.6202,    0.7604,    0.0788,    0.0865,    0.7445,
                                     0.6548,    0.3385,    0.0582,    0.6249,    0.7432};
         INDArray ndinput = Nd4j.createFromArray(input).reshape(11, 5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDEAN.toString()).invertDistanceMetric(false).theta(0.5)
                 .useAdaGrad(false).staticInit(ndinput).build();
         b.setY(ndinput);
         b.setN(11);
@@ -369,7 +370,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
                     0.0656,    0.1383,   -0.0707,   -0.1757,    0.0144,
                     0.0708,   -0.1725,   -0.0870,    0.0160,    0.1921};
         INDArray ndgrad = Nd4j.createFromArray(gradient).reshape(11, 5);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString())
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDEAN.toString())
                 .invertDistanceMetric(false).theta(0.5).learningRate(200)
                 .useAdaGrad(false).staticInit(ndinput).build();
         b.setY(ndinput);
@@ -437,7 +438,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
     /*
     @Test
     public void testSymmetrized() {
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDIAN.toString()).invertDistanceMetric(false).theta(0.5)
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).perplexity(3.0).similarityFunction(Distance.EUCLIDEAN.toString()).invertDistanceMetric(false).theta(0.5)
                 .useAdaGrad(false).build();
         INDArray expectedSymmetrized = Nd4j.createFromArray(new double[]{0.6239, 0.1813, 0.12359999999999999, 0.03695, 0.00795, 0.03385, 0.0074, 0.0158, 0.0013, 0.0042, 0.0074, 0.3093, 0.2085, 0.051000000000000004, 0.00895, 0.016050000000000002, 0.00245, 0.00705, 0.00125, 0.0021, 0.016050000000000002, 0.6022, 0.1615, 0.0233, 0.0183, 0.0108, 0.0068000000000000005, 0.0042, 0.011300000000000001, 0.00115, 0.1813, 0.00125, 0.0233, 0.65985, 0.0653, 0.0779, 0.03565, 0.05085, 0.038349999999999995, 0.026250000000000002, 0.6239, 0.3093, 0.0068000000000000005, 0.0653, 0.2099, 0.0205, 0.0173, 0.007300000000000001, 0.0171, 0.0089, 0.0158, 0.011300000000000001, 0.038349999999999995, 0.71495, 0.04775, 0.03615, 0.0089, 0.00275, 0.0021, 1.5623E-5, 0.00795, 0.00245, 0.6022, 0.0779, 0.007300000000000001, 0.5098, 0.015899999999999997, 0.00135, 1.5623E-5, 0.03385, 0.00705, 0.026250000000000002, 0.0171, 0.71495, 0.06515, 0.018349999999999998, 0.00775, 0.00115, 0.03695, 0.051000000000000004, 0.1615, 0.03565, 0.0205, 0.00275, 0.5098, 0.00775, 0.0055, 0.0026, 0.0013, 0.2085, 0.0183, 0.05085, 0.0173, 0.04775, 0.00135, 0.06515, 0.0026, 0.35855, 0.12359999999999999, 0.00895, 0.0108, 0.65985, 0.2099, 0.03615, 0.015899999999999997, 0.018349999999999998, 0.0055, 0.35855});
         INDArray rowsP = Nd4j.createFromArray(new int[]{0,         9,        18,        27,        36,        45,        54,        63,        72,        81,        90,        99});

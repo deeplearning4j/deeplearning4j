@@ -17,12 +17,9 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import lombok.Getter;
-import lombok.Setter;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
@@ -59,24 +56,7 @@ public class SpTree implements Serializable {
     private Set<INDArray> indices;
     private SpTree[] children;
     private static Logger log = LoggerFactory.getLogger(SpTree.class);
-    private String similarityFunction = "euclidean";
-    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder().initialSize(0)
-            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyLearning(LearningPolicy.OVER_TIME).policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-
-    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
-            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
-            .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME).build();
-
-    @Getter @Setter
-    protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
-    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
-            .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
-            .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-
+    private String similarityFunction = Distance.EUCLIDEAN.toString();
 
 
 
@@ -124,12 +104,7 @@ public class SpTree implements Serializable {
     }
 
     public MemoryWorkspace workspace() {
-        MemoryWorkspace workspace =
-                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal,
-                        workspaceExternal);
-        return workspace;
+        return null;
     }
 
     private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
@@ -139,7 +114,7 @@ public class SpTree implements Serializable {
         D = data.columns();
         N = data.rows();
         this.similarityFunction = similarityFunction;
-        nodeCapacity = 11; //N % NODE_RATIO;
+        nodeCapacity = N % NODE_RATIO;
         index = new int[nodeCapacity];
         for (int d = 1; d < this.D; d++)
             numChildren *= 2;
@@ -279,7 +254,7 @@ public class SpTree implements Serializable {
         try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             // Compute distance between point and center-of-mass
-            buf.assign(data.slice(pointIndex)).subi(centerOfMass);
+            data.slice(pointIndex).subi(centerOfMass, buf);
 
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
@@ -317,32 +292,22 @@ public class SpTree implements Serializable {
     public void computeEdgeForces(INDArray rowP, INDArray colP, INDArray valP, int N, INDArray posF) {
         if (!rowP.isVector())
             throw new IllegalArgumentException("RowP must be a vector");
-        /*MemoryWorkspace workspace =
-                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal,
-                        workspaceExternal);
-        INDArray outRows = Nd4j.create(rowP.shape());
-        INDArray outCols = Nd4j.create(colP.shape());
-        BarnesEdgeForces computeEdgeForces = new BarnesEdgeForces(rowP, colP, valP, data, N, outRows, outCols, buf);
-        Nd4j.getExecutioner().exec(computeEdgeForces);*/
 
         // Loop over all edges in the graph
-        INDArray buf = Nd4j.create(this.D);
+        INDArray buf = Nd4j.create(valP.dataType(), this.D);
         double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
                 // Compute pairwise distance and Q-value
-                buf.assign(slice).subi(data.slice(colP.getInt(i)));
+                slice.subi(data.slice(colP.getInt(i)), buf);
 
                 D = 1.0 + Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
                 posF.slice(n).addi(buf.muli(D));
-
             }
         }
     }

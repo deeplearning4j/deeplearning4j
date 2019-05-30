@@ -36,7 +36,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,7 +43,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -390,7 +388,6 @@ public class BarnesHutTsne implements Model {
                             present = true;
                         }
 
-
                     if (present)
                         rowCounts.putScalar(n, rowCounts.getInt(n) + 1);
 
@@ -448,7 +445,7 @@ public class BarnesHutTsne implements Model {
             }
 
             // Divide the result by two
-            symValP.divi(2.0);
+            symValP.divi(2.0D);
             return new SymResult(symRowP, symColP, symValP);
 
         }
@@ -466,7 +463,7 @@ public class BarnesHutTsne implements Model {
      */
     public Pair<INDArray, Double> computeGaussianKernel(INDArray distances, double beta, int k) {
         // Compute Gaussian kernel row
-        INDArray currP = Nd4j.create(k);
+        INDArray currP = Nd4j.create(distances.dataType(), k);
         for (int m = 0; m < k; m++) {
             currP.putScalar(m, Math.exp(-beta * distances.getDouble(m + 1)));
         }
@@ -647,7 +644,8 @@ public class BarnesHutTsne implements Model {
 
             INDArray yGrads = gradient;
 ;            if (gains == null)
-                gains = ones(DataType.DOUBLE, Y.shape());
+                gains = Y.ulike().assign(1.0);
+
             //Nd4j.getExecutioner().exec(new BarnesHutGains(gains, gains, yGrads, yIncs));
             // Copied from Reference
             for (int i = 0; i < yGrads.rows(); ++i) {
@@ -660,9 +658,6 @@ public class BarnesHutTsne implements Model {
                     }
                 }
             }
-            // Legacy implementation
-            /*gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(gains.dataType())
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).eq(sign(yIncs)).castTo(gains.dataType()));*/
             BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
             Y.addi(yIncs);
@@ -791,12 +786,11 @@ public class BarnesHutTsne implements Model {
                 int ind1 = n;
                 for (int i = begin; i < end; i++) {
                     int ind2 = cols.getInt(i);
-                    buff.assign(linear.slice(ind1));
-                    buff.subi(linear.slice(ind2));
+                    linear.slice(ind1).subi(linear.slice(ind2), buff);
 
-                    double Q = pow(buff, 2).sum(Integer.MAX_VALUE).getDouble(0);
+                    double Q = pow(buff, 2).sumNumber().doubleValue();
                     Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
-                    C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
+                    C += vals.getDouble(i) * Math.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
                             / (Q + Nd4j.EPS_THRESHOLD);
                 }
             }
@@ -883,18 +877,17 @@ public class BarnesHutTsne implements Model {
 
 
             if (yIncs == null)
-                yIncs = zeros(DataType.DOUBLE, Y.shape());
+                yIncs = Y.like();
             if (gains == null)
-                gains = ones(DataType.DOUBLE, Y.shape());
+                gains = Y.ulike().assign(1.0D);
 
             AtomicDouble sumQ = new AtomicDouble(0);
             /* Calculate gradient based on barnes hut approximation with positive and negative forces */
-            INDArray posF = Nd4j.create(DataType.DOUBLE, Y.shape());
-            INDArray negF = Nd4j.create(DataType.DOUBLE, Y.shape());
-            /*if (tree == null)*/ {
-                tree = new SpTree(Y);
-                //tree.setWorkspaceMode(workspaceMode);
-            }
+            INDArray posF = Y.like();
+            INDArray negF = Y.like();
+
+            tree = new SpTree(Y);
+
             tree.computeEdgeForces(rows, cols, vals, N, posF);
             for (int n = 0; n < N; n++) {
                 INDArray temp = negF.slice(n);
@@ -961,7 +954,7 @@ public class BarnesHutTsne implements Model {
         private double theta = 0.5;
         private boolean invert = true;
         private int numDim = 2;
-        private String similarityFunction = Distance.EUCLIDIAN.toString();
+        private String similarityFunction = Distance.EUCLIDEAN.toString();
         private int vpTreeWorkers = 1;
         protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 

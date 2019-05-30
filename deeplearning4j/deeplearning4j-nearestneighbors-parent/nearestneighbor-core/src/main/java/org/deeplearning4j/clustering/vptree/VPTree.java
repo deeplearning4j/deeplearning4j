@@ -251,7 +251,7 @@ public class VPTree implements Serializable {
             scalars = new ThreadLocal<>();
 
         if (scalars.get() == null)
-            scalars.set(Nd4j.scalar(0.0D));
+            scalars.set(Nd4j.scalar(arr1.dataType(), 0.0));
 
         switch (similarityFunction) {
             case "jaccard":
