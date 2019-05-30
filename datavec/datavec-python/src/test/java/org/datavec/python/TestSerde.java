@@ -28,7 +28,7 @@ public class TestSerde {
     public static YamlSerializer y = new YamlSerializer();
     public static JsonSerializer j = new JsonSerializer();
 
-    @Test
+    @Test(timeout = 60000L)
     public void testBasicSerde() throws Exception{
         Schema schema = new Schema.Builder()
                 .addColumnInteger("col1")

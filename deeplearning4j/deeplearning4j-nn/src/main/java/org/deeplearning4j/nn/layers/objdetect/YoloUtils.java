@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.objdetect;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
@@ -43,7 +44,7 @@ public class YoloUtils {
         return activate(boundingBoxPriors, input, LayerWorkspaceMgr.noWorkspaces());
     }
 
-    public static INDArray activate(INDArray boundingBoxPriors, INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
+    public static INDArray activate(@NonNull INDArray boundingBoxPriors, @NonNull INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
         // FIXME: int cast
         int mb = (int) input.size(0);
         int h = (int) input.size(2);
@@ -64,7 +65,7 @@ public class YoloUtils {
         //width/height: prior * exp(input)
         INDArray predictedWHPreExp = input5.get(all(), all(), interval(2,4), all(), all());
         INDArray predictedWH = Transforms.exp(predictedWHPreExp, false);
-        Broadcast.mul(predictedWH, boundingBoxPriors, predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
+        Broadcast.mul(predictedWH, boundingBoxPriors.castTo(input.dataType()), predictedWH, 1, 2);  //Box priors: [b, 2]; predictedWH: [mb, b, 2, h, w]
 
         //Confidence - sigmoid
         INDArray predictedConf = input5.get(all(), all(), point(4), all(), all());   //Shape: [mb, B, H, W]
@@ -209,7 +210,6 @@ public class YoloUtils {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             sm = softmax.get(point(i), point(box), all(), point(y), point(x)).dup();
                         }
-                        sm = sm.transpose();    //Convert to row vector
 
                         out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));
                     }

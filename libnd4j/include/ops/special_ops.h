@@ -166,7 +166,7 @@ namespace simdOps {
             }
             __syncthreads();
 
-			int tid = blockIdx.x * gridDim.x + threadIdx.x;
+			int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 				const int pw = index % outW;
@@ -1419,7 +1419,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         bool canCast = nd4j::DataTypeUtils::castShapeInfo(tadShapeInfo, xShapeInfoCast);
 
                         auto offsets = new Nd4jLong[tadLen];
-                        shape::calcSubArrOffsets(tadLen, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), offsets);
+                        shape::calcOffsets(tadShapeInfo, offsets);
 
                         PRAGMA_OMP_PARALLEL_FOR_SIMD
                         for (uint i = 0; i < numOfTads; ++i) {                        

@@ -151,7 +151,7 @@ abstract public class KerasConvolution extends KerasLayer {
                     INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
                     //manipulating weights in place to save memory
                     INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
-                    inPlaceFilter.muli(0).addi(newFilter);
+                    inPlaceFilter.muli(0).addi(newFilter.castTo(inPlaceFilter.dataType()));
                 }
                 break;
             default:

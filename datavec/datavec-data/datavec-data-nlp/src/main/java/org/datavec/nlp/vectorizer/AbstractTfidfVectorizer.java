@@ -19,6 +19,7 @@ package org.datavec.nlp.vectorizer;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.nlp.tokenization.tokenizer.TokenPreProcess;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
@@ -53,7 +54,13 @@ public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorize
         try {
             Class<? extends TokenizerFactory> tokenizerFactoryClazz =
                             (Class<? extends TokenizerFactory>) Class.forName(clazz);
-            return tokenizerFactoryClazz.newInstance();
+            TokenizerFactory tf = tokenizerFactoryClazz.newInstance();
+            String preproc = conf.get(PREPROCESSOR, null);
+            if(preproc != null){
+                TokenPreProcess tpp = (TokenPreProcess) Class.forName(preproc).newInstance();
+                tf.setTokenPreProcessor(tpp);
+            }
+            return tf;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

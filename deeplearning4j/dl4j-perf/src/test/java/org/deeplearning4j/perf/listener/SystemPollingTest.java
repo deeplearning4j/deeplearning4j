@@ -17,9 +17,11 @@
 package org.deeplearning4j.perf.listener;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.Arrays;
@@ -27,6 +29,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
 public class SystemPollingTest {
 
     @Rule
@@ -34,6 +37,7 @@ public class SystemPollingTest {
 
     @Test
     public void testPolling() throws Exception {
+        Nd4j.create(1);
         File tmpDir = tempDir.newFolder();
 
         SystemPolling systemPolling = new SystemPolling.Builder()
@@ -47,6 +51,7 @@ public class SystemPollingTest {
 
         File[] files = tmpDir.listFiles();
         assertTrue(files != null && files.length > 0);
+        //System.out.println(Arrays.toString(files));
 
         String yaml = FileUtils.readFileToString(files[0]);
         HardwareMetric fromYaml = HardwareMetric.fromYaml(yaml);

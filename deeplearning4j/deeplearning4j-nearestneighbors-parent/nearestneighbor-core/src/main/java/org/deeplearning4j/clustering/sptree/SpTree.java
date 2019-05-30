@@ -17,13 +17,12 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.val;
+import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.slf4j.Logger;
@@ -47,7 +46,6 @@ public class SpTree implements Serializable {
     private INDArray data;
     public final static int NODE_RATIO = 8000;
     private int N;
-    private INDArray buf;
     private int size;
     private int cumSize;
     private Cell boundary;
@@ -60,24 +58,7 @@ public class SpTree implements Serializable {
     private Set<INDArray> indices;
     private SpTree[] children;
     private static Logger log = LoggerFactory.getLogger(SpTree.class);
-    private String similarityFunction = "euclidean";
-    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder().initialSize(0)
-            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyLearning(LearningPolicy.OVER_TIME).policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-
-    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
-            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
-            .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME).build();
-
-    @Getter @Setter
-    protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
-    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
-            .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
-            .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-
+    private String similarityFunction = Distance.EUCLIDEAN.toString();
 
 
 
@@ -92,14 +73,14 @@ public class SpTree implements Serializable {
         this.N = data.rows();
         this.D = data.columns();
         this.similarityFunction = similarityFunction;
-        data = data.migrate();
+        data = data.dup();
         INDArray meanY = data.mean(0);
         INDArray minY = data.min(0);
         INDArray maxY = data.max(0);
-        INDArray width = Nd4j.create(meanY.shape());
+        INDArray width = Nd4j.create(data.dataType(), meanY.shape());
         for (int i = 0; i < width.length(); i++) {
             width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
-                    meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
+                    meanY.getDouble(i) - minY.getDouble(i)) + Nd4j.EPS_THRESHOLD);
         }
 
         try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -125,12 +106,7 @@ public class SpTree implements Serializable {
     }
 
     public MemoryWorkspace workspace() {
-        MemoryWorkspace workspace =
-                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal,
-                        workspaceExternal);
-        return workspace;
+        return null;
     }
 
     private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
@@ -153,21 +129,25 @@ public class SpTree implements Serializable {
         boundary = new Cell(D);
         boundary.setCorner(corner.dup());
         boundary.setWidth(width.dup());
-        centerOfMass = Nd4j.create(D);
-        buf = Nd4j.create(D);
+        centerOfMass = Nd4j.create(data.dataType(), D);
     }
 
 
 
     private boolean insert(int index) {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             INDArray point = data.slice(index);
+            /*boolean contains = false;
+            SpTreeCell op = new SpTreeCell(boundary.corner(), boundary.width(), point, N, contains);
+            Nd4j.getExecutioner().exec(op);
+            op.getOutputArgument(0).getScalar(0);
+            if (!contains) return false;*/
             if (!boundary.contains(point))
                 return false;
 
@@ -213,15 +193,15 @@ public class SpTree implements Serializable {
      * 4 children
      */
     public void subDivide() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) */{
 
-            INDArray newCorner = Nd4j.create(D);
-            INDArray newWidth = Nd4j.create(D);
+            INDArray newCorner = Nd4j.create(data.dataType(), D);
+            INDArray newWidth = Nd4j.create(data.dataType(), D);
             for (int i = 0; i < numChildren; i++) {
                 int div = 1;
                 for (int d = 0; d < D; d++) {
@@ -264,22 +244,23 @@ public class SpTree implements Serializable {
      */
     public void computeNonEdgeForces(int pointIndex, double theta, INDArray negativeForce, AtomicDouble sumQ) {
         // Make sure that we spend no time on empty nodes or self-interactions
+        INDArray buf = Nd4j.create(data.dataType(), this.D);
+
         if (cumSize == 0 || (isLeaf() && size == 1 && index[0] == pointIndex))
             return;
-        MemoryWorkspace workspace =
+       /* MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             // Compute distance between point and center-of-mass
-            buf.assign(data.slice(pointIndex)).subi(centerOfMass);
+            data.slice(pointIndex).subi(centerOfMass, buf);
 
             double D = Nd4j.getBlasWrapper().dot(buf, buf);
             // Check whether we can use this node as a "summary"
-            double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
+            double maxWidth = boundary.width().maxNumber().doubleValue();
             // Check whether we can use this node as a "summary"
             if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
@@ -288,8 +269,7 @@ public class SpTree implements Serializable {
                 double mult = cumSize * Q;
                 sumQ.addAndGet(mult);
                 mult *= Q;
-                negativeForce.addi(buf.muli(mult));
-
+                negativeForce.addi(buf.mul(mult));
             } else {
 
                 // Recursively apply Barnes-Hut to children
@@ -314,29 +294,29 @@ public class SpTree implements Serializable {
     public void computeEdgeForces(INDArray rowP, INDArray colP, INDArray valP, int N, INDArray posF) {
         if (!rowP.isVector())
             throw new IllegalArgumentException("RowP must be a vector");
-        MemoryWorkspace workspace =
-                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal,
-                        workspaceExternal);
 
         // Loop over all edges in the graph
+        // just execute native op
+        Nd4j.exec(new BarnesEdgeForces(rowP, colP, valP, data, N, posF));
+
+        /*
+        INDArray buf = Nd4j.create(data.dataType(), this.D);
         double D;
         for (int n = 0; n < N; n++) {
             INDArray slice = data.slice(n);
             for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
                 // Compute pairwise distance and Q-value
-                buf.assign(slice).subi(data.slice(colP.getInt(i)));
+                slice.subi(data.slice(colP.getInt(i)), buf);
 
-                D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
+                D = 1.0 + Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
                 posF.slice(n).addi(buf.muli(D));
-
             }
         }
+        */
     }
 
 
@@ -351,12 +331,12 @@ public class SpTree implements Serializable {
      * is correct.
      */
     public boolean isCorrect() {
-        MemoryWorkspace workspace =
+        /*MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered())*/ {
 
             for (int n = 0; n < size; n++) {
                 INDArray point = data.slice(index[n]);

@@ -45,7 +45,6 @@
 #define no_op_exec_special_accumulation_long 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
-#include <helpers/sharedmem.h>
 #define no_op_exec_special_any_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
 #define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
@@ -3479,7 +3478,7 @@ namespace simdOps {
             return (d1 == d2) ? static_cast<Y>(0.0f) :  static_cast<Y>(1.0f);
         }
 
-        op_def static void aggregateExtraParams(X *extraParamsTotal, X *extraParamsLocal) {
+        op_def static void aggregateExtraParams(Y *extraParamsTotal, Y *extraParamsLocal) {
 
         }
 
@@ -4135,7 +4134,7 @@ namespace simdOps {
 
 #ifdef __CUDACC__
 			X length = params[1];
-            X tid = gridDim.x * blockDim.x + threadIdx.x;
+            X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -4157,7 +4156,7 @@ namespace simdOps {
 			Y prob = d2;
 #ifdef __CUDACC__
 			X length = params[1];
-			X tid = gridDim.x * blockDim.x + threadIdx.x;
+			X tid = blockIdx.x * blockDim.x + threadIdx.x;
             X rnd = nd4j::math::nd4j_abs<X>(nd4j::math::nd4j_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) + static_cast<X>(length) * static_cast<X>(tid)));
 #else
 			X rnd = static_cast<X>(rand() / RAND_MAX);

@@ -22,6 +22,7 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class VectorsConfigurationTest {
         configuration.setMinLearningRate(0.25d);
         configuration.setEpochs(1);
 
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
 
         Word2Vec vec = new Word2Vec.Builder(configuration).iterate(iter).build();

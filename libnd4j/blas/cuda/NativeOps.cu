@@ -17,7 +17,6 @@
 
 #include "../NativeOps.h"
 #include <cuda.h>
-#include <cuda_launch_config.h>
 
 #include <buffer.h>
 #include <helpers/shape.h>
@@ -68,6 +67,7 @@
 #include <ShapeList.h>
 #include <Context.h>
 #include <ops/specials_cuda.h>
+#include <helpers/DebugHelper.h>
 
 #include <graph/exceptions/datatype_exception.h>
 
@@ -158,56 +158,6 @@ int getDeviceId(Nd4jPointer ptrToDeviceId) {
     return (int)(Nd4jLong)ptrToDeviceId;
 }
 
-template <typename T>
-dim3 getOptimalDimensions(Nd4jLong n,cudaFuncAttributes attributes, cudaDeviceProp properties) {
-
-	// we can combine the two to compute a block size
-	int num_threads = block_size_with_maximum_potential_occupancy(attributes, properties);
-
-	// no real sense launching more threads, then number of elements we have
-	if (num_threads > n) num_threads = n;
-
-	if (maxThreads > 0 && num_threads > maxThreads) num_threads = maxThreads;
-
-	// compute the number of blocks of size num_threads to launch
-	int num_blocks = n / num_threads;
-
-	// check for partial block at the end
-
-	if (num_blocks > blockLimit) num_blocks = blockLimit;
-
-	if (num_blocks < 4 && n > 128) {
-		num_blocks = 4;
-		num_threads = n / num_blocks;
-	}
-
-	if (num_threads >= 768) {
-		num_blocks = num_blocks * 2;
-		num_threads = num_threads / 2;
-	}
-
-	if(n % num_threads && num_blocks < blockLimit) ++num_blocks;
-    //(num_threads * sizeof(T)) + attributes.sharedSizeBytes);
-	return dim3(num_blocks,num_threads, 3000);
-}
-
-int getBaseMemorySize(int xRank, cudaFuncAttributes funcAttr) {
-	int memory_limit = 256; //funcAttr.sharedSizeBytes;
-
-	// TODO: remove this later
-	memory_limit += sizeof(UnifiedSharedMemory) + 32; // sizeof(shape::TAD) + (xRank * 4 * 4)
-/*
-	if (xRank == 0) xRank = 2;
-
-	memory_limit += (xRank * 2 + 4) * 3 * 4; // we reserve memory for xShape + T1/T2 shapes
-	memory_limit += yRank == 0 ? 0 : (yRank * 2 + 4) * 4;
-	memory_limit += zRank == 0 ? 0 : (zRank * 2 + 4) * 4;
-	memory_limit += (xRank * 4) * 6;
-	memory_limit += MAX_RANK * 4; // special case, needed roughtly in one pase
-*/
-	return memory_limit;
-}
-
 /*
  * Basic CUDA constants here: number of blocks per MP
  */
@@ -227,28 +177,6 @@ int getDeviceBlockThreshold(int deviceId) {
 	return blockThreshold;
 }
 
-dim3 getBasicLaunchParams(int deviceId, long problemLength, int sharedMemoryPerThread, cudaFuncAttributes funcAttr) {
-	int countMP = deviceProperties[deviceId].multiProcessorCount;
-	int blockThreshold = getDeviceBlockThreshold(deviceId);
-
-	int num_threads = problemLength / (countMP * blockThreshold);
-    num_threads = nd4j::math::nd4j_min<int>(num_threads, maxThreads);
-    num_threads = nd4j::math::nd4j_max<int>(num_threads, 64);
-    num_threads = nd4j::math::nd4j_max<int>(num_threads, minThreads);
-
-	int num_blocks = nd4j::math::nd4j_max<int>(problemLength / num_threads, 1);
-    num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-
-	int memory_limit = (sharedMemoryPerThread * num_threads) + getBaseMemorySize(1, funcAttr);
-
-	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Preliminary basic launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i]\n", num_blocks, num_threads, memory_limit);
-
-
-	return launchDims;
-}
 
 /*
  * This message returns shared memory threshold value. default overflow ratio is 0.3
@@ -276,217 +204,6 @@ int getDeviceSharedThreshold(int deviceId) {
 }
 
 
-dim3 getBetterDimensions(int deviceId, int numTads, int tadLength, int xRank, cudaFuncAttributes funcAttr, int dimensionLength, int elementSize, int reduction) {
-
-	int num_threads = nd4j::math::nd4j_min<int>(tadLength, maxThreads);
-
-
-
-	int countMP = deviceProperties[deviceId].multiProcessorCount;
-	int regPerBlock = deviceProperties[deviceId].regsPerBlock;
-	int warpSize = deviceProperties[deviceId].warpSize;
-
-	int blockThreshold = getDeviceBlockThreshold(deviceId);
-	int shmemThreshold = getDeviceSharedThreshold(deviceId);
-
-	// round num_threads to nearest warpSize
-	num_threads -= num_threads % warpSize;
-
-	num_threads = nd4j::math::nd4j_max<int>(1, num_threads);
-    if (num_threads < warpSize && tadLength < warpSize)
-        num_threads = tadLength;
-
-	// since we use shared memory as fast memory for some cases - we need to count that in
-	int memory_limit = getBaseMemorySize(xRank, funcAttr);
-	int memory_floor = memory_limit;
-	int effective_block_limit =  countMP * blockThreshold;
-
-	int num_blocks =  numTads; //nd4j::math::nd4j_min<int>(numTads, effective_block_limit);
-
-	int desiredShared = shmemThreshold / nd4j::math::nd4j_max<int>((num_blocks / countMP), 1);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Launch context: numBlocks: [%i], numThreads: [%i], countMap: [%i], shmemThreshold: [%i], desiredShared: [%i], elementSize: [%i]\n", num_blocks, num_threads, countMP, shmemThreshold, desiredShared, elementSize);
-
-	// at this moment we've stored all required information for things. time to count in reduction multipliers
-	int reduction_per_block = 0;
-	bool found = false;
-	if (reduction > 0)
-		while (!found) {
-			reduction_per_block = (num_threads * elementSize * reduction);
-			if (memory_limit + reduction_per_block < desiredShared) {
-				memory_limit += reduction_per_block;
-				found = true;
-			} else {
-				if (num_threads > minThreads) {
-					num_threads -= 32;
-				} else {
-					memory_limit += reduction_per_block;
-					found = true;
-				}
-			}
-		}
-
-	// at this moment we know total memory used per block, and we also know per-mp limit.
-	int max_active_blocks = shmemThreshold / nd4j::math::nd4j_max<int>(memory_limit, 1);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("MAB: [%i], memory_floor: [%i], memory_limit: [%i], reductionPerBlock: [%i]\n", max_active_blocks, memory_floor, memory_limit, reduction_per_block);
-
-	// we don't want to spawn more blocks, that gpu can actually handle without queue
-
-	//num_blocks = nd4j::math::nd4j_min<int>(num_blocks, max_active_blocks);
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-
-//	if (num_blocks > countMP)
-//    	num_blocks = num_blocks - (num_blocks % countMP);
-
-	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
-
-	int targetBlocksPerMP = num_blocks / countMP;
-
-	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
-	if (targetBlocksPerMP * num_threads > 2048) {
-		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= minThreads)
-				break;
-
-			num_threads -= 32;
-		}
-
-		reduction_per_block = (num_threads * elementSize * reduction);
-		memory_limit = memory_floor + reduction_per_block;
-	}
-
-
-
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Preliminary reduce launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], reduction_per_block: [%i], blocksPerMP: [%i]\n", num_blocks, num_threads, memory_limit, reduction_per_block, targetBlocksPerMP);
-
-	return dim3(num_blocks,num_threads, memory_limit);
-}
-
-/*
- * This method returns kernel launch param for linear memory access
- */
-dim3 getFlatLaunchParams(int deviceId, Nd4jLong *dXShapeInfo, Nd4jLong *dYShapeInfo, cudaFuncAttributes funcAttr) {
-	auto xRank = shape::rank(dXShapeInfo);
-	auto yRank = dYShapeInfo == nullptr ? 0 : shape::rank(dYShapeInfo);
-	auto zRank = 0;
-
-	int memory_limit = getBaseMemorySize(xRank, funcAttr);
-
-	int countMP = deviceProperties[deviceId].multiProcessorCount;
-	int regPerBlock = deviceProperties[deviceId].regsPerBlock;
-
-	int blockThreshold = getDeviceBlockThreshold(deviceId);
-	int shmemThreshold = getDeviceSharedThreshold(deviceId);
-
-	auto xLength = shape::length(dXShapeInfo);
-	int effective_block_limit =  countMP * blockThreshold;
-
-	// for flat calls we just want as much concurrent blocks, as possible, and we're not tied to TAD here
-	int num_threads = xLength / effective_block_limit;
-	if (num_threads < minThreads)
-		num_threads = minThreads;
-
-	num_threads = num_threads - (num_threads % 32);
-
-	int memory_floor = memory_limit;
-
-	int num_blocks = xLength / num_threads;
-	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, blockLimit);
-//	num_blocks = nd4j::math::nd4j_min<int>(num_blocks, effective_block_limit);
-	num_blocks = nd4j::math::nd4j_max<int>(num_blocks, 1);
-
-	int targetBlocksPerMP = num_blocks / countMP;
-
-	// now we know desired number of blocks wrt to shared memory. So, now we should take in account number of threads per SM
-	if (targetBlocksPerMP * num_threads > 2048 && num_threads >= 128) {
-		while (targetBlocksPerMP * num_threads > 2048) {
-			if (num_threads <= minThreads)
-				break;
-			num_threads -= 32;
-		}
-	}
-
-    if (xLength / num_threads > blockLimit)
-        num_blocks *= 2;
-
-	dim3 launchDims = dim3(num_blocks, num_threads, memory_limit);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Preliminary scalar launch params: gridSize: [%i], blockSize: [%i], base shmem: [%i], blocksPerMP: [%i], problemLength: [%i], effectiveBlockLimit: [%i]\n", num_blocks, num_threads, memory_limit, targetBlocksPerMP, xLength, effective_block_limit);
-
-
-	return launchDims;
-}
-
-/**
- * This method returns kernel launch params with TAD-based memory access
- *
- * @param deviceId
- * @param dXShapeInfo
- * @param tadShapeInfo
- * @param funcAttr
- * @param dimensionLength
- * @param elementSize
- * @param reductionSize
- * @return
- */
-dim3 getReduceLaunchParams(int deviceId, Nd4jLong *dXShapeInfo, Nd4jLong *tadShapeInfo, cudaFuncAttributes funcAttr, int dimensionLength, int elementSize, int reductionSize) {
-
-	Nd4jLong tadLength = 0;
-	Nd4jLong numTads = 0;
-	if (tadShapeInfo != nullptr) {
-		tadLength = shape::length(tadShapeInfo);
-		numTads = shape::length(dXShapeInfo) / tadLength;
-
-		if (tadLength == 1) {
-			if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-				printf("A xLength: [%i], zLength: [%i]\n", shape::length(dXShapeInfo), shape::length(tadShapeInfo));
-		}
-	} else{
-		// we have special case - reduction along all dimensions
-		tadLength = nd4j::math::nd4j_min<int>(shape::length(dXShapeInfo), 768);
-		numTads = shape::length(dXShapeInfo) / tadLength;
-	}
-
-	auto xRank = shape::rank(dXShapeInfo);
-	int zRank = tadShapeInfo == nullptr ? 0 : shape::rank(tadShapeInfo);
-
-	dim3 launchDims = getBetterDimensions(deviceId, numTads, tadLength, xRank, funcAttr, dimensionLength, elementSize, reductionSize);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose()) { //|| launchDims.dX == 1
-		printf("Reduce LaunchParams: xLength: [%i], numTads: [%i], tadLength: [%i], launchDims.dX: [%i], launchDims.dY: [%i], launchDims.dZ: [%i]\n", shape::length(dXShapeInfo), numTads, tadLength, launchDims.x, launchDims.y, launchDims.z);
-	}
-
-	return launchDims;
-}
-
-/**
- * Returns optimal launch parameters
- * given the extra pointers passed in.
- * The extra pointer should be
- * the host pointer for the shape information
- * associated with the data.
- * From there it is used to obtain the length
- * from which we can derive the optimal launch parameters.
- *
- */
-template <typename T>
-dim3 getOptimalLaunchParameters(const Nd4jLong *hXShapeInfo, cudaFuncAttributes attributes, cudaDeviceProp properties) {
-	
-	auto n = shape::length(hXShapeInfo);
-
-	dim3 launchDims = getOptimalDimensions<T>(n,attributes, properties);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("Params: gridSize: [%i], blockSize: [%i], shMem: [%i], problemLength: [%i], totalThreads:[%i]\n", launchDims.x, launchDims.y, launchDims.z, n, (launchDims.x * launchDims.y));
-
-	return launchDims;
-}
 
 nd4j::buffer::Buffer<Nd4jLong> * createScalarBuffer(cudaStream_t stream) {
 	Nd4jLong *scalarShapeInfo = shape::createScalarShapeInfo();
@@ -1515,7 +1232,7 @@ void NativeOps::flatten(Nd4jPointer *extraPointers,
 
 	// int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-	dim3 launchDims = getBasicLaunchParams(getDeviceId(extraPointers[2]), shape::length(hYShapeInfo), 2, funcAttributes[30]);
+	dim3 launchDims(256, 256, 2048);
 
 	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
 		printf("AF222 opNum:[7]\n");
@@ -1680,7 +1397,7 @@ Nd4jPointer NativeOps::mallocHost(Nd4jLong memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, Nd4jPointer ptrToDeviceId, int flags) {
+Nd4jPointer NativeOps::mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
 	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
@@ -1706,7 +1423,7 @@ int NativeOps::freeHost(Nd4jPointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int NativeOps::freeDevice(Nd4jPointer pointer, Nd4jPointer ptrToDeviceId) {
+int NativeOps::freeDevice(Nd4jPointer pointer, int deviceId) {
 	cudaError_t res = cudaFree(reinterpret_cast<void *>(pointer));
 	if (res != 0)
 		pointer = 0L;
@@ -1757,9 +1474,8 @@ int NativeOps::registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	return 1;
 }
 
-int NativeOps::setDevice(Nd4jPointer ptrToDeviceId) {
-	int deviceId = getDeviceId(ptrToDeviceId);
-	cudaError_t dZ = cudaSetDevice(deviceId);
+int NativeOps::setDevice(int deviceId) {
+	auto dZ = cudaSetDevice(deviceId);
 	checkCudaErrors(dZ);
 	if (dZ != 0)
 		throw std::runtime_error("cudaSetDevice(...) failed");
@@ -1776,8 +1492,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory() {
     return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceFreeMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1798,8 +1513,7 @@ Nd4jLong NativeOps::getDeviceFreeMemory(Nd4jPointer ptrToDeviceId) {
 	return (Nd4jLong) memFree;
 }
 
-Nd4jLong NativeOps::getDeviceTotalMemory(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+Nd4jLong NativeOps::getDeviceTotalMemory(int device) {
 	int orig = -1;
 
 	cudaGetDevice(&orig);
@@ -1957,20 +1671,16 @@ void NativeOps::enableVerboseMode(bool reallyEnable) {
 	nd4j::Environment::getInstance()->setVerbose(reallyEnable);
 }
 
-int NativeOps::getDeviceMajor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMajor(int device) {
 	return deviceProperties[device].major;
 }
 
-int NativeOps::getDeviceMinor(Nd4jPointer ptrToDeviceId) {
-	int device = getDeviceId(ptrToDeviceId);
+int NativeOps::getDeviceMinor(int device) {
 	return deviceProperties[device].minor;
 }
 
 
-const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
-    int device = getDeviceId(ptrToDeviceId);
-
+const char * NativeOps::getDeviceName(int device) {
     return deviceProperties[device].name;
 }
 
@@ -2010,14 +1720,15 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
     }
 }
 template<typename T>
-__host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    int blocks = numOfArrs * 16; // >> 1 << 2);
+__host__ static void concatCudaLauncher(const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
+    //int blocks = numOfArrs * 16; // >> 1 << 2);
     //nd4j_printf("gridDim.x is %i\n", blocks);
-    if (blocks > 8192)
-        blocks = 8192; // restrict grid dims to 8K max
-    concatCuda<T><<<blocks, 128, 256, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    //if (blocks > 8192)
+    //    blocks = 8192; // restrict grid dims to 8K max
+    concatCuda<T><<<numOfArrs, 128, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    nd4j::DebugHelper::checkErrorCode(stream, "concat(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
 static void
 specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void*& outBuffer, Nd4jLong*& outShape) {
@@ -2053,7 +1764,7 @@ specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZSha
     }
 
     // check if there is possibility to set ews = 1
-    shape::calcEws(newShape, subArrLen);
+    shape::setEws(newShape, subArrLen);
 
     //makeBothBuffersActual();
     outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
@@ -2300,7 +2011,6 @@ void NativeOps::average(Nd4jPointer *extras,
 	// launching on gpu
 	if (mode == 0) {
 		dim3 launchDims(256, 256, 4096);
-		// averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dz, n, length, propagate);		
     	BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate), LIBND4J_TYPES);		    	
         nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
 	} else {
@@ -3053,6 +2763,8 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *dZ, int *dX, int numElement
     } else {
         nd4j::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numElements, 0, 0);
     }
+
+    nd4j::DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
 }
 
 
@@ -3286,7 +2998,7 @@ void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jLong* ptrMap, Nd4jLon
 
 
 nd4j::graph::ResultWrapper* NativeOps::executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-	return nullptr;
+    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
 }
 
 
@@ -3960,6 +3672,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
 
     BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
+    nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
 }
 
 void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
@@ -3968,3 +3681,29 @@ void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 
+void __global__ tryPointerKernel(void* p, int len) {
+    auto buf = reinterpret_cast<int8_t*>(p);
+    auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+    __shared__ int b;
+    if (tid < len)
+        atomicAdd(&b, buf[tid]);
+
+    __syncthreads();
+
+    if (threadIdx.x ==0 && blockIdx.x == 0)
+        printf("Pointer check complete: %i\n", b);
+}
+
+void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
+    tryPointerKernel<<<256, 512, len+64, stream>>>(p, len);
+    auto e = cudaStreamSynchronize(stream);
+
+    if (e != 0)
+        throw std::runtime_error("tryPointer failed");
+
+    cudaStreamDestroy(stream);
+}

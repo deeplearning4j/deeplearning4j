@@ -24,13 +24,12 @@
 #ifndef BROADCASTING_BOOL_H_
 #define BROADCASTING_BOOL_H_
 #include <dll.h>
-#include <helpers/sharedmem.h>
 #include <helpers/shape.h>
 #include <templatemath.h>
-#include <helper_cuda.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
 #include <op_boilerplate.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>

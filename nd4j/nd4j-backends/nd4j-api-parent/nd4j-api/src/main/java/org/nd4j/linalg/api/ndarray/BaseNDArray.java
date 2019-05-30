@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -1813,17 +1814,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
-        WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
-        if (this.isCompressed() && this.ordering() == Nd4j.order()) {
-            INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
-            ret.markAsCompressed(true);
-            return ret;
-        }
-        if(isEmpty())
-            return this;
-        Nd4j.getCompressor().autoDecompress(this);
-        INDArray ret = Shape.toOffsetZeroCopy(this);
-        return ret;
+        return dup(Nd4j.order());
     }
 
     @Override
@@ -1836,6 +1827,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         if(isEmpty())
             return this;
+
+        // fixme: eventually it would be nice to have this in native code
+        if (isS()) {
+            val list = new ArrayList<String>();
+            for (int e = 0; e < this.length(); e++)
+                list.add(this.getString(e));
+
+            return Nd4j.create(list, this.shape(), this.ordering());
+        }
+
         Nd4j.getCompressor().autoDecompress(this);
         return Shape.toOffsetZeroCopy(this, order);
     }

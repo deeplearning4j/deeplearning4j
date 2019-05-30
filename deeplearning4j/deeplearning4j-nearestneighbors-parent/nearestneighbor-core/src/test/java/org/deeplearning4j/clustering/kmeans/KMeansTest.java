@@ -16,20 +16,15 @@
 
 package org.deeplearning4j.clustering.kmeans;
 
-import lombok.val;
-import lombok.var;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.cluster.*;
-import org.joda.time.Duration;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,7 +38,7 @@ public class KMeansTest {
     @Test
     public void testKMeans() {
         Nd4j.getRandom().setSeed(7);
-        KMeansClustering kMeansClustering = KMeansClustering.setup(5, 5, Distance.EUCLIDIAN);
+        KMeansClustering kMeansClustering = KMeansClustering.setup(5, 5, Distance.EUCLIDEAN);
         List<Point> points = Point.toPoints(Nd4j.randn(5, 5));
         ClusterSet clusterSet = kMeansClustering.applyTo(points);
         PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
@@ -61,7 +56,7 @@ public class KMeansTest {
         PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
 
 
-        KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDIAN);
+        KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN);
         ClusterSet clusterSetEuclidean = kMeansClusteringEuclidean.applyTo(points);
         PointClassification pointClassificationEuclidean = clusterSetEuclidean.classifyPoint(points.get(0));
         System.out.println("Cosine " + pointClassification);
@@ -96,6 +91,7 @@ public class KMeansTest {
     }
 
     @Test
+    @Ignore
     public void testPerformanceWithConvergence() {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);
@@ -144,7 +140,7 @@ public class KMeansTest {
             Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
             Nd4j.getRandom().setSeed(7);
             int numClusters = 3;
-            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDIAN, true);
+            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN, true);
             double[] data = new double[]{
                     15, 16,
                     16, 18.5,
@@ -229,7 +225,7 @@ public class KMeansTest {
         List<Point> points = Point.toPoints(pointData.reshape(15,2));
 
         for (int i = 0 ; i < points.size(); ++i) {
-            INDArray dist = ch.getMinDistances(points.get(i), Distance.EUCLIDIAN);
+            INDArray dist = ch.getMinDistances(points.get(i), Distance.EUCLIDEAN);
             System.out.println("Point: " + points.get(i).getArray());
             System.out.println("Centers: " + ch.getCenters());
             System.out.println("Distance: " + dist);

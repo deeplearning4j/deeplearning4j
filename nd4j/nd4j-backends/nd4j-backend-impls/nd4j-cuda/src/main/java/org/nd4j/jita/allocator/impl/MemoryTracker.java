@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.jita.allocator.impl;
 
 import java.util.*;
@@ -27,10 +43,9 @@ public class MemoryTracker {
             cachedPerDevice.add(i, new AtomicLong(0));
 	        workspacesPerDevice.add(i, new AtomicLong(0));
 
-	        val ptr = new CudaPointer(i);
-            totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(ptr)));
+            totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(i)));
 
-            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(ptr));
+            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(i));
 
             log.debug("Free memory on device_{}: {}", i, f);
             freePerDevice.add(i, f);
@@ -120,7 +135,7 @@ public class MemoryTracker {
      */
     public long getPreciseFreeMemory(int deviceId) {
         // we refresh free memory on device
-        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(new CudaPointer(deviceId));
+        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
         //freePerDevice.get(deviceId).set(extFree);
 
         return extFree;

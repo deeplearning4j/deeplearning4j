@@ -23,10 +23,12 @@ import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.reflections.Reflections;
@@ -46,7 +48,16 @@ import java.util.Set;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class OpsMappingTests {
+public class OpsMappingTests extends BaseNd4jTest {
+
+    public OpsMappingTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testCustomOpsMapping() {

@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -31,7 +32,16 @@ import static org.junit.Assert.assertTrue;
  * @author Audrey Loeffel
  */
 @Ignore // temporary ignored
-public class SparseNDArrayCSRTest {
+public class SparseNDArrayCSRTest extends BaseNd4jTest {
+
+    public SparseNDArrayCSRTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     /*
     * [[1 -1 0 -3 0]

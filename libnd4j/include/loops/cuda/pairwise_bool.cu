@@ -53,6 +53,8 @@ void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cu
 														int *allocPointer){
 
 	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
+
+	nd4j::DebugHelper::checkErrorCode(stream, "bool PWT(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

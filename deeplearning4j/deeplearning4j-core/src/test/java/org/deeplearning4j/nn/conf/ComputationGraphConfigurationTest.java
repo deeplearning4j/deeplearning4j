@@ -217,6 +217,32 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             //OK - exception is good
             //e.printStackTrace();
         }
+
+        //Test: input != inputType count mismatch
+        try {
+             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1", "input2")
+                     .setInputTypes(new InputType.InputTypeRecurrent(10, 12))
+                     .addLayer("cnn1",
+                             new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                     .build(),
+                             "input1")
+                     .addLayer("cnn2",
+                             new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                     .build(),
+                             "input2")
+                     .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
+                     .addVertex("subset1", new SubsetVertex(0, 1), "merge1")
+                     .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                     .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                     .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
+                             "dense2")
+                     .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "add")
+                     .setOutputs("out").build();
+            fail("No exception thrown for invalid configuration");
+        } catch (IllegalArgumentException e) {
+            //OK - exception is good
+            //e.printStackTrace();
+        }
     }
 
 

@@ -83,6 +83,10 @@ public abstract class BaseLabels implements Labels {
 
     @Override
     public List<List<ClassPrediction>> decodePredictions(INDArray predictions, int n) {
+        if(predictions.rank() == 1){
+            //Reshape 1d edge case to [1, nClasses] 2d
+            predictions = predictions.reshape(1, predictions.length());
+        }
         Preconditions.checkState(predictions.size(1) == labels.size(), "Invalid input array:" +
                 " expected array with size(1) equal to numLabels (%s), got array with shape %s", labels.size(), predictions.shape());
 
@@ -96,8 +100,8 @@ public abstract class BaseLabels implements Labels {
         }
         List<List<ClassPrediction>> descriptions = new ArrayList<>();
         for (int batch = 0; batch < rows; batch++) {
-            INDArray result = predictions.getRow(batch);
-            result = Nd4j.vstack(Nd4j.linspace(0, cols, cols), result);
+            INDArray result = predictions.getRow(batch, true);
+            result = Nd4j.vstack(Nd4j.linspace(result.dataType(), 0, cols, 1).reshape(1,cols), result);
             result = Nd4j.sortColumns(result, 1, false);
             List<ClassPrediction> current = new ArrayList<>();
             for (int i = 0; i < n; i++) {

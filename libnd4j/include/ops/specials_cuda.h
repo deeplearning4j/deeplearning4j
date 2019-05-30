@@ -22,6 +22,7 @@
 #define PROJECT_SPECIALS_CUDA_H
 
 #include <helpers/shape.h>
+#include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
 

@@ -33,7 +33,8 @@
 #include <cuda.h>
 #include <driver_types.h>
 #include <cuda_runtime_api.h>
-#include <helper_cuda.h>
+
+#define checkCudaErrors(ERR) if (ERR != 0) {throw std::runtime_error("CUDA stream synchronization failed");}
 
 #endif
 #include <DebugInfo.h>
@@ -47,7 +48,6 @@ namespace nd4j {
         static FORCEINLINE void checkErrorCode(cudaStream_t *stream, int opNum = 0) {
             if (Environment::getInstance()->isDebug()) {
                 cudaError_t res = cudaStreamSynchronize(*stream);
-                checkCudaErrors(res);
 
                 if (res != 0) {
                     //PRINT_FIRST("Kernel OpNum failed: [%i]\n", opNum);
@@ -65,7 +65,7 @@ namespace nd4j {
             if (res != 0) {
                 if (failMessage == nullptr) {
                     std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
-
+                    throw std::runtime_error(op);
                 } else {
                     std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) + std::string("]");
                     throw std::runtime_error(op);

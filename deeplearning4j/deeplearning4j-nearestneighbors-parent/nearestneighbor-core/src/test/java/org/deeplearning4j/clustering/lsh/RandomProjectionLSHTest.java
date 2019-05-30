@@ -38,13 +38,16 @@ public class RandomProjectionLSHTest {
     int intDimensions = 13;
 
     RandomProjectionLSH rpLSH;
-    INDArray e1 = Nd4j.ones(1, intDimensions);
+    INDArray e1;
     INDArray inputs;
 
     @Before
     public void setUp() {
+        Nd4j.getRandom().setSeed(12345);
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         rpLSH = new RandomProjectionLSH(hashLength, numTables, intDimensions, 0.1f);
-        inputs = Nd4j.rand(100, intDimensions);
+        inputs = Nd4j.rand(DataType.DOUBLE, 100, intDimensions);
+        e1 = Nd4j.ones(DataType.DOUBLE, 1, intDimensions);
     }
 
 

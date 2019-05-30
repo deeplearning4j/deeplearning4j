@@ -295,7 +295,7 @@ class TransformProcess(object):
         reduction_to_function = {'std': 'stdevColumns', 'uncorrected_std': 'uncorrectedStdevColumns', 'var': 'variance',
                                  'pop_var': 'populationVariance', 'first': 'takeFirstColumns', 'last': 'takeLastColumns', 'max': 'maxColumn'}
         if default is None:
-            default = col_2_reduction[col_2_reduction.keys()[0]]
+            default = col_2_reduction[list(col_2_reduction.keys())[0]]
         reduction_to_op = {'std': 'Stdev', 'uncorrected_std': 'UncorrectedStdDev', 'var': 'Variance', 'pop_var': 'PopulationVariance',
                            'first': 'TakeFirst', 'last': 'TakeLast'}
         default_op = reduction_to_op.get(default, _to_camel(default, True))

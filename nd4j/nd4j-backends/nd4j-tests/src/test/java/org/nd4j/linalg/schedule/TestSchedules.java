@@ -17,6 +17,8 @@
 package org.nd4j.linalg.schedule;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -24,7 +26,16 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestSchedules {
+public class TestSchedules extends BaseNd4jTest {
+
+    public TestSchedules(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testJson() throws Exception {

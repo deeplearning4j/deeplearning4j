@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.parallelism.BaseDL4JTest;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,7 +43,7 @@ import java.io.File;
  * Created by agibsonccc on 12/29/16.
  */
 @Slf4j
-public class ParallelWrapperMainTest {
+public class ParallelWrapperMainTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -91,9 +92,12 @@ public class ParallelWrapperMainTest {
         File tmp = testDir.newFile("tmpmodel.bin");
         tmp.deleteOnExit();
         ParallelWrapperMain parallelWrapperMain = new ParallelWrapperMain();
-        parallelWrapperMain.runMain(new String[] {"--modelPath", tempModel.getAbsolutePath(),
-                        "--dataSetIteratorFactoryClazz", MnistDataSetIteratorProviderFactory.class.getName(),
-                        "--modelOutputPath", tmp.getAbsolutePath(), "--uiUrl", "localhost:" + uiPort});
+        try {
+            parallelWrapperMain.runMain(new String[]{"--modelPath", tempModel.getAbsolutePath(),
+                    "--dataSetIteratorFactoryClazz", MnistDataSetIteratorProviderFactory.class.getName(),
+                    "--modelOutputPath", tmp.getAbsolutePath(), "--uiUrl", "localhost:" + uiPort});
+        } finally {
+            parallelWrapperMain.stop();
+        }
     }
-
 }

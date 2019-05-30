@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -40,9 +41,9 @@ import static org.junit.Assert.*;
 public class CNNProcessorTest extends BaseDL4JTest {
     private static int rows = 28;
     private static int cols = 28;
-    private static INDArray in2D = Nd4j.create(1, 784);
-    private static INDArray in3D = Nd4j.create(20, 784, 7);
-    private static INDArray in4D = Nd4j.create(20, 1, 28, 28);
+    private static INDArray in2D = Nd4j.create(DataType.FLOAT, 1, 784);
+    private static INDArray in3D = Nd4j.create(DataType.FLOAT, 20, 784, 7);
+    private static INDArray in4D = Nd4j.create(DataType.FLOAT, 20, 1, 28, 28);
 
 
     @Test
@@ -52,12 +53,12 @@ public class CNNProcessorTest extends BaseDL4JTest {
         INDArray check2to4 = convProcessor.preProcess(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
-        assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
+        assertEquals(Nd4j.create(DataType.FLOAT, 1, 1, 28, 28), check2to4);
 
         INDArray check4to4 = convProcessor.preProcess(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
-        assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
+        assertEquals(Nd4j.create(DataType.FLOAT, 20, 1, 28, 28), check4to4);
     }
 
     @Test
@@ -72,10 +73,10 @@ public class CNNProcessorTest extends BaseDL4JTest {
                     FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, d);
 
                     for (int miniBatch : nMiniBatchSize) {
-                        int[] ffShape = new int[] {miniBatch, rows * cols * d};
+                        long[] ffShape = new long[] {miniBatch, rows * cols * d};
                         INDArray rand = Nd4j.rand(ffShape);
-                        INDArray ffInput_c = Nd4j.create(ffShape, 'c');
-                        INDArray ffInput_f = Nd4j.create(ffShape, 'f');
+                        INDArray ffInput_c = Nd4j.create(DataType.FLOAT, ffShape, 'c');
+                        INDArray ffInput_f = Nd4j.create(DataType.FLOAT, ffShape, 'f');
                         ffInput_c.assign(rand);
                         ffInput_f.assign(rand);
                         assertEquals(ffInput_c, ffInput_f);
@@ -107,8 +108,8 @@ public class CNNProcessorTest extends BaseDL4JTest {
 
                         //Test backward pass:
                         //Idea is that backward pass should do opposite to forward pass
-                        INDArray epsilon4_c = Nd4j.create(convShape, 'c');
-                        INDArray epsilon4_f = Nd4j.create(convShape, 'f');
+                        INDArray epsilon4_c = Nd4j.create(DataType.FLOAT, convShape, 'c');
+                        INDArray epsilon4_f = Nd4j.create(DataType.FLOAT, convShape, 'f');
                         epsilon4_c.assign(convAct_c);
                         epsilon4_f.assign(convAct_f);
                         INDArray epsilon2_c = convProcessor.backprop(epsilon4_c, -1, LayerWorkspaceMgr.noWorkspaces());
@@ -130,7 +131,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
         INDArray check2to2 = convProcessor.backprop(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
-        assertEquals(Nd4j.create(1, 784), check2to2);
+        assertEquals(Nd4j.create(DataType.FLOAT, 1, 784), check2to2);
     }
 
     @Test
@@ -140,12 +141,12 @@ public class CNNProcessorTest extends BaseDL4JTest {
         INDArray check2to4 = convProcessor.backprop(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
-        assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
+        assertEquals(Nd4j.create(DataType.FLOAT, 1, 1, 28, 28), check2to4);
 
         INDArray check4to4 = convProcessor.backprop(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
-        assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
+        assertEquals(Nd4j.create(DataType.FLOAT, 20, 1, 28, 28), check4to4);
     }
 
     @Test
@@ -156,12 +157,12 @@ public class CNNProcessorTest extends BaseDL4JTest {
         INDArray check2to2 = convProcessor.preProcess(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
-        assertEquals(Nd4j.create(1, 784), check2to2);
+        assertEquals(Nd4j.create(DataType.FLOAT, 1, 784), check2to2);
 
         INDArray check4to2 = convProcessor.preProcess(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
-        assertEquals(Nd4j.create(20, 784), check4to2);
+        assertEquals(Nd4j.create(DataType.FLOAT, 20, 784), check4to2);
     }
 
     @Test
@@ -176,10 +177,10 @@ public class CNNProcessorTest extends BaseDL4JTest {
                     CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, d);
 
                     for (int miniBatch : nMiniBatchSize) {
-                        int[] convActShape = new int[] {miniBatch, d, rows, cols};
+                        long[] convActShape = new long[] {miniBatch, d, rows, cols};
                         INDArray rand = Nd4j.rand(convActShape);
-                        INDArray convInput_c = Nd4j.create(convActShape, 'c');
-                        INDArray convInput_f = Nd4j.create(convActShape, 'f');
+                        INDArray convInput_c = Nd4j.create(DataType.FLOAT, convActShape, 'c');
+                        INDArray convInput_f = Nd4j.create(DataType.FLOAT, convActShape, 'f');
                         convInput_c.assign(rand);
                         convInput_f.assign(rand);
                         assertEquals(convInput_c, convInput_f);
@@ -211,8 +212,8 @@ public class CNNProcessorTest extends BaseDL4JTest {
 
                         //Test backward pass:
                         //Idea is that backward pass should do opposite to forward pass
-                        INDArray epsilon2_c = Nd4j.create(ffActShape, 'c');
-                        INDArray epsilon2_f = Nd4j.create(ffActShape, 'f');
+                        INDArray epsilon2_c = Nd4j.create(DataType.FLOAT, ffActShape, 'c');
+                        INDArray epsilon2_f = Nd4j.create(DataType.FLOAT, ffActShape, 'f');
                         epsilon2_c.assign(ffAct_c);
                         epsilon2_f.assign(ffAct_c);
                         INDArray epsilon4_c = convProcessor.backprop(epsilon2_c, -1, LayerWorkspaceMgr.noWorkspaces());
@@ -292,10 +293,10 @@ public class CNNProcessorTest extends BaseDL4JTest {
         MultiLayerNetwork niceModel = new MultiLayerNetwork(conf);
         niceModel.init();
 
-        niceModel.output(Nd4j.create(1, 2, 20, 10));    //Valid
+        niceModel.output(Nd4j.create(DataType.FLOAT, 1, 2, 20, 10));    //Valid
 
         try {
-            niceModel.output(Nd4j.create(1, 2, 10, 20));
+            niceModel.output(Nd4j.create(DataType.FLOAT, 1, 2, 10, 20));
             fail("Expected exception");
         } catch (IllegalStateException e){
             //OK

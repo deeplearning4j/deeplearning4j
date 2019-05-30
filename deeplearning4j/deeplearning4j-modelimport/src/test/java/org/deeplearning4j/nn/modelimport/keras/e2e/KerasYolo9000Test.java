@@ -26,8 +26,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -61,15 +63,14 @@ public class KerasYolo9000Test {
 
         String modelPath = "modelimport/keras/examples/yolo/yolo.h5";
 
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = testDir.newFile(TEMP_MODEL_FILENAME + System.currentTimeMillis() + H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildModel().getComputationGraph();
+        try(InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.newFile(TEMP_MODEL_FILENAME + System.currentTimeMillis() + H5_EXTENSION);
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(false).buildModel().getComputationGraph();
 
-        System.out.println(model.summary());
+            System.out.println(model.summary());
+        }
 
 
     }

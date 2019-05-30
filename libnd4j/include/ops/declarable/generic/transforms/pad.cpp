@@ -45,8 +45,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
 	NDArray padValue(input->dataType(), block.workspace());
 
-	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 
-	// REFLECT case
+	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 	
 	if (INT_ARG(0) == 0) { // CONSTANT mode
 		if(block.width() > 2) {
 			REQUIRE_TRUE(input->dataType() == INPUT_VARIABLE(2)->dataType(), 0, "PAD op: data types of input and padValue arrays should be the same but got %i and %i correspondingly !", input->dataType(), INPUT_VARIABLE(2)->dataType());
@@ -67,8 +66,8 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	// CONSTANT->0, REFLECT->1, SYMMETRIC->2
     REQUIRE_TRUE(INT_ARG(0) >= 0 && INT_ARG(0) <= 2, 0, "PAD op: unknown padding mode, there are only three possible legal values -> 0,1,2, but got %i instead !", INT_ARG(0));
 
-	std::vector<int> dimensions(input->rankOf());
-    std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
+	// std::vector<int> dimensions(input->rankOf());
+ //    std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
     
 	// helpers::recursiveLoopForPad(INT_ARG(0), *input, *paddings, *output, dimensions, 0, 0, 0, padValue);
 	helpers::pad(INT_ARG(0), *input, *paddings, *output, padValue);

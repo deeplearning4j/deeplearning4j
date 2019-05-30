@@ -21,14 +21,18 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,7 +42,8 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class BertWordPieceTokenizerTests {
 
-    private File pathToVocab =  new ClassPathResource("other/vocab.txt").getFile();
+    private File pathToVocab =  Resources.asFile("other/vocab.txt");
+    private Charset c = StandardCharsets.UTF_8;
 
     public BertWordPieceTokenizerTests() throws IOException {
     }
@@ -46,7 +51,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer1() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
         int position = 1;
@@ -61,7 +66,7 @@ public class BertWordPieceTokenizerTests {
 
     @Test
     public void testBertWordPieceTokenizer2() throws Exception {
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
 
         ClassPathResource resource = new ClassPathResource("reuters/5250");
         String str = FileUtils.readFileToString(resource.getFile());
@@ -71,9 +76,10 @@ public class BertWordPieceTokenizerTests {
     }
 
     @Test
+    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer3() throws Exception {
         String toTokenize = "Donaudampfschifffahrtskapitänsmützeninnenfuttersaum";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -85,7 +91,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer4() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -95,10 +101,11 @@ public class BertWordPieceTokenizerTests {
     }
 
     @Test
+    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer5() throws Exception {
         // Longest Token in Vocab is 22 chars long, so make sure splits on the edge are properly handled
         String toTokenize = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         Tokenizer tokenizer = t.create(toTokenize);
         Tokenizer tokenizer2 = t.create(new ByteArrayInputStream(toTokenize.getBytes()));
 
@@ -110,7 +117,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer6() throws Exception {
         String toTokenize = "I sAw A gIrL wItH a tElEsCoPe.";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         t.setLowerCaseOnly(true);
 
         Tokenizer tokenizer = t.create(toTokenize);
@@ -124,7 +131,7 @@ public class BertWordPieceTokenizerTests {
     @Test
     public void testBertWordPieceTokenizer7() throws Exception {
         String toTokenize = "I saw a girl with a telescope.";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
         t.setTokenPreProcessor(new LowCasePreProcessor());
 
         Tokenizer tokenizer = t.create(toTokenize);

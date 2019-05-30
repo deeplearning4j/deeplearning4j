@@ -22,6 +22,7 @@
 #define LIBND4J_AGGREGATES_H
 
 #include <ops/aggregate_ops.h>
+#include <helpers/DebugHelper.h>
 #include <helpers/helper_ptrmap.h>
 
 namespace functions {

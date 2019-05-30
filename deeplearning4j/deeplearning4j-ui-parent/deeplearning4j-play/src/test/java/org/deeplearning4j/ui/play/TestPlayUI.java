@@ -161,7 +161,7 @@ public class TestPlayUI {
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
-            net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
+            net.setListeners(new StatsListener(ss, 1), new ScoreIterationListener(1));
 
             DataSetIterator iter = new IrisDataSetIterator(150, 150);
 

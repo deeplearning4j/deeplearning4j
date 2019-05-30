@@ -20,13 +20,17 @@ package org.nd4j.linalg;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.profiler.ProfilerConfig;
@@ -34,7 +38,9 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.mutable.StringBuilder;
 
+import java.lang.management.ManagementFactory;
 import java.util.*;
 
 
@@ -45,6 +51,13 @@ import java.util.*;
 @RunWith(Parameterized.class)
 public abstract class BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
+
+    @Rule
+    public TestName testName = new TestName();
+
+    protected long startTime;
+    protected int threadCountBefore;
+
     protected Nd4jBackend backend;
     protected String name;
     public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
@@ -55,11 +68,6 @@ public abstract class BaseNd4jTest {
 
     public BaseNd4jTest(String name) {
         this(name, getDefaultBackend());
-    }
-
-    @Before
-    public void beforeTest() {
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
@@ -100,6 +108,14 @@ public abstract class BaseNd4jTest {
 
     public static void assertArrayEquals(String string, long[] shapeA, long[] shapeB) {
         org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(String string, byte[] shapeA, byte[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(byte[] shapeA, byte[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB);
     }
 
     public static void assertArrayEquals(long[] shapeA, long[] shapeB) {
@@ -187,6 +203,7 @@ public abstract class BaseNd4jTest {
     @Before
     public void before() throws Exception {
         log.info("Running " + getClass().getName() + " on backend " + backend.getClass().getName());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
@@ -194,11 +211,16 @@ public abstract class BaseNd4jTest {
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        startTime = System.currentTimeMillis();
+        threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
     @After
     public void after() throws Exception {
-        log.info("Ending {}; Physical bytes after: {}; Max: {}", getClass().getName(), Pointer.physicalBytes(), Pointer.maxPhysicalBytes());
+        long totalTime = System.currentTimeMillis() - startTime;
+        Nd4j.getMemoryManager().purgeCaches();
+
+        logTestCompletion(totalTime);
         if (System.getProperties().getProperty("backends") != null
                         && !System.getProperty("backends").contains(backend.getClass().getName()))
             return;
@@ -219,6 +241,60 @@ public abstract class BaseNd4jTest {
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
             System.exit(1);
         }
+    }
+
+    public void logTestCompletion( long totalTime){
+        StringBuilder sb = new StringBuilder();
+        long maxPhys = Pointer.maxPhysicalBytes();
+        long maxBytes = Pointer.maxBytes();
+        long currPhys = Pointer.physicalBytes();
+        long currBytes = Pointer.totalBytes();
+
+        long jvmTotal = Runtime.getRuntime().totalMemory();
+        long jvmMax = Runtime.getRuntime().maxMemory();
+
+        int threadsAfter = ManagementFactory.getThreadMXBean().getThreadCount();
+        sb.append(getClass().getSimpleName()).append(".").append(testName.getMethodName())
+                .append(": ").append(totalTime).append(" ms")
+                .append(", threadCount: (").append(threadCountBefore).append("->").append(threadsAfter).append(")")
+                .append(", jvmTotal=").append(jvmTotal)
+                .append(", jvmMax=").append(jvmMax)
+                .append(", totalBytes=").append(currBytes).append(", maxBytes=").append(maxBytes)
+                .append(", currPhys=").append(currPhys).append(", maxPhys=").append(maxPhys);
+
+        List<MemoryWorkspace> ws = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
+        if(ws != null && ws.size() > 0){
+            long currSize = 0;
+            for(MemoryWorkspace w : ws){
+                currSize += w.getCurrentSize();
+            }
+            if(currSize > 0){
+                sb.append(", threadWSSize=").append(currSize)
+                        .append(" (").append(ws.size()).append(" WSs)");
+            }
+        }
+
+
+        Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+        Object o = p.get("cuda.devicesInformation");
+        if(o instanceof List){
+            List<Map<String,Object>> l = (List<Map<String, Object>>) o;
+            if(l.size() > 0) {
+
+                sb.append(" [").append(l.size())
+                        .append(" GPUs: ");
+
+                for (int i = 0; i < l.size(); i++) {
+                    Map<String,Object> m = l.get(i);
+                    if(i > 0)
+                        sb.append(",");
+                    sb.append("(").append(m.get("cuda.freeMemory")).append(" free, ")
+                            .append(m.get("cuda.totalMemory")).append(" total)");
+                }
+                sb.append("]");
+            }
+        }
+        log.info(sb.toString());
     }
 
 

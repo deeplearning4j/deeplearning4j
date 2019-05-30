@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
@@ -49,7 +48,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
-import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OperatingSystem;
 
 import java.io.File;
@@ -400,13 +398,12 @@ public class CrashReportingUtil {
                 try {
                     Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
                     Constructor<?> constructor = c.getConstructor(long.class);
-                    Pointer p = (Pointer) constructor.newInstance((long) i);
-                    String name = nativeOps.getDeviceName(p);
-                    long total = nativeOps.getDeviceTotalMemory(p);
-                    long free = nativeOps.getDeviceFreeMemory(p);
+                    String name = nativeOps.getDeviceName(i);
+                    long total = nativeOps.getDeviceTotalMemory(i);
+                    long free = nativeOps.getDeviceFreeMemory(i);
                     long current = total - free;
-                    int major = nativeOps.getDeviceMajor(p);
-                    int minor = nativeOps.getDeviceMinor(p);
+                    int major = nativeOps.getDeviceMajor(i);
+                    int minor = nativeOps.getDeviceMinor(i);
 
                     sb.append(String.format(fGpu, name, major + "." + minor, fBytes(total), fBytes(current), fBytes(free))).append("\n");
                 } catch (Exception e) {

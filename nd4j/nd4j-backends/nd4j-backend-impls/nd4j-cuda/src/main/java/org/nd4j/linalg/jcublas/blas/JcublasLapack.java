@@ -979,11 +979,11 @@ public class JcublasLapack extends BaseLapack {
 
     static class Workspace extends Pointer {
         public Workspace(long size) {
-            super(NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(size, null, 0));
+            super(NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(size, 0, 0));
             deallocator(new Deallocator() {
                 @Override
                 public void deallocate() {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(Workspace.this, null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(Workspace.this, 0);
                 }
             });
         }

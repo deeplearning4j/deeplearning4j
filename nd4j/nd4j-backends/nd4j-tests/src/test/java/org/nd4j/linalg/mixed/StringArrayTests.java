@@ -21,13 +21,24 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.graph.FlatArray;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.*;
 
 @Slf4j
-public class StringArrayTests {
+public class StringArrayTests extends BaseNd4jTest {
+
+    public StringArrayTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBasicStrings_1() {
@@ -90,5 +101,15 @@ public class StringArrayTests {
         assertEquals("alpha", restored.getString(0));
         assertEquals("beta", restored.getString(1));
         assertEquals("gamma", restored.getString(2));
+    }
+
+    @Test
+    public void testBasicStrings_5() {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        val arrayZ0 = arrayX.dup();
+        val arrayZ1 = arrayX.dup(arrayX.ordering());
+
+        assertEquals(arrayX, arrayZ0);
+        assertEquals(arrayX, arrayZ1);
     }
 }

@@ -39,6 +39,7 @@ public class DeepWalkGradientCheck {
 
     public static final double epsilon = 1e-8;
     public static final double MAX_REL_ERROR = 1e-3;
+    public static final double MIN_ABS_ERROR = 1e-5;
 
     @Before
     public void before() {
@@ -128,18 +129,20 @@ public class DeepWalkGradientCheck {
                         double numericalGradient = (scorePlus - scoreMinus) / (2 * epsilon);
 
                         double relError;
-                        if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                        double absErr;
+                        if (backpropGradient == 0.0 && numericalGradient == 0.0) {
                             relError = 0.0;
-                        else {
-                            relError = Math.abs(backpropGradient - numericalGradient)
-                                            / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
+                            absErr = 0.0;
+                        } else {
+                            absErr = Math.abs(backpropGradient - numericalGradient);
+                            relError = absErr / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
                         }
 
                         String msg = "innerNode grad: i=" + i + ", j=" + j + ", p=" + p + ", v=" + v + " - relError: "
                                         + relError + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus
                                         + ", numGrad=" + numericalGradient + ", backpropGrad = " + backpropGradient;
 
-                        if (relError > MAX_REL_ERROR)
+                        if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                             fail(msg);
                         else
                             System.out.println(msg);
@@ -163,18 +166,20 @@ public class DeepWalkGradientCheck {
                     double numericalGradient = (scorePlus - scoreMinus) / (2 * epsilon);
 
                     double relError;
-                    if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                    double absErr;
+                    if (backpropGradient == 0.0 && numericalGradient == 0.0){
                         relError = 0.0;
-                    else {
-                        relError = Math.abs(backpropGradient - numericalGradient)
-                                        / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
+                        absErr = 0.0;
+                    } else {
+                        absErr = Math.abs(backpropGradient - numericalGradient);
+                        relError = absErr / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
                     }
 
                     String msg = "vector grad: i=" + i + ", j=" + j + ", v=" + v + " - relError: " + relError
                                     + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus + ", numGrad="
                                     + numericalGradient + ", backpropGrad = " + backpropGradient;
 
-                    if (relError > MAX_REL_ERROR)
+                    if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                         fail(msg);
                     else
                         System.out.println(msg);
@@ -188,8 +193,10 @@ public class DeepWalkGradientCheck {
 
 
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 60000L)
     public void checkGradients2() throws IOException {
+
+        double minAbsError = 1e-5;
 
         ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/graph13.txt");
 
@@ -279,12 +286,13 @@ public class DeepWalkGradientCheck {
                             relError = Math.abs(backpropGradient - numericalGradient)
                                             / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
                         }
+                        double absErr = Math.abs(backpropGradient - numericalGradient);
 
                         String msg = "innerNode grad: i=" + i + ", j=" + j + ", p=" + p + ", v=" + v + " - relError: "
                                         + relError + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus
                                         + ", numGrad=" + numericalGradient + ", backpropGrad = " + backpropGradient;
 
-                        if (relError > MAX_REL_ERROR)
+                        if (relError > MAX_REL_ERROR && absErr > minAbsError)
                             fail(msg);
                         else
                             System.out.println(msg);
@@ -308,18 +316,21 @@ public class DeepWalkGradientCheck {
                     double numericalGradient = (scorePlus - scoreMinus) / (2 * epsilon);
 
                     double relError;
-                    if (backpropGradient == 0.0 && numericalGradient == 0.0)
+                    double absErr;
+                    if (backpropGradient == 0.0 && numericalGradient == 0.0) {
                         relError = 0.0;
-                    else {
+                        absErr = 0.0;
+                    } else {
                         relError = Math.abs(backpropGradient - numericalGradient)
                                         / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
+                        absErr = Math.abs(backpropGradient - numericalGradient);
                     }
 
                     String msg = "vector grad: i=" + i + ", j=" + j + ", v=" + v + " - relError: " + relError
                                     + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus + ", numGrad="
                                     + numericalGradient + ", backpropGrad = " + backpropGradient;
 
-                    if (relError > MAX_REL_ERROR)
+                    if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                         fail(msg);
                     else
                         System.out.println(msg);
