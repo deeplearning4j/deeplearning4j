@@ -3,6 +3,8 @@ package org.deeplearning4j.models.fasttext;
 import com.github.jfasttext.JFastText;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 
 public class FastTextTest {
 
@@ -15,6 +17,16 @@ public class FastTextTest {
         FastText fastText = new FastText(builder);
         System.out.printf("\nTraining supervised model ...\n");
         fastText.fit();
+    }
+
+    @Test
+    public void testPredict() {
+        String model = "src/test/resources/models/fasttext/supervised.model.bin";
+        String text = "I like soccer";
+
+        FastText fastText = new FastText();
+        String label = fastText.predict(model, text);
+        assertEquals("__label__soccer", label);
     }
 
     // Reference test

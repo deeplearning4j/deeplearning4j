@@ -11,8 +11,12 @@ public class FastText extends SequenceVectors<VocabWord> {
     private JFastText fastTextImpl;
     private Builder builder;
 
-    public FastText(Builder builder) {
+    public FastText() {
         fastTextImpl = new JFastText();
+    }
+
+    public FastText(Builder builder) {
+        this();
         this.builder = builder;
     }
 
@@ -28,6 +32,12 @@ public class FastText extends SequenceVectors<VocabWord> {
                     "-output", builder.outputFile};
 
         fastTextImpl.runCmd(cmd);
+    }
+
+    public String predict(String modelPath, String text) {
+        fastTextImpl.loadModel(modelPath);
+        String label = fastTextImpl.predict(text);
+        return label;
     }
 
     @Data
