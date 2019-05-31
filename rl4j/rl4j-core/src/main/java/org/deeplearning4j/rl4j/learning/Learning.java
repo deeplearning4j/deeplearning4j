@@ -43,7 +43,7 @@ import java.util.Random;
  */
 @Slf4j
 public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
+        implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
     @Getter
     final private Random random;
     @Getter @Setter
@@ -74,7 +74,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     }
 
     public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
-                    IHistoryProcessor hp) {
+                                                                                         IHistoryProcessor hp) {
 
         O obs = mdp.reset();
 
@@ -140,7 +140,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return epochCounter++;
     }
 
-    public void setHistoryProcessor(HistoryProcessor.Configuration conf) {
+    public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
         historyProcessor = new HistoryProcessor(conf);
     }
 

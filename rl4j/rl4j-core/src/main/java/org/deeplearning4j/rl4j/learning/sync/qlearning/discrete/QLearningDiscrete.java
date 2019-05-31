@@ -61,6 +61,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Getter
     private DQNPolicy<O> policy;
     @Getter
+    @Setter // FIXME: Remove, was added to help unit tests
     private EpsGreedy<O, Integer, DiscreteSpace> egPolicy;
     @Getter
     @Setter
