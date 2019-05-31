@@ -18,6 +18,7 @@ package org.nd4j.linalg.learning;
 
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.learning.config.AdaGrad;

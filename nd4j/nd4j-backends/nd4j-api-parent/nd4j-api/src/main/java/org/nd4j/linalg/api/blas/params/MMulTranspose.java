@@ -22,6 +22,9 @@ import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @EqualsAndHashCode
@@ -83,5 +86,30 @@ public class MMulTranspose implements Serializable {
                 return x.permute(0, 2, 1);
         }
         return x;
+    }
+
+    public Object getValue(Field property) {
+        try {
+            return property.get(this);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Map<String, Object> toProperties(){
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("transposeA", transposeA);
+        ret.put("transposeB", transposeB);
+        ret.put("transposeResult", transposeResult);
+        return ret;
+    }
+
+    public void setProperties(Map<String,Object> properties){
+        if(properties.containsKey("transposeA"))
+            transposeA = (Boolean)properties.get("transposeA");
+        if(properties.containsKey("transposeB"))
+            transposeB = (Boolean)properties.get("transposeB");
+        if(properties.containsKey("transposeResult"))
+            transposeResult = (Boolean)properties.get("transposeResult");
     }
 }

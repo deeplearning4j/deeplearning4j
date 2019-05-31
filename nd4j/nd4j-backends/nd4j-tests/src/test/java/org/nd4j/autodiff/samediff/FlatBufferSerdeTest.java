@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
@@ -267,7 +268,37 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
             SameDiff sd2 = SameDiff.fromFlatFile(f);
             assertNotNull(sd2.getTrainingConfig());
             assertNotNull(sd2.getUpdaterMap());
-            assertTrue(sd.isInitializedTraining());
+            assertTrue(sd2.isInitializedTraining());
+
+            assertEquals(sd.getTrainingConfig(), sd2.getTrainingConfig());
+            Map<String, GradientUpdater> m1 = sd.getUpdaterMap();
+            Map<String, GradientUpdater> m2 = sd2.getUpdaterMap();
+            assertEquals(m1.keySet(), m2.keySet());
+            for(String s : m1.keySet()){
+                GradientUpdater g1 = m1.get(s);
+                GradientUpdater g2 = m2.get(s);
+                assertEquals(g1.getState(), g2.getState());
+                assertEquals(g1.getConfig(), g2.getConfig());
+            }
+
+
+            //Check training post deserialization
+            for( int i=0; i<3; i++ ){
+                sd.fit(ds);
+                sd2.fit(ds);
+            }
+
+            for(SDVariable v : sd.variables()){
+                if(v.isPlaceHolder())
+                    continue;
+
+                SDVariable v2 = sd2.getVariable(v.getVarName());
+
+                INDArray a1 = v.getArr();
+                INDArray a2 = v2.getArr();
+
+                assertEquals(a1, a2);
+            }
         }
     }
 }

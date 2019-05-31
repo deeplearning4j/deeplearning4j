@@ -223,13 +223,13 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
+        assertEquals(sameDiff.getUpdaterMap(), sameDiff1.getUpdaterMap());
 
         sameDiff.saveWithTrainingConfig(newFile);
         sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
+        assertEquals(sameDiff.getUpdaterMap(), sameDiff1.getUpdaterMap());
 
     }
 
