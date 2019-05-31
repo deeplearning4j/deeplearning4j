@@ -408,7 +408,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
-        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {1, 2});
+        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new float[] {-4, -4}), arr.getRow(0));
