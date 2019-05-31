@@ -4598,8 +4598,40 @@ public class SameDiff extends SDBaseOps {
         }
         int lossVarOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsets);
 
+        int trainingConfigOffset = 0;
+        int updaterStateOffset = 0;
+        if(trainingConfig != null){
+            String json = trainingConfig.toJson();
+            trainingConfigOffset = bufferBuilder.createString(json);
+        }
+        if(updaterMap != null && !updaterMap.isEmpty()){
+            int[] updaterOffsets = new int[updaterMap.size()];
+            int updaterNum = 0;
+            for(Map.Entry<String,GradientUpdater> g : updaterMap.entrySet()){
+                int paramNameOffset = bufferBuilder.createString(g.getKey());
+                int stateKeyOffset = 0;
+                int stateValuesOffset = 0;
+                Map<String,INDArray> state = g.getValue().getState();
+                if(state != null && !state.isEmpty()){
+                    int[] keysOffsets = new int[state.size()];
+                    int[] valuesOffsets = new int[state.size()];
+                    int i=0;
+                    for(Map.Entry<String,INDArray> e : state.entrySet()){
+                        keysOffsets[i] = bufferBuilder.createString(e.getKey());
+                        valuesOffsets[i] = e.getValue().toFlatArray(bufferBuilder);
+                    }
+
+                    stateKeyOffset = UpdaterState.createUpdaterStateKeysVector(bufferBuilder, keysOffsets);
+                    stateValuesOffset = UpdaterState.createUpdaterStateValuesVector(bufferBuilder, valuesOffsets);
+                }
+                updaterOffsets[updaterNum++] = UpdaterState.createUpdaterState(bufferBuilder, paramNameOffset, stateKeyOffset, stateValuesOffset);
+            }
+
+            updaterStateOffset = FlatGraph.createUpdaterStateVector(bufferBuilder, updaterOffsets);
+        }
+
         int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset,
-                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset);
+                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset, trainingConfigOffset, updaterStateOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
