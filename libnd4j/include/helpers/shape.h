@@ -1032,6 +1032,14 @@ namespace shape {
     */
     ND4J_EXPORT _CUDA_HD void insertDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis, const Nd4jLong dimension);
 
+    /**
+    * erase dimension at shape[axis] position
+    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, result is -> shape = {2,5}
+    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 2, result is -> shape = {2,4}
+    * axis should be within [0, rank-1] range
+    */
+    ND4J_EXPORT _CUDA_HD void eraseDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis);
+
 
 
 
@@ -4933,6 +4941,12 @@ INLINEDEF _CUDA_HD void insertDimension(const int rank, Nd4jLong *shape, const N
     shape[axis] = dimension;
 }
 
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD void eraseDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis) {
+
+    for (int i = axis; i < rank - 1; ++i)
+        shape[i] = shape[i + 1];
+}
 
 
 }
