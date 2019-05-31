@@ -26,7 +26,7 @@ This video describes the conversion of image data to a vector.
 ## Key Aspects
 - [DataVec](https://github.com/deeplearning4j/DataVec) uses an input/output format system (similar in some ways to how Hadoop MapReduce uses InputFormat to determine InputSplits and RecordReaders, DataVec also provides RecordReaders to Serialize Data)
 - Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
-- Uses an output format system to specify an implementation-neutral type of vector format (ARFF, SVMLight, etc.)
+- Uses an output format system to specify an implementation-neutral type of vector format (SVMLight, etc.)
 - Can be extended for specialized input formats (such as exotic image formats); i.e. You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
 - Makes vectorization a first-class citizen
 - Built in Transformation tools to convert and normalize data
@@ -39,8 +39,8 @@ There's a <a href="#tutorial">brief tutorial below</a>.
  * Convert the CSV-based UCI Iris dataset into svmLight open vector text format
  * Convert the MNIST dataset from raw binary files to the svmLight text format.
  * Convert raw text into the Metronome vector format
- * Convert raw text into TF-IDF based vectors in a text vector format {svmLight, metronome, arff}
- * Convert raw text into the word2vec in a text vector format {svmLight, metronome, arff}
+ * Convert raw text into TF-IDF based vectors in a text vector format {svmLight, metronome}
+ * Convert raw text into the word2vec in a text vector format {svmLight, metronome}
 
 ## Targeted Vectorization Engines
 
@@ -116,7 +116,6 @@ Runs as both a local serial process and a MapReduce (MR engine on the roadmap) s
 * svmLight
 * libsvm
 * Metronome
-* ARFF
 
 ## Built-In General Functionality
 * Understands how to take general text and convert it into vectors with stock techniques such as kernel hashing and TF-IDF

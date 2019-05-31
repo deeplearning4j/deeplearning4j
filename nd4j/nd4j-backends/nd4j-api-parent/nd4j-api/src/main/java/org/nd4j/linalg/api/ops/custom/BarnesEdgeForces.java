@@ -4,6 +4,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 public class BarnesEdgeForces extends DynamicCustomOp {
+
+    public BarnesEdgeForces(){ }
+
     public BarnesEdgeForces(INDArray rowP, INDArray colP, INDArray valP, INDArray dataP, long N,
                             INDArray output) {
 
