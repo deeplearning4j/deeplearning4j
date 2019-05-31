@@ -404,12 +404,12 @@ namespace nd4j {
             // FIXME: remove this method once we get 1D vectors supported
             //vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
-            if((indices.size() == 6) && (indices[2] - indices[0] == 1)) {
+            if(z->lengthOf() == 1 && !z->isEmpty()) { //(indices.size() == 6) && (indices[2] - indices[0] == 1)) {
                 z->assign(x->e<float>(indices[0]));
             }
             else {
-                auto sub = (*x)(indices, true, true);
-                z->assign(sub);
+            auto sub = (*x)(indices, true, true);
+            z->assign(sub);
             }
 
             return Status::OK();
