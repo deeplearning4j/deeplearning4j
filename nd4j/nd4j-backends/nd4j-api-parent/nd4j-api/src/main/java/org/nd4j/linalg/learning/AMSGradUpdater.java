@@ -53,7 +53,7 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
     }
 
     @Override
-    public void setState(@NonNull Map<String, INDArray> stateMap) {
+    public void setState(@NonNull Map<String, INDArray> stateMap, boolean initialize) {
         if(!stateMap.containsKey(M_STATE) || !stateMap.containsKey(V_STATE) || stateMap.containsKey(V_HAT_STATE) || stateMap.size() != 3){
             throw new IllegalStateException("State map should contain only keys [" + M_STATE + "," + V_STATE + "," + V_HAT_STATE + "] but has keys " + stateMap.keySet());
         }

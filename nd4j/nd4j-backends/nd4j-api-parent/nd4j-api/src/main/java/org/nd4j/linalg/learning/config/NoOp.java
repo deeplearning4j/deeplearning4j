@@ -22,6 +22,8 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.NoOpUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 
+import java.util.Map;
+
 /**
  * NoOp updater: gradient updater that makes no changes to the gradient
  *
@@ -40,6 +42,13 @@ public class NoOp implements IUpdater {
             throw new IllegalStateException("Cannot use view array with NoOp updater");
         }
         return new NoOpUpdater(this);
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        NoOpUpdater u = new NoOpUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
+        return u;
     }
 
     @Override

@@ -38,7 +38,7 @@ public class SgdUpdater implements GradientUpdater<Sgd> {
     }
 
     @Override
-    public void setState(Map<String, INDArray> stateMap) {
+    public void setState(Map<String, INDArray> stateMap, boolean initialize) {
         Preconditions.checkState(stateMap == null || stateMap.isEmpty(), "SGD updater does not have any updater state," +
                 " attempting to set with %s values", (stateMap == null ? 0 : stateMap.size()));
     }

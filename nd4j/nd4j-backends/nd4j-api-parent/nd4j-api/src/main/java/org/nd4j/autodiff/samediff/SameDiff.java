@@ -2660,7 +2660,7 @@ public class SameDiff extends SDBaseOps {
                         GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
                         updaterMap.put(v.getVarName(), u);
                     } else {
-                        GradientUpdater u = trainingConfig.getUpdater().instantiate(null, true);
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray)null, true);
                         updaterMap.put(v.getVarName(), u);
                     }
                 }
@@ -4837,6 +4837,10 @@ public class SameDiff extends SDBaseOps {
      * @throws IOException
      */
     public static SameDiff fromFlatBuffers(ByteBuffer bbIn) throws IOException {
+        return fromFlatBuffers(bbIn, true);
+    }
+
+    public static SameDiff fromFlatBuffers(ByteBuffer bbIn, boolean loadUpdaterState) throws IOException {
 
         FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
 
@@ -4965,7 +4969,9 @@ public class SameDiff extends SDBaseOps {
                     v.setInputsForOp(new ArrayList<String>());
                 }
                 if(!v.getInputsForOp().contains(df.getOwnName())){
-                    v.getInputsForOp().add(df.getOwnName());
+                    v.getInputsForOp(
+
+                    ).add(df.getOwnName());
                 }
             }
 
@@ -5019,6 +5025,34 @@ public class SameDiff extends SDBaseOps {
         if(fg.lossVariablesLength() > 0){
             for(int i=0; i<fg.lossVariablesLength(); i++ ){
                 sd.addLossVariable(fg.lossVariables(i));
+            }
+        }
+
+        //Reconstruct training config
+        String tc = fg.trainingConfig();
+        if(tc != null){
+            sd.trainingConfig = TrainingConfig.fromJson(tc);
+        }
+
+        if(loadUpdaterState) {
+            //Reconstruct updater state
+            if (fg.updaterStateLength() > 0) {
+                int n = fg.updaterStateLength();
+                for (int i = 0; i < n; i++) {
+                    UpdaterState us = fg.updaterState(i);
+                    String name = us.paramName();
+                    int nKeys = us.updaterStateKeysLength();
+                    Map<String, INDArray> m = new HashMap<>();
+                    for (int j = 0; j < nKeys; j++) {
+                        FlatArray fa = us.updaterStateValues(j);
+                        INDArray stateArr = Nd4j.createFromFlatArray(fa);
+                        m.put(us.updaterStateKeys(j), stateArr);
+                    }
+
+                    //Initialize the updater
+                    GradientUpdater gu = sd.trainingConfig.getUpdater().instantiate(m, false);
+                    sd.updaterMap.put(name, gu);
+                }
             }
         }
 

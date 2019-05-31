@@ -49,7 +49,7 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
     }
 
     @Override
-    public void setState(@NonNull Map<String, INDArray> stateMap) {
+    public void setState(@NonNull Map<String, INDArray> stateMap, boolean initialize) {
         if(!stateMap.containsKey(M_STATE) || !stateMap.containsKey(V_STATE) || stateMap.size() != 2){
             throw new IllegalStateException("State map should contain only keys [" + M_STATE + "," + V_STATE + "] but has keys " + stateMap.keySet());
         }

@@ -54,7 +54,7 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
     }
 
     @Override
-    public void setState(Map<String, INDArray> stateMap) {
+    public void setState(Map<String, INDArray> stateMap, boolean initialize) {
         if(!stateMap.containsKey(GRAD_STATE) || stateMap.size() != 1){
             throw new IllegalStateException("State map should contain only key [" + GRAD_STATE + "] but has keys " + stateMap.keySet());
         }

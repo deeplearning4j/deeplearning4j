@@ -23,6 +23,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,7 +52,7 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
     }
 
     @Override
-    public void setState(Map<String, INDArray> stateMap) {
+    public void setState(Map<String, INDArray> stateMap, boolean initialize) {
         if(!stateMap.containsKey(MSG_STATE) || !stateMap.containsKey(MSDX_STATE) || stateMap.size() != 2){
             throw new IllegalStateException("State map should contain only keys [" + MSG_STATE + "," + MSDX_STATE + "] but has keys " + stateMap.keySet());
         }
@@ -61,7 +62,10 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
 
     @Override
     public Map<String, INDArray> getState() {
-        return null;
+        Map<String,INDArray> r = new HashMap<>();
+        r.put(MSG_STATE, msg);
+        r.put(MSDX_STATE, msdx);
+        return r;
     }
 
     @Override

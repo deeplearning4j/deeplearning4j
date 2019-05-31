@@ -31,7 +31,7 @@ public interface GradientUpdater<T extends IUpdater> {
 
     T getConfig();
 
-    void setState(Map<String,INDArray> stateMap);
+    void setState(Map<String, INDArray> stateMap, boolean initialize);
 
     Map<String,INDArray> getState();
 

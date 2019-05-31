@@ -26,8 +26,13 @@ import org.nd4j.graph.*;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -37,7 +42,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class FlatBufferSerdeTest extends BaseNd4jTest {
@@ -208,6 +215,59 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     assertEquals(s, vBefore.get(s).isConstant(), vAfter.get(s).isConstant());
                 }
             }
+        }
+    }
+
+
+    @Test
+    public void testTrainingSerde() throws Exception {
+
+        //Ensure 2 things:
+        //1. Training config is serialized/deserialized correctly
+        //2. Updater state
+
+        for(IUpdater u : new IUpdater[]{
+                new AdaDelta(), new AdaGrad(2e-3), new Adam(2e-3), new AdaMax(2e-3),
+                new AMSGrad(2e-3), new Nadam(2e-3), new Nesterovs(2e-3), new NoOp(),
+                new RmsProp(2e-3), new Sgd(2e-3)}) {
+
+            log.info("Testing: {}", u.getClass().getName());
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+            SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+            SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+
+            SDVariable mmul = in.mmul(w).add(b);
+            SDVariable softmax = sd.nn().softmax(mmul);
+            SDVariable loss = sd.loss().logLoss("loss", label, softmax);
+
+            sd.setTrainingConfig(TrainingConfig.builder()
+                    .updater(u)
+                    .regularization(new L1Regularization(1e-2), new L2Regularization(1e-2), new WeightDecay(1e-2, true))
+                    .dataSetFeatureMapping("in")
+                    .dataSetLabelMapping("label")
+                    .build());
+
+            INDArray inArr = Nd4j.rand(DataType.FLOAT, 3, 4);
+            INDArray labelArr = Nd4j.rand(DataType.FLOAT, 3, 3);
+
+            DataSet ds = new DataSet(inArr, labelArr);
+
+            for (int i = 0; i < 10; i++){
+                sd.fit(ds);
+            }
+
+
+            File dir = testDir.newFolder();
+            File f = new File(dir, "samediff.bin");
+            sd.asFlatFile(f);
+
+            SameDiff sd2 = SameDiff.fromFlatFile(f);
+            assertNotNull(sd2.getTrainingConfig());
+            assertNotNull(sd2.getUpdaterMap());
+            assertTrue(sd.isInitializedTraining());
         }
     }
 }

@@ -25,6 +25,8 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 /**
  * RMS Prop updates:
  * <p>
@@ -80,6 +82,13 @@ public class RmsProp implements IUpdater {
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         RmsPropUpdater u = new RmsPropUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
+        return u;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        RmsPropUpdater u = new RmsPropUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
         return u;
     }
 

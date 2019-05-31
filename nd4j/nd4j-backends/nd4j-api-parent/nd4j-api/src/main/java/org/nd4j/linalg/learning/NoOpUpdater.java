@@ -39,7 +39,7 @@ public class NoOpUpdater implements GradientUpdater<NoOp> {
     }
 
     @Override
-    public void setState(Map<String, INDArray> stateMap) {
+    public void setState(Map<String, INDArray> stateMap, boolean initialize) {
         Preconditions.checkState(stateMap == null || stateMap.isEmpty(), "No-op updater does not have any updater state," +
                 " attempting to set with %s values", (stateMap == null ? 0 : stateMap.size()));
     }

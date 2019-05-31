@@ -25,7 +25,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -49,7 +48,7 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
     }
 
     @Override
-    public void setState(@NonNull Map<String, INDArray> stateMap) {
+    public void setState(@NonNull Map<String, INDArray> stateMap, boolean initialize) {
         if(!stateMap.containsKey(V_STATE) || stateMap.size() != 1){
             throw new IllegalStateException("State map should contain only key [" + V_STATE + "] but has keys " + stateMap.keySet());
         }
