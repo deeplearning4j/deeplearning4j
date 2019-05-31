@@ -39,7 +39,7 @@ namespace helpers 	{
 template<typename X, typename Z>
 __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, const uint axis, const uint depth, const Z on, const Z off) {
 
-	const auto x = reinterpret_cast<const X*>(vx);
+    const auto x = reinterpret_cast<const X*>(vx);
           auto z = reinterpret_cast<Z*>(vz);
 
     __shared__ int xRank, zRank;

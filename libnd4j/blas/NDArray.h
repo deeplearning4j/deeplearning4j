@@ -1141,6 +1141,16 @@ namespace nd4j {
         template <typename T>
         void setValueInDiagMatrix(const T& value, const int diag, const char direction);
 
+        /**
+        * fill target matrix with given scalar value simultaneously in 2 directions from main diagonal:
+        * - down from main diagonal starting at subdiagonal number "lower"
+        * -   up from main diagonal starting at superdiagonal number "upper"
+        * rest of target elements are equal to this array elements
+        * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
+        */
+        template <typename T>
+        void fillAsTriangular(NDArray& target, const NDArray& scalar, const int lower, const int upper);
+
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *

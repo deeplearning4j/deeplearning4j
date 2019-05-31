@@ -107,6 +107,47 @@ template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag,
 template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
 ////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray::fillAsTriangular(NDArray& target, const NDArray& scalar, const int lower, const int upper) {
+
+    if (isS())
+        throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
+    if(!isSameShape(&target) && !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
+        throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
+
+    const T value = scalar.e<T>(0);
+    const auto x = reinterpret_cast<const T*>(getBuffer());
+          auto z = reinterpret_cast<T*>(target.getBuffer());
+
+    const int xRank = rankOf();
+    const int zRank = target.rankOf();
+
+    const auto zLen = target.lengthOf();
+
+    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target.getShapeInfo());
+
+    std::vector<Nd4jLong> coords(zRank);
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(if(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
+    for (Nd4jLong i = 0; i < zLen; ++i) {
+
+        shape::index2coords(zRank, target.shapeOf(), i, zLen, coords.data());
+        const auto zOffset = shape::getOffset(0, target.shapeOf(), target.stridesOf(), coords.data(), zRank);
+
+        // if( (row + upper < col) || (row + lower > col) )
+        if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+            z[zOffset] = value;
+        else if(this != &target) {      // when this and target are different arrays
+            if(xRank != zRank)
+                coords[0] = coords[1];
+            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shapeOf(), stridesOf(), coords.data(), xRank);
+            z[zOffset] = x[xOffset];
+        }
+    }
+}
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const NDArray& scalar, const int lower, const int upper), LIBND4J_TYPES);
+
+////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
     if (isS())
         throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");

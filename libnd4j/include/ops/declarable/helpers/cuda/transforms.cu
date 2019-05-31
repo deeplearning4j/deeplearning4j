@@ -36,18 +36,18 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    
+
     __shared__ int arrIdx, blocksPerArr;
     __shared__ T *x, *z;
     __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenPerBlock, start, end;
-    
+
     if (threadIdx.x == 0) {
-            
-        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil 
+
+        blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
         arrIdx = blockIdx.x / blocksPerArr;
-    
+
         x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
-        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);        
+        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
         xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
         zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
         arrLen = shape::length(xShapeInfo);
@@ -55,15 +55,16 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
 
         start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
-        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);        
+        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
     }
 
-    __syncthreads();    
+    __syncthreads();
 
     for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
         z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
 }
 
+///////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
@@ -86,12 +87,12 @@ __global__ static void padCuda(const int mode,
           auto z = reinterpret_cast<X*>(vz);
 
     __shared__ int rank, rankMinusOne;
-    __shared__ Nd4jLong zLen, yLen, totalThreads, *coord, *xShape, *zShape, *xStride, *zStride, shift1, shift2, yStride0;
-    
+    __shared__ Nd4jLong zLen, yLen, totalThreads, *coords, *xShape, *zShape, *xStride, *zStride, shift1, shift2, yStride0;
+
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        coord    = reinterpret_cast<Nd4jLong*>(shmem);
+        coords    = reinterpret_cast<Nd4jLong*>(shmem);
         zLen     = shape::length(zShapeInfo);
         xShape   = shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo));
         zShape   = shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo));
@@ -104,38 +105,38 @@ __global__ static void padCuda(const int mode,
         rankMinusOne = rank - 1;
         totalThreads = gridDim.x * blockDim.x;
         shift1 = mode == 1 ? 0 : 1;         // REFLECT : SYMMETRIC
-        shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC        
+        shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC
     }
 
     __syncthreads();
 
-    auto xzCoord = coord + threadIdx.x * rank;       // we use xzCoord storage both for x and z arrays    
+    auto xzCoord = coords + threadIdx.x * rank;       // we use xzCoord storage both for x and z arrays
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     if(mode == 0) { // CONSTANT case
-        
+
         for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
-        
-            shape::index2coords(rank, zShape, i, zLen, xzCoord);            
+
+            shape::index2coords(rank, zShape, i, zLen, xzCoord);
             const auto zOffset = shape::getOffset(0, zShape, zStride, xzCoord, rank);
-    
+
             bool within = true;
             for(int j = rankMinusOne; j >= 0; --j) {
                 if(xShape[j] == zShape[j]) continue;
                 const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];
                 if(xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {within = false; break;}
                 else                                                    {xzCoord[j] = xzCoord[j] - left;}
-            }                            
+            }
 
             if(within)
                 z[zOffset] = x[shape::getOffset(0, xShape, xStride, xzCoord, rank)];
-            else 
+            else
                 z[zOffset] = padVal;
         }
     }
     else {  // REFLECT and SYMMETRIC cases
-                        
+
         for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
             shape::index2coords(rank, zShape, i, zLen, xzCoord);
@@ -145,10 +146,10 @@ __global__ static void padCuda(const int mode,
 
                 if(xShape[j] == zShape[j]) continue;
                 xzCoord[j] = xzCoord[j] - y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];    // are ready to fill middle (within input dimension range)
-                if(xzCoord[j] < 0)               xzCoord[j] = -xzCoord[j] - shift1;                // means fill from left                    
+                if(xzCoord[j] < 0)               xzCoord[j] = -xzCoord[j] - shift1;                // means fill from left
                 else if(xzCoord[j] >= xShape[j]) xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2; // means fill from right
             }
-    
+
             const auto xOffset = shape::getOffset(0, xShape, xStride, xzCoord, rank);
             z[zOffset] = x[xOffset];
         }
@@ -157,13 +158,13 @@ __global__ static void padCuda(const int mode,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
                                 const int mode,
-                                const void *vx, const Nd4jLong *xShapeInfo, 
-                                const void *vy, const Nd4jLong *yShapeInfo, 
+                                const void *vx, const Nd4jLong *xShapeInfo,
+                                const void *vy, const Nd4jLong *yShapeInfo,
                                       void *vz, const Nd4jLong *zShapeInfo,
                                 const void* padVal) {
-        
+
     padCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(mode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, padVal);
 }
 
@@ -183,16 +184,115 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
 
     BUILD_DOUBLE_SELECTOR(xType, yType, padCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), mode, input.getSpecialBuffer(), input.getSpecialShapeInfo(), paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), padValue.getSpecialBuffer()), LIBND4J_TYPES, INTEGER_TYPES);
 
-    NDArray::registerSpecialUse({&output}, {&input, &paddings, &padValue});    
-    manager.synchronize();      
+    NDArray::registerSpecialUse({&output}, {&input, &paddings, &padValue});
+    manager.synchronize();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////
+// is used for triu op for example
+template<typename T>
+__global__ static void triangularMatrixCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const T val, const int lower, const int upper) {
+
+    const auto x = reinterpret_cast<const T*>(vx);
+          auto z = reinterpret_cast<T*>(vz);
+
+    __shared__ int zRank, xRank, areSameOffsets;        // xRank == zRank always, except when xRank = 1, in this case zRank = 2
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+        xRank = shape::rank(xShapeInfo);
+        zRank = shape::rank(zShapeInfo);
+        zLen  = shape::length(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * zRank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coords);
+        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
+
+        // if( (row + upper < col) || (row + lower > col) )
+        if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+            z[zOffset] = val;
+        else if(x != z) {      // when x and z are different arrays
+            if(xRank != zRank)
+                coords[0] = coords[1];
+            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+            z[zOffset] = x[xOffset];
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void triangularMatrixCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                         const void *vx, const Nd4jLong *xShapeInfo,
+                                               void *vz, const Nd4jLong *zShapeInfo,
+                                         const float val, const int lower, const int upper) {
+
+    triangularMatrixCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, static_cast<T>(val), lower, upper);
+}
+
+///////////////////////////////////////////////////////////////////
+void triangularMatrix(const nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const float val, const int lower, const int upper) {
+
+    if(lower < 0 && upper < 0) {
+        output.assign(input);
+        return;
+    }
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(decltype(*output.getShapeInfo())) * output.rankOf() + 128;
+
+    PointersManager manager(context, "triangularMatrix");
+
+    NDArray::prepareSpecialUse({&output}, {&input});
+    BUILD_SINGLE_SELECTOR(input.dataType(), triangularMatrixCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), val, lower, upper), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input});
+
+    manager.synchronize();
+}
 
 
 
     //////////////////////////////////////////////////////////////////////////
     void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
 
+        // int lower, upper;
+
+
+        // const int lower = diagonal >= 0 ? diagonal : -1;
+        // const int upper = diagonal >= 0 ? -1 : (-1*diagonal);
+        triangularMatrix(context, input, output, 0, diagonal, output.sizeAt(-1));
     }
 
 
@@ -841,20 +941,20 @@ void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, 
     }
 
     std::vector<NDArray*> outSubArrs(numOfArrs);
-    for(int i = 0; i < numOfArrs; ++i) 
+    for(int i = 0; i < numOfArrs; ++i)
         outSubArrs[i] = new NDArray(output(indices[i], true));
 
     // prepare arrays of pointers on buffers and shapes
     std::vector<void*>     hOutBuffers(numOfArrs), hInBuffers(numOfArrs);
     std::vector<Nd4jLong*> hOutShapeInfo(numOfArrs), hInShapeInfo(numOfArrs);
-    for(int i = 0; i < numOfArrs; ++i) {        
+    for(int i = 0; i < numOfArrs; ++i) {
         hOutBuffers[i]   = outSubArrs[i]->getSpecialBuffer();
         hInBuffers[i]    =     inArrs[i]->getSpecialBuffer();
         hOutShapeInfo[i] = outSubArrs[i]->getSpecialShapeInfo();
         hInShapeInfo[i]  =     inArrs[i]->getSpecialShapeInfo();
     }
 
-    // allocate and copy all buffers and shapes arrays to global memory    
+    // allocate and copy all buffers and shapes arrays to global memory
     PointersManager manager(context, "helpers::concat");
     void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
     void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
@@ -864,7 +964,7 @@ void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, 
     BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (numOfArrs, context->getCudaStream(), dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
 
     manager.synchronize();
-    
+
     for(int i = 0; i < numOfArrs; ++i)
         delete outSubArrs[i];
 
