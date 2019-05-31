@@ -348,6 +348,7 @@ namespace nd4j {
                 elements = v_begin->lengthOf();
 
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
+                REQUIRE_TRUE((v_begin->rankOf() == 1 ) && (v_begin->rankOf() == v_end->rankOf()), 0, "StridedSlice: Rank of begin and ends should be 1, but %i given instead", (int)v_end->rankOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
                     begin.emplace_back(v_begin->e<int>(e));
@@ -359,6 +360,7 @@ namespace nd4j {
                     auto v_stride = INPUT_VARIABLE(3);
 
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
+                    REQUIRE_TRUE((v_begin->rankOf() == v_stride->rankOf()), 0, "StridedSlice: Rank of begin and ends should be %i, but %i given instead", (int) v_begin->rankOf(), v_stride->rankOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
                         strides.emplace_back(v_stride->e<int>(e));
@@ -404,13 +406,13 @@ namespace nd4j {
             // FIXME: remove this method once we get 1D vectors supported
             //vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
-            if(z->lengthOf() == 1 && !z->isEmpty()) { //(indices.size() == 6) && (indices[2] - indices[0] == 1)) {
-                z->assign(x->e<float>(indices[0]));
-            }
-            else {
+//            if(z->lengthOf() == 1 && !z->isEmpty() && (input_shape.size() == 2 && input_shape[0] == 1)) { //(indices.size() == 6) && (indices[2] - indices[0] == 1)) {
+//                z->assign(x->e<float>(indices[0]));
+//            }
+//            else {
             auto sub = (*x)(indices, true, true);
             z->assign(sub);
-            }
+//            }
 
             return Status::OK();
         }
@@ -437,7 +439,7 @@ namespace nd4j {
             std::vector<int> strides;
 
             // if that's live - shape will be resolved in runtime
-            if (dim_values == 0 ) {
+            if (block.width() > 1) {
                 begin = INPUT_VARIABLE(1)->template asVectorT<int>();
                 end = INPUT_VARIABLE(2)->template asVectorT<int>();
                 strides = INPUT_VARIABLE(3)->template asVectorT<int>();

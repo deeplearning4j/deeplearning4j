@@ -372,9 +372,9 @@ TEST_F(IndexingTests, Live_Slice_1) {
     auto exp = NDArrayFactory::create<float>('c', {3});
     exp.setBuffer(_expB);
 
-    auto begin = NDArrayFactory::create<float>('c', {1, 3}, {1.0f, 0.0f, 0.0f});
-    auto end = NDArrayFactory::create<float>('c', {1, 3}, {3.0f, 3.0f, 3.0f});
-    auto stride = NDArrayFactory::create<float>('c', {1, 3}, {1.0f, 1.0f, 1.0f});
+    auto begin = NDArrayFactory::create<float>('c', {3}, {1.0f, 0.0f, 0.0f});
+    auto end = NDArrayFactory::create<float>('c', {3}, {3.0f, 3.0f, 3.0f});
+    auto stride = NDArrayFactory::create<float>('c', {3}, {1.0f, 1.0f, 1.0f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
@@ -417,9 +417,9 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
 
 TEST_F(IndexingTests, Test_StridedSlice_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    auto a = NDArrayFactory::create<float>('c', {1, 2}, {1, 1});
-    auto b = NDArrayFactory::create<float>('c', {1, 2}, {2, 2});
-    auto c = NDArrayFactory::create<float>('c', {1, 2}, {1, 1});
+    auto a = NDArrayFactory::create<float>('c', {2}, {1, 1});
+    auto b = NDArrayFactory::create<float>('c', {2}, {2, 2});
+    auto c = NDArrayFactory::create<float>('c', {2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {1}, {5.0});
 
     nd4j::ops::strided_slice op;
@@ -440,9 +440,9 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
 
 TEST_F(IndexingTests, Test_StridedSlice_3) {
     auto x = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    auto a = NDArrayFactory::create<float>('c', {1, 2}, {1, 2});
-    auto b = NDArrayFactory::create<float>('c', {1, 2}, {2, 3});
-    auto c = NDArrayFactory::create<float>('c', {1, 2}, {1, 1});
+    auto a = NDArrayFactory::create<float>('c', {2}, {1, 2});
+    auto b = NDArrayFactory::create<float>('c', {2}, {2, 3});
+    auto c = NDArrayFactory::create<float>('c', {2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {1}, {6.0});
 
     nd4j::ops::strided_slice op;
@@ -452,7 +452,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
 
     auto z = result->at(0);
 
-    //z->printIndexedBuffer("Z");
+    z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
