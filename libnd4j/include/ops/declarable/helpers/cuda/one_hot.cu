@@ -43,7 +43,7 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
           auto z = reinterpret_cast<Z*>(vz);
 
     __shared__ int xRank, zRank;
-    __shared__ Nd4jLong xLen, totalThreads, *sharedMem;
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
 
     if (threadIdx.x == 0) {
 
@@ -51,7 +51,7 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         xRank = shape::rank(xShapeInfo);
         zRank = shape::rank(zShapeInfo);
-        xLen  = shape::length(xShapeInfo);
+        zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
 
@@ -61,19 +61,15 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    for (Nd4jLong i = tid; i < xLen; i += totalThreads) {
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-        shape::index2coords(xRank, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, xLen, coord);
+        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coord);
+        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coord, zRank);
+        const auto depthCoord = coord[axis];
+        shape::eraseDimension(zRank, coord, axis);
         const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coord, xRank);
         const Nd4jLong idx = x[xOffset];
-
-        shape::insertDimension(xRank, coord, axis, 0);
-
-		for (uint j = 0; j < depth; ++j) {
-        	coord[axis]	= j;
-        	auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coord, zRank);
-			z[zOffset] = j == idx ? on : off;
-        }
+        z[zOffset] = depthCoord == idx ? on : off;
     }
 }
 
@@ -95,7 +91,7 @@ void onehot(const nd4j::LaunchContext* context, const NDArray *indices, NDArray 
 	const auto zType = output->dataType();
 
 	const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (indices->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 	const int sharedMem = threadsPerBlock * sizeof(decltype(*output->getShapeInfo())) * output->rankOf() + 128;
 
 	PointersManager manager(context, "onehot");
