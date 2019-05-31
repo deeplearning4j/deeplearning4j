@@ -115,6 +115,7 @@ public class LongBuffer extends BaseDataBuffer {
     }
 
     public LongBuffer(@NonNull Pointer hostPointer, long numberOfElements) {
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         this.offset = 0;
         this.originalOffset = 0;
         this.underlyingLength = numberOfElements;
