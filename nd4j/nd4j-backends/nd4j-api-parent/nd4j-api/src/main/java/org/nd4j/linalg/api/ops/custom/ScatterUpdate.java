@@ -43,6 +43,8 @@ public class ScatterUpdate implements CustomOp {
         ASSIGN,
     }
 
+    public ScatterUpdate(){ }
+
     public ScatterUpdate(@NonNull INDArray original, @NonNull INDArray updates, @NonNull int[] indices, int[] dimension, @NonNull UpdateOp op) {
         this(original, updates, null, indices, dimension, op);
     }

@@ -10,6 +10,9 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  * @author alexander.stoyakin@gmail.com
  */
 public class BarnesHutGains extends DynamicCustomOp {
+
+    public BarnesHutGains(){ }
+
     public BarnesHutGains(INDArray output, INDArray input, INDArray gradx, INDArray epsilon) {
 
         inputArguments.add(input);
