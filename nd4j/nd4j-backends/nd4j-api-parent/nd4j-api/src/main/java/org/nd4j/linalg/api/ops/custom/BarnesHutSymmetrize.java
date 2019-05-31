@@ -10,6 +10,8 @@ public class BarnesHutSymmetrize extends DynamicCustomOp {
     private INDArray output;
     private INDArray outCols;
 
+    public BarnesHutSymmetrize(){ }
+
     public BarnesHutSymmetrize(INDArray rowP, INDArray colP, INDArray valP, long N,
                                INDArray outRows) {
 
