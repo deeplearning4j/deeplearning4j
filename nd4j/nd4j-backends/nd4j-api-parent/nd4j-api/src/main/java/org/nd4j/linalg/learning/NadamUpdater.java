@@ -17,12 +17,16 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import lombok.NonNull;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nadam;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The Nadam updater.
@@ -32,6 +36,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @Data
 public class NadamUpdater implements GradientUpdater<Nadam> {
+    public static final String M_STATE = "M";
+    public static final String V_STATE = "V";
 
     private Nadam config;
     private INDArray m, v; // moving avg & sqrd gradients
@@ -40,6 +46,23 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
 
     public NadamUpdater(Nadam config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(@NonNull Map<String, INDArray> stateMap) {
+        if(!stateMap.containsKey(M_STATE) || !stateMap.containsKey(V_STATE) || stateMap.size() != 2){
+            throw new IllegalStateException("State map should contain only keys [" + M_STATE + "," + V_STATE + "] but has keys " + stateMap.keySet());
+        }
+        this.m = stateMap.get(M_STATE);
+        this.v = stateMap.get(V_STATE);
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        Map<String,INDArray> r = new HashMap<>();
+        r.put(M_STATE, m);
+        r.put(V_STATE, v);
+        return r;
     }
 
     @Override

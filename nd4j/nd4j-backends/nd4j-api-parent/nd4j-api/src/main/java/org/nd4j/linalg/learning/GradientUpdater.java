@@ -19,6 +19,8 @@ package org.nd4j.linalg.learning;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 
+import java.util.Map;
+
 /**
  * Gradient modifications: Calculates an update and tracks related information for gradient changes over time
  * for handling updates.
@@ -28,6 +30,10 @@ import org.nd4j.linalg.learning.config.IUpdater;
 public interface GradientUpdater<T extends IUpdater> {
 
     T getConfig();
+
+    void setState(Map<String,INDArray> stateMap);
+
+    Map<String,INDArray> getState();
 
     /**
      * For the internal updater state (if any): set this to use the provided array.

@@ -22,6 +22,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.learning.config.AdaGrad;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
@@ -35,6 +38,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  */
 @Data
 public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
+    public static final String GRAD_STATE = "grad";
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
@@ -47,6 +51,19 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
 
     public AdaGradUpdater(AdaGrad config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(Map<String, INDArray> stateMap) {
+        if(!stateMap.containsKey(GRAD_STATE) || stateMap.size() != 1){
+            throw new IllegalStateException("State map should contain only key [" + GRAD_STATE + "] but has keys " + stateMap.keySet());
+        }
+        this.historicalGradient = stateMap.get(GRAD_STATE);
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        return Collections.singletonMap(GRAD_STATE, historicalGradient);
     }
 
     @Override

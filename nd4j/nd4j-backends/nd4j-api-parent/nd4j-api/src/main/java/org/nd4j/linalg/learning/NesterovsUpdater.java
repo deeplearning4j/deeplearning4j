@@ -17,11 +17,16 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Nesterov's momentum.
@@ -32,6 +37,7 @@ import org.nd4j.linalg.learning.config.Nesterovs;
  */
 @Data
 public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
+    public static final String V_STATE = "V";
 
     private final Nesterovs config;
 
@@ -40,6 +46,19 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
 
     public NesterovsUpdater(Nesterovs config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(@NonNull Map<String, INDArray> stateMap) {
+        if(!stateMap.containsKey(V_STATE) || stateMap.size() != 1){
+            throw new IllegalStateException("State map should contain only key [" + V_STATE + "] but has keys " + stateMap.keySet());
+        }
+        this.v = stateMap.get(V_STATE);
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        return Collections.singletonMap(V_STATE, this.v);
     }
 
     @Override

@@ -17,8 +17,12 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.NoOp;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * NoOp updater: gradient updater that makes no changes to the gradient
@@ -32,6 +36,17 @@ public class NoOpUpdater implements GradientUpdater<NoOp> {
 
     public NoOpUpdater(NoOp config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(Map<String, INDArray> stateMap) {
+        Preconditions.checkState(stateMap == null || stateMap.isEmpty(), "No-op updater does not have any updater state," +
+                " attempting to set with %s values", (stateMap == null ? 0 : stateMap.size()));
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        return Collections.emptyMap();
     }
 
     @Override
