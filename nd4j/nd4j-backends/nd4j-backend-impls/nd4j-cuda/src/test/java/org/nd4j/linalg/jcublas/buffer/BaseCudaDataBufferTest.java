@@ -22,7 +22,7 @@ public class BaseCudaDataBufferTest {
         assertEquals(1, x.elementWiseStride());
         assertEquals('c', x.ordering());
 
-        val pair = Nd4j.getShapeInfoProvider().createShapeInformation(x.shape(), x.stride(), x.elementWiseStride(), x.ordering(), x.dataType());
+        val pair = Nd4j.getShapeInfoProvider().createShapeInformation(x.shape(), x.stride(), x.elementWiseStride(), x.ordering(), x.dataType(), x.isEmpty());
         val db = pair.getFirst();
         val jvm = pair.getSecond();
 

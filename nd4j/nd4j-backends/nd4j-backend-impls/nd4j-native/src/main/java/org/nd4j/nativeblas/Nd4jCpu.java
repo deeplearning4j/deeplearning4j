@@ -7002,7 +7002,7 @@ public static final int PREALLOC_SIZE = 33554432;
 /**
  * copy-past from java hasDefaultStridesForShape function
  * check whether array is not permuted and has contiguous elements in memory
- */ 
+ */
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
@@ -7800,13 +7800,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] coords);
 
    /**
-   * increment n-dimensional array by one iteration by changing coord appropriately  
+   * increment n-dimensional array by one iteration by changing coord appropriately
    * for example we have array with shape {2, 3}:
    * - if input coord = {0,1}, then output coord = {0,2}
    * - if input coord = {0,2}, then output coord = {1,0}
-   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
+   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}
    */
-   
+
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
@@ -7987,7 +7987,7 @@ public static final int PREALLOC_SIZE = 33554432;
     * arguments:
     * wholeShapeInfo - original shapeInfo of whole array
     * numOfSubArrs - number of sub-arrays, size of subArrOffsets is equal to numOfSubArrs
-    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array, copy of wholeShapeInfo and one zero offset will be returned 
+    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array, copy of wholeShapeInfo and one zero offset will be returned
     * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
     * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
     * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
@@ -7999,7 +7999,20 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
-    
+
+    /**
+    * insert dimension at shape[axis] position
+    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, dimension = 10 result is -> shape = {2,10,4,5}
+    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 3, dimension = 10 result is -> shape = {2,4,5,10}
+    * so be careful and provide shape buffer with enough (at least rank+1) length
+    * axis should be within [0, rank] range
+    */
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+
+
+
 
 
 
@@ -8121,10 +8134,10 @@ public static final int PREALLOC_SIZE = 33554432;
 */
 
 
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 
@@ -8588,7 +8601,7 @@ public static final int PREALLOC_SIZE = 33554432;
 //        return ret;
 //    }
 
-////////////////////////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////
 // copy-past from java hasDefaultStridesForShape function
 
 // INLINEDEF _CUDA_H bool reshapeC(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
@@ -8809,6 +8822,8 @@ public static final int PREALLOC_SIZE = 33554432;
     //////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 
