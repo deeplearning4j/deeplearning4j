@@ -28,6 +28,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -44,10 +45,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -72,8 +76,17 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
  * Created by agibsonccc on 4/11/17.
  */
 @Slf4j
-public class SameDiffTests {
+public class SameDiffTests extends BaseNd4jTest {
     private DataType initialType;
+
+    public SameDiffTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @ClassRule
     public static TemporaryFolder folder = new TemporaryFolder();
@@ -210,13 +223,13 @@ public class SameDiffTests {
         SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterState(), sameDiff1.getUpdaterState());
+        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
 
         sameDiff.saveWithTrainingConfig(newFile);
         sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
         assertEquals(sameDiff.getTrainingConfig().getUpdater(),
                 sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterState(), sameDiff1.getUpdaterState());
+        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
 
     }
 
@@ -2744,11 +2757,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
 
-        List<String> tp = c.getTrainableParams();
-        assertEquals(2, tp.size());
-        assertTrue(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToConstant();
 
         INDArray out2 = tanh.eval();
@@ -2789,11 +2797,6 @@ public class SameDiffTests {
 
         INDArray out = tanh.eval();
         sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
-        List<String> tp = c.getTrainableParams();
-        assertEquals(1, tp.size());
-        assertFalse(tp.contains("w"));
-        assertTrue(tp.contains("b"));
-
         w.convertToVariable();
 
         INDArray out2 = tanh.eval();
@@ -3046,5 +3049,253 @@ public class SameDiffTests {
         assertNotNull(sd.grad("a"));
         assertNull(sd.grad("b"));
         assertNull(sd.grad("c"));
+    }
+
+    @Test
+    public void testDuplicateNamePlaceholder(){
+
+        for( int i=0; i<2; i++ ) {
+            SameDiff sd = SameDiff.create();
+            SDVariable x1 = i == 0 ? sd.placeHolder("a", DataType.FLOAT, 5, 3) : sd.var("a", DataType.FLOAT, 5, 3);
+            SDVariable x2 = i == 0 ? sd.placeHolder("b", DataType.FLOAT, 5, 3) : sd.var("b", DataType.FLOAT, 5, 3);
+            try {
+                sd.placeHolder("a", DataType.FLOAT, 5, 3);
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", DataType.FLOAT, 1, 2);
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", Nd4j.zeros(1));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.var("a", LongShapeDescriptor.fromShape(new long[]{1}, DataType.FLOAT));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+
+            try {
+                sd.constant("a", Nd4j.zeros(1));
+                fail("Expected execption");
+            } catch (Throwable t) {
+                String m = t.getMessage();
+                assertNotNull(m);
+                assertTrue(m, m.contains("already exists"));
+            }
+        }
+    }
+
+    @Test
+    public void testSameDiffGetArrayScalar(){
+        final INDArray array = Nd4j.rand(1, 1);
+        final SameDiff sd = SameDiff.create();
+        final SDVariable a = sd.var("a", array.shape());
+        a.setScalarValue(array);
+        a.getArr();
+    }
+
+    @Test
+    public void testVariableRenaming(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.var("x", Nd4j.rand(DataType.FLOAT, 3,4));
+        SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4,5));
+        SDVariable v3 = v1.mmul("oldName", v2);
+
+        INDArray out = sd.execSingle(null, "oldName");
+
+        SDVariable renamed = v3.rename("newName");
+        assertTrue(v3 == renamed);
+        assertEquals("newName", renamed.getVarName());
+
+        assertNull(sd.getVariable("oldName"));
+        assertNotNull(sd.getVariable("newName"));
+
+        INDArray out2 = sd.execSingle(null, "newName");
+
+        assertEquals(out, out2);
+    }
+
+    @Test
+    public void testVariableRenaming2(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.placeHolder("x", DataType.FLOAT,3,4);
+        SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4,5));
+        SDVariable v3 = v1.mmul("oldName", v2);
+        SDVariable v4 = v3.std("out", false);
+
+        INDArray out = sd.execSingle(Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4)), "out");
+
+        sd.setTrainingConfig(TrainingConfig.builder()
+                .updater(new Adam(1e-3))
+                .dataSetFeatureMapping("x")
+                .markLabelsUnused()
+                .build());
+
+        sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
+        v3.rename("newName");
+        sd.fit(new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null));
+    }
+
+    @Test
+    public void testPlaceholderShapeValidation(){
+        SameDiff sd = SameDiff.create();
+        SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, 3, 4);
+        SDVariable ph2 = sd.placeHolder("ph2", DataType.FLOAT, -1, 4);
+        SDVariable ph3 = sd.placeHolder("ph3", DataType.FLOAT, 3, -1);
+        SDVariable ph4 = sd.placeHolder("ph4", DataType.FLOAT, -1, -1);
+
+        INDArray correctShape = Nd4j.create(DataType.FLOAT, 3, 4);
+        INDArray wrongShape = Nd4j.create(DataType.FLOAT, 2, 3);
+        INDArray wrongRank1 = Nd4j.create(DataType.FLOAT, 1);
+        INDArray wrongRank2 = Nd4j.create(DataType.FLOAT, 3, 4, 5);
+        for(SDVariable v : new SDVariable[]{ph1, ph2, ph3, ph4}){
+            v.setArray(correctShape);
+
+            if(v != ph4) {
+                try {
+                    v.setArray(wrongShape);
+                    fail("Expected exception");
+                } catch (Exception t) {
+                    String msg = t.getMessage();
+                    assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]") && msg.contains(Arrays.toString(v.placeholderShape())));
+                }
+            }
+
+            try{
+                v.setArray(wrongRank1);
+                fail("Expected exception");
+            } catch (Exception t){
+                String msg = t.getMessage();
+                assertTrue(msg, msg.contains("shape") && msg.contains("[1]") && msg.contains(Arrays.toString(v.placeholderShape())));
+            }
+
+            try{
+                v.setArray(wrongRank2);
+                fail("Expected exception");
+            } catch (Exception t){
+                String msg = t.getMessage();
+                assertTrue(msg, msg.contains("shape") && msg.contains("[3, 4, 5]") && msg.contains(Arrays.toString(v.placeholderShape())));
+            }
+        }
+
+        //Also try training:
+        SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
+        SDVariable mean = sum.mean();
+        MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
+
+        sd.setTrainingConfig(TrainingConfig.builder()
+                .dataSetFeatureMapping("ph1", "ph2", "ph3", "ph4")
+                .markLabelsUnused()
+                .updater(new Adam(1e-3)).build());
+
+        try{
+            sd.fit(mds);
+        } catch (Exception t){
+            String msg = t.getMessage();
+            assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]"));
+        }
+    }
+
+
+    @Test
+    public void testInferenceWithoutLabel(){
+        //We don't need a value for the label placeholder to calculate most values here
+
+        SameDiff sd = SameDiff.create();
+
+        int nIn = 4;
+        int minibatch = 3;
+        SDVariable input = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+
+        SDVariable mmul = input.mmul(w).add(b);
+        SDVariable softmax = sd.nn().softmax("softmax", mmul);
+        SDVariable loss = sd.loss().logLoss("loss", label, softmax);
+
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
+
+        Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+
+        INDArray out = m.get("softmax");
+
+
+        INDArray labelUnused = Nd4j.rand(DataType.FLOAT, minibatch, 3);
+        Map<String,INDArray> allPh = new HashMap<>();
+        allPh.put("in", inputArr);
+        allPh.put("label", labelUnused);
+        m = sd.exec(allPh, "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+        INDArray out2 = m.get("softmax");
+        assertEquals(out, out2);
+    }
+
+    @Test
+    public void testInferenceWithoutUnnecessaryPlaceholders(){
+        //We don't need an array for 2 of the placeholders to calculate the
+
+        SameDiff sd = SameDiff.create();
+
+        int nIn = 4;
+        int minibatch = 3;
+        SDVariable input = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable input2 = sd.placeHolder("in2", DataType.FLOAT);    //Scalar
+
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+
+        SDVariable mmul = input.mmul(w).add(b);
+        SDVariable softmax = sd.nn().softmax("softmax", mmul);
+        SDVariable loss = sd.loss().logLoss("loss", label, softmax);
+        SDVariable loss2 = softmax.mul(input2);
+
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
+
+        Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+
+        INDArray out = m.get("softmax");
+
+
+        INDArray labelUnused = Nd4j.rand(DataType.FLOAT, minibatch, 3);
+        Map<String,INDArray> allPh = new HashMap<>();
+        allPh.put("in", inputArr);
+        allPh.put("label", labelUnused);
+        allPh.put("in2", Nd4j.scalar(1.0f));
+        m = sd.exec(allPh, "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+        INDArray out2 = m.get("softmax");
+        assertEquals(out, out2);
     }
 }

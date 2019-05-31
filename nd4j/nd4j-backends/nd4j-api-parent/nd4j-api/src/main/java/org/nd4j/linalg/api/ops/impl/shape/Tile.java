@@ -26,14 +26,16 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tile function
@@ -49,6 +51,11 @@ public class Tile extends DynamicCustomOp {
         super(null,sameDiff, new SDVariable[]{i_v}, false);
         this.jaxis = axis;
         addArguments();
+    }
+
+    public Tile(SameDiff sameDiff, SDVariable i_v, SDVariable axis) {
+        super(null,sameDiff, new SDVariable[]{i_v, axis}, false);
+        this.jaxis = null;
     }
 
     public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis, boolean is_static_reps) {
@@ -73,12 +80,7 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val lastNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(nodeDef.getInputCount() - 1));
-        val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",lastNode,graph);
-        if(arr != null) {
-            this.jaxis = arr.data().asInt();
-            addArguments();
-        }
+
     }
 
 
@@ -103,7 +105,6 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-
         if(inputArguments.size() == 0)
             return Collections.emptyList();
 
@@ -152,13 +153,17 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().tileBp(arg(), i_v.get(0), jaxis));
+        if(jaxis != null){
+            return Collections.singletonList(f().tileBp(arg(), i_v.get(0), jaxis));
+        }else{
+            return Collections.singletonList(f().tileBp(arg(0), arg(1), i_v.get(0)));
+        }
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //2nd isput is dynamic repeat
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || (jaxis == null && dataTypes.size() == 2)),
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));

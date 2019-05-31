@@ -243,17 +243,27 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
+            case UINT32:
             case INT:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
+                break;
+            case BFLOAT16:
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                indexer = Bfloat16Indexer.create((ShortPointer) pointer);
                 break;
             case HALF:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
+            case UINT64:
             case LONG:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
+                break;
+            case UINT16:
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                indexer = UShortIndexer.create((ShortPointer) pointer);
                 break;
             case SHORT:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
@@ -312,6 +322,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
+            case UINT32:
             case INT:
                 this.attached = true;
                 this.parentWorkspace = workspace;
@@ -319,14 +330,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
                 break;
+            case BFLOAT16:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                indexer = Bfloat16Indexer.create((ShortPointer) pointer);
+                break;
             case HALF:
                 this.attached = true;
                 this.parentWorkspace = workspace;
 
-            // FIXME: proper pointer and proper indexer should be used here
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
+            case UINT64:
             case LONG:
                 this.attached = true;
                 this.parentWorkspace = workspace;
@@ -340,6 +358,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBooleanPointer();
                 indexer = BooleanIndexer.create((BooleanPointer) pointer);
+                break;
+            case UINT16:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                indexer = UShortIndexer.create((ShortPointer) pointer);
                 break;
             case SHORT:
                 this.attached = true;
@@ -418,18 +443,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
+            case UINT32:
             case INT:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
+                break;
+            case BFLOAT16:
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
+                indexer = Bfloat16Indexer.create((ShortPointer) pointer);
                 break;
             case HALF:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
+            case UINT64:
             case LONG:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
                 break;
+            case UINT16:
             case SHORT:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
                 indexer = ShortIndexer.create((ShortPointer) pointer);
@@ -661,6 +693,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     pointer.address();
                 }
                 break;
+            case UINT32:
             case INT: {
                     val pointer = new IntPointer(ArrayUtil.toInts(data));
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
@@ -671,6 +704,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     pointer.address();
                 }
                 break;
+            case UINT64:
             case LONG: {
                     val pointer = new LongPointer(data);
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
@@ -681,6 +715,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     pointer.address();
                 }
                 break;
+            case BFLOAT16: {
+                val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
+                val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                // we're keeping pointer reference for JVM
+                pointer.address();
+            }
+            break;
             case HALF: {
                     val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));

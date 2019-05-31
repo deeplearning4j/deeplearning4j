@@ -78,7 +78,12 @@ public class Slice extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));
+        if(args().length == 1) {
+            return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));
+        } else {
+            //Dynamic begin/size
+            return Collections.singletonList(f().sliceBp(arg(0), grad.get(0), arg(1), arg(2)));
+        }
     }
 
     @Override

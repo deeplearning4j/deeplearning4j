@@ -36,17 +36,23 @@ public interface OpContext {
      */
     void setIArguments(long... arguments);
 
+    List<Long> getIArguments();
+
     /**
      * This method sets floating point arguments required for operation
      * @param arguments
      */
     void setTArguments(double... arguments);
 
+    List<Double> getTArguments();
+
     /**
      * This method sets boolean arguments required for operation
      * @param arguments
      */
     void setBArguments(boolean... arguments);
+
+    List<Boolean> getBArguments();
 
     /**
      * This method sets root-level seed for rng

@@ -18,10 +18,12 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
@@ -105,6 +107,8 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
             sd.setTrainingConfig(conf);
 
+            sd.setListeners(new ScoreListener(1));
+
             sd.fit(iter, 100);
 
             Evaluation e = new Evaluation();
@@ -118,6 +122,70 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             double acc = e.accuracy();
             assertTrue(u + " - " + acc, acc >= 0.8);
         }
+    }
+
+
+
+    @Test
+    public void testTrainingMixedDtypes(){
+
+        for (String u : new String[]{"adam", "nesterov", "adamax", "amsgrad"}) {
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+
+            SDVariable inHalf = in.castTo(DataType.HALF);
+            SDVariable inDouble = in.castTo(DataType.DOUBLE);
+
+            SDVariable wFloat = sd.var("wFloat", Nd4j.rand(DataType.FLOAT, 4, 3));
+            SDVariable wDouble = sd.var("wDouble", Nd4j.rand(DataType.DOUBLE, 4, 3));
+            SDVariable wHalf = sd.var("wHalf", Nd4j.rand(DataType.HALF, 4, 3));
+
+            SDVariable outFloat = in.mmul(wFloat);
+            SDVariable outDouble = inDouble.mmul(wDouble);
+            SDVariable outHalf = inHalf.mmul(wHalf);
+
+            SDVariable sum = outFloat.add(outDouble.castTo(DataType.FLOAT)).add(outHalf.castTo(DataType.FLOAT));
+
+            SDVariable loss = sum.std(true);
+
+            IUpdater updater;
+            switch (u) {
+                case "sgd":
+                    updater = new Sgd(1e-2);
+                    break;
+                case "adam":
+                    updater = new Adam(1e-2);
+                    break;
+                case "nesterov":
+                    updater = new Nesterovs(1e-2);
+                    break;
+                case "adamax":
+                    updater = new AdaMax(1e-2);
+                    break;
+                case "amsgrad":
+                    updater = new AMSGrad(1e-2);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            TrainingConfig conf = new TrainingConfig.Builder()
+                    .l2(1e-4)
+                    .updater(updater)
+                    .dataSetFeatureMapping("in")
+                    .markLabelsUnused()
+                    .build();
+
+            sd.setTrainingConfig(conf);
+
+            DataSet ds = new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), null);
+
+            for( int i=0; i<10; i++ ){
+                sd.fit(ds);
+            }
+        }
+
     }
 
     @Override

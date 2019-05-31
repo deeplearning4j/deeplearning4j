@@ -18,8 +18,10 @@ package org.nd4j.serde.jackson;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.serde.jackson.shaded.NDArrayDeSerializer;
@@ -30,11 +32,21 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 6/23/16.
  */
-public class NdArraySerializerTest {
+public class NdArraySerializerTest extends BaseNd4jTest {
     private static ObjectMapper objectMapper;
 
+    public NdArraySerializerTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
+
+
     @BeforeClass
-    public static void before() {
+    public static void beforeClass() {
         objectMapper = objectMapper();
 
     }

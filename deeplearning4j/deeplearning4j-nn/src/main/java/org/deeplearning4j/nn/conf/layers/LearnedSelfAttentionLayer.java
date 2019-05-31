@@ -13,6 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
@@ -22,6 +23,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -148,7 +150,10 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         val baseQueries = paramTable.get(WEIGHT_QUERIES);
-        val queries = sameDiff.f().tile(baseQueries, new int[]{(int) layerInput.getShape()[0], 1, 1});
+        val batchSize = layerInput.shape().get(SDIndex.point(0));
+        val tileAxis = sameDiff.scatterUpdate(sameDiff.onesLike(layerInput.shape()), sameDiff.constant(0), batchSize);
+
+        val queries = sameDiff.tile(baseQueries, tileAxis);
 
         if(projectInput){
             val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);

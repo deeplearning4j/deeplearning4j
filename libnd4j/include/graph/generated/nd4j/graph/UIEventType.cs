@@ -16,7 +16,6 @@ public enum UIEventType : sbyte
  SUMMARY_STATISTICS = 6,
  OP_TIMING = 7,
  HARDWARE_STATE = 8,
- GC_EVENT = 9,
 };
 
 

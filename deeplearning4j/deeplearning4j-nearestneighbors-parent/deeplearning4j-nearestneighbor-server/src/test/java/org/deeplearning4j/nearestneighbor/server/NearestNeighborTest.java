@@ -23,6 +23,7 @@ import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -49,6 +50,7 @@ public class NearestNeighborTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
+    //@Ignore("AB 2019/05/21 - Failing - Issue #7657")
     public void testNearestNeighbor() {
         double[][] data = new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}};
         INDArray arr = Nd4j.create(data);

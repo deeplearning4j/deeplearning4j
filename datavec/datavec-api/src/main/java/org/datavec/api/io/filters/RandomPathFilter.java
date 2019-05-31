@@ -17,6 +17,7 @@
 package org.datavec.api.io.filters;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -64,8 +65,12 @@ public class RandomPathFilter implements PathFilter {
 
     @Override
     public URI[] filter(URI[] paths) {
+        // shuffle before to avoid sampling bias
+        ArrayList<URI> paths2 = new ArrayList<URI>(Arrays.asList(paths));
+        Collections.shuffle(paths2, random);
+
         ArrayList<URI> newpaths = new ArrayList<URI>();
-        for (URI path : paths) {
+        for (URI path : paths2) {
             if (accept(path.toString())) {
                 newpaths.add(path);
             }
@@ -73,7 +78,6 @@ public class RandomPathFilter implements PathFilter {
                 break;
             }
         }
-        Collections.shuffle(newpaths, random);
         return newpaths.toArray(new URI[newpaths.size()]);
     }
 }

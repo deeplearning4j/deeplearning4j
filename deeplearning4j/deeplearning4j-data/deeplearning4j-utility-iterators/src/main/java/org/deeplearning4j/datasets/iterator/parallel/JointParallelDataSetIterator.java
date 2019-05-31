@@ -19,7 +19,7 @@ package org.deeplearning4j.datasets.iterator.parallel;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;

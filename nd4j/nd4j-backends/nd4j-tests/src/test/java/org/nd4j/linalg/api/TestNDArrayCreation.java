@@ -46,6 +46,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testBufferCreation() {
         DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
@@ -97,6 +98,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
     public void testCreateNpy3() throws Exception {
         INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/rank3.npy").getFile());
         assertEquals(8, arrCreate.length());

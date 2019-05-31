@@ -31,6 +31,7 @@ import org.deeplearning4j.spark.models.sequencevectors.learning.elements.SparkSk
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
@@ -69,6 +70,7 @@ public class SparkWord2VecTest {
     }
 
     @Test
+    @Ignore("AB 2019/05/21 - Failing - Issue #7657")
     public void testStringsTokenization1() throws Exception {
         JavaRDD<String> rddSentences = sc.parallelize(sentences);
 

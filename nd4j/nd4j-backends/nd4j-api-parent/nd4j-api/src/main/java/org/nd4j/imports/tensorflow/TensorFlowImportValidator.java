@@ -1,5 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.tensorflow;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.base.Preconditions;
@@ -12,17 +29,17 @@ import java.io.*;
 import java.util.*;
 
 /**
- * A simple utility that analyzes TensorFlow graphs and reports details about the models:
- * - The path of the model file(s)
- * - The path of the model(s) that can't be imported due to missing ops
- * - The path of model files that couldn't be read for some reason (corrupt file?)
- * - The total number of ops in all graphs
- * - The number of unique ops in all graphs
- * - The (unique) names of all ops encountered in all graphs
- * - The (unique) names of all ops that were encountered, and can be imported, in all graphs
- * - The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping)
- *
- * Note that an op is considered to be importable if has an import mapping specified for that op name in SameDiff.
+ * A simple utility that analyzes TensorFlow graphs and reports details about the models:<br>
+ * - The path of the model file(s)<br>
+ * - The path of the model(s) that can't be imported due to missing ops<br>
+ * - The path of model files that couldn't be read for some reason (corrupt file?)<br>
+ * - The total number of ops in all graphs<br>
+ * - The number of unique ops in all graphs<br>
+ * - The (unique) names of all ops encountered in all graphs<br>
+ * - The (unique) names of all ops that were encountered, and can be imported, in all graphs<br>
+ * - The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping)<br>
+ *<br>
+ * Note that an op is considered to be importable if has an import mapping specified for that op name in SameDiff.<br>
  * This alone does not guarantee that the op can be imported successfully.
  *
  * @author Alex Black
@@ -31,9 +48,9 @@ import java.util.*;
 public class TensorFlowImportValidator {
 
     /**
-     * Recursively scan the specified directory for .pb files, and evaluate
-     * @param directory
-     * @return
+     * Recursively scan the specified directory for .pb files, and evaluate which operations/graphs can/can't be imported
+     * @param directory Directory to scan
+     * @return Status for TensorFlow import for all models in
      * @throws IOException
      */
     public static TFImportStatus checkAllModelsForImport(File directory) throws IOException {
@@ -53,7 +70,21 @@ public class TensorFlowImportValidator {
         return status;
     }
 
-    public static TFImportStatus checkModelForImport(File file) throws IOException {
+    /**
+     * See {@link #checkModelForImport(File)}. Defaults to exceptionOnRead = false
+     */
+    public static TFImportStatus checkModelForImport(@NonNull File file) throws IOException {
+        return checkModelForImport(file, false);
+    }
+
+    /**
+     * Check whether the TensorFlow frozen model (protobuf format) can be imported into SameDiff or not
+     * @param file            Protobuf file
+     * @param exceptionOnRead If true, and the file can't be read, throw an exception. If false, return an "empty" TFImportStatus
+     * @return Status for importing the file
+     * @throws IOException If error
+     */
+    public static TFImportStatus checkModelForImport(@NonNull File file, boolean exceptionOnRead) throws IOException {
         TFGraphMapper m = TFGraphMapper.getInstance();
 
         try {
@@ -94,7 +125,10 @@ public class TensorFlowImportValidator {
                     importSupportedOpNames,
                     unsupportedOpNames);
         } catch (Throwable t){
-            log.warn("Failed to import model: " + file.getPath(), t);
+            if(exceptionOnRead) {
+                throw new IOException("Error reading model from path " + file.getPath() + " - not a TensorFlow frozen model in ProtoBuf format?", t);
+            }
+            log.warn("Failed to import model from file: " + file.getPath() + " - not a TensorFlow frozen model in ProtoBuf format?", t);
             return new TFImportStatus(
                     Collections.<String>emptyList(),
                     Collections.<String>emptyList(),

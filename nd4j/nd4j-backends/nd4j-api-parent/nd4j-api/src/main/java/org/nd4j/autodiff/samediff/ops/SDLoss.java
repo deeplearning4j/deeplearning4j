@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff.ops;
 
 import lombok.NonNull;
@@ -8,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.autodiff.samediff.ops.SDValidation.*;
 
@@ -43,8 +60,12 @@ public class SDLoss extends SDOps {
                                          SDVariable weights, @NonNull LossReduce lossReduce) {
         validateFloatingPoint("absolute difference loss", "predictions", predictions);
         validateNumerical("absolute difference loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossAbsoluteDifference(label, predictions, weights, lossReduce);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -84,8 +105,12 @@ public class SDLoss extends SDOps {
                                      SDVariable weights, @NonNull LossReduce lossReduce, int dimension) {
         validateFloatingPoint("cosine distance loss", "predictions", predictions);
         validateNumerical("cosine distance loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossCosineDistance(label, predictions, weights, lossReduce, dimension);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -167,8 +192,12 @@ public class SDLoss extends SDOps {
                                 SDVariable weights, @NonNull LossReduce lossReduce, double delta) {
         validateFloatingPoint("huber loss", "predictions", predictions);
         validateNumerical("huber loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossHuber(label, predictions, weights, lossReduce, delta);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -229,8 +258,12 @@ public class SDLoss extends SDOps {
                               SDVariable weights, @NonNull LossReduce lossReduce, double epsilon) {
         validateFloatingPoint("log loss", "predictions", predictions);
         validateNumerical("log loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossLog(label, predictions, weights, lossReduce, epsilon);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -266,8 +299,12 @@ public class SDLoss extends SDOps {
                                  SDVariable weights, @NonNull LossReduce lossReduce) {
         validateFloatingPoint("log poisson loss", "predictions", predictions);
         validateNumerical("log poisson loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossLogPoisson(label, predictions, weights, lossReduce);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -304,8 +341,12 @@ public class SDLoss extends SDOps {
                                      SDVariable weights, @NonNull LossReduce lossReduce) {
         validateFloatingPoint("log poisson (full) loss", "predictions", predictions);
         validateNumerical("log poisson (full) loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossLogPoissonFull(label, predictions, weights, lossReduce);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -341,8 +382,12 @@ public class SDLoss extends SDOps {
     public SDVariable meanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
         validateFloatingPoint("main pairwise squared error loss", "predictions", predictions);
         validateNumerical("mean pairwise squared error loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -372,8 +417,12 @@ public class SDLoss extends SDOps {
                                        SDVariable weights, @NonNull LossReduce lossReduce) {
         validateFloatingPoint("mean squared error loss", "predictions", predictions);
         validateNumerical("mean squared error loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossMeanSquaredError(label, predictions, weights, lossReduce);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -419,8 +468,12 @@ public class SDLoss extends SDOps {
                                           SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         validateFloatingPoint("sigmoid cross entropy loss", "predictions", predictionLogits);
         validateNumerical("sigmoid cross entropy loss", "labels", label);
-        if (weights == null)
-            weights = sd.scalar(null, predictionLogits.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(predictionLogits.dataType(), 1.0));
+        }
         SDVariable result = f().lossSigmoidCrossEntropy(label, predictionLogits, weights, lossReduce, labelSmoothing);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();
@@ -465,8 +518,12 @@ public class SDLoss extends SDOps {
                                           SDVariable weights, @NonNull LossReduce lossReduce, double labelSmoothing) {
         validateFloatingPoint("softmax cross entropy loss", "predictions", logitPredictions);
         validateNumerical("softmax cross entropy loss", "oneHotLabels", oneHotLabels);
-        if (weights == null)
-            weights = sd.scalar(null, logitPredictions.dataType(), 1.0);
+        if (weights == null) {
+            String weightName = null;
+            if(name != null)
+                weightName = name + "/weight";
+            weights = sd.constant(weightName, Nd4j.scalar(logitPredictions.dataType(), 1.0));
+        }
         SDVariable result = f().lossSoftmaxCrossEntropy(oneHotLabels, logitPredictions, weights, lossReduce, labelSmoothing);
         result = updateVariableNameAndReference(result, name);
         result.markAsLoss();

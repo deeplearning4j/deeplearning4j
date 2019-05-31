@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.deeplearning4j.datasets.iterator.FileSplitDataSetIterator;
 import org.deeplearning4j.datasets.iterator.callbacks.FileCallback;
 import org.nd4j.linalg.dataset.DataSet;

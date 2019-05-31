@@ -19,9 +19,11 @@ package org.nd4j.serde.binary;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,7 +37,16 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 9/23/16.
  */
-public class BinarySerdeTest {
+public class BinarySerdeTest extends BaseNd4jTest {
+
+    public BinarySerdeTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testToAndFrom() {

@@ -421,6 +421,20 @@
           </properties>
         </profile>
         <profile>
+          <id>linux-arm64-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>linux-arm64</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform.properties>linux-arm64</javacpp.platform.properties>
+            <javacpp.platform.compiler>aarch64-linux-gnu-g++</javacpp.platform.compiler>
+            <dependency.platform2></dependency.platform2>
+          </properties>
+        </profile>
+        <profile>
           <id>linux-ppc64le-default</id>
           <activation>
             <property>

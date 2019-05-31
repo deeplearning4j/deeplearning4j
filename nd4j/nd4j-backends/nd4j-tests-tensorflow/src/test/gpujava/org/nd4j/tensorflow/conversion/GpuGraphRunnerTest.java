@@ -18,6 +18,7 @@ package org.nd4j.tensorflow.conversion;
 
 import com.github.os72.protobuf351.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +36,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@Ignore("AB 2019/05/24 - Failing on CI - no jnitensorflow in java.library.path - see issue #7657")
 public class GpuGraphRunnerTest {
 
     @Test

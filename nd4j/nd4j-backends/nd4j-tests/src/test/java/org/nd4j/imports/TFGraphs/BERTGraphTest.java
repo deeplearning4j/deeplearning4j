@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
@@ -12,10 +28,12 @@ import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Downloader;
@@ -29,7 +47,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class BERTGraphTest {
+@Ignore("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
+public class BERTGraphTest extends BaseNd4jTest {
+
+    public BERTGraphTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBert() throws Exception {
@@ -240,7 +268,7 @@ public class BERTGraphTest {
         assertEquals(exp3, softmax.getRow(3));
     }
 
-    @Test @Ignore   //AB ignored 08/04/2019 until fixed
+    @Test //@Ignore   //AB ignored 08/04/2019 until fixed
     public void testBertTraining() throws Exception {
         String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
@@ -291,10 +319,26 @@ public class BERTGraphTest {
 
         SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
 
+        /*
+        Set<String> floatConstants = new HashSet<>(Arrays.asList(
+                "bert/embeddings/one_hot/on_value",
+                "bert/embeddings/one_hot/off_value",
+                "bert/embeddings/LayerNorm/batchnorm/add/y",    //Scalar - Eps Constant?
+                "bert/embeddings/dropout/keep_prob",
+                "bert/encoder/ones",
+                "bert/embeddings/dropout/random_uniform/min",   //Dropout scalar values
+                "bert/embeddings/dropout/random_uniform/max"
+
+        ));*/
+
+        Set<String> floatConstants = new HashSet<>(Arrays.asList(
+                "bert/encoder/ones"
+        ));
+
         //For training, convert weights and biases from constants to variables:
         for(SDVariable v : sd.variables()){
-            if(v.isConstant() && v.dataType().isFPType()){
-                log.info("Converting to variable: {} - shape {}", v.getVarName(), v.shape());
+            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar() && !floatConstants.contains(v.getVarName())){    //Skip scalars - trainable params
+                log.info("Converting to variable: {} - dtype: {} - shape: {}", v.getVarName(), v.dataType(), Arrays.toString(v.getArr().shape()));
                 v.convertToVariable();
             }
         }
@@ -354,7 +398,7 @@ public class BERTGraphTest {
         INDArray lossArr = sd.exec(placeholderValues, "loss").get("loss");
         assertTrue(lossArr.isScalar());
         double scoreBefore = lossArr.getDouble(0);
-        for( int i=0; i<100; i++ ){
+        for( int i=0; i<5; i++ ){
             sd.fit(mds);
         }
 
@@ -362,8 +406,8 @@ public class BERTGraphTest {
         assertTrue(lossArr.isScalar());
         double scoreAfter = lossArr.getDouble(0);
 
-        System.out.println("Score Before: " + scoreBefore);
-        System.out.println("Score After: " + scoreAfter);
+        String s = "Before: " + scoreBefore + "; after: " + scoreAfter;
+        assertTrue(s, scoreAfter < scoreBefore);
     }
 
     @Test @Ignore

@@ -23,7 +23,6 @@ import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.transform.analysis.counter.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +54,7 @@ public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, Lis
                         analysisCounters.add(new LongAnalysisCounter());
                         break;
                     case Double:
+                    case Float:
                         analysisCounters.add(new DoubleAnalysisCounter());
                         break;
                     case Categorical:
@@ -68,6 +68,9 @@ public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, Lis
                         break;
                     case NDArray:
                         analysisCounters.add(new NDArrayAnalysisCounter());
+                        break;
+                    case Boolean:
+                        analysisCounters.add(new IntegerAnalysisCounter());
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);

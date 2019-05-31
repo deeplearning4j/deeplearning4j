@@ -27,9 +27,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +43,8 @@ import static org.junit.Assert.*;
 
 public class TestBertIterator {
 
-    private File pathToVocab =  new ClassPathResource("other/vocab.txt").getFile();
+    private File pathToVocab = Resources.asFile("other/vocab.txt");
+    private static Charset c = StandardCharsets.UTF_8;
 
     public TestBertIterator() throws IOException{ }
 
@@ -49,7 +53,7 @@ public class TestBertIterator {
 
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
 
         BertIterator b = BertIterator.builder()
                 .tokenizer(t)
@@ -121,7 +125,7 @@ public class TestBertIterator {
     @Test(timeout = 20000L)
     public void testBertUnsupervised() throws Exception {
         //Task 1: Unsupervised
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         BertIterator b = BertIterator.builder()
                 .tokenizer(t)
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
@@ -152,7 +156,7 @@ public class TestBertIterator {
     public void testLengthHandling() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
         List<String> tokens = t.create(toTokenize1).getTokens();
@@ -221,7 +225,7 @@ public class TestBertIterator {
     public void testMinibatchPadding() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
         List<String> tokens = t.create(toTokenize1).getTokens();

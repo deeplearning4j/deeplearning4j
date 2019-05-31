@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 23/03/2017.
  */
-public class TestListeners {
+public class TestListeners extends BaseDL4JTest {
 
     @Test
     public void testListeners() {

@@ -30,6 +30,7 @@ import org.datavec.api.writable.*;
 import org.datavec.python.PythonTransform;
 
 import org.datavec.local.transforms.LocalTransformExecutor;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -246,7 +247,8 @@ public class ExecutionTest  {
         assertEquals(expOut, out);
     }
 
-    @Test
+    @Test(timeout = 60000L)
+    @Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
     public void testPythonExecutionNdarray()throws Exception{
         Schema schema = new Schema.Builder()
                 .addColumnNDArray("first",new long[]{1,32577})

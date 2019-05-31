@@ -60,9 +60,10 @@ public class Cell implements Serializable {
         INDArray cornerMinusWidth = corner.sub(width);
         INDArray cornerPlusWidth = corner.add(width);
         for (int d = 0; d < dimension; d++) {
-            if (cornerMinusWidth.getDouble(d) > point.getDouble(d))
+            double pointD = point.getDouble(d);
+            if (cornerMinusWidth.getDouble(d) > pointD)
                 return false;
-            if (cornerPlusWidth.getDouble(d) < point.getDouble(d))
+            if (cornerPlusWidth.getDouble(d) < pointD)
                 return false;
         }
         return true;

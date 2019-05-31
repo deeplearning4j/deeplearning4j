@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.autodiff.samediff.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -54,6 +70,13 @@ public class FlatBuffersMapper {
                 return DataType.UINT8;
             case UTF8:
                 return DataType.UTF8;
+            case UINT16:
+                return DataType.UINT16;
+            case UINT32:
+                return DataType.UINT32;
+            case UINT64:
+                return DataType.UINT64;
+
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -86,6 +109,12 @@ public class FlatBuffersMapper {
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
         else if (val == DataType.UTF8)
             return org.nd4j.linalg.api.buffer.DataType.UTF8;
+        else if (val == DataType.UINT16)
+            return org.nd4j.linalg.api.buffer.DataType.UINT16;
+        else if (val == DataType.UINT32)
+            return org.nd4j.linalg.api.buffer.DataType.UINT32;
+        else if (val == DataType.UINT64)
+            return org.nd4j.linalg.api.buffer.DataType.UINT64;
         else
             throw new RuntimeException("Unknown datatype: " + val);
     }

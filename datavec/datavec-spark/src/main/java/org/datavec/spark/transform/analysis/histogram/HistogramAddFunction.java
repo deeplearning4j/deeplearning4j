@@ -57,6 +57,7 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>, L
                     case Long:
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
+                    case Float:
                     case Double:
                         histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
@@ -72,6 +73,9 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>, L
                         break;
                     case NDArray:
                         histogramCounters.add(new NDArrayHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
+                        break;
+                    case Boolean:
+                        histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);

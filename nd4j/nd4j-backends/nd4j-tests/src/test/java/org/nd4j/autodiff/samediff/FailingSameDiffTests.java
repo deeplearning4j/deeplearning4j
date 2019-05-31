@@ -17,14 +17,17 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -35,7 +38,17 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class FailingSameDiffTests {
+@Ignore("AB 2019/05/21 - JVM Crash on ppc64 - Issue #7657")
+public class FailingSameDiffTests extends BaseNd4jTest {
+
+    public FailingSameDiffTests(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testEye(){

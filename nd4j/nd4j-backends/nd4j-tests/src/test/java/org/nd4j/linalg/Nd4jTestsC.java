@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -1341,7 +1342,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{12});
         INDArray flattened = Nd4j.toFlattened(concat);
         assertEquals(assertion, flattened);
-
     }
 
 
@@ -5749,8 +5749,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         Nd4j.getExecutioner().exec(im2colOp);
-
-        log.info("result: {}", output);
     }
 
 
@@ -7355,27 +7353,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testRollingMean() {
         val wsconf = WorkspaceConfiguration.builder()
-                .initialSize(1500L * 1024L * 1024L)
+                .initialSize(4L * (32*128*256*256 + 32*128 + 10*1024*1024))
                 .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policySpill(SpillPolicy.FAIL)
                 .build();
 
-        for (int e = 0; e < 5; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+        String wsName = "testRollingMeanWs";
+        try {
+            System.gc();
+            for (int e = 0; e < 5; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
-        }
 
-        int iterations = 100;
-        val timeStart = System.nanoTime();
-        for (int e = 0; e < iterations; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+            int iterations = 100;
+            val timeStart = System.nanoTime();
+            for (int e = 0; e < iterations; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
+            val timeEnd = System.nanoTime();
+            log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
+        } finally {
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
-        val timeEnd = System.nanoTime();
-        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     @Test
@@ -7642,6 +7647,100 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(expected, actual);
     }
+
+    @Test
+    public void testType1() throws IOException {
+        for (int i = 0; i < 10; ++i) {
+            INDArray in1 = Nd4j.rand(DataType.DOUBLE, new int[]{100, 100});
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test.bin"));
+            oos.writeObject(in1);
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.bin"));
+            INDArray in2 = null;
+            try {
+                in2 = (INDArray) ois.readObject();
+            } catch(ClassNotFoundException e) {
+
+            }
+
+            assertEquals(in1, in2);
+        }
+
+    }
+
+    @Test
+    public void testOnes(){
+        INDArray arr = Nd4j.ones();
+        INDArray arr2 = Nd4j.ones(DataType.LONG);
+        assertEquals(0, arr.rank());
+        assertEquals(1, arr.length());
+        assertEquals(0, arr2.rank());
+        assertEquals(1, arr2.length());
+    }
+
+    @Test
+    public void testZeros(){
+        INDArray arr = Nd4j.zeros();
+        INDArray arr2 = Nd4j.zeros(DataType.LONG);
+        assertEquals(0, arr.rank());
+        assertEquals(1, arr.length());
+        assertEquals(0, arr2.rank());
+        assertEquals(1, arr2.length());
+    }
+
+    @Test
+    public void testType2() throws IOException {
+        for (int i = 0; i < 10; ++i) {
+            INDArray in1 = Nd4j.ones(DataType.UINT16);
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test1.bin"));
+            oos.writeObject(in1);
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test1.bin"));
+            INDArray in2 = null;
+            try {
+                in2 = (INDArray) ois.readObject();
+            } catch(ClassNotFoundException e) {
+
+            }
+
+            assertEquals(in1, in2);
+        }
+
+        for (int i = 0; i < 10; ++i) {
+            INDArray in1 = Nd4j.ones(DataType.UINT32);
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test2.bin"));
+            oos.writeObject(in1);
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test2.bin"));
+            INDArray in2 = null;
+            try {
+                in2 = (INDArray) ois.readObject();
+            } catch(ClassNotFoundException e) {
+
+            }
+
+            assertEquals(in1, in2);
+        }
+
+        for (int i = 0; i < 10; ++i) {
+            INDArray in1 = Nd4j.ones(DataType.UINT64);
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test3.bin"));
+            oos.writeObject(in1);
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test3.bin"));
+            INDArray in2 = null;
+            try {
+                in2 = (INDArray) ois.readObject();
+            } catch(ClassNotFoundException e) {
+
+            }
+
+            assertEquals(in1, in2);
+        }
+
+    }
+
+
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {

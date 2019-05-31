@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+@Ignore("AB - 2019/05/27 - Integration tests need to be updated")
 public class IntegrationTests extends BaseDL4JTest {
 
     @Rule

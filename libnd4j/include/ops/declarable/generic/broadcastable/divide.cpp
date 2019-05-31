@@ -88,8 +88,8 @@ namespace nd4j {
 
                 auto tmp = epsNext->reduceNumber(reduce::Sum);
                 auto tmpX = x->reduceNumber(reduce::Sum);
-                tmpX.printBuffer("SumX");
-                tmp.printBuffer("Sum Eps");
+                //tmpX.printBuffer("SumX");
+                //tmp.printBuffer("Sum Eps");
                 gradY->assign(tmp * tmpX / ((*y) * (*y)));
                 gradY->applyTransform(transform::Neg, nullptr, nullptr);
 

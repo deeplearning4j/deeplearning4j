@@ -163,7 +163,7 @@ namespace functions {
                             oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
                     }
                 }
-                else if(shape::haveSameOffsets(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameOffsets(xTadShapeShapeInfo, zTadShapeInfo)) {
+                else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
 
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
@@ -181,7 +181,7 @@ namespace functions {
                         }
                     }
                 }
-                else if(shape::haveSameOffsets(xTadShapeShapeInfo, yShapeInfo)) {
+                else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
 
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint tadShapeInfoZCast[MAX_RANK];
@@ -202,7 +202,7 @@ namespace functions {
                         }
                     }
                 }
-                else if(shape::haveSameOffsets(xTadShapeShapeInfo, zTadShapeInfo)) {
+                else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
 
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
@@ -223,7 +223,7 @@ namespace functions {
                         }
                     }
                 }
-                else if(shape::haveSameOffsets(yShapeInfo, zTadShapeInfo)) {
+                else if(shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
 
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
@@ -349,7 +349,7 @@ namespace functions {
                         oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
                 }
             }
-            else if(shape::haveSameOffsets(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameOffsets(yTadShapeShapeInfo, zTadShapeInfo)) {
+            else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
@@ -367,7 +367,7 @@ namespace functions {
                     }
                 }
             }
-            else if(shape::haveSameOffsets(yTadShapeShapeInfo, xShapeInfo)) {
+            else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint tadShapeInfoZCast[MAX_RANK];
@@ -388,7 +388,7 @@ namespace functions {
                     }
                 }
             }
-            else if(shape::haveSameOffsets(yTadShapeShapeInfo, zTadShapeInfo)) {
+            else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];
@@ -409,7 +409,7 @@ namespace functions {
                     }
                 }
             }
-            else if(shape::haveSameOffsets(xShapeInfo, zTadShapeInfo)) {
+            else if(shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
 
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];

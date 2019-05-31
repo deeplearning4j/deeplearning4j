@@ -20,6 +20,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 public class AsyncLabelAwareIteratorTest {
     @Test
     public void nextDocument() throws Exception {
-        SentenceIterator sentence = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+        SentenceIterator sentence = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
         BasicLabelAwareIterator backed = new BasicLabelAwareIterator.Builder(sentence).build();
 
         int cnt = 0;

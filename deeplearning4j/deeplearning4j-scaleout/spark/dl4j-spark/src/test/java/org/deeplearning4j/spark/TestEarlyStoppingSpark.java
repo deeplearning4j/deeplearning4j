@@ -76,7 +76,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
                                         .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
                                         .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
                                         .modelSaver(saver).build();
 
@@ -127,7 +127,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
                                         .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES),
+                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES),
                                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
                                         .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
                                         .modelSaver(saver).build();
@@ -177,7 +177,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         int durationSeconds = (int) (endTime - startTime) / 1000;
 
         assertTrue("durationSeconds = " + durationSeconds, durationSeconds >= 3);
-        assertTrue("durationSeconds = " + durationSeconds, durationSeconds <= 9);
+        assertTrue("durationSeconds = " + durationSeconds, durationSeconds <= 20);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
                         result.getTerminationReason());
@@ -241,7 +241,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                         new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
                                         .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
                                         .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
                                         .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
                                         .modelSaver(saver).build();
 

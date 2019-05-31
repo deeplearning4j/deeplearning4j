@@ -53,25 +53,14 @@ public interface IHistoryProcessor {
     @Builder
     @Value
     public static class Configuration {
-        int historyLength;
-        int rescaledWidth;
-        int rescaledHeight;
-        int croppingWidth;
-        int croppingHeight;
-        int offsetX;
-        int offsetY;
-        int skipFrame;
-
-        public Configuration() {
-            historyLength = 4;
-            rescaledWidth = 84;
-            rescaledHeight = 84;
-            croppingWidth = 84;
-            croppingHeight = 84;
-            offsetX = 0;
-            offsetY = 0;
-            skipFrame = 4;
-        }
+        @Builder.Default int historyLength = 4;
+        @Builder.Default int rescaledWidth = 84;
+        @Builder.Default int rescaledHeight = 84;
+        @Builder.Default int croppingWidth = 84;
+        @Builder.Default int croppingHeight = 84;
+        @Builder.Default int offsetX = 0;
+        @Builder.Default int offsetY = 0;
+        @Builder.Default int skipFrame = 4;
 
         public int[] getShape() {
             return new int[] {getHistoryLength(), getCroppingHeight(), getCroppingWidth()};

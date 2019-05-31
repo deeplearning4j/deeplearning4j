@@ -632,7 +632,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
-        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order()).assign(-123);
+        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
         nativeOps.concat(null, dimension, toConcat.length,
                     dataPointers, shapeInfoPointers,

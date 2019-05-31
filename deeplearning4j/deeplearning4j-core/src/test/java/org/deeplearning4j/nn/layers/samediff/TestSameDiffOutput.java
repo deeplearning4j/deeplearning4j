@@ -85,6 +85,11 @@ public class TestSameDiffOutput extends BaseDL4JTest {
             assertEquals(netStd.params(), netSD.params());
             assertEquals(netStd.getFlattenedGradients(), netSD.getFlattenedGradients());
         }
+
+        //Test fit before output:
+        MultiLayerNetwork net = new MultiLayerNetwork(confSD.clone());
+        net.init();
+        net.fit(ds);
     }
 
 
@@ -154,6 +159,11 @@ public class TestSameDiffOutput extends BaseDL4JTest {
                 assertEquals(s, netStd.params(), netSD.params());
                 assertEquals(s, netStd.getFlattenedGradients(), netSD.getFlattenedGradients());
             }
+
+            //Test fit before output:
+            MultiLayerNetwork net = new MultiLayerNetwork(confSD.clone());
+            net.init();
+            net.fit(ds);
         }
     }
 

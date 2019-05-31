@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
@@ -154,6 +170,70 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                    assertTrue(name, gradOK);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testLearnedSelfAttentionLayer_differentMiniBatchSizes() {
+        int nIn = 3;
+        int nOut = 5;
+        int tsLength = 4;
+        int layerSize = 8;
+        int numQueries = 6;
+
+        Random r = new Random(12345);
+        for (boolean inputMask : new boolean[]{false, true}) {
+            for (boolean projectInput : new boolean[]{false, true}) {
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
+                    .activation(Activation.TANH)
+                    .updater(new NoOp())
+                    .weightInit(WeightInit.XAVIER)
+                    .list()
+                    .layer(new LSTM.Builder().nOut(layerSize).build())
+                    .layer( projectInput ?
+                            new LearnedSelfAttentionLayer.Builder().nOut(8).nHeads(2).nQueries(numQueries).projectInput(true).build()
+                            : new LearnedSelfAttentionLayer.Builder().nHeads(1).nQueries(numQueries).projectInput(false).build()
+                    )
+                    .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
+                    .layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .setInputType(InputType.recurrent(nIn))
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            for (int mb : new int[]{3, 2, 1}) {
+                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
+                    INDArray labels = Nd4j.create(mb, nOut);
+                    for (int i = 0; i < mb; i++) {
+                        labels.putScalar(i, r.nextInt(nOut), 1.0);
+                    }
+                    String maskType = (inputMask ? "inputMask" : "none");
+
+                    INDArray inMask = null;
+                    if (inputMask) {
+                        inMask = Nd4j.ones(mb, tsLength);
+                        for (int i = 0; i < mb; i++) {
+                            int firstMaskedStep = tsLength - 1 - i;
+                            if (firstMaskedStep == 0) {
+                                firstMaskedStep = tsLength;
+                            }
+                            for (int j = firstMaskedStep; j < tsLength; j++) {
+                                inMask.putScalar(i, j, 0.0);
+                            }
+                        }
+                    }
+
+                    String name = "testLearnedSelfAttentionLayer() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType + ", projectInput = " + projectInput;
+                    System.out.println("Starting test: " + name);
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);

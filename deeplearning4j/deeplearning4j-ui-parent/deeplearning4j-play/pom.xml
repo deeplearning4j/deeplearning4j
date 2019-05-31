@@ -316,14 +316,42 @@
 
         <!-- WebJars Dependencies -->
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>2.3.2</version>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>babel__polyfill</artifactId>
+            <version>7.4.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>coreui__coreui</artifactId>
+            <version>2.1.9</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.webjars.npm</groupId>
+                    <artifactId>coreui__coreui-plugin-npm-postinstall</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.webjars.npm</groupId>
+            <artifactId>coreui__icons</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>popper.js</artifactId>
+            <version>1.12.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>4.2.1</version>
+            <version>4.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
@@ -577,6 +605,123 @@
             </plugin>
         </plugins>
     </build>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Override webjars dependencies with fixed versions.
+            See issue #7730 for details
+            WebJars defines its dependencies using ranges - [3.10.0,4)
+            However, we want to lock down the versions, for a few reasons:
+            (a) When defined in a range like this, user builds will check on every build of their project
+            (b) It makes it harder to debug issues, if user and developers are using different versions
+            (c) Though in-principle this should be safe, we can't be sure that a 3rd party change won't break our UI with a new version
+            (d) The ranges don't always work as expected in practice: in one instance 3.0.0-beta9 was considered within the range [2.0.0,3)
+             -->
+
+            <!-- babel__polyfill dependencies -->
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>core-js</artifactId>
+                <version>2.6.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>regenerator-runtime</artifactId>
+                <version>0.13.2</version>
+            </dependency>
+
+            <!-- coreui__coreui dependencies -->
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>4.3.1</version>
+            </dependency>
+
+            <!-- org.webjars.npm:cytoscape -->
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>heap</artifactId>
+                <version>0.2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>lodash.debounce</artifactId>
+                <version>4.0.8</version>
+            </dependency>
+
+
+            <!-- org.webjars.npm:dagre -->
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>graphlib</artifactId>
+                <version>2.1.7</version>
+            </dependency>
+
+
+
+            <dependency>
+                <groupId>org.webjars.bower</groupId>
+                <artifactId>cytoscape</artifactId>
+                <version>3.2.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.bower</groupId>
+                <artifactId>dagre</artifactId>
+                <version>0.7.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.bower</groupId>
+                <artifactId>graphlib</artifactId>
+                <version>1.0.7</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.bower</groupId>
+                <artifactId>lodash</artifactId>
+                <version>3.10.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>lodash</artifactId>
+                <version>4.17.11</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>webcola</artifactId>
+                <version>3.3.8</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>d3-dispatch</artifactId>
+                <version>1.0.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>d3-drag</artifactId>
+                <version>1.2.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>d3-selection</artifactId>
+                <version>1.4.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>d3-timer</artifactId>
+                <version>1.0.9</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>klayjs</artifactId>
+                <version>0.4.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars.npm</groupId>
+                <artifactId>weaverjs</artifactId>
+                <version>1.2.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 
 </project>

@@ -20,11 +20,11 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.TaskContext;
 import org.apache.spark.TaskContextHelper;
-import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
-import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.callbacks.DataSetCallback;
+import org.nd4j.linalg.dataset.callbacks.DefaultCallback;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.BlockingQueue;

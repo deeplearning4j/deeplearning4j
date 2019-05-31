@@ -644,9 +644,14 @@ public abstract class DifferentialFunction {
                 this.ownName = UUID.randomUUID().toString();
             else {
                 int argIndex = 0;
-                String varName = sameDiff.generateNewVarName(opName(),argIndex);
+                String scope = sameDiff.currentNameScope();
+                if(scope == null)
+                    scope = "";
+                else
+                    scope = scope + "/";
+                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
                 while(sameDiff.functionExists(varName)) {
-                    varName = sameDiff.generateNewVarName(opName(), argIndex);
+                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
                     argIndex++;
                 }
 

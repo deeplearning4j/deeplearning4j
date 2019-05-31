@@ -203,19 +203,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray toFlattened(Collection<INDArray> matrices) {
-        int length = 0;
-        for (INDArray m : matrices)
-            length += m.length();
-        INDArray ret = Nd4j.create(1, length);
-        int linearIndex = 0;
-        for (INDArray d : matrices) {
-            INDArray vector = d.reshape(d.length());
-            ret.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(linearIndex, linearIndex + d.length())}, vector);
-            linearIndex += d.length();
-        }
-
-        return ret;
-
+        return toFlattened('c', matrices.toArray(new INDArray[matrices.size()]));
     }
 
     @Override
@@ -1293,12 +1281,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType, ws);
             case FLOAT:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case BFLOAT16:
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
             case HALF:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT32:
             case INT:
                 return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT64:
             case LONG:
                 return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT16:
             case SHORT:
                 return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
             case BYTE:

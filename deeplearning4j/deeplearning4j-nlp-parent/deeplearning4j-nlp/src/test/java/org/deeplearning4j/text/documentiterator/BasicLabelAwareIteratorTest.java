@@ -21,6 +21,7 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 
@@ -39,7 +40,7 @@ public class BasicLabelAwareIteratorTest {
     @Test
     public void testHasNextDocument1() throws Exception {
 
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter).setLabelTemplate("DOCZ_").build();
@@ -61,7 +62,7 @@ public class BasicLabelAwareIteratorTest {
     @Test
     public void testHasNextDocument2() throws Exception {
 
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         BasicLabelAwareIterator iterator = new BasicLabelAwareIterator.Builder(iter).setLabelTemplate("DOCZ_").build();
