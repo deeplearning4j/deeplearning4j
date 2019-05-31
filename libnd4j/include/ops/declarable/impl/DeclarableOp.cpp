@@ -314,13 +314,13 @@ namespace nd4j {
             if (var->getNDArray() == nullptr) {
 
                 std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.getVariableSpace()->launchContext()));
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
             }
             else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
                 std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.getVariableSpace()->launchContext()));
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
             }
 
             return true;
@@ -334,11 +334,11 @@ namespace nd4j {
             Nd4jLong len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var->setNDArray(new NDArray(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var->setNDArray(new NDArray(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             }
 
             return true;

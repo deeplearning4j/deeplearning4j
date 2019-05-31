@@ -232,7 +232,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 				*dLdw = 0.;
 			}
 			else {
-				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getVariableSpace()->launchContext());
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

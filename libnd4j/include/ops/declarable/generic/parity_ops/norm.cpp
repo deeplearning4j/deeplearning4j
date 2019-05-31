@@ -43,7 +43,7 @@ namespace nd4j {
                 axisVector->printIndexedBuffer("AXIS");
                 auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, false);
                 if (!shape::equalsStrict(shape, output->shapeInfo())) {
-                    output = new NDArray(shape, false, block.getVariableSpace()->launchContext());
+                    output = new NDArray(shape, false, block.launchContext());
                     overwrite = true;
                 }
             }

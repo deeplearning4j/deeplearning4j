@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
             allOfSameType &= (INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType());
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
                 // FIXME, use this instead:  block.dataType()
-                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.getVariableSpace()->launchContext());
+                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.launchContext());
                 vec->assign(INPUT_VARIABLE(i));
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);

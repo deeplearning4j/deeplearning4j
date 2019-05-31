@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {
         // FIXME: which datatype should be used here?
-    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.getVariableSpace()->launchContext());
+    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.launchContext());
     	seqLen->assign(time);                                        // set each element of seqLen to be equal to time
     }
 

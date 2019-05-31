@@ -249,7 +249,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 				*dLdw = 0.;
 			}
 			else {
-				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getVariableSpace()->launchContext());
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
 				else if(weights != weightsBroad) {

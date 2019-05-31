@@ -26,9 +26,9 @@
 #include <op_boilerplate.h>
 #include <dll.h>
 #include <pointercast.h>
-#include <DataType.h>
+#include <array/DataType.h>
 #include <memory/Workspace.h>
-#include <LaunchContext.h>
+#include <execution/LaunchContext.h>
 
 namespace nd4j {
 

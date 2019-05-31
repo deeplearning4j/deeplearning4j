@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
 	if(!weights->isScalar() && !weights->isSameShape(predictions)) 
 		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
 
-	NDArray E(labels->getShapeInfo(), false, block.getVariableSpace()->launchContext());
+	NDArray E(labels->getShapeInfo(), false, block.launchContext());
 	predictions->applyPairwiseTransform(pairwise::SquaredSubtract, labels, &E, nullptr);
 
     // multiply E on weights
@@ -239,7 +239,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 				*dLdw = 0.;
 			}
 			else {
-				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getVariableSpace()->launchContext());
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

@@ -72,7 +72,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     //  xm = x * mask
     auto xm = x;
     if(mask) {
-        xm = new NDArray(x->getShapeInfo(), true, block.getVariableSpace()->launchContext());
+        xm = new NDArray(x->getShapeInfo(), true, block.launchContext());
         x->applyBroadcast(broadcast::Multiply, {0, 1}, mask, xm, nullptr);
     }
 
@@ -167,16 +167,16 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     const int K       = x->shapeOf()[1];
     const int N       = x->shapeOf()[2];                     // N - number of time steps
     
-    auto gradBias = NDArrayFactory::create_(x->ordering(), {bS, 2*K, N}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto gradU    = NDArrayFactory::create_(x->ordering(), {bS, 3*K, N}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto gradHX   = NDArrayFactory::create_(x->ordering(), {bS, K, N}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto gct      = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto gradTanh = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto gradCt   = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto ftMinus  = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto rtMinus  = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto temp1    = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
-    auto temp2    = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.getVariableSpace()->launchContext());
+    auto gradBias = NDArrayFactory::create_(x->ordering(), {bS, 2*K, N}, gradX->dataType(), block.launchContext());
+    auto gradU    = NDArrayFactory::create_(x->ordering(), {bS, 3*K, N}, gradX->dataType(), block.launchContext());
+    auto gradHX   = NDArrayFactory::create_(x->ordering(), {bS, K, N}, gradX->dataType(), block.launchContext());
+    auto gct      = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto gradTanh = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto gradCt   = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto ftMinus  = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto rtMinus  = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto temp1    = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+    auto temp2    = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
 
     //  x = x * mask
     if(applyMask)
@@ -875,10 +875,10 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     const auto bF = (*b)({0,0,  0,       inSize});                                 // biases for forget gate [1 x inSize]
 //     const auto bR = (*b)({0,0,  inSize,2*inSize});                                 // biases for reset  gate [1 x inSize]
-//     NDArray gradBias(x->ordering(),   {bS, 2*inSize, time}, x->dataType(), block.getVariableSpace()->launchContext());
-//     NDArray gradU   (x->ordering(),   {bS, 3*inSize, time}, x->dataType(), block.getVariableSpace()->launchContext());
-//     NDArray gradHX  (x->ordering(),   {bS,   inSize, time}, x->dataType(), block.getVariableSpace()->launchContext());
-//     NDArray gct     (c->ordering(),   {bS, inSize},         x->dataType(), block.getVariableSpace()->launchContext());
+//     NDArray gradBias(x->ordering(),   {bS, 2*inSize, time}, x->dataType(), block.launchContext());
+//     NDArray gradU   (x->ordering(),   {bS, 3*inSize, time}, x->dataType(), block.launchContext());
+//     NDArray gradHX  (x->ordering(),   {bS,   inSize, time}, x->dataType(), block.launchContext());
+//     NDArray gct     (c->ordering(),   {bS, inSize},         x->dataType(), block.launchContext());
 
 //     //  x = x * mask
 //     if(mask)
