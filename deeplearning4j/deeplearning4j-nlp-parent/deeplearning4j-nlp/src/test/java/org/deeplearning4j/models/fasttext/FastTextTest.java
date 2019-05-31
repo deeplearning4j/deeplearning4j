@@ -25,8 +25,15 @@ public class FastTextTest {
         String text = "I like soccer";
 
         FastText fastText = new FastText();
-        String label = fastText.predict(model, text);
+        fastText.loadBinaryModel(model);
+        String label = fastText.predict(text);
         assertEquals("__label__soccer", label);
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testState() {
+        FastText fastText = new FastText();
+        String label = fastText.predict("something");
     }
 
     // Reference test
