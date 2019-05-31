@@ -16,10 +16,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -27,7 +24,9 @@ import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
+import org.nd4j.serde.json.JsonMappers;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -405,6 +404,23 @@ public class TrainingConfig {
                 }
                 iter.remove();
             }
+        }
+    }
+
+
+    public String toJson(){
+        try {
+            return JsonMappers.getMapper().writeValueAsString(this);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static TrainingConfig fromJson(@NonNull String json){
+        try{
+            return JsonMappers.getMapper().readValue(json, TrainingConfig.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
         }
     }
 }
