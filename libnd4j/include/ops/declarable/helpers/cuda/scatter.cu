@@ -78,7 +78,7 @@ namespace helpers {
             //                         break;
             //                     case pairwise::ReverseDivide:
             //                         x[xOffset] = y[yOffset] / x[xOffset];
-            //                         break;                                
+            //                         break;
             //                     case pairwise::CopyPws:
             //                         x[xOffset] = y[yOffset];
             //                         break;
@@ -120,7 +120,7 @@ namespace helpers {
             //                         break;
             //                     case pairwise::ReverseDivide:
             //                         x[xOffset] = y[yOffset] / x[xOffset];
-            //                         break;                                
+            //                         break;
             //                     case pairwise::CopyPws:
             //                         x[xOffset] = y[yOffset];
             //                         break;
@@ -174,12 +174,12 @@ template<typename X, typename Y>
 __global__ static void scatterLockCuda(const int opCode,
                                        const void* vx, const Nd4jLong *xShapeInfo,
                                        const void* vy, const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
-                                             void* vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zOffsets,                                                     
-                                       const Nd4jLong xLen, const Nd4jLong yTadLen, const Nd4jLong zTadLen) {    
-    
+                                             void* vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zOffsets,
+                                       const Nd4jLong xLen, const Nd4jLong yTadLen, const Nd4jLong zTadLen) {
+
     const auto x = reinterpret_cast<const X*>(vx);
     const auto y = reinterpret_cast<const Y*>(vy);
-          auto z = reinterpret_cast<Y*>(vz);    
+          auto z = reinterpret_cast<Y*>(vz);
 
     __shared__ bool vectorCase;
     if(threadIdx.x == 0)
@@ -192,9 +192,9 @@ __global__ static void scatterLockCuda(const int opCode,
         const bool isOwner = zIndex < gridDim.x ? blockIdx.x == zIndex : blockIdx.x == zIndex % gridDim.x;
 
         if (!isOwner)
-            continue;        
+            continue;
 
-        if(vectorCase) { // means z_rank = 1 and might be yTadLen != zTadLen in this case 
+        if(vectorCase) { // means z_rank = 1 and might be yTadLen != zTadLen in this case
 
             if(threadIdx.x != 0)
                 continue;
@@ -220,11 +220,11 @@ __global__ static void scatterLockCuda(const int opCode,
                     break;
                 case pairwise::ReverseDivide:
                     z[zOffset] = y[yOffset] / z[zOffset];
-                    break;                    
+                    break;
                 case pairwise::CopyPws:
                     z[zOffset] = y[yOffset];
                     break;
-                case pairwise::MaxPairwise: 
+                case pairwise::MaxPairwise:
                     if(z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
                     break;
                 case pairwise::MinPairwise:
@@ -240,10 +240,10 @@ __global__ static void scatterLockCuda(const int opCode,
                   Y* zTad = z + zOffsets[zIndex];
 
             for (Nd4jLong i = threadIdx.x; i < zTadLen; i += blockDim.x) {
-    
+
                 const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, zTadLen);
-                const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, zTadLen);                
-    
+                const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, zTadLen);
+
                 switch (opCode) {
                     case pairwise::Add:
                         zTad[zOffset] += yTad[yOffset];
@@ -262,11 +262,11 @@ __global__ static void scatterLockCuda(const int opCode,
                         break;
                     case pairwise::ReverseDivide:
                         zTad[zOffset] = yTad[yOffset] / zTad[zOffset];
-                        break;                                
+                        break;
                     case pairwise::CopyPws:
                         zTad[zOffset] = yTad[yOffset];
                         break;
-                    case pairwise::MaxPairwise: 
+                    case pairwise::MaxPairwise:
                         if(zTad[zOffset] < yTad[yOffset]) zTad[zOffset] = yTad[yOffset];
                         break;
                     case pairwise::MinPairwise:
@@ -275,20 +275,20 @@ __global__ static void scatterLockCuda(const int opCode,
                     default:
                         continue;
                 }
-            }            
+            }
         }
     }
 }
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void scatterLockCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+static void scatterLockCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
                                     const int opCode,
                                     const void* vx, const Nd4jLong *xShapeInfo,
                                     const void* vy, const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
                                           void* vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zOffsets,
                                     const Nd4jLong xLen, const Nd4jLong yTadLen, const Nd4jLong zTadLen) {
-        
+
     scatterLockCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy, yTadShapeInfo, yOffsets, vz, zTadShapeInfo, zOffsets, xLen, yTadLen, zTadLen);
 }
 
@@ -306,28 +306,28 @@ __global__ static void scatterCuda(const int opCode,
 
     __shared__ int xRank, yRank, zRank;
     __shared__ Nd4jLong yLen, totalThreads, *coord;
-    
+
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
         coord = reinterpret_cast<Nd4jLong*>(shmem);
-        yLen = shape::length(yShapeInfo);    
+        yLen = shape::length(yShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
         xRank = shape::rank(xShapeInfo);
         yRank = shape::rank(yShapeInfo);
-        zRank = shape::rank(zShapeInfo);        
+        zRank = shape::rank(zShapeInfo);
     }
 
     __syncthreads();
 
     auto xCoord = coord + threadIdx.x * (xRank + yRank + zRank);
     auto yCoord = xCoord + xRank;
-    auto zCoord = yCoord + yRank;    
+    auto zCoord = yCoord + yRank;
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (Nd4jLong i = tid; i < yLen; i += totalThreads) {
-        
+
         shape::index2coords(yRank, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), i, yLen, yCoord);
 
         for (uint j = 0; j < xRank; ++j)
@@ -337,7 +337,7 @@ __global__ static void scatterCuda(const int opCode,
         zCoord[0] = x[xOffset];
 
         for (uint j = 0; j < yRank - xRank; ++j)
-            zCoord[j + 1] = yCoord[xRank + j];        
+            zCoord[j + 1] = yCoord[xRank + j];
 
         const auto yOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), shape::stride(const_cast<Nd4jLong*>(yShapeInfo)), yCoord, yRank);
         const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), zCoord, zRank);
@@ -360,11 +360,11 @@ __global__ static void scatterCuda(const int opCode,
                 break;
             case pairwise::ReverseDivide:
                 z[zOffset] = y[yOffset] / z[zOffset];
-                break;                    
+                break;
             case pairwise::CopyPws:
                 z[zOffset] = y[yOffset];
                 break;
-            case pairwise::MaxPairwise: 
+            case pairwise::MaxPairwise:
                 if(z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
                 break;
             case pairwise::MinPairwise:
@@ -378,12 +378,12 @@ __global__ static void scatterCuda(const int opCode,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
                                 const int opCode,
-                                const void *vx, const Nd4jLong *xShapeInfo, 
-                                const void *vy, const Nd4jLong *yShapeInfo, 
+                                const void *vx, const Nd4jLong *xShapeInfo,
+                                const void *vy, const Nd4jLong *yShapeInfo,
                                       void *vz, const Nd4jLong *zShapeInfo) {
-        
+
     scatterCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
@@ -393,19 +393,19 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
 
     PointersManager manager(context, "scatterND");
 
-    NDArray::prepareSpecialUse({&output}, {&updates, &indices});    
+    NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
     if(lock) {
-         
-        const int xRank = indices.rankOf();        
+
+        const int xRank = indices.rankOf();
 
         std::vector<int> zTadDims = ShapeUtils::evalDimsToExclude(output.rankOf(), {0});
         std::vector<int> yTadDims(xRank);
-        std::iota(yTadDims.begin(), yTadDims.end(), xRank == 1 ? 0 : xRank);          
+        std::iota(yTadDims.begin(), yTadDims.end(), xRank == 1 ? 0 : xRank);
 
         auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
         auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
-                      
+
         const Nd4jLong zTadLen = shape::length(packZ.primaryShapeInfo());
         const Nd4jLong yTadLen = shape::length(packY.primaryShapeInfo());
 
@@ -427,10 +427,10 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
         const auto yType = updates.dataType();
 
         BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
-    }    
+    }
 
     NDArray::registerSpecialUse({&output}, {&updates, &indices});
-    manager.synchronize();      
+    manager.synchronize();
 }
 
 
@@ -449,30 +449,30 @@ __global__ static void scatterNDLockCuda(const int opCode,
 
     const auto x = reinterpret_cast<const X*>(vx);
     const auto y = reinterpret_cast<const Y*>(vy);
-          auto z = reinterpret_cast<Y*>(vz);    
+          auto z = reinterpret_cast<Y*>(vz);
 
     __shared__ Nd4jLong *zTadCoords;
-    __shared__ int xLastDim;    
+    __shared__ int xLastDim;
 
     if (threadIdx.x == 0) {
-    
+
         extern __shared__ unsigned char shmem[];
         zTadCoords = reinterpret_cast<Nd4jLong*>(shmem);
         xLastDim = xTadShapeInfo[1];   // xTad has rank = 1 always
     }
-    
+
     __syncthreads();
 
     Nd4jLong* zTadCoordsPerThread = zTadCoords + threadIdx.x * xLastDim;
 
     for (Nd4jLong i = 0; i < numOfXTads; ++i) {
-            
+
         const X* xTad = x + xOffsets[i];
-            
+
         for (uint k = 0; k < xLastDim; ++k)
             zTadCoordsPerThread[k] = xTad[shape::getIndexOffset(k, xTadShapeInfo, xLastDim)];
 
-        const auto zTadIndex = shape::coords2index(xLastDim, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), zTadCoordsPerThread);        
+        const auto zTadIndex = shape::coords2index(xLastDim, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), zTadCoordsPerThread);
 
         const bool isOwner = zTadIndex < gridDim.x ? blockIdx.x == zTadIndex : blockIdx.x == zTadIndex % gridDim.x;
 
@@ -480,13 +480,13 @@ __global__ static void scatterNDLockCuda(const int opCode,
             continue;
 
         if(numOfZTads == 1) {     // yTadLen == numOfXTads in this case
-            
-            if(threadIdx.x != 0) 
+
+            if(threadIdx.x != 0)
                 continue;
-            
+
             const auto yOffset = shape::getIndexOffset(i,         yTadShapeInfo, yTadLen);
             const auto zOffset = shape::getIndexOffset(zTadIndex, zTadShapeInfo, yTadLen);
-                
+
             switch (opCode) {
                 case pairwise::Add:
                     z[zOffset] += y[yOffset];
@@ -505,11 +505,11 @@ __global__ static void scatterNDLockCuda(const int opCode,
                     break;
                 case pairwise::ReverseDivide:
                     z[zOffset] = y[yOffset] / z[zOffset];
-                    break;                    
+                    break;
                 case pairwise::CopyPws:
                     z[zOffset] = y[yOffset];
                     break;
-                case pairwise::MaxPairwise: 
+                case pairwise::MaxPairwise:
                     if(z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
                     break;
                 case pairwise::MinPairwise:
@@ -517,14 +517,14 @@ __global__ static void scatterNDLockCuda(const int opCode,
                     break;
                 default:
                     continue;
-            }            
+            }
         }
         else {
             const auto yTad = y + yOffsets[i];
             const auto zTad = z + zOffsets[zTadIndex];
-            
+
             for (Nd4jLong j = threadIdx.x; j < yTadLen; j += blockDim.x) {
-                
+
                 const auto yOffset = shape::getIndexOffset(j, yTadShapeInfo, yTadLen);
                 const auto zOffset = shape::getIndexOffset(j, zTadShapeInfo, yTadLen);
 
@@ -549,8 +549,8 @@ __global__ static void scatterNDLockCuda(const int opCode,
                         break;
                     case pairwise::CopyPws:
                         zTad[zOffset] = yTad[yOffset];
-                        break;           
-                    case pairwise::MaxPairwise: 
+                        break;
+                    case pairwise::MaxPairwise:
                         if(zTad[zOffset] < yTad[yOffset]) zTad[zOffset] = yTad[yOffset];
                         break;
                     case pairwise::MinPairwise:
@@ -558,7 +558,7 @@ __global__ static void scatterNDLockCuda(const int opCode,
                         break;
                     default:
                         continue;
-                }                                
+                }
             }
         }
     }
@@ -566,15 +566,15 @@ __global__ static void scatterNDLockCuda(const int opCode,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void scatterNDLockCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+static void scatterNDLockCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
                                       const int opCode,
                                       const void* vx, const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
                                       const void* vy, const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
                                             void* vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zOffsets,
                                       const Nd4jLong *zShapeInfo,
                                       const Nd4jLong numOfXTads, const Nd4jLong numOfZTads, const Nd4jLong zTadLen) {
-        
-    scatterNDLockCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, 
+
+    scatterNDLockCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode,
                                                                                    vx, xTadShapeInfo, xOffsets,
                                                                                    vy, yTadShapeInfo, yOffsets,
                                                                                    vz, zTadShapeInfo, zOffsets,
@@ -592,16 +592,16 @@ __global__ static void scatterNDCuda(const int opCode,
 
     const auto x = reinterpret_cast<const X*>(vx);
     const auto y = reinterpret_cast<const Y*>(vy);
-          auto z = reinterpret_cast<Y*>(vz);    
+          auto z = reinterpret_cast<Y*>(vz);
 
     __shared__ int xRank, yRank, zRank, xLastDim;
     __shared__ Nd4jLong yLen, totalThreads, *coord;
-    
+
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
         coord = reinterpret_cast<Nd4jLong*>(shmem);
-        yLen = shape::length(yShapeInfo);    
+        yLen = shape::length(yShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
         xRank = shape::rank(xShapeInfo);
         yRank = shape::rank(yShapeInfo);
@@ -613,14 +613,14 @@ __global__ static void scatterNDCuda(const int opCode,
 
     auto xCoord = coord + threadIdx.x * (xRank + yRank + zRank);
     auto yCoord = xCoord + xRank;
-    auto zCoord = yCoord + yRank;    
+    auto zCoord = yCoord + yRank;
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (Nd4jLong i = tid; i < yLen; i += totalThreads) {
-        
+
         shape::index2coords(yRank, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), i, yLen, yCoord);
-        
+
         for (uint j = 0; j < xRank - 1; ++j)
             xCoord[j] = yCoord[j];
 
@@ -654,11 +654,11 @@ __global__ static void scatterNDCuda(const int opCode,
                 break;
             case pairwise::ReverseDivide:
                 z[zOffset] = y[yOffset] / z[zOffset];
-                break;                    
+                break;
             case pairwise::CopyPws:
                 z[zOffset] = y[yOffset];
                 break;
-            case pairwise::MaxPairwise: 
+            case pairwise::MaxPairwise:
                 if(z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
                 break;
             case pairwise::MinPairwise:
@@ -667,17 +667,17 @@ __global__ static void scatterNDCuda(const int opCode,
             default:
                 continue;
         }
-    }    
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, 
+static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
                                   const int opCode,
-                                  const void *vx, const Nd4jLong *xShapeInfo, 
-                                  const void *vy, const Nd4jLong *yShapeInfo, 
+                                  const void *vx, const Nd4jLong *xShapeInfo,
+                                  const void *vy, const Nd4jLong *yShapeInfo,
                                         void *vz, const Nd4jLong *zShapeInfo) {
-        
+
     scatterNDCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(opCode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
@@ -690,18 +690,18 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
 
     PointersManager manager(context, "scatterND");
 
-    NDArray::prepareSpecialUse({&output}, {&updates, &indices});    
+    NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 
     if(lock) {
- 
-        const int xLastDim = indices.sizeAt(-1);        
 
-        // y_tad and z_tad have the same shape 
+        const int xLastDim = indices.sizeAt(-1);
+
+        // y_tad and z_tad have the same shape
         std::vector<int> yTadDims(zRank - xLastDim), zTadDims(zRank - xLastDim);
         for (int j = 0, i = zTadDims.size() - 1; i >=0 ; --i, ++j) {
             yTadDims[i] = yRank - 1 - j;
             zTadDims[i] = zRank - 1 - j;
-        }        
+        }
 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(indices.getShapeInfo(), {xRank - 1});
         auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
@@ -709,7 +709,7 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = packZ.numberOfTads();
-        const int sharedMem = 8 * threadsPerBlock * xLastDim + 128;        
+        const int sharedMem = 8 * threadsPerBlock * xLastDim + 128;
 
         const auto xType = indices.dataType();
         const auto yType = updates.dataType();
@@ -726,10 +726,10 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
         const auto yType = updates.dataType();
 
         BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), INTEGER_TYPES, GENERIC_NUMERIC_TYPES);
-    }    
+    }
 
     NDArray::registerSpecialUse({&output}, {&updates, &indices});
-    manager.synchronize();        
+    manager.synchronize();
 }
 
 
