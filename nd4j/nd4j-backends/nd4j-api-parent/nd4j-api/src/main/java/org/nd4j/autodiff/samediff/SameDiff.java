@@ -1867,11 +1867,7 @@ public class SameDiff extends SDBaseOps {
 
                 INDArray arr = v.getVariable().getArr();
                 long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
-                if(stateSize == 0){
-                    //Updater has no state array (such as SGD or No-Op updaters
-                    continue;
-                }
-                INDArray view = Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
+                INDArray view = stateSize == 0 ? null : Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
 
                 updaterStates.put(v.getName(), view);
                 updaterMap.put(v.getName(), trainingConfig.getUpdater().instantiate(view, true));
