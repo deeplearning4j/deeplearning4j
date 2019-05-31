@@ -283,8 +283,8 @@ public class WordVectorSerializerTest {
         assertEquals(lookupTable.getSyn0().rows(), ((InMemoryLookupTable<VocabWord>) deser).getSyn0().rows());
         for (int c = 0; c < ((InMemoryLookupTable<VocabWord>) deser).getSyn0().columns(); ++c) {
             for (int r = 0; r < ((InMemoryLookupTable<VocabWord>) deser).getSyn0().rows(); ++r) {
-                assertEquals(lookupTable.getSyn0().getDouble(c,r),
-                            ((InMemoryLookupTable<VocabWord>) deser).getSyn0().getDouble(c,r), 1e-5);
+                assertEquals(lookupTable.getSyn0().getDouble(r,c),
+                            ((InMemoryLookupTable<VocabWord>) deser).getSyn0().getDouble(r,c), 1e-5);
             }
         }
     }

@@ -59,7 +59,13 @@ public class TestOpMapping extends BaseNd4jTest {
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || c == SDVariable.class || ILossFunction.class.isAssignableFrom(c))
                 continue;
 
-            DifferentialFunction df = c.newInstance();
+            DifferentialFunction df;
+            try {
+                df = c.newInstance();
+            } catch (Throwable t){
+                //All differential functions should have a no-arg constructor
+                throw new RuntimeException("Error instantiating new instance - op class " + c.getName() + " likely does not have a no-arg constructor", t);
+            }
             String opName = df.opName();
 
             assertTrue(opName, opNameMapping.containsKey(opName));
