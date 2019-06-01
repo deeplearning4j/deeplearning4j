@@ -23,6 +23,8 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 
+import java.util.Map;
+
 /**
  * Created by Alex on 09/05/2017.
  */
@@ -50,6 +52,11 @@ public class CustomIUpdater implements IUpdater {
             throw new IllegalStateException("View arrays are not supported/required for SGD updater");
         }
         return new CustomGradientUpdater(this);
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
