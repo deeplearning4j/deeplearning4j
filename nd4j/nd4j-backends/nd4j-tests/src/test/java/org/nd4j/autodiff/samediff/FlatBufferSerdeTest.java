@@ -271,6 +271,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
             assertTrue(sd2.isInitializedTraining());
 
             assertEquals(sd.getTrainingConfig(), sd2.getTrainingConfig());
+            assertEquals(sd.getTrainingConfig().toJson(), sd2.getTrainingConfig().toJson());
             Map<String, GradientUpdater> m1 = sd.getUpdaterMap();
             Map<String, GradientUpdater> m2 = sd2.getUpdaterMap();
             assertEquals(m1.keySet(), m2.keySet());

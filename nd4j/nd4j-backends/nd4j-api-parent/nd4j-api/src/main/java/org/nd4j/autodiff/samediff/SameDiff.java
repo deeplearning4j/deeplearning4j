@@ -945,10 +945,11 @@ public class SameDiff extends SDBaseOps {
                 val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
                 session.getNodeOutputs().put(varId, arr);
                 //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
+                break;
             case PLACEHOLDER:
                 //Validate placeholder shapes:
                 long[] phShape = variable.placeholderShape();
-                Preconditions.checkState(Shape.shapeMatchesPlaceholder(phShape, arr.shape()),
+                Preconditions.checkState(phShape == null || Shape.shapeMatchesPlaceholder(phShape, arr.shape()),
                         "Invalid array shape: cannot associate an array with shape %ndShape with a placeholder of shape %s:" +
                                 "shape is wrong rank or does not match on one or more dimensions", arr, phShape);
 
