@@ -38,7 +38,7 @@ template <typename T>
 static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
-    const_cast<NDArray&>(input).fillAsTriangular<T>(dOdI, 0, diagonal, dOdI.sizeAt(-1));
+    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), &dOdI);
     int dLen = dOdI.lengthOf();
 
     PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())

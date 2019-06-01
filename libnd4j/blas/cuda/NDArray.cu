@@ -150,26 +150,30 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray::fillAsTriangular(NDArray& target, const float val, const int lower, const int upper) {
+void NDArray::fillAsTriangular(const float val, const int lower, const int upper, NDArray* target) {
 
-    // if(lower < 0 && upper < 0) {
-    //     output.assign(input);
-    //     return;
-    // }
+    if (isS())
+        throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
+
+    if(target == nullptr)
+        target = this;
+
+    if(!isSameShape(target) && !(rankOf() == 1 && target->rankOf() == 2 && sizeAt(0) == target->sizeAt(0) && sizeAt(0) == target->sizeAt(1)))
+        throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(decltype(*target.getShapeInfo())) * target.rankOf() + 128;
+    const int blocksPerGrid = (target->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(decltype(*target->getShapeInfo())) * target->rankOf() + 128;
 
     PointersManager manager(getContext(), "NDArray::fillAsTriangular");
 
-    NDArray::prepareSpecialUse({&target}, {this});
-    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target.getPlatformBuffer(), target.getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
-    NDArray::registerSpecialUse({&target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
+    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target->getPlatformBuffer(), target->getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
+    NDArray::registerSpecialUse({target}, {this});
 
     manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const float val, const int lower, const int upper), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, const int lower, const int upper, NDArray* target), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {

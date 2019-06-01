@@ -1153,7 +1153,7 @@ namespace nd4j {
         * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
         template <typename T>
-        void fillAsTriangular(NDArray& target, const float value, const int lower, const int upper);
+        void fillAsTriangular(const float value, const int lower, const int upper, NDArray* target = nullptr);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

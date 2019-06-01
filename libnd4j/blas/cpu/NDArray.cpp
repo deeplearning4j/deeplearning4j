@@ -113,36 +113,40 @@ template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, c
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(NDArray& target, const float val, const int lower, const int upper) {
+void NDArray::fillAsTriangular(const float val, const int lower, const int upper, NDArray* target) {
 
     if (isS())
         throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
-    if(!isSameShape(&target) && !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
+
+    if(target == nullptr)
+        target = this;
+
+    if(!isSameShape(target) && !(rankOf() == 1 && target->rankOf() == 2 && sizeAt(0) == target->sizeAt(0) && sizeAt(0) == target->sizeAt(1)))
         throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
     const T value = static_cast<T>(val);
     const auto x = reinterpret_cast<const T*>(getBuffer());
-          auto z = reinterpret_cast<T*>(target.getBuffer());
+          auto z = reinterpret_cast<T*>(target->getBuffer());
 
     const int xRank = rankOf();
-    const int zRank = target.rankOf();
+    const int zRank = target->rankOf();
 
-    const auto zLen = target.lengthOf();
+    const auto zLen = target->lengthOf();
 
-    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target.getShapeInfo());
+    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target->getShapeInfo());
 
     std::vector<Nd4jLong> coords(zRank);
 
     PRAGMA_OMP_PARALLEL_FOR_ARGS(if(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(zRank, target.shapeOf(), i, zLen, coords.data());
-        const auto zOffset = shape::getOffset(0, target.shapeOf(), target.stridesOf(), coords.data(), zRank);
+        shape::index2coords(zRank, target->shapeOf(), i, zLen, coords.data());
+        const auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), coords.data(), zRank);
 
         // if( (row + upper < col) || (row + lower > col) )
         if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
             z[zOffset] = value;
-        else if(this != &target) {      // when this and target are different arrays
+        else if(this != target) {      // when this and target are different arrays
             if(xRank != zRank)
                 coords[0] = coords[1];
             const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shapeOf(), stridesOf(), coords.data(), xRank);
@@ -150,7 +154,7 @@ void NDArray::fillAsTriangular(NDArray& target, const float val, const int lower
         }
     }
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const float val, const int lower, const int upper), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, const int lower, const int upper, NDArray* target), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
