@@ -53,6 +53,7 @@ import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -201,36 +202,6 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray exp = Nd4j.scalar(arr.sumNumber().floatValue()).reshape(1);
         INDArray resultArr = result.getArr();
         assertEquals(exp, resultArr);
-    }
-
-    @Test
-    public void testSaveWriteWithTrainingConfig() throws Exception {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
-        SDVariable x = sameDiff.var("x", arr);
-        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
-        TrainingConfig trainingConfig = TrainingConfig.builder()
-                .dataSetFeatureMapping("x")
-                .dataSetLabelMapping(result.getVarName())
-                .updater(new Nesterovs()).build();
-        sameDiff.setTrainingConfig(trainingConfig);
-        sameDiff.initializeTraining();
-        File newFile = folder.newFile();
-        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(newFile))) {
-            sameDiff.saveWithTrainingConfig(bufferedOutputStream);
-        }
-
-        SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
-        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
-                sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterMap(), sameDiff1.getUpdaterMap());
-
-        sameDiff.saveWithTrainingConfig(newFile);
-        sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
-        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
-                sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterMap(), sameDiff1.getUpdaterMap());
-
     }
 
     @Test

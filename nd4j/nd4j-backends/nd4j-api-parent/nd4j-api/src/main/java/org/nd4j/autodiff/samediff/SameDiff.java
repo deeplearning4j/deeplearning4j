@@ -253,9 +253,6 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private SameDiff child;
 
-    public final static String TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME = "trainingConfig.json";
-    public final static String SAMEDIFF_FILE_ENTRY_NAME = "samediff.fb";
-
     static {
         opMethods = new HashMap<>();
         Method[] methods = SameDiff.class.getDeclaredMethods();
@@ -2578,7 +2575,8 @@ public class SameDiff extends SDBaseOps {
                 Map<String,INDArray> m = gu.getState();
                 if(m != null){
                     for(INDArray arr : m.values()){
-                        arr.close();
+                        if(arr.closeable())
+                            arr.close();
                     }
                 }
             }
@@ -4441,10 +4439,11 @@ public class SameDiff extends SDBaseOps {
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
      * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
-        return asFlatBuffers(0, configuration);
+    public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
+        return asFlatBuffers(0, configuration, includeUpdaterState);
     }
 
     /**
@@ -4452,9 +4451,10 @@ public class SameDiff extends SDBaseOps {
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
      * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration) {
+    public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
         Nd4j.getExecutioner().commit();
         val bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
@@ -4600,7 +4600,7 @@ public class SameDiff extends SDBaseOps {
             String json = trainingConfig.toJson();
             trainingConfigOffset = bufferBuilder.createString(json);
         }
-        if(updaterMap != null && !updaterMap.isEmpty()){
+        if(includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()){
             int[] updaterOffsets = new int[updaterMap.size()];
             int updaterNum = 0;
             for(Map.Entry<String,GradientUpdater> g : updaterMap.entrySet()){
@@ -4639,27 +4639,29 @@ public class SameDiff extends SDBaseOps {
         return bufferBuilder.dataBuffer();
     }
 
-    public FlatGraph asFlatGraph() {
-        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers());
+    public FlatGraph asFlatGraph(boolean includeUpdaterState) {
+        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers(includeUpdaterState));
     }
 
     /**
      * This method returns FlatGraph structure
      *
      * @param configuration
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return
      */
-    public FlatGraph asFlatGraph(long graphId, ExecutorConfiguration configuration) {
-        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(graphId, configuration));
+    public FlatGraph asFlatGraph(long graphId, ExecutorConfiguration configuration, boolean includeUpdaterState) {
+        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(graphId, configuration, includeUpdaterState));
     }
 
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers() {
+    public ByteBuffer asFlatBuffers(boolean includeUpdaterState) {
         val configuration = ExecutorConfiguration.builder()
                 .outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
@@ -4667,119 +4669,56 @@ public class SameDiff extends SDBaseOps {
                 .gatherTimings(true)
                 .build();
 
-        return asFlatBuffers(configuration);
+        return asFlatBuffers(configuration, includeUpdaterState);
     }
 
-
     /**
-     * Save this samediff instance with its training config.
-     * Note that if a training configuration is not defined,
-     * an {@link IllegalStateException} is thrown.
+     * Save the SameDiff instance to a file. Files can be loaded using {@link #load(File, boolean)}
      *
-     * @param outputStream the output stream to write to
-     * @throws IOException
+     * @param file             File to save to
+     * @param saveUpdaterState If true: save the updater state (arrays etc for Adam, Nesterov, RmsProp etc). If false: don't save
+     *                         the updater state. If you want to continue training after loading your model, this should be true,
+     *                         however may increase the file size significantly.
+     *                         If the network is to be used for inference only, set this to false to save space
      */
-    public void saveWithTrainingConfig(OutputStream outputStream) throws IOException {
-        if(this.trainingConfig == null) {
-            throw new IllegalStateException("No training configuration found!");
-        }
-
-        saveWithTrainingConfig(this.trainingConfig,outputStream);
-    }
-
-
-
-    /**
-     * Save this samediff instance with its training config.
-     * Note that if a training configuration is not defined,
-     * an {@link IllegalStateException} is thrown.
-     *
-     * @param outputFile the output stream to write to
-     * @throws IOException
-     */
-    public void saveWithTrainingConfig(File outputFile) throws IOException {
-        if(this.trainingConfig == null) {
-            throw new IllegalStateException("No training configuration found!");
-        }
-
-        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            saveWithTrainingConfig(this.trainingConfig, bufferedOutputStream);
-            bufferedOutputStream.flush();
-        }
-
-    }
-
-
-    /**
-     * Save this samediff instance as a zip file
-     * with the training configuration
-     * @param trainingConfig the training configuration to save
-     * @param outputStream the output stream to write to
-     * @throws IOException
-     */
-    public void saveWithTrainingConfig(TrainingConfig trainingConfig,OutputStream outputStream) throws  IOException {
-        ObjectMapper objectMapper = ObjectMapperHolder.getJsonMapper();
-        String configJson = objectMapper.writeValueAsString(trainingConfig);
-        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(outputStream));
-        ZipEntry config = new ZipEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
-        zipfile.putNextEntry(config);
-        zipfile.write(configJson.getBytes());
-
-        ZipEntry sameDiff = new ZipEntry(SAMEDIFF_FILE_ENTRY_NAME);
-        zipfile.putNextEntry(sameDiff);
-
-        val fb = asFlatBuffers();
-        val offset = fb.position();
-
-        val array = fb.array();
-
-        try (BufferedOutputStream zipFileOutputStream = new BufferedOutputStream(zipfile);
-             val dos = new DataOutputStream(zipFileOutputStream)) {
-            dos.write(array, offset, array.length - offset);
+    public void save(File file, boolean saveUpdaterState) {
+        try {
+            asFlatFile(file, saveUpdaterState);
+        } catch (IOException e) {
+            throw new RuntimeException("Error saving SameDiff instance to file", e);
         }
     }
 
-
     /**
-     * Restore a {@link SameDiff}
-     * instance from a configuration
-     * zip file
-     * @param file the file to restore from
-     * @return the associated samediff instance
-     * @throws IOException
+     * Load the SameDiff instance previously saved with {@link #save(File, boolean)}
+     * @param file             The file to load the network from
+     * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
+     *                         For inference only, this should be false, as the updater state will take more memory, but
+     *                         is not required for training.
+     *                         If the network is to be trained further, this should be true.
+     *                         The updater state can only be loaded if it was saved with the network.
+     * @return The loaded SameDiff network
      */
-    public static SameDiff restoreFromTrainingConfigZip(File file) throws IOException {
-        ZipFile zipFile = new ZipFile(file);
-        ZipEntry config = zipFile.getEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
-        TrainingConfig trainingConfig = null;
-        try(InputStream stream = zipFile.getInputStream(config)) {
-            byte[] read = IOUtils.toByteArray(stream);
-            trainingConfig = ObjectMapperHolder.getJsonMapper().readValue(read,TrainingConfig.class);
+    public static SameDiff load(File file, boolean loadUpdaterState) {
+        try{
+            return fromFlatFile(file, loadUpdaterState);
+        } catch (IOException e){
+            throw new RuntimeException("Error loading SameDiff instance from file", e);
         }
-
-        SameDiff ret = null;
-
-        ZipEntry sameDiffFile = zipFile.getEntry(SAMEDIFF_FILE_ENTRY_NAME);
-        try(InputStream stream = zipFile.getInputStream(sameDiffFile)) {
-            byte[] read = IOUtils.toByteArray(stream);
-            ret = SameDiff.fromFlatBuffers(ByteBuffer.wrap(read));
-        }
-
-
-        ret.setTrainingConfig(trainingConfig);
-        ret.initializeTraining();
-        return ret;
     }
 
     /**
-     * This method converts SameDiff instance to
-     * FlatBuffers and saves it to file which
-     * can be restored later
+     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later<br>
+     * This includes the updater state, if applicable
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
     public void asFlatFile(@NonNull File file) throws IOException {
-        val fb = asFlatBuffers();
+        asFlatFile(file, true);
+    }
+
+    public void asFlatFile(@NonNull File file, boolean withUpdaterState) throws IOException {
+        val fb = asFlatBuffers(withUpdaterState);
         val offset = fb.position();
 
         val array = fb.array();
@@ -4793,9 +4732,10 @@ public class SameDiff extends SDBaseOps {
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      */
-    public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration) throws IOException {
-        val fb = asFlatBuffers(configuration);
+    public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) throws IOException {
+        val fb = asFlatBuffers(configuration, includeUpdaterState);
         val offset = fb.position();
 
         val array = fb.array();
@@ -4807,22 +4747,32 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Create a {@link SameDiff}
-     * instance from a file.
-     * The method to save the file is
-     * {@link #asFlatFile(File)}
+     * Create a {@link SameDiff} instance from a file, including the updater state
+     * The method to save the file is {@link #save(File, boolean)}
      * @param file the file to load from
      * @return the loaded same diff instance
      * @throws IOException
      */
     public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
+        return fromFlatFile(file, true);
+    }
+
+    /**
+     * Create a {@link SameDiff} instance from a file, optionally also loading the updater state
+     * The method to save the file is {@link #save(File, boolean)}
+     * @param file the file to load from
+     * @param loadUpdaterState If true, load the updater state (Adam etc state). For training, use true. For inference, use false
+     * @return the loaded same diff instance
+     * @throws IOException
+     */
+    public static SameDiff fromFlatFile(@NonNull File file, boolean loadUpdaterState) throws IOException {
         byte[] bytes;
         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
             bytes = IOUtils.toByteArray(is);
         }
 
         ByteBuffer bbIn = ByteBuffer.wrap(bytes);
-        return fromFlatBuffers(bbIn);
+        return fromFlatBuffers(bbIn, loadUpdaterState);
     }
 
     /**
@@ -5068,13 +5018,13 @@ public class SameDiff extends SDBaseOps {
      */
     public String asFlatPrint() {
         val sb = new StringBuilder();
-        val fb = asFlatBuffers();
+        val fb = asFlatBuffers(false);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
 
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
-            val var = graph.variables(e);
+            FlatVariable var = graph.variables(e);
             INDArray ndarray = null;
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 FlatArray fa = var.ndarray();
@@ -5118,7 +5068,7 @@ public class SameDiff extends SDBaseOps {
 
         sb.append("\nOps sequence:\n\n");
         for (int e = 0; e < graph.nodesLength(); e++) {
-            val node = graph.nodes(e);
+            FlatNode node = graph.nodes(e);
 
             log.info("{}:<{}>", node.id(), node.name());
             sb.append(node.id())
@@ -5144,7 +5094,7 @@ public class SameDiff extends SDBaseOps {
             sb.append("; Inputs: {");
 
             for (int i = 0; i < node.inputPairedLength(); i++) {
-                val pair = node.inputPaired(i);
+                IntPair pair = node.inputPaired(i);
 
                 sb.append("[").append(pair.first()).append(":").append(pair.second()).append("]");
 

@@ -70,7 +70,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
         SDVariable tanh = sd.nn().tanh("out", in);
         tanh.markAsLoss();
 
-        ByteBuffer bb = sd.asFlatBuffers();
+        ByteBuffer bb = sd.asFlatBuffers(true);
 
         File f = testDir.newFile();
         f.delete();
