@@ -121,6 +121,35 @@ public class LogFileWriter {
 
     public LogFileWriter(File file) throws IOException {
         this.file = file;
+        if(file.exists()){
+            //Restore state
+            StaticInfo si = readStatic();
+            List<Pair<UIStaticInfoRecord, Table>> staticList = si.getData();
+            long staticInfoOffset = 0;
+            boolean seenEndStatic = false;
+            for( int i=0; i<staticList.size(); i++ ){
+                UIStaticInfoRecord r = staticList.get(i).getFirst();
+                if(r.infoType() == UIInfoType.START_EVENTS){
+                    seenEndStatic = true;
+                }
+                staticInfoOffset += r.getByteBuffer().capacity();
+            }
+
+//            if(seenEndStatic)
+//                endStaticInfoOffset = staticInfoOffset;
+            endStaticInfoOffset = si.getFileOffset();
+
+            //Restore names:
+            List<Pair<UIEvent, Table>> events = readEvents();
+            for(Pair<UIEvent, Table> p : events){
+                if(p.getFirst().eventType() == UIEventType.ADD_NAME){
+                    nameIndexCounter.getAndIncrement();
+                    UIAddName name = (UIAddName) p.getSecond();
+                    nameIndexMap.put(name.nameIdx(), name.name());
+                    indexNameMap.put(name.name(), name.nameIdx());
+                }
+            }
+        }
     }
 
     /**
@@ -292,6 +321,7 @@ public class LogFileWriter {
     }
 
     public long registerEventNameQuiet(String name) {
+        Preconditions.checkState(!registeredEventName(name), "Event name \"%s\" has already been registered", name);
         try {
             return registerEventName(name);
         } catch (IOException e){
