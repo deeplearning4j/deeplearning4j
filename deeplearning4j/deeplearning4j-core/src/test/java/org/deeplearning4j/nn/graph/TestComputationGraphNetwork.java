@@ -2121,4 +2121,26 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 1e-8, false, true, new INDArray[]{features}, new INDArray[]{labels}, null, null);
         assertTrue(gradOK);
     }
+
+
+    @Test
+    public void testConv3dMergeVertex(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addLayer("l0", new Convolution3D.Builder().kernelSize(2,2,2).stride(1,1,1).nIn(3).nOut(3).dataFormat(Convolution3D.DataFormat.NCDHW).build(), "in")
+                .addLayer("l1", new Convolution3D.Builder().kernelSize(2,2,2).stride(1,1,1).nIn(3).nOut(3).dataFormat(Convolution3D.DataFormat.NCDHW).build(), "in")
+                .addVertex("out", new MergeVertex(), "l0", "l1")
+                .setInputTypes(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 16, 16, 16, 3))
+                .addInputs("in")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.create(DataType.FLOAT, 1, 3, 16, 16, 16);
+        INDArray out = cg.outputSingle(in);
+    }
 }

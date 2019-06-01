@@ -419,6 +419,9 @@ namespace nd4j {
         void assign(const int value);
         void assign(const int16_t value);
         void assign(const uint8_t value);
+        void assign(const uint16_t value);
+        void assign(const uint32_t value);
+        void assign(const uint64_t value);
         void assign(const int8_t value);
         void assign(const bool value);
 

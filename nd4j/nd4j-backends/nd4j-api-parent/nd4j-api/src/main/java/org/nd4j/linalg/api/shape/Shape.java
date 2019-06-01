@@ -3762,6 +3762,32 @@ public class Shape {
         return retShape;
     }
 
+    /**
+     * Determine whether the placeholder shape and the specified shape are compatible.<br>
+     * Shapes are compatible if:<br>
+     * (a) They are both the same length (same array rank, or null)<br>
+     * (b) At each position either phShape[i] == -1 or phShape[i] == arrShape[i]
+     *
+     * @param phShape  Placeholder shape
+     * @param arrShape Array shape to check if it matches the placeholder shape
+     * @return True if the array shape is compatible with the placeholder shape
+     */
+    public static boolean shapeMatchesPlaceholder(long[] phShape, long[] arrShape) {
+        if (phShape == null && arrShape == null)
+            return true;    //Rank 0?
+        if (phShape == null || arrShape == null)
+            return false;
+        if (phShape.length != arrShape.length)
+            return false;
+        for (int i = 0; i < phShape.length; i++) {
+            if (phShape[i] > 0) {//for <0 case: Any value for this dimension is OK (i.e., -1s)
+                if (phShape[i] != arrShape[i]) {
+                    return false;
+                }
+            }
+        }
 
+        return true;
+    }
 
 }

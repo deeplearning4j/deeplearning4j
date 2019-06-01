@@ -1148,4 +1148,14 @@ public abstract class NativeOps extends Pointer {
      * this method tries to read numBytes bytes from buffer to provoke crash in certain scenarios
      */
     public abstract void tryPointer(Pointer extras, Pointer buffer, int numBytesToRead);
+
+
+    /**
+     * This method returns data type from npy header
+     *
+     * PLEASE NOTE: dont use output directly, use DataType.fromInt(output) instead
+     * @param numpyHeader
+     * @return
+     */
+    public abstract int dataTypeFromNpyHeader(Pointer numpyHeader);
 }

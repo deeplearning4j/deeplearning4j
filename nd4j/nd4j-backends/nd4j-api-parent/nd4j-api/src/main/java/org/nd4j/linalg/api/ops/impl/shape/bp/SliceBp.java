@@ -32,10 +32,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Slice backprop function
@@ -56,6 +53,10 @@ public class SliceBp extends DynamicCustomOp {
         this.size = size;
         addIArgument(begin);
         addIArgument(size);
+    }
+
+    public SliceBp(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gradient, @NonNull SDVariable begin, @NonNull SDVariable size){
+        super(null, sameDiff, new SDVariable[]{input, begin, size, gradient});
     }
 
 
@@ -79,8 +80,15 @@ public class SliceBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 2, "Expected list with exactly 2 datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 2 || dataTypes.size() == 4, "Expected list with exactly 2 or 4 datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as (original) input type
-        return Collections.singletonList(arg().dataType());
+//        if(args().length == 1){
+            //Static begin/size
+        SDVariable[] args = args();
+            return Collections.singletonList(arg().dataType());
+//        } else {
+//            //Dynamic begin/size
+//            return Arrays.asList(arg(0).dataType(), arg(1).dataType(), arg(2).dataType());
+//        }
     }
 }

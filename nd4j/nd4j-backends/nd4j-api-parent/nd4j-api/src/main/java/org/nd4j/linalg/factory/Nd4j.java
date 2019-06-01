@@ -5214,14 +5214,16 @@ public class Nd4j {
     }
 
     /**
-     * Creates a row vector with the specified number of columns
+     * Creates an array with the specified datatype and shape, with values all set to 1
      *
-     * @param columns the columns of the ndarray
+     * @param shape Shape fo the array
      * @return the created ndarray
      */
 
-    public static INDArray ones(DataType dataType, long... columns) {
-        INDArray ret = INSTANCE.createUninitialized(dataType, columns, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+    public static INDArray ones(DataType dataType, long... shape) {
+        if(shape.length == 0)
+            return Nd4j.scalar(dataType, 1.0);
+        INDArray ret = INSTANCE.createUninitialized(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
         return ret;
     }
@@ -6056,12 +6058,16 @@ public class Nd4j {
             case BOOL:
             case UBYTE:
                 return 1;
+            case UINT16:
             case SHORT:
+            case BFLOAT16:
             case HALF:
                 return 2;
+            case UINT32:
             case FLOAT:
             case INT:
                 return 4;
+            case UINT64:
             case LONG:
             case DOUBLE:
                 return 8;
@@ -6511,12 +6517,12 @@ public class Nd4j {
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
-                val doubles = new byte[prod];
+                val bytes = new byte[prod];
                 val sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (byte) sb.get(e + sb.position());
+                    bytes[e] = (byte) sb.get(e + sb.position());
 
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
+                return Nd4j.create(bytes, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
                 val doubles = new boolean[prod];
@@ -6542,6 +6548,13 @@ public class Nd4j {
                     throw new RuntimeException(e);
                 }
             }
+            case UBYTE:
+                UInt8Buffer b = new UInt8Buffer(ArrayUtil.prod(shapeOf));
+                val sb = bb.order(_order).asReadOnlyBuffer();
+                for (int e = 0; e < prod; e++)
+                    b.put(e, sb.get(e));
+
+                return Nd4j.create(b, shapeOf);
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }

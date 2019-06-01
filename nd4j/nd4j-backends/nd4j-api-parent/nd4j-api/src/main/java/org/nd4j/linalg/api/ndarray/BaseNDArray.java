@@ -6476,7 +6476,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public boolean isR() {
         val dtype = dataType();
-        return dtype == DataType.FLOAT || dtype == DataType.DOUBLE || dtype == DataType.HALF;
+        return dtype == DataType.FLOAT || dtype == DataType.DOUBLE || dtype == DataType.HALF || dtype == DataType.BFLOAT16;
     }
 
     @Override
@@ -6496,9 +6496,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray castTo(DataType dataType) {
+        if(dataType == dataType())  //No-op if correct datatype
+            return this;
         if(isEmpty()){
-            if(dataType == dataType())
-                return this;
             return Nd4j.empty(dataType);
         }
         val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());

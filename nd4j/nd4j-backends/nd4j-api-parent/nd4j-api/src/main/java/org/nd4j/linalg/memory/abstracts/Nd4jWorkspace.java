@@ -157,7 +157,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 "For cyclic workspace overallocation should be positive integral value.");
 
             stepsNumber = (int) (workspaceConfiguration.getOverallocationLimit() + 1);
-            log.debug("Steps: {}", stepsNumber);
+            log.trace("Steps: {}", stepsNumber);
         }
 
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)

@@ -2565,6 +2565,11 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
         cnt += buf[cnt];
 }
 
+
+int NativeOps::dataTypeFromNpyHeader(void *header) {
+    return (int) cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header));
+}
+
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric, (void *, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);

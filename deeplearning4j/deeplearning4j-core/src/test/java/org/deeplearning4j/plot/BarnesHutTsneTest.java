@@ -22,6 +22,7 @@ import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
@@ -46,6 +47,7 @@ import org.nd4j.resources.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -110,7 +112,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
-                        NDArrayIndex.interval(0, 784));
+                NDArrayIndex.interval(0, 784));
 
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);

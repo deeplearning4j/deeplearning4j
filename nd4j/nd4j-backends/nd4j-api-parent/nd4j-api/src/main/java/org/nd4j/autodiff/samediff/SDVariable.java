@@ -90,6 +90,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
         Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
+        String nameScope = sameDiff.currentNameScope();
+        if(nameScope != null){
+            varName = nameScope + "/" + varName;
+        }
+
         this.varName = varName;
         this.variableType = varType;
         this.dataType = dataType;
@@ -205,13 +210,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             return sameDiff.getArrForVarName(getVarName());
 
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
-        if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
-            INDArray arr = Nd4j.valueArrayOf(getShape(),getScalarValue().getDouble(0));
-            sameDiff.associateArrayWithVariable(arr,this);
-            if(log.isTraceEnabled()){
-                log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
-            }
-        } else if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
+        if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
             INDArray arr = weightInitScheme.create(dataType, shape);
             sameDiff.associateArrayWithVariable(arr, this);
             if(log.isTraceEnabled()){
@@ -228,15 +227,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             }
             return null;
         }
-//        else {
-//            long[] shape = sameDiff.getShapeForVarName(getVarName());
-//            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
-//            sameDiff.associateArrayWithVariable(newAlloc,this);
-//            if(log.isTraceEnabled()){
-//                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
-//            }
-//        }
-
         return sameDiff.getArrForVarName(getVarName());
     }
 
@@ -1916,6 +1906,16 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.convertToVariable(this);
     }
 
+    /**
+     * Rename this variable to a new name. Equivalent to {@link SameDiff#renameVariable(String, String)}
+     *
+     * @param newName The new name for the variable - no variable with this name must already exist
+     * @return The current variable (same object)
+     */
+    public SDVariable rename(String newName) {
+        sameDiff.renameVariable(getVarName(), newName);
+        return this;
+    }
 
     /**
      * Mark this variable as a loss function variable. This means that this variable will be minimized via backprop during training.<br>

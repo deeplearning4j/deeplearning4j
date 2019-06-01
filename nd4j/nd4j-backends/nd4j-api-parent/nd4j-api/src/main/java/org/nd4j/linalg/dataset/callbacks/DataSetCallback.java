@@ -14,37 +14,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff.samediff.flow;
+package org.nd4j.linalg.dataset.callbacks;
 
-import lombok.Data;
-import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
+
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
- * This class describe Node state during execution time.
- *
  * @author raver119@gmail.com
  */
-@Data
-public class NodeState {
-    private String nodeName;
-    private boolean active = true;
-    private int activeBranch = 0;
-    private boolean executed = false;
-    private long numCycles = 0;
+public interface DataSetCallback {
 
-    private int rewindPosition = -1;
-    private String rewindNode;
+    void call(DataSet dataSet);
 
-    public NodeState(@NonNull String nodeName) {
-        this.nodeName = nodeName;
-    }
+    void call(MultiDataSet multiDataSet);
 
-    public void incrementNumberOfCycles() {
-        numCycles++;
-    }
-
-    public long getNumberOfCycles() {
-        return numCycles;
-    }
+    void reset();
 }

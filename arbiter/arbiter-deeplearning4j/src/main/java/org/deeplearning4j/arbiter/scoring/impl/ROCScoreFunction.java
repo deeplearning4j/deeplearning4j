@@ -19,12 +19,11 @@ package org.deeplearning4j.arbiter.scoring.impl;
 import lombok.*;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.ROC;
-import org.deeplearning4j.eval.ROCBinary;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.evaluation.classification.ROC;
+import org.nd4j.evaluation.classification.ROCBinary;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 

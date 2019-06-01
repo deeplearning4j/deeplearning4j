@@ -154,7 +154,7 @@ public class FileReadWriteTests extends BaseNd4jTest {
         w.registerEventName("accuracy");
         for( int iter=0; iter<3; iter++) {
             long t = System.currentTimeMillis();
-            w.writeScalarEvent("accuracy", t, iter, 0, 0.5 + 0.1 * iter);
+            w.writeScalarEvent("accuracy", LogFileWriter.EventSubtype.EVALUATION, t, iter, 0, 0.5 + 0.1 * iter);
         }
 
         //Read events back in...
@@ -188,6 +188,6 @@ public class FileReadWriteTests extends BaseNd4jTest {
 
         w.registerEventName("name");
         INDArray arr = Nd4j.create(1);
-        w.writeHistogramEventDiscrete("name", System.currentTimeMillis(), 0, 0, null, arr);
+        w.writeHistogramEventDiscrete("name", LogFileWriter.EventSubtype.TUNING_METRIC, System.currentTimeMillis(), 0, 0, null, arr);
     }
 }

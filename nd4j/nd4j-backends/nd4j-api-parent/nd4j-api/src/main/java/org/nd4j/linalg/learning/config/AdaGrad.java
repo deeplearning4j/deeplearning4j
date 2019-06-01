@@ -24,6 +24,8 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 /**
  * Vectorized Learning Rate used per Connection Weight
  * <p/>
@@ -80,6 +82,13 @@ public class AdaGrad implements IUpdater {
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaGradUpdater u = new AdaGradUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
+        return u;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        AdaGradUpdater u = new AdaGradUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
         return u;
     }
 

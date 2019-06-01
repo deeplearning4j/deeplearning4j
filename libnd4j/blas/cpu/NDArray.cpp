@@ -571,6 +571,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<int (int, int, int)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<int16_t (int16_t, int16_t, int16_t)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<uint8_t (uint8_t, uint8_t, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<uint16_t (uint16_t, uint16_t, uint16_t)>& func, NDArray* target);
+    template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<uint32_t (uint32_t, uint32_t, uint32_t)>& func, NDArray* target);
+    template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<uint64_t (uint64_t, uint64_t, uint64_t)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<int8_t (int8_t, int8_t, int8_t)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<bool (bool, bool, bool)>& func, NDArray* target);
 
@@ -637,6 +640,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint8_t (uint8_t, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint16_t (uint16_t, uint16_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint32_t (uint32_t, uint32_t)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<uint64_t (uint64_t, uint64_t)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<int8_t (int8_t, int8_t)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<bool (bool, bool)>& func, NDArray* target);
 
@@ -691,6 +697,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     template void NDArray::applyLambda(const std::function<int16_t(int16_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<int32_t(int32_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<uint8_t(uint8_t)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<uint16_t(uint16_t)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<uint32_t(uint32_t)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<uint64_t(uint64_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<int8_t(int8_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<bool(bool)>& func, NDArray* target);
 
@@ -743,6 +752,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     template void NDArray::applyIndexedLambda(const std::function<int(Nd4jLong, int)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<int16_t(Nd4jLong, int16_t)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<uint8_t (Nd4jLong, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedLambda(const std::function<uint16_t (Nd4jLong, uint16_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedLambda(const std::function<uint32_t (Nd4jLong, uint32_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedLambda(const std::function<uint64_t (Nd4jLong, uint64_t)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<int8_t(Nd4jLong, int8_t)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<bool(Nd4jLong, bool)>& func, NDArray* target);
 
@@ -807,6 +819,9 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<int (Nd4jLong, int, int)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<int16_t (Nd4jLong, int16_t, int16_t)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<uint8_t (Nd4jLong, uint8_t, uint8_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<uint16_t (Nd4jLong, uint16_t, uint16_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<uint32_t (Nd4jLong, uint32_t, uint32_t)>& func, NDArray* target);
+    template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<uint64_t (Nd4jLong, uint64_t, uint64_t)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<int8_t (Nd4jLong, int8_t, int8_t)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<bool (Nd4jLong, bool, bool)>& func, NDArray* target);
 #endif
@@ -1133,6 +1148,24 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void NDArray::assign(const uint8_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint16_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint32_t value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const uint64_t value) {
         // just fire scalar
         auto temp = NDArrayFactory::create(this->dataType(), value, this->_workspace);
         NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
@@ -3532,6 +3565,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const int value);
     template void NDArray::p(const Nd4jLong i, const int8_t value);
     template void NDArray::p(const Nd4jLong i, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const uint16_t value);
+    template void NDArray::p(const Nd4jLong i, const uint32_t value);
+    template void NDArray::p(const Nd4jLong i, const uint64_t value);
     template void NDArray::p(const Nd4jLong i, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const bool value);
 
@@ -3585,6 +3621,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint32_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint64_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
    // template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const utf8string value);
@@ -3610,6 +3649,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint32_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint64_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
@@ -3632,6 +3674,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint32_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint64_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
@@ -3654,6 +3699,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const Nd4jLong value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int8_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const uint8_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const uint16_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const uint32_t value);
+template void NDArray::pIdx(const Nd4jLong* indices, const uint64_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int16_t value);
 template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 

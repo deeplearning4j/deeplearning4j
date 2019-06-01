@@ -22,6 +22,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -137,14 +139,8 @@ public abstract class AbstractSession<T, O> {
      * @param placeholderValues The placeholder values (if any).
      * @return The specified variable values, optionally in the specified workspace
      */
-    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues) {
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, List<Listener> listeners, boolean training, At at) {
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
-        List<String> sdPlaceholders = sameDiff.inputs();
-        Preconditions.checkState(sdPlaceholders == null || sdPlaceholders.isEmpty()
-                        || (placeholderValues != null && placeholderValues.size() == sdPlaceholders.size() &&
-                        placeholderValues.keySet().containsAll(sdPlaceholders)),
-                "Attempting to perform inference with invalid placeholders: SameDiff instance has placeholder variables %s, placeholders provided for inference: %s",
-                sdPlaceholders, (placeholderValues == null ? null : placeholderValues.keySet()));
 
 
         //Step 0: validation - that variables exist, placeholders have arrays, etc
@@ -168,6 +164,40 @@ public abstract class AbstractSession<T, O> {
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
         // we actually need to execute
         initSubgraph(variables);
+
+        //Step 1a: Check that we have required placeholders
+        List<String> phNames = sameDiff.inputs();
+        if(placeholderValues != null && !placeholderValues.keySet().containsAll(phNames)){
+            /* We only have a subset of all placeholders
+            Validate that we have all *required* placeholder values. Some might not be needed to calculate the requested outputs
+            A placeholder is required if:
+            (a) It's one of the requested outputs
+            (b) It's required to calculate any of the ops in the subgraph
+             */
+            for(String s : phNames){
+                boolean required = false;
+                if(variables.contains(s)){      //TODO List.contains - O(N)
+                    required = true;
+                }
+                if(!required){
+                    Variable v = sameDiff.getVariables().get(s);
+                    if(v.getInputsForOp() != null){
+                        for(String s2 : v.getInputsForOp()){
+                            if(subgraph.contains(s2)){
+                                //Placeholder is required
+                                required = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if(required && !placeholderValues.containsKey(s)){
+                    throw new IllegalStateException("An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
+                            " but a placeholder value was not provided");
+                }
+            }
+        }
 
         //Step 2: execute in any order, until we have all required nodeOutputs
         /*
@@ -263,7 +293,7 @@ public abstract class AbstractSession<T, O> {
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
                 O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, training, at);
 
 
                 //Post execution: work out what is now available for exec
@@ -791,7 +821,8 @@ public abstract class AbstractSession<T, O> {
      * @param inputs          The specific input arrays for the op
      * @return The outputs of the op
      */
-    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs);
+    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
+                                   List<Listener> listeners, boolean training, At at);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.

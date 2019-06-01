@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -566,5 +567,29 @@ public class CustomOpsTests extends BaseNd4jTest {
             System.out.println(i);
             Nd4j.getExecutioner().exec(op);
         }
+    }
+
+    @Test
+    public void testScalarVector_edge_1() {
+        val x = Nd4j.scalar(2.0f);
+        val y = Nd4j.createFromArray(new float[]{2.0f});
+        val e = Nd4j.createFromArray(new float[]{4.0f});
+
+        val z = Nd4j.exec(new AddOp(new INDArray[]{x, y}, new INDArray[]{}))[0];
+
+        assertTrue(Shape.shapeEquals(e.shape(), z.shape()));
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testScalarVector_edge_2() {
+        val x = Nd4j.scalar(2.0f);
+        val y = Nd4j.createFromArray(new float[]{2.0f});
+        val e = Nd4j.createFromArray(new float[]{4.0f});
+
+        val z = Nd4j.exec(new AddOp(new INDArray[]{y, x}, new INDArray[]{}))[0];
+
+        assertTrue(Shape.shapeEquals(e.shape(), z.shape()));
+        assertEquals(e, z);
     }
 }

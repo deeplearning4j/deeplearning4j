@@ -647,9 +647,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         int nClasses = confusion.getClasses().size();
         DecimalFormat df = new DecimalFormat("0.0000");
         double acc = accuracy();
-        double precisionMacro = precision(EvaluationAveraging.Macro);
-        double recallMacro = recall(EvaluationAveraging.Macro);
-        double f1Macro = f1(EvaluationAveraging.Macro);
+        double precision = precision(); //Macro precision for N>2, or binary class 1 (only) precision by default
+        double recall = recall();       //Macro recall for N>2, or binary class 1 (only) precision by default
+        double f1 = f1();               //Macro F1 for N>2, or binary class 1 (only) precision by default
         builder.append("\n========================Evaluation Metrics========================");
         builder.append("\n # of classes:    ").append(nClasses);
         builder.append("\n Accuracy:        ").append(format(df, acc));
@@ -657,7 +657,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             double topNAcc = topNAccuracy();
             builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df, topNAcc));
         }
-        builder.append("\n Precision:       ").append(format(df, precisionMacro));
+        builder.append("\n Precision:       ").append(format(df, precision));
         if (nClasses > 2 && averagePrecisionNumClassesExcluded() > 0) {
             int ex = averagePrecisionNumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");
@@ -665,7 +665,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 builder.append("es");
             builder.append(" excluded from average)");
         }
-        builder.append("\n Recall:          ").append(format(df, recallMacro));
+        builder.append("\n Recall:          ").append(format(df, recall));
         if (nClasses > 2 && averageRecallNumClassesExcluded() > 0) {
             int ex = averageRecallNumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");
@@ -673,7 +673,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 builder.append("es");
             builder.append(" excluded from average)");
         }
-        builder.append("\n F1 Score:        ").append(format(df, f1Macro));
+        builder.append("\n F1 Score:        ").append(format(df, f1));
         if (nClasses > 2 && averageF1NumClassesExcluded() > 0) {
             int ex = averageF1NumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");

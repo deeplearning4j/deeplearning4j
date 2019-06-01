@@ -19,6 +19,8 @@
 //
 
 #include "testinclude.h"
+#include <string>
+#include <NativeOps.h>
 
 class FileTest : public testing::Test {
 
@@ -27,6 +29,43 @@ class FileTest : public testing::Test {
 class LoadFromStringTest :  public testing::Test {
 
 };
+
+class HeaderTest :  public testing::Test {
+
+};
+
+TEST_F(HeaderTest, test_dataTypes_1) {
+    std::string header("0NUMPY6789{'descr': '>f4");
+
+
+    NativeOps nativeOps;
+    ASSERT_EQ(nd4j::DataType::FLOAT32, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+}
+
+TEST_F(HeaderTest, test_dataTypes_2) {
+    std::string header("0NUMPY6789{'descr': '>f8");
+
+
+    NativeOps nativeOps;
+    ASSERT_EQ(nd4j::DataType::DOUBLE, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+}
+
+TEST_F(HeaderTest, test_dataTypes_3) {
+    std::string header("0NUMPY6789{'descr': '<i4");
+
+
+    NativeOps nativeOps;
+    ASSERT_EQ(nd4j::DataType::INT32, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+}
+
+TEST_F(HeaderTest, test_dataTypes_4) {
+    std::string header("0NUMPY6789{'descr': '>u2");
+
+
+    NativeOps nativeOps;
+    ASSERT_EQ(nd4j::DataType::UINT16, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+}
+
 /*
 TEST_F(FileTest,T) {
     cnpy::NpyArray npy = cnpy::npyLoad(std::string("/home/agibsonccc/code/libnd4j/test.npy"));

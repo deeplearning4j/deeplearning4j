@@ -3707,3 +3707,7 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
 
     cudaStreamDestroy(stream);
 }
+
+int NativeOps::dataTypeFromNpyHeader(void *header) {
+    return (int) cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header));
+}

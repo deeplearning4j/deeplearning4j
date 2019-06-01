@@ -70,6 +70,13 @@ public class FlatBuffersMapper {
                 return DataType.UINT8;
             case UTF8:
                 return DataType.UTF8;
+            case UINT16:
+                return DataType.UINT16;
+            case UINT32:
+                return DataType.UINT32;
+            case UINT64:
+                return DataType.UINT64;
+
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -102,6 +109,12 @@ public class FlatBuffersMapper {
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
         else if (val == DataType.UTF8)
             return org.nd4j.linalg.api.buffer.DataType.UTF8;
+        else if (val == DataType.UINT16)
+            return org.nd4j.linalg.api.buffer.DataType.UINT16;
+        else if (val == DataType.UINT32)
+            return org.nd4j.linalg.api.buffer.DataType.UINT32;
+        else if (val == DataType.UINT64)
+            return org.nd4j.linalg.api.buffer.DataType.UINT64;
         else
             throw new RuntimeException("Unknown datatype: " + val);
     }
@@ -462,7 +475,11 @@ public class FlatBuffersMapper {
                 String str = (String) v;
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
-            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ){
+            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ) {
+                String str = v.toString();
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
+            } else if(v instanceof Enum){
                 String str = v.toString();
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
@@ -534,7 +551,6 @@ public class FlatBuffersMapper {
             int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
 
             outIdxs[count++] = FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape);
-
         }
         return outIdxs;
     }
