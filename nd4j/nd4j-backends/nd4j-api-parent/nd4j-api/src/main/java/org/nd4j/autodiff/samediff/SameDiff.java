@@ -5179,6 +5179,12 @@ public class SameDiff extends SDBaseOps {
             String arrayShape = "-";
             if (arr != null) {
                 arrayShape = Arrays.toString(arr.shape());
+            } else if(varMap.get(s).isPlaceHolder()){
+                SDVariable v = varMap.get(s);
+                long[] phShape = v.placeholderShape();
+                if(phShape != null){
+                    arrayShape = Arrays.toString(phShape);
+                }
             }
             String varType = getVariable(s).getVariableType().toString();
             String dtype = getVariable(s).dataType().toString();
