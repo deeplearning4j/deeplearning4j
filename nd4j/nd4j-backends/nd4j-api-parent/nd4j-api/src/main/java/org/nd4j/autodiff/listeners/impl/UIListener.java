@@ -1,14 +1,19 @@
 package org.nd4j.autodiff.listeners.impl;
 
+import com.google.flatbuffers.Table;
 import lombok.NonNull;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.graph.UIGraphStructure;
+import org.nd4j.graph.UIInfoType;
+import org.nd4j.graph.UIStaticInfoRecord;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -19,12 +24,64 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * User interface listener for SameDiff<br>
+ * <br>
+ * <b>Basic usage:</b>
+ * <pre>
+ * {@code
+ * UIListener l = UIListener.builder(f)
+ *                  //Plot loss curve, at every iteration (enabled and set to 1 by default)
+ *                 .plotLosses(1)
+ *                 //Plot the training set evaluation metrics: accuracy and f1 score
+ *                 .trainEvaluationMetrics("softmax", 0, Evaluation.Metric.ACCURACY, Evaluation.Metric.F1)
+ *                 //Plot the parameter to update:ratios for each parameter, every 10 iterations
+ *                 .updateRatios(10)
+ *                 .build();
+ * }
+ * </pre>
+ * <br>
+ * Note that the UIListener supports continuing with the same network on the same file - but only if the network configuration
+ * matches. See {@link FileMode} for configuration/details
+ *
+ * @author Alex Black
+ */
 public class UIListener extends BaseListener {
 
+    /**
+     * Default: FileMode.CREATE_OR_APPEND<br>
+     * The mode for handling behaviour when an existing UI file already exists<br>
+     * CREATE: Only allow new file creation. An exception will be thrown if the log file already exists.<br>
+     * APPEND: Only allow appending to an existing file. An exception will be thrown if: (a) no file exists, or (b) the
+     * network configuration in the existing log file does not match the current log file.<br>
+     * CREATE_OR_APPEND: As per APPEND, but create a new file if none already exists.<br>
+     * CREATE_APPEND_NOCHECK: As per CREATE_OR_APPEND, but no exception will be thrown if the existing model does not
+     * match the current model structure. This mode is not recommended.<br>
+     */
+    public enum FileMode {CREATE, APPEND, CREATE_OR_APPEND, CREATE_APPEND_NOCHECK}
+
+    /**
+     * Used to specify how the Update:Parameter ratios are computed. Only relevant when the update ratio calculation is
+     * enabled via {@link Builder#updateRatios(int, UpdateRatio)}; update ratio collection is disabled by default<br>
+     * L2: l2Norm(updates)/l2Norm(parameters) is used<br>
+     * MEAN_MAGNITUDE: mean(abs(updates))/mean(abs(parameters)) is used<br>
+     */
     public enum UpdateRatio {L2, MEAN_MAGNITUDE}
+
+    /**
+     * Used to specify which histograms should be collected. Histogram collection is disabled by default, but can be
+     * enabled via {@link Builder#histograms(int, HistogramType...)}. Note that multiple histogram types may be collected simultaneously.<br>
+     * Histograms may be collected for:<br>
+     * PARAMETERS: All trainable parameters<br>
+     * PARAMETER_GRADIENTS: Gradients corresponding to the trainable parameters<br>
+     * PARAMETER_UPDATES: All trainable parameter updates, before they are applied during training (updates are gradients after applying updater and learning rate etc)<br>
+     * ACTIVATIONS: Activations - ARRAY type SDVariables - those that are not constants, variables or placeholders<br>
+     * ACTIVATION_GRADIENTS: Activation gradients
+     */
     public enum HistogramType {PARAMETERS, PARAMETER_GRADIENTS, PARAMETER_UPDATES, ACTIVATIONS, ACTIVATION_GRADIENTS}
 
 
+    private FileMode fileMode;
     private File logFile;
     private int lossPlotFreq;
     private int performanceStatsFrequency;
@@ -51,9 +108,10 @@ public class UIListener extends BaseListener {
 
     private int firstUpdateRatioIter = -1;
 
-
+    private boolean checkStructureForRestore;
 
     private UIListener(Builder b){
+        fileMode = b.fileMode;
         logFile = b.logFile;
         lossPlotFreq = b.lossPlotFreq;
         performanceStatsFrequency = b.performanceStatsFrequency;
@@ -67,8 +125,138 @@ public class UIListener extends BaseListener {
         testEvaluation = b.testEvaluation;
         learningRateFrequency = b.learningRateFrequency;
 
-        Preconditions.checkState(!logFile.exists(), "Log file already exists: %s", logFile);
+        switch (fileMode){
+            case CREATE:
+                Preconditions.checkState(!logFile.exists(), "Log file already exists and fileMode is set to CREATE: %s\n" +
+                        "Either delete the existing file, specify a path that doesn't exist, or set the UIListener to another mode " +
+                        "such as CREATE_OR_APPEND", logFile);
+                break;
+            case APPEND:
+                Preconditions.checkState(logFile.exists(), "Log file does not exist and fileMode is set to APPEND: %s\n" +
+                        "Either specify a path to an existing log file for this model, or set the UIListener to another mode " +
+                        "such as CREATE_OR_APPEND", logFile);
+                break;
+        }
+
+        if(logFile.exists())
+            restoreLogFile();
+
     }
+
+    protected void restoreLogFile(){
+        if(logFile.length() == 0 && fileMode == FileMode.CREATE_OR_APPEND || fileMode == FileMode.APPEND){
+            logFile.delete();
+            return;
+        }
+
+        try {
+            writer = new LogFileWriter(logFile);
+        } catch (IOException e){
+            throw new RuntimeException("Error restoring existing log file at path: " + logFile.getAbsolutePath(), e);
+        }
+
+        if(fileMode == FileMode.APPEND || fileMode == FileMode.CREATE_OR_APPEND){
+            //Check the graph structure, if it exists.
+            //This is to avoid users creating UI log file with one network configuration, then unintentionally appending data
+            // for a completely different network configuration
+
+            LogFileWriter.StaticInfo si;
+            try {
+                si = writer.readStatic();
+            } catch (IOException e){
+                throw new RuntimeException("Error restoring existing log file, static info at path: " + logFile.getAbsolutePath(), e);
+            }
+
+            List<Pair<UIStaticInfoRecord, Table>> staticList = si.getData();
+            if(si != null) {
+                for (int i = 0; i < staticList.size(); i++) {
+                    UIStaticInfoRecord r = staticList.get(i).getFirst();
+                    if (r.infoType() == UIInfoType.GRAPH_STRUCTURE){
+                        //We can't check structure now (we haven't got SameDiff instance yet) but we can flag it to check on first iteration
+                        checkStructureForRestore = true;
+                    }
+                }
+            }
+
+        }
+    }
+
+    protected void checkStructureForRestore(SameDiff sd){
+        LogFileWriter.StaticInfo si;
+        try {
+            si = writer.readStatic();
+        } catch (IOException e){
+            throw new RuntimeException("Error restoring existing log file, static info at path: " + logFile.getAbsolutePath(), e);
+        }
+
+        List<Pair<UIStaticInfoRecord, Table>> staticList = si.getData();
+        if(si != null) {
+            UIGraphStructure structure = null;
+            for (int i = 0; i < staticList.size(); i++) {
+                UIStaticInfoRecord r = staticList.get(i).getFirst();
+                if (r.infoType() == UIInfoType.GRAPH_STRUCTURE){
+                    structure = (UIGraphStructure) staticList.get(i).getSecond();
+                    break;
+                }
+            }
+
+            if(structure != null){
+                int nInFile = structure.inputsLength();
+                List<String> phs = new ArrayList<>(nInFile);
+                for( int i=0; i<nInFile; i++ ){
+                    phs.add(structure.inputs(i));
+                }
+
+                List<String> actPhs = sd.inputs();
+                if(actPhs.size() != phs.size() || !actPhs.containsAll(phs)){
+                    throw new IllegalStateException("Error continuing collection of UI stats in existing model file " + logFile.getAbsolutePath() +
+                            ": Model structure differs. Existing (file) model placeholders: " + phs + " vs. current model placeholders: " + actPhs +
+                            ". To disable this check, use FileMode.CREATE_APPEND_NOCHECK though this may result issues when rendering data via UI");
+                }
+
+                //Check variables:
+                int nVarsFile = structure.variablesLength();
+                List<String> vars = new ArrayList<>(nVarsFile);
+                for( int i=0; i<nVarsFile; i++ ){
+                    vars.add(structure.variables(i).name());
+                }
+                List<SDVariable> sdVars = sd.variables();
+                List<String> varNames = new ArrayList<>(sdVars.size());
+                for(SDVariable v : sdVars){
+                    varNames.add(v.getVarName());
+                }
+
+                if(varNames.size() != vars.size() || !varNames.containsAll(vars)){
+                    int countDifferent = 0;
+                    List<String> different = new ArrayList<>();
+                    for(String s : varNames){
+                        if(!vars.contains(s)){
+                            countDifferent++;
+                            if(different.size() < 10){
+                                different.add(s);
+                            }
+                        }
+                    }
+                    StringBuilder msg = new StringBuilder();
+                    msg.append("Error continuing collection of UI stats in existing model file ")
+                            .append(logFile.getAbsolutePath())
+                            .append(": Current model structure differs vs. model structure in file - ").append(countDifferent).append(" variable names differ.");
+                    if(different.size() == countDifferent){
+                        msg.append("\nVariables in new model not present in existing (file) model: ").append(different);
+                    } else {
+                        msg.append("\nFirst 10 variables in new model not present in existing (file) model: ").append(different);
+                    }
+                    msg.append("\nTo disable this check, use FileMode.CREATE_APPEND_NOCHECK though this may result issues when rendering data via UI");
+
+                    throw new IllegalStateException(msg.toString());
+                }
+            }
+        }
+
+        checkStructureForRestore = false;
+    }
+
+
 
     protected void initalizeWriter(SameDiff sd) {
         try{
@@ -109,7 +297,9 @@ public class UIListener extends BaseListener {
                 for(Evaluation.Metric m : l) {
                     String mName = n + "/train/" + m.toString().toLowerCase();
                     if (!wroteEvalNames) {
-                        writer.registerEventNameQuiet(mName);
+                        if(!writer.registeredEventName(mName)) {    //Might have been registered if continuing training
+                            writer.registerEventNameQuiet(mName);
+                        }
                     }
 
                     double score = e.getValue().scoreForMetric(m);
@@ -129,25 +319,34 @@ public class UIListener extends BaseListener {
 
     @Override
     public void iterationStart(SameDiff sd, At at, MultiDataSet data, long etlMs) {
+        if(writer == null)
+            initalizeWriter(sd);
+        if(checkStructureForRestore)
+            checkStructureForRestore(sd);
+
         //If there's any evaluation to do in opExecution method, we'll need this there
         currentIterDataSet = data;
     }
 
     @Override
     public void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss) {
-        if(writer == null)
-            initalizeWriter(sd);
         long time = System.currentTimeMillis();
 
         //iterationDone method - just writes loss values (so far)
 
         if(!wroteLossNames){
             for(String s : loss.getLossNames()){
-                writer.registerEventNameQuiet("losses/" + s);
+                String n = "losses/" + s;
+                if(!writer.registeredEventName(n)) {    //Might have been registered if continuing training
+                    writer.registerEventNameQuiet(n);
+                }
             }
 
             if(loss.numLosses() > 1){
-                writer.registerEventNameQuiet("losses/totalLoss");
+                String n = "losses/totalLoss";
+                if(!writer.registeredEventName(n)) {    //Might have been registered if continuing training
+                    writer.registerEventNameQuiet(n);
+                }
             }
             wroteLossNames = true;
         }
@@ -179,7 +378,9 @@ public class UIListener extends BaseListener {
             //Collect + report learning rate
             if(!wroteLearningRateName){
                 String name = "learningRate";
-                writer.registerEventNameQuiet(name);
+                if(!writer.registeredEventName(name)) {
+                    writer.registerEventNameQuiet(name);
+                }
                 wroteLearningRateName = true;
             }
 
@@ -249,7 +450,9 @@ public class UIListener extends BaseListener {
                     for(Evaluation.Metric m : trainEvalMetrics.get(p)) {
                         String n = "evaluation/train_iter/" + p.getKey() + "/" + m.toString().toLowerCase();
                         if (!wroteEvalNamesIter) {
-                            writer.registerEventNameQuiet(n);
+                            if(!writer.registeredEventName(n)) {    //Might have been written previously if continuing training
+                                writer.registerEventNameQuiet(n);
+                            }
                             wrote = true;
                         }
 
@@ -280,7 +483,9 @@ public class UIListener extends BaseListener {
             if(firstUpdateRatioIter == at.iteration()){
                 //Register name
                 String name = "logUpdateRatio/" + v.getName();
-                writer.registerEventNameQuiet(name);
+                if(!writer.registeredEventName(name)){  //Might have already been registered if continuing
+                    writer.registerEventNameQuiet(name);
+                }
             }
 
             double params;
@@ -321,6 +526,7 @@ public class UIListener extends BaseListener {
 
     public static class Builder {
 
+        private FileMode fileMode = FileMode.CREATE_OR_APPEND;
         private File logFile;
 
         private int lossPlotFreq = 1;
@@ -343,6 +549,11 @@ public class UIListener extends BaseListener {
 
         public Builder(@NonNull File logFile){
             this.logFile = logFile;
+        }
+
+        public Builder fileMode(FileMode fileMode){
+            this.fileMode = fileMode;
+            return this;
         }
 
         public Builder plotLosses(int frequency){
