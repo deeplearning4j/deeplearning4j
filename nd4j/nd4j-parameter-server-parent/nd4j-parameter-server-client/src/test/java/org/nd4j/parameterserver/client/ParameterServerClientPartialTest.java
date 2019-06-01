@@ -22,6 +22,7 @@ import io.aeron.driver.ThreadingMode;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
@@ -104,6 +105,7 @@ public class ParameterServerClientPartialTest extends BaseNd4jTest {
 
 
     @Test(timeout = 60000L)
+    @Ignore("AB 2019/06/01 - Intermittent failures - see issue 7657")
     public void testServer() throws Exception {
         ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)
                         .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())
