@@ -6039,7 +6039,9 @@ public class Nd4j {
      * This method returns sizeOf(currentDataType), in bytes
      *
      * @return number of bytes per element
+     * @deprecated Use DataType.width()
      */
+    @Deprecated
     public static int sizeOfDataType() {
         return sizeOfDataType(Nd4j.dataType());
     }

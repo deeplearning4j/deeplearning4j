@@ -22,16 +22,13 @@ import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.BaseDL4JTest;
-<<<<<<< HEAD
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-=======
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.gradient.Gradient;
->>>>>>> 02682fda25309111e41da915c57889b5f4193dbc
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -50,6 +47,7 @@ import org.nd4j.resources.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -97,7 +95,12 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         
         val exp = Nd4j.createFromArray(new double[]{-3.5318212819287327, 35.40331834897696, 3.890809489531651, -1.291195609955519, -42.854099388207466, 7.8761368019456635, 28.798057251442877, 7.1456564000935225, 2.9518396278984786, -42.860181054199636, -34.989343304202, -108.99770355680282, 31.78123839126566, -29.322118879730205, 163.87558311206212, 2.9538984612478396, 31.419519824305546, 13.105400907817279, 25.46987139120746, -43.27317406736858, 32.455151773056144, 25.28067703547214, 0.005442008567682552, 21.005029233370358, -61.71390311950051, 5.218417653362599, 47.15762099517554, 8.834739256343404, 17.845790108867153, -54.31654219224107, -18.71285871476804, -16.446982180909007, -71.22568781913213, -12.339975548387091, 70.49096598213703, 25.022454385237456, -14.572652938207126, -5.320080866729078, 1.5874449933639676, -40.60960510287835, -31.98564381157643, -95.40875746933808, 19.196346639002364, -38.80930682421929, 135.00454225923906, 5.277879540549592, 30.79963767087089, -0.007276462027131683, 31.278796123365815, -38.47381680049993, 10.415728497075905, 36.567265019013085, -7.406587944733211, -18.376174615781114, -45.26976962854271}).reshape(-1, 5);
 
-        assertArrayEquals(exp.data().asDouble(), b.getData().data().asDouble(), 1e-2);
+        double eps = 1e-2;
+        if("CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
+            eps = 2e-2;
+        }
+
+        assertArrayEquals(exp.data().asDouble(), b.getData().data().asDouble(), eps);
     }
 
     @Test
@@ -109,12 +112,11 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
         DataSetIterator iter = new MnistDataSetIterator(100, true, 12345);
         INDArray data = iter.next().getFeatures();
+        List<String> labelsList = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
 
-<<<<<<< HEAD
-=======
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
->>>>>>> 02682fda25309111e41da915c57889b5f4193dbc
+
         b.fit(data);
         File outDir = testDir.newFolder();
         b.saveAsFile(labelsList, new File(outDir, "out.txt").getAbsolutePath());

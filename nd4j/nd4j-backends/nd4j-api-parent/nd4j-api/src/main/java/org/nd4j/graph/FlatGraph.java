@@ -31,17 +31,27 @@ public final class FlatGraph extends Table {
   public int placeholdersLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public String lossVariables(int j) { int o = __offset(16); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int lossVariablesLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
+  public String trainingConfig() { int o = __offset(18); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer trainingConfigAsByteBuffer() { return __vector_as_bytebuffer(18, 1); }
+  public ByteBuffer trainingConfigInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 18, 1); }
+  public UpdaterState updaterState(int j) { return updaterState(new UpdaterState(), j); }
+  public UpdaterState updaterState(UpdaterState obj, int j) { int o = __offset(20); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public int updaterStateLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
-                                    long id,
-                                    int variablesOffset,
-                                    int nodesOffset,
-                                    int outputsOffset,
-                                    int configurationOffset,
-                                    int placeholdersOffset,
-                                    int lossVariablesOffset) {
-    builder.startObject(7);
+      long id,
+      int variablesOffset,
+      int nodesOffset,
+      int outputsOffset,
+      int configurationOffset,
+      int placeholdersOffset,
+      int lossVariablesOffset,
+      int trainingConfigOffset,
+      int updaterStateOffset) {
+    builder.startObject(9);
     FlatGraph.addId(builder, id);
+    FlatGraph.addUpdaterState(builder, updaterStateOffset);
+    FlatGraph.addTrainingConfig(builder, trainingConfigOffset);
     FlatGraph.addLossVariables(builder, lossVariablesOffset);
     FlatGraph.addPlaceholders(builder, placeholdersOffset);
     FlatGraph.addConfiguration(builder, configurationOffset);
@@ -51,7 +61,7 @@ public final class FlatGraph extends Table {
     return FlatGraph.endFlatGraph(builder);
   }
 
-  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(7); }
+  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startObject(9); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -69,6 +79,10 @@ public final class FlatGraph extends Table {
   public static void addLossVariables(FlatBufferBuilder builder, int lossVariablesOffset) { builder.addOffset(6, lossVariablesOffset, 0); }
   public static int createLossVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startLossVariablesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addTrainingConfig(FlatBufferBuilder builder, int trainingConfigOffset) { builder.addOffset(7, trainingConfigOffset, 0); }
+  public static void addUpdaterState(FlatBufferBuilder builder, int updaterStateOffset) { builder.addOffset(8, updaterStateOffset, 0); }
+  public static int createUpdaterStateVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startUpdaterStateVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatGraph(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

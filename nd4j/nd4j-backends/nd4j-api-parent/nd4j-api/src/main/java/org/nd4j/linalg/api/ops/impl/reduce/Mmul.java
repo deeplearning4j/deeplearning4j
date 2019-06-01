@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,6 +33,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -94,6 +96,36 @@ public class Mmul extends DynamicCustomOp {
 
 
     public Mmul() {}
+
+    @Override
+    public Object getValue(Field property) {
+        if (mt == null) {
+            mt = MMulTranspose.builder().build();
+        }
+
+        return mt.getValue(property);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return mt.toProperties();
+    }
+
+    @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "mt";
+    }
+
+    public void setPropertiesForFunction(Map<String,Object> properties){
+        if(mt == null)
+            mt = MMulTranspose.builder().build();
+        mt.setProperties(properties);
+    }
 
     /**
      * For a 2D matrix of shape (M, N) we return (N, M).

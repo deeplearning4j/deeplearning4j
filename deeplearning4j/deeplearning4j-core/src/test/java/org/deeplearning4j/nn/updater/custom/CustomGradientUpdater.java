@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 
+import java.util.Map;
+
 /**
  * Created by Alex on 09/05/2017.
  */
@@ -31,6 +33,16 @@ public class CustomGradientUpdater implements GradientUpdater<CustomIUpdater> {
     @Override
     public CustomIUpdater getConfig() {
         return config;
+    }
+
+    @Override
+    public void setState(Map<String, INDArray> stateMap, boolean initialize) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

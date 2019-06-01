@@ -88,7 +88,7 @@ public class GraphInferenceGrpcClient {
      * @param graph
      */
     public void registerGraph(@NonNull SameDiff graph) {
-        blockingStub.registerGraph(graph.asFlatGraph());
+        blockingStub.registerGraph(graph.asFlatGraph(false));
     }
 
     /**
@@ -101,7 +101,7 @@ public class GraphInferenceGrpcClient {
      *
      */
     public void registerGraph(long graphId, @NonNull SameDiff graph, ExecutorConfiguration configuration) {
-        val g = graph.asFlatGraph(graphId, configuration);
+        val g = graph.asFlatGraph(graphId, configuration, false);
         val v = blockingStub.registerGraph(g);
         if (v.status() != 0)
             throw new ND4JIllegalStateException("registerGraph() gRPC call failed");

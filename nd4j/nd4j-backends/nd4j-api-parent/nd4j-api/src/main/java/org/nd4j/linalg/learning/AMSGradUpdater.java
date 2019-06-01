@@ -17,6 +17,7 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,6 +28,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The AMSGrad updater<br>
  * Reference: On the Convergence of Adam and Beyond - https://openreview.net/forum?id=ryQu7f-RZ
@@ -35,6 +39,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @Data
 public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
+    public static final String M_STATE = "M";
+    public static final String V_STATE = "V";
+    public static final String V_HAT_STATE = "V_HAT";
 
     private AMSGrad config;
     private INDArray m, v, vHat; // moving avg, sqrd gradients, max
@@ -43,6 +50,25 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
 
     public AMSGradUpdater(AMSGrad config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(@NonNull Map<String, INDArray> stateMap, boolean initialize) {
+        if(!stateMap.containsKey(M_STATE) || !stateMap.containsKey(V_STATE) || !stateMap.containsKey(V_HAT_STATE) || stateMap.size() != 3){
+            throw new IllegalStateException("State map should contain only keys [" + M_STATE + "," + V_STATE + "," + V_HAT_STATE + "] but has keys " + stateMap.keySet());
+        }
+        this.m = stateMap.get(M_STATE);
+        this.v = stateMap.get(V_STATE);
+        this.vHat = stateMap.get(V_HAT_STATE);
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        Map<String,INDArray> r = new HashMap<>();
+        r.put(M_STATE, m);
+        r.put(V_STATE, v);
+        r.put(V_HAT_STATE, vHat);
+        return r;
     }
 
     @Override

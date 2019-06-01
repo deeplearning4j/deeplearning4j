@@ -53,6 +53,7 @@ import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -201,36 +202,6 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray exp = Nd4j.scalar(arr.sumNumber().floatValue()).reshape(1);
         INDArray resultArr = result.getArr();
         assertEquals(exp, resultArr);
-    }
-
-    @Test
-    public void testSaveWriteWithTrainingConfig() throws Exception {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
-        SDVariable x = sameDiff.var("x", arr);
-        SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
-        TrainingConfig trainingConfig = TrainingConfig.builder()
-                .dataSetFeatureMapping("x")
-                .dataSetLabelMapping(result.getVarName())
-                .updater(new Nesterovs()).build();
-        sameDiff.setTrainingConfig(trainingConfig);
-        sameDiff.initializeTraining();
-        File newFile = folder.newFile();
-        try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(newFile))) {
-            sameDiff.saveWithTrainingConfig(bufferedOutputStream);
-        }
-
-        SameDiff sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
-        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
-                sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
-
-        sameDiff.saveWithTrainingConfig(newFile);
-        sameDiff1 = SameDiff.restoreFromTrainingConfigZip(newFile);
-        assertEquals(sameDiff.getTrainingConfig().getUpdater(),
-                sameDiff1.getTrainingConfig().getUpdater());
-        assertEquals(sameDiff.getUpdaterStates(), sameDiff1.getUpdaterStates());
-
     }
 
     @Test
@@ -3216,5 +3187,86 @@ public class SameDiffTests extends BaseNd4jTest {
             String msg = t.getMessage();
             assertTrue(msg, msg.contains("shape") && msg.contains("[2, 3]"));
         }
+    }
+
+
+    @Test
+    public void testInferenceWithoutLabel(){
+        //We don't need a value for the label placeholder to calculate most values here
+
+        SameDiff sd = SameDiff.create();
+
+        int nIn = 4;
+        int minibatch = 3;
+        SDVariable input = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+
+        SDVariable mmul = input.mmul(w).add(b);
+        SDVariable softmax = sd.nn().softmax("softmax", mmul);
+        SDVariable loss = sd.loss().logLoss("loss", label, softmax);
+
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
+
+        Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+
+        INDArray out = m.get("softmax");
+
+
+        INDArray labelUnused = Nd4j.rand(DataType.FLOAT, minibatch, 3);
+        Map<String,INDArray> allPh = new HashMap<>();
+        allPh.put("in", inputArr);
+        allPh.put("label", labelUnused);
+        m = sd.exec(allPh, "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+        INDArray out2 = m.get("softmax");
+        assertEquals(out, out2);
+    }
+
+    @Test
+    public void testInferenceWithoutUnnecessaryPlaceholders(){
+        //We don't need an array for 2 of the placeholders to calculate the
+
+        SameDiff sd = SameDiff.create();
+
+        int nIn = 4;
+        int minibatch = 3;
+        SDVariable input = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable input2 = sd.placeHolder("in2", DataType.FLOAT);    //Scalar
+
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+
+        SDVariable mmul = input.mmul(w).add(b);
+        SDVariable softmax = sd.nn().softmax("softmax", mmul);
+        SDVariable loss = sd.loss().logLoss("loss", label, softmax);
+        SDVariable loss2 = softmax.mul(input2);
+
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
+
+        Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+
+        INDArray out = m.get("softmax");
+
+
+        INDArray labelUnused = Nd4j.rand(DataType.FLOAT, minibatch, 3);
+        Map<String,INDArray> allPh = new HashMap<>();
+        allPh.put("in", inputArr);
+        allPh.put("label", labelUnused);
+        allPh.put("in2", Nd4j.scalar(1.0f));
+        m = sd.exec(allPh, "softmax");
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("softmax"));
+        INDArray out2 = m.get("softmax");
+        assertEquals(out, out2);
     }
 }

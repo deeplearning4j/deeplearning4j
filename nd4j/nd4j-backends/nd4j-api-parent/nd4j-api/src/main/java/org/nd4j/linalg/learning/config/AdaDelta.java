@@ -25,6 +25,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * http://www.matthewzeiler.com/pubs/googleTR2012/googleTR2012.pdf
@@ -63,6 +64,13 @@ public class AdaDelta implements IUpdater {
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
+        return u;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        AdaDeltaUpdater u = new AdaDeltaUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
         return u;
     }
 
