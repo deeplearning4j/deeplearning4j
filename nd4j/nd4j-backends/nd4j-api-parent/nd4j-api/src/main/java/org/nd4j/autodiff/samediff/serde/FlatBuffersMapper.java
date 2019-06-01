@@ -475,7 +475,11 @@ public class FlatBuffersMapper {
                 String str = (String) v;
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
-            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ){
+            } else if(v instanceof org.nd4j.linalg.api.buffer.DataType ) {
+                String str = v.toString();
+                int strOffset = fbb.createString(str);
+                sIdx = new int[]{strOffset};
+            } else if(v instanceof Enum){
                 String str = v.toString();
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
@@ -547,7 +551,6 @@ public class FlatBuffersMapper {
             int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
 
             outIdxs[count++] = FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape);
-
         }
         return outIdxs;
     }

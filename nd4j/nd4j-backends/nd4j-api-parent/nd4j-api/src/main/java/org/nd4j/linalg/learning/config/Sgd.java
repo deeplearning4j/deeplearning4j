@@ -26,6 +26,8 @@ import org.nd4j.linalg.learning.SgdUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 /**
  * SGD updater applies a learning rate only
  * @author Adam Gibson
@@ -68,6 +70,13 @@ public class Sgd implements IUpdater {
             throw new IllegalStateException("View arrays are not supported/required for SGD updater");
         }
         return new SgdUpdater(this);
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        SgdUpdater u = new SgdUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
+        return u;
     }
 
     @Override

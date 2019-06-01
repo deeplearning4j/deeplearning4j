@@ -15,6 +15,168 @@ nd4j.graph = nd4j.graph || {};
 /**
  * @constructor
  */
+nd4j.graph.UpdaterState = function() {
+  /**
+   * @type {flatbuffers.ByteBuffer}
+   */
+  this.bb = null;
+
+  /**
+   * @type {number}
+   */
+  this.bb_pos = 0;
+};
+
+/**
+ * @param {number} i
+ * @param {flatbuffers.ByteBuffer} bb
+ * @returns {nd4j.graph.UpdaterState}
+ */
+nd4j.graph.UpdaterState.prototype.__init = function(i, bb) {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param {flatbuffers.ByteBuffer} bb
+ * @param {nd4j.graph.UpdaterState=} obj
+ * @returns {nd4j.graph.UpdaterState}
+ */
+nd4j.graph.UpdaterState.getRootAsUpdaterState = function(bb, obj) {
+  return (obj || new nd4j.graph.UpdaterState).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.UpdaterState.prototype.paramName = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 4);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.UpdaterState.prototype.updaterStateKeys = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.UpdaterState.prototype.updaterStateKeysLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {number} index
+ * @param {nd4j.graph.FlatArray=} obj
+ * @returns {nd4j.graph.FlatArray}
+ */
+nd4j.graph.UpdaterState.prototype.updaterStateValues = function(index, obj) {
+  var offset = this.bb.__offset(this.bb_pos, 8);
+  return offset ? (obj || new nd4j.graph.FlatArray).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.UpdaterState.prototype.updaterStateValuesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 8);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ */
+nd4j.graph.UpdaterState.startUpdaterState = function(builder) {
+  builder.startObject(3);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} paramNameOffset
+ */
+nd4j.graph.UpdaterState.addParamName = function(builder, paramNameOffset) {
+  builder.addFieldOffset(0, paramNameOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} updaterStateKeysOffset
+ */
+nd4j.graph.UpdaterState.addUpdaterStateKeys = function(builder, updaterStateKeysOffset) {
+  builder.addFieldOffset(1, updaterStateKeysOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.UpdaterState.createUpdaterStateKeysVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.UpdaterState.startUpdaterStateKeysVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} updaterStateValuesOffset
+ */
+nd4j.graph.UpdaterState.addUpdaterStateValues = function(builder, updaterStateValuesOffset) {
+  builder.addFieldOffset(2, updaterStateValuesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.UpdaterState.createUpdaterStateValuesVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.UpdaterState.startUpdaterStateValuesVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.UpdaterState.endUpdaterState = function(builder) {
+  var offset = builder.endObject();
+  return offset;
+};
+
+/**
+ * @constructor
+ */
 nd4j.graph.FlatGraph = function() {
   /**
    * @type {flatbuffers.ByteBuffer}
@@ -155,10 +317,37 @@ nd4j.graph.FlatGraph.prototype.lossVariablesLength = function() {
 };
 
 /**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.FlatGraph.prototype.trainingConfig = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 18);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param {number} index
+ * @param {nd4j.graph.UpdaterState=} obj
+ * @returns {nd4j.graph.UpdaterState}
+ */
+nd4j.graph.FlatGraph.prototype.updaterState = function(index, obj) {
+  var offset = this.bb.__offset(this.bb_pos, 20);
+  return offset ? (obj || new nd4j.graph.UpdaterState).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatGraph.prototype.updaterStateLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 20);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatGraph.startFlatGraph = function(builder) {
-  builder.startObject(7);
+  builder.startObject(9);
 };
 
 /**
@@ -319,6 +508,43 @@ nd4j.graph.FlatGraph.createLossVariablesVector = function(builder, data) {
  * @param {number} numElems
  */
 nd4j.graph.FlatGraph.startLossVariablesVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} trainingConfigOffset
+ */
+nd4j.graph.FlatGraph.addTrainingConfig = function(builder, trainingConfigOffset) {
+  builder.addFieldOffset(7, trainingConfigOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} updaterStateOffset
+ */
+nd4j.graph.FlatGraph.addUpdaterState = function(builder, updaterStateOffset) {
+  builder.addFieldOffset(8, updaterStateOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatGraph.createUpdaterStateVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatGraph.startUpdaterStateVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
 };
 

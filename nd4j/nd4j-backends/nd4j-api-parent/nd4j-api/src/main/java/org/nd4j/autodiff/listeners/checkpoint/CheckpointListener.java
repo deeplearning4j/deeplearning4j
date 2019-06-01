@@ -217,7 +217,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
         c.setFilename(filename);
 
         File saveFile = new File(rootDir, c.getFilename());
-        model.asFlatFile(saveFile);
+        model.save(saveFile, true);
 
         String s = c.toFileString();
         writeCheckpointInfo(s + "\n", checkpointRecordFile);
@@ -403,25 +403,24 @@ public class CheckpointListener extends BaseListener implements Serializable {
     /**
      * Load a given checkpoint number
      *
+     * @param loadUpdaterState If true: load the updater state. See {@link SameDiff#load(File, boolean)} for more details
+     *
      */
-    public SameDiff loadCheckpoint(int checkpointNum){
-        return loadCheckpoint(rootDir, checkpointNum);
+    public SameDiff loadCheckpoint(int checkpointNum, boolean loadUpdaterState){
+        return loadCheckpoint(rootDir, checkpointNum, loadUpdaterState);
     }
 
     /**
      * Load a SameDiff instance for the given checkpoint that resides in the specified root directory
      *
-     * @param rootDir       Directory that the checkpoint resides in
-     * @param checkpointNum Checkpoint model number to load
+     * @param rootDir          Directory that the checkpoint resides in
+     * @param checkpointNum    Checkpoint model number to load
+     * @param loadUpdaterState If true: load the updater state. See {@link SameDiff#load(File, boolean)} for more details
      * @return The loaded model
      */
-    public static SameDiff loadCheckpoint(File rootDir, int checkpointNum){
+    public static SameDiff loadCheckpoint(File rootDir, int checkpointNum, boolean loadUpdaterState) {
         File f = getFileForCheckpoint(rootDir, checkpointNum);
-        try {
-            return SameDiff.fromFlatFile(f);
-        } catch (IOException e){
-            throw new RuntimeException("Error loading checkpoint " + checkpointNum + " from root directory " + rootDir.getAbsolutePath(), e);
-        }
+        return SameDiff.load(f, loadUpdaterState);
     }
 
     /**
@@ -429,9 +428,9 @@ public class CheckpointListener extends BaseListener implements Serializable {
      * @param rootDir Root directory to load checpoint from
      * @return ComputationGraph for last checkpoint
      */
-    public static SameDiff loadLastCheckpoint(File rootDir){
+    public static SameDiff loadLastCheckpoint(File rootDir, boolean loadUpdaterState){
         Checkpoint last = lastCheckpoint(rootDir);
-        return loadCheckpoint(rootDir, last.getCheckpointNum());
+        return loadCheckpoint(rootDir, last.getCheckpointNum(), loadUpdaterState);
     }
 
     public static Builder builder(@NonNull File rootDir){

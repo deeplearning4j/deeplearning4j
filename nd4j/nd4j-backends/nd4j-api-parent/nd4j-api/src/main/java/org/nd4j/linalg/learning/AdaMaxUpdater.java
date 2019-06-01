@@ -17,6 +17,7 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
+import lombok.NonNull;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
@@ -26,6 +27,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaMax;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The AdaMax updater, a variant of Adam.
  * http://arxiv.org/abs/1412.6980
@@ -34,6 +38,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @Data
 public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
+    public static final String M_STATE = "M";
+    public static final String U_STATE = "V";
 
     private final AdaMax config;
 
@@ -42,6 +48,23 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
 
     public AdaMaxUpdater(AdaMax config) {
         this.config = config;
+    }
+
+    @Override
+    public void setState(@NonNull Map<String, INDArray> stateMap, boolean initialize) {
+        if(!stateMap.containsKey(M_STATE) || !stateMap.containsKey(U_STATE) || stateMap.size() != 2){
+            throw new IllegalStateException("State map should contain only keys [" + M_STATE + "," + U_STATE + "] but has keys " + stateMap.keySet());
+        }
+        this.m = stateMap.get(M_STATE);
+        this.u = stateMap.get(U_STATE);
+    }
+
+    @Override
+    public Map<String, INDArray> getState() {
+        Map<String,INDArray> r = new HashMap<>();
+        r.put(M_STATE, m);
+        r.put(U_STATE, u);
+        return r;
     }
 
     @Override

@@ -100,6 +100,13 @@ public class Nesterovs implements IUpdater {
     }
 
     @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        NesterovsUpdater u = new NesterovsUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
+        return u;
+    }
+
+    @Override
     public Nesterovs clone() {
         return new Nesterovs(learningRate, learningRateSchedule, momentum, momentumISchedule);
     }
