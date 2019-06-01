@@ -41,9 +41,9 @@ public:
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
     auto matrix = NDArrayFactory::create<double>('c', {5, 2});
-    auto b = NDArrayFactory::create<double>(0.0f);
-    auto e = NDArrayFactory::create<double>(1.0f);
-    auto s = NDArrayFactory::create<double>(1.0f);
+    auto b = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto e = NDArrayFactory::create<double>('c', {1}, {1});
+    auto s = NDArrayFactory::create<double>('c', {1}, {1});
 
     auto exp = NDArrayFactory::create<double>('c', {2}, {1.0f, 2.0f});
 
@@ -175,9 +175,9 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_5) {
     auto matrix = NDArrayFactory::create<double>('c', {3, 2, 2});
-    auto b = NDArrayFactory::create<int>(2);
-    auto e = NDArrayFactory::create<int>(3);
-    auto s = NDArrayFactory::create<int>(1);
+    auto b = NDArrayFactory::create<int>('c', {1}, {2});
+    auto e = NDArrayFactory::create<int>('c', {1}, {3});
+    auto s = NDArrayFactory::create<int>('c', {1}, {1});
 
     auto exp = NDArrayFactory::create<double>('c', {2,2}, {0.0f, 0.0f, 0., 0.});
 
@@ -197,9 +197,9 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_5) {
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_6) {
     auto matrix = NDArrayFactory::create<double>('c', {3, 2, 2});
-    auto b = NDArrayFactory::create<int>(2);
-    auto e = NDArrayFactory::create<int>(3);
-    auto s = NDArrayFactory::create<int>(1);
+    auto b = NDArrayFactory::create<int>('c', {1}, {2});
+    auto e = NDArrayFactory::create<int>('c', {1}, {3});
+    auto s = NDArrayFactory::create<int>('c', {1}, {1});
 
     auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});
 

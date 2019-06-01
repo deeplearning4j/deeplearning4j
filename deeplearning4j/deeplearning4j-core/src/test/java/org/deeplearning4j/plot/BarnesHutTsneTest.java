@@ -110,10 +110,12 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
                         .useAdaGrad(false).build();
 
-        DataSetIterator iter = new MnistDataSetIterator(100, true, 12345);
-        INDArray data = iter.next().getFeatures();
-        List<String> labelsList = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+        File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
+                NDArrayIndex.interval(0, 784));
 
+        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
         File outDir = testDir.newFolder();
         b.saveAsFile(labelsList, new File(outDir, "out.txt").getAbsolutePath());
