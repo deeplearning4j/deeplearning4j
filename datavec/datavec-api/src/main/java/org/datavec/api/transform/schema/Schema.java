@@ -831,6 +831,14 @@ public class Schema implements Serializable {
         }
 
         /**
+         * Add a boolean (binary true/false) column
+         * @param columnName Name of the new column
+         */
+        public Builder addColumnBoolean(String columnName){
+            return addColumn(new BooleanMetaData(columnName));
+        }
+
+        /**
          * Create the Schema
          */
         public Schema build() {
