@@ -18,6 +18,8 @@
 //  @author raver119@gmail.com
 //
 
+#ifndef __CUDABLAS__
+
 #include "../ConstantShapeHelper.h"
 #include <logger.h>
 #include <ShapeBuilders.h>
@@ -142,3 +144,5 @@ namespace nd4j {
 
     nd4j::ConstantShapeHelper* nd4j::ConstantShapeHelper::_INSTANCE = 0;
 }
+
+#endif

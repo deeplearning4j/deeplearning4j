@@ -18,6 +18,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 //
 
+#ifndef __CUDABLAS__
+
 #include <PointersManager.h>
 #include <exceptions/cuda_exception.h>
 #include <logger.h>
@@ -47,5 +49,6 @@ PointersManager::~PointersManager() {
         // no-op
 }
 
-
 }
+
+#endif

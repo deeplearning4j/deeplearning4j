@@ -8011,6 +8011,16 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
     @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
 
+    /**
+    * erase dimension at shape[axis] position
+    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, result is -> shape = {2,5}
+    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 2, result is -> shape = {2,4}
+    * axis should be within [0, rank-1] range
+    */
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis);
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis);
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis);
+
 
 
 
@@ -8841,6 +8851,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
 
 
 

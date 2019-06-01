@@ -18,6 +18,8 @@
 //  @author raver119@gmail.com
 //
 
+#ifndef __CUDABLAS__
+
 #include <ConstantHelper.h>
 #include <types/types.h>
 #include <loops/type_conversions.h>
@@ -87,3 +89,5 @@ namespace nd4j {
 
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;
 }
+
+#endif

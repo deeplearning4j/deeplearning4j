@@ -24,6 +24,10 @@
 #include <helpers/ShapeBuilders.h>
 #include <PointersManager.h>
 
+#include <array/ConstantDataBuffer.h>
+#include <array/ShapeDescriptor.h>
+#include <helpers/ConstantShapeHelper.h>
+
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_any.h>
@@ -712,14 +716,15 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                     scalarCheat = true;
                 }
 
-                double * special = nullptr;
+                void* special = lc->getAllocationPointer();
 
                 if (scalarCheat) {
-                    auto scalarShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
+                    nd4j_printf("scalar cheat\n","");
+                    auto scalarShape = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor::scalarDescriptor(nd4j::DataType::INT64)); //ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
                     /**
                     * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
                     */
-                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape, special, nullptr);
+                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape.primaryAsT<Nd4jLong>(), special, nullptr);
                     Nd4jLong maxIdx = -119;
                     checkCudaErrors(cudaStreamSynchronize(*stream));
                     cudaMemcpyAsync(&maxIdx, special, sizeof(Nd4jLong), cudaMemcpyDeviceToHost, *stream);
@@ -736,26 +741,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
 
                     nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
 
-                    delete[] scalarShape;
-                } else {
-                    Nd4jLong* hostYShapeInfo  = nullptr;
-                    Nd4jLong* hostTShapeInfo  = nullptr;
-                    Nd4jLong* tadMaxShapeInfo = nullptr;
-                    Nd4jLong* tadMaxOffsets   = nullptr;
-                    int* dimension = nullptr;
-                    int dimensionLength = 0;
-
-                    // we call for IMax on specified dimension
-                    execIndexReduce(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, dimension, dimensionLength, nullptr, nullptr);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    dim3 launchDims(256, 256, 16384);
-
-                    // at this point, all IMax indexes are gathered, and we execute filler
-                    BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, special, dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets), LIBND4J_TYPES);
-
-                    nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
+                    //delete[] scalarShape;
                 }
             }
             break;
