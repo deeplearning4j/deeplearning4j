@@ -33,47 +33,12 @@ namespace ops 	  {
 namespace helpers {
 
 
-
-//////////////////////////////////////////////////////////////////////////
-void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
-
-    const int rank = input.rankOf();
-
-    switch(rank) {
-
-        case 1:
-            for(int i = 0; i < output.sizeAt(0); ++i)
-                output({i, i+1, 0,0}).assign(input);
-            output.setValueInDiagMatrix(0., diagonal-1, 'l');
-            break;
-
-        case 2:
-            output.assign(input);
-            output.setValueInDiagMatrix(0., diagonal-1, 'l');
-            break;
-
-        default:
-            auto inTads  = input.allTensorsAlongDimension({rank-2, rank-1});
-            auto outTads = output.allTensorsAlongDimension({rank-2, rank-1});
-
-            for(int i = 0; i < inTads->size(); ++i) {
-                auto inSubArr = inTads->at(i);
-                auto outSubArr = outTads->at(i);
-                outSubArr->assign(inSubArr);
-                outSubArr->setValueInDiagMatrix(0., diagonal-1, 'l');
-            }
-            delete inTads;
-            delete outTads;
-    }
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
-    helpers::triu(context, input, dOdI, diagonal);
+    const_cast<NDArray&>(input).fillAsTriangular<T>(dOdI, 0, diagonal, dOdI.sizeAt(-1));
     int dLen = dOdI.lengthOf();
 
     PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())

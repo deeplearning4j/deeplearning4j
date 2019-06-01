@@ -50,8 +50,13 @@
 namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::platformBuffer()             { return buffer(); }
+
+void* NDArray::platformBuffer()             { return buffer();    }
 void* NDArray::getPlatformBuffer() const    { return getBuffer(); }
+
+Nd4jLong* NDArray::getPlatformShapeInfo() const { return getShapeInfo(); }
+Nd4jLong* NDArray::platformShapeInfo()          { return shapeInfo(); }
+
 void NDArray::syncToDevice() const          { }
 void NDArray::syncToHost() const            { }
 void NDArray::tickWriteHost() const         { }
@@ -108,14 +113,14 @@ template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, c
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(NDArray& target, const NDArray& scalar, const int lower, const int upper) {
+void NDArray::fillAsTriangular(NDArray& target, const float val, const int lower, const int upper) {
 
     if (isS())
         throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
     if(!isSameShape(&target) && !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
         throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
-    const T value = scalar.e<T>(0);
+    const T value = static_cast<T>(val);
     const auto x = reinterpret_cast<const T*>(getBuffer());
           auto z = reinterpret_cast<T*>(target.getBuffer());
 
@@ -145,7 +150,7 @@ void NDArray::fillAsTriangular(NDArray& target, const NDArray& scalar, const int
         }
     }
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const NDArray& scalar, const int lower, const int upper), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const float val, const int lower, const int upper), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {

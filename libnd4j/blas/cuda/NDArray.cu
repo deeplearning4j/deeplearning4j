@@ -51,6 +51,10 @@ namespace nd4j {
 
 void* NDArray::platformBuffer()             { return specialBuffer();    }
 void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
+
+Nd4jLong* NDArray::getPlatformShapeInfo() const { return getSpecialShapeInfo(); }
+Nd4jLong* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
+
 void NDArray::syncToDevice() const          { _buffer->syncToSpecial();  }
 void NDArray::syncToHost() const            { _buffer->syncToPrimary(getContext()); }
 void NDArray::tickWriteHost() const         { _buffer->writePrimary();   }
@@ -99,6 +103,73 @@ template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag
 template void NDArray::setValueInDiagMatrix(const uint8_t& value, const int diag, const char direction);
 template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
 template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const T val, const int lower, const int upper) {
+
+    const auto x = reinterpret_cast<const T*>(vx);
+          auto z = reinterpret_cast<T*>(vz);
+
+    __shared__ int zRank, xRank, areSameOffsets;        // xRank == zRank always, except when xRank = 1, in this case zRank = 2
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+        xRank = shape::rank(xShapeInfo);
+        zRank = shape::rank(zShapeInfo);
+        zLen  = shape::length(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * zRank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coords);
+        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
+
+        // if( (row + upper < col) || (row + lower > col) )
+        if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+            z[zOffset] = val;
+        else if(vx != vz) {      // when x and z are different arrays
+            if(xRank != zRank)
+                coords[0] = coords[1];
+            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+            z[zOffset] = x[xOffset];
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray::fillAsTriangular(NDArray& target, const float val, const int lower, const int upper) {
+
+    // if(lower < 0 && upper < 0) {
+    //     output.assign(input);
+    //     return;
+    // }
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(decltype(*target.getShapeInfo())) * target.rankOf() + 128;
+
+    PointersManager manager(getContext(), "NDArray::fillAsTriangular");
+
+    NDArray::prepareSpecialUse({&target}, {this});
+    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target.getPlatformBuffer(), target.getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
+    NDArray::registerSpecialUse({&target}, {this});
+
+    manager.synchronize();
+}
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (NDArray& target, const float val, const int lower, const int upper), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {

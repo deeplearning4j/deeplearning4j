@@ -206,94 +206,9 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
 
 
 
-///////////////////////////////////////////////////////////////////
-// is used for triu op for example
-template<typename T>
-__global__ static void triangularMatrixCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const T val, const int lower, const int upper) {
-
-    const auto x = reinterpret_cast<const T*>(vx);
-          auto z = reinterpret_cast<T*>(vz);
-
-    __shared__ int zRank, xRank, areSameOffsets;        // xRank == zRank always, except when xRank = 1, in this case zRank = 2
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
-
-    if (threadIdx.x == 0) {
-
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
-        areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
-        xRank = shape::rank(xShapeInfo);
-        zRank = shape::rank(zShapeInfo);
-        zLen  = shape::length(zShapeInfo);
-        totalThreads = gridDim.x * blockDim.x;
-    }
-
-    __syncthreads();
-
-    auto coords = sharedMem + threadIdx.x * zRank;
-
-    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
-
-        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coords);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
-
-        // if( (row + upper < col) || (row + lower > col) )
-        if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
-            z[zOffset] = val;
-        else if(x != z) {      // when x and z are different arrays
-            if(xRank != zRank)
-                coords[0] = coords[1];
-            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
-            z[zOffset] = x[xOffset];
-        }
-    }
-}
-
-///////////////////////////////////////////////////////////////////
-template<typename T>
-static void triangularMatrixCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-                                         const void *vx, const Nd4jLong *xShapeInfo,
-                                               void *vz, const Nd4jLong *zShapeInfo,
-                                         const float val, const int lower, const int upper) {
-
-    triangularMatrixCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, static_cast<T>(val), lower, upper);
-}
-
-///////////////////////////////////////////////////////////////////
-void triangularMatrix(const nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const float val, const int lower, const int upper) {
-
-    if(lower < 0 && upper < 0) {
-        output.assign(input);
-        return;
-    }
-
-    const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(decltype(*output.getShapeInfo())) * output.rankOf() + 128;
-
-    PointersManager manager(context, "triangularMatrix");
-
-    NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), triangularMatrixCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), val, lower, upper), LIBND4J_TYPES);
-    NDArray::registerSpecialUse({&output}, {&input});
-
-    manager.synchronize();
-}
 
 
 
-    //////////////////////////////////////////////////////////////////////////
-    void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
-
-        // int lower, upper;
-
-
-        // const int lower = diagonal >= 0 ? diagonal : -1;
-        // const int upper = diagonal >= 0 ? -1 : (-1*diagonal);
-        triangularMatrix(context, input, output, 0, diagonal, output.sizeAt(-1));
-    }
 
 
     //////////////////////////////////////////////////////////////////////////

@@ -36,12 +36,7 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-    #ifdef __CUDABLAS__
-        helpers::triu(block.launchContext(), *input, *output, diag);
-    #else
-        NDArray scalar(input->dataType(), block.launchContext()); // = 0
-        BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (*output, scalar, diag, output->sizeAt(-1)), LIBND4J_TYPES);
-    #endif
+    BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (*output, 0, diag, output->sizeAt(-1)), LIBND4J_TYPES);
 
     return Status::OK();
 }
