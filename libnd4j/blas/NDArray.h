@@ -1132,28 +1132,18 @@ namespace nd4j {
         NDArray* diagonal(const char type ) const;
 
         /**
-        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
-        *
-        *  diag - diagonal starting from matrix is filled.
-        *      diag = 0 corresponds to main diagonal,
-        *      diag < 0 below main diagonal
-        *      diag > 0 above main diagonal
-        *  direction - in what direction to fill matrix. There are 2 possible directions:
-        *      'u' - fill up, mathematically this corresponds to lower triangular matrix
-        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
-        */
-        template <typename T>
-        void setValueInDiagMatrix(const T& value, const int diag, const char direction);
-
-        /**
-        * fill target matrix with given value simultaneously in 2 directions from main diagonal:
-        * - down from main diagonal starting at subdiagonal number "lower"
-        * -   up from main diagonal starting at superdiagonal number "upper"
+        * fill target matrix with given value in one or two directions from main diagonal:
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
+        * direction - in what direction to fill matrix. There are 3 possible directions:
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
+        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
         * rest of target elements are equal to this array elements
         * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
         template <typename T>
-        void fillAsTriangular(const float value, const int lower, const int upper, NDArray* target = nullptr);
+        void fillAsTriangular(const float value, int lower, int upper, const char direction = 'b', NDArray* target = nullptr);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

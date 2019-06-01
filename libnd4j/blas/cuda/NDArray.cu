@@ -66,43 +66,6 @@ bool NDArray::isActualOnHostSide() const    { return _buffer->isPrimaryActual();
 bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual(); }
 void NDArray::makeBothBuffersActual() const { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
-    if (isS())
-        throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
-    if(rankOf() != 2)
-       throw std::runtime_error("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
-    cudaStream_t* stream = getContext()->getCudaStream();
-    const auto rows = sizeAt(0);
-    const auto cols = sizeAt(1);
-    syncToDevice();
-
-    NDArray val = NDArrayFactory::create(value, getContext());
-    switch(direction) {
-        case 'u':                           // fill upper triangular block
-            BUILD_SINGLE_SELECTOR(dataType(), setDiagonalValueUpper, (getSpecialBuffer(), getSpecialShapeInfo(), val, diag, rows, cols,  *stream), LIBND4J_TYPES);
-            break;
-
-        case 'l':                           // fill lower triangular block
-            BUILD_SINGLE_SELECTOR(dataType(), setDiagonalValueLower, (getSpecialBuffer(), getSpecialShapeInfo(), val, diag, rows, cols, *stream), LIBND4J_TYPES);
-            break;
-        default:
-            throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
-    }
-
-    tickWriteDevice();
-}
-template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const float16& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const bfloat16& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const int& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const uint8_t& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
-template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
@@ -150,16 +113,21 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray::fillAsTriangular(const float val, const int lower, const int upper, NDArray* target) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, const char direction, NDArray* target) {
 
     if (isS())
-        throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
+        throw std::runtime_error("NDArray::fillAsTriangular: you can't use this method on String array!");
 
     if(target == nullptr)
         target = this;
 
     if(!isSameShape(target) && !(rankOf() == 1 && target->rankOf() == 2 && sizeAt(0) == target->sizeAt(0) && sizeAt(0) == target->sizeAt(1)))
-        throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
+        throw std::string("NDArray::fillAsTriangular method: wrong shape of target array !");
+
+     if (direction == 'u')
+        lower = -target->sizeAt(-2);
+    else if (direction == 'l')
+        upper = target->sizeAt(-1);
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (target->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -173,7 +141,51 @@ void NDArray::fillAsTriangular(const float val, const int lower, const int upper
 
     manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, const int lower, const int upper, NDArray* target), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, const T val) {
+
+    auto x = reinterpret_cast<T*>(vx);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        rank = shape::rank(xShapeInfo);
+        len  = shape::length(xShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < len; i += totalThreads) {
+
+        shape::index2coords(rank, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, len, coords);
+        const auto offset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, rank);
+
+        if(coords[rank - 2] == coords[rank - 1]) // row == col -> on diagonal
+            x[offset] = val;
+        else
+            x[offset] = static_cast<T>(0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void identityMatrixCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* vx, const Nd4jLong *xShapeInfo, const float val) {
+
+    identityMatrixCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, static_cast<T>(val));
+}
+BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* vx, const Nd4jLong *xShapeInfo, const float val), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
@@ -183,10 +195,17 @@ void NDArray::setIdentity() {
     if (rankOf() != 2)
         throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " + toStringValue(rankOf()) + " was given.");
 
-    this->assign(1.);
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(decltype(getShapeInfo())) * rankOf() + 128;
 
-    setValueInDiagMatrix(0.f, 1, 'u');
-    setValueInDiagMatrix(0.f, -1, 'l');
+    PointersManager manager(getContext(), "NDArray::setIdentity");
+
+    syncToDevice();
+    BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getPlatformBuffer(), getPlatformShapeInfo(), 1.f), LIBND4J_TYPES);
+    tickWriteDevice();
+
+    manager.synchronize();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

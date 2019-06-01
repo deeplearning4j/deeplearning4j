@@ -272,7 +272,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
         HHcolPivQR qr(matrix / scale);
         _m.assign(qr._qr({0,_cols, 0,_cols}));
-        _m.setValueInDiagMatrix(0., -1, 'l');
+        _m.fillAsTriangular<T>(0., 0, 0, 'l');
 
         HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
 
@@ -291,7 +291,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
         auto matrixT = matrix.transpose();
         HHcolPivQR qr(*matrixT / scale);
         _m.assign(qr._qr({0,_rows, 0,_rows}));
-        _m.setValueInDiagMatrix(0., -1, 'l');
+        _m.fillAsTriangular<T>(0., 0, 0, 'l');
         _m.transposei();
 
         HHsequence  hhSeg(qr._qr, qr._coeffs, 'u');          // type = 'u' is not mistake here !

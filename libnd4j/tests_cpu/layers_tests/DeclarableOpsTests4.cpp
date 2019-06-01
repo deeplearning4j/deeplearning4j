@@ -2143,6 +2143,8 @@ TEST_F(DeclarableOpsTests4, tri_test1) {
     auto results = op.execute({}, {}, {rows, cols});
     auto  output = results->at(0);
 
+    // output->printIndexedBuffer();
+
     ASSERT_EQ(Status::OK(), results->status());
 
     ASSERT_TRUE(expected.isSameShape(output));
