@@ -362,11 +362,12 @@ bool ShapeUtils::areShapesBroadcastable(const NDArray &arr1, const NDArray &arr2
     return areShapesBroadcastable(arr1.getShapeInfo(), arr2.getShapeInfo());
 }
 
-bool ShapeUtils::areShapesBroadcastable(Nd4jLong *arr1, Nd4jLong *arr2) {
-    int minRank = shape::rank(arr1) < shape::rank(arr2) ? shape::rank(arr1) : shape::rank(arr2);
+bool ShapeUtils::areShapesBroadcastable(Nd4jLong *shapeInfo1, Nd4jLong *shapeInfo2) {
+    int minRank = shape::rank(shapeInfo1) < shape::rank(shapeInfo2) ? shape::rank(shapeInfo1) : shape::rank(shapeInfo2);
 
     for (int i = -1; i >= -minRank; --i)
-        if (shape::sizeAt(arr1, i) != shape::sizeAt(arr2, i) && shape::sizeAt(arr1, i) != 1 && shape::sizeAt(arr2, i) != 1) return false;
+        if (shape::sizeAt(shapeInfo1, i) != shape::sizeAt(shapeInfo2, i) && shape::sizeAt(shapeInfo1, i) != 1 && shape::sizeAt(shapeInfo2, i) != 1)
+            return false;
 
     return true;
 }
