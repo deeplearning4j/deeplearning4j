@@ -561,12 +561,12 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_5) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, setValueInDiagMatrix_test1) {
+TEST_F(NDArrayTest2, fillAsTriangular_test1) {
 
     auto x   = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {1,0,0,0,5,6,0,0,9,10,11,0 ,13,14,15,16});
 
-    x.setValueInDiagMatrix(0., 1, 'u');
+    x.fillAsTriangular<float>(0., 0, 0, 'u');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -574,12 +574,12 @@ TEST_F(NDArrayTest2, setValueInDiagMatrix_test1) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, setValueInDiagMatrix_test2) {
+TEST_F(NDArrayTest2, fillAsTriangular_test2) {
 
     auto x   = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {0,0,0,0,5,0,0,0,9,10,0 ,0 ,13,14,15,0});
 
-    x.setValueInDiagMatrix(0., 0, 'u');
+    x.fillAsTriangular<float>(0., 0, -1, 'u');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -587,24 +587,25 @@ TEST_F(NDArrayTest2, setValueInDiagMatrix_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, setValueInDiagMatrix_test3) {
+TEST_F(NDArrayTest2, fillAsTriangular_test3) {
 
     auto x   = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,0,6,7,8,0,0 ,11,12,0 ,0 , 0,16});
 
-    x.setValueInDiagMatrix(0., -1, 'l');
+    x.fillAsTriangular<float>(0., 0, 0, 'l');
+
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
 
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, setValueInDiagMatrix_test4) {
+TEST_F(NDArrayTest2, fillAsTriangular_test4) {
 
     auto x   = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {0,2,3,4,0,0,7,8,0,0 , 0,12, 0, 0, 0, 0});
 
-    x.setValueInDiagMatrix(0., 0, 'l');
+    x.fillAsTriangular<float>(0., 1, 0, 'l');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
