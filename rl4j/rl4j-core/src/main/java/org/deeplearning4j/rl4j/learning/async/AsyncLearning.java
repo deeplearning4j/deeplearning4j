@@ -16,7 +16,11 @@
 
 package org.deeplearning4j.rl4j.learning.async;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -53,6 +57,14 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     protected boolean isTrainingComplete() {
         return getAsyncGlobal().isTrainingComplete();
+    }
+
+    @Getter @Setter
+    private IHistoryProcessor historyProcessor = null;     // FIXME: Remove
+
+    // FIXME: Remove
+    public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
+        historyProcessor = new HistoryProcessor(conf);
     }
 
     public void launchThreads() {

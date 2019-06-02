@@ -17,6 +17,11 @@ public class TestEpsGreedyPolicy<O extends Encodable> extends EpsGreedy<O, Integ
         this.actionList = actionList;
     }
 
+    public TestEpsGreedyPolicy(int[] actionList, StepCountable learning) {
+        super(null, null, 0, 0, null, 0.0f, learning);
+        this.actionList = actionList;
+    }
+
     @Override
     public Integer nextAction(INDArray input) {
         return actionList[actionListIdx++];

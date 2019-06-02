@@ -28,6 +28,10 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import org.deeplearning4j.rl4j.mdp.HistoryProcessorMDPRunner;
+import org.deeplearning4j.rl4j.mdp.IMDPRunner;
+import org.deeplearning4j.rl4j.mdp.MDPRunner;
+
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
  *
@@ -51,7 +55,17 @@ public abstract class Policy<O extends Encodable, A> {
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         getNeuralNet().reset();
-        Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);
+
+        // FIXME: Temporary refac code ---
+        IMDPRunner mdpRunner;
+        if(hp != null) {
+            mdpRunner = new HistoryProcessorMDPRunner(hp);
+        } else {
+            mdpRunner = new MDPRunner();
+        }
+        // ---
+
+        Learning.InitMdp<O> initMdp = mdpRunner.initMdp(mdp);
         O obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();

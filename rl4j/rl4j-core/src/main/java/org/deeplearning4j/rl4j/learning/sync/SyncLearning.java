@@ -16,7 +16,11 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -41,6 +45,20 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
         super(conf);
     }
 
+    @Getter
+    @Setter
+    private IHistoryProcessor historyProcessor = null;     // FIXME: Remove
+
+    // FIXME: Remove
+    public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
+        historyProcessor = new HistoryProcessor(conf);
+    }
+
+    // FIXME: Remove
+    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
+        this.historyProcessor = historyProcessor;
+    }
+
     public void train() {
 
         try {
@@ -57,7 +75,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
                 incrementEpoch();
 
                 if (getStepCounter() - lastSave >= Constants.MODEL_SAVE_FREQ) {
-                    getDataManager().save(this);
+                    getDataManager().save(this, historyProcessor);
                     lastSave = getStepCounter();
                 }
 

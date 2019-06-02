@@ -25,7 +25,10 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.mdp.HistoryProcessorMDPRunner;
+import org.deeplearning4j.rl4j.mdp.IMDPRunner;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.mdp.MDPRunner;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -92,7 +95,17 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         try {
             log.info("ThreadNum-" + threadNumber + " Started!");
             getCurrent().reset();
-            Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
+
+            // FIXME: Temporary refac code ---
+            IMDPRunner mdpRunner;
+            if(historyProcessor != null) {
+                mdpRunner = new HistoryProcessorMDPRunner(historyProcessor);
+            } else {
+                mdpRunner = new MDPRunner();
+            }
+            // ---
+
+            Learning.InitMdp<O> initMdp = mdpRunner.initMdp(getMdp());
             O obs = initMdp.getLastObs();
             double rewards = initMdp.getReward();
             int length = initMdp.getSteps();
@@ -114,7 +127,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
                     getCurrent().reset();
-                    initMdp = Learning.initMdp(getMdp(), historyProcessor);
+                    initMdp = mdpRunner.initMdp(getMdp());
                     obs = initMdp.getLastObs();
                     rewards = initMdp.getReward();
                     length = initMdp.getSteps();

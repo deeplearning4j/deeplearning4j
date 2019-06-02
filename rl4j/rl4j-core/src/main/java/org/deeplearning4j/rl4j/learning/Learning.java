@@ -22,7 +22,10 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.mdp.HistoryProcessorMDPRunner;
+import org.deeplearning4j.rl4j.mdp.IMDPRunner;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.mdp.MDPRunner;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -50,8 +53,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     private int stepCounter = 0;
     @Getter @Setter
     private int epochCounter = 0;
-    @Getter @Setter
-    private IHistoryProcessor historyProcessor = null;
 
     public Learning(LConfiguration conf) {
         random = new Random(conf.getSeed());
@@ -71,43 +72,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
             return arr.reshape(new long[] {1, arr.length()});
         else
             return arr.reshape(shape);
-    }
-
-    public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
-                                                                                         IHistoryProcessor hp) {
-
-        O obs = mdp.reset();
-
-        O nextO = obs;
-
-        int step = 0;
-        double reward = 0;
-
-        boolean isHistoryProcessor = hp != null;
-
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        while (step < requiredFrame) {
-            INDArray input = Learning.getInput(mdp, obs);
-
-            if (isHistoryProcessor)
-                hp.record(input);
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-            if (step % skipFrame == 0 && isHistoryProcessor)
-                hp.add(input);
-
-            StepReply<O> stepReply = mdp.step(action);
-            reward += stepReply.getReward();
-            nextO = stepReply.getObservation();
-
-            step++;
-
-        }
-
-        return new InitMdp(step, nextO, reward);
-
     }
 
     public static int[] makeShape(int size, int[] shape) {
@@ -140,21 +104,8 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return epochCounter++;
     }
 
-    public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
-        historyProcessor = new HistoryProcessor(conf);
-    }
-
-    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
-        this.historyProcessor = historyProcessor;
-    }
-
     public INDArray getInput(O obs) {
         return getInput(getMdp(), obs);
-    }
-
-    public InitMdp<O> initMdp() {
-        getNeuralNet().reset();
-        return initMdp(getMdp(), getHistoryProcessor());
     }
 
     @AllArgsConstructor

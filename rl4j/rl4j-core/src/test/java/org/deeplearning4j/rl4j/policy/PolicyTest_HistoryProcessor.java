@@ -2,7 +2,6 @@ package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.rl4j.learning.TestHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.TestMDP;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.TestQLearningDiscrete;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

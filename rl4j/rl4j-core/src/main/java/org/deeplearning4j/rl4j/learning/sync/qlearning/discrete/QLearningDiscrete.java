@@ -18,6 +18,8 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -70,7 +72,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private INDArray history[] = null;
     private double accuReward = 0;
     private int lastMonitor = -Constants.MONITOR_FREQ;
-
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                     DataManager dataManager, int epsilonNbStep) {

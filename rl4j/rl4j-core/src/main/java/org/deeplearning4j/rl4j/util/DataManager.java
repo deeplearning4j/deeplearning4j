@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -72,13 +73,13 @@ public class DataManager {
         }
     }
 
-    public static void save(String path, Learning learning) throws IOException {
+    public static void save(String path, Learning learning, IHistoryProcessor historyProcessor) throws IOException {
         try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
-            save(os, learning);
+            save(os, learning, historyProcessor);
         }
     }
 
-    public static void save(OutputStream os, Learning learning) throws IOException {
+    public static void save(OutputStream os, Learning learning, IHistoryProcessor historyProcessor) throws IOException {
 
         try (ZipOutputStream zipfile = new ZipOutputStream(os)) {
 
@@ -99,7 +100,7 @@ public class DataManager {
             writeEntry(inputStream, zipfile);
 
 
-            if (learning.getHistoryProcessor() != null) {
+            if (historyProcessor != null) {
                 ZipEntry hpconf = new ZipEntry("hpconf.bin");
                 zipfile.putNextEntry(hpconf);
 
@@ -256,12 +257,12 @@ public class DataManager {
         return exists;
     }
 
-    public void save(Learning learning) throws IOException {
+    public void save(Learning learning, IHistoryProcessor historyProcessor) throws IOException {
 
         if (!saveData)
             return;
 
-        save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning);
+        save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning, historyProcessor);
         learning.getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
 
     }

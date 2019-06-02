@@ -21,10 +21,15 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
+import org.deeplearning4j.rl4j.mdp.HistoryProcessorMDPRunner;
+import org.deeplearning4j.rl4j.mdp.IMDPRunner;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.mdp.MDPRunner;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -90,7 +95,19 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     protected abstract QLStepReturn<O> trainStep(O obs);
 
     protected StatEntry trainEpoch() {
-        InitMdp<O> initMdp = initMdp();
+        getNeuralNet().reset();
+
+        // FIXME: Temporary refac code ---
+        IMDPRunner mdpRunner;
+        if(getHistoryProcessor() != null) {
+            mdpRunner = new HistoryProcessorMDPRunner(getHistoryProcessor());
+        } else {
+            mdpRunner = new MDPRunner();
+        }
+        // ---
+
+        InitMdp<O> initMdp = mdpRunner.initMdp(getMdp());
+
         O obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
