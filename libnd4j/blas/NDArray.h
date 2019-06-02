@@ -406,8 +406,8 @@ namespace nd4j {
         FORCEINLINE Nd4jLong* getSpecialShapeInfo() const;
 
 
-        FORCEINLINE Nd4jLong* platformShapeInfo();
-        FORCEINLINE Nd4jLong* getPlatformShapeInfo() const;
+        Nd4jLong* platformShapeInfo();
+        Nd4jLong* getPlatformShapeInfo() const;
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array

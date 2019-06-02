@@ -282,6 +282,18 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
         public ConstantDescriptor(Pointer p) { super(p); }
     
+        public ConstantDescriptor(DoublePointer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(DoublePointer values, int length);
+        public ConstantDescriptor(DoubleBuffer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(DoubleBuffer values, int length);
+        public ConstantDescriptor(double[] values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(double[] values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") LongPointer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") LongBuffer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") long[] values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") long[] values, int length);
 
         public ConstantDescriptor(@Cast("Nd4jLong*") @StdVector LongPointer values) { super((Pointer)null); allocate(values); }
         private native void allocate(@Cast("Nd4jLong*") @StdVector LongPointer values);
