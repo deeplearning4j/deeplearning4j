@@ -156,6 +156,26 @@ TEST_F(ConstantHelperTests, basic_test_1) {
     ASSERT_EQ(3, iPtr[2]);
 }
 
+TEST_F(ConstantHelperTests, basic_test_2) {
+
+    double array[] = {1., 2., 3.};
+    ConstantDescriptor descriptor(array, 3);
+
+    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
+    auto fPtr = fBuffer->primaryAsT<float>();
+
+    ASSERT_NEAR(1.f, fPtr[0], 1e-5);
+    ASSERT_NEAR(2.f, fPtr[1], 1e-5);
+    ASSERT_NEAR(3.f, fPtr[2], 1e-5);
+
+    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::INT32);
+    auto iPtr = iBuffer->primaryAsT<int>();
+
+    ASSERT_EQ(1, iPtr[0]);
+    ASSERT_EQ(2, iPtr[1]);
+    ASSERT_EQ(3, iPtr[2]);
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
 

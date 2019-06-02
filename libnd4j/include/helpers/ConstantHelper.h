@@ -52,7 +52,7 @@ namespace nd4j {
         static int getNumberOfDevices();
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
 
-        ConstantDataBuffer* constantBuffer(ConstantDescriptor &descriptor, nd4j::DataType dataType);
+        ConstantDataBuffer* constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType);
     };
 }
 

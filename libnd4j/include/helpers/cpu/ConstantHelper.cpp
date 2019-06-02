@@ -58,7 +58,7 @@ namespace nd4j {
         return 1;
     }
 
-    ConstantDataBuffer* ConstantHelper::constantBuffer(ConstantDescriptor &descriptor, nd4j::DataType dataType) {
+    ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {
         const auto deviceId = getCurrentDevice();
 
         if (_cache[deviceId].count(descriptor) == 0) {
@@ -75,9 +75,9 @@ namespace nd4j {
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {
-                BUILD_DOUBLE_SELECTOR(nd4j::DataType::DOUBLE, dataType, nd4j::TypeCast::convertGeneric, (nullptr, descriptor.floatValues().data(), descriptor.length(), cbuff), (nd4j::DataType::DOUBLE, double), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(nd4j::DataType::DOUBLE, dataType, nd4j::TypeCast::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff), (nd4j::DataType::DOUBLE, double), LIBND4J_TYPES);
             } else if (descriptor.isInteger()) {
-                BUILD_DOUBLE_SELECTOR(nd4j::DataType::INT64, dataType, nd4j::TypeCast::convertGeneric, (nullptr, descriptor.integerValues().data(), descriptor.length(), cbuff), (nd4j::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(nd4j::DataType::INT64, dataType, nd4j::TypeCast::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff), (nd4j::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
             }
 
             ConstantDataBuffer dataBuffer(cbuff, nullptr, descriptor.length(), DataTypeUtils::sizeOf(dataType));

@@ -675,8 +675,9 @@ namespace nd4j {
         void applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target = nullptr, ExtraArguments *extraParams = nullptr);
 
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
-/*
-#ifdef __CUDABLAS__
+
+
+#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -692,7 +693,7 @@ namespace nd4j {
         template <typename Lambda>
         FORCEINLINE void applyTriplewiseLambda(NDArray* second, NDArray *third, Lambda func, NDArray* target = nullptr);
 #else
-        */
+
         /**
         *  apply operation "func" to an array
         *  func - what operation to apply
@@ -718,7 +719,7 @@ namespace nd4j {
 
         template <typename T>
         void applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<T(T, T, T)>& func, NDArray* target = nullptr);
-//#endif
+#endif
 
         /**
         *  reduces dimensions in this array relying on index operation OpName
@@ -2129,9 +2130,9 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 }
 
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) && defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
-//#include "cuda/NDArrayLambda.hpp"
+#include "cuda/NDArrayLambda.hpp"
 #endif
 
 }

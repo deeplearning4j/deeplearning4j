@@ -602,3 +602,26 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
     ASSERT_TRUE(z.isSameShape(e));
     ASSERT_TRUE(z.equalsTo(e));
 }
+
+TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
+
+    NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2, 2}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {3, 2, 2}, nd4j::DataType::BOOL);
+    NDArray e('c', {3, 2, 2}, nd4j::DataType::BOOL);
+
+    x.assign(1.f);
+    y.assign(2.f);
+    e.assign(false);
+
+    nd4j::ops::equals op;
+
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    // z.printIndexedBuffer("Z");
+
+    ASSERT_TRUE(z.isSameShape(e));
+    ASSERT_TRUE(z.equalsTo(e));
+}

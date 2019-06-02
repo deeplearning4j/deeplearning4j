@@ -83,8 +83,7 @@ namespace nd4j {
             if (res != 0)
                 throw cuda_exception::build("Memory allocation for tadOffsets failed", res);
 
-            cudaMemcpyAsync(soPtr, oPtr, numOfSubArrs * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
-            res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaSpecialStream());
+            res = cudaMemcpy(soPtr, oPtr, numOfSubArrs * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
             if (res != 0)
                 throw cuda_exception::build("tadOffsets copy failed", res);
 

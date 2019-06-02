@@ -34,10 +34,12 @@ namespace nd4j {
         std::vector<Nd4jLong> _integerValues;
         std::vector<double> _floatValues;
     public:
+        ConstantDescriptor(double* values, int length);
+        ConstantDescriptor(Nd4jLong* values, int length);
         ConstantDescriptor(std::initializer_list<double> values);
 
-        ConstantDescriptor(std::vector<Nd4jLong> &values);
-        ConstantDescriptor(std::vector<double> &values);
+        explicit ConstantDescriptor(std::vector<Nd4jLong> &values);
+        explicit ConstantDescriptor(std::vector<double> &values);
 
         ~ConstantDescriptor() = default;
 
@@ -47,13 +49,13 @@ namespace nd4j {
         // less than operator
         bool operator<(const ConstantDescriptor &other) const;
 
-        bool isInteger();
-        bool isFloat();
+        bool isInteger() const;
+        bool isFloat() const;
 
-        Nd4jLong length();
+        Nd4jLong length() const;
 
-        std::vector<Nd4jLong>& integerValues();
-        std::vector<double>& floatValues();
+        const std::vector<Nd4jLong>& integerValues() const;
+        const std::vector<double>& floatValues() const;
     };
 }
 
