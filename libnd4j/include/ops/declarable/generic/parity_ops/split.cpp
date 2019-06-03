@@ -134,7 +134,7 @@ namespace ops {
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		if(INPUT_VARIABLE(inputVar)->isEmpty()){
 			for (int e = 0; e < num_splits; e++) {
-                auto empty = ConstantShapeHelper::getInstance()->scalarShapeInfo(dataType);
+                auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
 				shapes->push_back(empty);
 			}
 			return shapes;
