@@ -338,18 +338,11 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     // looping through getBuffer() goes automatically by means of getSubArrayIndex applying
     const int ews = target.ews();
     const int targetLen = target.lengthOf();
-
-    nd4j_printf("Tile: gettng stream\n","");
     auto stream = getContext()->getCudaStream();
 
-    PointersManager pm(getContext(), "Tile method");
     prepareSpecialUse({&target}, {this});
-
-    nd4j_printf("Tile: executing %p\n", stream);
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
-    pm.synchronize();
-
 }
 
 //////////////////////////////////////////////////////////////////////////
