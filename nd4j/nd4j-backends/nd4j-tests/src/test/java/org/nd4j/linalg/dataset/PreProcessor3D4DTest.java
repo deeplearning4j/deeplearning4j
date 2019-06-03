@@ -58,8 +58,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         int timeSteps = 15;
         int samples = 100;
         //multiplier for the features
-        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3});
-        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3});
+        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3,1);
+        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3,1);
 
         Construct3dDataSet caseA = new Construct3dDataSet(featureScaleA, timeSteps, samples, 1);
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
@@ -386,14 +386,14 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             INDArray labels = Nd4j.linspace(1, nChannels, nChannels).reshape('c', nChannels, 1);
             sampleDataSet = new DataSet(allImages, labels);
 
-            expectedMean = allImages.mean(0, 2, 3);
-            expectedStd = allImages.std(0, 2, 3);
+            expectedMean = allImages.mean(0, 2, 3).reshape(1,allImages.size(1));
+            expectedStd = allImages.std(0, 2, 3).reshape(1,allImages.size(1));
 
-            expectedLabelMean = labels.mean(0);
-            expectedLabelStd = labels.std(0);
+            expectedLabelMean = labels.mean(0).reshape(1, labels.size(1));
+            expectedLabelStd = labels.std(0).reshape(1, labels.size(1));
 
-            expectedMin = allImages.min(0, 2, 3);
-            expectedMax = allImages.max(0, 2, 3);
+            expectedMin = allImages.min(0, 2, 3).reshape(1,allImages.size(1));
+            expectedMax = allImages.max(0, 2, 3).reshape(1,allImages.size(1));
         }
     }
 
