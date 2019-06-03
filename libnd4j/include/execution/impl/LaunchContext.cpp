@@ -119,6 +119,7 @@ LaunchContext::LaunchContext() {
 #ifdef __CUDABLAS__
         _isAllocated = false;
         _cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+        _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
         _reductionPointer = reductionPointer;
         _allocationPointer = reinterpret_cast<int *>(allocationPointer);
 #else

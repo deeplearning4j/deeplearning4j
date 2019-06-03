@@ -318,7 +318,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&result}, {this});
-    BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->getSpecialBuffer(), this->getSpecialShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), resultLen, *stream), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->getSpecialBuffer(), this->getSpecialShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), resultLen, stream), LIBND4J_TYPES);
     registerSpecialUse({&result}, {this});
 
     return result;
@@ -331,7 +331,6 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
     if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
-        delete []newShapeInfo;
         throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
     }
 
@@ -339,11 +338,18 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     // looping through getBuffer() goes automatically by means of getSubArrayIndex applying
     const int ews = target.ews();
     const int targetLen = target.lengthOf();
+
+    nd4j_printf("Tile: gettng stream\n","");
     auto stream = getContext()->getCudaStream();
 
+    PointersManager pm(getContext(), "Tile method");
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, *stream), LIBND4J_TYPES, LIBND4J_TYPES);
+
+    nd4j_printf("Tile: executing %p\n", stream);
+    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
+    pm.synchronize();
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -361,7 +367,7 @@ void NDArray::tile(NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, *stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 

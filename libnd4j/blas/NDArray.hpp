@@ -2516,6 +2516,8 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
         min = this;
     }
 
+    nd4j_printf("Step %i\n", 10);
+
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
         if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
@@ -2533,10 +2535,16 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
         std::vector<Nd4jLong> repeatMax(max->rankOf());
         for(int i = 1; i <= max->rankOf(); ++i)
             repeatMax[i-1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
+
+        nd4j_printf("Step %i\n", 16);
         max->tile(repeatMax, *pTarget);
     }
-    else
+    else {
+        nd4j_printf("Step %i\n", 17);
         pTarget->assign(max);
+    }
+
+    nd4j_printf("Step %i\n", 20);
 
     // check whether min array has to be tiled
     std::vector<Nd4jLong> repeatMin(min->rankOf());
@@ -2552,12 +2560,17 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
 
     std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
 
+    nd4j_printf("Step %i\n", 30);
+
     if(max == this) {
+        nd4j_printf("Step %i\n", 40);
         pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
     }
     else {
         auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
         const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
+
+        nd4j_printf("Step %i\n", 50);
 
         PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
@@ -2638,7 +2651,12 @@ void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>
     if(dataType() != tadArray->dataType())
         throw std::invalid_argument("NDArray::applyBroadcast bool method: this and tad arrays must have the same type !");
 
+    this->printShapeInfo("this shapeInfo");
+
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(shapeInfo(), dimensions);
+
+    result->printShapeInfo("result shapeInfo");
+
     auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->shapeInfo(), dimensions);
 
     auto tadLength = shape::length(packX.primaryShapeInfo());

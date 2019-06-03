@@ -3796,6 +3796,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
         public native @Cast("Nd4jLong*") LongPointer getSpecialShapeInfo();
 
+
+        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
+        public native @Cast("Nd4jLong*") LongPointer getPlatformShapeInfo();
+
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
         */
@@ -4290,15 +4294,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native NDArray diagonal(byte type );
 
         /**
-        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
-        *
-        *  diag - diagonal starting from matrix is filled.
-        *      diag = 0 corresponds to main diagonal,
-        *      diag < 0 below main diagonal
-        *      diag > 0 above main diagonal
-        *  direction - in what direction to fill matrix. There are 2 possible directions:
-        *      'u' - fill up, mathematically this corresponds to lower triangular matrix
-        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
+        * fill target matrix with given value in one or two directions from main diagonal:
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
+        * direction - in what direction to fill matrix. There are 3 possible directions:
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
+        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
+        * rest of target elements are equal to this array elements
+        * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
 
 		/**
@@ -4980,7 +4984,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 
-// #ifdef __CUDACC__
+// #if defined(__CUDACC__) && defined(BUILD_TESTS)
+// for CUDA we need stil stuff inline
+// #include "cuda/NDArrayLambda.hpp"
 // #endif
 
 

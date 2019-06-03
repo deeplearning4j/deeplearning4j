@@ -61,21 +61,16 @@ namespace nd4j {
                           LIBND4J_TYPES);
 
     template<typename T>
-    void tileKernelH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape,
-                     Nd4jLong resultLength, cudaStream_t stream) {
+    void tileKernelH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, cudaStream_t *stream) {
         dim3 launchDims(256, 512, 8192);
-        tileKernel<T> << < launchDims.x, launchDims.y, launchDims.z, stream >> >
-                                                                     (inputBuffer, inputShape, outputBuffer, outputShape, resultLength);
+        tileKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer, outputShape, resultLength);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void tileKernelH,
-                          (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, cudaStream_t stream),
-                          LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void tileKernelH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, cudaStream_t *stream), LIBND4J_TYPES);
 
     template<typename X, typename Y>
     static __global__ void
-    tileKernelDouble(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape,
-                     Nd4jLong resultLength, Nd4jLong ews) {
+    tileKernelDouble(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, Nd4jLong ews) {
         char ordering = shape::order(outputShape);
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         int totalThreads = gridDim.x * blockDim.x;
@@ -104,19 +99,13 @@ namespace nd4j {
         }
     }
 
-    BUILD_DOUBLE_TEMPLATE(template __global__ void tileKernelDouble,
-                          (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews),
-                          LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template __global__ void tileKernelDouble, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews), LIBND4J_TYPES, LIBND4J_TYPES);
 
     template<typename X, typename Y>
-    void tileKernelHH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape,
-                      Nd4jLong resultLength, Nd4jLong ews, cudaStream_t stream) {
+    void tileKernelHH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream) {
         dim3 launchDims(256, 512, 8192);
-        tileKernelDouble<X, Y> << < launchDims.x, launchDims.y, launchDims.z, stream >> >
-                                                                              (inputBuffer, inputShape, outputBuffer, outputShape, resultLength, ews);
+        tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer, outputShape, resultLength, ews);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void tileKernelHH,
-                          (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t stream),
-                          LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void tileKernelHH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream),LIBND4J_TYPES, LIBND4J_TYPES);
 }
