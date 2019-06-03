@@ -791,7 +791,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
                     auto shape = shape::shapeOf(hXShapeInfo);
                     auto reductionPointer = lc->getReductionPointer();
 					auto allocationPointer = lc->getAllocationPointer();
-					double*  specialPointer = nullptr;
+					auto specialPointer = reinterpret_cast<double *>(allocationPointer);
 
                     // special pointer for special buffer for special ops
                     auto dimension = reinterpret_cast<int *>(specialPointer);
