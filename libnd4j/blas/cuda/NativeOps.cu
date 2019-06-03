@@ -296,19 +296,19 @@ void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
         						void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
 
-	Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+	//Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+    //Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    //Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
+    //Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
 
 	auto dimension = reinterpret_cast<int *>(dDimension);
 	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
 	auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto dTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto dTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto dTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+	auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+	auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+	auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
+	auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcastBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
@@ -351,10 +351,10 @@ void   NativeOps::execBroadcast(
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
 	auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto dTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto dTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto dTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+	auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+	auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+	auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
+	auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
 
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
@@ -363,10 +363,10 @@ void   NativeOps::execBroadcast(
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("F3 opNum:[%i]\n", opNum);
 
-	Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+	//Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+    //Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+    //Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
+    //Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcast(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);

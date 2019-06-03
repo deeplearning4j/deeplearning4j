@@ -186,9 +186,10 @@ namespace functions {
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
-                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);                
+                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
             __syncthreads();
+
 
             for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
@@ -196,7 +197,7 @@ namespace functions {
                 auto rZ = z + tadOffsetsZ[r];
 
 
-                if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
+                if(tadEWS > 0 && zEWS > 0 && yEWS > 0) {
                     for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) 
                         rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]); 
                 }
