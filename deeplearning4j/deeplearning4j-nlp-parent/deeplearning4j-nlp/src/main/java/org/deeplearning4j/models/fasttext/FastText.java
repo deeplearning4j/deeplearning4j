@@ -39,12 +39,16 @@ public class FastText implements WordVectors {
     @Builder.Default  private int bucket = 100;
     @Builder.Default  private int minCount = 1;
 
-    //private boolean cbow;
+    private boolean cbow;
     private boolean nn;
     private boolean analogies;
     private String inputFile;
     private String outputFile;
     private SentenceIterator iterator;
+    private String modelName;
+    private String lossName;
+    //TODO:
+    private double[] pretrainedVectors;
 
     private JFastText fastTextImpl;
     private boolean modelLoaded;
@@ -82,6 +86,10 @@ public class FastText implements WordVectors {
         String[] cmd;
         if (skipgram) {
             cmd = new String[]{"skipgram", "-bucket", Integer.toString(bucket), "-minCount", Integer.toString(minCount),
+                    "-input", inputFile, "-output", outputFile};
+        }
+        else if (cbow) {
+            cmd = new String[]{"cbow", "-bucket", Integer.toString(bucket), "-minCount", Integer.toString(minCount),
                     "-input", inputFile, "-output", outputFile};
         }
         else if (supervised)
