@@ -1850,6 +1850,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     sb.append(Shape.shapeToStringShort(inputArgs[i]));
                 }
                 sb.append(")]");
+                if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+                    appendSameDiffInfo(sb, (DifferentialFunction) op);
+                }
+
                 log.error("Failed to calculate output shapes for op " + op.opName() + ". Attempted to execute with " +
                         String.valueOf(op.numInputArguments()) + " inputs, " +
                         String.valueOf(op.numOutputArguments()) + " outputs, "+
@@ -2093,15 +2097,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
-                DifferentialFunction df = (DifferentialFunction)op;
-                String[] inNames = df.argNames();
-                String[] outNames = df.outputVariablesNames();
-                if(inNames != null){
-                    sb.append(". Input var names: ").append(Arrays.toString(inNames));
-                }
-                if(outNames != null){
-                    sb.append(". Output var names: ").append(Arrays.toString(outNames));
-                }
+                appendSameDiffInfo(sb, (DifferentialFunction) op);
             }
 
             log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
@@ -2136,5 +2132,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 .countPositive(debugInfo._positiveCount())
                 .countZero(debugInfo._zeroCount())
                 .build();
+    }
+
+    protected void appendSameDiffInfo(StringBuilder sb, DifferentialFunction df){
+        String[] inNames = df.argNames();
+        String[] outNames = df.outputVariablesNames();
+        if(inNames != null){
+            sb.append(". Input var names: ").append(Arrays.toString(inNames));
+        }
+        if(outNames != null){
+            sb.append(". Output var names: ").append(Arrays.toString(outNames));
+        }
     }
 }
