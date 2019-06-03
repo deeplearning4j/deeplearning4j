@@ -72,7 +72,8 @@ public class DefaultGradient implements Gradient {
                 }
             }
         }
-        return Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
+        INDArray ret = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
+        return ret.reshape('c', 1, ret.length());
     }
 
     private void flattenGradient() {
@@ -94,6 +95,7 @@ public class DefaultGradient implements Gradient {
         } else if( !gradients.values().isEmpty() ){ //Edge case: can be empty for nets with 0 params
             //Standard case: flatten all to f order
             flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
+
         }
         if(flattenedGradient.rank() == 1){
             flattenedGradient = flattenedGradient.reshape('c', 1, flattenedGradient.length());
