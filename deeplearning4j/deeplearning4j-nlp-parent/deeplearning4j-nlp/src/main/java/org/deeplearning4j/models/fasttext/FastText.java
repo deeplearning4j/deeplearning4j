@@ -1,12 +1,12 @@
 package org.deeplearning4j.models.fasttext;
 
 import com.github.jfasttext.JFastText;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
+import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -15,17 +15,30 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@AllArgsConstructor
+@lombok.Builder
 public class FastText implements WordVectors {
 
-    private JFastText fastTextImpl;
-    private Builder builder;
+    private boolean supervised;
+    private boolean quantize;
+    private boolean predict;
+    private boolean predict_prob;
+    private boolean skipgram;
+    private boolean cbow;
+    private boolean nn;
+    private boolean analogies;
+    private String inputFile;
+    private String outputFile;
 
+    private JFastText fastTextImpl;
     private boolean modelLoaded;
 
     public FastText(File modelPath) {
@@ -34,10 +47,14 @@ public class FastText implements WordVectors {
     }
 
     public FastText(SentenceIterator iterator) {
-        // iterator -> file
         try {
-            File tempFile = File.createTempFile("FT1", ".txt");
-            loadBinaryModel(tempFile.getAbsolutePath());
+            File tempFile = File.createTempFile("FTX", ".txt");
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+            while (iterator.hasNext()) {
+                String sentence = iterator.nextSentence();
+                writer.write(sentence);
+            }
+
             fastTextImpl = new JFastText();
         } catch (IOException e) {
             System.out.println(e.toString());
@@ -48,20 +65,19 @@ public class FastText implements WordVectors {
         fastTextImpl = new JFastText();
     }
 
-    public FastText(Builder builder) {
-        this();
-        this.builder = builder;
+    public void init() {
+        fastTextImpl = new JFastText();
     }
 
     public void fit() {
 
         String[] cmd;
-        if (builder.supervised)
-            cmd = new String[]{"supervised", "-input", builder.inputFile,
-                    "-output", builder.outputFile};
+        if (supervised)
+            cmd = new String[]{"supervised", "-input", inputFile,
+                    "-output", outputFile};
         else
-            cmd = new String[]{"-input", builder.inputFile,
-                    "-output", builder.outputFile};
+            cmd = new String[]{"-input", inputFile,
+                    "-output", outputFile};
         fastTextImpl.runCmd(cmd);
     }
 
@@ -158,9 +174,11 @@ public class FastText implements WordVectors {
         return fastTextImpl.getWords().contains(word);
     }
 
+    protected transient ModelUtils modelUtils = new BasicModelUtils<>();
+
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-        return null;
+        return modelUtils.wordsNearest(words, top);
     }
 
     @Override
@@ -217,7 +235,7 @@ public class FastText implements WordVectors {
 
     @Override
     public void setModelUtils(ModelUtils utils) {
-
+        this.modelUtils = utils;
     }
 
     @Override
@@ -228,20 +246,4 @@ public class FastText implements WordVectors {
 
     @Override
     public boolean jsonSerializable() {return false;}
-
-    @Data
-    @lombok.Builder
-    public static class Builder {
-        private boolean supervised;
-        private boolean quantize;
-        private boolean predict;
-        private boolean predict_prob;
-        private boolean skipgram;
-        private boolean cbow;
-        private boolean nn;
-        private boolean analogies;
-
-        private String inputFile;
-        private String outputFile;
-    }
 }

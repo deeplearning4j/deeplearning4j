@@ -18,11 +18,13 @@ public class FastTextTest {
 
     @Test
     public void testTrainSupervised() {
-        FastText.Builder builder = FastText.Builder.builder().supervised(true).
+
+        FastText fastText =
+                 FastText.builder().supervised(true).
                 inputFile("src/test/resources/data/labeled_data.txt").
                 outputFile("src/test/resources/models/fasttext/supervised.model").build();
-        FastText fastText = new FastText(builder);
         System.out.printf("\nTraining supervised model ...\n");
+        fastText.init();
         fastText.fit();
     }
 
@@ -43,10 +45,28 @@ public class FastTextTest {
     }
 
     @Test
+    public void testVocabulary() {
+        String model = "src/test/resources/models/fasttext/supervised.model.bin";
+        FastText fastText = new FastText(new File(model));
+        assertEquals(48, fastText.vocab().numWords());
+        assertEquals(48, fastText.vocabSize());
+
+        String[] expected = {"</s>", ".", "is", "game", "the", "soccer", "?", "football", "3", "12", "takes", "usually", "A", "US",
+        "in", "popular", "most", "hours", "and", "clubs", "minutes", "Do", "you", "like", "Is", "your", "favorite", "games",
+        "Premier", "Soccer", "a", "played", "by", "two", "teams", "of", "eleven", "players", "The", "Football", "League", "an",
+        "English", "professional", "league", "for", "men's", "association"};
+
+        for (int i = 0; i < fastText.vocabSize(); ++i) {
+           assertEquals(expected[i], fastText.vocab().wordAtIndex(i));
+        }
+    }
+
+    @Test
     public void testLoadIterator() {
         try {
             SentenceIterator iter = new BasicLineIterator("src/test/resources/data/labeled_data.txt");
             FastText fastText = new FastText(iter);
+
         } catch (IOException e) {
             System.out.println(e.toString());
         }
