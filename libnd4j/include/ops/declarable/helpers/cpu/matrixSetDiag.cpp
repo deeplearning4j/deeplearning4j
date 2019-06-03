@@ -32,7 +32,7 @@ namespace helpers {
 template <typename T>
 static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArray* output) {
 
-    //*output = *input;
+    *output = *input;
 
     const int lastDimSize = input->sizeAt(-1);
     const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);

@@ -58,8 +58,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         int timeSteps = 15;
         int samples = 100;
         //multiplier for the features
-        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3});
-        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3});
+        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3,1);
+        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3,1);
 
         Construct3dDataSet caseA = new Construct3dDataSet(featureScaleA, timeSteps, samples, 1);
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
@@ -132,10 +132,10 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         myNormalizer.fit(sampleIterA);
         assertEquals(myNormalizer.getMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
         assertEquals(myNormalizer.getLabelMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
-        assertTrue(Transforms.abs(myNormalizer.getStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
-                        .floatValue() < 0.01);
-        assertTrue(Transforms.abs(myNormalizer.getLabelStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
-                        .floatValue() < 0.01);
+        double diff1 = Transforms.abs(myNormalizer.getStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber().doubleValue();
+        double diff2 = Transforms.abs(myNormalizer.getLabelStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber().doubleValue();
+        assertTrue(diff1 < 0.01);
+        assertTrue(diff2 < 0.01);
 
         myMinMaxScaler.fit(sampleIterB);
         assertEquals(myMinMaxScaler.getMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
@@ -352,18 +352,18 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).castTo(featureScale.dataType());
-            expectedMean.muliColumnVector(featureScale);
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}, new long[]{1, 3}).castTo(featureScale.dataType());
+            expectedMean.muli(featureScale.transpose());
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);
-            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).castTo(Nd4j.defaultFloatingPointType());
-            expectedStd.muliColumnVector(Transforms.abs(featureScale, true));
+            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}, new long[]{1, 3}).castTo(Nd4j.defaultFloatingPointType());
+            expectedStd.muli(Transforms.abs(featureScale, true).transpose());
             //preprocessors use the population std so divides by n not (n-1)
             expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN));
 
             //min max assumes all scaling values are +ve
-            expectedMin = Nd4j.ones(Nd4j.defaultFloatingPointType(), 3).muliColumnVector(featureScale);
-            expectedMax = Nd4j.ones(Nd4j.defaultFloatingPointType(),3).muli(samples * timeSteps).muliColumnVector(featureScale);
+            expectedMin = Nd4j.ones(featureScale.dataType(), 3, 1).muliColumnVector(featureScale);
+            expectedMax = Nd4j.ones(featureScale.dataType(),3, 1).muli(samples * timeSteps).muliColumnVector(featureScale);
         }
 
     }
@@ -386,14 +386,14 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             INDArray labels = Nd4j.linspace(1, nChannels, nChannels).reshape('c', nChannels, 1);
             sampleDataSet = new DataSet(allImages, labels);
 
-            expectedMean = allImages.mean(0, 2, 3);
-            expectedStd = allImages.std(0, 2, 3);
+            expectedMean = allImages.mean(0, 2, 3).reshape(1,allImages.size(1));
+            expectedStd = allImages.std(0, 2, 3).reshape(1,allImages.size(1));
 
-            expectedLabelMean = labels.mean(0);
-            expectedLabelStd = labels.std(0);
+            expectedLabelMean = labels.mean(0).reshape(1, labels.size(1));
+            expectedLabelStd = labels.std(0).reshape(1, labels.size(1));
 
-            expectedMin = allImages.min(0, 2, 3);
-            expectedMax = allImages.max(0, 2, 3);
+            expectedMin = allImages.min(0, 2, 3).reshape(1,allImages.size(1));
+            expectedMax = allImages.max(0, 2, 3).reshape(1,allImages.size(1));
         }
     }
 
