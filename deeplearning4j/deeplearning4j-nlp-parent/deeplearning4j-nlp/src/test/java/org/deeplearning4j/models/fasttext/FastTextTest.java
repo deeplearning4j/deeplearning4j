@@ -4,10 +4,12 @@ import com.github.jfasttext.JFastText;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Test;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +31,35 @@ public class FastTextTest {
     }
 
     @Test
+    public void testTrainSkipgram() {
+
+        FastText fastText =
+                FastText.builder().skipgram(true).
+                        inputFile("src/test/resources/data/labeled_data.txt").
+                        outputFile("src/test/resources/models/fasttext/supervised.model").build();
+        System.out.printf("\nTraining supervised model ...\n");
+        fastText.init();
+        fastText.fit();
+    }
+
+    @Test
+    public void testTrainSkipgramWithBuckets() {
+
+        FastText fastText =
+                FastText.builder().skipgram(true).
+                        //bucket(100).
+                        inputFile("src/test/resources/data/labeled_data.txt").
+                        outputFile("src/test/resources/models/fasttext/supervised.model").build();
+        System.out.printf("\nTraining supervised model ...\n");
+        fastText.init();
+        fastText.fit();
+        assertEquals(150, fastText.getNumberOfBuckets());
+        System.out.println(fastText.getModelName() + " " + fastText.getLossName());
+    }
+
+
+
+    @Test
     public void testPredict() {
         String model = "src/test/resources/models/fasttext/supervised.model.bin";
         String text = "I like soccer";
@@ -42,6 +73,18 @@ public class FastTextTest {
 
         String label = fastText.predict(text);
         assertEquals("__label__soccer", label);
+    }
+
+    @Test
+    public void testPredictProbability() {
+        String model = "src/test/resources/models/fasttext/supervised.model.bin";
+        String text = "I like soccer";
+
+        FastText fastText = new FastText(new File(model));
+
+        Pair<String,Float> result = fastText.predictProbability(text);
+        assertEquals("__label__soccer", result.getFirst());
+        assertEquals(-0.6930, result.getSecond(), 1e-4);
     }
 
     @Test
@@ -65,7 +108,9 @@ public class FastTextTest {
     public void testLoadIterator() {
         try {
             SentenceIterator iter = new BasicLineIterator("src/test/resources/data/labeled_data.txt");
-            FastText fastText = new FastText(iter);
+            FastText fastText =
+                    FastText.builder().supervised(true).iterator(iter).build();
+            fastText.init();
 
         } catch (IOException e) {
             System.out.println(e.toString());
@@ -78,15 +123,20 @@ public class FastTextTest {
         String label = fastText.predict("something");
     }
 
-    // Reference test
     @Test
-    public void test01TrainSupervisedCmd() {
-        System.out.printf("\nTraining supervised model ...\n");
-        JFastText jft = new JFastText();
-        jft.runCmd(new String[] {
-                "supervised",
-                "-input", "src/test/resources/data/labeled_data.txt",
-                "-output", "src/test/resources/models/fasttext/supervised.model"
-        });
+    public void testModelInfo() throws Exception {
+        FastText fastText = new FastText();
+        fastText.loadBinaryModel("src/test/resources/models/fasttext/supervised.model.bin");
+
+        assertEquals(48, fastText.vocabSize());
+        assertEquals(0.0500, fastText.getLearningRate(), 1e-4);
+        assertEquals(100, fastText.getDimension());
+        assertEquals(5, fastText.getContextWindowSize());
+        assertEquals(5, fastText.getEpoch());
+        assertEquals(5, fastText.getNegativesNumber());
+        assertEquals(1, fastText.getWordNgrams());
+        assertEquals("softmax", fastText.getLossName());
+        assertEquals("sup", fastText.getModelName());
+        assertEquals(0, fastText.getNumberOfBuckets());
     }
 }

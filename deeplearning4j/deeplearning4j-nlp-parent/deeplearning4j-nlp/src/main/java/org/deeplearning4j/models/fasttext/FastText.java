@@ -2,6 +2,7 @@ package org.deeplearning4j.models.fasttext;
 
 import com.github.jfasttext.JFastText;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -14,6 +15,7 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @AllArgsConstructor
 @lombok.Builder
 public class FastText implements WordVectors {
@@ -31,34 +34,25 @@ public class FastText implements WordVectors {
     private boolean quantize;
     private boolean predict;
     private boolean predict_prob;
+
     private boolean skipgram;
-    private boolean cbow;
+    @Builder.Default  private int bucket = 100;
+    @Builder.Default  private int minCount = 1;
+
+    //private boolean cbow;
     private boolean nn;
     private boolean analogies;
     private String inputFile;
     private String outputFile;
+    private SentenceIterator iterator;
 
     private JFastText fastTextImpl;
     private boolean modelLoaded;
+    private VocabCache vocabCache;
 
     public FastText(File modelPath) {
         this();
         loadBinaryModel(modelPath.getAbsolutePath());
-    }
-
-    public FastText(SentenceIterator iterator) {
-        try {
-            File tempFile = File.createTempFile("FTX", ".txt");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
-            while (iterator.hasNext()) {
-                String sentence = iterator.nextSentence();
-                writer.write(sentence);
-            }
-
-            fastTextImpl = new JFastText();
-        } catch (IOException e) {
-            System.out.println(e.toString());
-        }
     }
 
     public FastText() {
@@ -67,12 +61,30 @@ public class FastText implements WordVectors {
 
     public void init() {
         fastTextImpl = new JFastText();
+        if (iterator != null) {
+            try {
+                File tempFile = File.createTempFile("FTX", ".txt");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+                while (iterator.hasNext()) {
+                    String sentence = iterator.nextSentence();
+                    writer.write(sentence);
+                }
+
+                fastTextImpl = new JFastText();
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+        }
     }
 
     public void fit() {
 
         String[] cmd;
-        if (supervised)
+        if (skipgram) {
+            cmd = new String[]{"skipgram", "-bucket", Integer.toString(bucket), "-minCount", Integer.toString(minCount),
+                    "-input", inputFile, "-output", outputFile};
+        }
+        else if (supervised)
             cmd = new String[]{"supervised", "-input", inputFile,
                     "-output", outputFile};
         else
@@ -100,7 +112,18 @@ public class FastText implements WordVectors {
         return label;
     }
 
-    private VocabCache vocabCache;
+    public Pair<String, Float> predictProbability(String text) {
+
+        if (!modelLoaded)
+            throw new IllegalStateException("Model must be loaded before predict!");
+
+        JFastText.ProbLabel predictedProbLabel = fastTextImpl.predictProba(text);
+
+        Pair<String,Float> retVal = new Pair<>();
+        retVal.setFirst(predictedProbLabel.label);
+        retVal.setSecond(predictedProbLabel.logProb);
+        return retVal;
+    }
 
     @Override
     public VocabCache vocab() {
@@ -183,49 +206,51 @@ public class FastText implements WordVectors {
 
     @Override
     public Collection<String> wordsNearestSum(INDArray words, int top) {
-        return null;
+        return modelUtils.wordsNearestSum(words, top);
     }
 
     @Override
     public Collection<String> wordsNearestSum(String word, int n) {
-        return null;
+        return modelUtils.wordsNearestSum(word, n);
     }
 
 
     @Override
     public Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top) {
-        return null;
+        return modelUtils.wordsNearestSum(positive, negative, top);
     }
 
     @Override
     public Map<String, Double> accuracy(List<String> questions) {
-        return null;
+        return modelUtils.accuracy(questions);
     }
 
     @Override
-    public int indexOf(String word) {return -1;}
+    public int indexOf(String word) {
+        return vocab().indexOf(word);
+    }
 
 
     @Override
     public List<String> similarWordsInVocabTo(String word, double accuracy) {
-        return null;
+        return modelUtils.similarWordsInVocabTo(word, accuracy);
     }
 
     @Override
     public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
-        return null;
+        return modelUtils.wordsNearest(positive, negative, top);
     }
 
 
     @Override
     public Collection<String> wordsNearest(String word, int n) {
-        return null;
+        return modelUtils.wordsNearestSum(word, n);
     }
 
 
     @Override
     public double similarity(String word, String word2) {
-        return -1.0;
+        return modelUtils.similarity(word, word2);
     }
 
     @Override
@@ -246,4 +271,45 @@ public class FastText implements WordVectors {
 
     @Override
     public boolean jsonSerializable() {return false;}
+
+    public double getLearningRate() {
+        return fastTextImpl.getLr();
+    }
+
+    public int getDimension() {
+        return fastTextImpl.getDim();
+    }
+
+    public int getContextWindowSize() {
+        return fastTextImpl.getContextWindowSize();
+    }
+
+    public int getEpoch() {
+        return fastTextImpl.getEpoch();
+    }
+
+    public int getNegativesNumber() {
+        return fastTextImpl.getNSampledNegatives();
+    }
+
+    public int getWordNgrams() {
+        return fastTextImpl.getWordNgrams();
+    }
+
+    public String getLossName() {
+        return fastTextImpl.getLossName();
+    }
+
+    public String getModelName() {
+        return fastTextImpl.getModelName();
+    }
+
+    public int getNumberOfBuckets() {
+        return fastTextImpl.getBucket();
+    }
+
+    public String getLabelPrefix() {
+        return fastTextImpl.getLabelPrefix();
+    }
+
 }
