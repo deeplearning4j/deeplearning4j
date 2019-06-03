@@ -171,7 +171,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         double oneDivNu = 1.0 / layerConf().getNu();
         INDArray xTimesV = input.mmul(getParam(V_KEY));
         INDArray derivW = layerConf().getActivationFn().getActivation(xTimesV.dup(),true).negi();
-        derivW = derivW.muliColumnVector(delta).mean(0).muli(oneDivNu).addi(getParam(W_KEY));
+        INDArray w = getParam(W_KEY);
+        derivW = derivW.muliColumnVector(delta).mean(0).muli(oneDivNu).addi(w.reshape(w.length()));
         gradient.setGradientFor(W_KEY,gradientViews.get(W_KEY).assign(derivW));
 
         //dG -> sigmoid derivative

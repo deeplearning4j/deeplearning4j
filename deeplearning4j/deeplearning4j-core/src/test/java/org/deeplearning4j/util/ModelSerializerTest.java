@@ -183,8 +183,8 @@ public class ModelSerializerTest extends BaseDL4JTest {
     }
 
     private DataSet trivialDataSet() {
-        INDArray inputs = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f});
-        INDArray labels = Nd4j.create(new float[] {4.0f, 5.0f, 6.0f});
+        INDArray inputs = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f}, new int[]{1,3});
+        INDArray labels = Nd4j.create(new float[] {4.0f, 5.0f, 6.0f}, new int[]{1,3});
         return new DataSet(inputs, labels);
     }
 

@@ -2658,7 +2658,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (columnVector.data().sameUnderlyingData(data()))
             return doColumnWise(columnVector.dup(), operation);
-        if (isVector()) {
+        if (equalShapes(columnVector)) {
             switch (operation) {
                 case 'a':
                     addi(columnVector);
