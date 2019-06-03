@@ -420,7 +420,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_3) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Add_4) {
-    
+
     auto x = NDArrayFactory::create<float>(1.0f);
     auto y = NDArrayFactory::create<float>(4.f);
     auto e = NDArrayFactory::create<float>(5.f);
@@ -432,7 +432,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Add_5) {
-    
+
     auto x = NDArrayFactory::create<float>(1.0f);
     auto y = NDArrayFactory::create<float>(4.f);
     auto e = NDArrayFactory::create<float>(5.f);
@@ -444,7 +444,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_5) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Multiply_2) {
-    
+
     auto x = NDArrayFactory::create<float>(2.0f);
     auto y = NDArrayFactory::create<float>('c', {2}, {3.f, 4.f});
     auto e = NDArrayFactory::create<float>('c', {2}, {6.f, 8.f});
@@ -457,7 +457,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Multiply_3) {
-    
+
     auto x = NDArrayFactory::create<float>(2.0f);
     auto y = NDArrayFactory::create<float>('c', {2}, {3.f, 4.f});
     auto e = NDArrayFactory::create<float>('c', {2}, {6.f, 8.f});
@@ -469,7 +469,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_3) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Multiply_4) {
-    
+
     auto x = NDArrayFactory::create<float>(2.0f);
     auto y = NDArrayFactory::create<float>(4.f);
     auto e = NDArrayFactory::create<float>(8.f);
@@ -481,7 +481,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, Test_Multiply_5) {
-    
+
     auto x = NDArrayFactory::create<float>(2.0f);
     auto y = NDArrayFactory::create<float>(4.f);
     auto e = NDArrayFactory::create<float>(8.f);
@@ -540,7 +540,7 @@ TEST_F(BroadcastableOpsTests, broadcast_add_1) {
     NDArray y('c', {1,4}, {1,2,3,4});
     NDArray z('c', {1,4}, nd4j::DataType::DOUBLE);
     NDArray exp('c', {1,4}, {2,3,4,5}, nd4j::DataType::DOUBLE);
-    
+
     nd4j::ops::add op;
     auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
@@ -555,7 +555,7 @@ TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
     NDArray y('c', {3,4}, {0,0,0,0,  1,2,3,4,  1,2,3,4});
     NDArray z('c', {3,4}, nd4j::DataType::BOOL);
     NDArray exp('c', {3,4}, {0,0,0,0,  1,1,1,1,  1,1,1,1}, nd4j::DataType::BOOL);
-    
+
     nd4j::ops::equals op;
     auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
     // z.printIndexedBuffer();
@@ -581,12 +581,12 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
-    
+
     NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);
     NDArray y('c', {2, 2}, nd4j::DataType::FLOAT32);
     NDArray z('c', {3, 2, 2}, nd4j::DataType::BOOL);
     NDArray e('c', {3, 2, 2}, nd4j::DataType::BOOL);
-    
+
     x.assign(4.f);
     y.assign(2.f);
     e.assign(true);
@@ -625,3 +625,27 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
     ASSERT_TRUE(z.isSameShape(e));
     ASSERT_TRUE(z.equalsTo(e));
 }
+
+TEST_F(BroadcastableOpsTests, broadcast_2) {
+
+    NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2, 2}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {3, 2, 2}, nd4j::DataType::FLOAT32);
+    NDArray e('c', {3, 2, 2}, nd4j::DataType::FLOAT32);
+
+    x = 4.f;
+    y = 2.f;
+    e = -2.f;
+
+    nd4j::ops::reversesubtract op;   // z = y - x;
+
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    // z.printIndexedBuffer("Z");
+
+    ASSERT_TRUE(z.isSameShape(e));
+    ASSERT_TRUE(z.equalsTo(e));
+}
+
