@@ -712,11 +712,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
-                devTadShapeInfoZ, devTadOffsetsZ);
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), // 0
+                context.getOldStream(), // 1
+                AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
+                context.getBufferAllocation(), // 3
+                context.getBufferReduction(),  // 4
+                context.getBufferScalar(),  // 5
+                context.getBufferSpecial(), // 6
+                hostYShapeInfo,  // 7
+                hostZShapeInfo,  // 8
+                hostTadShapeInfo,  // 9
+                devTadShapeInfo,  // 10
+                devTadOffsets, // 11
+                devTadShapeInfoZ,  // 12
+                devTadOffsetsZ); // 13
 
         Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
         Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
