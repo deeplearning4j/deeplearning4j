@@ -81,6 +81,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
     private int keepEvery;
     private boolean logSaving;
     private boolean deleteExisting;
+    private boolean saveUpdaterState;
 
     private Integer saveEveryNEpochs;
     private Integer saveEveryNIterations;
@@ -106,6 +107,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
         this.keepEvery = builder.keepEvery;
         this.logSaving = builder.logSaving;
         this.deleteExisting = builder.deleteExisting;
+        this.saveUpdaterState = builder.saveUpdaterState;
 
         this.saveEveryNEpochs = builder.saveEveryNEpochs;
         this.saveEveryNIterations = builder.saveEveryNIterations;
@@ -217,7 +219,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
         c.setFilename(filename);
 
         File saveFile = new File(rootDir, c.getFilename());
-        model.save(saveFile, true);
+        model.save(saveFile, this.saveUpdaterState);
 
         String s = c.toFileString();
         writeCheckpointInfo(s + "\n", checkpointRecordFile);
@@ -444,6 +446,7 @@ public class CheckpointListener extends BaseListener implements Serializable {
         private KeepMode keepMode;
         private int keepLast;
         private int keepEvery;
+        private boolean saveUpdaterState = true;
         private boolean logSaving = true;
         private boolean deleteExisting = false;
 
@@ -581,6 +584,18 @@ public class CheckpointListener extends BaseListener implements Serializable {
          */
         public Builder logSaving(boolean logSaving){
             this.logSaving = logSaving;
+            return this;
+        }
+
+        /**
+         * Whether the updater state (history/state for Adam, Nesterov momentum, etc) should be saved with each checkpoint.<br>
+         * Updater state is saved by default.
+         * If you expect to continue training on any of the checkpoints, this should be set to true. However, it will increase
+         * the file size.
+         * @param saveUpdaterState If true: updater state will be saved with checkpoints. False: not saved.
+         */
+        public Builder saveUpdaterState(boolean saveUpdaterState){
+            this.saveUpdaterState = saveUpdaterState;
             return this;
         }
 
