@@ -2689,9 +2689,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArrayStatistics inspectArray(@NonNull INDArray array) {
         val debugInfo = new Nd4jCuda.DebugInfo();
+        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         AtomicAllocator.getInstance().synchronizeHostData(array);
 
-        nativeOps.inspectArray(null, AtomicAllocator.getInstance().getHostPointer(array), (LongPointer) AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()), null, null, debugInfo);
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        val extras = extraz.get().put(
+                null,
+                ctx.getOldStream(),
+                AtomicAllocator.getInstance().getDeviceIdPointer(),
+                ctx.getBufferAllocation(),
+                ctx.getBufferReduction(),
+                ctx.getBufferScalar(),
+                ctx.getBufferSpecial());
+
+
+        nativeOps.inspectArray(extras, AtomicAllocator.getInstance().getHostPointer(array), (LongPointer) AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(array, ctx), (LongPointer) AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()), debugInfo);
 
         return INDArrayStatistics.builder()
                 .minValue(debugInfo._minValue())

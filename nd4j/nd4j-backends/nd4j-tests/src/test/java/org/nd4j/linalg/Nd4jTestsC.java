@@ -2188,6 +2188,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testTensorDot() {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2).castTo(DataType.DOUBLE);
