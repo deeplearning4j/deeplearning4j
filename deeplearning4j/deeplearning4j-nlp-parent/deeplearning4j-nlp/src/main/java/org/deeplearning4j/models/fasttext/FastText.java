@@ -173,7 +173,7 @@ public class FastText implements WordVectors {
     @Override
     public INDArray getWordVectorMatrixNormalized(String word) {
         INDArray r = getWordVectorMatrix(word);
-        return r.div(Nd4j.getBlasWrapper().nrm2(r));
+        return r.divi(Nd4j.getBlasWrapper().nrm2(r));
     }
 
     @Override

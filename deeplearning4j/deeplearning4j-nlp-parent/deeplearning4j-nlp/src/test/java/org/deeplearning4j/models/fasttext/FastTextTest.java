@@ -47,14 +47,12 @@ public class FastTextTest {
 
         FastText fastText =
                 FastText.builder().skipgram(true).
-                        //bucket(100).
+                        bucket(150).
                         inputFile("src/test/resources/data/labeled_data.txt").
                         outputFile("src/test/resources/models/fasttext/supervised.model").build();
         System.out.printf("\nTraining supervised model ...\n");
         fastText.init();
         fastText.fit();
-        assertEquals(150, fastText.getNumberOfBuckets());
-        System.out.println(fastText.getModelName() + " " + fastText.getLossName());
     }
 
 
@@ -85,6 +83,17 @@ public class FastTextTest {
         Pair<String,Float> result = fastText.predictProbability(text);
         assertEquals("__label__soccer", result.getFirst());
         assertEquals(-0.6930, result.getSecond(), 1e-4);
+
+        assertEquals(48, fastText.vocabSize());
+        assertEquals(0.0500, fastText.getLearningRate(), 1e-4);
+        assertEquals(100, fastText.getDimension());
+        assertEquals(5, fastText.getContextWindowSize());
+        assertEquals(5, fastText.getEpoch());
+        assertEquals(5, fastText.getNegativesNumber());
+        assertEquals(1, fastText.getWordNgrams());
+        assertEquals("softmax", fastText.getLossName());
+        assertEquals("sup", fastText.getModelName());
+        assertEquals(0, fastText.getNumberOfBuckets());
     }
 
     @Test
@@ -123,20 +132,4 @@ public class FastTextTest {
         String label = fastText.predict("something");
     }
 
-    @Test
-    public void testModelInfo() throws Exception {
-        FastText fastText = new FastText();
-        fastText.loadBinaryModel("src/test/resources/models/fasttext/supervised.model.bin");
-
-        assertEquals(48, fastText.vocabSize());
-        assertEquals(0.0500, fastText.getLearningRate(), 1e-4);
-        assertEquals(100, fastText.getDimension());
-        assertEquals(5, fastText.getContextWindowSize());
-        assertEquals(5, fastText.getEpoch());
-        assertEquals(5, fastText.getNegativesNumber());
-        assertEquals(1, fastText.getWordNgrams());
-        assertEquals("softmax", fastText.getLossName());
-        assertEquals("sup", fastText.getModelName());
-        assertEquals(0, fastText.getNumberOfBuckets());
-    }
 }
