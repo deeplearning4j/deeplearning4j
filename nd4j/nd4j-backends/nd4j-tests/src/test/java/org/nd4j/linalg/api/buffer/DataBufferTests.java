@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.buffer;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,6 +49,7 @@ public class DataBufferTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore("AB 2019/06/03 - CI issue: \"CUDA stream synchronization failed\" - see issue 7657")
     public void testNoArgCreateBufferFromArray() {
 
         //Tests here:
