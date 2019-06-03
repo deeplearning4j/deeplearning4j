@@ -334,7 +334,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
 
                 // we want to ensure it's the same cached shapeInfo used here
-                assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+                assertEquals(array.shapeInfoDataBuffer().addressPointer().address(), restored.shapeInfoDataBuffer().addressPointer().address());
             }
         }
     }
@@ -365,7 +365,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
 
             // we want to ensure it's the same cached shapeInfo used here
-            assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+            assertEquals(array.shapeInfoDataBuffer().addressPointer().address(), restored.shapeInfoDataBuffer().addressPointer().address());
         }
     }
 
@@ -388,7 +388,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
 
             // we want to ensure it's the same cached shapeInfo used here
-            assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+            assertEquals(array.shapeInfoDataBuffer().addressPointer().address(), restored.shapeInfoDataBuffer().addressPointer().address());
         }
     }
 

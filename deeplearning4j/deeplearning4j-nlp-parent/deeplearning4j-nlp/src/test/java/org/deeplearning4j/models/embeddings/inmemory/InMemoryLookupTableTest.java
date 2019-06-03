@@ -32,6 +32,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.resources.Resources;
+
+import java.io.File;
 
 import static org.junit.Assert.*;
 
@@ -56,9 +59,9 @@ public class InMemoryLookupTableTest {
         AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
 
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File resource = Resources.asFile("big/raw_sentences.txt");
 
-        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource);
 
 
         SentenceTransformer transformer =
@@ -103,9 +106,9 @@ public class InMemoryLookupTableTest {
         AbstractCache<VocabWord> cacheSource = new AbstractCache.Builder<VocabWord>().build();
 
 
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
+        File resource = Resources.asFile("big/raw_sentences.txt");
 
-        BasicLineIterator underlyingIterator = new BasicLineIterator(resource.getFile());
+        BasicLineIterator underlyingIterator = new BasicLineIterator(resource);
 
 
         SentenceTransformer transformer =
@@ -133,7 +136,7 @@ public class InMemoryLookupTableTest {
 
 
         val dir = testDir.newFolder();
-        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+        new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
                         .addSourceFolder(dir).build();

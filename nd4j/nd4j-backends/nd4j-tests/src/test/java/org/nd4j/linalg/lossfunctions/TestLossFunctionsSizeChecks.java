@@ -18,9 +18,11 @@ package org.nd4j.linalg.lossfunctions;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -35,7 +37,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  * 
  * @author Jonathan S. Arney.
  */
-public class TestLossFunctionsSizeChecks {
+public class TestLossFunctionsSizeChecks extends BaseNd4jTest {
+
+    public TestLossFunctionsSizeChecks(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
+
     @Test
     public void testL2() {
         LossFunction[] lossFunctionList = {LossFunction.MSE, LossFunction.L1, LossFunction.EXPLL, LossFunction.XENT,

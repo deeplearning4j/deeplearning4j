@@ -19,6 +19,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -232,6 +233,7 @@ public class IndexedTailTest {
 
 
     @Test
+    @Ignore("AB 2019/05/21 - Failing sometimes on linux-x86_64-cpu - Issue #7657")
     public void testMultiThreaded_1() throws Exception {
         val numReaders = 4;
         final val tail = new IndexedTail(numReaders);

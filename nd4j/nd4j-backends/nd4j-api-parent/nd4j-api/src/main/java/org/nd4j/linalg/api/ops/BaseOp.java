@@ -373,6 +373,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 dimensions = Shape.normalizeAxis(x.rank(), dimensions);
             }
         }
+
+        if (dimensions == null || dimensions.length == 0)
+            dimensions = new int[]{Integer.MAX_VALUE};
+
         this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
     }
 

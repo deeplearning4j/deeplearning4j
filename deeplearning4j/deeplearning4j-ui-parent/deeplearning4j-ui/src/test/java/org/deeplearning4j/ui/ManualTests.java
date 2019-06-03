@@ -61,6 +61,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,8 +109,7 @@ public class ManualTests {
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
                         .useAdaGrad(true).build();
 
-        org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("/mnist2500_X.txt");
-        File f = resource.getTempFileFromArchive();
+        File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
         INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
                         NDArrayIndex.interval(0, 784));
 
@@ -212,7 +212,7 @@ public class ManualTests {
 
     @Test
     public void testWord2VecPlot() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();

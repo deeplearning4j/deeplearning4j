@@ -61,12 +61,12 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
         // this won't be view, so ews is 1
         int ews = 1;
 
-        return createShapeInformation(shape, stride, ews, order, dataType);
+        return createShapeInformation(shape, stride, ews, order, dataType, false);
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
-        DataBuffer buffer = Shape.createShapeInformation(shape, stride, elementWiseStride, order, dataType);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+        DataBuffer buffer = Shape.createShapeInformation(shape, stride, elementWiseStride, order, dataType, empty);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asLong());
     }

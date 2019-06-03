@@ -56,7 +56,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -308,7 +307,7 @@ public class CNN2DTestCases {
                                 "leaky_re_lu_8")
                         .addLayer("outputs",
                                 new Yolo2OutputLayer.Builder()
-                                        .lambbaNoObj(lambdaNoObj)
+                                        .lambdaNoObj(lambdaNoObj)
                                         .lambdaCoord(lambdaCoord)
                                         .boundingBoxPriors(priors)
                                         .build(),

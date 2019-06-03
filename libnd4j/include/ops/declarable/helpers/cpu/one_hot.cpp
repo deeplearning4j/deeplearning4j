@@ -26,11 +26,11 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename Z, typename I>
-            static void onehot_(void *voutput, Nd4jLong *zShapeInfo, void *vindices, Nd4jLong *iShapeInfo, std::vector<int> &axis, double on, double off) {
+            static void onehot_(void *voutput, Nd4jLong *zShapeInfo, void *vindices, Nd4jLong *iShapeInfo, int axis, double on, double off) {
                 auto output = reinterpret_cast<Z*>(voutput);
                 auto indices = reinterpret_cast<I*>(vindices);
 
-                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, axis);
+                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, {axis});
 
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
@@ -85,11 +85,11 @@ namespace nd4j {
                 }
             }
 
-            void onehot(nd4j::LaunchContext * context, NDArray *output, NDArray *indices, std::vector<int> &axis, double on, double off) {
+            void onehot(const nd4j::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
                 auto zType = output->dataType();
                 auto iType = indices->dataType();
 
-                BUILD_DOUBLE_SELECTOR(zType, iType, onehot_, (output->buffer(), output->shapeInfo(), indices->buffer(), indices->shapeInfo(), axis, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(zType, iType, onehot_, (output->buffer(), output->shapeInfo(), indices->getBuffer(), indices->getShapeInfo(), axis, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
     }

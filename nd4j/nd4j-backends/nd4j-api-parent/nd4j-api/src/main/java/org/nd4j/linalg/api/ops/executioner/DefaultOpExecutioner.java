@@ -889,7 +889,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         throw new UnsupportedOperationException();
     }
 

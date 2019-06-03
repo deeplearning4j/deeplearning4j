@@ -1028,8 +1028,8 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             }
         }
         else {
-            int idx = 0;            
-            for(int i = 0; i < len; i++)                            
+            int idx = 0;
+            for(int i = 0; i < len; i++)
                     hZ[idx++] = input[shape::getIndexOffset(i, inputShapeInfo, len)];
         }
     }
@@ -1097,7 +1097,7 @@ void NativeOps::concat(
         void *dZ, Nd4jLong *dZShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
-    
+
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
@@ -1142,7 +1142,7 @@ void NativeOps::flatten(
         void *dZ, Nd4jLong *dZShapeInfo,
         void *input, Nd4jLong *inputShapeInfo,
         void *dinput, Nd4jLong *dinputShapeInfo) {
-    
+
     auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1381,9 +1381,9 @@ void pullRowsGeneric(void *vx,
             for (int i = 0; i < tadLength; i++ ) {
                 rZ[i * zEWS] = rX[i * xEWS];
             }
-        } 
-        else {            
-            for (int i = 0; i < tadLength; i++) {                
+        }
+        else {
+            for (int i = 0; i < tadLength; i++) {
                 auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo, tadLength);
                 auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo, tadLength);
                 hZ[zOffset] = hX[xOffset];
@@ -1440,11 +1440,11 @@ void tearGeneric(void *vx,
             for (Nd4jLong j = 0; j < tadLength; j++) {
                 hZ[j * zEWS] = s[j * tadEWS];
             }
-        } 
+        }
         else {
-            
-            for (Nd4jLong j = 0; j < tadLength; j++)                 
-                hZ[shape::getIndexOffset(j, hZShapeInfo, tadLength)] = s[shape::getIndexOffset(j, tadShapeInfo, tadLength)];            
+
+            for (Nd4jLong j = 0; j < tadLength; j++)
+                hZ[shape::getIndexOffset(j, hZShapeInfo, tadLength)] = s[shape::getIndexOffset(j, tadShapeInfo, tadLength)];
         }
     }
 }
@@ -1616,22 +1616,22 @@ void NativeOps::setOmpMinThreads(int threads) {
 }
 
 /*
-void NativeOps::execMetaPredicateShape(Nd4jPointer *extras, 
-                                        const int opTypeA, 
-                                        const int opNumA, 
-                                        const int opTypeB, 
-                                        const int opNumB, 
-                                        Nd4jLong N, 
+void NativeOps::execMetaPredicateShape(Nd4jPointer *extras,
+                                        const int opTypeA,
+                                        const int opNumA,
+                                        const int opTypeB,
+                                        const int opNumB,
+                                        Nd4jLong N,
                                         void *hX, Nd4jLong *hXShapeInfo,
                                         void *dX, Nd4jLong *dXShapeInfo,
                                         void *hY, Nd4jLong *hYShapeInfo,
                                         void *dY, Nd4jLong *dYShapeInfo,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                        void *extraA, 
-                                        void *extraB, 
-                                        double scalarA, 
-                                        double scalarB) {    
+                                        void *extraA,
+                                        void *extraB,
+                                        double scalarA,
+                                        double scalarB) {
     // no-op;
 }
 */
@@ -2033,7 +2033,7 @@ int NativeOps::estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer hX, Nd4
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     auto list = reinterpret_cast<nd4j::ShapeList*>(shapeList);
 
-    list->destroy();
+    //list->destroy();
     delete list;
 }
 
@@ -2057,8 +2057,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
         // we shouldn't copy buffer if that's empty array
         void *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
 
-        auto array = new nd4j::NDArray(buffer_, shape_);
-        array->triggerAllocationFlag(false);
+        auto array = new nd4j::NDArray(buffer_, shape_, varSpace.launchContext(), false);
 
         // block should contain references to proper variable
         varSpace.putVariable(1, e, array);
@@ -2162,8 +2161,6 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
             outputs[e] = array;
 
             // and we want to release shape copy once we're done
-            array->triggerAllocationFlag(false);
-
             delete []shape;
         }
 
@@ -2678,7 +2675,7 @@ void NativeOps::scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfS
 
 void NativeOps::inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
     auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
-    NDArray array(buffer, shapeInfo, nullptr);
+    NDArray array(buffer, shapeInfo);
     nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
 }
 

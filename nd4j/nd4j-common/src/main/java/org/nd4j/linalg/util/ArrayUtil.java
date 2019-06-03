@@ -242,7 +242,23 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toLongs(boolean[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = data[i] ? 1 : 0;
+        }
+        return ret;
+    }
+
     public static long[] toLongs(short[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(int[] data) {
         val ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = (long) data[i];

@@ -59,6 +59,8 @@ public class CuDNNValidationUtil {
         @Builder.Default private boolean testBackward = true;
         @Builder.Default private boolean testTraining = true;
         @Builder.Default private boolean trainFirst = false;
+        @Builder.Default private double maxRE = MAX_REL_ERROR;
+        @Builder.Default private double minAbsErr = MIN_ABS_ERROR;
         INDArray features;
         INDArray labels;
         private DataSetIterator data;
@@ -114,14 +116,14 @@ public class CuDNNValidationUtil {
                 for (String p : paramKeys) {
                     INDArray p1 = net1NoCudnn.getParam(p);
                     INDArray p2 = net2With.getParam(p);
-                    INDArray re = relError(p1, p2, MIN_ABS_ERROR);
+                    INDArray re = relError(p1, p2, t.minAbsErr);
                     double maxRE = re.maxNumber().doubleValue();
-                    if (maxRE >= MAX_REL_ERROR) {
+                    if (maxRE >= t.maxRE) {
                         System.out.println("Failed param values: parameter " + p + " - No CuDNN vs. with CuDNN - train=" + train);
                         System.out.println(p1);
                         System.out.println(p2);
                     }
-                    assertTrue(s + " - param changed during forward pass: " + p, maxRE < MAX_REL_ERROR);
+                    assertTrue(s + " - param changed during forward pass: " + p, maxRE < t.maxRE);
                 }
 
                 for( int i=0; i<ff1.size(); i++ ){
@@ -131,26 +133,26 @@ public class CuDNNValidationUtil {
                     INDArray arr1 = ff1.get(i);
                     INDArray arr2 = ff2.get(i);
 
-                    INDArray relError = relError(arr1, arr2, MIN_ABS_ERROR);
+                    INDArray relError = relError(arr1, arr2, t.minAbsErr);
                     double maxRE = relError.maxNumber().doubleValue();
                     int idx = relError.argMax(Integer.MAX_VALUE).getInt(0);
-                    if(maxRE >= MAX_REL_ERROR){
+                    if(maxRE >= t.maxRE){
                         double d1 = arr1.dup('c').getDouble(idx);
                         double d2 = arr2.dup('c').getDouble(idx);
                         System.out.println("Different values at index " + idx + ": " + d1 + ", " + d2 + " - RE = " + maxRE);
                     }
-                    assertTrue(s + layerName + " - max RE: " + maxRE, maxRE < MAX_REL_ERROR);
+                    assertTrue(s + layerName + " - max RE: " + maxRE, maxRE < t.maxRE);
                     log.info("Forward pass, max relative error: " + layerName + " - " + maxRE);
                 }
 
                 INDArray out1 = net1NoCudnn.output(t.getFeatures(), train);
                 INDArray out2 = net2With.output(t.getFeatures(), train);
-                INDArray relError = relError(out1, out2, MIN_ABS_ERROR);
+                INDArray relError = relError(out1, out2, t.minAbsErr);
                 double maxRE = relError.maxNumber().doubleValue();
                 log.info(s + "Output, max relative error: " + maxRE);
 
                 assertEquals(net1NoCudnn.params(), net2With.params());  //Check that forward pass does not modify params
-                assertTrue(s + "Max RE: " + maxRE, maxRE < MAX_REL_ERROR);
+                assertTrue(s + "Max RE: " + maxRE, maxRE < t.maxRE);
             }
         }
 
@@ -165,7 +167,7 @@ public class CuDNNValidationUtil {
 
             double re = relError(s1, s2);
             String s = "Relative error: " + re;
-            assertTrue(s, re < MAX_REL_ERROR);
+            assertTrue(s, re < t.maxRE);
         }
 
         if(t.isTestBackward()) {
@@ -193,16 +195,16 @@ public class CuDNNValidationUtil {
                     throw new RuntimeException("Null gradients");
                 }
 
-                INDArray re = relError(g1, g2, MIN_ABS_ERROR);
+                INDArray re = relError(g1, g2, t.minAbsErr);
                 double maxRE = re.maxNumber().doubleValue();
-                if (maxRE >= MAX_REL_ERROR) {
+                if (maxRE >= t.maxRE) {
                     System.out.println("Failed param values: no CuDNN vs. with CuDNN - parameter: " + p);
                     System.out.println(Arrays.toString(g1.dup().data().asFloat()));
                     System.out.println(Arrays.toString(g2.dup().data().asFloat()));
                 } else {
                     System.out.println("OK: " + p);
                 }
-                assertTrue("Gradients are not equal: " + p, maxRE < MAX_REL_ERROR);
+                assertTrue("Gradients are not equal: " + p + ": maxRE=" + maxRE, maxRE < t.maxRE);
             }
         }
 
@@ -241,7 +243,7 @@ public class CuDNNValidationUtil {
                     double d2 = listNew.get(j);
                     double re = relError(d1, d2);
                     String msg = "Scores at iteration " + j + " - relError = " + re + ", score1 = " + d1 + ", score2 = " + d2;
-                    assertTrue(msg, re < MAX_REL_ERROR);
+                    assertTrue(msg, re < t.maxRE);
                     System.out.println("j=" + j + ", d1 = " + d1 + ", d2 = " + d2);
                 }
             }
@@ -329,7 +331,7 @@ public class CuDNNValidationUtil {
         result.muli(greaterThanMinAbs);
 
 //        double maxRE = result.maxNumber().doubleValue();
-//        if(maxRE > MAX_REL_ERROR){
+//        if(maxRE > t.maxRe){
 //            System.out.println();
 //        }
         return result;

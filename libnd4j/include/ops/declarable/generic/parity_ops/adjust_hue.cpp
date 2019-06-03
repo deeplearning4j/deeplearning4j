@@ -62,7 +62,7 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustHue: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
-        auto ts = NDArrayFactory::create(delta, block.getVariableSpace()->launchContext());
+        auto ts = NDArrayFactory::create(delta, block.launchContext());
         // FIXME: delta should be NDArray scalar
         helpers::_adjust_hue(block.launchContext(), input, output, &ts, isNHWC);
 

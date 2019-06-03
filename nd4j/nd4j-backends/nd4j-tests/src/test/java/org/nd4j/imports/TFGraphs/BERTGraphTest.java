@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
@@ -12,10 +28,12 @@ import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
 import org.nd4j.imports.tensorflow.TFOpImportFilter;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Downloader;
@@ -29,7 +47,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class BERTGraphTest {
+@Ignore("AB 2019/05/21 - JVM Crash on linux-x86_64-cuda-9.2, linux-ppc64le-cpu - Issue #7657")
+public class BERTGraphTest extends BaseNd4jTest {
+
+    public BERTGraphTest(Nd4jBackend b){
+        super(b);
+    }
+
+    @Override
+    public char ordering(){
+        return 'c';
+    }
 
     @Test
     public void testBert() throws Exception {

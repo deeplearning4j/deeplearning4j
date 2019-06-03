@@ -17,9 +17,14 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import lombok.NonNull;
+import lombok.val;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
 import java.nio.ByteBuffer;
 
@@ -107,6 +112,18 @@ public class LongBuffer extends BaseDataBuffer {
 
     public LongBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
+    }
+
+    public LongBuffer(@NonNull Pointer hostPointer, long numberOfElements) {
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+        this.offset = 0;
+        this.originalOffset = 0;
+        this.underlyingLength = numberOfElements;
+        this.length = numberOfElements;
+        initTypeAndSize();
+
+        this.pointer = new PagedPointer(hostPointer, numberOfElements).asLongPointer();
+        indexer = LongIndexer.create((LongPointer) this.pointer);
     }
 
     @Override

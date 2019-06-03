@@ -38,6 +38,7 @@
 #include <Status.h>
 #include <ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <array/DataBuffer.h>
 
 
 namespace nd4j {
@@ -85,9 +86,6 @@ namespace nd4j {
         void templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value);
 
         template <typename T>
-        void templatedSwap(void *xBuffer, void *yBuffer, const Nd4jLong length);
-
-        template <typename T>
         void templatedAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const;
 
         template <typename X, typename Y>
@@ -101,41 +99,36 @@ namespace nd4j {
 */
         template <typename T>
         void* templatedPointerShift(const Nd4jLong offset) const;
-        
+
         FORCEINLINE void copyBufferStatus(const NDArray& other) const;
 
     protected:
 
        /**
        *  if true then array doesn't own buffer and simply points to another's buffer
-       */                  
+       */
         bool _isView = false;
 
         /**
-        *  pointer on flattened data array in memory
+        *  pointer on DataBuffer buffers in cpu/device memory
         */
-        int8_t* _buffer = nullptr;
+        std::shared_ptr<DataBuffer> _buffer = std::make_shared<DataBuffer>();
+
+        /**
+        *  buffers offset, it is the same both for cpu and device buffers
+        */
+        Nd4jLong _offset = 0L;
 
         /**
         *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, element-wise-stride, c-like or fortan-like order
-        */  
+        */
         Nd4jLong *_shapeInfo = nullptr;
-
-        /**
-        *  pointer on device launch context (with all data needed there).
-        */  
-        nd4j::LaunchContext * _context = nd4j::LaunchContext::defaultContext();
-        /**
-        *  alternative buffers for special computational devices (like GPUs for CUDA)
-        */  
-        int8_t* _bufferD = nullptr;
         Nd4jLong *_shapeInfoD = nullptr;
 
         /**
-        *  indicates whether user allocates memory for _buffer/_shapeInfo by himself, in opposite case the memory must be allocated from outside
+        *  pointer on device launch context (with all data needed there).
         */
-        bool _isBuffAlloc = false;
-        bool _isBuffDAlloc = false;
+        nd4j::LaunchContext * _context = nd4j::LaunchContext::defaultContext();
 
         // indicates if array's buffer is within workspace
         bool _isAttached = false;
@@ -147,31 +140,35 @@ namespace nd4j {
 
         /**
         *  type of array elements
-        */  
+        */
         nd4j::DataType _dataType = FLOAT32;
 
         template<typename T>
         std::string toStringValue(T value);
 
-        mutable Nd4jLong _opCounter = 0L;
-        mutable Nd4jLong _writeHost = 0L;
-        mutable Nd4jLong _writeDevice = 0L;
-        mutable Nd4jLong _readHost = 0L;
-        mutable Nd4jLong _readDevice = 0L;
-
     public:
-        NDArray();
+        NDArray() = default;
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isBuffAlloc = false);
+#ifndef __JAVACPP_HACK__
+        NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const Nd4jLong offset = 0);
+
+        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+
+#endif
+
+        /**
+        *  do not allocate memory, memory for array is passed from outside
+        */
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
+        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
 
         /**
         *  copy constructor
@@ -190,7 +187,7 @@ namespace nd4j {
 
 
         /**
-		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
 		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
@@ -216,9 +213,10 @@ namespace nd4j {
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
-        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        *  this constructor creates new NDArray with shape matching "other" array,
+        *  doesn't copy "other" elements into new array !!!
         */
-        explicit NDArray(const NDArray *other, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        explicit NDArray(const NDArray* other, const bool copyStrides = false, nd4j::LaunchContext* context = nd4j::LaunchContext ::defaultContext());
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
@@ -228,9 +226,7 @@ namespace nd4j {
         /**
          * This method blocks until asynchronous operation finishes
          */
-        void synchronize() const;
-
-        bool isContiguous() const;
+        void synchronize(const char* msg) const;
 
         /**
          * This method allows to set _isAttached flag
@@ -238,13 +234,14 @@ namespace nd4j {
          */
         void setAttached(bool reallyAttached);
 
-        FORCEINLINE void tickWriteHost() const;
-        FORCEINLINE void tickWriteDevice() const;
-        FORCEINLINE void tickReadHost() const;
-        FORCEINLINE void tickReadDevice() const;
-        FORCEINLINE bool isActualOnHostSide() const;
-        FORCEINLINE bool isActualOnDeviceSide() const;
-        FORCEINLINE void makeBothBuffersActual() const;
+        void tickWriteHost() const;
+        void tickWriteDevice() const;
+        void tickReadHost() const;
+        void tickReadDevice() const;
+        void tickBothActual() const;
+        bool isActualOnHostSide() const;
+        bool isActualOnDeviceSide() const;
+        void makeBothBuffersActual() const;
 
         void syncToHost() const;
         void syncToDevice() const;
@@ -281,7 +278,7 @@ namespace nd4j {
         NDArray& operator=(NDArray&& other) noexcept;
 
         /**
-        *  assignment operator, assigns the same scalar to all array elements 
+        *  assignment operator, assigns the same scalar to all array elements
         */
         template <typename T>
         NDArray& operator=(const T scalar);
@@ -289,7 +286,7 @@ namespace nd4j {
 
         /**
         *   operators for memory allocation and deletion
-        */ 
+        */
         void* operator new(size_t i);
         void operator delete(void* p);
 
@@ -297,15 +294,10 @@ namespace nd4j {
         void setContext(nd4j::LaunchContext * context);
 
         /**
-        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-        */
-        void replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool releaseExisting = true);
- 
-        /**
         *  create a new array by replicating current array by repeats times along given dimension
         *  dimension - dimension along which to repeat elements
         *  repeats - number of repetitions
-        */        
+        */
         NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
 
         /**
@@ -330,15 +322,10 @@ namespace nd4j {
         static NDArray* quantize(NDArray *array);
 
         /**
-        *  fill target array by repeating current array 
-        *  dimension - dimension along which to repeat elements        
+        *  fill target array by repeating current array
+        *  dimension - dimension along which to repeat elements
         */
         void repeat(int dimension, NDArray& target) const;
-
-        /**
-        *  creates array which is view of this array
-        */
-        NDArray* getView();
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -364,11 +351,37 @@ namespace nd4j {
             return _context;
         }
 
+#ifndef __JAVACPP_HACK__
+        FORCEINLINE std::shared_ptr<DataBuffer> getDataBuffer() const;
+        FORCEINLINE std::shared_ptr<DataBuffer> dataBuffer();
+#endif
+
         /**
-        *   returns _buffer
+        *   returns host buffer
         */
-        void* getBuffer() const;
-        void* buffer();
+        FORCEINLINE void* getBuffer() const;
+        FORCEINLINE void* buffer();
+
+
+        /**
+        *   returns buffer offset (offset is the same for host and device buffers)
+        */
+        FORCEINLINE Nd4jLong getBufferOffset() const;
+        FORCEINLINE Nd4jLong bufferOffset();
+
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
+        FORCEINLINE void* specialBuffer();
+        FORCEINLINE void* getSpecialBuffer() const;
+
+        /**
+        *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
+        */
+        void* getPlatformBuffer() const;
+        void* platformBuffer();
+
+
 
         template <typename T>
         T* bufferAsT() const;
@@ -376,14 +389,9 @@ namespace nd4j {
         /**
         *   returns _shapeInfo
         */
-        Nd4jLong* shapeInfo();
-        Nd4jLong* getShapeInfo() const;
+        FORCEINLINE Nd4jLong* shapeInfo();
+        FORCEINLINE Nd4jLong* getShapeInfo() const;
 
-        /**
-        *  if _bufferD==nullptr return _buffer, else return _bufferD
-        */
-        void* specialBuffer();
-        void* getSpecialBuffer() const;
 
         /**
          * Returns True if it's legally empty NDArray, or false otherwise
@@ -394,13 +402,12 @@ namespace nd4j {
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
         */
-        Nd4jLong* specialShapeInfo();
-        Nd4jLong* getSpecialShapeInfo() const;
+        FORCEINLINE Nd4jLong* specialShapeInfo();
+        FORCEINLINE Nd4jLong* getSpecialShapeInfo() const;
 
-        /**
-        *  set values for _bufferD and _shapeInfoD
-        */
-        void setSpecialBuffer(void *buffer);
+
+        Nd4jLong* platformShapeInfo();
+        Nd4jLong* getPlatformShapeInfo() const;
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -416,6 +423,8 @@ namespace nd4j {
         bool isFinite();
         bool hasNaNs();
         bool hasInfs();
+
+        void copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCopyInBytes = 0, Nd4jLong offsetThis = 0, Nd4jLong offsetOther = 0);
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -441,16 +450,16 @@ namespace nd4j {
 
         /**
         *  prints information about array shape
-        *  msg - message to print out 
-        */ 
+        *  msg - message to print out
+        */
         void printShapeInfo(const char * msg = nullptr) const;
 
         /**
         *  prints buffer elements
-        *  msg - message to print out 
+        *  msg - message to print out
         *  limit - number of array elements to print out
-        *  sync - if true check whether host buffer is actual, if it is not then make it so 
-        */ 
+        *  sync - if true check whether host buffer is actual, if it is not then make it so
+        */
         void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1, const bool sync = true) const;
 
         /**
@@ -461,9 +470,9 @@ namespace nd4j {
 
         /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
-        *  msg - message to print out 
+        *  msg - message to print out
         *  limit - number of array elements to print out
-        */ 
+        */
         void printIndexedBuffer(const char* msg = nullptr, Nd4jLong limit = -1) const;
 
         std::string asIndexedString(Nd4jLong limit = -1);
@@ -471,12 +480,12 @@ namespace nd4j {
 
         /**
         *  this method assigns values of given array to this one
-        */ 
+        */
         void assign(const NDArray* other);
 
         /**
         *  this method assigns values of given array to this one
-        */ 
+        */
         void assign(const NDArray& other);
 
         /**
@@ -498,7 +507,7 @@ namespace nd4j {
         */
         NDArray *dup(const char newOrder = 'a');
 
-        /** 
+        /**
         *  returns sum of all elements of array
         */
         NDArray sumNumber() const;
@@ -521,7 +530,7 @@ namespace nd4j {
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
         *  dimensions - array of dimensions to reduce along
         *  keepDims - if true then put unities in place of reduced dimensions
-        */ 
+        */
 
         NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         NDArray* reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
@@ -545,7 +554,7 @@ namespace nd4j {
         *  dimensions - array of dimensions to reduce along
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
-        */ 
+        */
         void reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
         void reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target,  const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
         void reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target,  const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
@@ -558,9 +567,9 @@ namespace nd4j {
         NDArray varianceNumber(nd4j::variance::Ops op, bool biasCorrected = true);
 
         /**
-        *  apply scalar operation to array 
+        *  apply scalar operation to array
         *  extraParams - extra parameters for operation
-        */  
+        */
         NDArray reduceNumber(nd4j::reduce::FloatOps ops, void *extraParams = nullptr) const;
         NDArray reduceNumber(nd4j::reduce::SameOps  ops, void *extraParams = nullptr) const;
         NDArray reduceNumber(nd4j::reduce::BoolOps  ops, void *extraParams = nullptr) const;
@@ -574,16 +583,16 @@ namespace nd4j {
         /**
         *  returns element index which corresponds to some condition imposed by operation
         *  extraParams - extra parameters for operation
-        */ 
+        */
         NDArray indexReduceNumber(nd4j::indexreduce::Ops op, ExtraArguments *extraParams = nullptr);
 
         /**
         *  returns index of max element in a given array (optionally: along given dimension(s))
         *  dimensions - optional vector with dimensions
-        */          
+        */
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
-        
+
         void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
         void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
         void applyTransform(nd4j::transform::AnyOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
@@ -622,7 +631,7 @@ namespace nd4j {
         *  dimensions -  dimensions array to broadcast along
         *  target - where to store result
         *  extraParams - extra parameters for operation
-        */               
+        */
         void applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, ExtraArguments* extraArgs = nullptr);
 
         void applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
@@ -631,16 +640,16 @@ namespace nd4j {
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
-        *  other - input array 
+        *  other - input array
         *  extraParams - extra parameters for operation
-        */                       
+        */
         NDArray applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs = nullptr) const;
 
         NDArray* applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, ExtraArguments *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
-        *  other - input array 
+        *  other - input array
         *  target - where to store result
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
@@ -649,7 +658,7 @@ namespace nd4j {
 
         void applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr) const;
 
-        /** 
+        /**
         *  apply a scalar operation to an array
         *  scalar - input scalar
         *  target - where to store result
@@ -661,17 +670,18 @@ namespace nd4j {
         template <typename T>
         void applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
-        /** 
+        /**
         *  apply a scalar operation to an array
         *  scalar - input array which is simple scalar
         *  target - where to store result
         *  extraParams - extra parameters for operation
-        */ 
+        */
         void applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target = nullptr, ExtraArguments *extraParams = nullptr);
 
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
-#ifdef __CUDABLAS__
+
+#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -687,6 +697,7 @@ namespace nd4j {
         template <typename Lambda>
         FORCEINLINE void applyTriplewiseLambda(NDArray* second, NDArray *third, Lambda func, NDArray* target = nullptr);
 #else
+
         /**
         *  apply operation "func" to an array
         *  func - what operation to apply
@@ -764,32 +775,32 @@ namespace nd4j {
         NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const;
         NDArray varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
-        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, NDArray* target, const bool biasCorrected, const std::vector<int>& dimensions) const;
 
-        void varianceAlongDimension(nd4j::variance::Ops op, const NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
+        void varianceAlongDimension(nd4j::variance::Ops op, NDArray* target, const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
 #endif
 
         /**
-        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
         NDArray* transpose() const;
         NDArray  transp() const;
 
         /**
-        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  perform transpose operation and store result in target, this array remains unaffected
         *  target - where to store result
-        */ 
+        */
         void transpose(NDArray& target) const;
 
         /**
-        *  apply in-place transpose operation to this array, so this array becomes transposed 
-        */ 
+        *  apply in-place transpose operation to this array, so this array becomes transposed
+        */
         void transposei();
 
         /**
         *  return array pointing on certain range of this array
-        *  index - the number of array to be returned among set of possible arrays 
+        *  index - the number of array to be returned among set of possible arrays
         *  dimensions - array of dimensions to point on
         */
         NDArray* tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const;
@@ -809,7 +820,7 @@ namespace nd4j {
         */
         bool equalsTo(const NDArray *other, double eps = 1e-5) const;
         bool equalsTo(const NDArray &other, double eps = 1e-5) const;
-        
+
         /**
         *  add given row vector to all rows of this array
         *  row - row vector to add
@@ -829,7 +840,7 @@ namespace nd4j {
         *  target - where to store result
         */
         void subRowVector(const NDArray *row, NDArray* target) const;
-        
+
         /**
         *  multiply all rows of this array on given row vector, store result in target
         *  row - row vector to multiply on
@@ -843,7 +854,7 @@ namespace nd4j {
         *  target - where to store result
         */
         void divRowVector(const NDArray *row, NDArray* target) const;
-        
+
         /**
         *  add given column vector to all columns of this array, store result in target
         *  column - column vector to add
@@ -867,18 +878,17 @@ namespace nd4j {
         *  returns number of bytes used by _buffer & _shapeInfo
         */
         FORCEINLINE Nd4jLong memoryFootprint();
-        
+
         /**
         *  these methods suited for FlatBuffers use
         */
         template <typename T>
         std::vector<T> getBufferAsVector();
-        void *getBufferAsPointer(nd4j::DataType dtype);
         std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
         std::vector<int64_t> getShapeAsFlatVector();
-				
+
         /**
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
@@ -891,7 +901,7 @@ namespace nd4j {
 
         bool reshapei(const std::initializer_list<Nd4jLong>& shape);
 		bool reshapei(const std::vector<Nd4jLong>& shape);
-	
+
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
@@ -900,7 +910,7 @@ namespace nd4j {
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
 		NDArray* reshape(const char order, const std::vector<Nd4jLong>& shape) const;
-		
+
         /**
         *  calculate strides and set given order
         *  order - order to set
@@ -914,7 +924,7 @@ namespace nd4j {
 		void tilei(const std::vector<Nd4jLong>& repeats);
 
         /**
-        *  returns new array which is created by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps
         *  repeats - contains numbers of repetitions
         */
 		NDArray tile(const std::vector<Nd4jLong>& repeats) const;
@@ -927,32 +937,26 @@ namespace nd4j {
         void tile(const std::vector<Nd4jLong>& repeats, NDArray& target) const;
 
         /**
-        *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape        
+        *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape
         *  target - where to store result
         */
         void tile(NDArray& target) const;
-        
+
         /**
-        *  returns an array which is result of broadcasting of this and other arrays 
+        *  returns an array which is result of broadcasting of this and other arrays
         *  other - input array
         */
 		NDArray* broadcast(const NDArray& other);
-		
-        /**
-        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
-        *  arg - 0 -> row, 1 -> column
-        */
-		bool hasOrthonormalBasis(const int arg); 
-				
+
         /**
         *  check whether array is identity matrix
         */
-		bool isIdentityMatrix(); 
-		
+		bool isIdentityMatrix();
+
         /**
         *  check whether array is unitary matrix
         */
-		bool isUnitary(); 
+		bool isUnitary();
 
 
         /**
@@ -1005,7 +1009,7 @@ namespace nd4j {
         //template <typename T>
         //friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
 
-        
+
         /**
         *  addition unary operator array += other
         *  other - input array to add
@@ -1023,13 +1027,13 @@ namespace nd4j {
 
         template <typename T>
         void operator-=(const T other);
-        
+
         /**
         *  subtraction operator: array - other
         *  other - input array to subtract
         */
         NDArray operator-(const NDArray& other) const;
-        
+
         /**
         *  subtraction operator: array - scalar
         *  scalar - input scalar to subtract
@@ -1053,14 +1057,14 @@ namespace nd4j {
         *  other - input array to multiply on
         */
         NDArray operator*(const NDArray& other) const;
-    
+
         /**
         *  multiplication operator: array * scalar
         *  scalar - input scalar to multiply on
         */
         template <typename T>
         NDArray operator*(const T& scalar) const;
-        
+
         /**
         *  pairwise multiplication unary operator array *= other
         *  other - input array to multiply on
@@ -1118,8 +1122,8 @@ namespace nd4j {
         void setIdentity();
 
         /**
-        *  swaps the contents of tow arrays, 
-        *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same 
+        *  swaps the contents of tow arrays,
+        *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same
         */
         void swapUnsafe(NDArray& other);
 
@@ -1130,23 +1134,23 @@ namespace nd4j {
         NDArray* diagonal(const char type ) const;
 
         /**
-        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
-        *
-        *  diag - diagonal starting from matrix is filled. 
-        *      diag = 0 corresponds to main diagonal, 
-        *      diag < 0 below main diagonal
-        *      diag > 0 above main diagonal
-        *  direction - in what direction to fill matrix. There are 2 possible directions:
-        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
-        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
+        * fill target matrix with given value in one or two directions from main diagonal:
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
+        * direction - in what direction to fill matrix. There are 3 possible directions:
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
+        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
+        * rest of target elements are equal to this array elements
+        * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
         template <typename T>
-        void setValueInDiagMatrix(const T& value, const int diag, const char direction);
+        void fillAsTriangular(const float value, int lower, int upper, const char direction = 'b', NDArray* target = nullptr);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
-        *  shape  - contains new shape to broadcast array to 
+        *  shape  - contains new shape to broadcast array to
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         NDArray tileToShape(const Nd4jLong* shapeInfo);
@@ -1170,8 +1174,6 @@ namespace nd4j {
         */
         double getTrace() const;
 
-        NDArray* dupUninitialized() const;
-
         ResultSet* multipleTensorsAlongDimension(const std::vector<int>& indices, const std::vector<int>& dimensions) const;
 
         ResultSet* allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const;
@@ -1188,6 +1190,7 @@ namespace nd4j {
         void setShapeInfo(const Nd4jLong *shapeInfo);
         void setShapeInfo(const Nd4jLong *shapeInfo, const nd4j::DataType dtype);
         void setShapeInfo(const ShapeDescriptor& descriptor);
+        void setShapeInfo(const ConstantDataBuffer& shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -1217,7 +1220,7 @@ namespace nd4j {
         /**
         *  default destructor
         */
-        ~NDArray() noexcept;
+        ~NDArray() noexcept = default;
 
         /**
         *  set _shapeInfo
@@ -1226,36 +1229,25 @@ namespace nd4j {
         FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype);
 
         /**
-        *  set _buffer
-        */
-        FORCEINLINE void setBuffer(void* buffer);
-
-        /**
-        *  set _isBuffAlloc and _isShapeAlloc
-        */
-        FORCEINLINE void triggerAllocationFlag(bool bufferAllocated);
-        FORCEINLINE void triggerSpecialAllocationFlag(bool bufferAllocated);
-
-        /**
-        *  returns the value of "dim" dimension 
+        *  returns the value of "dim" dimension
         */
         Nd4jLong sizeAt(const int dim) const;
 
-        /**        
+        /**
         *  returns order of array
         */
         FORCEINLINE char ordering() const;
 
         /**
         *  return _isView
-        */ 
+        */
         FORCEINLINE bool isView() const;
 
         /**
         *  returns shape portion of shapeInfo
         */
         FORCEINLINE Nd4jLong* shapeOf() const;
-        
+
         /**
         *  returns strides portion of shapeInfo
         */
@@ -1264,9 +1256,9 @@ namespace nd4j {
         /**
         *  returns rank of array
         */
-        FORCEINLINE int rankOf() const;        
+        FORCEINLINE int rankOf() const;
 
-        /** 
+        /**
         *  returns length of array
         */
         FORCEINLINE Nd4jLong lengthOf() const;
@@ -1278,17 +1270,17 @@ namespace nd4j {
 
         /**
         *  returns number of columns in array
-        */ 
+        */
         FORCEINLINE Nd4jLong columns() const;
 
         /**
         *  returns size of array elements type
-        */ 
+        */
         FORCEINLINE size_t sizeOfT() const;
 
         /**
         *  returns element-wise-stride
-        */ 
+        */
         FORCEINLINE Nd4jLong ews() const;
 
         // returns true if arrays have same shape
@@ -1318,16 +1310,16 @@ namespace nd4j {
         template <typename T>
         T e(const Nd4jLong i) const;
 
-        /** 
-        *  returns element with given indexes from 2D array 
-        *  i - number of row 
+        /**
+        *  returns element with given indexes from 2D array
+        *  i - number of row
         *  j - number of column
         */
         template <typename T>
         T e(const Nd4jLong i, const Nd4jLong j) const;
 
-        /** 
-        *  returns element with given indexes from 3D array 
+        /**
+        *  returns element with given indexes from 3D array
         *  i - height
         *  j - width
         *  k - depth
@@ -1341,13 +1333,13 @@ namespace nd4j {
         template <typename T>
         T e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const;
 
-        /** 
+        /**
         *  returns array-scalar containing element of this array with given index
         *  i - element index in array
         */
         NDArray e(const Nd4jLong i) const;
 
-        /** 
+        /**
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
         *  value - scalar value to assign
@@ -1357,7 +1349,7 @@ namespace nd4j {
 
         void p(const Nd4jLong i, const NDArray& value);
 
-        /** 
+        /**
         *  assigns given scalar to 2D array element by given indexes
         *  i - number of row
         *  j - number of row
@@ -1366,7 +1358,7 @@ namespace nd4j {
         template <typename T>
         void p(const Nd4jLong i, const Nd4jLong j, const T value);
 
-        /** 
+        /**
         *  assigns given scalar to 3D array element by given indexes
         *  i - height
         *  j - width
@@ -1457,12 +1449,12 @@ namespace nd4j {
         bool isS() const;
 
         /**
-        *  inline accessing operator for matrix, i - absolute index        
+        *  inline accessing operator for matrix, i - absolute index
         */
         //FORCEINLINE NDArray operator()(const Nd4jLong i) const;
 
         /**
-        *  inline modifying operator for matrix, i - absolute index        
+        *  inline modifying operator for matrix, i - absolute index
         */
         //FORCEINLINE NDArray& operator()(const Nd4jLong i);
 
@@ -1483,12 +1475,12 @@ namespace nd4j {
 
         /**
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  inline modifying operator for 4D array, i - height, j - width, k - depth
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
 
         /**
@@ -1499,7 +1491,7 @@ namespace nd4j {
         /**
         *  inline modifying operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
 
         /**
@@ -1521,15 +1513,13 @@ namespace nd4j {
         FORCEINLINE bool operator==(const NDArray &other) const;
 
         FORCEINLINE bool operator!=(const NDArray &other) const;
-
-        void lazyAllocateBuffer() const;
     };
 
 
 
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS ///// 
+///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::isAttached() {
         return this->_context->getWorkspace() != nullptr;
@@ -1578,25 +1568,6 @@ namespace nd4j {
             _dataType = nd4j::DataType::INHERIT;
             _length = 0;
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::setBuffer(void* buffer) {
-        if(_isBuffAlloc)
-            RELEASE(_buffer, _context->getWorkspace());
- 
-        _buffer = reinterpret_cast<int8_t *>(buffer);
-        _isBuffAlloc = false;
-        tickWriteHost();
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::triggerAllocationFlag(bool bufferAllocated) {
-        _isBuffAlloc = bufferAllocated;
-    }
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated) {
-        _isBuffDAlloc = bufferAllocated;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1675,9 +1646,9 @@ namespace nd4j {
             return true;
 
         if(!Environment::getInstance()->isCPU())
-            return this->_bufferD != nullptr && this->_shapeInfoD != nullptr;
+            return getDataBuffer()->special() != nullptr && getSpecialShapeInfo() != nullptr;
 
-        return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+        return getDataBuffer()->primary() != nullptr && getShapeInfo() != nullptr;
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1737,17 +1708,15 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
 
     auto ews   = shape::elementWiseStride(_shapeInfo);
-    char order = ordering();   
+    char order = ordering();
 
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -1756,7 +1725,6 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     }
 }
@@ -1774,14 +1742,12 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
 
         // FIXME: bad
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -1790,26 +1756,24 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
-    }    
+    }
 }*/
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 /*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
-    
+
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
-    
+
     Nd4jLong coords[2] = {i, j};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
     // TODO: do we really want a view here?
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1825,7 +1789,6 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -1836,16 +1799,15 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 // accessing operator for 3D array, i - row, j - column
 /*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
-    
+
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
-    
+
     Nd4jLong coords[3] = {i, j, k};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1854,7 +1816,7 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
 // modifying operator for 3D array
 /*
 NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
-    
+
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
@@ -1863,7 +1825,6 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -1871,7 +1832,7 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 */
 /*
 NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
-    
+
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
@@ -1880,13 +1841,12 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
 /*
 NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
-    
+
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
@@ -1896,7 +1856,6 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
     // FIXME
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1904,15 +1863,14 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
 /*
 NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
-    for(int i = 0; i < rankOf(); ++i)    
+    for(int i = 0; i < rankOf(); ++i)
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
-    
+
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -1920,7 +1878,7 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
 /*
 NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
-    for(int i = 0; i < rankOf(); ++i)    
+    for(int i = 0; i < rankOf(); ++i)
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
@@ -1928,7 +1886,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     // FIXME
     return result;
@@ -1999,8 +1956,8 @@ bool NDArray::isSameShapeStrict(const NDArray *other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
     if (this->_shapeInfo == nullptr)
-            return false;
-    
+        return false;
+
     return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
 
@@ -2100,33 +2057,84 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
 
+#ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
-void NDArray::copyBufferStatus(const NDArray& other) const { 
-    
-    if (other.isActualOnHostSide()) 
-        tickWriteHost();
-    else
-        tickWriteDevice();
+std::shared_ptr<DataBuffer> NDArray::getDataBuffer() const {
+    return _buffer;
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tickWriteHost() const          { _writeHost   = ++_opCounter; }
-void NDArray::tickWriteDevice() const        {  _writeDevice = ++_opCounter; }
-void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
-void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
-bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
-bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
+std::shared_ptr<DataBuffer> NDArray::dataBuffer() {
+    return _buffer;
+}
+#endif
 
-void NDArray::makeBothBuffersActual() const  { 
-    if(!isActualOnHostSide()) 
-        syncToHost(); 
-    if(!isActualOnDeviceSide()) 
-        syncToDevice(); 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getBuffer() const {
+
+    return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void* NDArray::buffer() {
+    return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::getShapeInfo() const {
+    return _shapeInfo;
+}
+
+//////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::shapeInfo() {
+    return _shapeInfo;
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::specialShapeInfo() {
+    if (_shapeInfoD == nullptr)
+        return _shapeInfo;
+    // FIXME: this should be fixed once CUDA backend added
+    return _shapeInfoD;
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+      if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::getBufferOffset() const {
+    return _offset;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::bufferOffset() {
+    return _offset;
+}
+
+////////////////////////////////////////////////////////////////////////
+Nd4jLong* NDArray::getSpecialShapeInfo() const{
+    if (_shapeInfoD == nullptr)
+        return _shapeInfo;
+    // FIXME: this should be fixed once CUDA backend added
+    return _shapeInfoD;
 }
 
 
-
-#ifdef __CUDACC__
+#if defined(__CUDACC__) && defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif

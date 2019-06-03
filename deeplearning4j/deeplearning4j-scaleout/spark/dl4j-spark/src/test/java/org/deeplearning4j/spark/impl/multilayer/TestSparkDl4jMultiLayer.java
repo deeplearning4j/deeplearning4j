@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
-    @Test
+    @Test(timeout = 120000L)
     public void testEvaluationSimple() throws Exception {
 
         for( int evalWorkers : new int[]{1, 4, 8}) {

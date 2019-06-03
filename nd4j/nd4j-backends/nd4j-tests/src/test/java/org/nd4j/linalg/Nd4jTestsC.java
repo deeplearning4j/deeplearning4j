@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -407,7 +408,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
-        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {1, 2});
+        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new float[] {-4, -4}), arr.getRow(0));
@@ -770,6 +771,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
         assertEquals(Nd4j.create(new boolean[] {false, false, false, true, false, false}), Transforms.isMax(Nd4j.create(new double[] {0, 0, 0, 2, 2, 0}), DataType.BOOL));
+    }
+
+    @Test
+    public void testIMaxVector_1() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(0).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_2() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(Integer.MAX_VALUE).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_3() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax().getInt(0);
+        assertEquals(0, idx);
     }
 
     @Test
@@ -1341,7 +1363,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, new int[]{12});
         INDArray flattened = Nd4j.toFlattened(concat);
         assertEquals(assertion, flattened);
-
     }
 
 
@@ -5749,8 +5770,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .build();
 
         Nd4j.getExecutioner().exec(im2colOp);
-
-        log.info("result: {}", output);
     }
 
 
@@ -7355,27 +7374,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testRollingMean() {
         val wsconf = WorkspaceConfiguration.builder()
-                .initialSize(1500L * 1024L * 1024L)
+                .initialSize(4L * (32*128*256*256 + 32*128 + 10*1024*1024))
                 .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policySpill(SpillPolicy.FAIL)
                 .build();
 
-        for (int e = 0; e < 5; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+        String wsName = "testRollingMeanWs";
+        try {
+            System.gc();
+            for (int e = 0; e < 5; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
-        }
 
-        int iterations = 100;
-        val timeStart = System.nanoTime();
-        for (int e = 0; e < iterations; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "kjmnf,ndsfhnsdjhflljkl131334")) {
-                val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
-                array.mean(2, 3);
+            int iterations = 100;
+            val timeStart = System.nanoTime();
+            for (int e = 0; e < iterations; e++) {
+                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
+                    val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
+                    array.mean(2, 3);
+                }
             }
+            val timeEnd = System.nanoTime();
+            log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
+        } finally {
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
-        val timeEnd = System.nanoTime();
-        log.info("Average time: {} ms", (timeEnd - timeStart) / (double) iterations / (double) 1000 / (double) 1000);
     }
 
     @Test
@@ -7622,6 +7648,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(scalarRank0, scalarRank0.dup());
         assertEquals(scalarRank1, scalarRank1.dup());
         assertEquals(scalarRank2, scalarRank2.dup());
+    }
+
+    @Test
+    public void testSumEdgeCase(){
+        INDArray row = Nd4j.create(1,3);
+        INDArray sum = row.sum(0);
+        assertArrayEquals(new long[]{3}, sum.shape());
+
+        INDArray twoD = Nd4j.create(2,3);
+        INDArray sum2 = twoD.sum(0);
+        assertArrayEquals(new long[]{3}, sum2.shape());
     }
 
     ///////////////////////////////////////////////////////

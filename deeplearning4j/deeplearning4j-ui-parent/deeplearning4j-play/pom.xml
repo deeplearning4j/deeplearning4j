@@ -316,14 +316,42 @@
 
         <!-- WebJars Dependencies -->
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>2.3.2</version>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>babel__polyfill</artifactId>
+            <version>7.4.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>coreui__coreui</artifactId>
+            <version>2.1.9</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.webjars.npm</groupId>
+                    <artifactId>coreui__coreui-plugin-npm-postinstall</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.webjars.npm</groupId>
+            <artifactId>coreui__icons</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>popper.js</artifactId>
+            <version>1.12.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>4.2.1</version>
+            <version>4.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>

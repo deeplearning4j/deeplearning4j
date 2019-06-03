@@ -22,12 +22,12 @@
 #ifndef DEV_TESTS_DATABUFFER_H
 #define DEV_TESTS_DATABUFFER_H
 
-#include <dll.h>
 #include <cstring>
 #include <op_boilerplate.h>
+#include <dll.h>
 #include <pointercast.h>
-#include <memory/Workspace.h>
 #include <array/DataType.h>
+#include <memory/Workspace.h>
 #include <execution/LaunchContext.h>
 
 namespace nd4j {
@@ -36,8 +36,8 @@ class ND4J_EXPORT DataBuffer {
 
     private:
 
-        Nd4jPointer _primaryBuffer;
-        Nd4jPointer _specialBuffer;
+        void* _primaryBuffer;
+        void* _specialBuffer;
         size_t _lenInBytes;
         DataType _dataType;
         memory::Workspace* _workspace;
@@ -52,36 +52,51 @@ class ND4J_EXPORT DataBuffer {
         mutable std::atomic<Nd4jLong> _readSpecial;
     #endif
 
-        void setCountersToZero();
-        void copyCounters(const DataBuffer& other);
-        void deleteBuffers();
-        void copyBuffers(const DataBuffer& other);
-        void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
-        void allocatePrimary();
-        void allocateSpecial();
-        void allocateBuffers();
+                    void setCountersToZero();
+                    void copyCounters(const DataBuffer& other);
+                    void deleteSpecial();
+        FORCEINLINE void deletePrimary();
+        FORCEINLINE void deleteBuffers();
+        FORCEINLINE void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
+                    void allocateBuffers(const bool allocBoth = false);
+                    void setSpecial(void* special, const bool isOwnerSpecial);
+                    void copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetHostBuffer = 0);
 
 
     public:
 
-        DataBuffer(Nd4jPointer primary, Nd4jPointer special,
-                    const size_t lenInBytes, const DataType dataType,
-                    const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
-                    memory::Workspace* workspace = nullptr);
+        FORCEINLINE DataBuffer(void* primary, void* special,
+                               const size_t lenInBytes, const DataType dataType,
+                               const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
+                               memory::Workspace* workspace = nullptr);
 
-        DataBuffer(const DataBuffer& other);
-        DataBuffer(DataBuffer&& other);
-        explicit DataBuffer();
-        ~DataBuffer();
+        FORCEINLINE DataBuffer(void* primary,
+                               const size_t lenInBytes, const DataType dataType,
+                               const bool isOwnerPrimary = false,
+                               memory::Workspace* workspace = nullptr);
 
-        DataBuffer& operator=(const DataBuffer& other);
-        DataBuffer& operator=(DataBuffer&& other) noexcept;
+        FORCEINLINE DataBuffer(const void* hostBuffer,      // copies data from hostBuffer to own memory buffer
+                               const DataType dataType, const size_t lenInBytes,
+                               memory::Workspace* workspace = nullptr);
 
-        DataType getDataType();
-        size_t getLenInBytes();
+        FORCEINLINE DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace = nullptr, const bool allocBoth = false);
 
-        Nd4jPointer primary();
-        Nd4jPointer special();
+        FORCEINLINE DataBuffer(const DataBuffer& other);
+        FORCEINLINE DataBuffer(DataBuffer&& other);
+        FORCEINLINE explicit DataBuffer();
+        FORCEINLINE ~DataBuffer();
+
+        FORCEINLINE DataBuffer& operator=(const DataBuffer& other);
+        FORCEINLINE DataBuffer& operator=(DataBuffer&& other) noexcept;
+
+        FORCEINLINE DataType getDataType();
+        FORCEINLINE size_t getLenInBytes() const;
+
+        FORCEINLINE void* primary();
+        FORCEINLINE void* special();
+
+        FORCEINLINE void allocatePrimary();
+                    void allocateSpecial();
 
         void writePrimary() const;
         void writeSpecial() const;
@@ -90,14 +105,15 @@ class ND4J_EXPORT DataBuffer {
         bool isPrimaryActual() const;
         bool isSpecialActual() const;
 
-        template <typename T>
-        T* primaryAsT();
+        template <typename T> FORCEINLINE T* primaryAsT();
+        template <typename T> FORCEINLINE T* specialAsT();
 
-        template <typename T>
-        T* specialAsT();
+        void syncToPrimary(const LaunchContext* context, const bool forceSync = false);
+        void syncToSpecial(const bool forceSync = false);
 
-        void syncToPrimary(const LaunchContext* context);
-        void syncToSpecial();
+        void setToZeroBuffers(const bool both = false);
+
+        void copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
 };
 
 
@@ -133,17 +149,20 @@ DataBuffer::DataBuffer(const DataBuffer &other) {
     _primaryBuffer = nullptr;
     _specialBuffer = nullptr;
 
-    allocateBuffers();
-    copyBuffers(other);
+    setCountersToZero();
 
-    writeSpecial();
+    allocateBuffers();
+    copyBufferFrom(other);
 }
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special,
-                        const size_t lenInBytes, const DataType dataType,
-                        const bool isOwnerPrimary, const bool isOwnerSpecial,
-                        memory::Workspace* workspace) {
+DataBuffer::DataBuffer(void* primary, void* special,
+                       const size_t lenInBytes, const DataType dataType,
+                       const bool isOwnerPrimary, const bool isOwnerSpecial,
+                       memory::Workspace* workspace) {
+
+    if (primary == nullptr && special == nullptr)
+        throw std::runtime_error("DataBuffer constructor: can't be initialized with both nullptr buffers !");
 
     _primaryBuffer  = primary;
     _specialBuffer  = special;
@@ -154,8 +173,59 @@ DataBuffer::DataBuffer(Nd4jPointer primary, Nd4jPointer special,
     _isOwnerSpecial = isOwnerSpecial;
 
     setCountersToZero();
+
+    if(primary != nullptr)
+        readPrimary();
+    if(special != nullptr)
+        readSpecial();
 }
 
+////////////////////////////////////////////////////////////////////////
+DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace):
+            DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+
+    syncToSpecial(true);
+}
+
+////////////////////////////////////////////////////////////////////////
+// copies data from hostBuffer to own memory buffer
+DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) {
+
+    if (hostBuffer == nullptr)
+        throw std::runtime_error("DataBuffer constructor: can't be initialized with nullptr host buffer !");
+    if (lenInBytes == 0)
+        throw std::runtime_error("DataBuffer constructor: can't be initialized with zero length !");
+
+    _primaryBuffer  = nullptr;
+    _specialBuffer  = nullptr;
+    _lenInBytes     = lenInBytes;
+    _dataType       = dataType;
+    _workspace      = workspace;
+
+    setCountersToZero();
+
+    allocateBuffers();
+
+    copyBufferFromHost(hostBuffer, lenInBytes);
+}
+
+////////////////////////////////////////////////////////////////////////
+DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) {
+
+    _dataType   = dataType;
+    _workspace  = workspace;
+    _lenInBytes = lenInBytes;
+
+    _primaryBuffer = nullptr;
+    _specialBuffer = nullptr;
+
+    setCountersToZero();
+
+    if(!lenInBytes == 0) {
+        allocateBuffers(allocBoth);
+        writeSpecial();
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // move constructor
@@ -190,9 +260,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
     _workspace     = other._workspace;
 
     allocateBuffers();
-    copyBuffers(other);
-
-    writeSpecial();
+    copyBufferFrom(other);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -220,12 +288,12 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
 }
 
 ////////////////////////////////////////////////////////////////////////
-Nd4jPointer DataBuffer::primary() {
+void* DataBuffer::primary() {
     return _primaryBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////
-Nd4jPointer DataBuffer::special() {
+void* DataBuffer::special() {
     return _specialBuffer;
 }
 
@@ -235,7 +303,7 @@ DataType DataBuffer::getDataType() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-size_t DataBuffer::getLenInBytes() {
+size_t DataBuffer::getLenInBytes() const {
     return _lenInBytes;
 }
 
@@ -265,6 +333,25 @@ void DataBuffer::setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpec
 
     _isOwnerPrimary = isOwnerPrimary;
     _isOwnerSpecial = isOwnerSpecial;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deletePrimary() {
+
+    if(_isOwnerPrimary && _primaryBuffer != nullptr && getLenInBytes() != 0) {
+        auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
+        RELEASE(p, _workspace);
+        _primaryBuffer = nullptr;
+        _isOwnerPrimary = false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteBuffers() {
+
+    deletePrimary();
+    deleteSpecial();
+    _lenInBytes = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////

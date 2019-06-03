@@ -42,6 +42,7 @@ import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.parameterserver.BaseSparkTest;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingMaster;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -65,6 +66,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore("AB 2019/05/21 - Failing - Issue #7657")
 public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Rule

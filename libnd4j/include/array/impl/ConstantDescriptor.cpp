@@ -23,6 +23,16 @@
 #include <stdexcept>
 
 namespace nd4j {
+    ConstantDescriptor::ConstantDescriptor(double* values, int length) {
+        for (int e = 0; e < length; e++)
+            _floatValues.emplace_back(values[e]);
+    }
+
+    ConstantDescriptor::ConstantDescriptor(Nd4jLong * values, int length) {
+        for (int e = 0; e < length; e++)
+            _integerValues.emplace_back(values[e]);
+    }
+
     ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> values) {
         _floatValues = values;
     }
@@ -45,23 +55,23 @@ namespace nd4j {
         return std::tie(_floatValues, _integerValues) < std::tie(other._floatValues, other._integerValues);
     }
 
-    bool ConstantDescriptor::isInteger() {
+    bool ConstantDescriptor::isInteger() const {
         return !_integerValues.empty();
     }
 
-    bool ConstantDescriptor::isFloat() {
+    bool ConstantDescriptor::isFloat() const {
         return !_floatValues.empty();
     }
 
-    std::vector<Nd4jLong>& ConstantDescriptor::integerValues() {
+    const std::vector<Nd4jLong>& ConstantDescriptor::integerValues() const {
         return _integerValues;
     }
 
-    std::vector<double>& ConstantDescriptor::floatValues() {
+    const std::vector<double>& ConstantDescriptor::floatValues() const {
         return _floatValues;
     }
 
-    Nd4jLong ConstantDescriptor::length() {
+    Nd4jLong ConstantDescriptor::length() const {
         return isInteger() ? _integerValues.size() : isFloat() ? _floatValues.size() : 0L;
     }
 }

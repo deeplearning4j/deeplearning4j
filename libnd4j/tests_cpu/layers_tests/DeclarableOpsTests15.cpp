@@ -40,7 +40,7 @@ public:
 
 TEST_F(DeclarableOpsTests15, Test_NormalizeMoments_1) {
     auto d = NDArrayFactory::create<double>('c', {10, 10});
-    auto w = NDArrayFactory::create<int>(10);
+    auto w = NDArrayFactory::create<double>(10);
     auto x = NDArrayFactory::create<double>('c', {10});
     auto y = NDArrayFactory::create<double>('c', {10});
 

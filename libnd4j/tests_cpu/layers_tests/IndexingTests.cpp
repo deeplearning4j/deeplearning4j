@@ -65,10 +65,7 @@ TEST_F(IndexingTests, StridedSlice_1) {
 
 TEST_F(IndexingTests, StridedSlice_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5, 5});
-
-    float _expB[] = {86.f,   87.f,   88.f,  91.f,   92.f,   93.f,  96.f,   97.f,   98.f,   111.f,  112.f,  113.f,  116.f,  117.f,  118.f,  121.f,  122.f,  123.f,};
-    auto exp = NDArrayFactory::create<float>('c', {2, 3, 3});
-    exp.setBuffer(_expB);
+    auto exp = NDArrayFactory::create<float>('c', {2, 3, 3}, {86.f,   87.f,   88.f,  91.f,   92.f,   93.f,  96.f,   97.f,   98.f,   111.f,  112.f,  113.f,  116.f,  117.f,  118.f,  121.f,  122.f,  123.f});
 
     x.linspace(1);
 
@@ -88,10 +85,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
 
 TEST_F(IndexingTests, StridedSlice_3) {
     auto x = NDArrayFactory::create<float>('c', {5, 5, 5});
-
-    float _expB[] = {86.f, 88.f,  91.f, 93.f, 96.f, 98.f, 111.f,  113.f,  116.f, 118.f,  121.f,  123.f,};
-    auto exp = NDArrayFactory::create<float>('c', {2, 3, 2});
-    exp.setBuffer(_expB);
+    auto exp = NDArrayFactory::create<float>('c', {2, 3, 2}, {86.f, 88.f,  91.f, 93.f, 96.f, 98.f, 111.f,  113.f,  116.f, 118.f,  121.f,  123.f});
 
     x.linspace(1);
 
@@ -110,9 +104,8 @@ TEST_F(IndexingTests, StridedSlice_3) {
 
 
 TEST_F(IndexingTests, SimpleSlice_1) {
-    float _inB[] = {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6};
-    auto input = NDArrayFactory::create<float>('c', {3, 2, 3});
-    input.setBuffer(_inB);
+
+    auto input = NDArrayFactory::create<float>('c', {3, 2, 3}, {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6});
 
     auto exp = NDArrayFactory::create<float>('c', {1, 1, 3});
     exp.p(0, 3.0f);
@@ -135,9 +128,7 @@ TEST_F(IndexingTests, SimpleSlice_1) {
 
 
 TEST_F(IndexingTests, SimpleSlice_2) {
-    float _inB[] = {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6};
-    auto input = NDArrayFactory::create<float>('c', {3, 2, 3});
-    input.setBuffer(_inB);
+    auto input = NDArrayFactory::create<float>('c', {3, 2, 3}, {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6});
 
     auto exp = NDArrayFactory::create<float>('c', {1, 2, 3});
     exp.p(0, 3.0f);
@@ -162,9 +153,7 @@ TEST_F(IndexingTests, SimpleSlice_2) {
 }
 
 TEST_F(IndexingTests, SimpleSlice_3) {
-    float _inB[] = {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6};
-    auto input = NDArrayFactory::create<float>('c', {3, 2, 3});
-    input.setBuffer(_inB);
+    auto input = NDArrayFactory::create<float>('c', {3, 2, 3}, {1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6});
 
     auto exp = NDArrayFactory::create<float>('c', {2, 1, 3});
     exp.p(0, 3.0f);
@@ -289,13 +278,9 @@ TEST_F(IndexingTests, MaskedSlice_1) {
 }
 
 TEST_F(IndexingTests, MaskedSlice_2) {
-    float _buff[] = {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f};
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3});
-    matrix.setBuffer(_buff);
 
-    float _expB[] = {4.000000f, 4.200000f, 4.300000f, 5.000000f, 5.200000f, 5.300000f, 6.000000f, 6.200000f, 6.300000f};
-    auto exp = NDArrayFactory::create<float>('c', {3, 3});
-    exp.setBuffer(_expB);
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {4.000000f, 4.200000f, 4.300000f, 5.000000f, 5.200000f, 5.300000f, 6.000000f, 6.200000f, 6.300000f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
@@ -313,13 +298,9 @@ TEST_F(IndexingTests, MaskedSlice_2) {
 
 
 TEST_F(IndexingTests, MaskedSlice_3) {
-    float _buff[] = {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f};
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3});
-    matrix.setBuffer(_buff);
 
-    float _expB[] = { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f};
-    auto exp = NDArrayFactory::create<float>('c', {2, 3});
-    exp.setBuffer(_expB);
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 3}, { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
@@ -337,13 +318,9 @@ TEST_F(IndexingTests, MaskedSlice_3) {
 
 
 TEST_F(IndexingTests, MaskedSlice_4) {
-    float _buff[] = {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f};
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3});
-    matrix.setBuffer(_buff);
 
-    float _expB[] = { 4.f,   4.2f,  4.3f};
-    auto exp = NDArrayFactory::create<float>('c', {3});
-    exp.setBuffer(_expB);
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f});
+    auto exp = NDArrayFactory::create<float>('c', {3}, { 4.f,   4.2f,  4.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
@@ -361,13 +338,8 @@ TEST_F(IndexingTests, MaskedSlice_4) {
 }
 
 TEST_F(IndexingTests, Live_Slice_1) {
-    float _buff[] = {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f};
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3});
-    matrix.setBuffer(_buff);
-
-    float _expB[] = { 4.f,   4.2f,  4.3f};
-    auto exp = NDArrayFactory::create<float>('c', {3});
-    exp.setBuffer(_expB);
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f});
+    auto exp = NDArrayFactory::create<float>('c', {3}, { 4.f,   4.2f,  4.3f});
 
     auto begin = NDArrayFactory::create<float>('c', {1, 3}, {1.0f, 0.0f, 0.0f});
     auto end = NDArrayFactory::create<float>('c', {1, 3}, {3.0f, 3.0f, 3.0f});
@@ -382,7 +354,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
     auto z = result->at(0);
 
     // z->printShapeInfo("z shape");
-    
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -482,7 +454,7 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
 
 TEST_F(IndexingTests, Test_Subarray_Strided_1) {
     auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    auto exp = NDArrayFactory::create<float>('c', {3, 2}, {1, 3, 4, 6, 7, 9});    
+    auto exp = NDArrayFactory::create<float>('c', {3, 2}, {1, 3, 4, 6, 7, 9});
     auto sub = x({0,0,0,  0,3,2}, true, true);
 
     ASSERT_TRUE(exp.isSameShape(sub));
@@ -492,13 +464,9 @@ TEST_F(IndexingTests, Test_Subarray_Strided_1) {
 
 /*
 TEST_F(IndexingTests, MaskedSlice_5) {
-    float _buff[] = {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f};
-    auto matrix('c', {3, 3, 3});
-    matrix.setBuffer(_buff);
 
-    float _expB[] = { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f};
-    auto exp('c', {2, 3});
-    exp.setBuffer(_expB);
+    auto matrix('c', {3, 3, 3}, {1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,  7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f});
+    auto exp('c', {2, 3}, { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice<float> op;

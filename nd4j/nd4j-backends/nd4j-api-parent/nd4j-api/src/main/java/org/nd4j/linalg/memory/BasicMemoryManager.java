@@ -94,7 +94,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
      */
     @Override
     public void purgeCaches() {
-        throw new UnsupportedOperationException("This method isn't implemented yet");
+        //No op for CPU (no cache)
     }
 
     @Override

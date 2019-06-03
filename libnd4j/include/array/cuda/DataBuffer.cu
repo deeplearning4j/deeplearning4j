@@ -20,12 +20,11 @@
 //
 
 #include "../DataBuffer.h"
+#include <DataTypeUtils.h>
 #include <op_boilerplate.h>
 #include <exceptions/cuda_exception.h>
 
 namespace nd4j {
-
-
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
@@ -36,9 +35,11 @@ void DataBuffer::allocateSpecial() {
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToPrimary(const LaunchContext* context) {
+void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
+
+    if(isPrimaryActual() && !forceSync)
+        return;
 
     allocatePrimary();
 
@@ -53,7 +54,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context) {
 
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToSpecial() {
+void DataBuffer::syncToSpecial(const bool forceSync) {
+
+    if(isSpecialActual() && !forceSync)
+        return;
 
     allocateSpecial();
 
@@ -62,25 +66,18 @@ void DataBuffer::syncToSpecial() {
     readSpecial();
 }
 
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteBuffers() {
 
-    if(getLenInBytes() != 0) {
-        if(_primaryBuffer != nullptr && _isOwnerPrimary) {
-            auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-            RELEASE(p, _workspace);
-            _primaryBuffer = nullptr;
-            _isOwnerPrimary = false;
-        }
-        if(_primaryBuffer != nullptr && _isOwnerSpecial) {
-            auto p = reinterpret_cast<int8_t*>(_specialBuffer);
-            RELEASE_SPECIAL(p, _workspace);
-            _specialBuffer = nullptr;
-            _isOwnerSpecial = false;
-        }
-        _lenInBytes = 0;
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteSpecial() {
+
+    if(_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
+        auto p = reinterpret_cast<int8_t*>(_specialBuffer);
+        RELEASE_SPECIAL(p, _workspace);
+        _specialBuffer = nullptr;
+        _isOwnerSpecial = false;
     }
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
@@ -103,27 +100,78 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffers(const DataBuffer& other) {     // always copies only to special buffer
+void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {     // copies only to special buffer
 
     if(other._primaryBuffer == nullptr && other._specialBuffer == nullptr)
         return;
 
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = other.getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
     if(other.isPrimaryActual()) {
-        auto res = cudaMemcpy(_specialBuffer, other._primaryBuffer, other._lenInBytes, cudaMemcpyHostToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyHostToDevice);
         if (res != 0)
-            throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+            throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+        other.readPrimary();
     }
     else {
-        auto res = cudaMemcpy(_specialBuffer, other._specialBuffer, other._lenInBytes, cudaMemcpyDeviceToDevice);
+        auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
         if (res != 0)
-            throw cuda_exception::build("DataBuffer::copyBuffers: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+            throw cuda_exception::build("DataBuffer::copyBufferFrom: cudaMemcpy_cudaMemcpyDeviceToDevice failed!", res);
+        other.readSpecial();
     }
+
+    writeSpecial();
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateBuffers() {    // always allocate special buffer only (cuda case)
+void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetHostBuffer) {     // copies only to special buffer
+
+    if(hostBuffer == nullptr)
+        return;
+
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
+    auto res = cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes, cudaMemcpyHostToDevice);
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::copyBufferFromHost: cudaMemcpy_cudaMemcpyHostToDevice failed!", res);
+
+    writeSpecial();
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
+
+    deleteSpecial();
+    _specialBuffer = special;
+    _isOwnerSpecial = isOwnerSpecial;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate special buffer only (cuda case)
 
     allocateSpecial();
+
+    if(allocBoth)
+        allocatePrimary();
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setToZeroBuffers(const bool both) {
+
+    cudaMemset(special(), 0, getLenInBytes());
+    writeSpecial();
+
+    if(both) {
+        memset(primary(), 0, getLenInBytes());
+        readPrimary();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////

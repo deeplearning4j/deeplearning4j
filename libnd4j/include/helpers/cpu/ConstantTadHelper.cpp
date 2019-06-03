@@ -22,6 +22,7 @@
 #include <TAD.h>
 #include <ShapeUtils.h>
 
+#ifndef __CUDABLAS__
 
 namespace nd4j {
 
@@ -111,3 +112,5 @@ namespace nd4j {
 
     nd4j::ConstantTadHelper* nd4j::ConstantTadHelper::_INSTANCE = 0;
 }
+
+#endif

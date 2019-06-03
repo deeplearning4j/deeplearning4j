@@ -129,6 +129,8 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_MKL_FALLBACK = "ND4J_MKL_FALLBACK";
 
+    public static final String ND4J_RESOURCES_CACHE_DIR = "ND4J_RESOURCES_CACHE_DIR";
+
     private ND4JEnvironmentVars() {
     }
 }

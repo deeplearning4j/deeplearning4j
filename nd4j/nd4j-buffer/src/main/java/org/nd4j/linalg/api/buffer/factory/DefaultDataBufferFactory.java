@@ -586,6 +586,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         throw new IllegalArgumentException("Invalid opType " + type);
     }
 
+    @Override
+    public DataBuffer create(Pointer pointer, Pointer specialPointer, DataType type, long length, @NonNull Indexer indexer) {
+        return create(pointer, type, length, indexer);
+    }
+
     /**
      * @param doublePointer
      * @param length

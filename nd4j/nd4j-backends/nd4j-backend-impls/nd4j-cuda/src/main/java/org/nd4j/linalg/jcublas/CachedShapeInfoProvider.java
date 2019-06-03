@@ -40,8 +40,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type) {
-        return provider.createShapeInformation(shape, stride, elementWiseStride, order, type);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type, boolean empty) {
+        return provider.createShapeInformation(shape, stride, elementWiseStride, order, type, empty);
     }
 
 

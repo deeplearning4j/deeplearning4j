@@ -114,7 +114,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
 
     NDArray inputMinusMean;
     if(!input->isSameShape(output) && !mean->isSameShape(output)) {
-        auto inputTiled = NDArray(output, false, block.getVariableSpace()->launchContext());
+        auto inputTiled = NDArray(output, false, block.launchContext());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }
@@ -361,7 +361,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     NDArray inputMinusMean;
     if(!input->isSameShape(dLdO) && !mean->isSameShape(dLdO)) {
-        auto inputTiled = NDArray(dLdO, false, block.getVariableSpace()->launchContext());
+        auto inputTiled = NDArray(dLdO, false, block.launchContext());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }

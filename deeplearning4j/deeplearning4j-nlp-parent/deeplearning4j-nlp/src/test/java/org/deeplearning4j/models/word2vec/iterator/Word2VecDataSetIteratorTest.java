@@ -31,6 +31,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class Word2VecDataSetIteratorTest {
      */
     @Test
     public void testIterator1() throws Exception {
-        File inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();

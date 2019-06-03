@@ -20,37 +20,9 @@
 //
 
 #include "../DataBuffer.h"
+#include <DataTypeUtils.h>
 
 namespace nd4j {
-
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateSpecial() {
-
-}
-
-
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToPrimary(const LaunchContext* context) {
-
-}
-
-
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::syncToSpecial() {
-
-}
-
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::deleteBuffers() {
-
-    if(getLenInBytes() != 0 && _primaryBuffer != nullptr) {
-        auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-        RELEASE(p, _workspace);
-        _primaryBuffer  = nullptr;
-        _isOwnerPrimary = false;
-        _lenInBytes     = 0;
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
@@ -63,18 +35,66 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateBuffers() {    // always allocate primary buffer only (cpu case)
+void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate primary buffer only (cpu case)
 
     allocatePrimary();
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBuffers(const DataBuffer& other) {
+void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {
+
+    if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = other.getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
 
     if(other._primaryBuffer != nullptr)
-        memcpy(_primaryBuffer, other._primaryBuffer, other._lenInBytes);
+        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes);
 }
 
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetHostBuffer) {
+
+	if(sizeToCopyinBytes == 0)
+        sizeToCopyinBytes = getLenInBytes();
+    if(sizeToCopyinBytes == 0)
+        return;
+
+    if(hostBuffer != nullptr)
+        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::deleteSpecial() {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setToZeroBuffers(const bool both) {
+
+    memset(primary(), 0, getLenInBytes());
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::syncToSpecial(const bool forceSync) {
+
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::allocateSpecial() {
+
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { }

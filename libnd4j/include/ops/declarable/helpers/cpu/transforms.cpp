@@ -33,47 +33,12 @@ namespace ops 	  {
 namespace helpers {
 
 
-
-//////////////////////////////////////////////////////////////////////////
-void triu(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int diagonal) {
-
-    const int rank = input.rankOf();
-    
-    switch(rank) {
-
-        case 1:
-            for(int i = 0; i < output.sizeAt(0); ++i)
-                output({i, i+1, 0,0}).assign(input);
-            output.setValueInDiagMatrix(0., diagonal-1, 'l');    
-            break;
-
-        case 2:
-            output.assign(input);
-            output.setValueInDiagMatrix(0., diagonal-1, 'l');    
-            break;
-
-        default: 
-            auto inTads  = input.allTensorsAlongDimension({rank-2, rank-1});
-            auto outTads = output.allTensorsAlongDimension({rank-2, rank-1});
-
-            for(int i = 0; i < inTads->size(); ++i) {
-                auto inSubArr = inTads->at(i);
-                auto outSubArr = outTads->at(i);
-                outSubArr->assign(inSubArr);
-                outSubArr->setValueInDiagMatrix(0., diagonal-1, 'l');
-            }
-            delete inTads;
-            delete outTads;
-    }
-}
-
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
-    helpers::triu(context, input, dOdI, diagonal);
+    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), 'b', &dOdI);
     int dLen = dOdI.lengthOf();
 
     PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())
@@ -120,15 +85,15 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
     // check edge cases first
     int temp;
-    const int firstDim = input.sizeAt(0);    
+    const int firstDim = input.sizeAt(0);
     if(input.lengthOf() == 1 || firstDim == 1) {
-        
+
         if(!isInplace)
             output.assign(input);
-    } 
+    }
     else if (input.isVector() || shape::isLikeVector(input.getShapeInfo(), temp)) {
-                
-        // apply Fisher-Yates shuffle 
+
+        // apply Fisher-Yates shuffle
         if(isInplace) {
             PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
@@ -140,11 +105,11 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
                 //math::nd4j_swap<T>(input(i), input(r));
                 input.p<T>(i, _e1);
                 input.p<T>(r, _e0);
-            }        
+            }
         }
-        else {        
-            std::vector<int> indices(firstDim);        
-            std::iota(indices.begin(), indices.end(), 0);        
+        else {
+            std::vector<int> indices(firstDim);
+            std::iota(indices.begin(), indices.end(), 0);
             output.p<T>(Nd4jLong(0), input.e<T>(0));
             PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
@@ -155,12 +120,12 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
                 output.p(r, input.e<T>(indices[i]));
                 math::nd4j_swap<int>(indices[i], indices[r]);
-            }           
+            }
             rng.rewindH(firstDim-1);
         }
     }
     else {
-            
+
         // evaluate sub-arrays list of input array through all dimensions excluding first one
         std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
         auto subArrsListIn = input.allTensorsAlongDimension(dimensions);
@@ -173,13 +138,13 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
                 if(i == r)
                     continue;
                 subArrsListIn->at(i)->swapUnsafe(*subArrsListIn->at(r));
-            }        
+            }
         }
         else {
-            // evaluate sub-arrays list of output array through all dimensions excluding first one        
+            // evaluate sub-arrays list of output array through all dimensions excluding first one
             auto subArrsListOut = output.allTensorsAlongDimension(dimensions);
-            std::vector<int> indices(firstDim);        
-            std::iota(indices.begin(), indices.end(), 0);        
+            std::vector<int> indices(firstDim);
+            std::iota(indices.begin(), indices.end(), 0);
             bool isZeroShuffled = false;
             PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
@@ -191,7 +156,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
                     continue;
                 subArrsListOut->at(r)->assign(subArrsListIn->at(indices[i]));
                 math::nd4j_swap<int>(indices[i], indices[r]);
-            }           
+            }
             if(!isZeroShuffled)
                 subArrsListOut->at(0)->assign(subArrsListIn->at(0));
             delete subArrsListOut;
@@ -208,144 +173,213 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
 
+
+
+
+
+
+
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
 
-    const int rank = output.rankOf();
-    const int rankBorder = rank - 1;
-    std::vector<int> dimsToExclude(rankBorder);
-    std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
-    //dimsToExclude.pop_back();
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
 
-    Nd4jLong numLeft    = paddings.e<Nd4jLong>(rankBorder, 0);
-    Nd4jLong numRight   = paddings.e<Nd4jLong>(rankBorder, 1);
-    Nd4jLong inDimSize  = input.sizeAt(rankBorder);
-    Nd4jLong outDimSize = output.sizeAt(rankBorder);
+    const Nd4jLong* xShape  = input.shapeOf();
+    const Nd4jLong* zShape  = output.shapeOf();
+    const Nd4jLong* xStride = input.stridesOf();
+    const Nd4jLong* zStride = output.stridesOf();
 
-    std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2 * rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
+    const int rank = input.rankOf();  // both input and output have the same rank
+    const int rankMinusOne = rank - 1;
 
-    for(int i = 0; i < rankBorder; ++i) {
-        outIdx[0][2*i]     = paddings.e<Nd4jLong>(i, 0);
-        outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
-    }
-    outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
+    const auto zLen = output.lengthOf();
 
-    // ***** populate innermost sub-arrays firstly ***** //
+    std::vector<Nd4jLong> coords(rank);  // we use the same coordinates storage both for input and output since their ranks are the same
 
+    if(mode == 0) { // CONSTANT case
 
-    Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
-    Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
+        const T padVal = padValue.e<T>(0);
 
-    Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
+        for(uint i = 0; i < zLen; ++i) {
 
-    NDArray outSubArr0 = output(outIdx[0], true);
+            shape::index2coords(rank, zShape, i, zLen, coords.data());
+            const auto zOffset = shape::getOffset(0, zShape, zStride, coords.data(), rank);
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
-
-        NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
-        NDArray inSubArr     = input(j, dimsToExclude);
-        NDArray outSubArrMid = outSubArr1(outIdx[1]);
-
-        outSubArrMid.assign(inSubArr);      // assign middle
-
-        if(mode == 0)  { // CONSTANT
-            if(numLeft != 0) {
-                NDArray temp = outSubArr1(outIdx[2]);
-                temp.assign(padValue);                        // assign left
+            bool within = true;
+            for(int j = rankMinusOne; j >= 0; --j) {
+                if(xShape[j] == zShape[j]) continue;
+                const auto left = paddings.e<Nd4jLong>(j, 0);
+                if(coords[j] < left || coords[j] >= left + xShape[j]) {within = false; break;}
+                else                                                  {coords[j] = coords[j] - left;}
             }
-            if(numRight != 0) {
-                NDArray temp = outSubArr1(outIdx[3]);
-                temp.assign(padValue);                        // assign right
-            }
-        }
-        else {                                                              // REFLECT or SYMMETRIC
 
-//#pragma omp parallel for schedule(guided)
-            for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-                outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-
-//#pragma omp parallel for schedule(guided)
-            for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-                outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+            if(within)
+                z[zOffset] = x[shape::getOffset(0, xShape, xStride, coords.data(), rank)];
+            else
+                z[zOffset] = padVal;
         }
     }
+    else {  // REFLECT and SYMMETRIC cases
 
-    // ***** fill rest of outer sub-arrays ***** //
-    std::vector<Nd4jLong> outIdxInner(2, 0);
-    std::vector<Nd4jLong> outIdxOuter(2, 0);
+        const Nd4jLong shift1 = mode == 1 ? 0 : 1;         // REFLECT : SYMMETRIC
+        const Nd4jLong shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC
 
-    for(int i = rankBorder - 1; i >= 0; --i) {
+        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
+        for(uint i = 0; i < zLen; ++i) {
 
-        dimsToExclude.pop_back();
+            shape::index2coords(rank, zShape, i, zLen, coords.data());
+            const auto zOffset = shape::getOffset(0, zShape, zStride, coords.data(), rank);
 
-        outIdxInner.push_back(0), outIdxInner.push_back(0);
-        outIdxOuter.push_back(0), outIdxOuter.push_back(0);
+            for(int j = rankMinusOne; j >= 0; --j) {
 
-        Nd4jLong numLeft  = paddings.e<Nd4jLong>(i, 0);
-        Nd4jLong numRight = paddings.e<Nd4jLong>(i, 1);
-
-        if(numLeft == 0 && numRight == 0)
-            continue;
-
-        Nd4jLong inDimSize  = input.sizeAt(i);
-        Nd4jLong outDimSize = output.sizeAt(i);
-
-        if(mode == 0) {
-            outIdxOuter[0] = 0;                   outIdxOuter[1] = numLeft;
-            outIdxInner[0] = numLeft + inDimSize; outIdxInner[1] = outDimSize;
-        }
-
-        startL = mode == 1 ? numLeft + 1 : numLeft;                            // REFLECT or SYMMETRIC
-        startR = mode == 1 ? numLeft + inDimSize - 2 : numLeft + inDimSize-1;      // REFLECT or SYMMETRIC
-
-        numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
-
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(outIdxOuter, outIdxInner))
-        for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
-
-            NDArray outSubArr = output(j, dimsToExclude);
-
-            if(mode == 0)  { // CONSTANT
-
-                if(numLeft != 0) {
-                    NDArray tempO = outSubArr(outIdxOuter);
-                    tempO.assign(padValue);                              // assign left
-                }
-
-                if(numRight != 0) {
-                    NDArray tempI = outSubArr(outIdxInner);
-                    tempI.assign(padValue);                              // assign right
-                }
+                if(xShape[j] == zShape[j]) continue;
+                coords[j] = coords[j] - paddings.e<Nd4jLong>(j, 0);                             // are ready to fill middle (within input dimension range)
+                if(coords[j] < 0)               coords[j] = -coords[j] - shift1;                // means fill from left
+                else if(coords[j] >= xShape[j]) coords[j] = 2 * xShape[j] - coords[j] - shift2; // means fill from right
             }
-            else {                                                              // REFLECT or SYMMETRIC
 
-//#pragma omp parallel for schedule(guided)
-                for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
-                    outIdxOuter[0] = k;
-                    outIdxOuter[1] = k+1;
-                    outIdxInner[0] = e;
-                    outIdxInner[1] = e+1;
-                    NDArray outSubArrInner = outSubArr(outIdxInner);
-                    NDArray outSubArrOuter = outSubArr(outIdxOuter);
-                    outSubArrOuter.assign(outSubArrInner);
-                }
-
-///#pragma omp parallel for schedule(guided)
-                for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right side
-                    outIdxOuter[0] = k;
-                    outIdxOuter[1] = k+1;
-                    outIdxInner[0] = e;
-                    outIdxInner[1] = e+1;
-                    NDArray outSubArrInner = outSubArr(outIdxInner);
-                    NDArray outSubArrOuter = outSubArr(outIdxOuter);
-                    outSubArrOuter.assign(outSubArrInner);
-                }
-            }
+            const auto xOffset = shape::getOffset(0, xShape, xStride, coords.data(), rank);
+            z[zOffset] = x[xOffset];
         }
     }
 }
+
+// //////////////////////////////////////////////////////////////////////////
+// template<typename T>
+// void pad2_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+
+//     const int rank = output.rankOf();
+//     std::vector<int> dimsToExclude(rank);
+//     std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
+
+//     Nd4jLong numLeft    = paddings.e<Nd4jLong>(rank-1,0);
+//     Nd4jLong numRight   = paddings.e<Nd4jLong>(rank-1,1);
+//     Nd4jLong inDimSize  = input.sizeAt(rank-1);
+//     Nd4jLong outDimSize = output.sizeAt(rank-1);
+
+//     std::vector<std::vector<Nd4jLong>> outIdx = { std::vector<Nd4jLong>(2*rank), {numLeft, numLeft + inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
+
+//     for(int i = 0; i < rank-1; ++i) {
+//         outIdx[0][2*i]     = paddings.e<Nd4jLong>(i, 0);
+//         outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
+//     }
+//     outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
+
+//     // ***** populate innermost sub-arrays firstly ***** //
+//     dimsToExclude.pop_back();
+
+//     Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
+//     Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
+
+//     Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+
+//     NDArray outSubArr0 = output(outIdx[0], true);
+
+//     PRAGMA_OMP_PARALLEL_FOR
+//     for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
+
+//         NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
+//         NDArray inSubArr     = input(j, dimsToExclude);
+//         NDArray outSubArrMid = outSubArr1(outIdx[1]);
+
+//         outSubArrMid.assign(inSubArr);      // assign middle
+
+//         if(mode == 0)  { // CONSTANT
+//             if(numLeft != 0) {
+//                 NDArray temp = outSubArr1(outIdx[2]);
+//                 temp.assign(padValue);                        // assign left
+//             }
+//             if(numRight != 0) {
+//                 NDArray temp = outSubArr1(outIdx[3]);
+//                 temp.assign(padValue);                        // assign right
+//             }
+//         }
+//         else {                                                              // REFLECT or SYMMETRIC
+
+//             for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
+//                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+
+//             for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
+//                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
+//         }
+//     }
+
+//     // ***** fill rest of outer sub-arrays ***** //
+//     std::vector<Nd4jLong> outIdxInner(2, 0);
+//     std::vector<Nd4jLong> outIdxOuter(2, 0);
+
+//     for(int i = rankBorder - 1; i >= 0; --i) {
+
+//         dimsToExclude.pop_back();
+
+//         outIdxInner.push_back(0), outIdxInner.push_back(0);
+//         outIdxOuter.push_back(0), outIdxOuter.push_back(0);
+
+//         Nd4jLong numLeft  = paddings.e<Nd4jLong>(i, 0);
+//         Nd4jLong numRight = paddings.e<Nd4jLong>(i, 1);
+
+//         if(numLeft == 0 && numRight == 0)
+//             continue;
+
+//         Nd4jLong inDimSize  = input.sizeAt(i);
+//         Nd4jLong outDimSize = output.sizeAt(i);
+
+//         if(mode == 0) {
+//             outIdxOuter[0] = 0;                   outIdxOuter[1] = numLeft;
+//             outIdxInner[0] = numLeft + inDimSize; outIdxInner[1] = outDimSize;
+//         }
+
+//         startL = mode == 1 ? numLeft + 1 : numLeft;                            // REFLECT or SYMMETRIC
+//         startR = mode == 1 ? numLeft + inDimSize - 2 : numLeft + inDimSize-1;      // REFLECT or SYMMETRIC
+
+//         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
+
+//         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(outIdxOuter, outIdxInner))
+//         for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
+
+//             NDArray outSubArr = output(j, dimsToExclude);
+
+//             if(mode == 0)  { // CONSTANT
+
+//                 if(numLeft != 0) {
+//                     NDArray tempO = outSubArr(outIdxOuter);
+//                     tempO.assign(padValue);                              // assign left
+//                 }
+
+//                 if(numRight != 0) {
+//                     NDArray tempI = outSubArr(outIdxInner);
+//                     tempI.assign(padValue);                              // assign right
+//                 }
+//             }
+//             else {                                                              // REFLECT or SYMMETRIC
+
+//                 for(Nd4jLong k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
+//                     outIdxOuter[0] = k;
+//                     outIdxOuter[1] = k+1;
+//                     outIdxInner[0] = e;
+//                     outIdxInner[1] = e+1;
+//                     NDArray outSubArrInner = outSubArr(outIdxInner);
+//                     NDArray outSubArrOuter = outSubArr(outIdxOuter);
+//                     outSubArrOuter.assign(outSubArrInner);
+//                 }
+
+//                 for(Nd4jLong k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right side
+//                     outIdxOuter[0] = k;
+//                     outIdxOuter[1] = k+1;
+//                     outIdxInner[0] = e;
+//                     outIdxInner[1] = e+1;
+//                     NDArray outSubArrInner = outSubArr(outIdxInner);
+//                     NDArray outSubArrOuter = outSubArr(outIdxOuter);
+//                     outSubArrOuter.assign(outSubArrInner);
+//                 }
+//             }
+//         }
+//     }
+// }
 
 void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), LIBND4J_TYPES);
@@ -357,12 +391,12 @@ BUILD_SINGLE_TEMPLATE(template void pad_, (const int mode, const NDArray& input,
 /*// initial values of inIdx, outIdx, dim must be equal to zero
 template<typename T>
 static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue ) {
-    
+
     int leftOffset;
     // dimensions are array of input dimensions, it is sorted in increasing order
     // every time at the beginning we erase first element from it (not good idea to use vector for this purpose, but luckily it is small enough)
-    // then we use this array for tads building, every time while recursion the number of built tads becomes bigger 
-    dimensions.erase(dimensions.begin());       
+    // then we use this array for tads building, every time while recursion the number of built tads becomes bigger
+    dimensions.erase(dimensions.begin());
     // build tad basing on output array, also create auxiliary arrays pointing on required output array ranges
     shape::TAD tadOut(output.getShapeInfo(), dimensions.data(), dimensions.size());
     tadOut.createTadOnlyShapeInfo();
@@ -383,7 +417,7 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
     int k = -1;
     // loop through current dimension
     for(int i = 0; i < output.sizeAt(dim); ++i) {
-        // corresponds to outer range (relevant indices are absent in input)                        
+        // corresponds to outer range (relevant indices are absent in input)
         leftOffset = paddings.e<int>(dim, 0);
         if(i < leftOffset || i >= (input.sizeAt(dim) + leftOffset))
             continue;
@@ -405,16 +439,16 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
             }
             // most inner loop, corresponds to last dim = rank-1
             switch (mode) {
-                case 0:             // CONSTANT mode                    
-                    for(int j = 0; j < subArrOut.lengthOf(); ++j)                   
+                case 0:             // CONSTANT mode
+                    for(int j = 0; j < subArrOut.lengthOf(); ++j)
                             if(j < leftOffset || j >= (subArrIn.lengthOf() + leftOffset) )                  // firstly fill with zeros outer ranges
                                 subArrOut.p(j, (T)0.f);
                             else
                                 subArrOut.p(j, subArrIn.e<T>(j - leftOffset));   // fill middle with elements of input array
                     break;
 
-                case 1:             // REFLECT mode                 
-                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
+                case 1:             // REFLECT mode
+                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side
                         subArrOut.p(leftOffset - j, subArrIn.e<T>(j));
                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
                         subArrOut.p(leftOffset + j, subArrIn.e<T>(j));
@@ -422,8 +456,8 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
                         subArrOut.p(j, subArrIn.e<T>(subArrOut.lengthOf() - j - 1));
                     break;
 
-                case 2:             // SYMMETRIC mode               
-                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side 
+                case 2:             // SYMMETRIC mode
+                    for(int j = 1;  j <= leftOffset; ++j)                                               // fill firstly left side
                         subArrOut.p(leftOffset - j, subArrIn.e<T>(j-1));
                     for(int j = 0; j < subArrIn.lengthOf(); ++j)                                        // fill middle
                         subArrOut.p(leftOffset + j, subArrIn.e<T>(j));
@@ -436,9 +470,9 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
 
              if (mode == 0 && input.rankOf() < 2)
                  subArrOut.p(i, subArrIn.e<T>(i - leftOffset));   // fill middle with elements of input array
-        }   
-    }   
-    // populate sub-array formed previously 
+        }
+    }
+    // populate sub-array formed previously
     leftOffset = paddings.e<int>(dim,0);
     switch (mode) {
         case 0:         // CONSTANT mode
@@ -465,29 +499,29 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
             }
             break;
 
-        case 1:         // REFLECT mode 
-            for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side 
+        case 1:         // REFLECT mode
+            for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side
                 subArr.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + leftOffset + j]);
                 subArrOut.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + leftOffset - j]);
                 subArrOut.assign(&subArr);
-            }               
+            }
             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
                 subArr.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - 1 - j]);
                 subArrOut.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + j]);
-                subArrOut.assign(&subArr);              
-            }   
+                subArrOut.assign(&subArr);
+            }
             break;
 
-        case 2:         // SYMMETRIC mode   
+        case 2:         // SYMMETRIC mode
             for(int j = 1;  j <= leftOffset; ++j) {                                                     // fill left side
                 subArr.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + leftOffset + j - 1]);
                 subArrOut.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + leftOffset - j]);
                 subArrOut.assign(&subArr);
-            }           
+            }
             for(int j = (output.sizeAt(dim) - leftOffset); j < output.sizeAt(dim); ++j) {       // fill right side
                 subArr.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + output.sizeAt(dim) + leftOffset - j]);
                 subArrOut.setBuffer(reinterpret_cast<T*>(output.getBuffer()) + tadOut.tadOffsets[outIdx + j]);
-                subArrOut.assign(&subArr);      
+                subArrOut.assign(&subArr);
             }
             break;
     }
@@ -506,15 +540,15 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
 void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     std::set<int> uniqueElems;
-    const int length = input.lengthOf();    
+    const int length = input.lengthOf();
 
     for(int i = 0; i < length; ++i) {
-        
+
         int elem = input.e<int>(i);
- 
+
         if(!uniqueElems.insert(elem).second)        // this operation forbids us to use #pragma omp
             throw std::runtime_error("helpers::invertPermutation function: input array contains duplicates !");
-            
+
         if(elem < 0 || elem > length - 1)
             throw  std::runtime_error("helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
 
@@ -526,7 +560,7 @@ void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDAr
 template<typename T>
 static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
-    if (input.ordering() != 'c') 
+    if (input.ordering() != 'c')
         input.streamline('c');
 
     if (indices.ordering() != 'c')
@@ -535,13 +569,13 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     const int rankIn     = input.rankOf();
     const int rankInd    = indices.rankOf();
     const int lastIndDim = indices.sizeAt(-1);
-    
+
     std::vector<int> tadDims(rankIn - lastIndDim);
     std::iota(tadDims.begin(), tadDims.end(), rankInd-1);
     auto innerMostOut = output.allTensorsAlongDimension(tadDims);
 
     auto innerMostInd = indices.allTensorsAlongDimension({rankInd-1});
-    
+
     std::iota(tadDims.begin(), tadDims.end(), lastIndDim);
     auto innerMostIn = input.allTensorsAlongDimension(tadDims);
 
@@ -555,15 +589,15 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     Nd4jLong idx[MAX_RANK];
 
     for(int i = 0; i < innerMostInd->size(); ++i) {
-                
+
         auto idxSubArr = innerMostInd->at(i);
-        
+
         for(int j = 0; j < lastIndDim; ++j) {
             if(idxSubArr->e<Nd4jLong>(j) >= input.sizeAt(j))
                 throw std::runtime_error("helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
             idx[j] = idxSubArr->e<Nd4jLong>(j);
         }
-                
+
         auto currentInd0 = shape::getOffset(0, shape::shapeOf(outerShapeInfo), shape::stride(outerShapeInfo), idx, lastIndDim);
 
         if(rankIn != lastIndDim) {
@@ -598,12 +632,12 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
     const int numOfIntArgs = intArgs.size();
 
-    if (indices != nullptr) {        
+    if (indices != nullptr) {
 
         for(int i = 0; i < indices->lengthOf(); ++i)
             if(indices->e<Nd4jLong>(i) >= input->sizeAt(axis))
                 throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
-    
+
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
             if(input->rankOf() <= 1){
@@ -657,7 +691,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 subArrOut.assign(subArrIn);
             }
         }
-    }    
+    }
 }
 
     void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
@@ -675,7 +709,7 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
     PRAGMA_OMP_PARALLEL_FOR_IF(arrs->size() > Environment::getInstance()->tadThreshold())
     for(int i = 0; i < arrs->size(); ++i)
         arrs->at(i)->setIdentity();
-    
+
     delete arrs;
 }
 
@@ -683,7 +717,7 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
 
     int opCode = (*intArgs)[0];
-    int dimSize = (*intArgs)[1];    
+    int dimSize = (*intArgs)[1];
     Nd4jLong e;
     Nd4jLong limg = 2 + dimSize;
     std::vector<int> tadDimensions(dimSize);
@@ -730,7 +764,7 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
                 inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
                 break;
             default:
-                continue;                 
+                continue;
         }
     }
 }
@@ -769,9 +803,9 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T max = -DataTypeUtils::max<T>();
         Nd4jLong idx = 0;
-            
+
         for (int i = 0; i < numArgs; i++){
-            
+
             T v = inArrs[i]->e<T>(e);
             if (v > max) {
                 max = v;
@@ -790,7 +824,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
-    
+
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
@@ -814,7 +848,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
-    
+
     const Nd4jLong numArgs = inArrs.size();
     const T factor = 1.f / numArgs;
     auto x = inArrs[0];
@@ -822,7 +856,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
         T sum = 0.;
-        for (int i = 0; i < numArgs; i++) { 
+        for (int i = 0; i < numArgs; i++) {
             T v = inArrs[i]->e<T>(e);
             sum += v;
         }
@@ -838,16 +872,16 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
-    
+
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
     PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        
+
         T sum = (T) 0.f;
-        
-        for (int i = 0; i < numArgs; i++) 
+
+        for (int i = 0; i < numArgs; i++)
             sum += inArrs[i]->e<T>(e);
 
         output.p(e, sum);
@@ -862,7 +896,7 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
-        
+
     const int rank = input.rankOf();
    auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
 
@@ -880,7 +914,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 if (norm2.e<T>(i) > clipNorm.e<T>(0)) {
-                    
+
                     auto inputSubArr  = input(i, dimsToExclude);
                     inputSubArr *= (clipNorm.e<T>(0) / norm2.e<T>(i));
                 }
@@ -888,7 +922,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
         }
     }
     else {
-        
+
         if(norm2.lengthOf() == 1) {
 
             if(norm2.e<T>(0) > clipNorm.e<T>(0))
@@ -897,7 +931,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                 output.assign( input );
         }
         else {
-            
+
             std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
             std::vector<Nd4jLong> idxRanges(rank * 2);
@@ -910,10 +944,10 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                 auto outputSubArr = output(idxRanges);
                 auto inputSubArr  = input(idxRanges);
                 outputSubArr.assign(inputSubArr);
-                
+
                 if (norm2.e<T>(i) > clipNorm.e<T>(0))
                     outputSubArr *= clipNorm / norm2.e<T>(i);
-            }           
+            }
         }
     }
 }
@@ -962,17 +996,17 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
-    
+
     const int rank = input.rankOf();
 
     auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
 
-    if(norm2.lengthOf() == 1) {        
+    if(norm2.lengthOf() == 1) {
 
         const T N = norm2.e<T>(0);
 
         auto cn = clipNorm.e<T>(0);
-        
+
         if(N > cn) {
 
             const T sumOfProd = (input * gradO).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
@@ -985,11 +1019,11 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
             (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(const_cast<NDArray*>(&gradO), lambda, &gradI);
         }
-        else 
+        else
             gradI.assign(gradO);
     }
     else {
-            
+
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
         const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
         std::vector<Nd4jLong> idxRanges(rank * 2);
@@ -1006,9 +1040,9 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
             auto cn = clipNorm.e<T>(0);
 
             if (N > cn) {
-                
+
                 auto inputSubArr = input(idxRanges);
-                
+
                 const T sumOfProd = (inputSubArr * gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
                 const T factor1 = static_cast<T>(1.f) / N;
                 const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
@@ -1020,7 +1054,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
             }
             else
                 gradISubArr.assign(gradOSubArr);
-        }           
+        }
     }
 }
 
@@ -1042,13 +1076,13 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
         if (n2 <= cn) {
             if (!isInplace)
                 output.assign(input);
-        } 
+        }
         else {
             const T factor = cn / n2;
             auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
             input.applyLambda<T>(lambda, &output);
         }
-    } 
+    }
     else {
         // along dimension
         auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
@@ -1102,7 +1136,7 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
-    
+
     // mode:  0 - REFLECT, else - SYMMETRIC
     const int reflBorder = (bool)mode ? 1 : 0;
     const int rank        = input.rankOf();
@@ -1122,7 +1156,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
             else if(i >= leftSide && i < leftSide + inLen)      // middle
                 output.p(i, input.e<T>(i - leftSide));
-            
+
             else                                                // right side
                 output.p(i, input.e<T>(len - i));
         }
@@ -1137,7 +1171,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
             shape::index2coords(rank, output.shapeOf(), i, outIdx.data());
 
             for(int j = 0; j < rank; ++j) {
-            
+
                 const Nd4jLong inLen         = input.sizeAt(j);
                 const auto leftSide          = paddings.e<T>(j, 0);
                 const auto leftSideCorrected = leftSide - reflBorder;
@@ -1152,7 +1186,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
                 else                                                            // right side
                     inIdx[j] = len - outIdx[j];
             }
-    
+
             auto outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
             auto inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
             reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T*>(input.getBuffer())[inOffset];
@@ -1214,7 +1248,7 @@ static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const 
             return;
         }
     }
-    
+
     const int rank  = inArrs[0]->rankOf();
     const int rank2 = 2*rank;
     std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));

@@ -96,6 +96,8 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -1253,6 +1255,43 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
+    public static DataBuffer createBuffer(@NonNull Pointer pointer, @NonNull Pointer devicePointer, long length, @NonNull DataType dataType) {
+        Pointer nPointer = null;
+        switch (dataType) {
+            case LONG:
+                nPointer =  new LongPointer(pointer);
+                break;
+            case INT:
+                nPointer =  new IntPointer(pointer);
+                break;
+            case SHORT:
+                nPointer =  new ShortPointer(pointer);
+                break;
+            case BYTE:
+                nPointer =  new BytePointer(pointer);
+                break;
+            case UBYTE:
+                nPointer =  new BytePointer(pointer);
+                break;
+            case BOOL:
+                nPointer =  new BooleanPointer(pointer);
+                break;
+            case FLOAT:
+                nPointer =  new FloatPointer(pointer);
+                break;
+            case HALF:
+                nPointer =  new ShortPointer(pointer);
+                break;
+            case DOUBLE:
+                nPointer =  new DoublePointer(pointer);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType);
+        }
+
+        return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
+    }
+
     /**
      * Create a buffer based on the data opType
      *
@@ -2376,8 +2415,12 @@ public class Nd4j {
      * @param split    the split separator
      * @return the read txt method
      */
-    public static INDArray readNumpy(InputStream filePath, String split) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
+    public static INDArray readNumpy(@NonNull InputStream filePath, @NonNull String split) throws IOException {
+        return readNumpy(DataType.FLOAT, filePath, split, StandardCharsets.UTF_8);
+    }
+
+    public static INDArray readNumpy(@NonNull DataType dataType, @NonNull InputStream filePath, @NonNull String split, @NonNull Charset charset) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(filePath, charset));
         String line;
         List<float[]> data2 = new ArrayList<>();
         int numColumns = -1;
@@ -2393,10 +2436,10 @@ public class Nd4j {
 
 
         }
-        ret = Nd4j.create(Nd4j.defaultFloatingPointType(), data2.size(), numColumns);
+        ret = Nd4j.create(dataType, data2.size(), numColumns);
         for (int i = 0; i < data2.size(); i++) {
             float[] row = data2.get(i);
-            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, Nd4j.defaultFloatingPointType());
+            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, dataType);
             ret.putRow(i, arr);
         }
         return ret;
@@ -2433,8 +2476,12 @@ public class Nd4j {
      * @return the read txt method
      */
     public static INDArray readNumpy(String filePath, String split) throws IOException {
+        return readNumpy(DataType.FLOAT, filePath, split);
+    }
+
+    public static INDArray readNumpy(DataType dataType, String filePath, String split) throws IOException {
         try(InputStream is = new FileInputStream(filePath)) {
-            return readNumpy(is, split);
+            return readNumpy(dataType, is, split, StandardCharsets.UTF_8);
         }
     }
 
@@ -2445,7 +2492,11 @@ public class Nd4j {
      * @return the read txt method
      */
     public static INDArray readNumpy(String filePath) throws IOException {
-        return readNumpy(filePath, "\t");
+        return readNumpy(DataType.FLOAT, filePath);
+    }
+
+    public static INDArray readNumpy(DataType dataType, String filePath) throws IOException {
+        return readNumpy(dataType, filePath, " ");
     }
 
 
@@ -2564,6 +2615,11 @@ public class Nd4j {
         } finally {
             LineIterator.closeQuietly(it);
         }
+
+        if(newArr == null){
+            throw new IllegalStateException("Cannot parse file: file does not appear to represent a text serialized INDArray file");
+        }
+
         return newArr;
     }
 

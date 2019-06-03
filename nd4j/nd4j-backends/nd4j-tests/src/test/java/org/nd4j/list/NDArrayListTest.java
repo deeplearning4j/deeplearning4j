@@ -17,7 +17,9 @@
 package org.nd4j.list;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.list.matrix.MatrixNDArrayList;
 
 import java.util.ArrayList;
@@ -26,7 +28,16 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class NDArrayListTest {
+public class NDArrayListTest extends BaseNd4jTest {
+
+    public NDArrayListTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testList() {

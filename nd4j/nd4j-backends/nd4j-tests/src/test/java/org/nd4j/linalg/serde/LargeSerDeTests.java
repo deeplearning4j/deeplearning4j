@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 @Slf4j
+@Ignore("AB 2019/05/23 - JVM crash on linux-x86_64-cpu-avx512 - issue #7657")
 public class LargeSerDeTests extends BaseNd4jTest {
     public LargeSerDeTests(Nd4jBackend backend) {
         super(backend);

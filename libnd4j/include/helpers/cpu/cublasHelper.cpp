@@ -25,5 +25,9 @@ namespace nd4j {
         void* handle() {
             return nullptr;
         }
+
+        void destroyHandle(void* handle) {
+            //
+        }
     }
 }

@@ -31,8 +31,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Resources;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -71,19 +73,19 @@ public class KerasLambdaTest {
 
         String modelPath = "modelimport/keras/examples/lambda/sequential_lambda.h5";
 
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        MultiLayerNetwork model = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+        try(InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            MultiLayerNetwork model = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
 
-        System.out.println(model.summary());
-        INDArray input = Nd4j.create(new int[]{10, 100});
+            System.out.println(model.summary());
+            INDArray input = Nd4j.create(new int[]{10, 100});
 
-        model.output(input);
-        KerasLayer.clearLambdaLayers();
+            model.output(input);
+        } finally {
+            KerasLayer.clearLambdaLayers();
+        }
     }
 
     @Test
@@ -93,19 +95,19 @@ public class KerasLambdaTest {
 
         String modelPath = "modelimport/keras/examples/lambda/model_lambda.h5";
 
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildModel().getComputationGraph();
+        try(InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
+            Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                    .enforceTrainingConfig(false).buildModel().getComputationGraph();
 
-        System.out.println(model.summary());
-        INDArray input = Nd4j.create(new int[]{10, 784});
+            System.out.println(model.summary());
+            INDArray input = Nd4j.create(new int[]{10, 784});
 
-        model.output(input);
-        KerasLayer.clearLambdaLayers(); // Clear all lambdas, so other tests aren't affected.
+            model.output(input);
+        } finally {
+            KerasLayer.clearLambdaLayers(); // Clear all lambdas, so other tests aren't affected.
+        }
     }
 
 }

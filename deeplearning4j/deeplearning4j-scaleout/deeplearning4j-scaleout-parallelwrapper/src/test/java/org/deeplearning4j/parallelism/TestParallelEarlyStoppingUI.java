@@ -44,7 +44,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 
 
-public class TestParallelEarlyStoppingUI {
+public class TestParallelEarlyStoppingUI extends BaseDL4JTest {
 
     @Test
     @Ignore //To be run manually

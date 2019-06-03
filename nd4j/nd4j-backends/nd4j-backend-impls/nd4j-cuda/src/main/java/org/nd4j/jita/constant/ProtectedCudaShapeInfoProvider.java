@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.Configuration;
@@ -68,8 +69,11 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type) {
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type, boolean empty) {
         long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+        if (empty)
+            extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
+
         return createShapeInformation(shape, stride, elementWiseStride, order, extras);
     }
 

@@ -30,8 +30,8 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_prod: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
-            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
+            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
             REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 

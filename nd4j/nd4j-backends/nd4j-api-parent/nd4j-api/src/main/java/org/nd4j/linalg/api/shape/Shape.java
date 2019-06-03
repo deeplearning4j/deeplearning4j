@@ -3200,8 +3200,8 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType);
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, empty);
     }
 
 
@@ -3231,7 +3231,8 @@ public class Shape {
         */
 
         val dtype = ArrayOptionsHelper.dataType(extras);
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype);
+        val empty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, empty);
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,

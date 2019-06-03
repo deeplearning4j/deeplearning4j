@@ -110,7 +110,7 @@ namespace nd4j {
         }
 
         bool nd4j::graph::Variable::isEmpty() {
-            if (_variableType == VariableType::NDARRAY) 
+            if (_variableType == VariableType::NDARRAY)
                 return _ndarray == nullptr || !_ndarray->nonNull();
             else if (_variableType == VariableType::ARRAY_LIST)
                 return _list == nullptr;
@@ -166,29 +166,29 @@ namespace nd4j {
             return this->_list;
         }
 
-        
+
         bool Variable::isRemovable() {
             return _removable;
         }
 
-        
+
         void nd4j::graph::Variable::setNDArrayList(nd4j::NDArrayList * list) {
             this->_variableType = VariableType::ARRAY_LIST;
             this->_list = list;
         }
 
-        
+
         void nd4j::graph::Variable::setNDArray(nd4j::NDArray * array) {
             this->_variableType = VariableType::NDARRAY;
             this->_ndarray = array;
         }
 
-        
+
         VariableType nd4j::graph::Variable::variableType() {
             return _variableType;
         }
 
-        
+
         nd4j::graph::Variable::Variable(const nd4j::graph::FlatVariable *flatVariable) {
             auto vid = flatVariable->id();
             this->_id = vid->first();
@@ -209,7 +209,6 @@ namespace nd4j {
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
-                            _ndarray->triggerAllocationFlag(true);
                         }
 
                         _variableType = VariableType::NDARRAY;
@@ -225,7 +224,6 @@ namespace nd4j {
                         } else {
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                         }
-                        _ndarray->triggerAllocationFlag(true);
 
                         _variableType = VariableType::NDARRAY;
                     }
@@ -236,7 +234,7 @@ namespace nd4j {
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
-                            _ndarray->triggerAllocationFlag(true);
+                            // _ndarray->triggerAllocationFlag(true);
                         }
 
                         _variableType = VariableType::NDARRAY;
@@ -249,7 +247,7 @@ namespace nd4j {
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
-                            _ndarray->triggerAllocationFlag(true);
+                            // _ndarray->triggerAllocationFlag(true);
 
                             _variableType = VariableType::NDARRAY;
                         }
@@ -272,12 +270,12 @@ namespace nd4j {
         std::vector<Nd4jLong>& nd4j::graph::Variable::shape() {
             return _shape;
         }
-        
+
         nd4j::graph::Variable::Variable(bool placeholder) {
             _placeholder = placeholder;
         }
 
-        
+
         nd4j::graph::Variable::Variable(NDArray *array, const char *name ) {
             _ndarray = array;
 
@@ -291,13 +289,13 @@ namespace nd4j {
                 _variableType = VariableType::NDARRAY;
         }
 
-        
+
         nd4j::graph::Variable::Variable(NDArray *array, const char *name, int id, int idx) : Variable(array, name) {
             _id = id;
             _index = idx;
         }
 
-        
+
         nd4j::graph::Variable::~Variable() {
             //nd4j_printf("Removing variable [%i:%i]\n", _id, _index);
             if (_variableType == VariableType::NDARRAY) {
@@ -307,13 +305,13 @@ namespace nd4j {
             }
         }
 
-        
+
         void Variable::setId(int id, int idx) {
             _id = id;
             _index = idx;
         }
 
-        
+
         flatbuffers::Offset<FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
             if (this->hasNDArray()) {
                 auto array = this->getNDArray();

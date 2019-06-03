@@ -31,6 +31,7 @@
 
 
 #include <dll.h>
+#include <memory>
 #include <op_boilerplate.h>
 #include <memory/Workspace.h>
 #include <vector>
@@ -42,7 +43,7 @@ namespace nd4j  {
 class ND4J_EXPORT LaunchContext {
 
 	private:
-        static std::vector<LaunchContext*> _contexts;
+        static std::vector<std::shared_ptr<LaunchContext>> _contexts;
 
 #ifdef __CUDABLAS__
 
@@ -65,8 +66,6 @@ class ND4J_EXPORT LaunchContext {
 #ifdef __CUDABLAS__
 
 #ifndef __JAVACPP_HACK__
-
-		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 
 		FORCEINLINE void* getReductionPointer () const {return _reductionPointer;};
@@ -92,7 +91,7 @@ class ND4J_EXPORT LaunchContext {
 #endif // JCPP
 
 #endif // CUDA
-		LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer = nullptr, Nd4jPointer allocationPointer = nullptr);
+		LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer = nullptr, Nd4jPointer scalarPointer = nullptr, Nd4jPointer allocationPointer = nullptr);
     	LaunchContext();
     	~LaunchContext();
     	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }

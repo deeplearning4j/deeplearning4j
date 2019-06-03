@@ -27,26 +27,26 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T> 
-    static void _swapRows(NDArray* matrix, int theFirst, int theSecond) {
+    template <typename T>
+    static void swapRows_(NDArray* matrix, int theFirst, int theSecond) {
 
         if (theFirst != theSecond)
             for (int i = 0; i < matrix->columns(); i++) {
-                T _e0 = matrix->e<T>(theFirst, i);
-                T _e1 = matrix->e<T>(theSecond, i);
+                T e0 = matrix->e<T>(theFirst, i);
+                T e1 = matrix->e<T>(theSecond, i);
 
-                matrix->p<T>(theFirst, i, _e1);
-                matrix->p<T>(theSecond, i, _e0);
+                matrix->p<T>(theFirst, i, e1);
+                matrix->p<T>(theSecond, i, e0);
             }
     }
-    BUILD_SINGLE_TEMPLATE(template void _swapRows, (NDArray* matrix, int theFirst, int theSecond), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray* matrix, int theFirst, int theSecond), FLOAT_TYPES);
 
     void swapRows(NDArray* matrix, int theFirst, int theSecond) {
-        BUILD_SINGLE_SELECTOR(matrix->dataType(), _swapRows, (matrix, theFirst, theSecond), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), FLOAT_TYPES);
     }
 
     template <typename T>
-    static void _invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+    static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->assign(0.f);
 
@@ -62,16 +62,16 @@ namespace helpers {
 
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 2; i < n; i++) {
-            for (int j = i - 2; j > -1; --j) 
-                for (int k = 0; k < i; k++) 
+            for (int j = i - 2; j > -1; --j)
+                for (int k = 0; k < i; k++)
                     invertedMatrix->t<T>(i, j) -= (invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k));
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
     void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
-        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), invertLowerMatrix_, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
     template <typename T>
@@ -93,8 +93,8 @@ namespace helpers {
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = n - 2; i > - 1; i--) {
-            for (int j = i + 2; j < n; j++) 
-                for (int k = i; k < n; k++) 
+            for (int j = i + 2; j < n; j++)
+                for (int k = i; k < n; k++)
                     invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
     }
@@ -107,15 +107,15 @@ namespace helpers {
 
 
     template <typename T>
-    static NDArray _lup(NDArray* input, NDArray* compound, NDArray* permutation) {
+    static NDArray lup_(NDArray* input, NDArray* compound, NDArray* permutation) {
 
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
         NDArray determinant = NDArrayFactory::create<T>(1.f);
-        std::unique_ptr<NDArray> compoundMatrix(input->dup()); // copy
-        std::unique_ptr<NDArray> permutationMatrix(input->dupUninitialized()); //put identity
-        permutationMatrix->setIdentity();
+        NDArray compoundMatrix = *input; // copy
+        NDArray permutationMatrix(input, false, input->getContext()); // has same shape as input and contiguous strides
+        permutationMatrix.setIdentity();
 
         T pivotValue; // = T(0.0);
         int pivot; // = -1;
@@ -126,23 +126,23 @@ namespace helpers {
             pivot = -1;
 
             for(int rowCounter = i; rowCounter < rowNum; rowCounter++ ) {
-                if(nd4j::math::nd4j_abs(compoundMatrix->e<T>(rowCounter, i)) > pivotValue ) {
-                    pivotValue = nd4j::math::nd4j_abs(compoundMatrix->e<T>(rowCounter, i));
+                if(nd4j::math::nd4j_abs(compoundMatrix.e<T>(rowCounter, i)) > pivotValue ) {
+                    pivotValue = nd4j::math::nd4j_abs(compoundMatrix.e<T>(rowCounter, i));
                     pivot = rowCounter;
                 }
             }
 
             if( pivotValue != T(0.0) ) {
-                swapRows(compoundMatrix.get(), pivot, i);
-                swapRows(permutationMatrix.get(), pivot, i);
+                swapRows(&compoundMatrix, pivot, i);
+                swapRows(&permutationMatrix, pivot, i);
                 if (pivot != i)
                     swapCount++;
 
                 for( int j = i + 1; j < rowNum; j++ ) {
-                    compoundMatrix->p(j, i, compoundMatrix->e<T>(j, i) / compoundMatrix->e<T>(i, i));
+                    compoundMatrix.p(j, i, compoundMatrix.e<T>(j, i) / compoundMatrix.e<T>(i, i));
                     for( int k = i + 1; k < rowNum; k++ ) {
-                        T arg = compoundMatrix->e<T>(j, i) * compoundMatrix->e<T>(i, k);
-                        compoundMatrix->p(j, k, compoundMatrix->e<T>(j, k) - arg);
+                        T arg = compoundMatrix.e<T>(j, i) * compoundMatrix.e<T>(i, k);
+                        compoundMatrix.p(j, k, compoundMatrix.e<T>(j, k) - arg);
                     }
                 }
             }
@@ -150,42 +150,41 @@ namespace helpers {
 
         for (int e = 0; e < rowNum; e++) {
             // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
-            determinant *= compoundMatrix->e<T>(e, e);
+            determinant *= compoundMatrix.e<T>(e, e);
         }
         if (swapCount % 2) determinant = -determinant;
         if (compound != nullptr)
-            *compound = *compoundMatrix;
+            compound->assign(compoundMatrix);
         if (permutation != nullptr)
-            *permutation = *permutationMatrix;
+            permutation->assign(permutationMatrix);
         return determinant;
     }
 
-    BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray lup_, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
 
 
 
     template <typename T>
-    static int _determinant(NDArray* input, NDArray* output) {
+    static int determinant_(NDArray* input, NDArray* output) {
 
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
         auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
-        for (int e = 0; e < output->lengthOf(); e++) {
-            for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
-                matrix.p(row, input->e<T>(k));
-            }
 
-            output->p(e, _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
+        for (int e = 0; e < output->lengthOf(); e++) {
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row)
+                matrix.p(row, input->e<T>(k));
+            output->p(e, lup_<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
         }
 
         return Status::OK();
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (input, output), FLOAT_TYPES);
     }
 
 template <typename T>
@@ -199,7 +198,7 @@ template <typename T>
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
             }
-	    NDArray det = _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+	    NDArray det = lup_<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
 	    if (det.e<T>(0) != 0.f)
              	output->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
         }
@@ -219,7 +218,7 @@ template <typename T>
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
-        
+
         output->assign(0.f); // fill up output tensor with zeros
         auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
         auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
@@ -234,7 +233,7 @@ template <typename T>
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 matrix.p(row++, input->e<T>(k));
             }
-            T det = _lup<T>(&matrix, &compound, &permutation).template e<T>(0);
+            T det = lup_<T>(&matrix, &compound, &permutation).template e<T>(0);
 
             // FIXME: and how this is going to work on float16?
             if (nd4j::math::nd4j_abs<T>(det) < T(0.0000001)) {
@@ -345,7 +344,7 @@ template <typename T>
 
     int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
-    }    
+    }
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int _inverse, (NDArray* input, NDArray* output), FLOAT_TYPES);
 

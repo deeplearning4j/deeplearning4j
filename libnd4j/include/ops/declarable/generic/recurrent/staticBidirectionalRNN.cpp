@@ -82,22 +82,22 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
         REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
     // forward steps 
-    auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.getVariableSpace()->launchContext());
+    auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.launchContext());
     helpers::rnnTimeLoop(block.launchContext(), x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);
 
     auto seqLen = maxTimeStep;    
     if(seqLen == nullptr) {
-//        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.getVariableSpace()->launchContext());	  // [bS]
-    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, nd4j::DataType::INT64, block.getVariableSpace()->launchContext());	  // [bS]
+//        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.launchContext());	  // [bS]
+    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, nd4j::DataType::INT64, block.launchContext());	  // [bS]
         *seqLen = x->sizeAt(0);                                 			                  // set each element of seqLen to be equal to time
     }    
     
     // reverse x 
-    auto revOut = new NDArray(x, false, block.getVariableSpace()->launchContext());
+    auto revOut = new NDArray(x, false, block.launchContext());
     helpers::reverseSequence(block.launchContext(), x, seqLen, revOut, 0, 1);
 
     // backward steps    
-    auto hBW = new NDArray(x->ordering(), {time, bS, numUnitsBW}, x->dataType(), block.getVariableSpace()->launchContext());
+    auto hBW = new NDArray(x->ordering(), {time, bS, numUnitsBW}, x->dataType(), block.launchContext());
     
     helpers::rnnTimeLoop(block.launchContext(), revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 

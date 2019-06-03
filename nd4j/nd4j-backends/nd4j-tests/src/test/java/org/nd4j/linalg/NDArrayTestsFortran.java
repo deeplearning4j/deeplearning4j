@@ -903,7 +903,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 3, 4}, new long[] {2, 2});
-        INDArray brr = Nd4j.create(new double[] {5, 6}, new long[] {1, 2});
+        INDArray brr = Nd4j.create(new double[] {5, 6}, new long[] {2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new double[] {-4, -3}), arr.getRow(0));

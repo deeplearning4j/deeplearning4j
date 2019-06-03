@@ -312,19 +312,15 @@ namespace nd4j {
 
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                int8_t * buffer;
-                ALLOCATE(buffer, workspace, len, int8_t);
 
-                var->setNDArray(new NDArray(buffer, __shape, block.getVariableSpace()->launchContext()));
-                var->getNDArray()->triggerAllocationFlag(true);
-            } else if(var->getNDArray()->lengthOf() != len) {
+                std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
+            }
+            else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                int8_t * buffer;
-                ALLOCATE(buffer, workspace, len, int8_t);
-
-                var->setNDArray(new NDArray(buffer, __shape, block.getVariableSpace()->launchContext()));
-                var->getNDArray()->triggerAllocationFlag(true);
+                std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
             }
 
             return true;
@@ -338,13 +334,11 @@ namespace nd4j {
             Nd4jLong len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
-                var->getNDArray()->triggerAllocationFlag(true);
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
-                var->getNDArray()->triggerAllocationFlag(true);
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             }
 
             return true;
@@ -778,7 +772,7 @@ namespace nd4j {
                 in.push_back(cnt);
                 variableSpace.putVariable(cnt--, var);
             }
-            
+
             Context block(1, &variableSpace, false);
             block.setDataType(0, type);
             block.fillInputs(in);

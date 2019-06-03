@@ -18,6 +18,8 @@
 //  @author raver119@gmail.com
 //
 
+#ifndef __CUDABLAS__
+
 #include "../ConstantShapeHelper.h"
 #include <logger.h>
 #include <ShapeBuilders.h>
@@ -43,6 +45,12 @@ namespace nd4j {
         ShapeDescriptor descriptor(dataType, order, shape);
         return bufferForShapeInfo(descriptor);
     }
+
+    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
+        ShapeDescriptor descriptor(dataType, order, shape, rank);
+        return bufferForShapeInfo(descriptor);
+    }
+
 
     ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = 0;
@@ -136,3 +144,5 @@ namespace nd4j {
 
     nd4j::ConstantShapeHelper* nd4j::ConstantShapeHelper::_INSTANCE = 0;
 }
+
+#endif

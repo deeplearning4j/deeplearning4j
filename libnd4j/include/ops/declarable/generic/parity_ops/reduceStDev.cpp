@@ -132,7 +132,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
 
     auto mean = input->reduceAlongDims(reduce::Mean, dimensions, true);
     
-    NDArray variance(mean.getShapeInfo(), true, block.getVariableSpace()->launchContext());                    // create empty array with shape matching shape of mean array
+    NDArray variance(mean.getShapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
     input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, &variance, biasCorrected, dimensions);
 
     gradI->assign( (*input - mean) / (variance * NminusOne));                              // automatic broadcasting happens here

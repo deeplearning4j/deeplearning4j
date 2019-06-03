@@ -363,7 +363,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                            null,
+                            (IntPointer) op.dimensions().data().addressPointer(),
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                             AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                             null,
@@ -410,7 +410,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -420,7 +420,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -430,7 +430,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -440,7 +440,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -598,7 +598,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                      extraArgs,
                 null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                null,
+                (IntPointer) op.dimensions().data().addressPointer(),
                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                 AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                 null);
@@ -712,11 +712,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
-                AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
-                context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
-                devTadShapeInfoZ, devTadOffsetsZ);
+                AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), // 0
+                context.getOldStream(), // 1
+                AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
+                context.getBufferAllocation(), // 3
+                context.getBufferReduction(),  // 4
+                context.getBufferScalar(),  // 5
+                context.getBufferSpecial(), // 6
+                hostYShapeInfo,  // 7
+                hostZShapeInfo,  // 8
+                hostTadShapeInfo,  // 9
+                devTadShapeInfo,  // 10
+                devTadOffsets, // 11
+                devTadShapeInfoZ,  // 12
+                devTadOffsetsZ); // 13
 
         Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
         Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
@@ -2382,8 +2391,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
         val context = (CudaOpContext) buildContext();
-
-        context.setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
         context.markInplace(op.isInplaceCall());
 
         // transferring rng state
@@ -2668,6 +2675,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
+        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
+
         nativeOps.execCustomOp(null, op.opHash(), context.contextPointer());
 
         if (context.getOutputArrays().isEmpty())
@@ -2698,8 +2708,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, false);
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
         return new CudaLongDataBuffer(dbf.primary(), dbf.special(), Shape.shapeInfoLength(shape.length));
     }

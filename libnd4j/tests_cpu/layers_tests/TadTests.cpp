@@ -38,22 +38,16 @@ public:
 };
 
 TEST_F(TadTests, Test4DTad1) {
-    std::unique_ptr<NDArray> arraySource(nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000));
 
-    std::unique_ptr<NDArray> arrayExp(NDArrayFactory::create_<float>('c', {2, 1, 4, 4}));
-    std::unique_ptr<NDArray> arrayBad(NDArrayFactory::create_<float>('c', {2, 1, 4, 4}));
+    NDArray*  arraySource = nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000);
 
-    arrayExp->setBuffer(arraySource->getBuffer());
-    //arrayExp->printShapeInfo("Exp shapeBuffer: ");
+    Nd4jLong badShape[]  = {4, 2, 1, 4, 4, 80, 16, 4, 1, 8192, -1, 99};
+    Nd4jLong goodShape[] = {4, 2, 1, 4, 4, 16, 16, 4, 1, 8192,  1, 99};
 
+    std::vector<float> buff = arraySource->getBufferAsVector<float>();
 
-    std::vector<Nd4jLong> badShape({4, 2, 1, 4, 4, 80, 16, 4, 1, 8192, -1, 99});
-
-    arrayBad->setBuffer(arraySource->getBuffer());
-    arrayBad->setShapeInfo(badShape.data());
-    arrayBad->triggerAllocationFlag(false);
-    //arrayBad->printShapeInfo("Bad shapeBuffer: ");
-
+    NDArray* arrayExp = new NDArray(buff.data(), goodShape);
+    NDArray* arrayBad = new NDArray(buff.data(), badShape);
 
     int dim = 1;
     shape::TAD tad;
@@ -61,12 +55,13 @@ TEST_F(TadTests, Test4DTad1) {
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
-
-
-	int exp[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95 };
-    for (int e = 0; e < 32; e++) {
+    int exp[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95 };
+    for (int e = 0; e < 32; e++)
         ASSERT_EQ((int) tad.tadOffsets[e],  exp[e]);
-    }
+
+    delete arrayExp;
+    delete arrayBad;
+    delete arraySource;
 }
 
 TEST_F(TadTests, TestNumTads1) {
@@ -90,15 +85,15 @@ TEST_F(TadTests, TestNumTads1) {
 
 TEST_F(TadTests, TestShapeTad_1) {
 
-    float buff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};    
+    float buff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 8192, 1, 99};
 
     NDArray input(buff, shapeInfo);
-    
+
     std::vector<int> dimensions = {0,1,2};
     Nd4jLong tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
     Nd4jLong numTads = input.lengthOf() / tadLength;
-    
+
     shape::TAD tad;
     tad.init(input.getShapeInfo(), dimensions.data(), dimensions.size());
     tad.createTadOnlyShapeInfo();
@@ -109,11 +104,11 @@ TEST_F(TadTests, TestShapeTad_1) {
 
     float* tadBuff = reinterpret_cast<float*>(input.getBuffer()) + tad.tadOffsets[0];
     NDArray tadArr(tadBuff, tadShapeInfo);
-   
+
     ASSERT_TRUE(numTads==1);
     ASSERT_TRUE(input.isSameShapeStrict(&tadArr));
     ASSERT_TRUE(input.equalsTo(&tadArr));
-    
+
 	delete[] tadShapeInfo;
 }
 
@@ -163,7 +158,7 @@ TEST_F(TadTests, TadEdgeCase_2) {
 
     auto tad = array.tensorAlongDimension(0, {1});
 
-    // tad->printShapeInfo("TAD shape"); 
+    // tad->printShapeInfo("TAD shape");
     ASSERT_EQ(3, tad->lengthOf());
 
     delete tad;
@@ -281,29 +276,29 @@ TEST_F(TadTests, test_column_1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(TadTests, calcOffsets_1) {
-    
+
     Nd4jLong shapeInfoF[10]  = {3, 2,3,4,  1,2,6,   8192, 1, 102};
     Nd4jLong shapeInfoC[10]  = {3, 2,3,4,  12,4,1,  8192, 1, 99};
     Nd4jLong shapeInfoFC[10] = {3, 2,3,4,  1,2,6,   8192, 1, 99};;
-    
+
     Nd4jLong expOffsetsF[24] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23};
     Nd4jLong expOffsetsC[24] = {0,12,4,16,8,20,1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23};
- 
+
     Nd4jLong offsets[24];
 
     shape::calcOffsets(shapeInfoF, offsets, 'f');
 
     for (int e = 0; e < 24; e++)
-        ASSERT_TRUE(offsets[e] == expOffsetsF[e]);    
+        ASSERT_TRUE(offsets[e] == expOffsetsF[e]);
 
     shape::calcOffsets(shapeInfoC, offsets, 'f');
 
-    for (int e = 0; e < 24; e++)         
+    for (int e = 0; e < 24; e++)
         ASSERT_TRUE(offsets[e] == expOffsetsC[e]);
 
     shape::calcOffsets(shapeInfoFC, offsets, 'f');
 
-    for (int e = 0; e < 24; e++)         
+    for (int e = 0; e < 24; e++)
         ASSERT_TRUE(offsets[e] == expOffsetsF[e]);
 }
 

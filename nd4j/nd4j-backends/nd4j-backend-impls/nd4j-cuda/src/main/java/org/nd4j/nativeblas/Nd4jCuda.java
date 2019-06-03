@@ -246,7 +246,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
 // #endif
 
-// Parsed from array/DataBuffer.h
+// Parsed from array/ConstantDescriptor.h
 
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
@@ -266,130 +266,66 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
 //
 // @author raver119@gmail.com
-// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-// #ifndef DEV_TESTS_DATABUFFER_H
-// #define DEV_TESTS_DATABUFFER_H
+// #ifndef DEV_TESTS_CONSTANTDESCRIPTOR_H
+// #define DEV_TESTS_CONSTANTDESCRIPTOR_H
 
-// #include <dll.h>
-// #include <cstring>
-// #include <op_boilerplate.h>
-// #include <pointercast.h>
-// #include <memory/Workspace.h>
 // #include <array/DataType.h>
-// #include <execution/LaunchContext.h>
+// #include <map>
+// #include <vector>
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <array/ConstantDataBuffer.h>
+    @Namespace("nd4j") @NoOffset public static class ConstantDescriptor extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ConstantDescriptor(Pointer p) { super(p); }
+    
+        public ConstantDescriptor(DoublePointer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(DoublePointer values, int length);
+        public ConstantDescriptor(DoubleBuffer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(DoubleBuffer values, int length);
+        public ConstantDescriptor(double[] values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(double[] values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") LongPointer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") LongBuffer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer values, int length);
+        public ConstantDescriptor(@Cast("Nd4jLong*") long[] values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("Nd4jLong*") long[] values, int length);
 
-@Namespace("nd4j") @NoOffset public static class DataBuffer extends Pointer {
-    static { Loader.load(); }
-    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-    public DataBuffer(Pointer p) { super(p); }
-    /** Native array allocator. Access with {@link Pointer#position(long)}. */
-    public DataBuffer(long size) { super((Pointer)null); allocateArray(size); }
-    private native void allocateArray(long size);
-    @Override public DataBuffer position(long position) {
-        return (DataBuffer)super.position(position);
+        public ConstantDescriptor(@Cast("Nd4jLong*") @StdVector LongPointer values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@Cast("Nd4jLong*") @StdVector LongPointer values);
+        public ConstantDescriptor(@Cast("Nd4jLong*") @StdVector LongBuffer values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@Cast("Nd4jLong*") @StdVector LongBuffer values);
+        public ConstantDescriptor(@Cast("Nd4jLong*") @StdVector long[] values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@Cast("Nd4jLong*") @StdVector long[] values);
+        public ConstantDescriptor(@StdVector DoublePointer values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@StdVector DoublePointer values);
+        public ConstantDescriptor(@StdVector DoubleBuffer values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@StdVector DoubleBuffer values);
+        public ConstantDescriptor(@StdVector double[] values) { super((Pointer)null); allocate(values); }
+        private native void allocate(@StdVector double[] values);
+
+        // equal to operator
+        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef ConstantDescriptor other);
+
+        // less than operator
+        public native @Cast("bool") @Name("operator <") boolean lessThan(@Const @ByRef ConstantDescriptor other);
+
+        public native @Cast("bool") boolean isInteger();
+        public native @Cast("bool") boolean isFloat();
+
+        public native @Cast("Nd4jLong") long length();
+
+        public native @Cast("Nd4jLong*") @StdVector LongPointer integerValues();
+        public native @StdVector DoublePointer floatValues();
     }
 
 
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
-                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType,
-                            @Cast("const bool") boolean isOwnerPrimary/*=false*/, @Cast("const bool") boolean isOwnerSpecial/*=false*/,
-                            Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(primary, special, lenInBytes, dataType, isOwnerPrimary, isOwnerSpecial, workspace); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
-                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType,
-                            @Cast("const bool") boolean isOwnerPrimary/*=false*/, @Cast("const bool") boolean isOwnerSpecial/*=false*/,
-                            Workspace workspace/*=nullptr*/);
-        public DataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
-                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType) { super((Pointer)null); allocate(primary, special, lenInBytes, dataType); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special,
-                            @Cast("const size_t") long lenInBytes, @Cast("const nd4j::DataType") int dataType);
 
-        public DataBuffer(@Const @ByRef DataBuffer other) { super((Pointer)null); allocate(other); }
-        private native void allocate(@Const @ByRef DataBuffer other);
-        public DataBuffer() { super((Pointer)null); allocate(); }
-        private native void allocate();
-
-        public native @ByRef @Name("operator =") DataBuffer put(@Const @ByRef DataBuffer other);
-
-        public native @Cast("nd4j::DataType") int getDataType();
-        public native @Cast("size_t") long getLenInBytes();
-
-        public native @Cast("Nd4jPointer") Pointer primary();
-        public native @Cast("Nd4jPointer") Pointer special();
-
-        public native void writePrimary();
-        public native void writeSpecial();
-        public native void readPrimary();
-        public native void readSpecial();
-        public native @Cast("bool") boolean isPrimaryActual();
-        public native @Cast("bool") boolean isSpecialActual();
-
-        public native void syncToPrimary(@Const LaunchContext context);
-        public native void syncToSpecial();
-}
-
-
-
-///// IMLEMENTATION OF INLINE METHODS /////
-
-
-////////////////////////////////////////////////////////////////////////
-// default constructor
-
-
-////////////////////////////////////////////////////////////////////////
-// copy constructor
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////
-// move constructor
-
-
-////////////////////////////////////////////////////////////////////////
-// assignment operator
-
-
-////////////////////////////////////////////////////////////////////////
-// move assignment operator
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-// #endif //DEV_TESTS_DATABUFFER_H
+// #endif //DEV_TESTS_CONSTANTDESCRIPTOR_H
 
 
 // Parsed from array/ConstantDataBuffer.h
@@ -741,7 +677,9 @@ bool verbose = false;
 */
 
 // #include <array/ShapeList.h>
+// #include <array/ConstantDescriptor.h>
 // #include <array/ConstantDataBuffer.h>
+// #include <helpers/ConstantHelper.h>
 // #include <array/TadPack.h>
 // #include <graph/VariablesSet.h>
 // #include <graph/GraphState.h>
@@ -3001,6 +2939,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
     public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
     public native ConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("nd4j::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") LongPointer data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, @Cast("Nd4jLong*") long[] data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, DoublePointer data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, DoubleBuffer data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, double[] data, int length);
+    public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, ConstantDescriptor descriptor);
 }
 
 
@@ -3493,6 +3439,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <Status.h>
 // #include <ShapeDescriptor.h>
 // #include <helpers/ConstantShapeHelper.h>
+// #include <array/DataBuffer.h>
 
 
     @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
@@ -3530,6 +3477,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     
         public NDArray() { super((Pointer)null); allocate(); }
         private native void allocate();
+
+        /**
+        *  do not allocate memory, memory for array is passed from outside
+        */
+// #ifndef __JAVACPP_HACK__
+
+// #endif
 
         /**
         *  do not allocate memory, memory for array is passed from outside
@@ -3582,7 +3536,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
         /**
-		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
 		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
@@ -3663,7 +3617,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype);
 
         /**
-        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        *  this constructor creates new NDArray with shape matching "other" array,
+        *  doesn't copy "other" elements into new array !!!
         */
         public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(other, copyStrides, context); }
         private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
@@ -3679,9 +3634,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
          * This method blocks until asynchronous operation finishes
          */
-        public native void synchronize();
-
-        public native @Cast("bool") boolean isContiguous();
+        public native void synchronize(@Cast("char*") String msg);
+        public native void synchronize(@Cast("char*") BytePointer msg);
 
         /**
          * This method allows to set _isAttached flag
@@ -3693,6 +3647,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void tickWriteDevice();
         public native void tickReadHost();
         public native void tickReadDevice();
+        public native void tickBothActual();
         public native @Cast("bool") boolean isActualOnHostSide();
         public native @Cast("bool") boolean isActualOnDeviceSide();
         public native void makeBothBuffersActual();
@@ -3726,13 +3681,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  assignment operator, assigns the same scalar to all array elements 
+        *  assignment operator, assigns the same scalar to all array elements
         */
 
 
         /**
         *   operators for memory allocation and deletion
-        */ 
+        */
         public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
         public native @Name("operator delete") void _delete(Pointer p);
 
@@ -3740,20 +3695,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void setContext(LaunchContext context);
 
         /**
-        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
-        */
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
-        public native void replacePointers(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo);
- 
-        /**
         *  create a new array by replicating current array by repeats times along given dimension
         *  dimension - dimension along which to repeat elements
         *  repeats - number of repetitions
-        */        
+        */
         public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
         public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
         public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
@@ -3779,15 +3724,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
          */
 
         /**
-        *  fill target array by repeating current array 
-        *  dimension - dimension along which to repeat elements        
+        *  fill target array by repeating current array
+        *  dimension - dimension along which to repeat elements
         */
         public native void repeat(int dimension, @ByRef NDArray target);
-
-        /**
-        *  creates array which is view of this array
-        */
-        public native NDArray getView();
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -3809,11 +3749,33 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native LaunchContext getContext();
 
+// #ifndef __JAVACPP_HACK__
+// #endif
+
         /**
-        *   returns _buffer
+        *   returns host buffer
         */
         public native Pointer getBuffer();
         public native Pointer buffer();
+
+
+        /**
+        *   returns buffer offset (offset is the same for host and device buffers)
+        */
+        public native @Cast("Nd4jLong") long getBufferOffset();
+        public native @Cast("Nd4jLong") long bufferOffset();
+
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
+        public native Pointer specialBuffer();
+        public native Pointer getSpecialBuffer();
+
+        /**
+        *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
+        */
+        public native Pointer getPlatformBuffer();
+        public native Pointer platformBuffer();
 
         /**
         *   returns _shapeInfo
@@ -3821,11 +3783,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong*") LongPointer shapeInfo();
         public native @Cast("Nd4jLong*") LongPointer getShapeInfo();
 
-        /**
-        *  if _bufferD==nullptr return _buffer, else return _bufferD
-        */
-        public native Pointer specialBuffer();
-        public native Pointer getSpecialBuffer();
 
         /**
          * Returns True if it's legally empty NDArray, or false otherwise
@@ -3839,10 +3796,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
         public native @Cast("Nd4jLong*") LongPointer getSpecialShapeInfo();
 
-        /**
-        *  set values for _bufferD and _shapeInfoD
-        */
-        public native void setSpecialBuffer(Pointer buffer);
+
+        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
+        public native @Cast("Nd4jLong*") LongPointer getPlatformShapeInfo();
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -3863,6 +3819,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isFinite();
         public native @Cast("bool") boolean hasNaNs();
         public native @Cast("bool") boolean hasInfs();
+
+        public native void copyBuffersContinuouslyFrom(@Const @ByRef NDArray other, @Cast("size_t") long sizeToCopyInBytes/*=0*/, @Cast("Nd4jLong") long offsetThis/*=0*/, @Cast("Nd4jLong") long offsetOther/*=0*/);
+        public native void copyBuffersContinuouslyFrom(@Const @ByRef NDArray other);
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -3902,18 +3861,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  prints information about array shape
-        *  msg - message to print out 
-        */ 
+        *  msg - message to print out
+        */
         public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
         public native void printShapeInfo();
         public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
 
         /**
         *  prints buffer elements
-        *  msg - message to print out 
+        *  msg - message to print out
         *  limit - number of array elements to print out
-        *  sync - if true check whether host buffer is actual, if it is not then make it so 
-        */ 
+        *  sync - if true check whether host buffer is actual, if it is not then make it so
+        */
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
@@ -3924,9 +3883,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  prints buffer elements, takes into account offset between elements (element-wise-stride)
-        *  msg - message to print out 
+        *  msg - message to print out
         *  limit - number of array elements to print out
-        */ 
+        */
         public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
         public native void printIndexedBuffer();
         public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/);
@@ -3938,7 +3897,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  this method assigns values of given array to this one
-        */ 
+        */
         public native void assign(@Const NDArray other);
 
         /**
@@ -3962,7 +3921,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native NDArray dup(byte newOrder/*='a'*/);
         public native NDArray dup();
 
-        /** 
+        /**
         *  returns sum of all elements of array
         */
         public native @ByVal NDArray sumNumber();
@@ -3977,25 +3936,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #endif
 
         /**
-        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
         public native NDArray transpose();
         public native @ByVal NDArray transp();
 
         /**
-        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  perform transpose operation and store result in target, this array remains unaffected
         *  target - where to store result
-        */ 
+        */
         public native void transpose(@ByRef NDArray target);
 
         /**
-        *  apply in-place transpose operation to this array, so this array becomes transposed 
-        */ 
+        *  apply in-place transpose operation to this array, so this array becomes transposed
+        */
         public native void transposei();
 
         /**
         *  return array pointing on certain range of this array
-        *  index - the number of array to be returned among set of possible arrays 
+        *  index - the number of array to be returned among set of possible arrays
         *  dimensions - array of dimensions to point on
         */
         public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntPointer dimensions);
@@ -4017,7 +3976,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native @Cast("bool") boolean equalsTo(@Const NDArray other, double eps/*=1e-5*/);
         public native @Cast("bool") boolean equalsTo(@Const NDArray other);
-        
+
         /**
         *  add given row vector to all rows of this array
         *  row - row vector to add
@@ -4037,7 +3996,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  target - where to store result
         */
         public native void subRowVector(@Const NDArray row, NDArray target);
-        
+
         /**
         *  multiply all rows of this array on given row vector, store result in target
         *  row - row vector to multiply on
@@ -4051,7 +4010,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  target - where to store result
         */
         public native void divRowVector(@Const NDArray row, NDArray target);
-        
+
         /**
         *  add given column vector to all columns of this array, store result in target
         *  column - column vector to add
@@ -4075,16 +4034,15 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns number of bytes used by _buffer & _shapeInfo
         */
         public native @Cast("Nd4jLong") long memoryFootprint();
-        
+
         /**
         *  these methods suited for FlatBuffers use
         */
-        public native Pointer getBufferAsPointer(@Cast("nd4j::DataType") int dtype);
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeAsVector();
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeInfoAsVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeInfoAsFlatVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeAsFlatVector();
-				
+
         /**
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
@@ -4098,7 +4056,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native @Cast("bool") boolean reshapei(@Cast("Nd4jLong*") @StdVector LongPointer shape);
 		public native @Cast("bool") boolean reshapei(@Cast("Nd4jLong*") @StdVector LongBuffer shape);
 		public native @Cast("bool") boolean reshapei(@Cast("Nd4jLong*") @StdVector long[] shape);
-	
+
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
@@ -4109,7 +4067,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
 		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
 		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
-		
+
         /**
         *  calculate strides and set given order
         *  order - order to set
@@ -4125,7 +4083,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public native void tilei(@Cast("Nd4jLong*") @StdVector long[] repeats);
 
         /**
-        *  returns new array which is created by repeating of this array the number of times given by reps 
+        *  returns new array which is created by repeating of this array the number of times given by reps
         *  repeats - contains numbers of repetitions
         */
 		public native @ByVal NDArray tile(@Cast("Nd4jLong*") @StdVector LongPointer repeats);
@@ -4142,32 +4100,26 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void tile(@Cast("Nd4jLong*") @StdVector long[] repeats, @ByRef NDArray target);
 
         /**
-        *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape        
+        *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape
         *  target - where to store result
         */
         public native void tile(@ByRef NDArray target);
-        
+
         /**
-        *  returns an array which is result of broadcasting of this and other arrays 
+        *  returns an array which is result of broadcasting of this and other arrays
         *  other - input array
         */
 		public native NDArray broadcast(@Const @ByRef NDArray other);
-		
-        /**
-        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
-        *  arg - 0 -> row, 1 -> column
-        */
-		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
-				
+
         /**
         *  check whether array is identity matrix
         */
-		public native @Cast("bool") boolean isIdentityMatrix(); 
-		
+		public native @Cast("bool") boolean isIdentityMatrix();
+
         /**
         *  check whether array is unitary matrix
         */
-		public native @Cast("bool") boolean isUnitary(); 
+		public native @Cast("bool") boolean isUnitary();
 
 
         /**
@@ -4233,7 +4185,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         //template <typename T>
         //friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
 
-        
+
         /**
         *  addition unary operator array += other
         *  other - input array to add
@@ -4245,13 +4197,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to add
         */
         public native @Name("operator -=") void subtractPut(@Const @ByRef NDArray other);
-        
+
         /**
         *  subtraction operator: array - other
         *  other - input array to subtract
         */
         public native @ByVal @Name("operator -") NDArray subtract(@Const @ByRef NDArray other);
-        
+
         /**
         *  subtraction operator: array - scalar
         *  scalar - input scalar to subtract
@@ -4273,12 +4225,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to multiply on
         */
         public native @ByVal @Name("operator *") NDArray multiply(@Const @ByRef NDArray other);
-    
+
         /**
         *  multiplication operator: array * scalar
         *  scalar - input scalar to multiply on
         */
-        
+
         /**
         *  pairwise multiplication unary operator array *= other
         *  other - input array to multiply on
@@ -4330,8 +4282,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void setIdentity();
 
         /**
-        *  swaps the contents of tow arrays, 
-        *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same 
+        *  swaps the contents of tow arrays,
+        *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same
         */
         public native void swapUnsafe(@ByRef NDArray other);
 
@@ -4342,21 +4294,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native NDArray diagonal(byte type );
 
         /**
-        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
-        *
-        *  diag - diagonal starting from matrix is filled. 
-        *      diag = 0 corresponds to main diagonal, 
-        *      diag < 0 below main diagonal
-        *      diag > 0 above main diagonal
-        *  direction - in what direction to fill matrix. There are 2 possible directions:
-        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
-        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
+        * fill target matrix with given value in one or two directions from main diagonal:
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
+        * direction - in what direction to fill matrix. There are 3 possible directions:
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
+        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
+        * rest of target elements are equal to this array elements
+        * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
-        *  shape  - contains new shape to broadcast array to 
+        *  shape  - contains new shape to broadcast array to
         *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case tile operation is done in place
         */
         public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
@@ -4380,8 +4332,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native double getTrace();
 
-        public native NDArray dupUninitialized();
-
         public native ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
         public native ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
         public native ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
@@ -4404,6 +4354,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void setShapeInfo(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const nd4j::DataType") int dtype);
         public native void setShapeInfo(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const nd4j::DataType") int dtype);
         public native void setShapeInfo(@Const @ByRef ShapeDescriptor descriptor);
+        public native void setShapeInfo(@Const @ByRef ConstantDataBuffer shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -4429,36 +4380,25 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
 
         /**
-        *  set _buffer
-        */
-        public native void setBuffer(Pointer buffer);
-
-        /**
-        *  set _isBuffAlloc and _isShapeAlloc
-        */
-        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated);
-        public native void triggerSpecialAllocationFlag(@Cast("bool") boolean bufferAllocated);
-
-        /**
-        *  returns the value of "dim" dimension 
+        *  returns the value of "dim" dimension
         */
         public native @Cast("Nd4jLong") long sizeAt(int dim);
 
-        /**        
+        /**
         *  returns order of array
         */
         public native char ordering();
 
         /**
         *  return _isView
-        */ 
+        */
         public native @Cast("bool") boolean isView();
 
         /**
         *  returns shape portion of shapeInfo
         */
         public native @Cast("Nd4jLong*") LongPointer shapeOf();
-        
+
         /**
         *  returns strides portion of shapeInfo
         */
@@ -4467,9 +4407,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  returns rank of array
         */
-        public native int rankOf();        
+        public native int rankOf();
 
-        /** 
+        /**
         *  returns length of array
         */
         public native @Cast("Nd4jLong") long lengthOf();
@@ -4481,17 +4421,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  returns number of columns in array
-        */ 
+        */
         public native @Cast("Nd4jLong") long columns();
 
         /**
         *  returns size of array elements type
-        */ 
+        */
         public native @Cast("size_t") long sizeOfT();
 
         /**
         *  returns element-wise-stride
-        */ 
+        */
         public native @Cast("Nd4jLong") long ews();
 
         // returns true if arrays have same shape
@@ -4516,14 +4456,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  i - element index in array
         */
 
-        /** 
-        *  returns element with given indexes from 2D array 
-        *  i - number of row 
+        /**
+        *  returns element with given indexes from 2D array
+        *  i - number of row
         *  j - number of column
         */
 
-        /** 
-        *  returns element with given indexes from 3D array 
+        /**
+        *  returns element with given indexes from 3D array
         *  i - height
         *  j - width
         *  k - depth
@@ -4533,13 +4473,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns element with given indexes from DD array
         */
 
-        /** 
+        /**
         *  returns array-scalar containing element of this array with given index
         *  i - element index in array
         */
         public native @ByVal NDArray e(@Cast("const Nd4jLong") long i);
 
-        /** 
+        /**
         *  assigns given scalar to array element by given index, regards array buffer as linear
         *  i - element index in array
         *  value - scalar value to assign
@@ -4547,14 +4487,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native void p(@Cast("const Nd4jLong") long i, @Const @ByRef NDArray value);
 
-        /** 
+        /**
         *  assigns given scalar to 2D array element by given indexes
         *  i - number of row
         *  j - number of row
         *  value - scalar value to assign
         */
 
-        /** 
+        /**
         *  assigns given scalar to 3D array element by given indexes
         *  i - height
         *  j - width
@@ -4638,12 +4578,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isS();
 
         /**
-        *  inline accessing operator for matrix, i - absolute index        
+        *  inline accessing operator for matrix, i - absolute index
         */
         //FORCEINLINE NDArray operator()(const Nd4jLong i) const;
 
         /**
-        *  inline modifying operator for matrix, i - absolute index        
+        *  inline modifying operator for matrix, i - absolute index
         */
         //FORCEINLINE NDArray& operator()(const Nd4jLong i);
 
@@ -4664,12 +4604,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  inline modifying operator for 4D array, i - height, j - width, k - depth
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
 
         /**
@@ -4680,7 +4620,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  inline modifying operator for ND array
         *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        */ 
+        */
         //FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
 
         /**
@@ -4697,15 +4637,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef NDArray other);
 
         public native @Cast("bool") @Name("operator !=") boolean notEquals(@Const @ByRef NDArray other);
-
-        public native void lazyAllocateBuffer();
     }
 
 
 
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS ///// 
+///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
     
 
@@ -4714,14 +4652,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     //////////////////////////////////////////////////////////////////////////
     
 
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
     //////////////////////////////////////////////////////////////////////////
     
 
@@ -4786,17 +4716,15 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
             throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
 
     auto ews   = shape::elementWiseStride(_shapeInfo);
-    char order = ordering();   
+    char order = ordering();
 
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -4805,7 +4733,6 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     }
 }
@@ -4823,14 +4750,12 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
     if(ews == 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
 
         // FIXME: bad
         return result;
     } else if(ews > 1 && order == 'c') {
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
     } else {
         Nd4jLong idx[MAX_RANK];
@@ -4839,26 +4764,24 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        result.triggerAllocationFlag(false);
         return result;
-    }    
+    }
 }*/
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator for 2D matrix, i - row, j - column
 /*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
-    
+
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
-    
+
     Nd4jLong coords[2] = {i, j};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
     // TODO: do we really want a view here?
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -4874,7 +4797,6 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -4885,16 +4807,15 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
 // accessing operator for 3D array, i - row, j - column
 /*
 NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
-    
+
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
-    
+
     Nd4jLong coords[3] = {i, j, k};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -4903,7 +4824,7 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
 // modifying operator for 3D array
 /*
 NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
-    
+
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
@@ -4912,7 +4833,6 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     //FIXME: bad, will crash!
     return result;
@@ -4920,7 +4840,7 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
 */
 /*
 NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
-    
+
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
@@ -4929,13 +4849,12 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
 /*
 NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
-    
+
     if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
@@ -4945,7 +4864,6 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
     // FIXME
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -4953,15 +4871,14 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
 /*
 NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
-    for(int i = 0; i < rankOf(); ++i)    
+    for(int i = 0; i < rankOf(); ++i)
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
-    
+
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
     return result;
 }
 */
@@ -4969,7 +4886,7 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
 /*
 NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
-    for(int i = 0; i < rankOf(); ++i)    
+    for(int i = 0; i < rankOf(); ++i)
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
@@ -4977,7 +4894,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    result.triggerAllocationFlag(false);
 
     // FIXME
     return result;
@@ -5034,6 +4950,33 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 ////////////////////////////////////////////////////////////////////////
 
 
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+
+
 ////////////////////////////////////////////////////////////////////////
 
 
@@ -5041,15 +4984,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 
-
-
-
-
-
-
-
-
-// #ifdef __CUDACC__
+// #if defined(__CUDACC__) && defined(BUILD_TESTS)
+// for CUDA we need stil stuff inline
+// #include "cuda/NDArrayLambda.hpp"
 // #endif
 
 
@@ -7083,7 +7020,7 @@ public static final int PREALLOC_SIZE = 33554432;
 /**
  * copy-past from java hasDefaultStridesForShape function
  * check whether array is not permuted and has contiguous elements in memory
- */ 
+ */
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
@@ -7881,13 +7818,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] coords);
 
    /**
-   * increment n-dimensional array by one iteration by changing coord appropriately  
+   * increment n-dimensional array by one iteration by changing coord appropriately
    * for example we have array with shape {2, 3}:
    * - if input coord = {0,1}, then output coord = {0,2}
    * - if input coord = {0,2}, then output coord = {1,0}
-   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
+   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}
    */
-   
+
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
     * arrLen - array length
    */
@@ -8068,7 +8005,7 @@ public static final int PREALLOC_SIZE = 33554432;
     * arguments:
     * wholeShapeInfo - original shapeInfo of whole array
     * numOfSubArrs - number of sub-arrays, size of subArrOffsets is equal to numOfSubArrs
-    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array, copy of wholeShapeInfo and one zero offset will be returned 
+    * dimsSize - size of dimsToExclude, if dimsSize = array rank or dimsSize = 0 it means sub-array is whole array, copy of wholeShapeInfo and one zero offset will be returned
     * dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-array along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
     * subArrShapeInfo    - output argument, contains shapeInfo common for all sub-arrays
     * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
@@ -8080,7 +8017,30 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
-    
+
+    /**
+    * insert dimension at shape[axis] position
+    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, dimension = 10 result is -> shape = {2,10,4,5}
+    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 3, dimension = 10 result is -> shape = {2,4,5,10}
+    * so be careful and provide shape buffer with enough (at least rank+1) length
+    * axis should be within [0, rank] range
+    */
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
+
+    /**
+    * erase dimension at shape[axis] position
+    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, result is -> shape = {2,5}
+    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 2, result is -> shape = {2,4}
+    * axis should be within [0, rank-1] range
+    */
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis);
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis);
+    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis);
+
+
+
 
 
 
@@ -8202,10 +8162,10 @@ public static final int PREALLOC_SIZE = 33554432;
 */
 
 
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 
@@ -8669,7 +8629,7 @@ public static final int PREALLOC_SIZE = 33554432;
 //        return ret;
 //    }
 
-////////////////////////////////////////////////////////////////////////// 
+//////////////////////////////////////////////////////////////////////////
 // copy-past from java hasDefaultStridesForShape function
 
 // INLINEDEF _CUDA_H bool reshapeC(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder, Nd4jLong* target) {
@@ -8907,6 +8867,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
 //////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 
 
 
@@ -9818,6 +9781,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 // #include <dll.h>
+// #include <memory>
 // #include <op_boilerplate.h>
 // #include <memory/Workspace.h>
 // #include <vector>
@@ -9839,8 +9803,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #endif // JCPP
 
 // #endif // CUDA
-		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/) { super((Pointer)null); allocate(cudaStream, reductionPointer, allocationPointer); }
-		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/);
+		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer scalarPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/) { super((Pointer)null); allocate(cudaStream, reductionPointer, scalarPointer, allocationPointer); }
+		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer scalarPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/);
 		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream) { super((Pointer)null); allocate(cudaStream); }
 		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream);
     	public LaunchContext() { super((Pointer)null); allocate(); }
@@ -9973,6 +9937,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
         public native int rank();
         public native @Cast("Nd4jLong") long ews();
+        public native @Cast("Nd4jLong") long arrLength();
         public native char order();
         public native @Cast("nd4j::DataType") int dataType();
         public native @Cast("bool") boolean isEmpty();

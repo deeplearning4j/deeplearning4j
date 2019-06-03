@@ -132,7 +132,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
     //ASSERT_TRUE(y->isActualOnDeviceSide());
     //ASSERT_TRUE(y->isActualOnHostSide());
     //y->syncToHost();
-    y->printBuffer("Negatives");
+    // y->printBuffer("Negatives");
     delete x;
     delete y;
 }
@@ -189,7 +189,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
 
-    for (int e = 0; e < z.lengthOf(); e++) 
+    for (int e = 0; e < z.lengthOf(); e++)
         ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 }
 
@@ -206,14 +206,14 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_2) {
     CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
     cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
-    
+
     LaunchContext lc(stream, *stream, nullptr, nullptr);
-    NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);    
+    NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
     auto res = cudaStreamSynchronize(*stream);
-    ASSERT_EQ(0, res);    
-    
-    for (int e = 0; e < z.lengthOf(); e++) 
-        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);        
+    ASSERT_EQ(0, res);
+
+    for (int e = 0; e < z.lengthOf(); e++)
+        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -282,7 +282,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_4) {
     //ASSERT_EQ(0, res);
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
-    x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);    
+    x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
 
     //
     // cudaFree(devBufferPtrX);
@@ -313,7 +313,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_5) {
     //ASSERT_EQ(0, res);
     x += y;
     //x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
-    x.syncToHost();    
+    x.syncToHost();
     //y.printBuffer("3Y = ");
     //z.printBuffer("3Result out");
 
@@ -413,10 +413,9 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_1) {
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
-    z.lazyAllocateBuffer();
-    x.printBuffer("3X = ");
-    y.printBuffer("3Y = ");
-    z.printBuffer("3Result out");
+    // x.printBuffer("3X = ");
+    // y.printBuffer("3Y = ");
+    // z.printBuffer("3Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -448,7 +447,6 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_2) {
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
     x.printBuffer("3X = ");
     y.printBuffer("3Y = ");
-    z.lazyAllocateBuffer();
     z.printBuffer("3Result out");
 
     //
@@ -481,8 +479,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_3) {
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
-    z.lazyAllocateBuffer();
-    z.printBuffer("23Result out");
+    // z.printBuffer("23Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -516,7 +513,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_4) {
     //y.printBuffer("23Y = ");
     x *= y;
     //x.tickWriteDevice();
-    x.printBuffer("33Result out");
+    // x.printBuffer("33Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -542,8 +539,8 @@ TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_01) {
     ASSERT_EQ(0, res);
     y.tickWriteDevice();
 
-    x.printBuffer("X = ");
-    y.printBuffer("Y = ");
+    // x.printBuffer("X = ");
+    // y.printBuffer("Y = ");
 
     for (int e = 0; e < y.lengthOf(); e++) {
         ASSERT_NEAR(exp.e<int>(e), y.e<int>(e), 1e-5);
@@ -565,8 +562,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveNeg_2) {
     //ASSERT_TRUE(y->isActualOnHostSide());
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
-    y.lazyAllocateBuffer();
-    y.printBuffer("Negatives2");
+    // y.printBuffer("Negatives2");
     //delete x;
     //delete y;
 }
@@ -607,9 +603,9 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveAssign_1) { // strict
     //ASSERT_TRUE(y->isActualOnHostSide());
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
-    y.lazyAllocateBuffer();
-    printf("Assigned to another array\n");
-    y.printBuffer("OUput");
+
+    // printf("Assigned to another array\n");
+    // y.printBuffer("OUput");
     ASSERT_TRUE(y.equalsTo(x));
     //y.syncToHost();
     //y.printBuffer("IsMax output");
@@ -748,7 +744,6 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
     cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
-    z.lazyAllocateBuffer();
     z.printBuffer("Result with Broadcast2 (multiply)");
     exp.printBuffer("Expect with Broadcast2 (multiply)");
     // verify results
@@ -883,8 +878,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_01) {
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
     x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);// *= y;
-    z.lazyAllocateBuffer();
-    z.printBuffer("53Result out");
+    // z.printBuffer("53Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -917,8 +911,8 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_02) {
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
     x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);// *= y;
-    z.lazyAllocateBuffer();
-    z.printBuffer("52Result out");
+
+    // z.printBuffer("52Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -951,8 +945,8 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_002) {
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z);// *= y;
-    z.lazyAllocateBuffer();
-    z.printBuffer("51Result out");
+
+    // z.printBuffer("51Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -1017,10 +1011,10 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
                                        nullptr, nullptr);
 
     cudaResult = cudaStreamSynchronize(*stream); ASSERT_EQ(0, cudaResult);
-    z.lazyAllocateBuffer();
-    x.printIndexedBuffer(" X");
-    y.printIndexedBuffer("+Y");
-    z.printBuffer("ADD broadcasted output");
+
+    // x.printIndexedBuffer(" X");
+    // y.printIndexedBuffer("+Y");
+    // z.printBuffer("ADD broadcasted output");
     // verify results
    // for (int e = 0; e < z.lengthOf(); e++)
    //     ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -1124,16 +1118,14 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestDup1) {
-    
+
     NDArray array('c', {2,3}, {1,2,3,4,5,6});
     array.printBuffer("Array at start");
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
-    arrC->lazyAllocateBuffer();
-    arrC->printBuffer("arrC");
+    // arrC->printBuffer("arrC");
 
-    arrF->lazyAllocateBuffer();
-    arrF->printBuffer("arrF");
+    // arrF->printBuffer("arrF");
     //arrC->printShapeInfo("C shape");
     //arrF->printShapeInfo("F shape");
 
@@ -1148,10 +1140,10 @@ TEST_F(NDArrayCudaBasicsTests, TestDup1) {
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, equalsTo_1) {
-               
+
     NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
     NDArray y('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
-    
+
     ASSERT_TRUE(x.equalsTo(y));
 
     x.permutei({1,0});
@@ -1190,96 +1182,96 @@ TEST_F(NDArrayCudaBasicsTests, equalsTo_3) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyReduce3_1) {
-    
+
     NDArray x('c', {2,3,4}, {-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13}, nd4j::DataType::INT32);
     NDArray x2('c', {2,3,4}, {-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13}, nd4j::DataType::INT32);
-    NDArray y('c', {2,3,4}, {-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5}, nd4j::DataType::INT32);    
+    NDArray y('c', {2,3,4}, {-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2,3,-4,5}, nd4j::DataType::INT32);
     NDArray k('c', {2,3}, {-2,3,-4,5,-2,3}, nd4j::DataType::INT32);
     NDArray k2('c', {3,2}, {-2,3,-4,5,-2,3}, nd4j::DataType::INT32);
-        
+
     NDArray exp1('c', {3}, {4., 20., 36.}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {2,3}, {-10., -2., 6.,14., 22., 30.}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {4}, {38., 41., 44., 47.}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {4}, {114., 117., 120., 123.}, nd4j::DataType::FLOAT32);
-    
+
 
     NDArray* z = x.applyReduce3(nd4j::reduce3::Dot, &y, {0,2});
-    ASSERT_TRUE(z->equalsTo(&exp1));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp1));
+    delete z;
 
     z = x.applyReduce3(nd4j::reduce3::Dot, &k, {0,1});
-    ASSERT_TRUE(z->equalsTo(&exp3));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp3));
+    delete z;
 
     x.permutei({0,2,1});
     y.permutei({0,2,1});
 
     z = y.applyReduce3(nd4j::reduce3::Dot, &x, {1});
-    ASSERT_TRUE(z->equalsTo(&exp2));    
+    ASSERT_TRUE(z->equalsTo(&exp2));
     // printCudaGlobal<float><<<1,1,0, *y.getContext()->getCudaStream()>>>(z->specialBuffer(), 6);
-    delete z;    
+    delete z;
 
     x2.permutei({1,0,2});
 
     z = x2.applyReduce3(nd4j::reduce3::Dot, &k2, {0,1});
-    ASSERT_TRUE(z->equalsTo(&exp4));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp4));
+    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyReduce3_2) {
-    
+
     NDArray x('c', {2,3,4}, {-10,-9,-8.5,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13}, nd4j::DataType::DOUBLE);
     NDArray x2('c', {2,3,4}, {-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0.5,1,2,3,4,5,6,7,8,9,10,11,12,13}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {2,3,4}, {-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2.5,3,-4,5,-2,3,-4,5,-2,3,-4,5}, nd4j::DataType::DOUBLE);    
+    NDArray y('c', {2,3,4}, {-2,3,-4,5,-2,3,-4,5,-2,3,-4,5,-2.5,3,-4,5,-2,3,-4,5,-2,3,-4,5}, nd4j::DataType::DOUBLE);
     NDArray k('c', {2,3}, {-2,3,-4,5.5,-2,3}, nd4j::DataType::DOUBLE);
     NDArray k2('c', {3,2}, {-2,3,-4,5,-2,3.5}, nd4j::DataType::DOUBLE);
-    
+
     NDArray exp1('c', {3}, {5., 20., 36.}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,3}, {-8., -2., 6., 13., 22., 30.}, nd4j::DataType::DOUBLE);
     NDArray exp3('c', {4}, {39., 42.5, 47., 49.5}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {4}, {119., 122.5, 125., 129.5}, nd4j::DataType::DOUBLE);
-    
+
     NDArray* z = x.applyReduce3(nd4j::reduce3::Dot, &y, {0,2});
-    ASSERT_TRUE(z->equalsTo(&exp1));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp1));
+    delete z;
 
     z = x.applyReduce3(nd4j::reduce3::Dot, &k, {0,1});
-    ASSERT_TRUE(z->equalsTo(&exp3));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp3));
+    delete z;
 
     x.permutei({0,2,1});
     y.permutei({0,2,1});
 
     z = y.applyReduce3(nd4j::reduce3::Dot, &x, {1});
-    ASSERT_TRUE(z->equalsTo(&exp2));    
+    ASSERT_TRUE(z->equalsTo(&exp2));
     // printCudaGlobal<float><<<1,1,0, *y.getContext()->getCudaStream()>>>(z->specialBuffer(), 6);
-    delete z;    
+    delete z;
 
     x2.permutei({1,0,2});
 
     z = x2.applyReduce3(nd4j::reduce3::Dot, &k2, {0,1});
-    ASSERT_TRUE(z->equalsTo(&exp4));    
-    delete z; 
+    ASSERT_TRUE(z->equalsTo(&exp4));
+    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
-    
+
     NDArray x1('c', {2,2,2}, {1,2,3,4,5,6,7,8}, nd4j::DataType::INT32);
     NDArray x2('c', {2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8}, nd4j::DataType::INT32);
     NDArray x3('c', {3,2}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {3,2}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
-    
+
     NDArray exp1('c', {0}, {-204}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {0}, {31.5}, nd4j::DataType::DOUBLE);
-    
-    
+
+
     auto z = x1.applyReduce3(reduce3::Dot, &x2);
     ASSERT_TRUE(z->equalsTo(&exp1));
     delete z;
 
-    z = x3.applyReduce3(reduce3::Dot, &x4);    
+    z = x3.applyReduce3(reduce3::Dot, &x4);
     ASSERT_TRUE(z->equalsTo(&exp2));
     delete z;
 
@@ -1292,14 +1284,14 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
     ASSERT_TRUE(z->equalsTo(&exp1));
     delete z;
 
-    z = x3.applyReduce3(reduce3::Dot, &x4);    
+    z = x3.applyReduce3(reduce3::Dot, &x4);
     ASSERT_TRUE(z->equalsTo(&exp2));
     delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
-    
+
     NDArray x1('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::INT32);
     NDArray x2('c', {2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8}, nd4j::DataType::INT32);
     NDArray x3('c', {3,2}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
@@ -1347,11 +1339,11 @@ TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
 TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
 
     NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray scalar('c', {0}, {100}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {100,100}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {100,100,100}, nd4j::DataType::INT64);
-    
+
     NDArray exp1('c', {0}, {1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
@@ -1359,11 +1351,11 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
     NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
-    
+
     x.applyIndexReduce(nd4j::indexreduce::IndexMax, &scalar, {0,1});
     ASSERT_TRUE(scalar.equalsTo(&exp1));
 
-    x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {1});    
+    x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {1});
     ASSERT_TRUE(vec1.equalsTo(&exp2));
 
     x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec2, {0});
@@ -1374,7 +1366,7 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
     x.applyIndexReduce(nd4j::indexreduce::IndexMax, &scalar, {0,1});
     ASSERT_TRUE(scalar.equalsTo(&exp4));
 
-    x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {0});        
+    x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {0});
     ASSERT_TRUE(vec1.equalsTo(&exp5));
 
     x.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec2, {1});
@@ -1385,8 +1377,8 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
 
-    NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
+
     NDArray exp1('c', {0}, {1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
@@ -1394,12 +1386,12 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
     NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
-    
+
     auto z = x.applyIndexReduce(nd4j::indexreduce::IndexMax, {0,1});
     ASSERT_TRUE(z->equalsTo(&exp1));
     delete z;
 
-    z = x.applyIndexReduce(nd4j::indexreduce::IndexMax, {1});    
+    z = x.applyIndexReduce(nd4j::indexreduce::IndexMax, {1});
     ASSERT_TRUE(z->equalsTo(&exp2));
     delete z;
 
@@ -1413,7 +1405,7 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
     ASSERT_TRUE(z->equalsTo(&exp4));
     delete z;
 
-    z = x.applyIndexReduce(nd4j::indexreduce::IndexMax, {0});        
+    z = x.applyIndexReduce(nd4j::indexreduce::IndexMax, {0});
     ASSERT_TRUE(z->equalsTo(&exp5));
     delete z;
 
@@ -1424,24 +1416,24 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
-    
+
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::INT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::DOUBLE);    
+    NDArray z1('c', {0}, {100}, nd4j::DataType::DOUBLE);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::DOUBLE);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);    
+    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2}, {3.5,0.833333}, nd4j::DataType::FLOAT32);
-    
-    x.reduceAlongDimension(nd4j::reduce::Mean, &z1, {0,1,2});    
+
+    x.reduceAlongDimension(nd4j::reduce::Mean, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
-    
+
     x.reduceAlongDimension(nd4j::reduce::Mean, &z2, {1});
     ASSERT_TRUE(z2.equalsTo(&exp2));
 
@@ -1450,46 +1442,46 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
 
     x.permutei({1,0,2});    // 3x2x2
 
-    x.reduceAlongDimension(nd4j::reduce::Mean, &z1, {0,1,2});    
+    x.reduceAlongDimension(nd4j::reduce::Mean, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
 
     x.reduceAlongDimension(nd4j::reduce::Mean, &z4, {1});
     ASSERT_TRUE(z4.equalsTo(&exp4));
 
     x.reduceAlongDimension(nd4j::reduce::Mean, &z5, {0,2});
-    ASSERT_TRUE(z5.equalsTo(&exp5));  
+    ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test2) {
-    
+
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);    
+    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::DOUBLE);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp5('c', {2}, {3.5,0.833333}, nd4j::DataType::DOUBLE);
-    
+
     NDArray z1 = x.reduceAlongDims(nd4j::reduce::Mean, {0,1,2});
-    ASSERT_TRUE(z1.equalsTo(&exp1));    
-    
+    ASSERT_TRUE(z1.equalsTo(&exp1));
+
     NDArray z2 = x.reduceAlongDims(nd4j::reduce::Mean, {1});
-    ASSERT_TRUE(z2.equalsTo(&exp2));    
+    ASSERT_TRUE(z2.equalsTo(&exp2));
 
     NDArray z3 = x.reduceAlongDims(nd4j::reduce::Mean, {0,2});
-    ASSERT_TRUE(z3.equalsTo(&exp3));    
+    ASSERT_TRUE(z3.equalsTo(&exp3));
 
     x.permutei({1,0,2});    // 3x2x2
 
-    NDArray z4 = x.reduceAlongDims(nd4j::reduce::Mean, {0,1,2});    
+    NDArray z4 = x.reduceAlongDims(nd4j::reduce::Mean, {0,1,2});
     ASSERT_TRUE(z4.equalsTo(&exp1));
 
     NDArray z5 = x.reduceAlongDims(nd4j::reduce::Mean, {1});
     ASSERT_TRUE(z5.equalsTo(&exp4));
 
     NDArray z6 = x.reduceAlongDims(nd4j::reduce::Mean, {0,2});
-    ASSERT_TRUE(z6.equalsTo(&exp5));      
+    ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1540,24 +1532,24 @@ TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
-    
+
     NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::FLOAT32);    
+    NDArray z1('c', {0}, {100}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {26.5}, nd4j::DataType::FLOAT32);    
+    NDArray exp1('c', {0}, {26.5}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {2,2}, {9.5,12,3,2}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {19,4,3.5}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {3,2}, {9,10,2,2,1.5,2}, nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2}, {21.5,5}, nd4j::DataType::FLOAT32);
-    
-    x.reduceAlongDimension(nd4j::reduce::Sum, &z1, {0,1,2});    
+
+    x.reduceAlongDimension(nd4j::reduce::Sum, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
-    
+
     x.reduceAlongDimension(nd4j::reduce::Sum, &z2, {1});
     ASSERT_TRUE(z2.equalsTo(&exp2));
 
@@ -1566,68 +1558,68 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
 
     x.permutei({1,0,2});    // 3x2x2
 
-    x.reduceAlongDimension(nd4j::reduce::Sum, &z1, {0,1,2});    
+    x.reduceAlongDimension(nd4j::reduce::Sum, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
 
     x.reduceAlongDimension(nd4j::reduce::Sum, &z4, {1});
     ASSERT_TRUE(z4.equalsTo(&exp4));
 
     x.reduceAlongDimension(nd4j::reduce::Sum, &z5, {0,2});
-    ASSERT_TRUE(z5.equalsTo(&exp5));  
+    ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test2) {
-    
-    NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::INT64);  
 
-    NDArray exp1('c', {0}, {26}, nd4j::DataType::INT64);    
+    NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::INT64);
+
+    NDArray exp1('c', {0}, {26}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {9,12,3,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {18,4,4}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {8,10,2,2,2,2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {21,5}, nd4j::DataType::INT64);
-    
+
     NDArray z1 = x.reduceAlongDims(nd4j::reduce::Sum, {0,1,2});
-    ASSERT_TRUE(z1.equalsTo(&exp1));    
-    
+    ASSERT_TRUE(z1.equalsTo(&exp1));
+
     NDArray z2 = x.reduceAlongDims(nd4j::reduce::Sum, {1});
-    ASSERT_TRUE(z2.equalsTo(&exp2));    
+    ASSERT_TRUE(z2.equalsTo(&exp2));
 
     NDArray z3 = x.reduceAlongDims(nd4j::reduce::Sum, {0,2});
-    ASSERT_TRUE(z3.equalsTo(&exp3));    
+    ASSERT_TRUE(z3.equalsTo(&exp3));
 
     x.permutei({1,0,2});    // 3x2x2
 
-    NDArray z4 = x.reduceAlongDims(nd4j::reduce::Sum, {0,1,2});    
+    NDArray z4 = x.reduceAlongDims(nd4j::reduce::Sum, {0,1,2});
     ASSERT_TRUE(z4.equalsTo(&exp1));
 
     NDArray z5 = x.reduceAlongDims(nd4j::reduce::Sum, {1});
     ASSERT_TRUE(z5.equalsTo(&exp4));
 
     NDArray z6 = x.reduceAlongDims(nd4j::reduce::Sum, {0,2});
-    ASSERT_TRUE(z6.equalsTo(&exp5));      
+    ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
-    
+
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::DOUBLE);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::BOOL);    
+    NDArray z1('c', {0}, {100}, nd4j::DataType::BOOL);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::BOOL);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);    
+    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {1,1,1,0,1,1}, nd4j::DataType::BOOL);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::BOOL);
-    
-    x.reduceAlongDimension(nd4j::reduce::IsPositive, &z1, {0,1,2});    
+
+    x.reduceAlongDimension(nd4j::reduce::IsPositive, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
-    
+
     x.reduceAlongDimension(nd4j::reduce::IsPositive, &z2, {1});
     ASSERT_TRUE(z2.equalsTo(&exp2));
 
@@ -1636,68 +1628,68 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
 
     x.permutei({1,0,2});    // 3x2x2
 
-    x.reduceAlongDimension(nd4j::reduce::IsPositive, &z1, {0,1,2});    
+    x.reduceAlongDimension(nd4j::reduce::IsPositive, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
 
     x.reduceAlongDimension(nd4j::reduce::IsPositive, &z4, {1});
     ASSERT_TRUE(z4.equalsTo(&exp4));
 
     x.reduceAlongDimension(nd4j::reduce::IsPositive, &z5, {0,2});
-    ASSERT_TRUE(z5.equalsTo(&exp5));  
+    ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test2) {
-    
+
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);    
+    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {0,1,1,0,1,1}, nd4j::DataType::BOOL);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::BOOL);
-    
+
     NDArray z1 = x.reduceAlongDims(nd4j::reduce::IsPositive, {0,1,2});
-    ASSERT_TRUE(z1.equalsTo(&exp1));    
-    
+    ASSERT_TRUE(z1.equalsTo(&exp1));
+
     NDArray z2 = x.reduceAlongDims(nd4j::reduce::IsPositive, {1});
-    ASSERT_TRUE(z2.equalsTo(&exp2));    
+    ASSERT_TRUE(z2.equalsTo(&exp2));
 
     NDArray z3 = x.reduceAlongDims(nd4j::reduce::IsPositive, {0,2});
-    ASSERT_TRUE(z3.equalsTo(&exp3));    
+    ASSERT_TRUE(z3.equalsTo(&exp3));
 
     x.permutei({1,0,2});    // 3x2x2
 
-    NDArray z4 = x.reduceAlongDims(nd4j::reduce::IsPositive, {0,1,2});    
+    NDArray z4 = x.reduceAlongDims(nd4j::reduce::IsPositive, {0,1,2});
     ASSERT_TRUE(z4.equalsTo(&exp1));
 
     NDArray z5 = x.reduceAlongDims(nd4j::reduce::IsPositive, {1});
     ASSERT_TRUE(z5.equalsTo(&exp4));
 
     NDArray z6 = x.reduceAlongDims(nd4j::reduce::IsPositive, {0,2});
-    ASSERT_TRUE(z6.equalsTo(&exp5));      
+    ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
-    
+
     NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::INT64);    
+    NDArray z1('c', {0}, {100}, nd4j::DataType::INT64);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::INT64);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::INT64);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {0}, {2}, nd4j::DataType::INT64);    
+    NDArray exp1('c', {0}, {2}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {0,1,0,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,1,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {0,1,0,1,0,0}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
-    
-    x.reduceAlongDimension(nd4j::reduce::CountZero, &z1, {0,1,2});    
+
+    x.reduceAlongDimension(nd4j::reduce::CountZero, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
-    
+
     x.reduceAlongDimension(nd4j::reduce::CountZero, &z2, {1});
     ASSERT_TRUE(z2.equalsTo(&exp2));
 
@@ -1706,39 +1698,39 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
 
     x.permutei({1,0,2});    // 3x2x2
 
-    x.reduceAlongDimension(nd4j::reduce::CountZero, &z1, {0,1,2});    
+    x.reduceAlongDimension(nd4j::reduce::CountZero, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
 
     x.reduceAlongDimension(nd4j::reduce::CountZero, &z4, {1});
     ASSERT_TRUE(z4.equalsTo(&exp4));
 
     x.reduceAlongDimension(nd4j::reduce::CountZero, &z5, {0,2});
-    ASSERT_TRUE(z5.equalsTo(&exp5));  
+    ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
-    
+
     NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
-    
-    NDArray exp1('c', {0}, {4}, nd4j::DataType::INT64);    
+
+    NDArray exp1('c', {0}, {4}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {1,1,0,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {2,2,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {1,1,0,2,0,0}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {2,2}, nd4j::DataType::INT64);
-    
+
     NDArray z1 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,1,2});
-    ASSERT_TRUE(z1.equalsTo(&exp1));    
-    
+    ASSERT_TRUE(z1.equalsTo(&exp1));
+
     NDArray z2 = x.reduceAlongDims(nd4j::reduce::CountZero, {1});
-    ASSERT_TRUE(z2.equalsTo(&exp2));    
+    ASSERT_TRUE(z2.equalsTo(&exp2));
 
     NDArray z3 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,2});
-    ASSERT_TRUE(z3.equalsTo(&exp3));    
+    ASSERT_TRUE(z3.equalsTo(&exp3));
 
     x.permutei({1,0,2});    // 3x2x2
 
-    NDArray z4 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,1,2});    
+    NDArray z4 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,1,2});
     ASSERT_TRUE(z4.equalsTo(&exp1));
 
     NDArray z5 = x.reduceAlongDims(nd4j::reduce::CountZero, {1});
@@ -1752,15 +1744,15 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
 
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     auto z = NDArrayFactory::create<float>('c', {5, 5});
-    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);    
+    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
     NDArray expRow('c', {1, 5,}, {1,2,3,4,5}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {5,5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5}, nd4j::DataType::FLOAT32);
-    
+
     ASSERT_TRUE(row->equalsTo(&expRow));
-            
+
     x.applyBroadcast(broadcast::Add, {1}, row, &z, nullptr);
     x += *row;
-    
+
     ASSERT_TRUE(x.equalsTo(z));
     //ASSERT_TRUE(z.equalsTo(&exp));
 
@@ -1771,25 +1763,25 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
 
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     //auto z = NDArrayFactory::create<float>('c', {5, 5});
-    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);  
+    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
     NDArray expRow('c', {1, 5,}, {1,2,3,4,5}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {5,5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5}, nd4j::DataType::FLOAT32);
-    
-    ASSERT_TRUE(row->equalsTo(&expRow));        
-    x.applyBroadcast(broadcast::Add, {1}, row);    
-    ASSERT_TRUE(x.equalsTo(&exp));    
+
+    ASSERT_TRUE(row->equalsTo(&expRow));
+    x.applyBroadcast(broadcast::Add, {1}, row);
+    ASSERT_TRUE(x.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
-    
+
     NDArray exp('c', {2, 3, 2, 2}, {1., 1., 1., 1., 2., 2., 2., 2., 3., 3., 3., 3., 1., 1., 1., 1., 2., 2., 2., 2., 3., 3., 3., 3.}, nd4j::DataType::DOUBLE);
 
     auto input = NDArrayFactory::create<double>('c',{ 2, 3, 2, 2});
     auto bias = NDArrayFactory::create<double>('c', {1, 3});
 
-    bias.linspace(1);    
-    input.applyBroadcast(broadcast::Add, {1}, &bias);    
+    bias.linspace(1);
+    input.applyBroadcast(broadcast::Add, {1}, &bias);
     ASSERT_TRUE(exp.equalsTo(&input));
 }
 
@@ -1842,7 +1834,7 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_05)
     y = 2.;
     expected = 3.;
     res2 = 0.f;
-   
+
     x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
 
     ASSERT_TRUE(expected.isSameShape(&res2));
@@ -1914,11 +1906,10 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1)
     auto y = x.tile({1,2,1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2});
     exp = 10.;
-    y.lazyAllocateBuffer();
-    exp.lazyAllocateBuffer();
-    y.printShapeInfo("Output SHAPE");
-    y.printBuffer("Output TILE");
-    exp.printBuffer("Expect TILE");
+
+    // y.printShapeInfo("Output SHAPE");
+    // y.printBuffer("Output TILE");
+    // exp.printBuffer("Expect TILE");
     ASSERT_TRUE(exp.equalsTo(y));
 }
 
@@ -1938,9 +1929,9 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3)
 {
     auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
     x = 10.;
-    x.p(1,0,1, 20);    
+    x.p(1,0,1, 20);
     x.syncToDevice();
-    auto y = x.tile({1,2,1});    
+    auto y = x.tile({1,2,1});
     auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
     exp = 10.;
     exp.p(1,0,1, 20.);
@@ -1972,24 +1963,23 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, assign_2)
-{    
+{
     NDArray x('c', {4}, {1.5,2.5,3.5,4.5}, nd4j::DataType::FLOAT32);
     NDArray y('c', {4}, nd4j::DataType::INT32);
     NDArray expected('c', {4}, {1,2,3,4}, nd4j::DataType::INT32);
-    
+
     y.assign(x);
-    y.lazyAllocateBuffer();
-    y.printBuffer("ASSIGN VECTOR");
-    
+    // y.printBuffer("ASSIGN VECTOR");
+
     ASSERT_TRUE(expected.equalsTo(&y));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, subarray_1)
-{    
+{
     NDArray x('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
     NDArray y('f', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
-    
+
     Nd4jLong shapeExpX0[] = {1, 2, 12, 8192, -1, 99};
     float    buffExpX0[]  = {1.000000, 13.000000};
     Nd4jLong shapeExpX1[] = {1, 2, 12, 8192, -1, 99};
@@ -2015,7 +2005,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     float    buffExpY4[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
     Nd4jLong shapeExpY5[] = {2, 2, 3, 1, 2, 8192, -1, 99};
     float    buffExpY5[]  = {19.000000, 21.000000, 23.000000, 20.000000, 22.000000, 24.000000};
-    
+
 
     NDArray x0 = x(0, {1,2});
     NDArray xExp(buffExpX0, shapeExpX0);
@@ -2046,7 +2036,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
 //        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
 //    for(int i = 0; i < x2.lengthOf(); ++i)
 //        ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
-    
+
     NDArray x3 = x(2, {1});
     NDArray x3Exp(buffExpX3, shapeExpX3);
     ASSERT_TRUE(x3Exp.isSameShape(x3));
@@ -2096,7 +2086,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
         ASSERT_TRUE(y2.getShapeInfo()[i] == shapeExpY2[i]);
     for(int i = 0; i < y2.lengthOf(); ++i)
         ASSERT_TRUE(y2.e<float>(i) == buffExpY2[i]);
-    
+
     NDArray y3 = y(2, {1});
     for(int i = 0; i < shape::shapeInfoLength(y3.rankOf()); ++i)
         ASSERT_TRUE(y3.getShapeInfo()[i] == shapeExpY3[i]);
@@ -2114,7 +2104,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
         ASSERT_TRUE(y5.getShapeInfo()[i] == shapeExpY5[i]);
     for(int i = 0; i < y5.lengthOf(); ++i)
         ASSERT_TRUE(y5.e<float>(i) == buffExpY5[i]);
-        
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
@@ -2141,8 +2131,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
             tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
     cudaStream_t* stream = x.getContext()->getCudaStream();
     auto res = cudaStreamSynchronize(*stream);
-    tmp.lazyAllocateBuffer();
-    tmp.printBuffer("Compare result is (expected 0)");
+    // tmp.printBuffer("Compare result is (expected 0)");
     ASSERT_TRUE(exp.isSameShape(diag));
     ASSERT_TRUE(exp.equalsTo(diag));
 
@@ -2265,7 +2254,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Empty_4) {
 //     printCudaGlobal<int><<<1,1,0,*stream>>>(dimension, 1);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadShapeInfo, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
-//     cudaStreamSynchronize(*stream);  
+//     cudaStreamSynchronize(*stream);
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
     auto x = NDArrayFactory::create<float>('c', {5,2}, {0,1,2,3,4,5,6,7,8,9});
@@ -2275,7 +2264,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
     std::vector<void*> buffers(4);
     std::vector<Nd4jLong*> shapes(4);
     std::vector<Nd4jLong*> hostShapes(4);
-    
+
     for (size_t i = 0; i < buffers.size(); i++) {
         buffers[i] = x.specialBuffer();
         shapes[i] = x.specialShapeInfo();

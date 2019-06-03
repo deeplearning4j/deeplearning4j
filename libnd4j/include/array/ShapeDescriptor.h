@@ -59,6 +59,7 @@ class ND4J_EXPORT ShapeDescriptor {
 
         int rank() const;
         Nd4jLong ews() const;
+        Nd4jLong arrLength() const;
         char order() const;
         DataType dataType() const;
         bool isEmpty() const;

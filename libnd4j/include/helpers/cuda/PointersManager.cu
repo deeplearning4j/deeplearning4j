@@ -28,8 +28,8 @@
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(nd4j::LaunchContext  *context, const std::string& funcName)  {
-        _context  = context;
+PointersManager::PointersManager(const nd4j::LaunchContext* context, const std::string& funcName)  {
+        _context  = const_cast<nd4j::LaunchContext*>(context);
         _funcName = funcName;
 }
 
@@ -51,7 +51,7 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
         cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
 
     _pOnGlobMem.emplace_back(dst);
-    
+
     return dst;
 }
 
@@ -68,7 +68,7 @@ void PointersManager::synchronize() const {
 
 //////////////////////////////////////////////////////////////////////////
 PointersManager::~PointersManager() {
-    
+
     for (auto& p :_pOnGlobMem)
         cudaFree(p);
 }
