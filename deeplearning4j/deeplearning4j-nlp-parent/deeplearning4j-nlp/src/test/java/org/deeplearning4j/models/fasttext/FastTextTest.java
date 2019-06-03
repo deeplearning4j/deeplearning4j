@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.fasttext;
 
 import com.github.jfasttext.JFastText;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 
+@Slf4j
 public class FastTextTest {
 
 
@@ -25,7 +27,7 @@ public class FastTextTest {
                  FastText.builder().supervised(true).
                 inputFile("src/test/resources/data/labeled_data.txt").
                 outputFile("src/test/resources/models/fasttext/supervised.model").build();
-        System.out.printf("\nTraining supervised model ...\n");
+        log.info("\nTraining supervised model ...\n");
         fastText.init();
         fastText.fit();
     }
@@ -37,7 +39,7 @@ public class FastTextTest {
                 FastText.builder().skipgram(true).
                         inputFile("src/test/resources/data/labeled_data.txt").
                         outputFile("src/test/resources/models/fasttext/supervised.model").build();
-        System.out.printf("\nTraining supervised model ...\n");
+        log.info("\nTraining supervised model ...\n");
         fastText.init();
         fastText.fit();
     }
@@ -50,7 +52,7 @@ public class FastTextTest {
                         bucket(150).
                         inputFile("src/test/resources/data/labeled_data.txt").
                         outputFile("src/test/resources/models/fasttext/supervised.model").build();
-        System.out.printf("\nTraining supervised model ...\n");
+        log.info("\nTraining supervised model ...\n");
         fastText.init();
         fastText.fit();
     }
@@ -122,7 +124,7 @@ public class FastTextTest {
             fastText.init();
 
         } catch (IOException e) {
-            System.out.println(e.toString());
+            log.error(e.toString());
         }
     }
 
