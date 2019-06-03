@@ -1314,7 +1314,8 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
                                             void *hZ, Nd4jLong *hZShapeInfo,
                                             void *dZ, Nd4jLong *dZShapeInfo,
                                             int *dimension, int dimensionLength,
-                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                            Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets) {
 
     if(shape::isScalar(hZShapeInfo)) {
         NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
@@ -1337,6 +1338,6 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, yTadShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 

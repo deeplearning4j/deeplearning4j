@@ -1022,7 +1022,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                        null,
+                        (IntPointer) op.dimensions().data().addressPointer(),
                         (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                         dimensionPointer, null, (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             } else {
@@ -1031,7 +1031,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                              null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                 extraArgs,
                                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                            null,
+                            (IntPointer) op.dimensions().data().addressPointer(),
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                             AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                             null,
@@ -1045,7 +1045,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -1055,7 +1055,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -1065,7 +1065,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -1075,7 +1075,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                                    null,
+                                    (IntPointer) op.dimensions().data().addressPointer(),
                                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                                     null);
@@ -2726,12 +2726,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
-        throw new UnsupportedOperationException();
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBuffer(desiredType.toInt(), new LongPointer(values), values.length);
+
+        val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
+        buffer.setConstant(true);
+
+        return buffer;
     }
 
     @Override
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
-        throw new UnsupportedOperationException();
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBuffer(desiredType.toInt(), new DoublePointer(values), values.length);
+
+        val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
+        buffer.setConstant(true);
+
+        return buffer;
     }
 }
 

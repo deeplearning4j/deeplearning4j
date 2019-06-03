@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -43,6 +44,10 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
      */
     public CudaBoolDataBuffer(Pointer pointer, Indexer indexer, long length) {
         super(pointer, indexer, length);
+    }
+
+    public CudaBoolDataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
     }
 
     /**

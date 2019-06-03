@@ -461,7 +461,8 @@ static void execTransformBool(nd4j::LaunchContext  *lc,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength, 
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);   
+                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets);
 
  /**
      *
