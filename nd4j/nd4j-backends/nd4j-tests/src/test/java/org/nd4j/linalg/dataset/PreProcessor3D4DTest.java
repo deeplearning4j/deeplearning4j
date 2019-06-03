@@ -132,10 +132,10 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         myNormalizer.fit(sampleIterA);
         assertEquals(myNormalizer.getMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
         assertEquals(myNormalizer.getLabelMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
-        assertTrue(Transforms.abs(myNormalizer.getStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
-                        .floatValue() < 0.01);
-        assertTrue(Transforms.abs(myNormalizer.getLabelStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
-                        .floatValue() < 0.01);
+        double diff1 = Transforms.abs(myNormalizer.getStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber().doubleValue();
+        double diff2 = Transforms.abs(myNormalizer.getLabelStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber().doubleValue();
+        assertTrue(diff1 < 0.01);
+        assertTrue(diff2 < 0.01);
 
         myMinMaxScaler.fit(sampleIterB);
         assertEquals(myMinMaxScaler.getMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
@@ -352,18 +352,18 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).castTo(featureScale.dataType());
-            expectedMean.muliColumnVector(featureScale);
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}, new long[]{1, 3}).castTo(featureScale.dataType());
+            expectedMean.muli(featureScale.transpose());
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);
-            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).castTo(Nd4j.defaultFloatingPointType());
-            expectedStd.muliColumnVector(Transforms.abs(featureScale, true));
+            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}, new long[]{1, 3}).castTo(Nd4j.defaultFloatingPointType());
+            expectedStd.muli(Transforms.abs(featureScale, true).transpose());
             //preprocessors use the population std so divides by n not (n-1)
             expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN));
 
             //min max assumes all scaling values are +ve
-            expectedMin = Nd4j.ones(Nd4j.defaultFloatingPointType(), 3).muliColumnVector(featureScale);
-            expectedMax = Nd4j.ones(Nd4j.defaultFloatingPointType(),3).muli(samples * timeSteps).muliColumnVector(featureScale);
+            expectedMin = Nd4j.ones(featureScale.dataType(), 3, 1).muliColumnVector(featureScale);
+            expectedMax = Nd4j.ones(featureScale.dataType(),3, 1).muli(samples * timeSteps).muliColumnVector(featureScale);
         }
 
     }

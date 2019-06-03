@@ -119,8 +119,8 @@ public class DistributionStats implements NormalizerStats {
                 // null pointer exceptions.
                 return this;
             }
-            INDArray mean = data.mean(0);
-            INDArray variance = data.var(false, 0);
+            INDArray mean = data.mean(0).reshape(1,data.size(1));
+            INDArray variance = data.var(false, 0).reshape(1,data.size(1));
             long count = data.size(0);
 
             if (runningMean == null) {
