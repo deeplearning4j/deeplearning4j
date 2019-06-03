@@ -1212,7 +1212,7 @@ public class TransformOpValidation extends BaseOpValidation {
             tc.testName(name);
             String error = OpValidation.validate(tc, true);
             if(error != null){
-                allFailed.add(name);
+                allFailed.add(name + "(" + error + ")");
             }
         }
 

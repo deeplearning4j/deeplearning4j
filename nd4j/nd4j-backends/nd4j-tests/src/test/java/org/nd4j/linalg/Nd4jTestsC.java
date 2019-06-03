@@ -7629,6 +7629,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(scalarRank2, scalarRank2.dup());
     }
 
+    @Test
+    public void testSumEdgeCase(){
+        INDArray row = Nd4j.create(1,3);
+        INDArray sum = row.sum(0);
+        assertArrayEquals(new long[]{3}, sum.shape());
+
+        INDArray twoD = Nd4j.create(2,3);
+        INDArray sum2 = twoD.sum(0);
+        assertArrayEquals(new long[]{3}, sum2.shape());
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
