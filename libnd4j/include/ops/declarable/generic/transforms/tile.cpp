@@ -57,9 +57,9 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 }
 
     DECLARE_TYPES(tile) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+        getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_INTS})
-                ->setAllowedOutputTypes({ALL_FLOATS});
+                ->setAllowedOutputTypes(nd4j::DataType::ANY);
     }
 
 
