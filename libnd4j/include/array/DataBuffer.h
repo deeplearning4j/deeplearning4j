@@ -58,8 +58,6 @@ class ND4J_EXPORT DataBuffer {
         FORCEINLINE void deletePrimary();
         FORCEINLINE void deleteBuffers();
         FORCEINLINE void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
-        FORCEINLINE void allocatePrimary();
-                    void allocateSpecial();
                     void allocateBuffers(const bool allocBoth = false);
                     void setSpecial(void* special, const bool isOwnerSpecial);
                     void copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetHostBuffer = 0);
@@ -96,6 +94,9 @@ class ND4J_EXPORT DataBuffer {
 
         FORCEINLINE void* primary();
         FORCEINLINE void* special();
+
+        FORCEINLINE void allocatePrimary();
+                    void allocateSpecial();
 
         void writePrimary() const;
         void writeSpecial() const;

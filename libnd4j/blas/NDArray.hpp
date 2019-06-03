@@ -2008,6 +2008,7 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator+=(const NDArray& other) {
+
     if (isS())
         throw std::runtime_error("NDArray::operator+=: you can't use this method on String array!");
     if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType() && (this->dataType() != DataType::BOOL || other.dataType() != BOOL))
@@ -3008,7 +3009,7 @@ void NDArray::assign(const NDArray& other) {
     if (other.isScalar()) {
 
         if(this->isScalar()) {
-            other.syncToHost();
+            preparePrimaryUse({this}, {&other});
             BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.getBuffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
             registerPrimaryUse({this}, {&other});
         }

@@ -236,9 +236,11 @@ void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& wri
     for (const auto& a : readList)
         a->syncToDevice();
 
-    if (synchronizeWritables)
-        for (const auto& a : writeList)
+    for (const auto& a : writeList) {
+        a->getDataBuffer()->allocateSpecial();
+        if (synchronizeWritables)
             a->syncToDevice();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -257,9 +259,11 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
     for (const auto& a : readList)
             a->syncToHost();
 
-    if (synchronizeWritables)
-        for (const auto& a : writeList)
+    for (const auto& a : writeList) {
+        a->getDataBuffer()->allocatePrimary();
+        if (synchronizeWritables)
             a->syncToHost();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
