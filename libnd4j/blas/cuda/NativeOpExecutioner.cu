@@ -527,6 +527,7 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc,
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
+    nd4j_printf("Starting indexReduceScalar\n","");
     BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream,
                                                                                                 opNum,
                                                                                                 dX, dXShapeInfo, shape::rank(hXShapeInfo),
@@ -724,11 +725,12 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                     /**
                     * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
                     */
-                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape.primaryAsT<Nd4jLong>(), special, nullptr);
+                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape.primaryAsT<Nd4jLong>(), special, scalarShape.specialAsT<Nd4jLong>());
                     Nd4jLong maxIdx = -119;
-                    checkCudaErrors(cudaStreamSynchronize(*stream));
+                    nd4j::DebugHelper::checkErrorCode(stream, "IsMax: execIndexReduce(...) failed");
+
                     cudaMemcpyAsync(&maxIdx, special, sizeof(Nd4jLong), cudaMemcpyDeviceToHost, *stream);
-                    checkCudaErrors(cudaStreamSynchronize(*stream));
+                    nd4j::DebugHelper::checkErrorCode(stream, "IsMax: cudaMemcpyAsync(...) failed");
                     int targetIdx = 0;
 
                     if (shape::order(hXShapeInfo) == 'c' || shape::order(hXShapeInfo) == 'f' && maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1] >= shape::length(hXShapeInfo))

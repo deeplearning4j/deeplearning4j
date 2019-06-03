@@ -598,7 +598,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                      extraArgs,
                 null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                null,
+                (IntPointer) op.dimensions().data().addressPointer(),
                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                 AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                 null);

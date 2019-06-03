@@ -774,6 +774,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testIMaxVector_1() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(0).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_2() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(Integer.MAX_VALUE).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_3() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax().getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
     public void testIsMaxEqualValues_2() {
         //[0 2]    [0 1]
         //[2 1] -> [0 0]
