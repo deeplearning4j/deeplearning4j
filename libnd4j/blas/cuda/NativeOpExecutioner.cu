@@ -527,12 +527,11 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc,
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-    nd4j_printf("Starting indexReduceScalar\n","");
     BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream,
                                                                                                 opNum,
                                                                                                 dX, dXShapeInfo, shape::rank(hXShapeInfo),
                                                                                                 extraParams,
-                                                                                                dz, nullptr, 0,
+                                                                                                dz, dZShapeInfo, 0,
                                                                                                 nullptr, 0,
                                                                                                 1,
                                                                                                 allocationPointer, reductionPointer,
@@ -720,7 +719,6 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                 void* special = lc->getAllocationPointer();
 
                 if (scalarCheat) {
-                    nd4j_printf("scalar cheat\n","");
                     auto scalarShape = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor::scalarDescriptor(nd4j::DataType::INT64)); //ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
                     /**
                     * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call

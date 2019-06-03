@@ -22551,8 +22551,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifdef __CUDABLAS__
 
 // #endif // CUDA
-		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/) { super((Pointer)null); allocate(cudaStream, reductionPointer, allocationPointer); }
-		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/);
+		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer scalarPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/) { super((Pointer)null); allocate(cudaStream, reductionPointer, scalarPointer, allocationPointer); }
+		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer scalarPointer/*=nullptr*/, @Cast("Nd4jPointer") Pointer allocationPointer/*=nullptr*/);
 		public LaunchContext(@Cast("Nd4jPointer") Pointer cudaStream) { super((Pointer)null); allocate(cudaStream); }
 		private native void allocate(@Cast("Nd4jPointer") Pointer cudaStream);
     	public LaunchContext() { super((Pointer)null); allocate(); }

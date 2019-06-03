@@ -251,7 +251,7 @@ void NativeOps::execPairwiseTransform( Nd4jPointer *extraPointers,
         								void *dZ, Nd4jLong *dZShapeInfo,
         								void *extraParams) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execPairwiseTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 }
 
@@ -266,7 +266,7 @@ void NativeOps::execPairwiseTransformBool(Nd4jPointer *extraPointers,
         								void *dZ, Nd4jLong *dZShapeInfo,
         								void *extraParams) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execPairwiseBoolTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 }
 
@@ -280,7 +280,7 @@ void NativeOps::execSummaryStatsScalar(Nd4jPointer *extraPointers,
                                        void *dZ, Nd4jLong *dZShapeInfo,
                                        bool biasCorrected) {
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[3]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execSummaryStatsScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
 }
 
@@ -310,7 +310,7 @@ void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
 	auto dTADShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
 	auto dTADOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcastBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 
 }
@@ -368,7 +368,7 @@ void   NativeOps::execBroadcast(
     Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
     Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcast(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
 }
 
@@ -391,7 +391,7 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
 							void *hZ, Nd4jLong *hZShapeInfo,
 							void *dZ, Nd4jLong *dZShapeInfo) {
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[3]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execReduceFloatScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
@@ -404,7 +404,7 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo) {
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[3]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSameScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
@@ -423,7 +423,7 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
 
 	auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 }
 
@@ -442,7 +442,7 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
 
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceLong(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 }
 
@@ -495,7 +495,7 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
 
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execReduceBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 }
 
@@ -559,7 +559,7 @@ void NativeOps::execIndexReduce(Nd4jPointer *extraPointers,
 
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduce(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 }
 
@@ -587,7 +587,7 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
 
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 }
 
@@ -608,7 +608,7 @@ void NativeOps::execIndexReduceScalar(
         void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo){
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[3]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execIndexReduceScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
@@ -623,7 +623,7 @@ void NativeOps::execTransformSame(Nd4jPointer *extraPointers,int opNum,
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 }
 
@@ -638,7 +638,7 @@ void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,
 	auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 }
 
@@ -651,7 +651,7 @@ void NativeOps::execTransformAny(Nd4jPointer *extraPointers,int opNum,
 								  void *extraParams) {
 
     auto stream = reinterpret_cast<cudaStream_t*>(extraPointers[1]);
-    LaunchContext lc(stream, extraPointers[4], extraPointers[3]);
+    LaunchContext lc(stream, extraPointers[4], extraPointers[5], extraPointers[3]);
 
     // FIXME: remove this once all operations are enabled
     if (opNum == nd4j::transform::IsMax && extraParams != nullptr) {
@@ -696,7 +696,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformStrict(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 }
 
@@ -711,7 +711,7 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformFloat(&lc, opNum, hX, hXShapeInfo, dZ, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 }
 
@@ -1727,7 +1727,7 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  bool biasCorrected) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
 }
 
@@ -1745,7 +1745,7 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
 	auto dimension = reinterpret_cast<int *>(dDimension);
 	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
 }
 
@@ -1760,7 +1760,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execReduce3(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
@@ -1794,7 +1794,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
     auto tadLength = shape::length(tadPack.primaryShapeInfo());
     auto yLength = shape::length(hYShapeInfo);
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 
     if (tadLength == yLength) {
         nd4j_printf("== way\n","");
@@ -1815,7 +1815,7 @@ void NativeOps::execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo) {
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[3]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execReduce3Scalar(&lc, opNum,hX,hXShapeInfo,dX, dXShapeInfo,extraParams,hY,hYShapeInfo,dY,dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
@@ -1830,7 +1830,7 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 							void *dScalar, Nd4jLong *dScalarShapeInfo,
 							void *extraParams) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
 }
 
@@ -1850,7 +1850,7 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 	auto dimension = reinterpret_cast<int *>(dDimension);
 	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalars, hScalarShapeInfo, dScalars, dScalarShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
@@ -1865,7 +1865,7 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
 						void *dScalar, Nd4jLong *dScalarShapeInfo,
 						void *extraParams) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 	NativeOpExecutioner::execScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
 }
 
@@ -1958,7 +1958,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
                           void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
@@ -1970,7 +1970,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 						   void *dZ, Nd4jLong *dZShapeInfo,
 						   void *extraArguments) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
@@ -1984,7 +1984,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 							void *dZ, Nd4jLong *dZShapeInfo,
 							void *extraArguments) {
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
@@ -2255,7 +2255,7 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
 	auto dimension = reinterpret_cast<int *>(dDimension);
 	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1]);
+    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3All(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
 

@@ -62,13 +62,12 @@ namespace functions {
             simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
                                                                                             dx, xShapeInfo, xRank,
                                                                                             extraParams,
-                                                                                            result, nullptr, 0,
-                                                                                            nullptr,1,
+                                                                                            result, resultShapeInfo, 0,
+                                                                                            nullptr, 0,
                                                                                             1,
                                                                                             allocationBuffer, reductionBuffer,
                                                                                             tadOnlyShapeInfo, tadOffsets);
 
-            checkCudaErrors(cudaStreamSynchronize(*stream));
             nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
         }
 
@@ -358,6 +357,7 @@ namespace functions {
                         result[0] = sPartials[0].index;
                     }
                 }
+
             }
         }
 

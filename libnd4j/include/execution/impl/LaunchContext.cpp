@@ -28,16 +28,6 @@ namespace nd4j {
 #ifdef __CUDABLAS__
 
 ////////////////////////////////////////////////////////////////////////
-LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
-
-	_cudaStream 	   = cudaStream;
-	_cudaSpecialStream = nullptr;
-	_reductionPointer  = reductionPointer;
-	_scalarPointer     = scalarPointer;
-	_allocationPointer = allocationPointer;
-	_workspace = nullptr;
-}
-////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
 
 	_cudaStream 	   = cudaStream;
@@ -46,6 +36,7 @@ LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCuda
 	_scalarPointer     = scalarPointer;
 	_allocationPointer = allocationPointer;
 	_workspace = nullptr;
+	_isAllocated = false;
 }
 #endif
 
@@ -115,12 +106,13 @@ LaunchContext::LaunchContext() {
 #endif
 }
 
-    LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer) {
+    LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer scalarPointer, Nd4jPointer allocationPointer) {
 #ifdef __CUDABLAS__
         _isAllocated = false;
         _cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
         _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
         _reductionPointer = reductionPointer;
+        _scalarPointer = scalarPointer;
         _allocationPointer = reinterpret_cast<int *>(allocationPointer);
 #else
         // no-op
