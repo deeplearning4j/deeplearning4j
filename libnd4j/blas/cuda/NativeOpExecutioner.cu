@@ -786,7 +786,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
                     launchDims.y = block;
                     launchDims.z += (block * sizeof(double) * 4);
 
-                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
+                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, lc->getAllocationPointer(), lc->getReductionPointer(), nullptr, nullptr), FLOAT_TYPES);
                 } else {
                     auto shape = shape::shapeOf(hXShapeInfo);
                     auto reductionPointer = lc->getReductionPointer();
