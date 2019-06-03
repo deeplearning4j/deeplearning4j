@@ -25,6 +25,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.random.impl.Range;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -337,7 +340,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray arange(double begin, double end, double step) {
-        return Nd4j.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin, (int) end,  (int)step)));
+        long length = (long)Math.floor((end-begin)/step);
+        DynamicCustomOp op = new Range(begin, end, step, DataType.FLOAT);
+        INDArray out = Nd4j.create(op.calculateOutputShape().get(0));
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+        return out;
     }
 
     /**
