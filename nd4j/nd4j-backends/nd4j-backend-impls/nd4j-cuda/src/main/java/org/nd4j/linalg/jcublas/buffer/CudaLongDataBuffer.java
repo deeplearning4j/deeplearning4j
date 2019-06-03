@@ -51,6 +51,10 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         super(pointer, indexer, length);
     }
 
+    public CudaLongDataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
+    }
+
 
     public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements) {
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;

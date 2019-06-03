@@ -20,7 +20,9 @@
 
 #include <exceptions/cuda_exception.h>
 #include <ConstantHelper.h>
+#include <DataTypeUtils.h>
 #include <execution/LaunchContext.h>
+#include <specials.h>
 #include <logger.h>
 #include <cuda_runtime.h>
 #include <cuda.h>
@@ -67,6 +69,8 @@ namespace nd4j {
         auto numDevices = getNumberOfDevices();
         _devicePointers.resize(numDevices);
         _deviceOffsets.resize(numDevices);
+        _cache.resize(numDevices);
+
         // filling all pointers
         for (int e = 0; e < numDevices; e++) {
             auto res = cudaSetDevice(e);
@@ -74,8 +78,11 @@ namespace nd4j {
                 throw cuda_exception::build("cudaSetDevice failed", res);
              auto constant = getConstantSpace();
 
+            std::map<ConstantDescriptor, ConstantHolder> devCache;
+
             _devicePointers[e] = constant;
             _deviceOffsets[e] = 0;
+            _cache[e] = devCache;
         }
 
         //
@@ -137,14 +144,32 @@ namespace nd4j {
     ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {
         const auto deviceId = getCurrentDevice();
 
-//        if (_cache[deviceId].count(descriptor) == 0)
-//            _cache[deviceId].[descriptor]
+        if (_cache[deviceId].count(descriptor) == 0) {
+            ConstantHolder holder;
+            _cache[deviceId][descriptor] = holder;
+        }
 
-//        auto constant = _cache[deviceId][descriptor];
+        ConstantHolder* holder = &_cache[deviceId][descriptor];
 
+        if (holder->hasBuffer(dataType)) {
+            return holder->getConstantDataBuffer(dataType);
+        } else {
+            auto cbuff = new int8_t[descriptor.length() * DataTypeUtils::sizeOf(dataType)];
 
+            // create buffer with this dtype
+            if (descriptor.isFloat()) {
+                BUILD_DOUBLE_SELECTOR(nd4j::DataType::DOUBLE, dataType, nd4j::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff), (nd4j::DataType::DOUBLE, double), LIBND4J_TYPES);
+            } else if (descriptor.isInteger()) {
+                BUILD_DOUBLE_SELECTOR(nd4j::DataType::INT64, dataType, nd4j::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff), (nd4j::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
+            }
 
-        return nullptr;
+            auto dbuff = replicatePointer(cbuff, descriptor.length() * DataTypeUtils::sizeOf(dataType));
+
+            ConstantDataBuffer dataBuffer(cbuff, dbuff, descriptor.length(), DataTypeUtils::sizeOf(dataType));
+            holder->addBuffer(dataBuffer, dataType);
+
+            return holder->getConstantDataBuffer(dataType);
+        }
     }
 
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;

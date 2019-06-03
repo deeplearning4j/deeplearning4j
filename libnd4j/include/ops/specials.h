@@ -38,6 +38,11 @@ namespace nd4j {
     } FloatBits2;
 
 
+    class ND4J_EXPORT SpecialTypeConverter {
+    public:
+        template<typename S, typename T>
+        static void convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    };
 
     template <typename T>
     class ND4J_EXPORT SpecialMethods {

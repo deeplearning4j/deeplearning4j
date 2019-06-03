@@ -1147,4 +1147,8 @@ public abstract class NativeOps extends Pointer {
     public abstract void tryPointer(Pointer extras, Pointer buffer, int numBytesToRead);
 
     public abstract Pointer shapeBuffer(int rank, @Cast("Nd4jLong *") LongPointer shape, @Cast("Nd4jLong *") LongPointer strides, int dtype, char order, long ews, boolean empty);
+
+    public abstract Pointer constantBuffer(int dtype, DoublePointer data, int length);
+
+    public abstract Pointer constantBuffer(int dtype, @Cast("Nd4jLong *") LongPointer data, int length);
 }
