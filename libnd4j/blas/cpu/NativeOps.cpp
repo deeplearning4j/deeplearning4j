@@ -2033,7 +2033,7 @@ int NativeOps::estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer hX, Nd4
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     auto list = reinterpret_cast<nd4j::ShapeList*>(shapeList);
 
-    list->destroy();
+    //list->destroy();
     delete list;
 }
 

@@ -2658,7 +2658,7 @@ void NativeOps::deleteVariablesSet(Nd4jPointer pointer) {
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     nd4j::ShapeList* list = reinterpret_cast<nd4j::ShapeList*>(shapeList);
 
-    list->destroy();
+    //list->destroy();
     delete list;
 }
 
