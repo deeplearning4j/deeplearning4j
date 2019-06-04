@@ -2541,7 +2541,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 								(int*)devicePtrs[0], dimensions.size(), 
-								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.syncToHost(); 	
@@ -2597,7 +2597,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 								(int*)devicePtrs[0], dimensions.size(), 
-								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.syncToHost(); 	
@@ -2653,7 +2653,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 								(int*)devicePtrs[0], dimensions.size(), 
-								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.syncToHost(); 	
@@ -2708,7 +2708,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 								(int*)devicePtrs[0], dimensions.size(), 
-								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.syncToHost(); 	
