@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.checkutil.CheckUtil;
@@ -2280,6 +2281,42 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.empty(DataType.INT);
         op.setOutputArgument(0, out);
 
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testFill(){
+
+        INDArray shape = Nd4j.createFromArray(0,4);
+        INDArray value = Nd4j.scalar(1.0f);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("fill")
+                .addInputs(shape, value)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        op.setOutputArgument(0, Nd4j.empty(DataType.FLOAT));
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testFill2(){
+
+        INDArray shape = Nd4j.createFromArray(0,4);
+        INDArray value = Nd4j.scalar(1.0f);
+
+        DynamicCustomOp op = new Fill(shape, value, null);
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+
+        op.setOutputArgument(0, Nd4j.empty(DataType.FLOAT));
         Nd4j.exec(op);
     }
 }
