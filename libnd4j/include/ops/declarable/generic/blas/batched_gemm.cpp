@@ -25,9 +25,10 @@
 #include <ops/declarable/helpers/batched_gemm.h>
 
 namespace nd4j {
-namespace ops {
+namespace ops  {
 
 CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
+
     int transA = INT_ARG(0);
     int transB = INT_ARG(1);
     int M = INT_ARG(2);
@@ -37,7 +38,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     int ldB = INT_ARG(6);
     int ldC = INT_ARG(7);
     int batchSize = INT_ARG(8);
-
 
     if (transA == 0)
         transA = 111;
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
     REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0, "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-    nd4j::ops::helpers::_bgemm(block.launchContext(), vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+    nd4j::ops::helpers::bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
 
     return Status::OK();
 };
