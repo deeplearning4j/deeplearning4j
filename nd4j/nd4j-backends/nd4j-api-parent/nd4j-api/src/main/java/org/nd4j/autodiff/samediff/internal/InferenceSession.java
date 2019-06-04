@@ -617,10 +617,12 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     INDArray arr = this.nodeOutputs.get(vid);
                     args[i] = arr;
                 } else {
-                    for(VarId vid : opInputs){
-                        if(vid.getVariable().equals(s)){
-                            args[i] = this.nodeOutputs.get(vid);
-                            break;
+                    if(opInputs != null) {
+                        for (VarId vid : opInputs) {
+                            if (vid.getVariable().equals(s)) {
+                                args[i] = this.nodeOutputs.get(vid);
+                                break;
+                            }
                         }
                     }
                     if(args[i] == null && allIterInputs != null){

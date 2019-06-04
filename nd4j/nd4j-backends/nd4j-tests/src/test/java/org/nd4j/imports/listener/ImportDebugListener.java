@@ -16,11 +16,14 @@ import java.io.File;
 @Slf4j
 public class ImportDebugListener extends BaseListener {
 
+    public enum OnFailure {EXCEPTION, LOG};
+
     private File baseDir;
     private FilenameFunction function;
     private boolean checkShapesOnly;
     private double fpEps;
     private OnFailure onFailure;
+    private boolean logPass;
 
     public ImportDebugListener(Builder b){
         this.baseDir = b.baseDir;
@@ -28,6 +31,7 @@ public class ImportDebugListener extends BaseListener {
         this.checkShapesOnly = b.checkShapesOnly;
         this.fpEps = b.fpEps;
         this.onFailure = b.onFailure;
+        this.logPass = b.logPass;
     }
 
     @Override
@@ -111,10 +115,17 @@ public class ImportDebugListener extends BaseListener {
                         throw new RuntimeException();
                 }
             }
+
+            if(logPass){
+                log.info("Passed: {} output {}", op.getName(), i);
+            }
         }
     }
 
-    public enum OnFailure {EXCEPTION, LOG};
+    public static Builder builder(File rootDir){
+        return new Builder(rootDir);
+    }
+
 
     public static class Builder {
 
@@ -123,6 +134,7 @@ public class ImportDebugListener extends BaseListener {
         private boolean checkShapesOnly = false;
         private double fpEps = 1e-5;
         private OnFailure onFailure = OnFailure.EXCEPTION;
+        private boolean logPass = false;
 
 
         public Builder(@NonNull File baseDir){
@@ -149,6 +161,11 @@ public class ImportDebugListener extends BaseListener {
             return this;
         }
 
+        public Builder logPass(boolean logPass){
+            this.logPass = logPass;
+            return this;
+        }
+
         public ImportDebugListener build(){
             return new ImportDebugListener(this);
         }
@@ -164,8 +181,7 @@ public class ImportDebugListener extends BaseListener {
 
         @Override
         public File getFileFor(File rootDir, String opName, int outputNum){
-            return new File(rootDir, opName + "_" + outputNum + ".npy");
+            return new File(rootDir, opName + "__" + outputNum + ".npy");
         }
-
     }
 }
