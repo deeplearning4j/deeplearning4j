@@ -48,7 +48,7 @@ namespace ops {
         for (int o = 0; o < numPartition; ++o) {
             outputList[o] = OUTPUT_VARIABLE(o);
         }
-        helpers::dynamicPartitionFunctor(input, indices, outputList);
+        helpers::dynamicPartitionFunctor(block.launchContext(), input, indices, outputList);
 
         return Status::OK();
     }
@@ -78,7 +78,7 @@ namespace ops {
 
             shape::updateStrides(newShape, shape::order(in));
             ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
-            shapes->push_back(newShape);
+            shapes->push_back(CONSTANT(newShape));
         }
 
         return shapes;
@@ -110,7 +110,7 @@ namespace ops {
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
 
-        helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
+        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
 
         return ND4J_STATUS_OK;
     }
@@ -125,7 +125,7 @@ namespace ops {
         for (Nd4jLong i = 0; i < 2; i++) {
             Nd4jLong *newShape;
             COPY_SHAPE(inputShape->at(i), newShape);
-            shapes->push_back(newShape);
+            shapes->push_back(CONSTANT(newShape));
         }
 
         return shapes;

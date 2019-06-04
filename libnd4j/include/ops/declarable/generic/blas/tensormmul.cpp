@@ -69,17 +69,8 @@ namespace nd4j {
             std::vector<int> permutAt, permutBt;
             std::vector<Nd4jLong> shapeAt, shapeBt;
             auto outShape = nd4j::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
-            
-            int rank = outShape.size();
 
-            Nd4jLong* newShapeInfo = nullptr; 
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
-            newShapeInfo[0] = rank;
-            std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
-            
-            ShapeUtils::updateStridesAndType(newShapeInfo, block.dataType(), 'c');
-
-            return SHAPELIST(newShapeInfo);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(block.dataType(), 'c', outShape)));
         }
 
         DECLARE_TYPES(tensormmul) {

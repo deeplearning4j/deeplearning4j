@@ -31,9 +31,10 @@ public:
 };
 
 TEST_F(BackpropTests, Test_Add_1) {
-    auto x = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create<float>('c', {3, 4});
-    auto e = NDArrayFactory::create<float>('c', {2, 3, 4});
+
+    NDArray x('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {3, 4}, nd4j::DataType::FLOAT32);
+    NDArray e('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::add_bp op;
     auto result = op.execute({&x, &y, &e}, {}, {}, {});

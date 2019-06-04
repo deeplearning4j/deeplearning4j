@@ -47,26 +47,32 @@ namespace functions {
     namespace indexreduce {
 
         template <typename T>
-        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
+                                                                const int opNum,
+                                                                void *dx, Nd4jLong *xShapeInfo,
+                                                                int xRank,
+                                                                void *extraParams,
+                                                                Nd4jLong *result, Nd4jLong *resultShapeInfo,
+                                                                int zRank,
+                                                                int *dimension, int dimensionLength,
+                                                                int postProcessOrNot,
+                                                                int *allocationBuffer, void *reductionBuffer,
+                                                                Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
-			 opNum,
-			 dx,
-			 xShapeInfo, xRank,
-			 extraParams,
-			 result,
-			 nullptr, 0,
-			 nullptr,
-			 1,
-			 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+            simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
+                                                                                            dx, xShapeInfo, xRank,
+                                                                                            extraParams,
+                                                                                            result, resultShapeInfo, 0,
+                                                                                            nullptr, 0,
+                                                                                            1,
+                                                                                            allocationBuffer, reductionBuffer,
+                                                                                            tadOnlyShapeInfo, tadOffsets);
 
-            checkCudaErrors(cudaStreamSynchronize(*stream));
-            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarFloat(...) failed");
+            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
         }
 
         template <typename T>
         _CUDA_H void IndexReduce<T>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-
             simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			 opNum,
 			 dx,
@@ -170,19 +176,13 @@ namespace functions {
 
         template <typename T>
         template <typename OpType>
-        __device__ void IndexReduce<T>::transform(
-                void *vdx,
-                Nd4jLong *xShapeInfo,
-                void *vextraParams,
-                Nd4jLong *result,
-                Nd4jLong *resultShapeInfo,
-                int *dimension,
-                int dimensionLength,
-                int postProcessOrNot,
-                int *allocationBuffer,
-                void *vreductionBuffer,
-                Nd4jLong *tadOnlyShapeInfo,
-                Nd4jLong *tadOffsets){
+        __device__ void IndexReduce<T>::transform(void *vdx, Nd4jLong *xShapeInfo,
+                                                void *vextraParams,
+                                                Nd4jLong *result, Nd4jLong *resultShapeInfo,
+                                                int *dimension, int dimensionLength,
+                                                int postProcessOrNot,
+                                                int *allocationBuffer, void *vreductionBuffer,
+                                                Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets){
             /**int
              * Gpu information for the problem
              */
@@ -209,7 +209,6 @@ namespace functions {
             __shared__ volatile Nd4jLong resultLength;
 
 
-
             //only compute the tad indexes once
             IndexValue <T> reduction = OpType::startingIndexValue(dx);
 
@@ -219,7 +218,7 @@ namespace functions {
                 else resultLength = 1;
 
                 if (dimensionLength == 1) {
-                    if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
+                    if (resultLength == 1 && (dimension == nullptr || dimension[0] == MAX_DIMENSION))
                         resultScalar = 1;
                     else
                         resultScalar = 0;
@@ -230,10 +229,9 @@ namespace functions {
                 if (resultLength == 1)
                     resultScalar = 1;
 
-                //	xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-
                 xLength = shape::length(xShapeInfo);
             }
+
             __syncthreads();
 
             if (!resultScalar) {
@@ -243,7 +241,7 @@ namespace functions {
                 __shared__ int numTads;
 
                 if (threadIdx.x == 0) {
-                    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                    tadLength = shape::length(tadOnlyShapeInfo);
                     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                     numTads = shape::length(xShapeInfo) / tadLength;
                 }
@@ -359,6 +357,7 @@ namespace functions {
                         result[0] = sPartials[0].index;
                     }
                 }
+
             }
         }
 

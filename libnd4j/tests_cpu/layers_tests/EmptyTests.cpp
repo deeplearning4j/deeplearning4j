@@ -35,7 +35,7 @@ public:
     }
 };
 
-TEST_F(EmptyTests, Test_Create_Empty) {
+TEST_F(EmptyTests, Test_Create_Empty_1) {
     auto empty = NDArrayFactory::empty_<float>();
     ASSERT_TRUE(empty->isEmpty());
 
@@ -45,6 +45,17 @@ TEST_F(EmptyTests, Test_Create_Empty) {
     ASSERT_TRUE(shape::isEmpty(empty->shapeInfo()));
 
     delete empty;
+}
+
+TEST_F(EmptyTests, Test_Create_Empty_2) {
+    auto empty = NDArrayFactory::empty<float>();
+    ASSERT_TRUE(empty.isEmpty());
+
+    ASSERT_EQ(0, empty.lengthOf());
+    ASSERT_TRUE(empty.buffer() == nullptr);
+
+    ASSERT_TRUE(shape::isEmpty(empty.shapeInfo()));
+    ASSERT_TRUE(empty.isEmpty());
 }
 
 TEST_F(EmptyTests, Test_Concat_1) {

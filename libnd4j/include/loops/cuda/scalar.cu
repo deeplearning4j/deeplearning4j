@@ -90,7 +90,7 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
     // tad preparation
     auto tadEws = shape::elementWiseStride(tadShapeInfo);
     auto zEws = shape::elementWiseStride(tadShapeInfoZ);
-    auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
     if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {

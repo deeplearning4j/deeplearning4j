@@ -29,8 +29,9 @@
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
+#include <PointersManager.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -39,6 +40,40 @@ class ConvolutionTests2 : public testing::Test {
 public:
 
 };
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests2, im2col_1) {
+
+    int bS=2, iH=4,iW=3,  iC=4,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1; // VALID
+    int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
+
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+
+    NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray expected('c', {bS, iC, kH, kW, oH, oW}, {1,  2, 4,  5, 2,  3, 5,  6, 4,  5, 7,  8, 5,  6, 8,  9, 7,  8, 10, 11, 8,  9, 11, 12, 13, 14, 16, 17, 14,
+                                                    15, 17, 18, 16, 17, 19, 20, 17, 18, 20, 21, 19, 20, 22, 23, 20, 21, 23, 24, 25, 26, 28, 29, 26, 27, 29, 30,
+                                                    28, 29, 31, 32, 29, 30, 32, 33, 31, 32, 34, 35, 32, 33, 35, 36, 37, 38, 40, 41, 38, 39, 41, 42, 40, 41, 43,
+                                                    44, 41, 42, 44, 45, 43, 44, 46, 47, 44, 45, 47, 48, 49, 50, 52, 53, 50, 51, 53, 54, 52, 53, 55, 56, 53, 54,
+                                                    56, 57, 55, 56, 58, 59, 56, 57, 59, 60, 61, 62, 64, 65, 62, 63, 65, 66, 64, 65, 67, 68, 65, 66, 68, 69, 67,
+                                                    68, 70, 71, 68, 69, 71, 72, 73, 74, 76, 77, 74, 75, 77, 78, 76, 77, 79, 80, 77, 78, 80, 81, 79, 80, 82, 83,
+                                                    80, 81, 83, 84, 85, 86, 88, 89, 86, 87, 89, 90, 88, 89, 91, 92, 89, 90, 92, 93, 91, 92, 94, 95, 92, 93, 95, 96});
+
+    image.linspace(1, 1);
+
+    nd4j::ops::im2col op;
+    auto results = op.execute({&image}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode});
+    auto column = results->at(0);
+
+    // column->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expected.isSameShape(column));
+    ASSERT_TRUE(expected.equalsTo(column));
+
+    delete results;
+}
 
 template <typename T>
 class TypedConvolutionTests2 : public testing::Test {
@@ -182,10 +217,10 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_test2) {
     input = 2.;
     weightsDepth.linspace(0.1, 0.1);
     weightsPoint.linspace(0.15, 0.1);
-    gradO.linspace(0.01, 0.01);    
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::sconv2d_bp op;
-    Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias}, 
+    Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias},
                               {&gradI, &gradWD, &gradWP, &gradB},
                               {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
 
@@ -195,48 +230,48 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_test2) {
     NDArray expGradWD = gradWD;
     NDArray expGradWP = gradWP;
     NDArray expGradB  = gradB;
-    
-    for( int i=0; i<10; i++ ) {        
-        Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias}, 
+
+    for( int i=0; i<10; i++ ) {
+        Nd4jStatus status = op.execute({&input, &gradO, &weightsDepth, & weightsPoint, &bias},
                               {&gradI, &gradWD, &gradWP, &gradB},
                               {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
         ASSERT_EQ(Status::OK(), status);
-        
+
         ASSERT_TRUE(expGradI.equalsTo(gradI));
         ASSERT_TRUE(expGradWD.equalsTo(gradWD));
         ASSERT_TRUE(expGradWP.equalsTo(gradWP));
         ASSERT_TRUE(expGradB.equalsTo(expGradB));
-    }   
+    }
 }
 
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, im2col_bp_1) {
 
-    int bS=3, iH=12,iW=12,  iC=6,oC=3,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
-    int       oH=12,oW=12;    
+    int bS=3, iH=12,iW=12,  iC=6,oC=3,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=12,oW=12;
 
     // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
     NDArray gradO('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::DOUBLE);
     NDArray gradI('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);           // output
 
-    nd4j::ops::im2col_bp op; 
+    nd4j::ops::im2col_bp op;
     Nd4jStatus status = op.execute({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 1}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    ASSERT_EQ(ND4J_STATUS_OK, status);
 
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, depthwise_conv2d_test5) {
 
-    int bS=1, iH=111,iW=111,  iC=32,mC=1,  kH=7,kW=7,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;    
+    int bS=1, iH=111,iW=111,  iC=32,mC=1,  kH=7,kW=7,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;
     int       oC=iC*mC;
-    int       oH=56,oW=56; 
-    
+    int       oH=56,oW=56;
+
     int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
 
     const float unique = -1000000;
 
@@ -246,11 +281,11 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_test5) {
     input.linspace(0.1, 0.0001);
     weights = 0.5;
     output = unique;
-            
-    nd4j::ops::depthwise_conv2d op;
-    Nd4jStatus status = op.execute({&input, &weights}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});        
 
-    ASSERT_EQ(Status::OK(), status);    
+    nd4j::ops::depthwise_conv2d op;
+    Nd4jStatus status = op.execute({&input, &weights}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
+
+    ASSERT_EQ(Status::OK(), status);
 
     for(Nd4jLong i=output.lengthOf()/1.5; i < output.lengthOf(); ++i)
         ASSERT_EQ(output.e<float>(i) != unique, true);
@@ -259,10 +294,10 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_test5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, conv2d_bp_4) {
 
-    int bS=1, iH=7,iW=1,  iC=2,oC=3,  kH=2,kW=1,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int bS=1, iH=7,iW=1,  iC=2,oC=3,  kH=2,kW=1,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int       oH=7,oW=1;
     int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
 
     NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
     NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
@@ -272,7 +307,7 @@ TEST_F(ConvolutionTests2, conv2d_bp_4) {
     NDArray gradI('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
     NDArray gradW('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);
     NDArray gradB('c', {oC}, nd4j::DataType::FLOAT32);
-    
+
 
     input = 2.;
     weights.linspace(0.1, 0.1);
@@ -280,18 +315,18 @@ TEST_F(ConvolutionTests2, conv2d_bp_4) {
 
     nd4j::ops::conv2d_bp op;
     auto status = op.execute({&input, &weights, &bias, &gradO}, {&gradI, &gradW, &gradB}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
-    
+
     ASSERT_EQ(Status::OK(), status);
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, sconv2d_bp_2) {
-        
+
     int bS=1, iH=8,iW=8,  iC=3,mC=3,  kH=1,kW=1,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
     int       oH=8,oW=8;
     int       oC=2;                  // iC*mC if weightsPoint = nullptr
     int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
 
     auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
     auto gradO    = NDArrayFactory::create<double>('c', {bS, oC, oH, oW});
@@ -303,15 +338,15 @@ TEST_F(ConvolutionTests2, sconv2d_bp_2) {
     auto gradWD  = NDArrayFactory::create<double>('f', {kH, kW, iC, mC});
     auto gradWP  = NDArrayFactory::create<double>('c', {1, 1, iC*mC, oC});
     auto gradB   = NDArrayFactory::create<double>('c', {1,oC}, {1,2});
-    
+
     input = 2.;
     weightsDepth.linspace(0.1, 0.1);
     weightsDepth.linspace(-0.5, 0.1);
-    gradO.linspace(0.01, 0.01);    
+    gradO.linspace(0.01, 0.01);
 
     nd4j::ops::sconv2d_bp op;
     auto status = op.execute({&input, &gradO, &weightsDepth, &weightsPoint, &bias}, {&gradI, &gradWD, &gradWP, &gradB}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
-    ASSERT_EQ(Status::OK(), status);    
+    ASSERT_EQ(Status::OK(), status);
 }
 
  // @Test

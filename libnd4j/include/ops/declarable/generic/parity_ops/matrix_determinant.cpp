@@ -32,7 +32,7 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() >=2, 0, "matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
 
-            return helpers::determinant(input, output);
+            return helpers::determinant(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_determinant) {
@@ -42,13 +42,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.workspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded                
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -79,7 +79,7 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() >=2, 0, "log_matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
 
-            return helpers::log_abs_determinant(input, output);
+            return helpers::log_abs_determinant(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(log_matrix_determinant) {
@@ -89,13 +89,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -118,9 +118,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() >=2, 0, "logdet: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "logdet: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
-            REQUIRE_TRUE(helpers::checkCholeskyInput(input), 0, "logdet: The input tensor should be positive-defined hermitian.");
+            REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0, "logdet: The input tensor should be positive-defined hermitian.");
 
-            return helpers::logdetFunctor(input, output);
+            return helpers::logdetFunctor(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(logdet) {
@@ -130,13 +130,13 @@ namespace nd4j {
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector 
-                determinantShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShape), shape::sizeAt(inShape, 0), block.getWorkspace());
+                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), block.getWorkspace());                
+                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }

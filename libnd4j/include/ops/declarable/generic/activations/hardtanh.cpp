@@ -49,7 +49,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
-            helpers::hardTanhDerivative(input, epsilon, z);
+            helpers::hardTanhDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

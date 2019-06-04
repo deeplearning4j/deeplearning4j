@@ -24,35 +24,52 @@
 
 #include <vector>
 #include <string>
-#include <LaunchContext.h>
+#include <execution/LaunchContext.h>
+
 #include <types.h>
 
 namespace nd4j {
 
 class PointersManager {
-    
+
     private:
 
-        nd4j::graph::LaunchContext *_context;
+        nd4j::LaunchContext  *_context;
         std::vector<void*> _pOnGlobMem;
         std::string _funcName;
-        
+
     public:
-        
-        PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName = "");
-        
+
+        PointersManager(const nd4j::LaunchContext* context, const std::string& funcName = "");
+
         ~PointersManager();
-        
+
         void* replicatePointer(const void* src, const size_t size);
 
         void synchronize() const;
 
         template<typename T>
         void printDevContentOnHost(const void* pDev, const Nd4jLong len) const;
-        
+
+
 #ifdef __CUDABLAS__
         template<typename T>
-        void printDevContentOnDev(void* pDev, Nd4jLong len, int tid = 0);
+        static void printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid = 0);
+#endif
+
+#ifdef __CUDACC__
+        template<typename T>
+        static FORCEINLINE __device__ void printDevContentOnDev(const void* pDev, const Nd4jLong len, const int tid = 0) {
+            if(blockIdx.x * blockDim.x + threadIdx.x != tid)
+                return;
+
+            printf("device print out: \n");
+            for(Nd4jLong i = 0; i < len; ++i)
+                printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
+
+            printf("\n");
+        }
+
 #endif
 
 };

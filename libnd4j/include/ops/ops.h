@@ -3625,7 +3625,7 @@ namespace simdOps {
             return reduction;
         }
 
-        op_def static Z op(X d1, X d2, Z *extraParamsRef) {
+        op_def static Z op(X d1, X d2, Z *extraParamsRef) {        	
 			double eps = nd4j::math::nd4j_abs<double>(extraParamsRef[2]);
 			return static_cast<Z>(!nd4j::math::nd4j_eq<X>(d1, d2, eps));
         }

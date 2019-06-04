@@ -82,7 +82,7 @@ namespace ops  {
             outShapeInfo = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
             auto outColsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
             auto outRowsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());
-    		return SHAPELIST(outRowsShapeInfo, outColsShapeInfo, outShapeInfo);
+    		return SHAPELIST(CONSTANT(outRowsShapeInfo), CONSTANT(outColsShapeInfo), CONSTANT(outShapeInfo));
 		}
 
 }

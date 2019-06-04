@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_upsampling2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 namespace nd4j {
 namespace ops  {
@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
     REQUIRE_TRUE(input->rankOf() == 4, 0, "UPSAMPLING2D op: input should be 4D, but got %i instead!", input->rankOf());
     REQUIRE_TRUE(output->rankOf() == 4, 0, "UPSAMPLING2D op: output should be 4D, but got %i instead!", output->rankOf());
 
-    ConvolutionUtils::upsampling2d(*input, *output, factorH, factorW, (bool)isNCHW);
+    ConvolutionUtils::upsampling2d(*block.launchContext(), *input, *output, factorH, factorW, (bool)isNCHW);
 
     return Status::OK();
 }
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
 
     ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-    return SHAPELIST(outputShapeInfo);
+    return SHAPELIST(CONSTANT(outputShapeInfo));
 }
 
         DECLARE_TYPES(upsampling2d_bp) {
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(gradO->rankOf() == 4, 0, "UPSAMPLING2D_BP op: output's gradient array must be 4D, but got %i instead!", gradO->rankOf());
     REQUIRE_TRUE(gradI->rankOf() == 4, 0, "UPSAMPLING2D_BP op: input's gradient array must be 4D, but got %i instead!", gradI->rankOf());
 
-    ConvolutionUtils::upsampling2dBP(*gradO, *gradI, (bool)isNCHW);
+    ConvolutionUtils::upsampling2dBP(*block.launchContext(), *gradO, *gradI, (bool)isNCHW);
 
     return Status::OK();
 }
@@ -117,9 +117,9 @@ DECLARE_SHAPE_FN(upsampling2d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "UPSAMPLING2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "UPSAMPLING2D_BP op: output's gradient array must be 4D, but got %i instead!", inputShape->at(1)[0]);
 
-    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
+    auto gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
 
-    return SHAPELIST(gradIShapeInfo);
+    return SHAPELIST(CONSTANT(gradIShapeInfo));
 }
 
 }

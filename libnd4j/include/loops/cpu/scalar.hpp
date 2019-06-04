@@ -38,7 +38,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                                 void *vz, Nd4jLong *zShapeInfo, 
                                                 void *vscalars, 
                                                 int *dimension, int dimensionLength, 
-                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, 
+                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
                                                 Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
         
     auto x = reinterpret_cast<X *>(vx);
@@ -75,7 +75,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             for (unsigned int f = 0; f < tadLength; f++)
                 oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
         }
-    } 
+    }
     else {
         PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
         for (unsigned int r = 0; r < numTads; r++) {
@@ -142,7 +142,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     const auto len = shape::length(xShapeInfo);
     const auto xEws = shape::elementWiseStride(xShapeInfo);
     const auto zEws = shape::elementWiseStride(zShapeInfo);
-    
+
     nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
     if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
@@ -222,7 +222,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
             for (unsigned int i = 0; i < ulen; i++)
                 zi[i] = OpType::op(xi[i], scalar, extraParams);
         }
-    } 
+    }
     else {
 
         PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)

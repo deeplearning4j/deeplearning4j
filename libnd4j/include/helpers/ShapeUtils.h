@@ -25,18 +25,20 @@
 #include <NDArray.h>
 
 namespace nd4j {
- 
+
     class ShapeUtils {
 
         public:
-       
-        // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for transposition of two input arrays 
+
+        // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for transposition of two input arrays
         static std::vector<Nd4jLong> evalShapeForTensorDot(const Nd4jLong* aShapeInfo, const Nd4jLong* bShapeInfo, std::vector<int> axesA, std::vector<int> axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<Nd4jLong>& shapeAt, std::vector<Nd4jLong>& shapeBt);
         static std::vector<Nd4jLong> evalShapeForTensorDot(const NDArray* a,   const NDArray* b,   const std::vector<int>& axesA, const std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<Nd4jLong>& shapeAt, std::vector<Nd4jLong>& shapeBt);
 
         // evaluate resulting shape after reduce operation
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const nd4j::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const nd4j::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
         static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shape, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<Nd4jLong> evalRepeatShape(int dimension, const std::vector<Nd4jLong>& repeats, const NDArray& arr);
@@ -48,14 +50,12 @@ namespace nd4j {
         // evaluate shapeInfo of transposed array
         static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace);
 
-        static bool insertDimension(int rank, Nd4jLong *shape, int axis, Nd4jLong dimension);
-
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
         // return new (shorter) sorted dimensions array without dimensions that are present in input vector
         static std::vector<int> evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions);
         static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
-        
+
         // check whether 2 arrays have mutually broadcastable shapes
         // shape comparison starts from the end
         static bool areShapesBroadcastable(const NDArray &arr1, const NDArray &arr2);
@@ -74,7 +74,7 @@ namespace nd4j {
 
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
         static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace = nullptr);
-        
+
         // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
@@ -95,12 +95,12 @@ namespace nd4j {
 
         static std::vector<int> evalBroadcastBackwardAxis(const Nd4jLong *operand, const Nd4jLong *result);
 
-        // utility to calculate matrix product shape with give source shapes and additional params 
+        // utility to calculate matrix product shape with give source shapes and additional params
         // returns ShapeList pointer with result shape
         static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType dtype, nd4j::memory::Workspace* workspace);
 
         /**
-        *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo 
+        *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo
         *  if shapeFrom is identical to shapeTo (permutation is unnecessary) then empty vector is returned
         *  in case of permutation is impossible an exception is thrown
         */
@@ -108,8 +108,8 @@ namespace nd4j {
 
         /**
         *  This method composes shape (shape only, not whole shapeInfo!) using dimensions values and corresponding indexes,
-        *  please note: the size of input vector dimsAndIdx must always be even, since the numbers of dimensions and indexes are the same, 
-        *  for example if dimsAndIdx = {dimC,dimB,dimA,  2,1,0} then output vector = {dimA,dimB,dimC} 
+        *  please note: the size of input vector dimsAndIdx must always be even, since the numbers of dimensions and indexes are the same,
+        *  for example if dimsAndIdx = {dimC,dimB,dimA,  2,1,0} then output vector = {dimA,dimB,dimC}
         */
         static std::vector<Nd4jLong> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
 
@@ -118,7 +118,7 @@ namespace nd4j {
         *  possible cases: dot product (xRank=yRank=1), matrix-vector product (xRank=2, yRank=1), vector-matrix product (xRank=1, yRank=2), matrix-matrix product (xRank=yRank and rank >=2)
         */
         static std::vector<Nd4jLong> evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
-        
+
         /**
         *  evaluate number of sub-arrays along dimensions stored in dimsToExclude
         *  i.e. if shape is [2,3,4,5] and dimsToExclude={0,2}, then number of sub-arrays = 8
@@ -128,17 +128,17 @@ namespace nd4j {
         /**
         *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
         *  subArrIdx - index of current sub-array
-        *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays 
+        *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays
         *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5],
         *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
         *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
-        */ 
+        */
         static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
 
         /**
         *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
         *   if unities are not present in given shapeInfo then exactly identical shape will be returned, for example [2,3] -> [2,3]
-        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be empty and corresponds to scalar case
+        *   edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be empty and means scalar
         */
         static std::vector<Nd4jLong> evalDimsWithoutUnities(const Nd4jLong* shapeInfo);
 
@@ -148,12 +148,12 @@ namespace nd4j {
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);
 
         /**
-        *  calculates strides using "dest" shape and given "order", also copies data type from "source" to "dest"         
+        *  calculates strides using "dest" shape and given "order", also copies data type from "source" to "dest"
         */
         static void updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order);
 
         /**
-        *  calculates strides using "dest" shape and "order", also set "dtype" into "dest"         
+        *  calculates strides using "dest" shape and "order", also set "dtype" into "dest"
         */
         static void updateStridesAndType(Nd4jLong* dest, const DataType dtype, const char order);
 
@@ -170,7 +170,7 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS ///// 
+///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE bool ShapeUtils::isPermutNecessary(const std::vector<int>& permut) {
 

@@ -22,6 +22,7 @@
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
+#include <specials_cuda.h>
 
 using namespace simdOps;
 
@@ -70,7 +71,7 @@ __global__ void execGeneric(const int opNum,
 								int *allocationPointer,
 								Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 								Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-      
+
     Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);    
 }
 
@@ -114,7 +115,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 								void *vy, Nd4jLong *yShapeInfo,
 								void *extraParams,
 								void *vz, Nd4jLong *zShapeInfo, 
-								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {    
 
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<X*>(vy);
@@ -149,24 +150,22 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 
         if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
-            if (xEws == 1 && yEws == 1) {
-                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
-                }
+            if (xEws == 1 && yEws == 1) {                
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x)                     
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);				                
             }
             else {
-                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
-				}
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) 
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);				
             }
         }
         else {
             sPartials[threadIdx.x] = OpType::startingValue(x);
-
-            for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
-                auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
+			auto threadCount = gridDim.x * blockDim.x;
+            for(Nd4jLong i = tid; i < length; i += threadCount) {
+                auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
                 auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
-                sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[offset], y[yOffset], extraZ), extraZ);
+                sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
             }
         }
 
@@ -191,8 +190,8 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
             __syncthreads();
 
             if (threadIdx.x == 0) {
-            unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
-            amLast = (ticket == gridDim.x - 1);
+            	unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+            	amLast = (ticket == gridDim.x - 1);
             }
 
             sPartials[tid] = OpType::startingValue(x);
@@ -230,6 +229,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
                 auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
                 tc[16384] = 0;
                 z[0] = OpType::postProcess(sPartials[0], length, extraZ);
+                //printf("Z: [%f]\n", (float) z[0]);
             }
         }
 }
@@ -246,7 +246,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 											int *allocationPointer,
 											Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
 											Nd4jLong *yTadShapeInfo,Nd4jLong *yOffsets) {
-
+    
 	auto dx = reinterpret_cast<X*>(vx);
 	auto dy = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
@@ -275,8 +275,8 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
     //reading initial data
     if (threadIdx.x == 0) {
-		xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-        yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
+		xTadLength = shape::length(xTadShapeInfo);
+        yTadLength = shape::length(yTadShapeInfo);
 
         xTads = shape::length(xShapeInfo) / xTadLength;
         yTads = shape::length(yShapeInfo) / yTadLength;
@@ -350,184 +350,108 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 										int *allocationPointer,
 										Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 										Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-				
-	X* x = reinterpret_cast<X*>(vx);
-	X* y = reinterpret_cast<X*>(vy);
-	Z* z = reinterpret_cast<Z*>(vz);
 
-	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+	// FIXME
+	if(shape::isScalar(zShapeInfo))
+		return;
 
-	__shared__ int resultScalar;
-	__shared__ int xElementWiseStride;
-	__shared__ int yElementWiseStride;
-	
-	//shared memory space for storing intermediate results
-	__shared__ Z* sPartials;
-    if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
-    }
-    __syncthreads();
-	Z init = OpType::startingValue(x);
-	sPartials[threadIdx.x] = init;
+	if (yTadOnlyShapeInfo == nullptr) {
+		yTadOnlyShapeInfo = yShapeInfo;		// execReduce3TAD case
+	}
+
+	auto x = reinterpret_cast<X*>(vx);
+	auto y = reinterpret_cast<X*>(vy);
+	auto z = reinterpret_cast<Z*>(vz);
+
+	Z startingVal = OpType::startingValue(x);	
 
 	__shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 
-	//length for the tad
-	__shared__ Nd4jLong resultLength;
-	__shared__ int tadLength;
-	__shared__ int yLength;
-	__shared__ int tadEws;
-	__shared__ int yTadEws;
+	__shared__ Z* sPartials;
+	__shared__ int tadLen;
+	__shared__ Nd4jLong zLen;
+	__shared__ Nd4jLong xTadEws;
+	__shared__ Nd4jLong yTadEws;	
+	__shared__ Nd4jLong yTadNum;
+	__shared__ char xTadOrder;
+	__shared__ char yTadOrder;
 
-	Z startingVal = OpType::startingValue(x);
+	if(threadIdx.x == 0) {
+        
+        extern __shared__ unsigned char shmem[];
+        sPartials = reinterpret_cast<Z*>(shmem);
 
-	Z reduction = OpType::startingValue(x);
-	if (threadIdx.x == 0) {
-		
-		if (zShapeInfo != nullptr)
-			resultLength = shape::length(zShapeInfo);
-		else 
-			resultLength = 1;
+        tadLen    = shape::length(tadOnlyShapeInfo);
+        zLen      = shape::length(zShapeInfo);
+        xTadEws   = shape::elementWiseStride(tadOnlyShapeInfo);
+        yTadEws   = shape::elementWiseStride(yTadOnlyShapeInfo);        
+        yTadNum   = shape::length(yShapeInfo) / tadLen;
+        xTadOrder = shape::order(tadOnlyShapeInfo);
+        yTadOrder = shape::order(yTadOnlyShapeInfo);
+    }
+    __syncthreads();
 
-		if (dimensionLength == 1) {
-			if (dimension == nullptr || dimension[0] == MAX_DIMENSION)
-				resultScalar = 1;
-			else
-				resultScalar = 0;
-		}
-		else
-			resultScalar = 0;
+	sPartials[threadIdx.x] = startingVal;
 
-		if (resultLength == 1)
-			resultScalar = 1;
+	if(xTadEws >= 1 && yTadEws >= 1 && xTadOrder == yTadOrder) {
+        
+        for(int i = blockIdx.x; i < zLen; i+= gridDim.x) {
 
-		auto xStride = shape::stride(xShapeInfo);
-		auto xOrder = shape::order(xShapeInfo);
+        	Nd4jLong xOffset = tadOffsets[i];
+            Nd4jLong yOffset = yTadNum == 1 ? 0 : yTadOffsets[i];
 
-		tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-		tadEws = shape::elementWiseStride(tadOnlyShapeInfo);
-		yLength = shape::length(yShapeInfo);
-
-		if (yTadOnlyShapeInfo != nullptr)
-			yTadEws = shape::elementWiseStride(yTadOnlyShapeInfo);
-	}
-	
-	__syncthreads();
-
-    // code branch for TAD vs full array
-    if (tadLength == yLength) {                    
-
-		for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-			
-			int xOffsetForTad = tadOffsets[i];
-			if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) 
+        	if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) 
 				extraZ[threadIdx.x] = startingVal;
-				        
-			__syncthreads();
 
-			for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
-            	auto xOffset = shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength) + xOffsetForTad;
-                auto yOffset = shape::getIndexOffset(j, yShapeInfo, tadLength);
-				sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset],y[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset],y[yOffset], extraZ), extraZ);
-			}
-			
-			__syncthreads();
-			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
-            __syncthreads();
+			__syncthreads();                    
+
+            for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
+
+            	Nd4jLong xOffset2 =  xOffset + j*xTadEws;
+                Nd4jLong yOffset2 =  yOffset + j*yTadEws;
+                sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
+            }
             
+            __syncthreads();
+			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
+            __syncthreads();
+
             if (threadIdx.x == 0)
-				z[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
+				z[i] = OpType::postProcess(sPartials[threadIdx.x], tadLen, extraZ);
+
 			__syncthreads();
-		}
-	} 
-	else if (!resultScalar) {
-		
-		if(tadEws >= 1 && yTadEws) {
-    	
-    		for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-				int xOffsetForTad = tadOffsets[i];
-				int yOffsetForTad = yTadOffsets[i];
+        }
+    }
+    else {
 
-				if(OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) 
-					extraZ[threadIdx.x] = startingVal;
-				            
-				__syncthreads();
+        for(int i = blockIdx.x; i < zLen; i += gridDim.x) {
 
-            	if (threadIdx.x < tadLength)
-					sPartials[threadIdx.x] =  OpType::op(x[xOffsetForTad + tadEws * threadIdx.x],y[yOffsetForTad + yTadEws * threadIdx.x], extraZ);
+            Nd4jLong xOffset = tadOffsets[i];
+            Nd4jLong yOffset = yTadNum == 1 ? 0 : yTadOffsets[i];
 
-				for(int j = threadIdx.x + blockDim.x; j < tadLength; j += blockDim.x) 
-					sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffsetForTad + tadEws * j],y[yOffsetForTad + yTadEws * j], extraZ), extraZ);
-					
-				__syncthreads();
-				aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
-				__syncthreads();
+        	if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) 
+				extraZ[threadIdx.x] = startingVal;
+
+			__syncthreads(); 
+
+            for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
                 
-                if (threadIdx.x == 0)
-					z[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
-				__syncthreads();
-			}
-		}
-		else {
-/*
-						// DO NOT REMOVE THIS COMMENTED BLOCK PLEASE
+                Nd4jLong xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLen);
+                Nd4jLong yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo, tadLen);
+                sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
+                
+            }
+         	
+         	__syncthreads();
+			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
+            __syncthreads();
 
-						for (int r = blockIdx.x; r < tad->numTads; r += gridDim.x) {
-                            if (threadIdx.x == 0)
-                                tad->createOffsetForBlock(r);
-                            __syncthreads();
+            if (threadIdx.x == 0)
+				z[i] = OpType::postProcess(sPartials[threadIdx.x], tadLen, extraZ);
 
-                            int tadOffsetForBlock = tad->tadOffsetForBlock;
-                            X *xVal = x + tadOffsetForBlock;
-
-
-                            sPartials[threadIdx.x] = this->startingValue(xVal);
-                            for(int i = threadIdx.x; i < tad->tadLength; i+= blockDim.x) {
-                    			int xOffsetForTad = shape::tadOffset(i, xShapeInfo, dimension, dimensionLength, nullptr);
-								int yOffsetForTad = shape::tadOffset(i, yShapeInfo, dimension, dimensionLength, nullptr);
-
-                                sPartials[threadIdx.x] = this->update(sPartials[threadIdx.x],x[tadOffsetForBlock + i *  tad->tadEws], extraParams);
-                            }
-                            __syncthreads();
-
-                            // aggregate. do NOT reduce for elements > tadLength
-                            aggregatePartials(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tad->tadLength), extraParams);
-
-
-                            __syncthreads();
-                            if (threadIdx.x == 0)
-                                z[r] = this->postProcess(sPartials[threadIdx.x], tad->tadLength, extraParams);
-                        }
-
-*/
-			for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-				
-				auto xOffsetForTad = tadOffsets[i];
-				auto yOffsetForTad = yTadOffsets[i];
-
-					if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) 
-						extraZ[threadIdx.x] = startingVal;
-				    
-				    __syncthreads();
-
-					for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
-                    	auto xOffset = xOffsetForTad + shape::getIndexOffset(j, tadOnlyShapeInfo,  tadLength);
-                        auto yOffset = yOffsetForTad + shape::getIndexOffset(j, yTadOnlyShapeInfo, tadLength);
-						sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset],y[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset],y[yOffset], extraZ), extraZ);
-					}
-					
-					__syncthreads();                    
-					aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
-                    __syncthreads();
-                    	
-                    if (threadIdx.x == 0)
-						z[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
-
-					__syncthreads();
-			}
-		}
-	}
+			__syncthreads();   
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -542,7 +466,7 @@ __device__ void Reduce3<X,Y>::execCuda(const int opNum,
 									int *allocationPointer,
 									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-                           
+
 	DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
 
@@ -592,7 +516,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									int *allocationPointer, 
 									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, 
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-        
+
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
     nd4j::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
 }

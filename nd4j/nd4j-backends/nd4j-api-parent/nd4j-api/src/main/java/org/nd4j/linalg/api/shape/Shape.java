@@ -164,6 +164,15 @@ public class Shape {
         return Ints.toArray(dims);
     }
 
+    public static long sizeAt(long[] shape, int index) {
+        if (index < 0)
+            index += shape.length;
+
+        return shape[index];
+    }
+
+
+
     public static int[] getBroadcastDimensions(long[] left, long[] right) {
         if(Arrays.equals(left,right))
             return null;
@@ -3191,36 +3200,13 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
-        long offset = 0;
-
-        ArrayOptionsHelper.setOptionBit(offset, dataType);
-
-        if (shape.length != stride.length)
-            throw new IllegalStateException("Shape and stride must be the same length");
-
-        int rank = shape.length;
-        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
-        shapeBuffer[0] = rank;
-        int count = 1;
-        for (int e = 0; e < shape.length; e++)
-            shapeBuffer[count++] = shape[e];
-
-        for (int e = 0; e < stride.length; e++)
-            shapeBuffer[count++] = stride[e];
-
-        shapeBuffer[count++] = offset;
-        shapeBuffer[count++] = elementWiseStride;
-        shapeBuffer[count] = (int) order;
-
-        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
-        ret.setConstant(true);
-
-        return ret;
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, empty);
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
 
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+        /*
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
 
@@ -3242,6 +3228,11 @@ public class Shape {
         ret.setConstant(true);
 
         return ret;
+        */
+
+        val dtype = ArrayOptionsHelper.dataType(extras);
+        val empty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, empty);
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
@@ -3536,15 +3527,14 @@ public class Shape {
         return true;
     }
 
-    public static boolean areShapesBroadcastable(@NonNull long[] x, @NonNull long[] y){
+    public static boolean areShapesBroadcastable(@NonNull long[] left, @NonNull long[] right){
         //Ported from: https://github.com/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
 
-        int minRank = Math.min(x.length, y.length);
-        for( int i=-1; i>= -minRank; i--){
-            if(x[x.length + i] != y[y.length + i] && x[x.length + i] != 1 && y[y.length + i] != 1){
+        int minRank = Math.min(left.length, right.length);
+
+        for (int i = -1; i >= -minRank; --i)
+            if (sizeAt(left, i) != sizeAt(right, i) && sizeAt(left, i) != 1 && sizeAt(right, i) != 1)
                 return false;
-            }
-        }
 
         return true;
     }

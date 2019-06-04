@@ -23,7 +23,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void FORCEINLINE _cross(NDArray *a, NDArray *b, NDArray *o) {
+    void FORCEINLINE _cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
         if (a->isR()) {
             auto a0 = a->e<double>(0);
             auto a1 = a->e<double>(1);
@@ -53,7 +53,7 @@ namespace helpers {
         }
     }
 
-    void FORCEINLINE _crossBatched(NDArray *a, NDArray *b, NDArray *o) {
+    void FORCEINLINE _crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
         auto _a = a->reshape(a->ordering(), {-1, 3});
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});
@@ -70,7 +70,7 @@ namespace helpers {
             auto b_ = tadsB->at(e);
             auto o_ = tadsO->at(e);
 
-            helpers::_cross(a_, b_, o_);
+            helpers::_cross(context, a_, b_, o_);
         }
 
         delete tadsA;
@@ -81,7 +81,7 @@ namespace helpers {
         delete _o;
     }
 
-    void weightedCrossEntropyWithLogitsFunctor(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
+    void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }

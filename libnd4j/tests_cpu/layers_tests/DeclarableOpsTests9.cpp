@@ -204,20 +204,25 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
+   // Nd4jPointer extra[2];
+#ifndef __CUDABLAS__
     NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+#endif
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+
+
+
     delete[] buffer;
 }
 
@@ -455,6 +460,150 @@ TEST_F(DeclarableOpsTests9, concat_test9) {
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test10) {
+
+    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
+    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
+    auto x2 = NDArrayFactory::create<double>('c', {2,1,4});
+    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
+
+    nd4j::ops::concat op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test11) {
+
+    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
+    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
+    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
+    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
+
+    nd4j::ops::concat op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test12) {
+
+    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
+    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
+    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
+    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
+
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
+
+    nd4j::ops::concat op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test13) {
+
+    auto x0 = NDArrayFactory::create<double>('f', {2,3,4});
+    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
+    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
+    auto exp = NDArrayFactory::create<double>('f', {2,6,4}, { 1.f, 13.f, 5.f, 17.f, 9.f, 21.f, 1.f,  9.f, 5.f, 13.f, 1.f,  5.f, 2.f, 14.f, 6.f, 18.f,10.f, 22.f, 2.f, 10.f, 6.f, 14.f, 2.f,  6.f,
+                                       3.f, 15.f, 7.f, 19.f,11.f, 23.f, 3.f, 11.f, 7.f, 15.f, 3.f,  7.f, 4.f, 16.f, 8.f, 20.f,12.f, 24.f, 4.f, 12.f, 8.f, 16.f, 4.f,  8.f});
+
+    x0.linspace(1);
+    x1.linspace(1);
+    x2.linspace(1);
+
+    nd4j::ops::concat op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests9, concat_test14) {
+
+    NDArray x0('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 40, 60}, nd4j::DataType::DOUBLE);
+
+    x0 = 1.;
+    x1 = 2.;
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(2 == numOfTads);
+
+    for (int e = 0; e < numOfTads; ++e) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((e+1)*1., mean, 1e-5);
+    }
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests9, concat_test15) {
+    auto x = NDArrayFactory::create<double>('c', {2}, {1, 0});
+    auto y = NDArrayFactory::create<double> (3.0f);
+    auto exp = NDArrayFactory::create<double>('c', {3}, {1, 0, 3});
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x, &y}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
@@ -1005,12 +1154,11 @@ TEST_F(DeclarableOpsTests9, matmul_test11) {
 
     x.linspace(1.);
     y.linspace(0.5, 0.5);
- 
     nd4j::ops::matmul op;
     auto results = op.execute({&x, &y}, {}, {1, 1});
-    auto z = results->at(0);
- 
     ASSERT_EQ(Status::OK(), results->status());
+
+    auto z = results->at(0);
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1029,9 +1177,9 @@ TEST_F(DeclarableOpsTests9, matmul_test12) {
  
     nd4j::ops::matmul op;
     auto results = op.execute({&x, &y}, {}, {1, 1});
-    auto z = results->at(0);
- 
+
     ASSERT_EQ(Status::OK(), results->status());
+    auto z = results->at(0);
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1383,109 +1531,6 @@ TEST_F(DeclarableOpsTests9, test_unstack_SGO_1) {
     }
     delete result;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, concat_test10) {
-
-    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
-    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
-    auto x2 = NDArrayFactory::create<double>('c', {2,1,4});
-    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
-                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
-
-    x0.linspace(1);
-    x1.linspace(1);
-    x2.linspace(1);
-
-    nd4j::ops::concat op;
-
-    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    auto output = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, concat_test11) {
-
-    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
-    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
-    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
-    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
-                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
-
-    x0.linspace(1);
-    x1.linspace(1);
-    x2.linspace(1);
-
-    nd4j::ops::concat op;
-
-    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    auto output = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, concat_test12) {
-
-    auto x0 = NDArrayFactory::create<double>('c', {2,3,4});
-    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
-    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
-    auto exp = NDArrayFactory::create<double>('c', {2,6,4}, { 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
-                                      13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.f});
-
-    x0.linspace(1);
-    x1.linspace(1);
-    x2.linspace(1);
-
-    nd4j::ops::concat op;
-
-    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    auto output = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, concat_test13) {
-
-    auto x0 = NDArrayFactory::create<double>('f', {2,3,4});
-    auto x1 = NDArrayFactory::create<double>('f', {2,2,4});
-    auto x2 = NDArrayFactory::create<double>('f', {2,1,4});
-    auto exp = NDArrayFactory::create<double>('f', {2,6,4}, { 1.f, 13.f, 5.f, 17.f, 9.f, 21.f, 1.f,  9.f, 5.f, 13.f, 1.f,  5.f, 2.f, 14.f, 6.f, 18.f,10.f, 22.f, 2.f, 10.f, 6.f, 14.f, 2.f,  6.f,
-                                       3.f, 15.f, 7.f, 19.f,11.f, 23.f, 3.f, 11.f, 7.f, 15.f, 3.f,  7.f, 4.f, 16.f, 8.f, 20.f,12.f, 24.f, 4.f, 12.f, 8.f, 16.f, 4.f,  8.f});
-
-    x0.linspace(1);
-    x1.linspace(1);
-    x2.linspace(1);
-
-    nd4j::ops::concat op;
-
-    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    auto output = result->at(0);
-
-
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, clipbynorm_test12) {

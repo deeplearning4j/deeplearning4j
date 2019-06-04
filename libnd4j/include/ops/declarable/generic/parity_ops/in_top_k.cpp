@@ -38,8 +38,7 @@ namespace nd4j {
             REQUIRE_TRUE(target->rankOf() == 1, 0, "in_top_k: The target should be a vector");
 
             int k = INT_ARG(0);
-            result->nullify();
-            return helpers::inTopKFunctor(predictions, target, result, k);
+            return helpers::inTopKFunctor(block.launchContext(), predictions, target, result, k);
         }
 
         DECLARE_SHAPE_FN(in_top_k) {
@@ -47,8 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
-            Nd4jLong *aShape = ShapeBuilders::createShapeInfo(nd4j::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in), block.getWorkspace());
-
+            auto aShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in));
             shapeList->push_back(aShape);
             return shapeList;
         }

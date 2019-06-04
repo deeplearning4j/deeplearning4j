@@ -34,14 +34,16 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     const Nd4jLong len = outVector.lengthOf();
 
     auto buff = reinterpret_cast<T *>(outVector.getBuffer());
+    auto s = start.e<T>(0);
+    auto d = delta.e<T>(0);
 
     PRAGMA_OMP_PARALLEL_FOR_SIMD
     for(Nd4jLong i = 0; i < len; ++i)
-    	buff[i] =  start.e<T>(0) + i * delta.e<T>(0);
+    	buff[i] = s + i * d;
         
 }
 
-    void range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
     }
 

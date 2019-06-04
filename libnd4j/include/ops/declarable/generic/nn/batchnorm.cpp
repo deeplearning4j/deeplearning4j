@@ -105,7 +105,6 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
-    RELEASE(outShapeInfo, block.getWorkspace());
 
     // normalized output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
@@ -115,7 +114,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
 
     NDArray inputMinusMean;
     if(!input->isSameShape(output) && !mean->isSameShape(output)) {
-        auto inputTiled = NDArray(output, false, block.getWorkspace());
+        auto inputTiled = NDArray(output, false, block.launchContext());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }
@@ -150,9 +149,8 @@ DECLARE_SHAPE_FN(batchnorm) {
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
 
-    ArrayOptions::setDataType(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)));
-
-    return SHAPELIST(outShapeInfo);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in))));
+    return SHAPELIST(result);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -305,9 +303,9 @@ DECLARE_SHAPE_FN(batchnorm_new) {
     auto inShapeInfo = inputShape->at(0);
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShapeInfo));
      
-    Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
+    auto outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inShapeInfo, outType, false, block.getWorkspace());    // output shape is identical to input shape
 
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -351,8 +349,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
-    RELEASE(outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");
 
     // ***** calculations ***** //
 
@@ -364,7 +361,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     NDArray inputMinusMean;
     if(!input->isSameShape(dLdO) && !mean->isSameShape(dLdO)) {
-        auto inputTiled = NDArray(dLdO, false, block.getWorkspace());
+        auto inputTiled = NDArray(dLdO, false, block.launchContext());
         input->tile(inputTiled);
         inputMinusMean = inputTiled - *mean;
     }
@@ -436,8 +433,7 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
     // check whether all input shapes are mutually broadcastable
     Nd4jLong* outShapeInfo = nullptr;
     const bool areShapesOk = ShapeUtils::evalCommonBroadcastShapeInfo(inArrs, outShapeInfo, block.getWorkspace());
-    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");    
-    RELEASE(outShapeInfo, block.getWorkspace());
+    REQUIRE_TRUE(areShapesOk, 0, "BATCHNORM_BP op: the shapes of input arrays are not mutually broadcastable !");
 
     Nd4jLong* dLdIShapeInfo(nullptr), *dLdMShapeInfo(nullptr), *dLdVShapeInfo(nullptr), *dLdGShapeInfo(nullptr), *dLdBShapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), dLdIShapeInfo);
@@ -452,15 +448,15 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
     }
 
     if(!applyScale && !applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo));
 
     if(applyScale && !applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdGShapeInfo));
 
     if(!applyScale && applyOffset)
-        return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdBShapeInfo);
+        return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdBShapeInfo));
 
-    return SHAPELIST(dLdIShapeInfo, dLdMShapeInfo, dLdVShapeInfo, dLdGShapeInfo, dLdBShapeInfo);
+    return SHAPELIST(CONSTANT(dLdIShapeInfo), CONSTANT(dLdMShapeInfo), CONSTANT(dLdVShapeInfo), CONSTANT(dLdGShapeInfo), CONSTANT(dLdBShapeInfo));
 }
         // //////////////////////////////////////////////////////////////////////////
         // CONFIGURABLE_OP_IMPL(batchnorm_bp, 5, 1, true, 0, 1) {

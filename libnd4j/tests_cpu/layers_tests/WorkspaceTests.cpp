@@ -46,8 +46,9 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
     Workspace workspace(65536);
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
-
-    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+    LaunchContext ctx;
+    ctx.setWorkspace(&workspace);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
 
     array.p(0, 1.0f);
     array.p(5, 1.0f);
@@ -66,8 +67,10 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
     Workspace workspace;
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
+    LaunchContext ctx;
+    ctx.setWorkspace(&workspace);
 
-    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
 
     array.p(0, 1.0f);
     array.p(5, 1.0f);
@@ -84,8 +87,10 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 
 TEST_F(WorkspaceTests, ResetTest1) {
     Workspace workspace(65536);
+    LaunchContext ctx;
+    ctx.setWorkspace(&workspace);
 
-    auto array = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+    auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
     array.p(0, 1.0f);
     array.p(5, 1.0f);
 
@@ -93,7 +98,7 @@ TEST_F(WorkspaceTests, ResetTest1) {
     for (int e = 0; e < 5; e++) {
         workspace.scopeIn();
 
-        auto array2 = NDArrayFactory::create<float>('c', {5, 5}, &workspace);
+        auto array2 = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
         array2.p(0, 1.0f);
         array2.p(5, 1.0f);
 
@@ -165,13 +170,15 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
 
 TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
     Workspace ws(65536);
+    LaunchContext ctx;
+    ctx.setWorkspace(&ws);
 
     ASSERT_EQ(65536, ws.getCurrentSize());
     ASSERT_EQ(0, ws.getCurrentOffset());
 
     MemoryRegistrator::getInstance()->attachWorkspace(&ws);
 
-    auto ast = NDArrayFactory::create_<float>('c', {5, 5}, &ws);
+    auto ast = NDArrayFactory::create_<float>('c', {5, 5}, &ctx);
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
@@ -198,15 +205,18 @@ TEST_F(WorkspaceTests, CloneTest1) {
 
 TEST_F(WorkspaceTests, Test_Arrays_1) {
     Workspace ws(65536);
-    auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ws);
+    LaunchContext ctx;
+    ctx.setWorkspace(&ws);
+
+    auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ctx);
 
     // x.printIndexedBuffer("x0");
 
-    auto y = NDArrayFactory::create<float>('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ws);
+    auto y = NDArrayFactory::create<float>('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ctx);
 
     // x.printIndexedBuffer("x2");
 
-    auto z = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
+    auto z = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ctx);
 
     MmulHelper::mmul(&x, &y, &z);
 
@@ -240,11 +250,14 @@ TEST_F(WorkspaceTests, Test_Externalized_1) {
     Workspace ws(&pojo);
     ASSERT_EQ(10000, ws.getCurrentSize());
     ASSERT_EQ(10000, ws.getAllocatedSize());
+    LaunchContext ctx;
+    ctx.setWorkspace(&ws);
 
-    auto x = NDArrayFactory::create<float>('c', {10, 10}, &ws);
+    auto x = NDArrayFactory::create<float>('c', {10, 10}, &ctx);
 
-    ASSERT_EQ(64 + 400, ws.getUsedSize());
-    ASSERT_EQ(64 + 400, ws.getCurrentOffset());
+    // only buffer size goes into account
+    ASSERT_EQ(400, ws.getUsedSize());
+    ASSERT_EQ(400, ws.getCurrentOffset());
 
     x.assign(2.0);
 

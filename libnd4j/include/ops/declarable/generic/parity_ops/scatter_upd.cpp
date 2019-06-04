@@ -69,7 +69,7 @@ namespace nd4j {
                 output->assign(input);
 
             // ScatterHelper<T>::template scatterApply<simdOps::Copy<T>>(output, indices, updates);        
-            ScatterHelper::scatter(pairwise::CopyPws, *indices, *updates, *output, lock);
+            helpers::scatter(block.launchContext(), pairwise::CopyPws, *indices, *updates, *output, lock);
 
             return Status::OK();
         }

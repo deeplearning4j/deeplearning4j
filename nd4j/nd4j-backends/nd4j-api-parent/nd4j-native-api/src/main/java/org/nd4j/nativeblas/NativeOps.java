@@ -361,9 +361,7 @@ public abstract class NativeOps extends Pointer {
                                      Pointer y, @Cast("Nd4jLong *") LongPointer yShapeInfo,
                                      Pointer dy, @Cast("Nd4jLong *") LongPointer dyShapeInfo,
                                      Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                     @Cast("Nd4jLong *") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
-                                     @Cast("Nd4jLong *") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer yTadOffsets);
+                                     Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfo);
 
     /**
      * @param opNum
@@ -743,8 +741,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void setGridLimit(int gridSize);
 
-    public abstract void tadOnlyShapeInfo(@Cast("Nd4jLong *") LongPointer shapeInfo, IntPointer dimension, int dimensionLength,
-                                          @Cast("Nd4jLong *") LongPointer targetBuffer, @Cast("Nd4jLong *") LongPointer offsetsBuffer);
+    public abstract Pointer tadOnlyShapeInfo(@Cast("Nd4jLong *") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
 
     ///////////////
 
@@ -1158,4 +1155,10 @@ public abstract class NativeOps extends Pointer {
      * @return
      */
     public abstract int dataTypeFromNpyHeader(Pointer numpyHeader);
+
+    public abstract Pointer shapeBuffer(int rank, @Cast("Nd4jLong *") LongPointer shape, @Cast("Nd4jLong *") LongPointer strides, int dtype, char order, long ews, boolean empty);
+
+    public abstract Pointer constantBuffer(int dtype, DoublePointer data, int length);
+
+    public abstract Pointer constantBuffer(int dtype, @Cast("Nd4jLong *") LongPointer data, int length);
 }

@@ -30,13 +30,13 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_min: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_min: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            auto expected = NDArrayFactory::create(0.f, block.getWorkspace());
-            auto wrong = NDArrayFactory::create(0.f, block.getWorkspace());
+            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_min: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_min: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
             segmentedOutput->nullify();
-            helpers::segmentMinFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentMinFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -60,7 +60,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
         CUSTOM_OP_IMPL(segment_min_bp, 3, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -69,7 +69,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
-            return helpers::segmentMinFunctorBP(input, indices, gradOut, output);
+            return helpers::segmentMinFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_min_bp){
             Nd4jLong* in = inputShape->at(0);
@@ -79,13 +79,15 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
         }
 
         DECLARE_TYPES(segment_min) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setSameMode(false);
         }
         DECLARE_TYPES(segment_min_bp) {
             getOpDescriptor()

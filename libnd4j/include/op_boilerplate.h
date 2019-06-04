@@ -67,8 +67,11 @@
 
 #include <openmp_pragmas.h>
 #include <type_boilerplate.h>
+#include <exceptions/allocation_exception.h>
+#include <memory/MemoryTracker.h>
 
 #ifdef __CUDACC__
+
 #define meta_def inline __device__
 #define op_def inline __device__ __host__
 #define op_def_special __noinline__ __device__
@@ -80,24 +83,38 @@
 #define NATIVE_HALFS
 #endif
 
+#define linkage
+
 #elif __JAVACPP_HACK__
+
 #define meta_def
 #define op_def
 #define op_def_special
+#define linkage
+
 #elif _MSC_VER
+
 // it's "CUDA backend CPU code" only actually, so we don't care about inlining here
 // __pragma("omp declare simd")
 #define op_def  __forceinline
 #define meta_def  __forceinline
 #define op_def_special  __forceinline
+#define linkage
+
 #elif __clang__
+
 #define op_def inline
 #define op_def_special inline
 #define meta_def inline
+#define linkage
+
 #elif __GNUC__
+
+#define linkage
 #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
 #define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))
+
 #endif
 
 
@@ -1312,7 +1329,7 @@
                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                     auto shapeList = SHAPELIST(); \
                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
+                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                         shapeList->push_back(newshape); \
                                                     } \
                                                     return shapeList; \
@@ -1351,7 +1368,7 @@
                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                                     Nd4jLong* newshape; \
                                                                     COPY_SHAPE(inputShape->at(0), newshape); \
-                                                                    shapeList->push_back(newshape); \
+                                                                    shapeList->push_back(CONSTANT(newshape)); \
                                                                 } \
                                                                 return shapeList; \
                                                             } \
@@ -1372,7 +1389,7 @@
                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) { \
                                                                                     auto shapeList = SHAPELIST(); \
                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
-                                                                                        Nd4jLong* newshape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), block.getWorkspace()); \
+                                                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \
@@ -1431,8 +1448,47 @@
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
-#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
-#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
+#define REPLICATE_SHAPE(SRC, TGT)   if (shape::order(SRC) == 'c')\
+                                        shape::shapeBuffer(shape::rank(SRC), nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
+                                    else \
+                                        shape::shapeBufferFortran(shape::rank(SRC),  nd4j::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);\
+
+
+#ifdef __CUDABLAS__
+
+#ifdef _RELEASE
+
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
+
+#else
+
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { nd4j::memory::MemoryTracker::getInstance()->countIn(nd4j::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
+
+#endif
+
+#else
+
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = nullptr;
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
+
+#endif
+
+#ifdef _RELEASE
+
+#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
+#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { delete[] VARIABLE;};
+
+#else
+
+#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; nd4j::memory::MemoryTracker::getInstance()->countIn(nd4j::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
+#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); delete[] VARIABLE;};
+
+#endif
+
+#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance()->createFromExisting(SHAPE, block.workspace())
+
 
 
 #define STORE_RESULT(A)     this->storeResult(block, 0, A)
@@ -1465,7 +1521,7 @@
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
 #define INLINE_LOOPS
-#define FORCEINLINE inline 
+#define FORCEINLINE inline
 #elif _MSC_VER
 #define FORCEINLINE __forceinline
 #elif __GNUC__
@@ -1493,17 +1549,54 @@
 
 #endif // CUDACC
 
-#define CHECK_ALLOC(PTR, MSG) if (PTR == nullptr) { nd4j_printf("%s\n", MSG); throw std::bad_alloc(); };
+#define CHECK_ALLOC(PTR, MSG, BYTES) if (PTR == nullptr) { throw nd4j::allocation_exception::build(MSG, BYTES); };
+
+
+
+#ifdef __CUDABLAS__
+
+#define LAMBDA_T(X, ...) [=] __host__ __device__ (T X) -> T
+#define LAMBDA_TT(X, Y, ...) [=] __device__ (T X, T Y) -> T
+#define LAMBDA_TTT(t, u, v, ...) [=] __device__ (T t, T u, T v) -> T
+
+#define ILAMBDA_T(X, ...) [=] __device__ (Nd4jLong _idx, T X) -> T
+#define ILAMBDA_TT(X, Y, ...) [=] __device__ (Nd4jLong _idx, T X, T Y) -> T
+
+#define LAMBDA_D(X, ...) [=] __host__ __device__ (double X) -> double
+#define LAMBDA_DD(X, Y, ...) [=] __host__ __device__ (double X, double Y) -> double
+#define LAMBDA_DDD(t, u, v, ...) [=] __host__ __device__ (double t, double u, double v) -> double
+
+#define LAMBDA_H(X, ...) [__VA_ARGS__] __host__ __device__ (float16 X) -> float16
+#define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] __host__ __device__ (float16 X, float16 Y) -> float16
+
+#define ILAMBDA_D(X, ...) [__VA_ARGS__] __host__ __device__ (Nd4jLong _idx, double X) -> double
+#define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] __host__ __device__ (Nd4jLong _idx, double X, double Y) -> double
+
+#define ILAMBDA_F(X, ...) [__VA_ARGS__] __host__ __device__ (Nd4jLong _idx, float X) -> float
+#define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] __host__ __device__ (Nd4jLong _idx, float X, float Y) -> float
+
+#define LAMBDA_F(X, ...) [__VA_ARGS__] __host__ __device__ (float X) -> float
+#define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] __host__ __device__ (float X, float Y) -> float
+#define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__] __host__ __device__ (float t, float u, float v) -> float
+
+#else
+
+#define LAMBDA_T(X, ...) [__VA_ARGS__] (T X) -> T
+#define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
+#define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
+
+#define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
+#define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+
+#define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
+#define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
+#define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
 
 #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
 
 #define ILAMBDA_D(X, ...) [__VA_ARGS__] (Nd4jLong _idx, double X) -> double
 #define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, double X, double Y) -> double
-
-#define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
-#define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
-#define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
 
 #define ILAMBDA_F(X, ...) [__VA_ARGS__] (Nd4jLong _idx, float X) -> float
 #define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, float X, float Y) -> float
@@ -1512,12 +1605,7 @@
 #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
 #define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__] (float t, float u, float v) -> float
 
-#define LAMBDA_T(X, ...) [__VA_ARGS__] (T X) -> T
-#define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
-#define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
-
-#define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jLong _idx, T X) -> T
-#define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jLong _idx, T X, T Y) -> T
+#endif
 
 // stuff for benchmarks
 #define GENERATE_XYZ() [&] (ResultSet &x, ResultSet &y, ResultSet &z)

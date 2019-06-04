@@ -24,7 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <MmulHelper.h>
-#include <declarable/generic/helpers/convolutions.h>
+#include <declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 
@@ -69,14 +69,14 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.getWorkspace());
+    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.launchContext());
 
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
     // NCHW: [iC, oC, kH, kW] x [bS, iC, iH, iW] = [oC, kH, kW, bS, iH, iW]
     nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
-    LaunchContext ctx;
-    helpers::col2im(ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
+    LaunchContext* ctx = block.launchContext();
+    helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
            
     //----- add biases if required -----//
     if(bias)
@@ -136,25 +136,20 @@ DECLARE_SHAPE_FN(deconv2d) {
     int oH, oW;                                         // output height, width
     ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
     
-    Nd4jLong* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
+    Nd4jLong outputShape[4];
 
-    outputShapeInfo[0] = rank;
-    outputShapeInfo[1] = bS;
-
+    outputShape[0] = bS;
     if (isNCHW) {
-        outputShapeInfo[2] = oC;
-        outputShapeInfo[3] = oH;
-        outputShapeInfo[4] = oW;
+        outputShape[1] = oC;
+        outputShape[2] = oH;
+        outputShape[3] = oW;
     } else {
-        outputShapeInfo[2] = oH;
-        outputShapeInfo[3] = oW;
-        outputShapeInfo[4] = oC;
+        outputShape[1] = oH;
+        outputShape[2] = oW;
+        outputShape[3] = oC;
     }
-    
-    ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
 
-    return SHAPELIST(outputShapeInfo);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4)));
 }
 
     DECLARE_TYPES(deconv2d_bp) {
@@ -224,10 +219,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
         inputAxesForDot = {0, 2, 3};                                            // bS, iH, iW
 
     // ----- calculation of gradW ----- //
-    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getWorkspace());
+    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.launchContext());
 
-    LaunchContext ctx;
-    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    LaunchContext* ctx = block.launchContext();
+    helpers::im2col(*ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //
@@ -292,14 +287,14 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,   gradOShapeInfo, false, block.getWorkspace());
-    Nd4jLong* gradWShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
+    auto gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,   gradOShapeInfo, false, block.getWorkspace());
+    auto gradWShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
-    auto shapes = SHAPELIST(gradIShapeInfo, gradWShapeInfo);
+    auto shapes = SHAPELIST(CONSTANT(gradIShapeInfo), CONSTANT(gradWShapeInfo));
 
     if (biasShapeInfo != nullptr) {
-        Nd4jLong* gradBShapeInfo = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
-        shapes->push_back(gradBShapeInfo);
+        auto gradBShapeInfo = ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
+        shapes->push_back(CONSTANT(gradBShapeInfo));
     }
 
     return shapes;

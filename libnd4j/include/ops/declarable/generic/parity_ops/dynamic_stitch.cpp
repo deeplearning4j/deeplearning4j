@@ -44,7 +44,7 @@ namespace ops {
             indices[e] = index;
         }
 
-        return helpers::dynamicStitchFunctor(inputs, indices, output);
+        return helpers::dynamicStitchFunctor(block.launchContext(), inputs, indices, output);
     }
 
     DECLARE_TYPES(dynamic_stitch) {
@@ -67,20 +67,14 @@ namespace ops {
             if (maxV.e<Nd4jLong>(0) > maxValue) maxValue = maxV.e<Nd4jLong>(0);
         }
 
-        Nd4jLong *outShapeInfo;
         int outRank = shape::rank(restShape) - shape::rank(firstShape) + 1;
-        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+        std::vector<Nd4jLong> outShape(outRank);
 
-        outShapeInfo[0] = outRank;
-        outShapeInfo[1] = maxValue + 1;
+        outShape[0] = maxValue + 1;
         for(int i = 1; i < outRank; ++i)
-            outShapeInfo[i + 1] = shape::sizeAt(restShape, i);
+            outShape[i] = shape::sizeAt(restShape, i);
 
-        shape::updateStrides(outShapeInfo, shape::order(firstShape));
-
-        //shape::shapeVector(maxValue + 1, newShape);
-        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(restShape));
-        return SHAPELIST(outShapeInfo);
+        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape)));
     }
 }
 }

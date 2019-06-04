@@ -26,9 +26,9 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/VariableProxy.h>
-#include <graph/exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
-#include <graph/exceptions/unresolved_output_exception.h>
+#include <exceptions/graph_exception.h>
+#include <exceptions/unresolved_input_exception.h>
+#include <exceptions/unresolved_output_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -181,9 +181,9 @@ namespace nd4j {
                             }
 
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            Nd4jLong numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            auto shape = new Nd4jLong[2]{1, (int) numTads};
-                            newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);                            
+                            auto numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+                            Nd4jLong shape[2] = {1, (int) numTads};
+                            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);
@@ -204,9 +204,9 @@ namespace nd4j {
             }
 
             // this is the only place where we deallocate shapes.
-            if (_variableSpace->workspace() == nullptr)
-                for (auto v: shapes)
-                    delete[] v;
+            //if (_variableSpace->launchContext()->getWorkspace() == nullptr)
+            //    for (auto v: shapes)
+            //        delete[] v;
 
             return result;
         }
@@ -882,7 +882,7 @@ namespace nd4j {
 
             // if memory reqs were set - initialize workspace
             if (_configuration->_footprintForward > 0) {
-                nd4j::memory::Workspace *workspace = this->_variableSpace->workspace();
+                nd4j::memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
                 workspace->expandBy(_configuration->_footprintForward);
             }
 
@@ -1022,7 +1022,7 @@ namespace nd4j {
             }
 
             if (!_unmapped.empty())
-                throw graph::graph_exception("Graph wasn't toposorted");
+                throw graph_exception("Graph wasn't toposorted", 0);
 
             _built = true;
         }

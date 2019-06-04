@@ -27,7 +27,7 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-	void meshgrid(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims);
+	void meshgrid(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims);
 
 }
 }

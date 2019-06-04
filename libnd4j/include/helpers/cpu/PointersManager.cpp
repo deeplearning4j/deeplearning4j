@@ -18,15 +18,18 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 //
 
+#ifndef __CUDABLAS__
+
 #include <PointersManager.h>
+#include <exceptions/cuda_exception.h>
 #include <logger.h>
 #include <memory/Workspace.h>
 
 namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(nd4j::graph::LaunchContext *context, const std::string& funcName)  {
-    _context  = context;
+PointersManager::PointersManager(const nd4j::LaunchContext *context, const std::string& funcName)  {
+    _context  = const_cast<nd4j::LaunchContext*>(context);
     _funcName = funcName;
 }
 
@@ -46,5 +49,6 @@ PointersManager::~PointersManager() {
         // no-op
 }
 
-
 }
+
+#endif

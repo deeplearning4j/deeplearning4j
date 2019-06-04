@@ -177,7 +177,7 @@ namespace ops {
         auto internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
         auto internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
-        helpers::_batchToSpace(internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
+        helpers::_batchToSpace(block.launchContext(), internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
 
         if (order_changed)
             delete input;
@@ -292,15 +292,8 @@ namespace ops {
             depth *= size;
         }
 
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
-
-        //nd4j_printv("STB shape: ", external_output_shape);
-
         // we always give out C order here
-        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());        
-
-        return SHAPELIST(newShape);
+        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape));
     }
 }
 }

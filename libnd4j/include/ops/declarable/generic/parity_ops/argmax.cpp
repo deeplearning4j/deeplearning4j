@@ -21,8 +21,8 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_argmax)
 
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/CustomOperations.h>
 #include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
@@ -42,11 +42,11 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                helpers::adjustAxis(input, axisVector, axis);
+                helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
                 input->applyIndexReduce(indexreduce::IndexMax, output, axis);
             } else {
-                helpers::adjustAxis(input->shapeInfo(), axis);
+                helpers::adjustAxis(input->rankOf(), axis);
 
                 input->applyIndexReduce(indexreduce::IndexMax, output, axis);
             }
@@ -67,25 +67,17 @@ namespace nd4j {
             }
 
             // we're resolving negative axis here
-            helpers::adjustAxis(inputShape->at(0), dims);
+            helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
-                return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));
             }
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShape->at(0), dims);
-
-            auto tadLength = shape::length(tadPack.primaryShapeInfo());
-            auto numTads = tadPack.numberOfTads();
-
-            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
-            ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), DataType::INT64, false, false, block.getWorkspace()));
         }
     }
 }

@@ -96,13 +96,7 @@ namespace nd4j {
             auto length = shape::length(in);
 
             if (rank == 0 || (rank == 1 && length == 1)) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-                newShape[0] = 0;
-                newShape[1] = 0;
-                newShape[2] = 1;
-                newShape[3] = 99;
-                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
-                shapeList->push_back(newShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
@@ -147,21 +141,12 @@ namespace nd4j {
             }
 
             if (shape.size() == 0) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
-                newShape[0] = 0;
-                newShape[1] = 0;
-                newShape[2] = 1;
-                newShape[3] = 99;
-
-                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
-                shapeList->push_back(newShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
-            newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), order, shape, block.getWorkspace());
-
+            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), order, shape);
             shapeList->push_back(newShape);
-
             return shapeList;
         }
     }

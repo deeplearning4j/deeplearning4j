@@ -36,7 +36,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(rank) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT32, block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT32));
         }
 
 

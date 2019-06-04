@@ -25,7 +25,7 @@
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
 
 using namespace nd4j;

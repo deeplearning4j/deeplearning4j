@@ -24,25 +24,7 @@
 #include <ops/declarable/headers/common.h>
 
 namespace nd4j {
-    namespace ops {
-        
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operations for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of cell output [bS x K x N]
-       *    1: 3d tensor of cell state [bS x K x N]
-       */
-        #if NOT_EXCLUDED(OP_sru)
-        DECLARE_CUSTOM_OP(sru_old,       5, 2, false, 0, 0);
+namespace ops  { 
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -59,27 +41,9 @@ namespace nd4j {
        *    0: 3d tensor of cell output [bS x K x N]
        *    1: 3d tensor of cell state [bS x K x N]
        */
+        #if NOT_EXCLUDED(OP_sru)
         DECLARE_CUSTOM_OP(sru,   5, 2, false, 0, 0);
         #endif
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operation for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of cell output [bS x K x N]
-       *    1: 3d tensor of cell state [bS x K x N]
-       */
-        #if NOT_EXCLUDED(OP_sru_logic)
-        DECLARE_CUSTOM_OP(sru_logic,   5, 2, false, 0, 0);
-        #endif
-
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -124,32 +88,6 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_sru)
         DECLARE_CUSTOM_OP(sru_bp,      8, 4, true,  0, 0);
         #endif
-
-    
-    //////////////////////////////////////////////////////////////////////////
-    /**
-       * Implementation of operation for back propagation in Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
-       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-       *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
-       *    3: 2d tensor of previous cell state [bS x K]
-       *    4: 3d tensor of cell state [bS x K x N]
-       *    5: 2d tensor of cell state gradients [bS x K]
-       *    6: 3d tensor of state output gradients [bS x K x N]
-       *    7: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
-       *    0: 3d tensor of input gradients [bS x K x N]
-       *    1: 3d tensor of weights gradients [bS x 3K x K]
-       *    2: 2d, row of biases gradients [1 x 2K]
-       *    3: 2d, tensor of state gradients [bS x K]
-       */                  
-        #if NOT_EXCLUDED(OP_sru_logic)
-        DECLARE_CUSTOM_OP(sru_bp_logic,8, 4, true,  0, 0);
-        #endif
-
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -477,6 +415,7 @@ namespace nd4j {
        *    3: cell final non-zero output for backward RNN [batchSize x numUnitsBW]
        */
         DECLARE_CUSTOM_OP(dynamic_bidirectional_rnn, 7, 4, false, 0, 0);
-    }
+
+}
 }
 #endif

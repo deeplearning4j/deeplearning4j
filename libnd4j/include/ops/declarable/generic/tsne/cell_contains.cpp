@@ -46,7 +46,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(cell_contains) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::BOOL, block.workspace()));
+            return SHAPELIST(CONSTANT(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::BOOL, block.workspace())));
         }
     }
 }

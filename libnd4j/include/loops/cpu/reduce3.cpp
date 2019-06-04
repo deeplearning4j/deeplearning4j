@@ -64,7 +64,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     PRAGMA_OMP_SIMD
     for (int e = 0; e < maxThreads; e++)
         intermediate[e] = startingVal;
-    
+
     memset(extraParamsLocal, 0, 3 * 256 * sizeof(Z));
     if (extraParams != nullptr)
         PRAGMA_OMP_SIMD
@@ -94,7 +94,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {
-            const auto threadNum = omp_get_thread_num();      
+            const auto threadNum = omp_get_thread_num();
             auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
             auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
             intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
@@ -103,7 +103,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 
     // merge step
     for (int e = 0; e < maxThreads; e++)
-        OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);        
+        OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
     for (int e = 0; e < maxThreads; e++)
         startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
 

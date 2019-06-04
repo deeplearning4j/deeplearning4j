@@ -40,6 +40,7 @@
 #include <ops/declarable/LegacyTransformStrictOp.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <graph/FlatUtils.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j {
     namespace graph {
@@ -326,7 +327,7 @@ namespace nd4j {
             _hasInternalInputs = false;
             _hasInternalOutputs = false;
 
-            _scalar = scalar;
+            _scalar = NDArrayFactory::create(scalar);
 
             for (auto i: input)
                 pickInput(i);
@@ -374,7 +375,7 @@ namespace nd4j {
             _hasInternalInputs = false;
             _hasInternalOutputs = false;
 
-            _scalar = scalar;
+            _scalar = NDArrayFactory::create(scalar);
 
             for (auto i: input)
                 pickInput(i);

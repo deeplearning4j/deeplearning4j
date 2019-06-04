@@ -21,7 +21,7 @@
 #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 #define NATIVEOPERATIONS_NATIVEOPS_H
 
-
+/*
 #ifndef thread_local
 # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #  define thread_local _Thread_local
@@ -31,7 +31,7 @@
        defined __DMC__ || \
        defined __BORLANDC__ )
 #  define thread_local __declspec(thread)
-/* note that ICC (linux) and Clang are covered by __GNUC__ */
+// note that ICC (linux) and Clang are covered by __GNUC__ 
 # elif defined __GNUC__ || \
        defined __SUNPRO_C || \
        defined __xlC__
@@ -40,6 +40,7 @@
 #  error "Cannot define thread_local"
 # endif
 #endif
+*/
 
 #include <pointercast.h>
 #include <types/float16.h>
@@ -65,6 +66,10 @@ bool verbose = false;
 */
 
 #include <array/ShapeList.h>
+#include <array/ConstantDescriptor.h>
+#include <array/ConstantDataBuffer.h>
+#include <helpers/ConstantHelper.h>
+#include <array/TadPack.h>
 #include <graph/VariablesSet.h>
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
@@ -74,6 +79,7 @@ bool verbose = false;
 class ND4J_EXPORT NativeOps {
 
 public:
+    NativeOps();
 
     /**
      *
@@ -306,7 +312,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduce3(Nd4jPointer *extraPointers,
+    void  execReduce3(Nd4jPointer *extraPointers,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -314,9 +320,7 @@ public:
                             void *hY, Nd4jLong *hYShapeInfo,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+                            void *dZ, Nd4jLong *dZShapeInfo);
 
     /**
      *
@@ -881,11 +885,9 @@ public:
      * @param targetBuffer
      * @param offsetsBuffer
      */
-    void tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
+    nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
                           int *dimension,
-                          int dimensionLength,
-                          Nd4jLong *targetBuffer,
-                          Nd4jLong *offsetsBuffer);
+                          int dimensionLength);
 
     /*
      * PullRow special op
@@ -1659,6 +1661,13 @@ public:
                       int* hIindexes, int* dIindexes);
 
     void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
+
+
+    nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty);
+
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length);
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, double *data, int length);
+    nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
 };
 
 

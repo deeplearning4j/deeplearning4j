@@ -22,9 +22,11 @@
 #define LIBND4J_ENVIRONMENT_H
 
 #include <atomic>
+#include <vector>
 #include <dll.h>
 #include <stdexcept>
 #include <array/DataType.h>
+#include <types/pair.h>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {
@@ -33,6 +35,7 @@ namespace nd4j{
         std::atomic<int> _elementThreshold;
         std::atomic<bool> _verbose;
         std::atomic<bool> _debug;
+        std::atomic<bool> _leaks;
         std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
         std::atomic<nd4j::DataType> _dataType;
@@ -45,6 +48,9 @@ namespace nd4j{
         const bool _experimental = false;
 #endif
 
+        // device compute capability for CUDA
+        std::vector<Pair> _capabilities;
+
         static Environment* _instance;
 
         Environment();
@@ -56,9 +62,11 @@ namespace nd4j{
         void setVerbose(bool reallyVerbose);
         bool isDebug();
         bool isProfiling();
+        bool isDetectingLeaks();
         bool isDebugAndVerbose();
         void setDebug(bool reallyDebug);
         void setProfiling(bool reallyProfile);
+        void setLeaksDetector(bool reallyDetect);
         
         int tadThreshold();
         void setTadThreshold(int threshold);
@@ -79,6 +87,10 @@ namespace nd4j{
         void allowPrecisionBoost(bool reallyAllow);
 
         bool isExperimentalBuild();
+
+        bool isCPU();
+
+        std::vector<Pair>& capabilities();
     };
 }
 

@@ -48,8 +48,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(set_seed) {
-            auto newshape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
-
+            auto newshape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
             return SHAPELIST(newshape);
         }
 

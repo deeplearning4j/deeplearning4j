@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
     outputs[inputs.size()] = OUTPUT_VARIABLE(inputs.size());
     double clipNorm = T_ARG(0);
     bool isInplace = block.isInplace();
-    helpers::clipByGlobalNorm(inputs, clipNorm, block.workspace(), outputs, isInplace);
+    helpers::clipByGlobalNorm(block.launchContext(), inputs, clipNorm, block.workspace(), outputs, isInplace);
 
     return Status::OK();
 }
@@ -52,10 +52,10 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
                 
         Nd4jLong* newShape;
         COPY_SHAPE(in, newShape);
-        shapeList->push_back(newShape);
+        shapeList->push_back(CONSTANT(newShape));
     }
 
-    shapeList->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
+    shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
     return shapeList;
 }
 

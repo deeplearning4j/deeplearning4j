@@ -25,6 +25,13 @@
 #include "Environment.h"
 #include <helpers/StringUtils.h>
 
+#ifdef __CUDABLAS__
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#endif
+
 namespace nd4j {
 
     nd4j::Environment::Environment() {
@@ -34,6 +41,7 @@ namespace nd4j {
         _debug.store(false);
         _profile.store(false);
         _precBoost.store(false);
+        _leaks.store(false);
         _dataType.store(nd4j::DataType::FLOAT32);
 
 #ifndef ANDROID
@@ -49,6 +57,26 @@ namespace nd4j {
                 // still do nothing
             }
         }
+#endif
+
+#ifdef __CUDABLAS__
+        int devCnt = 0;
+	    cudaGetDeviceCount(&devCnt);
+	    auto devProperties = new cudaDeviceProp[devCnt];
+	    for (int i = 0; i < devCnt; i++) {
+		    cudaSetDevice(i);
+		    cudaGetDeviceProperties(&devProperties[i], i);
+
+		    //cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+		    Pair p(devProperties[i].major, devProperties[i].minor);
+		    _capabilities.emplace_back(p);
+
+		    printf("CUDA device %i: [%s]; cc: [%i.%i]; Total memory: [%lld];\n", i, devProperties[i].name, devProperties[i].major, devProperties[i].minor, (Nd4jLong) devProperties[i].totalGlobalMem);
+	    }
+	    fflush(stdout);
+
+	    cudaSetDevice(0);
+	    delete[] devProperties;
 #endif
     }
 
@@ -75,6 +103,10 @@ namespace nd4j {
         return _dataType.load();
     }
 
+    std::vector<Pair>& Environment::capabilities() {
+        return _capabilities;
+    }
+
     void Environment::setDefaultFloatDataType(nd4j::DataType dtype) {
         if (dtype != nd4j::DataType::FLOAT32 && dtype != nd4j::DataType::DOUBLE && dtype != nd4j::DataType::FLOAT8 && dtype != nd4j::DataType::HALF)
             throw std::runtime_error("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
@@ -92,6 +124,14 @@ namespace nd4j {
 
     bool Environment::isProfiling() {
         return _profile.load();
+    }
+
+    bool Environment::isDetectingLeaks() {
+        return _leaks.load();
+    }
+
+    void Environment::setLeaksDetector(bool reallyDetect) {
+        _leaks.store(reallyDetect);
     }
 
     void Environment::setProfiling(bool reallyProfile) {
@@ -136,6 +176,14 @@ namespace nd4j {
 
     void Environment::allowPrecisionBoost(bool reallyAllow) {
         _precBoost.store(reallyAllow);
+    }
+
+    bool Environment::isCPU() {
+#ifdef __CUDABLAS__
+        return false;
+#else
+        return true;
+#endif
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;

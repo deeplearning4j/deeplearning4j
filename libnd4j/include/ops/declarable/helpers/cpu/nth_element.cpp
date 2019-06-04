@@ -46,8 +46,9 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
-            SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), reverse);
+            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
+
+            SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
 
             std::unique_ptr<ResultSet> rows(sortedVals.allTensorsAlongDimension(lastDims));
 
@@ -60,7 +61,8 @@ namespace helpers {
             }
         }
     }
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+
+    void nthElementFunctor(nd4j::LaunchContext  *launchContext, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }

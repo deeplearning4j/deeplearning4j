@@ -579,6 +579,24 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         throw new IllegalArgumentException("Illegal dtype " + type);
     }
 
+    @Override
+    public DataBuffer create(Pointer pointer, Pointer specialPointer, DataType type, long length, Indexer indexer) {
+        switch (type) {
+            case LONG:
+                return new CudaLongDataBuffer(pointer, specialPointer, indexer, length);
+            case INT:
+                return new CudaIntDataBuffer(pointer, specialPointer, indexer, length);
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(pointer, specialPointer, indexer, length);
+            case FLOAT:
+                return new CudaFloatDataBuffer(pointer, specialPointer, indexer, length);
+            case HALF:
+                return new CudaHalfDataBuffer(pointer, specialPointer, indexer, length);
+        }
+
+        throw new IllegalArgumentException("Illegal dtype " + type);
+    }
+
     /**
      * @param doublePointer
      * @param length

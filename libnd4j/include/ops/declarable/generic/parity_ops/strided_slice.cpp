@@ -508,12 +508,15 @@ namespace nd4j {
                 }
             }
             if (nonEmpty && inputLen > 1) {
-                newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
             }
             else {
-                newShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace());
-                if (shape::rank(inShape) == 0 || begin >= end)
-                ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                if (shape::rank(inShape) == 0 || begin >= end) {
+                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape));
+                } else {
+                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
+
+                }
             }
 
             return SHAPELIST(newShape);

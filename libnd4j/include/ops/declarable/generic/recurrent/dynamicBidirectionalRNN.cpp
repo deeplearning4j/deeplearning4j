@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {
         // FIXME: which datatype should be used here?
-    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.getWorkspace());
+    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.launchContext());
     	seqLen->assign(time);                                        // set each element of seqLen to be equal to time
     }
 
@@ -204,7 +204,7 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
     ShapeUtils::updateStridesAndType(hFWFinalPrevShapeInfo, x->getShapeInfo(), x->ordering());
     ShapeUtils::updateStridesAndType(hBWFinalPrevShapeInfo, x->getShapeInfo(), x->ordering());
          
-    return SHAPELIST(hFWShapeInfo, hBWShapeInfo, hFWFinalPrevShapeInfo, hBWFinalPrevShapeInfo);
+    return SHAPELIST(CONSTANT(hFWShapeInfo), CONSTANT(hBWShapeInfo), CONSTANT(hFWFinalPrevShapeInfo), CONSTANT(hBWFinalPrevShapeInfo));
 }   
 
 

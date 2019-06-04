@@ -30,7 +30,7 @@
 
 namespace nd4j {
 
-    class ND4J_EXPORT ShapeDescriptor {
+class ND4J_EXPORT ShapeDescriptor {
 
     private:
         int _rank = 0;
@@ -42,10 +42,14 @@ namespace nd4j {
         bool _empty = false;
 
     public:
-        explicit ShapeDescriptor(const ShapeDescriptor &other);
-        explicit ShapeDescriptor(const Nd4jLong *shapeInfo);
+        ShapeDescriptor(const ShapeDescriptor &other);
+        ShapeDescriptor(const Nd4jLong *shapeInfo, bool inheritDtype = true);
+        explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride);
+        explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride);
+        explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride, const Nd4jLong *orderOverride);
         explicit ShapeDescriptor(const DataType type, const Nd4jLong length);
         explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank);
+        explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const Nd4jLong *strides, const int rank, Nd4jLong ews, const bool empty);
         explicit ShapeDescriptor(const DataType type, const char order, const std::initializer_list<Nd4jLong> &shape);
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides);
@@ -55,6 +59,7 @@ namespace nd4j {
 
         int rank() const;
         Nd4jLong ews() const;
+        Nd4jLong arrLength() const;
         char order() const;
         DataType dataType() const;
         bool isEmpty() const;
@@ -73,7 +78,12 @@ namespace nd4j {
         // less than operator
         bool operator<(const ShapeDescriptor &other) const;
 
-        Nd4jLong* toShapeInfo();
+        Nd4jLong* toShapeInfo() const;
+
+
+        static ShapeDescriptor emptyDescriptor(const DataType type);
+        static ShapeDescriptor scalarDescriptor(const DataType type);
+        static ShapeDescriptor vectorDescriptor(const Nd4jLong length, const DataType type);
     };
 
 

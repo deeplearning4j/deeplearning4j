@@ -110,7 +110,7 @@ static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParam
     int tadEWS = shape::elementWiseStride(tadShapeInfo);
     int zEWS = shape::elementWiseStride(tadShapeInfo);
     int tadRank = shape::rank(tadShapeInfo);
-    int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
     int numTads =shape::length(xShapeInfo) / tadLength;
 
     // main loop, rolling over tads

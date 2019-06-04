@@ -30,7 +30,7 @@ namespace ops {
         std::vector<int> axes;// = *block.getIArguments();
         if (block.width() > 1) {
             auto axisVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axisVector, axes );
+            helpers::adjustAxis(input->rankOf(), axisVector, axes );
         }
         else if (block.getIArguments()->size() > 0) {
             axes = *block.getIArguments();
@@ -64,7 +64,7 @@ namespace ops {
         std::vector<int> axes; // = *block.getIArguments();
         if (block.width() > 1) {
             auto axisVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axisVector, axes );
+            helpers::adjustAxis(input->rankOf(), axisVector, axes );
         }
         else if (block.getIArguments()->size() > 0) {
             axes = *block.getIArguments();

@@ -48,7 +48,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, z, nullptr);
-            helpers::eluDerivative(input, epsilon, z);
+            helpers::eluDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

@@ -58,15 +58,17 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
         expectedAlphaShape[sharedAxes[i] - 1] = 1;
     }
 
-    //const Nd4jLong expectedAlphaLen =  0; //std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());
+    Nd4jLong product = 1;
+    for(const auto& item : expectedAlphaShape)
+        product *= item;
 
-    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
+    REQUIRE_TRUE(product == alphaLen, 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
 
     if(alphaShape != expectedAlphaShape)
         alpha = alpha->reshape(alpha->ordering(), expectedAlphaShape);
 
-    helpers::prelu(*input, *alpha, *output);
+    helpers::prelu(block.launchContext(), *input, *alpha, *output);
 
     if(alphaShape != expectedAlphaShape)
         delete alpha;
@@ -103,6 +105,11 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     const std::vector<Nd4jLong> alphaShape = alpha->getShapeAsVector();
 
     //***** input validation *****//
+    
+    // temporary limitation imposed by Yurii
+    REQUIRE_TRUE(inputRank <= MAX_RANK/2, 0, "rank of input array should be <= MAX_RANK/2, but got %i instead!", inputRank);
+    REQUIRE_TRUE(input->lengthOf() / alpha->lengthOf() <= MAX_RANK*2, 0, "the length of input array should be no more than MAX_RANK*2 times the alpha array length, but got %lld and %lld correspondingly!", input->lengthOf(), alpha->lengthOf());
+
     std::vector<Nd4jLong> expectedAlphaShape(&inputShape[1], &inputShape[inputRank]);
 
     REQUIRE_TRUE(inputRank > 1, 0, "PRELU_BP OP: wrong rank of input array, expected rank should be > 1, but got %i instead !", inputRank);   
@@ -114,7 +121,11 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
         expectedAlphaShape[sharedAxes[i] - 1] = 1;
     }
 
-    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
+    Nd4jLong product = 1;
+    for(const auto& item : expectedAlphaShape)
+        product *= item;
+
+    REQUIRE_TRUE(product == alphaLen, 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
     
     if(alphaShape != expectedAlphaShape) {
@@ -122,7 +133,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
         dLdA  = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
     }
 
-    helpers::preluBP(*input, *alpha, *dLdO, *dLdI, *dLdA);
+    helpers::preluBP(block.launchContext(), *input, *alpha, *dLdO, *dLdI, *dLdA);
 
     if(alphaShape != expectedAlphaShape) {        
         delete alpha;

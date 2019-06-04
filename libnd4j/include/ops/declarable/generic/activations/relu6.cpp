@@ -51,7 +51,7 @@ CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
     auto gradI = OUTPUT_VARIABLE(0);
 
     //input->applyPairwiseTransform(pairwise::RELU6DerivativeE, gradO, gradI, nullptr);
-    helpers::relu6Derivative(input, gradO, gradI);
+    helpers::relu6Derivative(block.launchContext(), input, gradO, gradI);
     return Status::OK();
 }
 

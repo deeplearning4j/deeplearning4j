@@ -50,7 +50,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
-            helpers::leakyReluDerivative(input, epsilon, z);
+            helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

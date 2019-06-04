@@ -61,8 +61,8 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
     // multiply E on weights
      E *= *weightsBroad;
- 	
-	switch (reductionMode) {		
+
+	switch (reductionMode) {
 		case 0: {											// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(E);
 			break;
@@ -99,9 +99,9 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			else
 				output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 			break;
-		}		
+		}
 	}
-   
+
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
@@ -110,7 +110,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(huber_loss) {
-	
+
 	getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -121,22 +121,22 @@ DECLARE_SHAPE_FN(huber_loss) {
 	auto weightsShapeInfo 	  = inputShape->at(1);
     auto labelsShapeInfo  	  = inputShape->at(2);
 
-     // labels and predictions must have the same shapes 
+     // labels and predictions must have the same shapes
     REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "HUBER_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(predictionsShapeInfo).c_str());
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
     REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(labelsShapeInfo), 0, "HUBER_LOSS OP: weights array should be scalar or have the same rank as labels array, but got %i and %i correspondingly!", shape::rank(weightsShapeInfo), shape::rank(labelsShapeInfo));
-    // check whether broadcast operation is possible for weights array    
+    // check whether broadcast operation is possible for weights array
     REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "HUBER_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
     Nd4jLong* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
-    	outShapeInfo = ShapeBuilders::createScalarShapeInfo(outType, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
     else 							// in this case output has the same shape as labels and predictions
-    	outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -179,10 +179,10 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 			NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic)*delta;
 
-			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.getWorkspace());
+			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
 
-            NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.getWorkspace());
+            NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::GreaterThan, delta, &gtMask);
 
 			NDArray signDiff(diff);
@@ -258,7 +258,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 						*dLdw = 0.;
 					}
 					else {
-						auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+						auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
 						if(weights->isScalar())
 							dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

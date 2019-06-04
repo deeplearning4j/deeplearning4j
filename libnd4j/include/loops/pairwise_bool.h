@@ -63,19 +63,9 @@ namespace functions {
 #ifdef __CUDACC__
 
             template <typename OpType>            
-            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams, int *allocationPointer);
+            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams);
 
-            template<typename OpType>
-            static __device__ void transformCuda(Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *params, void *z, Nd4jLong zEws, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo);
-
-            template<typename OpType>
-            static __device__ void transformCuda(void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo);
-
-            static __device__ void transformCuda(const int opNum, Nd4jLong len, void *x, void *y, Nd4jLong xEws, Nd4jLong yEws, void *extraParams, void *z, Nd4jLong zEws, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo);
-
-            static __device__ void transformCuda(const int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo);
-
-            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *resultShapeInfo, void *extraParams);
+            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams);
 
 
 #endif

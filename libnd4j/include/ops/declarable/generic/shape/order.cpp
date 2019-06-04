@@ -45,8 +45,7 @@ namespace nd4j {
 
             auto isFOrder = INT_ARG(0) == 1;
 
-            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input), block.getWorkspace());
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
             return SHAPELIST(newShape);
         }
     }

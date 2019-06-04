@@ -49,7 +49,7 @@ namespace nd4j {
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
             REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
-            int res =  helpers::topKFunctor(x, values, indices, k, needSort);
+            int res =  helpers::topKFunctor(block.launchContext(), x, values, indices, k, needSort);
             return res;
         }
 
@@ -76,8 +76,9 @@ namespace nd4j {
                 aShape[shapeRank] = k;
 
                 shape::updateStrides(aShape, shape::order(in));
-                ArrayOptions::setDataType(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::INT64));
-                shapeList->push_back(aShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::INT64))));
+
+                RELEASE(aShape, block.getWorkspace());
             }
             return shapeList;
         }

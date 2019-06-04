@@ -22,6 +22,8 @@
 #ifndef DEV_TESTS_SCALARBENCHMARK_H
 #define DEV_TESTS_SCALARBENCHMARK_H
 
+using namespace nd4j::graph;
+
 namespace nd4j {
     class ND4J_EXPORT ScalarBenchmark : public OpBenchmark {
     public:
@@ -56,10 +58,14 @@ namespace nd4j {
         }
 
         void executeOnce() override {
+            PointersManager manager(LaunchContext::defaultContext(), "ScalarBM");
+
             if (_z == nullptr)
-                NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _x->buffer(), _x->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
+                NativeOpExecutioner::execScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), nullptr);
             else
-                NativeOpExcutioner::execScalar(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), _y->buffer(), _y->shapeInfo(), nullptr);
+                NativeOpExecutioner::execScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), nullptr);
+
+            manager.synchronize();
         }
 
         std::string orders() override {

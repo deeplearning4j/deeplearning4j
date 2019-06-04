@@ -21,16 +21,17 @@
 #ifndef DEV_TESTS_TADPACK_H
 #define DEV_TESTS_TADPACK_H
 
-#include "DataBuffer.h"
+#include "ConstantDataBuffer.h"
 
 namespace nd4j {
     class ND4J_EXPORT TadPack {
     private:
-        DataBuffer _tadShape;
-        DataBuffer _tadOffsets;
+        ConstantDataBuffer _tadShape;
+        ConstantDataBuffer _tadOffsets;
         Nd4jLong _numTads;
+        int _shapeInfoLength;
     public:
-        explicit TadPack(DataBuffer &shapes, DataBuffer &offets, Nd4jLong numTads);
+        explicit TadPack(ConstantDataBuffer &shapes, ConstantDataBuffer &offets, Nd4jLong numTads);
         TadPack() = default;
         ~TadPack() = default;
 
@@ -41,6 +42,14 @@ namespace nd4j {
         Nd4jLong* specialOffsets();
 
         Nd4jLong numberOfTads();
+        int shapeInfoLength();
+
+        /**
+         * These methods return either primary or special pointers depending on platform binaries were compiled for
+         * @return
+         */
+        Nd4jLong *platformShapeInfo();
+        Nd4jLong *platformOffsets();
     };
 }
 

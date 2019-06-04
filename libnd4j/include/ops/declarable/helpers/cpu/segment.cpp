@@ -19,7 +19,7 @@
 //
 
 #include <ops/declarable/helpers/segment.h>
-
+#include <ShapeUtils.h>
 namespace nd4j {
 namespace ops {
 namespace helpers {
@@ -46,12 +46,7 @@ namespace helpers {
             }
         }
         else {
-            std::vector<int> restDims(input->rankOf() - 1);
-            Nd4jLong loop_size = input->rankOf();
-            PRAGMA_OMP_PARALLEL_FOR
-            for (Nd4jLong e = 1; e < loop_size; e++)
-                restDims[e - 1] = e;
-
+            std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
             auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
@@ -310,27 +305,27 @@ namespace helpers {
 //    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& anOutput) {
 //      }
 
-    void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentMinFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMinFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentMeanFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentMeanFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentSumFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentSumFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    void segmentProdFunctor(NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentProdFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), segmentProdFunctor_, (input, indices, output), LIBND4J_TYPES);
     }
 
-    bool segmentIndicesValidate(NDArray* indices, NDArray& expected, NDArray& output) {
+    bool segmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, NDArray& expected, NDArray& output) {
         auto val = indices->e(0);
         for (int e = 1; e < indices->lengthOf(); e++) {
             output = indices->e(e);
@@ -352,7 +347,7 @@ namespace helpers {
     // Unsorted segment ops
     // -------------------------------------------------------------------------------------------------------------- //
 
-    bool unsortedSegmentIndicesValidate(NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
+    bool unsortedSegmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         Nd4jLong val = indices->e<Nd4jLong>(0);
 
         Nd4jLong maxInd = indices->argMax();
@@ -416,7 +411,7 @@ namespace helpers {
             }
         }
     }
-    void unsortedSegmentMaxFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMaxFunctor_, (input, indices, numOfClasses, output), NUMERIC_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMaxFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
@@ -472,14 +467,14 @@ namespace helpers {
         }
 
     }
-    void unsortedSegmentMinFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMinFunctor_, (input, indices, numOfClasses, output),
                               NUMERIC_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    void unsortedSegmentMeanFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -522,7 +517,7 @@ namespace helpers {
         }
     }
 
-    void unsortedSegmentSumFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -602,12 +597,12 @@ namespace helpers {
         }
     }
 
-    void unsortedSegmentProdFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentProdFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentProdFunctor_, (input, indices, numOfClasses, output), NUMERIC_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentProdFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    void unsortedSegmentSqrtNFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSqrtNFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -651,10 +646,9 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // Sorted backpropagate ops
     //
-
     // segment max
     template <typename T>
-    int segmentMaxFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMaxFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         //int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
@@ -701,15 +695,15 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return segmentMaxFunctorBP_, (input, indices, gradOut, output), NUMERIC_TYPES);
+    int segmentMaxFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), return segmentMaxFunctorBP_, (context, input, indices, gradOut, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
 
     // segmen min
-    int segmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMinFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         std::unique_ptr<NDArray> tempRes(gradOut->dup());
-        segmentMinFunctor(input, indices, tempRes.get());
+        segmentMinFunctor(context, input, indices, tempRes.get());
         if (input->isVector()) {
             PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
@@ -750,7 +744,7 @@ namespace helpers {
     }
 
     // segmen mean
-    int segmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         int numClasses = output->sizeAt(0);
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
@@ -798,7 +792,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentSumFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
 //        int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         Nd4jLong idx = indices->e<Nd4jLong>(0);
@@ -830,9 +824,9 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int segmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto tempRes = gradOut->dup();
-        segmentProdFunctor(input, indices, tempRes);
+        segmentProdFunctor(context, input, indices, tempRes);
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
@@ -873,11 +867,11 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int unsortedSegmentMaxFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMaxFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 //        int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
-        unsortedSegmentMaxFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
 
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
@@ -911,15 +905,15 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMaxFunctorBP_, (input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
+    int unsortedSegmentMaxFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     template <typename T>
-    static int unsortedSegmentMinFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMinFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
-        unsortedSegmentMinFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentMinFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
 
             PRAGMA_OMP_PARALLEL_FOR
@@ -960,12 +954,12 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMinFunctorBP_, (input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
+    int unsortedSegmentMinFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
-    int unsortedSegmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
@@ -1004,7 +998,7 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSumFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
         // if input is a vector: (as if in doc sample)
         Nd4jLong idx = indices->e<Nd4jLong>(0);
@@ -1037,10 +1031,10 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
-    int unsortedSegmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
 
-        unsortedSegmentProdFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentProdFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
             PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
@@ -1075,7 +1069,7 @@ namespace helpers {
     }
 
 //    template <typename T>
-    int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSqrtNFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {

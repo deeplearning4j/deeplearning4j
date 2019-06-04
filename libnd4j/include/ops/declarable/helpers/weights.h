@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void adjustWeights(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength);
+    void adjustWeights(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength);
 
 }
 }

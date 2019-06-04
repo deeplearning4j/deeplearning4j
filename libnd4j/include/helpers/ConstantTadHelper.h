@@ -29,7 +29,6 @@
 #include <mutex>
 #include <array/ShapeDescriptor.h>
 #include <array/TadDescriptor.h>
-#include <array/DataBuffer.h>
 #include <array/TadPack.h>
 
 namespace nd4j {

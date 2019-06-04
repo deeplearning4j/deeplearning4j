@@ -58,7 +58,7 @@ public class MinMaxStats implements NormalizerStats {
         // If any entry in `addedPadding` is not 0, then we had to add something to prevent 0 difference, Add this same
         // value to the upper bounds to actually apply the padding, and log about it
         if (addedPadding.sumNumber().doubleValue() > 0) {
-            log.info("API_INFO: max val minus min val found to be zero. Transform will round up to epsilon to avoid nans.");
+            log.info("NormalizerMinMaxScaler: max val minus min val found to be zero. Transform will round up to epsilon to avoid nans.");
             upper.addi(addedPadding);
         }
 
@@ -119,9 +119,8 @@ public class MinMaxStats implements NormalizerStats {
                 return this;
             }
 
-            INDArray tad = data.javaTensorAlongDimension(0, 0);
-            INDArray batchMin = data.min(0);
-            INDArray batchMax = data.max(0);
+            INDArray batchMin = data.min(0).reshape(1, data.size(1));
+            INDArray batchMax = data.max(0).reshape(1, data.size(1));
             if (!Arrays.equals(batchMin.shape(), batchMax.shape()))
                 throw new IllegalStateException(
                                 "Data min and max must be same shape. Likely a bug in the operation changing the input?");

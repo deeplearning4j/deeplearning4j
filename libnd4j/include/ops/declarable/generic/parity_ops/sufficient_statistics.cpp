@@ -36,11 +36,12 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());//*block.getIArguments();
 
             // axis might be dynamic (i.e. tf mode)
-            helpers::adjustAxis(input, axisVector, axis);
+            helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
             input->reduceAlongDimension(reduce::SquaredNorm, squares, axis);
             input->reduceAlongDimension(reduce::Sum, sum, axis);
-            dataCount->assign(input->lengthOf() / sum->lengthOf());
+            auto count = NDArrayFactory::create(input->dataType(), input->lengthOf() / sum->lengthOf());
+            dataCount->assign(count);
             if (block.numT() > 0) {
                 auto shift = OUTPUT_VARIABLE(3);
                 shift->assign(T_ARG(0));
@@ -51,7 +52,7 @@ namespace nd4j {
 
         DECLARE_TYPES(sufficient_statistics) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, {DataType::FLOAT8, DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
             getOpDescriptor()
                     ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
             getOpDescriptor()
@@ -67,23 +68,17 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());
 
             auto input = INPUT_VARIABLE(0);
+            helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-            for (int e = 0; e < axisVector->lengthOf(); e++) {
-                int ca = axisVector->e<int>(e);
-                if (ca < 0)
-                        ca += input->rankOf();
-
-                    axis[e] = ca;
-            }
             //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            auto scalarShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace());
+            auto scalarShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)));
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            ArrayOptions::setDataType(sumShape, ArrayOptions::dataType(inputShape->at(0)));
+
             auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            ArrayOptions::setDataType(squareShape, ArrayOptions::dataType(inputShape->at(0)));
+
             auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
             if (block.numT() > 0)
-                shapeList->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
+                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
             
             return shapeList;
         }

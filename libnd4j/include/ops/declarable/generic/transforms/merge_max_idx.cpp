@@ -37,7 +37,7 @@ OP_IMPL(mergemaxindex, -1, 1, false) {
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
-    helpers::mergeMaxIndex(inArrs, *output);
+    helpers::mergeMaxIndex(block.launchContext(), inArrs, *output);
 
     return Status::OK();
 }

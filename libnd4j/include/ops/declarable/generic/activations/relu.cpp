@@ -52,7 +52,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, z, nullptr);
-            helpers::reluDerivative(input, epsilon, z);
+            helpers::reluDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
         DECLARE_SYN(ReluGrad, relu_bp);

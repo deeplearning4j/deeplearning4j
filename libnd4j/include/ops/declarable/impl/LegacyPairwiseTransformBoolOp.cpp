@@ -41,6 +41,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             if (!x->isSameShape(y)) {
                 std::string sx = ShapeUtils::shapeAsString(x);
                 std::string sy = ShapeUtils::shapeAsString(y);
@@ -49,11 +51,18 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execPairwiseTransform(opNum, x->getBuffer(), x->getShapeInfo(), y->getBuffer(), y->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
+            ExtraArguments extras(*block.getTArguments());
+        PointersManager manager(block.launchContext(), "LegacyPairwiseTransformBoolOp");
 
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                    y->getBuffer(), y->getShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(),
+                    z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
+                    extras.argumentsAsT(x->dataType()));
+
+            manager.synchronize();
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
@@ -61,12 +70,7 @@ namespace nd4j {
         */
         ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-            ArrayOptions::setDataType(newShape, DataType::BOOL);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

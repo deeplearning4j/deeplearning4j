@@ -122,7 +122,7 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<X*>(shmem);
-        tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        tadLength = shape::length(tadOnlyShapeInfo);
         tadRank = shape::rank(tadOnlyShapeInfo);
         numTads = shape::length(xShapeInfo) / tadLength;
         tadShape = shape::shapeOf(tadOnlyShapeInfo);
@@ -177,16 +177,19 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
     auto z = reinterpret_cast<X*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<X*>(vreductionBuffer);
-    
-    int xEws = shape::elementWiseStride(xShapeInfo);
-    auto len = shape::length(xShapeInfo);
+
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
     __shared__ X* sPartials;
+    __shared__ Nd4jLong xEws;
+    __shared__ Nd4jLong len;
+
     if(threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<X*>(shmem);
+        xEws = shape::elementWiseStride(xShapeInfo);
+        len = shape::length(xShapeInfo);
     }
     __syncthreads();
     sPartials[threadIdx.x] = OpType::startingValue(x);

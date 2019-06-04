@@ -72,8 +72,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     else {
         REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays must be equal to 3, but got %i instead !", block.width());   
         std::vector<Nd4jLong> shape = {iD};
-        mean = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.getWorkspace());
-        variance = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.getWorkspace());
+        mean = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());
+        variance = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());
     }
 
     // FIXME: double?
@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
         epsilon = 0.001;
     
     const int restSize = x->lengthOf() / iD;    
-    auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, x->dataType(), block.getWorkspace());
+    auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, x->dataType(), block.launchContext());
     xAffected.assign(x);
 
     const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(fused_batch_norm) {
     COPY_SHAPE(scaleShapeInfo, batchMeanShapeInfo);
     COPY_SHAPE(scaleShapeInfo, batchVarShapeInfo);    
     
-    return SHAPELIST(outShapeInfo, batchMeanShapeInfo, batchVarShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo), CONSTANT(batchMeanShapeInfo), CONSTANT(batchVarShapeInfo));
 }
 
 

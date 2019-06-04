@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,6 +44,7 @@ import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -883,6 +885,36 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArrayStatistics inspectArray(INDArray array) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(int[] values, DataType desiredType) {
+        return createConstantBuffer(ArrayUtil.toLongArray(values), desiredType);
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(float[] values, DataType desiredType) {
+        return createConstantBuffer(ArrayUtil.toDoubles(values), desiredType);
+    }
+
+    @Override
+    public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
         throw new UnsupportedOperationException();
     }
 }

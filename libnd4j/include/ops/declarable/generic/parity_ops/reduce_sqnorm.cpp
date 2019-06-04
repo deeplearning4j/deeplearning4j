@@ -27,19 +27,19 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
-    
+
     auto input = INPUT_VARIABLE(0);
     auto gradI = OUTPUT_VARIABLE(0);
-    
+
     bool keepDims = false;
 
     auto dimensions = *block.getIArguments();
 
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
-    }    
-        
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    }
+
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
     else if (block.getTArguments()->size())
@@ -59,37 +59,37 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
 
     auto dimensions = *block.getIArguments();
     bool keepDims = false;
-    
+
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
-        
+
     if (block.getBArguments()->size())
         keepDims = B_ARG(0);
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
-    
+
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());    
+    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
 
 DECLARE_TYPES(reduce_sqnorm) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY) 
+        ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 #endif 
 
 #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
- 
+
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 
@@ -98,18 +98,18 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
     auto gradI  = OUTPUT_VARIABLE(0);
 
     if (gradO->lengthOf() == 1) {
-        gradI->assign( 2 * (*input) * gradO->e(0));        
+        gradI->assign( 2 * (*input) * gradO->e(0));
     }
     else {
-        
+
         bool keepDims = false;
         auto dimensions = *block.getIArguments();
-        
+
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
-            helpers::adjustAxis(input, axesVector, dimensions);
+            helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
         }
-                
+
         if (block.getBArguments()->size())
             keepDims = B_ARG(0);
         else if (block.getTArguments()->size())
@@ -123,10 +123,8 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
         // *** calculations *** //
 
         if(!keepDims) {
-
-            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+            auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-            RELEASE(gradOShapeKeepDims, block.getWorkspace());
         }
 
         gradI->assign(2. * (*input) * *gradO);
@@ -140,23 +138,23 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
 
     if(shape::length(inputShape->at(1)) > 1) {
-        
+
         auto dimensions = *block.getIArguments();
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+            helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
         }
 
         REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
-    
+
         for(const auto& item : dimensions)
             REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SQNORM_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     }
-    
+
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 
-    return SHAPELIST(gradIshapeInfo);
+    return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_sqnorm_bp) {
@@ -164,7 +162,7 @@ DECLARE_TYPES(reduce_sqnorm_bp) {
         ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
-   
+
 #endif
 
 }

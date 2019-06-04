@@ -197,6 +197,11 @@ There are 2 directories for running tests:
     2. layers_tests: This covers the newer graph operations and ops associated with samediff.
 
 
-For running the tests, we currently use cmake to run the tests.
-We typically use clion for our tests.
+For running the tests, we currently use cmake or CLion to run the tests.
+
+To run tests using CUDA backend it's pretty much similar process:
+
+    1. ./buildnativeoperations.h -c cuda -cc <YOUR_ARCH> -b debug -t -j <NUMBER_OF_CORES>
+    2. ./blasbuild/cuda/tests_cpu/layers_tests/runtests (.exe on Windows)
+
 

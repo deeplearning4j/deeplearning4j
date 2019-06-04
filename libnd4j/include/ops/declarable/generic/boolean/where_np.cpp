@@ -116,11 +116,8 @@ namespace nd4j {
                     auto output = OUTPUT_VARIABLE(outNext);
                     for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
                         output->p<Nd4jLong>(e, whereTrue->e<Nd4jLong>(e, outNext));
-                        //throw std::runtime_error("Not implemented");
                     }
                 }
-//                auto result = list.stack();
-//                OVERWRITE_RESULT(result);
             }
 
             return ND4J_STATUS_OK;
@@ -133,7 +130,7 @@ namespace nd4j {
                 auto inShape = inputShape->at(1);
                 COPY_SHAPE(inShape, newShape);
 
-                shapes->push_back(newShape);
+                shapes->push_back(CONSTANT(newShape));
             } else {
                 auto condition = INPUT_VARIABLE(0);
 
@@ -144,17 +141,11 @@ namespace nd4j {
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 if (numOfTrue) {
                     for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-//                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                        //                  shape::shapeVector(numOfTrue, newShape);
-                        auto newShape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, numOfTrue, block.workspace());
-                    //ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
-                        shapes->push_back(newShape);
+                        shapes->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(numOfTrue, nd4j::DataType::INT64));
                     }
                 }
                 else {
-                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
-                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
-                    shapes->push_back(newShape);
+                    shapes->push_back(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64));
                 }
             }
             return shapes;

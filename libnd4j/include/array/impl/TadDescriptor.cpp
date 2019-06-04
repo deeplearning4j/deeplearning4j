@@ -70,6 +70,6 @@ namespace nd4j {
     }
 
     bool TadDescriptor::areUnitiesinShape() const {
-        return _unitiesInShape;   
+        return _unitiesInShape;
     }
 }

@@ -30,10 +30,7 @@ import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.DataTypeEx;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -51,6 +48,7 @@ import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -2132,6 +2130,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 .countPositive(debugInfo._positiveCount())
                 .countZero(debugInfo._zeroCount())
                 .build();
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+        val dbf = (Nd4jCpu.ConstantDataBuffer) loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+
+        return new LongBuffer(dbf.primary(), Shape.shapeInfoLength(shape.length));
+    }
+
+    @Override
+    public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
+        val pack = (Nd4jCpu.TadPack) loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+
+        val tadShape = new LongBuffer(pack.primaryShapeInfo(), pack.shapeInfoLength());
+        val tadOffsets = new LongBuffer(pack.primaryOffsets(), pack.numberOfTads());
+
+        return new TadPack(tadShape, tadOffsets);
     }
 
     protected void appendSameDiffInfo(StringBuilder sb, DifferentialFunction df){

@@ -41,7 +41,7 @@ namespace nd4j {
                 //input->printIndexedBuffer("input buffer");
                 Nd4jStatus result = list->write(idx->e<int>(0), input->dup());
 
-                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
+                auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
                 //res->printShapeInfo("Write_list 2 output shape");
 
                 setupResult(res, block);
@@ -54,7 +54,7 @@ namespace nd4j {
 
                 Nd4jStatus result = list->write(idx, input->dup());
 
-                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
+                auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
                 //res->printShapeInfo("Write_list 1 output shape");
                 //OVERWRITE_RESULT(res);
                 setupResult(res, block);

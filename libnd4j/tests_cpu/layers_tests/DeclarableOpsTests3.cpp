@@ -2005,7 +2005,7 @@ TEST_F(DeclarableOpsTests3, zeta_test9) {
     ASSERT_EQ(ND4J_STATUS_OK, results);
 
     //auto *output = results->at(0);
-    z.printIndexedBuffer("Zeta output");
+    // z.printIndexedBuffer("Zeta output");
     ASSERT_TRUE(expected.isSameShape(z));
     ASSERT_TRUE(expected.equalsTo(z));
 
@@ -2030,7 +2030,7 @@ TEST_F(DeclarableOpsTests3, zeta_test10) {
     ASSERT_EQ(ND4J_STATUS_OK, results);
 
     //auto *output = results->at(0);
-    z.printIndexedBuffer("Zeta output");
+    // z.printIndexedBuffer("Zeta output");
     ASSERT_TRUE(expected.isSameShape(z));
     ASSERT_TRUE(expected.equalsTo(z));
 
@@ -2068,7 +2068,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);
-    output->printBuffer();
+    // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));

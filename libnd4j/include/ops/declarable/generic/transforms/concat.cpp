@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
             allOfSameType &= (INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType());
             if(INPUT_VARIABLE(i)->rankOf() == 0) {
                 // FIXME, use this instead:  block.dataType()
-                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
+                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.launchContext());
                 vec->assign(INPUT_VARIABLE(i));
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
@@ -88,7 +88,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     if(numOfArrs == 1) 
         output->assign(nonEmptyArrs[0]);
     else 
-        helpers::concat(nonEmptyArrs, *output, axis);
+        helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
     // delete dynamically allocated vectors with length=1
     for(int index : arrsToDelete)
@@ -122,8 +122,7 @@ DECLARE_SHAPE_FN(concat) {
             
             if(inputShape->at(i)[0] == 0) {
                 // FIXME, use this instead: block.dataType()
-                nonEmptyArrShapes.push_back(ShapeBuilders::createVectorShapeInfo(INPUT_VARIABLE(0)->dataType(), 1, block.workspace()));
-                shapesToDelete.push_back(index);
+                nonEmptyArrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
             }
             else{
                 nonEmptyArrShapes.push_back(inputShape->at(i));
@@ -136,8 +135,7 @@ DECLARE_SHAPE_FN(concat) {
 
     if(numOfArrs == 0){
         //All inputs are empty arrays -> return empty, mainly for TF import compatibility
-        Nd4jLong* empty = ShapeBuilders::createScalarShapeInfo(INPUT_VARIABLE(0)->dataType(), block.getWorkspace());
-		ArrayOptions::setPropertyBit(empty, ARRAY_EMPTY);
+        auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
         return SHAPELIST(empty);
     }
     
@@ -167,7 +165,7 @@ DECLARE_SHAPE_FN(concat) {
     // case when we have only one input array
     if(numOfArrs == 1) {    
         ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));        
-        return SHAPELIST(outShapeInfo);
+        return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
     for(int i = 1; i < numOfArrs; ++i)
@@ -176,10 +174,12 @@ DECLARE_SHAPE_FN(concat) {
     ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
-    for(int index : shapesToDelete)        
+    for(int index : shapesToDelete)
         RELEASE(nonEmptyArrShapes[index], block.getWorkspace());
 
-    return SHAPELIST(outShapeInfo);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(result);
 }
 
 
@@ -405,11 +405,7 @@ DECLARE_SHAPE_FN(concat) {
 
             for (int e = 0; e < inputShape->size() - 1; e++) {
                 auto inShape = inputShape->at(e);
-                Nd4jLong* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
-                memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
-
-                shapeList->push_back(newShape);
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
             }
 
             return shapeList;

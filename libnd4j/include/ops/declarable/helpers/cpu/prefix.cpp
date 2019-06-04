@@ -119,11 +119,11 @@ namespace nd4j {
                     __prefix<T>(op, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
             };
 
-            void _prefix(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+            void _prefix(nd4j::LaunchContext * context, scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
                 BUILD_SINGLE_SELECTOR(x->dataType(), __prefix, (op, x, z, exclusive, reverse), LIBND4J_TYPES);
             }
 
-            void _prefix(scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse) {
+            void _prefix(nd4j::LaunchContext * context, scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse) {
                 BUILD_SINGLE_SELECTOR(x->dataType(), __prefix, (op, x, z, dims, exclusive, reverse), LIBND4J_TYPES);
             }
 

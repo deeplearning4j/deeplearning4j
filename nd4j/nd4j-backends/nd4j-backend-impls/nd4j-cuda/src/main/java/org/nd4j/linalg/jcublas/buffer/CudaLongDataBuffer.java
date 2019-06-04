@@ -16,10 +16,16 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.NonNull;
+import lombok.val;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -43,6 +49,29 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
      */
     public CudaLongDataBuffer(Pointer pointer, Indexer indexer, long length) {
         super(pointer, indexer, length);
+    }
+
+    public CudaLongDataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
+    }
+
+
+    public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements) {
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+        this.offset = 0;
+        this.originalOffset = 0;
+        this.underlyingLength = numberOfElements;
+        this.length = numberOfElements;
+        initTypeAndSize();
+
+        this.pointer = new CudaPointer(hostPointer, numberOfElements).asLongPointer();
+        indexer = LongIndexer.create((LongPointer) this.pointer);
+
+        this.allocationPoint = AtomicAllocator.getInstance().pickExternalBuffer(this);
+
+        val pp = new PointersPair(devicePointer, this.pointer);
+        allocationPoint.setPointers(pp);
+        trackingPoint = allocationPoint.getObjectId();
     }
 
     /**

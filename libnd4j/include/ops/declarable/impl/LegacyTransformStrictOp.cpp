@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyTransformStrictOp.h>
 
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 
 
 namespace nd4j {
@@ -41,13 +41,19 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {input});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execTransformStrict(opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext(), "LegacyTransformStrictOp");
 
+            NativeOpExecutioner::execTransformStrict(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
+
+            manager.synchronize();
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
@@ -61,7 +67,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(CONSTANT(newShape));
         }
     }
 }

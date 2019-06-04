@@ -49,11 +49,11 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         if(numInArrs == 1) {
                 //limit = (*INPUT_VARIABLE(0))(0.);
                 if (output->isR()) {
-                    s = NDArrayFactory::create_(0.0f, block.workspace());
-                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                    s = NDArrayFactory::create_(0.0f, block.launchContext());
+                    d = NDArrayFactory::create_(1.0f, block.launchContext());
                 } else {
-                    s = NDArrayFactory::create_(0, block.workspace());
-                    d = NDArrayFactory::create_(1, block.workspace());
+                    s = NDArrayFactory::create_(0, block.launchContext());
+                    d = NDArrayFactory::create_(1, block.launchContext());
                 }
                 localS = true;
                 localD = true;
@@ -61,9 +61,9 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
                 s = INPUT_VARIABLE(0);
                 //limit = (*INPUT_VARIABLE(1))(0.);
                 if (output->isR()) {
-                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                    d = NDArrayFactory::create_(1.0f, block.launchContext());
                 } else {
-                    d = NDArrayFactory::create_(1, block.workspace());
+                    d = NDArrayFactory::create_(1, block.launchContext());
                 }
                 localD = true;
         } else {
@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         if(numIArgs == 1) {
           //  limit = INT_ARG(0);
         } else if(numIArgs == 2) {
-            s = NDArrayFactory::create_(INT_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(INT_ARG(0), block.launchContext());
             //limit = INT_ARG(1);
-            d = NDArrayFactory::create_(1, block.workspace());
+            d = NDArrayFactory::create_(1, block.launchContext());
         }
         else {
-            s = NDArrayFactory::create_(INT_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(INT_ARG(0), block.launchContext());
             //limit = INT_ARG(1);
-            d = NDArrayFactory::create_(INT_ARG(2), block.workspace());
+            d = NDArrayFactory::create_(INT_ARG(2), block.launchContext());
         }
 
         localS = true;
@@ -93,17 +93,17 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
         if(numTArgs == 1) {
             //limit = T_ARG(0);
-            s = NDArrayFactory::create_(0.0f, block.workspace());
-            d = NDArrayFactory::create_(1.0f, block.workspace());
+            s = NDArrayFactory::create_(0.0f, block.launchContext());
+            d = NDArrayFactory::create_(1.0f, block.launchContext());
         } else if(numTArgs == 2) {
-            s = NDArrayFactory::create_(T_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
             //limit = T_ARG(1);
-            d = NDArrayFactory::create_(1.0f, block.workspace());
+            d = NDArrayFactory::create_(1.0f, block.launchContext());
         }
         else {
-            s = NDArrayFactory::create_(T_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
             //limit = T_ARG(1);
-            d = NDArrayFactory::create_(T_ARG(2), block.workspace());
+            d = NDArrayFactory::create_(T_ARG(2), block.launchContext());
         }
 
         localS = true;
@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         REQUIRE_TRUE(false, 0, "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
     }
 
-    helpers::range(*s, *d, *output);
+    helpers::range(block.launchContext(), *s, *d, *output);
 
     if (localS)
         delete s;
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(range) {
             }
 
             if (limit == start)
-                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -178,7 +178,7 @@ DECLARE_SHAPE_FN(range) {
             //nd4j_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
 
             if (limit == start)
-                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dtype, block.workspace()));
+                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -204,7 +204,7 @@ DECLARE_SHAPE_FN(range) {
         }
 
         if (limit == start)
-            return SHAPELIST(ShapeBuilders::emptyShapeInfo(nd4j::DataType::INT32, block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT32));
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -235,7 +235,7 @@ DECLARE_SHAPE_FN(range) {
 
         //REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
         if (limit == start)
-            return SHAPELIST(ShapeBuilders::emptyShapeInfo(Environment::getInstance()->defaultFloatDataType(), block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(Environment::getInstance()->defaultFloatDataType()));
 
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -254,7 +254,7 @@ DECLARE_SHAPE_FN(range) {
 
     REQUIRE_TRUE(steps > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
 
-    return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dataType, steps, block.workspace()));
+    return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(steps, dataType));
 }
 
 

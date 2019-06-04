@@ -37,8 +37,7 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                axis.resize(axisVector->lengthOf());
-                helpers::adjustAxis(input, axisVector, axis);
+                helpers::adjustAxis(input->rankOf(), axisVector, axis);
 //                for (int e = 0; e < axisVector->lengthOf(); e++) {
 //                    int ca = (int) axisVector->e(e);
 //                    if (ca < 0)
@@ -78,8 +77,6 @@ namespace nd4j {
     
             auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
-            ArrayOptions::setDataType(meanShape, input->dataType());
-            ArrayOptions::setDataType(varianceShape, input->dataType());
             return SHAPELIST(meanShape, varianceShape); 
         }
 

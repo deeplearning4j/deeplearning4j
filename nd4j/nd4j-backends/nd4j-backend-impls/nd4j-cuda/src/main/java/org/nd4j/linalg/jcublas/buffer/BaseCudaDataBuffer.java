@@ -27,6 +27,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.CudaDeallocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.workspace.CudaWorkspaceDeallocator;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -83,6 +84,22 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer() {
 
+    }
+
+    public BaseCudaDataBuffer(@NonNull Pointer pointer, @NonNull Pointer specialPointer, @NonNull Indexer indexer, long length) {
+        this.allocationPoint = AtomicAllocator.getInstance().pickExternalBuffer(this);
+        this.allocationPoint.setPointers(new PointersPair(specialPointer, pointer));
+        this.trackingPoint = allocationPoint.getObjectId();
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+
+        this.indexer = indexer;
+
+        this.offset = 0;
+        this.originalOffset = 0;
+        this.underlyingLength = length;
+        this.length = length;
+
+        initTypeAndSize();
     }
 
     /**

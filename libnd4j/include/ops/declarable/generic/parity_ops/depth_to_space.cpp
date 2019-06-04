@@ -44,7 +44,7 @@ namespace ops {
 
         auto output = OUTPUT_VARIABLE(0);
 
-        helpers::_depthToSpace(input, output, block_size, isNHWC);   
+        helpers::_depthToSpace(block.launchContext(), input, output, block_size, isNHWC);
 
         STORE_RESULT(output);     
 
@@ -79,8 +79,7 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
         
-        Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data(), block.getWorkspace());
-        
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

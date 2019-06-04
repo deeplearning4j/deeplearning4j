@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
             REQUIRE_TRUE( (paddings->e<Nd4jLong>(i,0) <= (input->sizeAt(i) - includeBorder)) && (paddings->e<Nd4jLong>(i,1) <= (input->sizeAt(i) - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
     }
 
-    helpers::mirrorPad(*input, *paddings, *output, mode);
+    helpers::mirrorPad(block.launchContext(), *input, *paddings, *output, mode);
 
     return Status::OK();
 }
@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(mirror_pad) {
 
     if(rank == 1) {
         Nd4jLong len = input->lengthOf() + paddings->e<Nd4jLong>(0) + paddings->e<Nd4jLong>(1);
-        outShapeInfo = ShapeBuilders::createVectorShapeInfo(input->dataType(), len, block.getWorkspace());
+        outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(len, input->dataType());
     }
     else {
         ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
@@ -91,6 +91,8 @@ DECLARE_SHAPE_FN(mirror_pad) {
         for(int i = 0; i < rank; ++i)
             outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
         ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
+
+        outShapeInfo = CONSTANT(outShapeInfo);
     }
 
     return SHAPELIST(outShapeInfo);

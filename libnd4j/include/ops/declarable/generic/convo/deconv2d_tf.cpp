@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_deconv2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 namespace nd4j {
 namespace ops  {
@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(gradIShape->lengthOf() == rank, 0, "CUSTOM DECONV2D_TF OP: length of array with output shape must be equal to 4, but got %i instead !", gradIShape->lengthOf());    
 
     // create empty conv2d input array
-    NDArray input(gradO->ordering(), gradIShape->asVectorT<Nd4jLong>(), gradO->dataType(), block.getWorkspace());
+    NDArray input(gradO->ordering(), gradIShape->asVectorT<Nd4jLong>(), gradO->dataType(), block.launchContext());
     
                                      
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM DECONV2D_TF OP: wrong shape of input array, basing on array with output shape expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weights), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weights).c_str());
 
-    ConvolutionUtils::conv2dBP(block, &input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
+    ConvolutionUtils::conv2dBP(*block.launchContext(), &input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
     
     return Status::OK();
 }
@@ -131,29 +131,20 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     REQUIRE_TRUE(expectedGradIShape == ShapeUtils::shapeAsString(gradIShape), 0,  "CUSTOM DECONV2D_TF OP: wrong shape of array with output shape, expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils::shapeAsString(gradIShape).c_str());
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     
-    Nd4jLong* gradIshapeInfo(nullptr);        
-    ALLOCATE(gradIshapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-    gradIshapeInfo[0] = rank;
-    gradIshapeInfo[1] = bS;
+    Nd4jLong shape[4];
+    shape[0] = bS;
 
     if (isNCHW) {
-        gradIshapeInfo[2] = iC;
-        gradIshapeInfo[3] = iH;
-        gradIshapeInfo[4] = iW;
+        shape[1] = iC;
+        shape[2] = iH;
+        shape[3] = iW;
     } else {
-        gradIshapeInfo[2] = iH;
-        gradIshapeInfo[3] = iW;
-        gradIshapeInfo[4] = iC;
+        shape[1] = iH;
+        shape[2] = iW;
+        shape[3] = iC;
     }
-    
-    ShapeUtils::updateStridesAndType(gradIshapeInfo, gradIShapeShapeInfo, shape::order(gradOShapeInfo));
 
-    // setting datatype equal to weights type
-    ArrayOptions::setDataType(gradIshapeInfo, ArrayOptions::dataType(weightsShapeInfo));
-
-    return SHAPELIST(gradIshapeInfo);        
-
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weightsShapeInfo), shape::order(gradOShapeInfo), 4, shape));
 }
 
 }

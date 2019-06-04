@@ -130,7 +130,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) const {
+    bool BlasHelper::hasGEMV(const nd4j::DataType dtype)  {
         if(dtype == DataType::FLOAT32) {
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
                 return true;
@@ -206,7 +206,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) const {
+    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) {
         if(dtype == DataType::FLOAT32) {
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
                 return true;
@@ -223,6 +223,7 @@ namespace nd4j {
         }
         return false;
     }
+
 
     template <>
     bool BlasHelper::hasBatchedGEMM<float>() {

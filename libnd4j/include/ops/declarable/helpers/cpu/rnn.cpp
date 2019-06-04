@@ -37,7 +37,7 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void rnnCell(const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* ht_1, NDArray* ht) {
+void rnnCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* ht_1, NDArray* ht) {
 
     // xt   input [bS x inSize]
     // Wx   input-to-hidden weights, [inSize  x numUnits]
@@ -53,7 +53,7 @@ void rnnCell(const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDAr
 
 
 //////////////////////////////////////////////////////////////////////////
-void rnnTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
+void rnnTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
 
     // x   input [time x bS x inSize]
 	// Wx  input-to-hidden  weights, [inSize  x numUnits]
@@ -90,7 +90,7 @@ void rnnTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wh, const N
                     ht_1.assign((*h)({maxStep-1,maxStep, e,e+1, 0,0}));
             }
             else {
-                helpers::rnnCell(&xt, Wx, Wh, b, &ht_1, &ht);
+                helpers::rnnCell(context, &xt, Wx, Wh, b, &ht_1, &ht);
                 ht_1.assign(ht);
             }
         }

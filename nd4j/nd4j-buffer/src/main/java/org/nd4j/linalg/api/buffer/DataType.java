@@ -54,6 +54,22 @@ public enum DataType {
         }
     }
 
+    public int toInt() {
+        switch (this) {
+            case BOOL: return 1;
+            case HALF: return 3;
+            case FLOAT: return 5;
+            case DOUBLE: return 6;
+            case BYTE: return 7;
+            case SHORT: return 8;
+            case INT: return 9;
+            case LONG: return 10;
+            case UBYTE: return 11;
+            case UTF8: return 50;
+            default: throw new UnsupportedOperationException("Non-covered data type: [" + this + "]");
+        }
+    }
+
     /**
      * @return Returns true if the datatype is a floating point type (double, float or half precision)
      */

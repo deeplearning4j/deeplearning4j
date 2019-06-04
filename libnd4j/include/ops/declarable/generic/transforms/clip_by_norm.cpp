@@ -31,10 +31,10 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.getWorkspace());
+        const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.launchContext());
         const bool isInplace = block.isInplace();
         
-        helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);
+        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace);
 
         return Status::OK();
     }
@@ -47,7 +47,7 @@ namespace ops  {
         auto gradI = OUTPUT_VARIABLE(0);
         const auto clipNorm = NDArrayFactory::create(T_ARG(0));
 
-        helpers::clipByNormBP(*input, *gradO, *gradI, *block.getIArguments(), clipNorm); 
+        helpers::clipByNormBP(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm);
 
         return Status::OK();
     }
@@ -58,7 +58,7 @@ namespace ops  {
         Nd4jLong *newShape = nullptr;
         COPY_SHAPE(inShapeInfo, newShape);
 
-        return SHAPELIST(newShape);
+        return SHAPELIST(CONSTANT(newShape));
     }
 
     DECLARE_TYPES(clipbynorm) {

@@ -29,7 +29,7 @@ namespace ops {
 
     CUSTOM_OP_IMPL(eye, -2, 1, false, 0, -2) {
 
-        helpers::eye(*OUTPUT_VARIABLE(0));
+        helpers::eye(block.launchContext(), *OUTPUT_VARIABLE(0));
 
         return Status::OK();
     }
@@ -57,7 +57,6 @@ namespace ops {
                 for (int e = 0; e < input->lengthOf(); e++) {
                     params.emplace_back(input->e<int>(e));
                 }
-                delete input;
             }
         }
 
@@ -102,8 +101,9 @@ namespace ops {
         }
         
         shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]));
-        ArrayOptions::setDataType(outShapeInfo, dtype);
-        return SHAPELIST(outShapeInfo);
+        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, dtype));
+        RELEASE(outShapeInfo, block.getWorkspace());
+        return SHAPELIST(result);
     }
 
 

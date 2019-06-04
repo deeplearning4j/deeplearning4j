@@ -32,7 +32,7 @@ namespace nd4j {
 
             bool isNonDecreasing = true;
 
-            nd4j::ops::helpers::compare_elem(input, false, isNonDecreasing);
+            nd4j::ops::helpers::compare_elem(block.launchContext(), input, false, isNonDecreasing);
 
             if (isNonDecreasing)
                 return ND4J_STATUS_TRUE;

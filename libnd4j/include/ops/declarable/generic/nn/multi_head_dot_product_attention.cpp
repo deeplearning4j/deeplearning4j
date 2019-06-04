@@ -93,12 +93,12 @@ namespace ops  {
 
 
         // Project queries, keys, values
-        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.workspace());
-        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.workspace());
-        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.workspace());
+        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.launchContext());
+        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.launchContext());
+        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.launchContext());
 
         // Apply Attention
-        NDArray attnResults('c', {projectedQueries->sizeAt(0), projectedValues->sizeAt(1), projectedValues->sizeAt(2), projectedQueries->sizeAt(3)}, projectedValues->dataType(), block.workspace());
+        NDArray attnResults('c', {projectedQueries->sizeAt(0), projectedValues->sizeAt(1), projectedValues->sizeAt(2), projectedQueries->sizeAt(3)}, projectedValues->dataType(), block.launchContext());
         nd4j::ops::dot_product_attention attention;
         attention.execute({projectedQueries, projectedKeys, projectedValues, mask}, {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});
 
@@ -107,7 +107,7 @@ namespace ops  {
         attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
         nd4j::ops::matmul mmul;
-        NDArray projRes('c', {attnResults.sizeAt(0), Wo->sizeAt(1)}, values->dataType(), block.workspace());
+        NDArray projRes('c', {attnResults.sizeAt(0), Wo->sizeAt(1)}, values->dataType(), block.launchContext());
         mmul.execute({&attnResults, Wo},{&projRes}, {}, {}, {});
         projRes.reshapei(projRes.ordering(), {miniBatchSize, queryCount, outSize});
         projRes.permutei({0, 2, 1});
@@ -139,10 +139,8 @@ namespace ops  {
         auto numHeads = shape::sizeAt(WkShape, 0);
         auto timeSteps = shape::sizeAt(keysShape, 2);
 
-        Nd4jLong *weightsShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c',
-                                                                 {batchSize, numHeads, timeSteps, queryCount}, block.workspace());
-        Nd4jLong *outputShape = ShapeBuilders::createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c',
-                                                                {batchSize, outSize, queryCount}, block.workspace());
+        auto weightsShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
+        auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
 
         if(INT_ARG(1)){
             return SHAPELIST(outputShape, weightsShape);
@@ -224,12 +222,12 @@ namespace ops  {
                      ShapeUtils::shapeAsString(Wo).c_str(), ShapeUtils::shapeAsString(Wv).c_str());
 
         // Project queries, keys, values
-        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.workspace());
-        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.workspace());
-        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.workspace());
+        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.launchContext());
+        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.launchContext());
+        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.launchContext());
 
         // Apply Attention
-        NDArray attnResults('c', {projectedQueries->sizeAt(0), projectedValues->sizeAt(1), projectedValues->sizeAt(2), projectedQueries->sizeAt(3)}, projectedValues->dataType(), block.workspace());
+        NDArray attnResults('c', {projectedQueries->sizeAt(0), projectedValues->sizeAt(1), projectedValues->sizeAt(2), projectedQueries->sizeAt(3)}, projectedValues->dataType(), block.launchContext());
         nd4j::ops::dot_product_attention attention;
         attention.execute({projectedQueries, projectedKeys, projectedValues, mask}, {&attnResults}, {}, {normalization, 0}, {});
 
@@ -241,7 +239,7 @@ namespace ops  {
         auto epsPerm = eps->permute({0, 2, 1});
         auto epsPostReshape = epsPerm->reshape(eps->ordering(), {miniBatchSize * queryCount, outSize});
         nd4j::ops::matmul_bp matmulBp;
-        NDArray dLdPreWo(attnResults.shapeInfo(), false, block.workspace());
+        NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
         matmulBp.execute({&attnResults, Wo, epsPostReshape}, {&dLdPreWo, dLdWo}, {}, {}, {});
 
         // dLdAttn
@@ -249,14 +247,14 @@ namespace ops  {
         dLdPreWo.permutei({0, 2, 3, 1});
 
         nd4j::ops::dot_product_attention_bp attentionBp;
-        NDArray dLdProjectedQueries(projectedQueries->shapeInfo(), false, block.workspace());
-        NDArray dLdProjectedKeys(projectedKeys->shapeInfo(), false, block.workspace());
-        NDArray dLdProjectedValues(projectedValues->shapeInfo(), false, block.workspace());
+        NDArray dLdProjectedQueries(projectedQueries->shapeInfo(), false, block.launchContext());
+        NDArray dLdProjectedKeys(projectedKeys->shapeInfo(), false, block.launchContext());
+        NDArray dLdProjectedValues(projectedValues->shapeInfo(), false, block.launchContext());
         attentionBp.execute({projectedQueries, projectedKeys, projectedValues, &dLdPreWo, mask},{&dLdProjectedQueries, &dLdProjectedKeys, &dLdProjectedValues}, {}, {normalization}, {});
 
-        AttentionHelper::multiHeadProjectBp(queries, Wq, &dLdProjectedQueries, dLdq, dLdWq, block.workspace());
-        AttentionHelper::multiHeadProjectBp(keys, Wk, &dLdProjectedKeys, dLdk, dLdWk, block.workspace());
-        AttentionHelper::multiHeadProjectBp(values, Wv, &dLdProjectedValues, dLdv, dLdWv, block.workspace());
+        AttentionHelper::multiHeadProjectBp(queries, Wq, &dLdProjectedQueries, dLdq, dLdWq, block.launchContext());
+        AttentionHelper::multiHeadProjectBp(keys, Wk, &dLdProjectedKeys, dLdk, dLdWk, block.launchContext());
+        AttentionHelper::multiHeadProjectBp(values, Wv, &dLdProjectedValues, dLdv, dLdWv, block.launchContext());
 
         delete projectedQueries;
         delete projectedKeys;
@@ -288,7 +286,7 @@ namespace ops  {
         Nd4jLong *dLdWo_shape;
         COPY_SHAPE(inputShape->at(6), dLdWo_shape);
 
-        return SHAPELIST(dLdq_shape, dLdk_shape, dLdv_shape, dLdWq_shape, dLdWk_shape, dLdWv_shape, dLdWo_shape);
+        return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape), CONSTANT(dLdWq_shape), CONSTANT(dLdWk_shape), CONSTANT(dLdWv_shape), CONSTANT(dLdWo_shape));
     }
 
 }

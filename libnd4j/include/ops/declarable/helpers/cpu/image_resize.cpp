@@ -233,7 +233,7 @@ namespace helpers {
                                   std::vector<BilinearInterpolationData> const& ys,
                                   NDArray* output), LIBND4J_TYPES);
 
-    int resizeBilinearFunctor(NDArray const *images, int width, int height, bool center, NDArray *output) {
+    int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const *images, int width, int height, bool center, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_,
                               (images, width, height, center, output), LIBND4J_TYPES);
     }
@@ -241,7 +241,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_,
                           (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
-    int resizeNeighborFunctor(NDArray const *images, int width, int height, bool center, NDArray *output) {
+    int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const *images, int width, int height, bool center, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
                               (images, width, height, center, output), LIBND4J_TYPES);
     }
@@ -345,7 +345,7 @@ namespace helpers {
 
 
     void
-    cropAndResizeFunctor(NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize,
+    cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize,
                          int method, double extrapolationVal, NDArray *crops) {
         BUILD_SINGLE_SELECTOR(images->dataType(), cropAndResizeFunctor_,
                               (images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES);

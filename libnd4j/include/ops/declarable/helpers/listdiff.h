@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int listDiffFunctor(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);
-    Nd4jLong listDiffCount(NDArray* values, NDArray* keep);
+    int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);
+    Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep);
 }
 }
 }

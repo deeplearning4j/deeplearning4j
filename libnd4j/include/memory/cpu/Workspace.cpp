@@ -41,6 +41,7 @@ namespace nd4j {
                 _initialSize = external->sizeHost();
                 _currentSize = external->sizeHost();
                 _offset = 0L;
+                _offsetSecondary = 0L;
                 this->_cycleAllocations = 0;
                 this->_spillsSize = 0;
 
@@ -48,11 +49,11 @@ namespace nd4j {
             }
         };
 
-        Workspace::Workspace(Nd4jLong initialSize) {
+        Workspace::Workspace(Nd4jLong initialSize, Nd4jLong secondaryBytes) {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", initialSize);
 
                 memset(this->_ptrHost, 0, initialSize);
                 this->_allocatedHost = true;
@@ -62,18 +63,19 @@ namespace nd4j {
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
             this->_offset = 0;
+            this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;
             this->_spillsSize = 0;
         }
 
-        void Workspace::init(Nd4jLong bytes) {
+        void Workspace::init(Nd4jLong bytes, Nd4jLong secondaryBytes) {
             if (this->_currentSize < bytes) {
                 if (this->_allocatedHost && !_externalized)
                     free((void *)this->_ptrHost);
 
                 this->_ptrHost =(char *) malloc(bytes);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", bytes);
 
                 memset(this->_ptrHost, 0, bytes);
                 this->_currentSize = bytes;
@@ -81,12 +83,12 @@ namespace nd4j {
             }
         }
 
-        void Workspace::expandBy(Nd4jLong numBytes) {
-            this->init(_currentSize + numBytes);
+        void Workspace::expandBy(Nd4jLong numBytes, Nd4jLong secondaryBytes) {
+            this->init(_currentSize + numBytes, _currentSizeSecondary + secondaryBytes);
         }
 
-        void Workspace::expandTo(Nd4jLong numBytes) {
-            this->init(numBytes);
+        void Workspace::expandTo(Nd4jLong numBytes, Nd4jLong secondaryBytes) {
+            this->init(numBytes, secondaryBytes);
         }
 
         void Workspace::freeSpills() {
@@ -122,10 +124,9 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jLong numBytes) {
-            if (numBytes < 1) {
-                nd4j_printf("Bad number of bytes requested for allocation: %i\n", numBytes);
-                throw std::invalid_argument("Number of bytes for allocation should be positive");
-            }
+            if (numBytes < 1)
+                throw allocation_exception::build("Number of bytes for allocation should be positive", numBytes);
+
 
             //numBytes += 32;
             void* result = nullptr;
@@ -138,7 +139,7 @@ namespace nd4j {
 
                 void *p = malloc(numBytes);
 
-                CHECK_ALLOC(p, "Failed to allocate new workspace");
+                CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
 
                 _mutexSpills.lock();
                 _spills.push_back(p);
@@ -172,6 +173,7 @@ namespace nd4j {
 
         void Workspace::scopeOut() {
             _offset = 0;
+            _offsetSecondary = 0;
         }
 
         Nd4jLong Workspace::getSpilledSize() {
@@ -183,6 +185,26 @@ namespace nd4j {
                 throw std::runtime_error("CPU backend doesn't have device memory");
 
             return this->allocateBytes(numBytes);
+        }
+
+        Nd4jLong Workspace::getAllocatedSecondarySize() {
+            return 0L;
+        }
+
+        Nd4jLong Workspace::getCurrentSecondarySize() {
+            return 0L;
+        }
+
+        Nd4jLong Workspace::getCurrentSecondaryOffset() {
+            return 0L;
+        }
+
+        Nd4jLong Workspace::getSpilledSecondarySize() {
+            return 0L;
+        }
+
+        Nd4jLong Workspace::getUsedSecondarySize() {
+            return 0L;
         }
 
         Workspace* Workspace::clone() {

@@ -56,7 +56,7 @@ OP_IMPL(scatter_nd_sub, 3, 1, true) {
     if (!block.isInplace())
         output->assign(input);
 
-    ScatterHelper::scatterND(pairwise::Subtract, *indices, *updates, *output, lock);
+        helpers::scatterND(block.launchContext(), pairwise::Subtract, *indices, *updates, *output, lock);
 
     return Status::OK();
 }

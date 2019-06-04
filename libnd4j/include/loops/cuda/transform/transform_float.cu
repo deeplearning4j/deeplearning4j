@@ -29,7 +29,7 @@
 using namespace simdOps;
 
 template <typename X, typename Z, typename OpType>
-__global__ void transformFloatSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
+__global__ void transformFloatSimple(void *x, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
 								void *z, Nd4jLong *zShapeInfo, int zRank,
 								int *allocationPointer,
@@ -37,7 +37,7 @@ __global__ void transformFloatSimple(void *dy, Nd4jLong *xShapeInfo, int xRank,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	
 	functions::transform::TransformFloat<X,Z>::template transformCuda<OpType>(
-	    											dy, xShapeInfo,
+	    											x, xShapeInfo,
 	    											params,
 	    											z, zShapeInfo,
 	    											allocationPointer, reductionPointer,
@@ -59,57 +59,63 @@ namespace functions {
         template<typename X, typename Z>
         template <typename OpType>
         __device__ void TransformFloat<X,Z>::transformCuda(
-											void *vdy,
-											Nd4jLong *shapeInfo,
+											void *vx,
+											Nd4jLong *xShapeInfo,
 											void *vparams,
-											void *vresult,
+											void *vz,
 											Nd4jLong *zShapeInfo,
 											int *allocationPointer, void *vreductionPointer, 
 											Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-        	auto dy = reinterpret_cast<X*>(vdy);
-		    auto z = reinterpret_cast<Z*>(vresult);
+        	auto x = reinterpret_cast<X*>(vx);
+		    auto z = reinterpret_cast<Z*>(vz);
 		    auto params = reinterpret_cast<Z*>(vparams);
 		    auto reductionPointer = reinterpret_cast<Z*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(dy,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(x,xShapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
-		    } else {
+		    } 
+		    else {
 
-		        auto xOrder = shape::order(shapeInfo);
-		        auto zOrder = shape::order(zShapeInfo);
+	            __shared__ Nd4jLong xEws;
+    	        __shared__ Nd4jLong zEws;
+        	    __shared__ char xOrder;
+            	__shared__ char zOrder;
+            	__shared__ Nd4jLong length;
+            
+	            if (threadIdx.x == 0) {
+    	                               	                            
+        	        xEws = shape::elementWiseStride(xShapeInfo);
+            	    zEws = shape::elementWiseStride(zShapeInfo);
+                	xOrder = shape::order(xShapeInfo);
+					zOrder = shape::order(zShapeInfo);
+					length = shape::length(xShapeInfo);
+            	}
+            	__syncthreads();
 
-		        auto xEws = shape::elementWiseStride(shapeInfo);
-    		    auto zEws = shape::elementWiseStride(zShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-				int totalThreads = gridDim.x * blockDim.x;
+				int totalThreads = gridDim.x * blockDim.x;                
 
-                __shared__ Nd4jLong length;
-		        if(threadIdx.x == 0)
-			        length = shape::length(shapeInfo);
-		        __syncthreads();
-
-		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-					if(xEws == 1 && zEws == 1) {
-						/* equal, positive, non-unit increments. */
-						for (int i = tid; i < length; i += totalThreads) {
-							z[i] = OpType::op(dy[i], params);
-						}
-					}
-					else {
-						for (int i = tid; i < length; i += totalThreads) {
-							z[i * zEws] = OpType::op(dy[i * xEws], params);
-						}
-					}
+		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {								
+					
+					for (int i = tid; i < length; i += totalThreads)
+						z[i * zEws] = OpType::op(x[i * xEws], params);				
 		        }
 		        else {			        
-			
-		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-						auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
-						auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);				        
-	    			    z[zOffset2] = OpType::op(dy[xOffset2], params);
-		    	    }
+					if(vx == vz) {
+						for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);						
+	    			    	z[xOffset] = OpType::op(x[xOffset], params);
+		    	    	}		    	    
+					}
+					else {
+		    	    	for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
+							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);				        
+	    			    	z[zOffset] = OpType::op(x[xOffset], params);
+		    	    	}
+		    		}
 		        }
 	        }
 	    };
@@ -117,8 +123,8 @@ namespace functions {
         template<typename X, typename Y>
         __device__ void TransformFloat<X,Y>::transformCudaLegacy(
 						                int opNum,
-						                void *dy,
-						                Nd4jLong *shapeInfo,
+						                void *x,
+						                Nd4jLong *xShapeInfo,
 						                void *params,
 						                void *z,
 						                Nd4jLong *zShapeInfo,
@@ -126,7 +132,7 @@ namespace functions {
 						                void *reductionPointer,
 						                Nd4jLong *tadShapeInfo,
 						                Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(x, xShapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
         }
 
 		template<typename X, typename Z>

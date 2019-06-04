@@ -29,14 +29,14 @@
 using namespace simdOps;
 
 template <typename X, typename OpType>
-__global__ void transformStrictSimple(void *y, Nd4jLong *xShapeInfo, int xRank,
+__global__ void transformStrictSimple(void *x, Nd4jLong *xShapeInfo, int xRank,
 								void *params,
 								void *z, Nd4jLong *zShapeInfo, int zRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	
-	functions::transform::TransformStrict<X>::template transformCuda<OpType>(y,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
+	functions::transform::TransformStrict<X>::template transformCuda<OpType>(x,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
 }
 
 
@@ -53,66 +53,69 @@ namespace functions {
 
         template<typename X>
         template <typename OpType>
-        __device__ void TransformStrict<X>::transformCuda(
-			void *vy,
-			Nd4jLong *shapeInfo,
-			void *vparams,
-			void *vz,
-			Nd4jLong *zShapeInfo,
-			int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+        __device__ void TransformStrict<X>::transformCuda(void *vx, Nd4jLong *xShapeInfo,
+        												void *vparams,
+        												void *vz, Nd4jLong *zShapeInfo,
+        												int *allocationPointer, void *vreductionPointer,
+        												Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-        	auto y = static_cast<X*>(vy);
+        	auto x = static_cast<X*>(vx);
 		    auto z = static_cast<X*>(vz);
 		    auto params = static_cast<X*>(vparams);
 		    auto reductionPointer = static_cast<X*>(vreductionPointer);
 
+
 		    if(OpType::requiresSpecial) {
-			    OpType::execSpecialCuda(y,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			    OpType::execSpecialCuda(x,xShapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
-		    } else {
+		    }
+		    else {
+		    	__shared__ Nd4jLong xEws;
+    	        __shared__ Nd4jLong zEws;
+        	    __shared__ char xOrder;
+            	__shared__ char zOrder;
+            	__shared__ Nd4jLong length;
 
-		        auto xOrder = shape::order(shapeInfo);
-		        auto zOrder = shape::order(zShapeInfo);
+	            if (threadIdx.x == 0) {
 
-		        auto xEws = shape::elementWiseStride(shapeInfo);
-    		    auto zEws = shape::elementWiseStride(zShapeInfo);
+        	        xEws = shape::elementWiseStride(xShapeInfo);
+            	    zEws = shape::elementWiseStride(zShapeInfo);
+                	xOrder = shape::order(xShapeInfo);
+					zOrder = shape::order(zShapeInfo);
+					length = shape::length(xShapeInfo);
+            	}
+            	__syncthreads();
+
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 				int totalThreads = gridDim.x * blockDim.x;
 
-                __shared__ Nd4jLong length;
-		        if(threadIdx.x == 0)
-			        length = shape::length(shapeInfo);
-		        __syncthreads();
+		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {
 
-		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-					if(xEws == 1 && zEws == 1) {
-						/* equal, positive, non-unit increments. */
-						for (int i = tid; i < length; i += totalThreads) {
-							z[i] = OpType::op(y[i], params);
-						}
+					for (int i = tid; i < length; i += totalThreads)
+						z[i * zEws] = OpType::op(x[i * xEws], params);
+		        }
+		        else {
+					if(vx == vz) {
+						for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
+	    			    	z[xOffset] = OpType::op(x[xOffset], params);
+		    	    	}
 					}
 					else {
-						for (int i = tid; i < length; i += totalThreads) {
-							z[i * zEws] = OpType::op(y[i * xEws], params);
-						}
-					}
+		    	    	for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
+							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);
+	    			    	z[zOffset] = OpType::op(x[xOffset], params);
+		    	    	}
+		    		}
 		        }
-		        else {			
-			
-		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-
-		    	    	auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
-						auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);
-	    			    z[zOffset2] = OpType::op(y[xOffset2], params);
-		    	    }
-		        }
-	        }
+	  		}
 	    };
 
 		template<typename X>
 		template <typename OpType>
 		_CUDA_H void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-			transformStrictSimple<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
+			transformStrictSimple<X, OpType><<<launchDims.x, launchDims.x, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
             nd4j::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 		}
 

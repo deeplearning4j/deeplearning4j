@@ -30,13 +30,13 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_mean: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_mean: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            auto expected = NDArrayFactory::create(0.f, block.getWorkspace());
-            auto wrong = NDArrayFactory::create(0.f, block.getWorkspace());
+            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_mean: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
             segmentedOutput->nullify();
-            helpers::segmentMeanFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentMeanFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -60,12 +60,13 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         DECLARE_TYPES(segment_mean) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(false);
         }
@@ -78,7 +79,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
-            return helpers::segmentMeanFunctorBP(input, indices, gradOut, output);
+            return helpers::segmentMeanFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_mean_bp){
             Nd4jLong* in = inputShape->at(0);
@@ -88,7 +89,7 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
         }
         DECLARE_TYPES(segment_mean_bp) {
             getOpDescriptor()

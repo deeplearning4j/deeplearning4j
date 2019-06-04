@@ -119,8 +119,8 @@ namespace functions {
                     tadOffsets = tadPack.primaryOffsets();
                 }
 
-                //int *resultStride = shape::stride(xTadShapeShapeInfo);                
-                unsigned int tadLength = shape::length(xTadShapeShapeInfo);
+                //int *resultStride = shape::stride(xTadShapeShapeInfo);
+                unsigned int tadLength = shape::length(xTadShapeShapeInfo);//shape::length(xTadShapeShapeInfo);
                 unsigned int tads = shape::length(xShapeInfo) / tadLength;
 
                 if (zTadShapeInfo == nullptr) {
@@ -134,12 +134,12 @@ namespace functions {
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
-                
+
                 auto xEws = shape::elementWiseStride(xTadShapeShapeInfo);
                 auto yEws = shape::elementWiseStride(yShapeInfo);
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-                const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);                
+                const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == nd4j::LoopKind::EWS1) {
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
@@ -151,7 +151,7 @@ namespace functions {
                       for (unsigned int f = 0; f < tadLength; f++)
                         oZ[f] = OpType::op(oX[f], y[f]);
                     }
-                } 
+                }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO){
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
@@ -320,12 +320,12 @@ namespace functions {
             int tadsPerThread = tads / TAD_THRESHOLD;
             int threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
             threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
-            
+
             auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
             auto xEws = shape::elementWiseStride(xShapeInfo);
             auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-            const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);            
+            const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
 
             if(kindOfLoop == nd4j::LoopKind::EWS1) {
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
@@ -337,7 +337,7 @@ namespace functions {
                     for (unsigned int f = 0; f < tadLength; f++)
                         oZ[f] = OpType::op(x[f], oY[f]);
                 }
-            } 
+            }
             else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                 for (int i = 0; i < tads; i++) {

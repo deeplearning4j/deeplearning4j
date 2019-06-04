@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
         outArrs[i] = OUTPUT_VARIABLE(i);
     }
 
-    helpers::meshgrid(inArrs, outArrs, swapFirst2Dims);
+    helpers::meshgrid(block.launchContext(), inArrs, outArrs, swapFirst2Dims);
 
     return Status::OK();
 }
@@ -77,12 +77,11 @@ DECLARE_SHAPE_FN(meshgrid) {
     ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
     auto shapes = SHAPELIST();
-    shapes->push_back(outShapeInfo);
-    
-    Nd4jLong* tempShapeInfo = nullptr;
+    auto resultShape = CONSTANT(outShapeInfo);
+    shapes->push_back(resultShape);
+
     for(int i = 2; i <= rank; ++i) {
-        COPY_SHAPE(outShapeInfo, tempShapeInfo);
-        shapes->push_back(tempShapeInfo);
+        shapes->push_back(resultShape);
     }
     
     return shapes;

@@ -1111,6 +1111,31 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
     ASSERT_EQ(Status::OK(), status);
 }
 
+TEST_F(JavaInteropTests, Test_Fastpath_7) {
+    auto a = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
+    auto b = NDArrayFactory::create<float>(3.f);
+    auto z = NDArrayFactory::create<float>('c', {3});
+    auto e = NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f});
+
+    Context ctx(1);
+    Nd4jLong iArgs[] = {0L, 0L, 0L};
+
+    ctx.setIArguments(iArgs, 1);
+
+    NativeOps nativeOps;
+    nd4j::ops::concat op;
+
+    ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
+    ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
+
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     NativeOps ops;

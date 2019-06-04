@@ -33,12 +33,12 @@ CUSTOM_OP_IMPL(reduce_min, 1, 1, false, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
-    
+
     std::vector<int> dimensions = *block.getIArguments();
-    
+
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(reduce_min, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(reduce_min) {
 
     bool keepDims = false;//: false;
-    
+
     if (block.getBArguments()->size() > 0)
         keepDims = B_ARG(0);
     else if (block.getTArguments()->size() > 0)
@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(reduce_min) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(reduce_min) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_MIN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());    
+    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
@@ -100,12 +100,12 @@ CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
-    
+
     std::vector<int> dimensions = *block.getIArguments();
-    
+
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -135,10 +135,10 @@ CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(reduce_min_bp) {
 
     std::vector<int> dimensions = *block.getIArguments();
-    
+
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
@@ -149,7 +149,7 @@ DECLARE_SHAPE_FN(reduce_min_bp) {
     Nd4jLong* outShapeInfo;
     COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_min_bp) {
@@ -158,7 +158,7 @@ DECLARE_TYPES(reduce_min_bp) {
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-   
+
 #endif
 
 }

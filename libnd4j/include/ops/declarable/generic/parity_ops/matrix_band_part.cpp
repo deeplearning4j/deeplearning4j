@@ -41,7 +41,7 @@ namespace nd4j {
             REQUIRE_TRUE(maxUpper > -M && maxUpper < M, 0, "matrix_band_part: upper diagonal count %i should be less than %i.",
                     maxUpper, M);
 
-            helpers::matrixBandPart(input, output, minLower, maxUpper);
+            helpers::matrixBandPart(block.launchContext(), input, output, minLower, maxUpper);
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(band_part, matrix_band_part);
@@ -49,8 +49,8 @@ namespace nd4j {
 
     DECLARE_TYPES(matrix_band_part) {
         getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
-            ->setAllowedInputTypes({ALL_FLOATS})
+            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
             ->setSameMode(true);
     }
 }

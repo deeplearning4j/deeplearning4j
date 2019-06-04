@@ -40,9 +40,14 @@ else()
     if (APPLE)
         set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
     elseif(WIN32)
-        set(CMAKE_CXX_FLAGS  " -O0 -g --fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+		if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+			set(CMAKE_CXX_FLAGS  " -O0 -g --fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+		endif()
     else()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        if (CPU_BLAS)
+            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address")
+        endif()
     endif()
 endif()
 
@@ -74,7 +79,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}
     message(FATAL_ERROR "You need at least GCC 4.9")
 endif()
 
-find_package(OpenMP)
+if (NOT MSVC_DEV)
+	message("Looking for OpenMP")
+	find_package(OpenMP)
+endif()
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -108,7 +116,7 @@ add_definitions(-D__CPUBLAS__=true)
 find_package(GRPC REQUIRED)
 message("gRPC found, building GraphServer")
 add_executable(GraphServer ./GraphServer.cpp ../include/graph/generated/graph.grpc.fb.cc ../blas/cpu/NativeOps.cpp ../blas/cpu/GraphExecutioner.cpp
-        ../blas/cpu/NativeOpExcutioner.cpp ../blas/cpu/NDArray.cpp
+        ../blas/cpu/NativeOpExecutioner.cpp ../blas/cpu/NDArray.cpp
         ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
         ../blas/Environment.cpp ../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
         ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES})

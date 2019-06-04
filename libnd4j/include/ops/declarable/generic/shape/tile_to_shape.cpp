@@ -48,7 +48,7 @@ namespace ops {
 
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
-        Nd4jLong* newShape = ShapeBuilders::createShapeInfo(block.dataType(), shape::order(in), conv, block.getWorkspace());        
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(in), conv);
 
         return SHAPELIST(newShape);
     }
@@ -91,7 +91,7 @@ namespace ops {
         Nd4jLong *newShape;
         COPY_SHAPE(in, newShape);
 
-        return SHAPELIST(newShape);
+        return SHAPELIST(CONSTANT(newShape));
     }
 }
 }

@@ -57,8 +57,8 @@ namespace nd4j {
             }
 
 
-            if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
-                    this->_workspace = variableSpace->workspace();
+            if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
+                    this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
         nd4j::DataType Context::dataType(int index) {
 
@@ -84,11 +84,8 @@ namespace nd4j {
             this->_executionTime.first = 0;
             this->_executionTime.second = 0;
 
-            if (variableSpace != nullptr)
-                this->_rng = variableSpace->getRNG();
-
-            if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
-                this->_workspace = variableSpace->workspace();
+            if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
+                this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
 
         Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
@@ -107,6 +104,9 @@ namespace nd4j {
 
             for (auto v:_handles)
                 delete v;
+
+            if (_context != nullptr)
+                delete _context;
         }
 
         bool Context::hasWorkspaceProvided() {
@@ -119,9 +119,6 @@ namespace nd4j {
 
         void Context::setVariableSpace(VariableSpace *variableSpace) {
             this->_variableSpace = variableSpace;
-
-            if (variableSpace != nullptr)
-                this->_rng = variableSpace->getRNG();
         }
 
         void Context::forgetWorkspace() {
@@ -303,7 +300,7 @@ namespace nd4j {
             std::pair<int,int> pair(nodeId, index);
             pushNDArrayListToVariableSpace(pair, list, track);
         }
-        
+
         void Context::pushNDArrayListToVariableSpace(std::pair<int, int>& pair, NDArrayList* list, bool track) {
             if (!_variableSpace->hasVariable(pair)) {
                 auto var = new Variable(nullptr, nullptr, pair.first, pair.second);
@@ -371,6 +368,15 @@ namespace nd4j {
             return nullptr;
         }
 
+        LaunchContext* Context::launchContext() {
+            //FIXME: we need proper context to be shared here
+            if (_context == nullptr) {
+                return LaunchContext::defaultContext();
+            } else {
+                return _context;
+            }
+        }
+
         unsigned long Context::width() {
             if (!_fastpath_in.empty())
                 return _fastpath_in.size();
@@ -388,14 +394,16 @@ namespace nd4j {
         }
 
         void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
-            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
-            array->triggerAllocationFlag(false, false);
+            auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
 
             if (_fastpath_in.size() < index + 1)
                 _fastpath_in.resize(index+1);
 
             _fastpath_in[index] = array;
             _handles.emplace_back(array);
+
+            if (_context != nullptr)
+                array->setContext(_context);
         }
 
         void Context::setOutputArray(int index, NDArray *array, bool removable) {
@@ -412,11 +420,13 @@ namespace nd4j {
             if (_fastpath_out.size() < index + 1)
                 _fastpath_out.resize(index+1);
 
-            auto array = new NDArray(buffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
-            array->triggerAllocationFlag(false, false);
+            auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<Nd4jLong *>(shapeInfo));
 
             _fastpath_out[index] = array;
             _handles.emplace_back(array);
+
+            if (_context != nullptr)
+                array->setContext(_context);
         }
 
         void Context::setTArguments(double *arguments, int numberOfArguments) {
@@ -438,6 +448,18 @@ namespace nd4j {
             _bArgs.reserve(numberOfArguments);
             for (int e = 0; e < numberOfArguments; e++)
                 _bArgs.push_back(arguments[e]);
+        }
+
+        void Context::setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer) {
+#ifdef __CUDABLAS__
+            _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
+
+            for (auto v: _fastpath_out)
+                v->setContext(_context);
+
+            for (auto v: _fastpath_in)
+                v->setContext(_context);
+#endif
         }
     }
 }

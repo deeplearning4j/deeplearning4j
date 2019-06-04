@@ -30,7 +30,7 @@ namespace helpers {
 
 template <typename T>
 static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
-    
+
     T* inBuff  = reinterpret_cast<T *>(input);
     T* outBuff = reinterpret_cast<T *>(output);
 
@@ -79,7 +79,57 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
 }
 
 ///////////////////////////////////////////////////////////////////
-void softMaxForVector(const NDArray& input, NDArray& output) {
+    template <typename T>
+    void static _softMaxDerivForVector(nd4j::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output) {
+
+        const T* inBuff  = reinterpret_cast<const T *>(input);
+        T* outBuff = reinterpret_cast<T *>(output);
+
+        T max = -DataTypeUtils::max<T>();
+        T sum = 0.;
+        int length = shape::length(inShapeInfo);
+
+#pragma omp simd reduction(maxT:max)
+        for (int i = 0; i < length; i++) {
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
+        }
+
+#pragma omp parallel for simd reduction(sumT:sum)
+        for (int i = 0; i < length; i++) {
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
+            sum += outBuff[offset];
+        }
+#pragma omp simd
+        for (int i = 0; i < length; i++) {
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            outBuff[offset] /= sum;
+            outBuff[offset] *= (1.f - outBuff[offset]);     // derivative
+        }
+    }
+
+///////////////////////////////////////////////////////////////////
+    void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+
+        const int rank = input.rankOf();
+        int temp;
+
+        if(shape::isCommonVector(input.getShapeInfo(), temp)) {
+
+            BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
+        }
+        else {
+            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+            output /= sumAlongDim;
+            output *= (1.f - output);   // derivative
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////
+void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     if(!input.isVector() || !output.isVector())
         throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
@@ -88,7 +138,7 @@ void softMaxForVector(const NDArray& input, NDArray& output) {
     BUILD_SINGLE_SELECTOR(xType, softMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
 }
 
-    
+
     template <typename T>
     void logSoftMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
         auto inBuff  = reinterpret_cast<T *>(input);
@@ -136,9 +186,9 @@ void softMaxForVector(const NDArray& input, NDArray& output) {
             }
         }
     }
-    
+
     ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(const NDArray& input, NDArray& output) {
+    void logSoftMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
@@ -149,7 +199,7 @@ void softMaxForVector(const NDArray& input, NDArray& output) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void softmax_(const NDArray& input, NDArray& output, const int dimension) {
+static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
     const int rank = input.rankOf();
 
@@ -167,7 +217,7 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
         Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
         const uint numOfSubArrs = tadPack.numberOfTads();
         const uint tadLen       = shape::length(tadShapeInfo);
-        
+
         if(shape::elementWiseStride(tadShapeInfo) == 1){
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
@@ -180,8 +230,8 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
                 T sum = 0;
                         
                 for(uint j = 0; j < tadLen; ++j)
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);            
-            
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
+
                 for (uint j = 0; j < tadLen; ++j) {
                     T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
                     outBuff[j] = temp;
@@ -201,19 +251,19 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
             shape::calcOffsets(tadShapeInfo, offsets);
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (uint i = 0; i < numOfSubArrs; ++i) {                        
+            for (uint i = 0; i < numOfSubArrs; ++i) {
 
                 T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
                 T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0.f;
-            
-                
- 
-                for(uint j = 0; j < tadLen; ++j)                    
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);                
-            
+
+
+
+                for(uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
+
                 for (uint j = 0; j < tadLen; ++j) {
                     T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
                     outBuff[offsets[j]] = temp;
@@ -221,7 +271,7 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
                 }
 
                 for (uint j = 0; j < tadLen; ++j)
-                    outBuff[offsets[j]] /= sum;                    
+                    outBuff[offsets[j]] /= sum;
             }
             delete []offsets;
         }
@@ -237,14 +287,14 @@ static void softmax_(const NDArray& input, NDArray& output, const int dimension)
 
 
 ///////////////////////////////////////////////////////////////////
-void softmax(const NDArray& input, NDArray& output, const int dimension) {
-    
-    BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (input, output, dimension), FLOAT_TYPES);
+void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+
+    BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (context, input, output, dimension), FLOAT_TYPES);
 }
 
 
     //////////////////////////////////////////////////////////////////////////
-    void prelu(const NDArray& input, const NDArray& alpha, NDArray& output) {
+    void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
         const Nd4jLong inputLen = input.lengthOf();
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
@@ -262,7 +312,7 @@ void softmax(const NDArray& input, NDArray& output, const int dimension) {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void preluBP(const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+    void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
         const Nd4jLong inputLen = input.lengthOf();
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
@@ -299,25 +349,49 @@ void softmax(const NDArray& input, NDArray& output, const int dimension) {
         const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
     }
 
-    void thresholdRelu(NDArray const& input, double threshold, NDArray& output) {
+    void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
 
     template <typename T>
-    static void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+    static void thresholdReluDerivative_(nd4j::LaunchContext * context, NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
         auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
         input->applyPairwiseLambda<T>(dLdO, derivative, output);
 
     }
 
-    void thresholdReluDerivative(NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
+    void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (context, input, threshold, dLdO, output), FLOAT_TYPES);
     }
 
-BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void softmax_, (const NDArray& input, NDArray& output, const int dimension), FLOAT_TYPES);
+    ///////////////////////////////////////////////////////////////////
+    void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+
+        const int rank = input.rankOf();
+
+        if(input.isVector()) {
+
+            if(rank == 1 || input.sizeAt(dimension) != 1) {
+                BUILD_SINGLE_SELECTOR(input.dataType(), logSoftMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
+            }
+            else
+                output = 0.;
+        }
+        else {
+
+            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+            output /= sumAlongDim;
+            output.applyTransform(transform::Log);
+        }
+    }
+
+BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void softmax_, (nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (nd4j::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
 
 }
 }

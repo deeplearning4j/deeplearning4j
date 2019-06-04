@@ -43,19 +43,8 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
 
     REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
 
-    if(input->isVector()) {
-        
-        if(rank == 1 || input->sizeAt(dim) != 1)
-            helpers::logSoftMaxForVector(*input, *output);
-        else
-            *output = 0.;
-    }
-    else {
-        auto exponents = input->transform(transform::Exp);
-        auto sumAlongDim = exponents.reduceAlongDims(reduce::Sum, {dim}, true);
-        output->assign( *input - sumAlongDim.transform(transform::Log) );
-    }
-    
+    helpers::logSoftmax(block.launchContext(), *input, *output, dim);
+
     return Status::OK();
 }
 
@@ -77,7 +66,7 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
 
     REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
 
-    helpers::softmax(*input, *gradI, dim);
+    helpers::softmax(block.launchContext(), *input, *gradI, dim);
         
     gradI->assign( *gradO - (*gradI * *gradO).reduceAlongDims(reduce::Sum, {dim}, true) );
 

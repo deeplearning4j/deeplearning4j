@@ -31,7 +31,7 @@ namespace nd4j {
             REQUIRE_TRUE(!input->isScalar(), 0, "CUSTOM_OP matrix_diag: input array must be at list a vector, but scalar was given!");
 
             output->nullify();
-            return helpers::matrixDiag(input, output);
+            return helpers::matrixDiag(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_diag) {
@@ -50,7 +50,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
-            return SHAPELIST(outShapeInfo);
+            return SHAPELIST(CONSTANT(outShapeInfo));
         }
 
         DECLARE_TYPES(matrix_diag) {

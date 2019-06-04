@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
     REQUIRE_TRUE(correctBShape  == bShape,  0, "LSTM operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str());
     REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTM operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
 
-    helpers::lstmTimeLoop(x,h0,c0, Wx,Wh,Wc,Wp,b,   h,c,   {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
+    helpers::lstmTimeLoop(block.launchContext(), x, h0, c0, Wx, Wh, Wc, Wp, b, h, c, {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
 
     return Status::OK();
 }
@@ -153,7 +153,7 @@ DECLARE_SHAPE_FN(lstm) {
     ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, xShapeInfo, shape::order(c0ShapeInfo));
          
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+    return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(cShapeInfo));
 }   
 
 

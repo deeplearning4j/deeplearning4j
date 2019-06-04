@@ -27,6 +27,7 @@
 #include <OpBenchmark.h>
 #include <declarable/DeclarableOp.h>
 #include <declarable/OpRegistrator.h>
+#include <PointersManager.h>
 
 namespace nd4j {
     class ND4J_EXPORT DeclarableBenchmark : public OpBenchmark  {
@@ -82,7 +83,9 @@ namespace nd4j {
         }
 
         void executeOnce() override {
+            PointersManager pm(LaunchContext::defaultContext(), "DeclarableBenchmark");
             _op->execute(_context);
+            pm.synchronize();
         }
 
         OpBenchmark *clone() override {

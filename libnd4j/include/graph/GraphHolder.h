@@ -23,7 +23,7 @@
 #include <map>
 #include <graph/Graph.h>
 #include <helpers/SimpleReadWriteLock.h>
-#include <graph/exceptions/unknown_graph_exception.h>
+#include <exceptions/unknown_graph_exception.h>
 
 namespace nd4j {
     namespace graph {

@@ -39,14 +39,14 @@ namespace ops {
     DECLARE_SHAPE_FN(lin_space) {
         auto dataType = ArrayOptions::dataType(inputShape->at(0));
         Nd4jLong steps = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
-        return SHAPELIST(ShapeBuilders::createVectorShapeInfo(dataType, steps, block.workspace()));
+        return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(steps, dataType));
     }
 
 
     DECLARE_TYPES(lin_space) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
-                ->setAllowedInputTypes(1, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
                 ->setAllowedInputTypes(2, {ALL_INTS})
                 ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
     }

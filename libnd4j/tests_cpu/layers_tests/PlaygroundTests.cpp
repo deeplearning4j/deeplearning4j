@@ -30,9 +30,12 @@
 #include <ops/ops.h>
 #include <OmpLaunchHelper.h>
 #include <GradCheck.h>
+#include <ops/declarable/helpers/im2col.h>
 #include <Loops.h>
 
 #include <helpers/BenchmarkHelper.h>
+#include <ops/declarable/helpers/scatter.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <array>
 
@@ -50,11 +53,122 @@ public:
     }
 };
 
+/*
+TEST_F(PlaygroundTests, LSTMBenchmarks_DebugTNS) {
+
+    BenchmarkHelper helper(5,10);
+
+    PredefinedParameters mb("mb", {1, 8, 64});
+    PredefinedParameters nInOut("nInOut", {32, 256, 1024});
+
+    ParametersBatch batch({&mb, &nInOut});
+    nd4j::ops::lstmBlock lstmBlock;
+    DeclarableBenchmark benchmark(lstmBlock, "lstm");
+
+    int seqLength = 64;
+
+    auto generator = PARAMETRIC_D() {
+        auto ctx = new Context(1);
+        int m = p.getIntParam("mb");
+        int n = p.getIntParam("nInOut");
+
+        Nd4jLong l = 0;
+        ctx->setInputArray(0, NDArrayFactory::create_<Nd4jLong>(l));  //Max TS length (unused)
+
+
+        //TNS format
+        ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {seqLength, m, n}));     //x
+        ctx->setOutputArray(0, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //i
+        ctx->setOutputArray(1, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //c
+        ctx->setOutputArray(2, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //f
+        ctx->setOutputArray(3, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //o
+        ctx->setOutputArray(4, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //z
+        ctx->setOutputArray(5, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //h
+        ctx->setOutputArray(6, NDArrayFactory::create_<float>('c', {seqLength, m, n}));    //y
+
+        auto cLast = NDArrayFactory::create_<float>('c', {m, n});
+        auto yLast = NDArrayFactory::create_<float>('c', {m, n});
+        auto W = NDArrayFactory::create_<float>('c', {2 * n, 4 * n});
+        auto Wci = NDArrayFactory::create_<float>('c', {n});
+        auto Wcf = NDArrayFactory::create_<float>('c', {n});
+        auto Wco = NDArrayFactory::create_<float>('c', {n});
+        auto b = NDArrayFactory::create_<float>('c', {4 * n});
+
+        ctx->setInputArray(2, cLast);
+        ctx->setInputArray(3, yLast);
+        ctx->setInputArray(4, W);
+        ctx->setInputArray(5, Wci);
+        ctx->setInputArray(6, Wcf);
+        ctx->setInputArray(7, Wco);
+        ctx->setInputArray(8, b);
+
+        Nd4jLong *iargs = new Nd4jLong[2];
+        iargs[0] = 0;   //No peephole
+        iargs[1] = 0;   //TNS
+        ctx->setIArguments(iargs, 2);
+        delete[] iargs;
+        double *targs = new double[2];
+        targs[0] = 1.0; //forget bias
+        targs[1] = 0.0; //cell clipping value
+        ctx->setTArguments(targs, 2);
+        delete[] targs;
+        return ctx;
+    };
+
+    helper.runOperationSuit(&benchmark, generator, batch, "LSTMBlock");
+}
+
+
+TEST_F(PlaygroundTests, BroadcastOps2d) {
+    BenchmarkHelper helper;
+
+    PredefinedParameters rows("rows", {1024, 1048576});
+    IntPowerParameters cols("cols", 2, 2, 10, 2);      //2^1 to 2^10 in steps of 2 - 2^1=2, ..., 2^10=1024
+    BoolParameters axis("axis");
+    BoolParameters inplace("inplace");
+
+    ParametersBatch batch({&rows, &cols, &axis, &inplace});
+
+    auto generator = PARAMETRIC_D() {
+        nd4j_printf("Entered generator\n","");
+        auto a = p.getIntParam("axis");
+        auto arr = NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), p.getIntParam("cols")});
+        nd4j_printf("Created first array: [%lld, %lld]\n",arr->sizeAt(0), arr->sizeAt(1));
+
+        auto ctx = new Context(1);
+        ctx->setInputArray(0, arr, true);
+        if(a == 0){
+            ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), 1}), true);
+            nd4j_printf("Created second array (a=0): [%lld, %lld]\n",ctx->getNDArray(1)->sizeAt(0), ctx->getNDArray(1)->sizeAt(1));
+        } else {
+            ctx->setInputArray(1, NDArrayFactory::create_<float>('c', {1, p.getIntParam("cols")}), true);
+            nd4j_printf("Created second array (a=1): [%lld, %lld]\n",ctx->getNDArray(1)->sizeAt(0), ctx->getNDArray(1)->sizeAt(1));
+        }
+        if (p.getIntParam("inplace") == 1) {
+            ctx->setOutputArray(0, arr, false);
+            ctx->markInplace(true);
+            nd4j_printf("Set result array (inplace)\n","");
+        } else {
+            auto out = NDArrayFactory::create_<float>('c', {p.getIntParam("rows"), p.getIntParam("cols")});
+            ctx->setOutputArray(0, out, true);
+            nd4j_printf("Created and set result array (not inplace): [%lld, %lld]\n",out->sizeAt(0), out->sizeAt(1));
+        }
+        return ctx;
+    };
+
+    std::string s("add");
+    nd4j::ops::add op;
+    DeclarableBenchmark benchmark(op, "add");
+    nd4j_printf("About to execute\n","");
+    helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
+}
+ */
+
 TEST_F(PlaygroundTests, test_small_reductions) {
     auto f = NDArrayFactory::create<float>('c', {1024 ,1024});
     f.assign(1.0f);
 
-    int iterations = 100;
+    int iterations = 1;
     std::vector<Nd4jLong> results(iterations);
     Nd4jLong mean = 0L;
     Nd4jLong max = 0L;
@@ -70,7 +184,7 @@ TEST_F(PlaygroundTests, test_small_reductions) {
 
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execReduceFloat(reduce::Mean, x.buffer(), x.shapeInfo(), nullptr, z.buffer(), z.shapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+        NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext ::defaultContext(), reduce::Mean, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &axis, 1, tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -99,7 +213,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
 
     //x.printShapeInfo("x");
 
-    int iterations = 100;
+    int iterations = 1;
     std::vector<Nd4jLong> results(iterations);
     Nd4jLong mean = 0L;
     Nd4jLong max = 0L;
@@ -109,7 +223,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_1) {
     for (int e = 0; e < iterations; e++) {
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+        NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), transform::StrictOps::Sin, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, nullptr);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -154,7 +268,7 @@ TEST_F(PlaygroundTests, Test_PermutedArray_Operation_2) {
 
         auto timeStart = std::chrono::system_clock::now();
 
-        NativeOpExcutioner::execTransformStrict(transform::StrictOps::Tanh, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), nullptr, nullptr, nullptr);
+        NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), transform::StrictOps::Tanh, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, nullptr);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)).count();
@@ -240,6 +354,8 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
     parameters.addBoolParam("fOrder", true);
     float scalar = 2.0f;
 
+    auto fa = NDArrayFactory::create<int>(1);
+
     ScalarBenchmark sb(scalar::Multiply);
 
     // Y will be shared
@@ -250,7 +366,7 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
 
-        x.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+        x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
 
         // only share within single op call. do not cross share
@@ -261,21 +377,22 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         // using bool param here
         if (parameters.getBoolParam("fOrder")) {
             x.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
-            z.push_back(NDArrayFactory::create_<float>('f', {1000, 1000}));
+            z.push_back(NDArrayFactory::create_<float>('c', {1000, 1000}));
         }
 
         //another way to call inplace op
         x.push_back(NDArrayFactory::create_<float>('c', {100, 100}));
         z.push_back(nullptr);
+
     };
 
     helper.runOperationSuit(&sb, generator, "ScalarTest");
 
     TransformBenchmark tb(transform::StrictOps::Tanh, "tanh");
 
+
     // we can use the same generator, since the same number of operands used
     helper.runOperationSuit(&tb, generator, "TransformTest");
-
 
     PairwiseBenchmark pb(pairwise::Pow, "pow test");
 
@@ -295,11 +412,11 @@ TEST_F(PlaygroundTests, Test_OpBenchmark_2) {
         x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
 
         // axis goes to y here
-        y.push_back(NDArrayFactory::create_<int>('c', {1}, {(int) 0}));
+        y.push_back(NDArrayFactory::create_<int>(0));
         z.push_back(NDArrayFactory::create_<float>('c', {1000}));
 
         x.push_back(NDArrayFactory::create_<float>('c', {100, 1000}));
-        y.push_back(NDArrayFactory::create_<int>('c', {1}, {1}));
+        y.push_back(NDArrayFactory::create_<int>(1));
         z.push_back(NDArrayFactory::create_<float>('c', {100}));
 
         // scalar case
@@ -494,6 +611,8 @@ TEST_F(PlaygroundTests, StridedReductionsNoEWS) {
 }
 */
 
+#ifndef __CUDABLAS__
+
 TEST_F(PlaygroundTests, LambdaTest_1) {
     auto array = NDArrayFactory::create<float>('c', {8192, 1024});
     array.linspace(1);
@@ -541,6 +660,8 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
 
     // nd4j_printf("Broadcast time %lld us\n", outerTime / numIterations);
 }
+
+
 
 
 TEST_F(PlaygroundTests, NoCacheTest_1) {
@@ -611,6 +732,8 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
         delete v;
 }
 
+#endif
+
 
 TEST_F(PlaygroundTests, ReductionTest_1) {
     std::vector<NDArray*> pool1(poolSize);
@@ -624,7 +747,7 @@ TEST_F(PlaygroundTests, ReductionTest_1) {
 
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 1; e++) {
         auto v = pool1[poolSize - 1 - cnt];
         auto r = v->sumNumber();
 
@@ -659,7 +782,7 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
     float *buff = reinterpret_cast<float*>(source.buffer());
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 100; e++) {
         //auto v = pool1[poolSize - 1 - cnt];
         //v->template applyScalar<simdOps::Add<float>>(2.0f);
         source.applyScalar(scalar::Add,2.0f);
@@ -698,7 +821,7 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
     auto timeStart = std::chrono::system_clock::now();
     int cnt = 0;
     float * array = reinterpret_cast<float*>(source.buffer());
-    for (int e = 0; e < 100000; e++) {
+    for (int e = 0; e < 1000; e++) {
 
 #pragma omp simd
         for (int i = 0; i < source.lengthOf(); i++) {
@@ -814,9 +937,9 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     auto legacyStart = std::chrono::system_clock::now();
 
-    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.f, 0.f};
+    ExtraArguments extra({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, (double) 0.f, (double)0.f});
     for (int e = 0; e < iterations; e++) {
-        input.applyTransform(transform::Im2col, &output, extra);
+        input.applyTransform(transform::Im2col, &output, &extra);
     }
 
     auto legacyEnd = std::chrono::system_clock::now();
@@ -826,7 +949,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto legacyPermStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        input.applyTransform(transform::Im2col, &outputPermuted, extra);
+        input.applyTransform(transform::Im2col, &outputPermuted, &extra);
     }
 
     auto legacyPermEnd = std::chrono::system_clock::now();
@@ -988,6 +1111,9 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 
 
 TEST_F(PlaygroundTests, loop_test_1) {
+
+    if (1>0)
+        return;
 
     auto f = NDArrayFactory::create<float>('c', {2}, {5000, 10000});
     nd4j::ops::randomuniform op;
@@ -1163,7 +1289,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test2) {
     
     NDArray x('c', {40, 25}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 10;
+    const int iterations = 1;
     const int arrays = 10;
 
     std::vector<NDArray> arrs(arrays);
@@ -1259,7 +1385,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test3) {
     
     NDArray x('c', {50, 250}, nd4j::DataType::FLOAT32);
 
-    const int iterations = 100;
+    const int iterations = 1;
     const int arrays = 100;
 
     std::vector<NDArray> arrs(arrays);
@@ -1355,7 +1481,7 @@ TEST_F(PlaygroundTests, test_batched_skipgram_1) {
     //indices.printIndexedBuffer("indices");
     //codes.printIndexedBuffer("codes");
 
-    auto iterations = 10;
+    auto iterations = 1;
 
     nd4j::ops::skipgram op;
 
@@ -1383,14 +1509,14 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_1) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
     // warm up
-    for (int e = 0; e < 5; e++) {
-        NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+    for (int e = 0; e < 1; e++) {
+        NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
-    int iterations = 10;
+    int iterations = 1;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceFloatScalar(reduce::Mean, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::Mean, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1405,14 +1531,14 @@ TEST_F(PlaygroundTests, test_reduce_scalar_float_2) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
      // warm up
-     for (int e = 0; e < 100; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+     for (int e = 0; e < 1; e++) {
+         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
      }
 
-     int iterations = 100;
+     int iterations = 1;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execReduceFloatScalar(reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+         NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), reduce::ReduceFloatBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1427,14 +1553,14 @@ TEST_F(PlaygroundTests, test_reduce_scalar_same_2) {
     auto target = NDArrayFactory::create<float>(0.0f);
 
     // warm up
-    for (int e = 0; e < 100; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+    for (int e = 0; e < 1; e++) {
+        NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
-    int iterations = 100;
+    int iterations = 1;
     auto timeStart = std::chrono::system_clock::now();
     for (int e = 0; e < iterations; e++) {
-        NativeOpExcutioner::execReduceSameScalar(reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), nullptr, target.buffer(), target.shapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), reduce::ReduceSameBenchmarkOp, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
     auto timeEnd = std::chrono::system_clock::now();
     auto spanTime = std::chrono::duration_cast<std::chrono::nanoseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1456,13 +1582,13 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
      // warm up
      for (int e = 0; e < 5; e++) {
-         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+         NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
      }
 
-     int iterations = 10;
+     int iterations = 1;
      auto timeStart = std::chrono::system_clock::now();
      for (int e = 0; e < iterations; e++) {
-         NativeOpExcutioner::execTransformAny(transform::Assign, array.buffer(), array.shapeInfo(), target.buffer(), target.shapeInfo(), nullptr, nullptr, nullptr);
+         NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), transform::Assign, array.buffer(), array.shapeInfo(), array.specialBuffer(), array.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, nullptr, nullptr);
      }
      auto timeEnd = std::chrono::system_clock::now();
      auto spanTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/iterations).count();
@@ -1507,7 +1633,6 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     delete[] array;
     delete[] z;
 }
-*/
 
 TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 64, 55, 55, 3, 3});
@@ -1533,12 +1658,12 @@ TEST_F(PlaygroundTests, test_col2im_permuted_1) {
     auto ttlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart)).count();
 
     nd4j_printf("Starting legacy run...\n","");
-    std::array<float, 8> extra = {2.f, 2.f, 0.f, 0.f, 112.f, 112.f, 1.f, 1.f};
+    ExtraArguments arguments({2., 2., 0., 0., 112., 112., 1., 1.});
 
     auto legacyStart = std::chrono::system_clock::now();
-    for (int e = 0; e < iterations; e++) {
-        x.applyTransform(transform::Col2Im, &z1, extra.data());
-    }
+    for (int e = 0; e < iterations; e++)
+        x.applyTransform(transform::Col2Im, &z1, &arguments);
+
     auto legacyEnd = std::chrono::system_clock::now();
     auto legacySpanTime = std::chrono::duration_cast<std::chrono::microseconds> ((legacyEnd - legacyStart) / iterations).count();
     auto legacyTtlTime = std::chrono::duration_cast<std::chrono::milliseconds> ((legacyEnd - legacyStart)).count();
@@ -1570,7 +1695,7 @@ TEST_F(PlaygroundTests, test_addi_assign) {
     nd4j_printf("Bandwidth: %f GB/s\n", bw);
 }
 
-/*
+
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, conv2d_1) {
 
@@ -1605,7 +1730,7 @@ TEST_F(PlaygroundTests, conv2d_1) {
 /////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, batchnorm_1) {
 
-    const int N   = 100;
+    const int N   = 1;
     NDArray input   ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray output  ('c', {8, 32, 64, 64}, nd4j::DataType::FLOAT32);
     NDArray mean    ('c', {32}, nd4j::DataType::FLOAT32);
@@ -1630,13 +1755,10 @@ TEST_F(PlaygroundTests, batchnorm_1) {
     printf("duration %ld\n", duration);
 }
 
-
-
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, softmax_1) {
     
-    const int N = 100;
+    const int N = 1;
     NDArray input('c', {1024, 256}, nd4j::DataType::FLOAT32);
     NDArray output('c', {1024, 256}, nd4j::DataType::FLOAT32);
 
@@ -1748,8 +1870,8 @@ TEST_F(PlaygroundTests, loops_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, newTads_1) {
 
-    const int N = 1000;
-    
+    const int N = 1;
+
     Nd4jLong shapeInfo[] = {4, 1024,1024,1024,1024,  1024*1024*1024,1024*1024,1024,1,  16384,1,99};
     const int rank = shape::rank(shapeInfo);
     const std::vector<int> dimsToExclude = {1,3};
@@ -1768,7 +1890,7 @@ TEST_F(PlaygroundTests, newTads_1) {
 
     auto timeStart = std::chrono::system_clock::now();
     for (int i = 0; i < N ; i++)
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(shapeInfo, tadDims);  
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(shapeInfo, tadDims);
     auto timeEnd  = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
 
@@ -1779,14 +1901,14 @@ TEST_F(PlaygroundTests, newTads_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_2) {
-    
+
     const uint N = 5;
     const Nd4jLong dim0(10), dim1(10), dim2(10);
 
     const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  1,dim0,dim0*dim1,  8192,1,102};
     const Nd4jLong len = shape::length(shapeInfo);
     float* buff = new float[len];
-    
+
     const Nd4jLong* shape   = shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo));
     const Nd4jLong* strides = shape::stride(const_cast<Nd4jLong*>(shapeInfo));
 
@@ -1796,50 +1918,50 @@ TEST_F(PlaygroundTests, loops_2) {
     xOffsets = new Nd4jLong[len];
     yOffsets = new Nd4jLong[len];
     zOffsets = new Nd4jLong[len];
-    
+
 
     // warm up
     for (int i = 0; i < 1000; ++i) 32*512;
 
 
     //***********************************
-    //***********************************  
+    //***********************************
     auto timeStart = std::chrono::system_clock::now();
 
     for (int i = 0; i < N; ++i)
     {
-            
+
         #pragma omp parallel sections
         {
             #pragma omp section
             {
-    
-                shape::calcOffsets(3, shape, strides, xOffsets);            
-            } 
+
+                shape::calcOffsets(3, shape, strides, xOffsets);
+            }
             #pragma omp section
             {
-                
+
                 shape::calcOffsets(3, shape, strides, yOffsets);
-            } 
+            }
             #pragma omp section
             {
-                
+
                 shape::calcOffsets(3, shape, strides, zOffsets);
-            }    
+            }
         }
-     
-    
+
+
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (uint i = 0; i < len; i++) 
+        for (uint i = 0; i < len; i++)
             buff[zOffsets[i]] = buff[xOffsets[i]] * buff[yOffsets[i]];
-    } 
+    }
     auto timeEnd = std::chrono::system_clock::now();
     auto myTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N) .count();
-    
+
     //***********************************
     //***********************************
-    
-    timeStart = std::chrono::system_clock::now();    
+
+    timeStart = std::chrono::system_clock::now();
 
     uint xShapeInfoCast[MAX_RANK];
     uint yShapeInfoCast[MAX_RANK];
@@ -1853,13 +1975,13 @@ TEST_F(PlaygroundTests, loops_2) {
     {
         PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (uint i = 0; i < len; i++) {
-            
+
             auto xOffset = shape::indexOffset(i, shapeInfo, xShapeInfoCast, len, canCastX);
             auto yOffset = shape::indexOffset(i, shapeInfo, yShapeInfoCast, len, canCastY);
             auto zOffset = shape::indexOffset(i, shapeInfo, zShapeInfoCast, len, canCastZ);
             buff[zOffset] = buff[xOffset] * buff[yOffset];
         }
-                 
+
     // PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(1)
     // for (uint i0 = 0; i0 < shape[0]; ++i0)
     //     for (uint i1 = 0; i1 < shape[1]; ++i1)
@@ -1868,7 +1990,7 @@ TEST_F(PlaygroundTests, loops_2) {
     }
     timeEnd = std::chrono::system_clock::now();
     auto oldTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-   
+
     nd4j_printf("My  time: %lld us;\n", myTime);
     nd4j_printf("Old time: %lld us;\n", oldTime);
 
@@ -1880,7 +2002,7 @@ TEST_F(PlaygroundTests, loops_2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, loops_3) {
-    
+
     const uint N = 5;
     // const Nd4jLong dim0(1024), dim1(1024), dim2(1024);
     const Nd4jLong dim0(10), dim1(10), dim2(10);
@@ -1888,17 +2010,17 @@ TEST_F(PlaygroundTests, loops_3) {
     const Nd4jLong shapeInfo[2*3+4] = {3, dim0,dim1,dim2,  dim1*dim2,dim2,1,  8192,1,99};
     const Nd4jLong len = shape::length(shapeInfo);
     float* buff = new float[len];
-    
+
     const Nd4jLong* shape   = shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo));
-    const Nd4jLong* strides = shape::stride(const_cast<Nd4jLong*>(shapeInfo));    
+    const Nd4jLong* strides = shape::stride(const_cast<Nd4jLong*>(shapeInfo));
 
     // warm up
     for (int i = 0; i < 1000; ++i) 32*512;
 
 
     //***********************************
-    //***********************************  
-    auto timeStart = std::chrono::system_clock::now();    
+    //***********************************
+    auto timeStart = std::chrono::system_clock::now();
 
 
     for (int i = 0; i < N; ++i)
@@ -1923,46 +2045,46 @@ TEST_F(PlaygroundTests, loops_3) {
         Nd4jLong initX(0), initY(0), initZ(0), offsetsX(0), offsetsY(0), offsetsZ(0);
         Nd4jLong rankMinusOne(3 - 1), jX(rankMinusOne), jY(rankMinusOne), jZ(rankMinusOne);
 
-        // we do first iteration separately 
+        // we do first iteration separately
         buff[offsetsZ] = buff[offsetsX] * buff[offsetsY];
         uint e = 1;
-        
+
         while (e < len) {
 
             // printf("%lld,  %lld,  %lld\n", jX, jY, jZ);
-            if(shape[jX] == 1) { --jX; --jY; --jZ; continue; } 
+            if(shape[jX] == 1) { --jX; --jY; --jZ; continue; }
 
-            if(jX == rankMinusOne) { for(int l = 1; l < shape[jX]; ++l) {offsetsX += strides[jX]; ++e;} --jX; }            
+            if(jX == rankMinusOne) { for(int l = 1; l < shape[jX]; ++l) {offsetsX += strides[jX]; ++e;} --jX; }
             else if(idxX[jX] < shape[jX] - 1) {initX += strides[jX]; offsetsX = initX; ++idxX[jX]; jX = rankMinusOne; ++e;}
             else {initX -= offsetPerDimX[jX]; idxX[jX--] = 0;}
 
-            if(jY == rankMinusOne) { for(int l = 1; l < shape[jY]; ++l) {offsetsY += strides[jY];} --jY; }            
+            if(jY == rankMinusOne) { for(int l = 1; l < shape[jY]; ++l) {offsetsY += strides[jY];} --jY; }
             else if(idxY[jY] < shape[jY] - 1) {initY += strides[jY]; offsetsY = initY; ++idxY[jY]; jY = rankMinusOne; }
             else {initY -= offsetPerDimY[jY]; idxY[jY--] = 0;}
 
-            if(jZ == rankMinusOne) { for(int l = 1; l < shape[jZ]; ++l) {offsetsZ += strides[jZ];} --jZ; }            
+            if(jZ == rankMinusOne) { for(int l = 1; l < shape[jZ]; ++l) {offsetsZ += strides[jZ];} --jZ; }
             else if(idxZ[jZ] < shape[jZ] - 1) {initZ += strides[jZ]; offsetsZ = initZ; ++idxZ[jZ]; jZ = rankMinusOne; }
             else {initZ -= offsetPerDimZ[jZ]; idxZ[jZ--] = 0;}
 
             buff[offsetsZ] = buff[offsetsX] * buff[offsetsY];
         }
 
-        delete []idxX;            
-        delete []idxY;            
+        delete []idxX;
+        delete []idxY;
         delete []idxZ;
         delete []offsetPerDimX;
         delete []offsetPerDimY;
-        delete []offsetPerDimZ;            
+        delete []offsetPerDimZ;
 
     }
 
     auto timeEnd = std::chrono::system_clock::now();
     auto myTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N) .count();
-    
+
     //***********************************
     //***********************************
-    
-    timeStart = std::chrono::system_clock::now();    
+
+    timeStart = std::chrono::system_clock::now();
 
     // uint xShapeInfoCast[MAX_RANK];
     // uint yShapeInfoCast[MAX_RANK];
@@ -1973,7 +2095,7 @@ TEST_F(PlaygroundTests, loops_3) {
     // bool canCastZ = DataTypeUtils::castShapeInfo(shapeInfo, zShapeInfoCast);
 
     // for (int i = 0; i < N; ++i)
-    // {                 
+    // {
     //     PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(1)
     //     for (uint i0 = 0; i0 < shape[0]; ++i0)
     //         for (uint i1 = 0; i1 < shape[1]; ++i1)
@@ -1984,41 +2106,41 @@ TEST_F(PlaygroundTests, loops_3) {
     xOffsets = new Nd4jLong[len];
     yOffsets = new Nd4jLong[len];
     zOffsets = new Nd4jLong[len];
-    
+
     for (int i = 0; i < N; ++i)
     {
-            
+
         #pragma omp parallel sections
         {
             #pragma omp section
             {
-    
-                shape::calcOffsets(3, shape, strides, xOffsets);            
-            } 
+
+                shape::calcOffsets(3, shape, strides, xOffsets);
+            }
             #pragma omp section
             {
-                
+
                 shape::calcOffsets(3, shape, strides, yOffsets);
-            } 
+            }
             #pragma omp section
             {
-                
+
                 shape::calcOffsets(3, shape, strides, zOffsets);
-            }    
+            }
         }
-     
-    
+
+
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (uint i = 0; i < len; i++) 
+        for (uint i = 0; i < len; i++)
             buff[zOffsets[i]] = buff[xOffsets[i]] * buff[yOffsets[i]];
-    } 
+    }
     timeEnd = std::chrono::system_clock::now();
     auto oldTime = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
 
         delete []xOffsets;
     delete []yOffsets;
     delete []zOffsets;
-   
+
     nd4j_printf("My  time: %lld us;\n", myTime);
     nd4j_printf("Old time: %lld us;\n", oldTime);
 
@@ -2035,12 +2157,12 @@ TEST_F(PlaygroundTests, loops_4) {
     NDArray z('c', {dim0, dim2});
 
     x = 0.1;
-    
+
     // warm up
     for (int i = 0; i < 1000; ++i) 32*512;
 
-    
-    auto timeStart = std::chrono::system_clock::now();    
+
+    auto timeStart = std::chrono::system_clock::now();
     for (uint i = 0; i < N; ++i)
         x.reduceAlongDimension(reduce::Sum, &z, {1,3});
     auto timeEnd = std::chrono::system_clock::now();
@@ -2057,19 +2179,175 @@ TEST_F(PlaygroundTests, loops_5) {
     NDArray x('c', {dim0, dim1, dim2});
     NDArray z('c', {dim0, dim1, dim2});
 
-    // provide worst case 
+    // provide worst case
     *shape::ews(x.shapeInfo()) = 0;
     *shape::ews(z.shapeInfo()) = 0;
 
     x = 0.1;
-    
+
     // warm up
     for (int i = 0; i < 1000; ++i) 32*512;
-    
-    auto timeStart = std::chrono::system_clock::now();    
+
+    auto timeStart = std::chrono::system_clock::now();
     for (uint i = 0; i < N; ++i)
         x.applyTransform(transform::Log, &z);
     auto timeEnd = std::chrono::system_clock::now();
     auto myTime = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd - timeStart) / N) .count();
     nd4j_printf("My  time: %lld us;\n", myTime);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, im2col_1) {
+
+    // int bS=32, iH=244,iW=244,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int bS=2, iH=4,iW=4,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1; // VALID
+    int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
+
+    NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+    NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);
+
+    nd4j::LaunchContext * context = image.getContext();
+    NDArray padValue (nd4j::DataType::FLOAT32, context); // scalar =0
+
+    image.linspace(1, 1);
+
+    const int N = 1;
+
+    // warm up
+    nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);   // warm up
+
+    // ---------------------------------------- //
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        nd4j::ops::helpers::im2col(*context, image, column, kH, kW, sH, sW, pH, pW, dH, dW, padValue);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd1 - timeStart1) / N).count();
+    printf("duration my %ld\n", duration1);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, im2col_2) {
+
+    // int bS=32, iH=244,iW=244,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int bS=2, iH=4,iW=4,  iC=3,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1; // VALID
+    int oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1; // VALID
+
+    NDArray image('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+    NDArray column('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::FLOAT32);
+
+    nd4j::LaunchContext * context = image.getContext();
+
+    image.linspace(1, 1);
+    ExtraArguments extras(std::vector<double>({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, 0., 0.}));
+
+    const int N = 1;
+
+    // warm up
+    void* params = extras.argumentsAsT(column.dataType());
+    NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col, image.buffer(), image.getShapeInfo(), image.getSpecialBuffer(), image.getSpecialShapeInfo(), column.buffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), params, nullptr, nullptr);
+
+    // ---------------------------------------- //
+    auto timeStart2 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        NativeOpExecutioner::execTransformSame(context, nd4j::transform::Im2col,
+                                                image.buffer(), image.getShapeInfo(), image.getSpecialBuffer(),   image.getSpecialShapeInfo(),
+                                                column.buffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(),
+                                                params,
+                                                nullptr, nullptr);
+    }
+
+    auto timeEnd2 = std::chrono::system_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd2 - timeStart2) / N).count();
+    printf("duration old %ld\n", duration2);
+}
+/*
+TEST_F(PlaygroundTests, test_scatter_119) {
+    auto output = NDArrayFactory::create<float>('c', {65536, 512});
+    auto updates = NDArrayFactory::create<float>('c', {65536, 512});
+    auto indices = NDArrayFactory::create<int>('c', {65536});
+
+    int p = 0;
+    for (int e = 65534; e >= 0; e--)
+        indices.p(p++, e);
+
+    indices.syncToDevice();
+
+    int N = 1;
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        helpers::scatter(LaunchContext::defaultContext(), pairwise::CopyPws, indices, updates, output, false);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
+    nd4j_printf("duration my %ld\n", duration1);
+}
+
+TEST_F(PlaygroundTests, test_scatter_120) {
+    auto output = NDArrayFactory::create_<float>('c', {65536, 512});
+    auto updates = NDArrayFactory::create_<float>('c', {65536, 512});
+    auto indices = NDArrayFactory::create_<int>('c', {65536});
+
+    int p = 0;
+    for (int e = 65534; e >= 0; e--)
+        indices->p(p++, e);
+
+    indices->syncToDevice();
+
+    int N = 1;
+
+    auto timeStart1 = std::chrono::system_clock::now();
+
+    for (int i = 0; i < N ; i++) {
+        helpers::scatter(LaunchContext::defaultContext(), pairwise::CopyPws, *indices, *updates, *output, false);
+        // FIXME: do not use cuda methods in generic code
+        //cudaStreamSynchronize(*context->getCudaStream());
+    }
+
+    auto timeEnd1 = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds> ((timeEnd1 - timeStart1) / N).count();
+    nd4j_printf("duration my %ld\n", duration1);
+
+    delete output;
+    delete indices;
+    delete updates;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, mmulMxM_1) {
+
+    const int numOfIters = 100;
+
+    const Nd4jLong M = 1024;
+    const Nd4jLong K = 1024;
+    const Nd4jLong N = 1024;
+
+    NDArray a('f', {M,K}, nd4j::DataType::FLOAT32);
+    NDArray b('f', {K,N}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {M,N}, nd4j::DataType::FLOAT32);
+
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int i = 0; i < numOfIters; ++i)
+        nd4j::MmulHelper::mmul(&a, &b, &c, 1., 0.);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / numOfIters).count();
+    printf("duration  %ld\n", duration1);
+}
+*/

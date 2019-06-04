@@ -272,6 +272,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         val ordering = array.ordering();
         val length = array.length();
         val dtype = array.dataType();
+        val empty = array.isEmpty();
 
         // we use this call to get device memory updated
         AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
@@ -286,7 +287,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
 
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
-        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, elementWiseStride, ordering, dtype).getFirst();
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, elementWiseStride, ordering, dtype, empty).getFirst();
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         if (currentDeviceId != deviceId.intValue()) {
@@ -381,16 +382,17 @@ public class CudaAffinityManager extends BasicAffinityManager {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
         switch (location) {
             case HOST: {
-                AtomicAllocator.getInstance().synchronizeHostData(array);
+                    AtomicAllocator.getInstance().synchronizeHostData(array);
                 }
                 break;
             case DEVICE:{
-                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                    AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                 }
                 break;
             case EVERYWHERE:
             default: {
-                throw new UnsupportedOperationException("Unknown location specified: " + location);
+                AtomicAllocator.getInstance().synchronizeHostData(array);
+                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
             }
         }
     }

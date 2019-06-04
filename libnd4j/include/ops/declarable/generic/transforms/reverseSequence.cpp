@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
     auto maxElem = seqLengths->reduceNumber(reduce::Max);
     REQUIRE_TRUE(maxElem.e<Nd4jLong>(0) <= input->sizeAt(seqDim), 0, "REVERSE_SEQUENSE operation: max element in seqLengths array must be not greater than value of seqDim dimension of input array !");
     
-    helpers::reverseSequence(input, seqLengths, output, seqDim, batchDim);
+    helpers::reverseSequence(block.launchContext(), input, seqLengths, output, seqDim, batchDim);
 
     return Status::OK();
 }
@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(reverse_sequence) {
     Nd4jLong* outShapeInfo = nullptr;
     COPY_SHAPE(inShapeInfo, outShapeInfo);
         
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

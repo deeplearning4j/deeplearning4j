@@ -28,14 +28,14 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum, 1, 1, false, 0, 0) {
-    
+
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
-    
+
     std::vector<int> dimensions;
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
     else if (block.getIArguments()->size())
         dimensions = *block.getIArguments();
@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
     std::vector<int> dimensions;
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
     else if (block.getIArguments()->size())
         dimensions = *block.getIArguments();
@@ -77,10 +77,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_SUM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
-
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace()));
 }
 
 DECLARE_TYPES(reduce_sum) {
@@ -93,22 +90,22 @@ DECLARE_TYPES(reduce_sum) {
 #if NOT_EXCLUDED(OP_reduce_sum_bp)
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
-        
+
     auto input = INPUT_VARIABLE(0);
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
-    
+
     if (gradO->lengthOf() == 1) {
-        gradI->assign(gradO->e(0));        
+        gradI->assign(gradO->e(0));
     }
     else {
-        
+
         bool keepDims = false;
         auto dimensions = *block.getIArguments();
 
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
-            helpers::adjustAxis(input, axesVector, dimensions);
+            helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
         }
 
         if (block.getBArguments()->size())
@@ -124,12 +121,10 @@ CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
         // *** calculations *** //
 
         if(!keepDims) {
-
-            Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+            auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-            RELEASE(gradOShapeKeepDims, block.getWorkspace());
         }
-        
+
         gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), gradO, gradI);
 
         if(!keepDims)
@@ -139,14 +134,14 @@ CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
-DECLARE_SHAPE_FN(reduce_sum_bp) {    
+DECLARE_SHAPE_FN(reduce_sum_bp) {
 
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
-    
+
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_SUM_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
@@ -155,7 +150,7 @@ DECLARE_SHAPE_FN(reduce_sum_bp) {
     Nd4jLong* outShapeInfo;
     COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
-    return SHAPELIST(outShapeInfo);
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_sum_bp) {
@@ -164,7 +159,7 @@ DECLARE_TYPES(reduce_sum_bp) {
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-    
+
 #endif
 
 }

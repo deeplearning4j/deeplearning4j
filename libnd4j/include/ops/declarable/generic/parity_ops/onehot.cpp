@@ -66,8 +66,7 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
-            std::vector<int> vec({axis});
-            helpers::onehot(output, input, vec, on, off);
+            helpers::onehot(block.launchContext(), input, output, axis, depth, on, off);
 
             return Status::OK();
         }
@@ -92,30 +91,15 @@ namespace nd4j {
             Nd4jLong *newShape;
             int rank = shape::rank(inShape);
 
-            if (inShape[0] == 2 && inShape[1] == 1) {                
+            if (axis < 0)
+                axis = rank + 1 + axis;
 
-                Nd4jLong* shape;
-                ALLOCATE(shape, block.getWorkspace(), rank, Nd4jLong);
-                memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
+            std::vector<Nd4jLong> shape;
+            for (int e = 0; e < rank; e++)
+                shape.push_back(shape::shapeOf(inShape)[e]);
 
-                ShapeUtils::insertDimension(rank, shape, axis, depth);
-
-                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank, shape, block.getWorkspace());
-
-                RELEASE(shape, block.getWorkspace());
-            } 
-            else {                
-
-                if (axis < 0)
-                    axis = rank + 1 + axis;
-
-                std::vector<Nd4jLong> shape;
-                for (int e = 0; e < rank; e++)
-                    shape.push_back(shape::shapeOf(inShape)[e]);
-
-                shape.insert(shape.begin() + axis, depth);
-                newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', rank + 1, shape.data(), block.getWorkspace());                
-            }
+            shape.insert(shape.begin() + axis, depth);
+            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', rank + 1, shape.data());
 
             return SHAPELIST(newShape);
         }

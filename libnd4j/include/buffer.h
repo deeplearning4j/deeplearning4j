@@ -220,7 +220,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 			bufferRef->length = length;
 			bufferRef->data = reinterpret_cast<T *>(malloc(sizeof(T) * length));
 
-			CHECK_ALLOC(bufferRef->data, "Failed to allocate new buffer");
+			CHECK_ALLOC(bufferRef->data, "Failed to allocate new buffer", sizeof(T) * length);
 #ifdef __CUDACC__
 			checkCudaErrors(cudaMalloc(&bufferRef->gData, sizeof(T) * length));
 #endif

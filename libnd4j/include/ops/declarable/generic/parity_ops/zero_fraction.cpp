@@ -42,7 +42,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::DOUBLE, block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::DOUBLE));
         }
 
         DECLARE_TYPES(zero_fraction) {

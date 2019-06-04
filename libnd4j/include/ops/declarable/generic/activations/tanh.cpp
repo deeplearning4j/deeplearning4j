@@ -50,7 +50,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::TanhDerivativeE, epsilon, z, nullptr);
-            helpers::tanhDerivative(input, epsilon, z);
+            helpers::tanhDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
         DECLARE_SYN(TanhGrad, tanh_bp);

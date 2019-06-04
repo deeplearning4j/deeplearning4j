@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void nonMaxSuppressionV2(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output);
+    void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output);
 
 }
 }

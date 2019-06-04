@@ -65,7 +65,7 @@ namespace nd4j {
 
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
-            helpers::minimumBPFunctor(x, y, epsNext, gradX, gradY);
+            helpers::minimumBPFunctor(block.launchContext(), x, y, epsNext, gradX, gradY);
             return Status::OK();
         }
 
@@ -83,9 +83,7 @@ namespace nd4j {
             COPY_SHAPE(x, shapeE);
             COPY_SHAPE(y, shapeG);
 
-            auto shapeList = SHAPELIST(shapeE, shapeG);
-
-            return shapeList;
+            return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
         }
     }
 }

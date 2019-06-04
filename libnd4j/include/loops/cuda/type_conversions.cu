@@ -242,7 +242,6 @@ __global__ static void execEncoderKernelP3(void *dx, int *offsets, Nd4jLong N, v
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, Nd4jLong N, void *dz) {
-
     execEncoderKernelP3<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, offsets, N, dz);
         nd4j::DebugHelper::checkErrorCode(stream, "encoderP3(...) failed");
 }

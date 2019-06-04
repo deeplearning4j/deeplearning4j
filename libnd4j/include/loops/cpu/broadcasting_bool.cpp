@@ -120,7 +120,7 @@ namespace functions {
                 }
 
                 //int *resultStride = shape::stride(xTadShapeShapeInfo);
-                unsigned int tadLength = shape::length(xTadShapeShapeInfo);
+                unsigned int tadLength = shape::length(xTadShapeShapeInfo);//shape::length(xTadShapeShapeInfo);
                 unsigned int tads = shape::length(xShapeInfo) / tadLength;
 
                 if (zTadShapeInfo == nullptr) {
@@ -151,7 +151,7 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f] = OpType::op(oX[f], y[f]);
                     }
-                } 
+                }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
@@ -313,7 +313,7 @@ namespace functions {
                 if (zTadShapeInfo == nullptr) {
                     zTadShapeInfo = yTadShapeShapeInfo;
                     zTadOffset = tadOffsets;
-                }                                
+                }
 
                 auto lenZ = shape::length(zTadShapeInfo);
                 auto lenX = shape::length(xShapeInfo);
@@ -326,7 +326,7 @@ namespace functions {
                 auto xEws = shape::elementWiseStride(xShapeInfo);
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-                const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);                
+                const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == nd4j::LoopKind::EWS1) {
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
@@ -338,7 +338,7 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f] = OpType::op(x[f], oY[f]);
                     }
-                } 
+                }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
@@ -357,10 +357,10 @@ namespace functions {
 
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
-                    
+
                         auto oY = y + tadOffsets[i];
-                        auto oZ = z + zTadOffset[i];                        
-                                        
+                        auto oZ = z + zTadOffset[i];
+
                         // TODO: cover this codebranch with tests
                         // all this stuff already happens within thread
                         PRAGMA_OMP_SIMD
@@ -379,7 +379,7 @@ namespace functions {
 
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
-                    
+
                         auto oZ = z + zTadOffset[i];
                         auto oY = y + tadOffsets[i];
 
@@ -396,11 +396,11 @@ namespace functions {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);                    
+                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
-                    
+
                         auto oZ = z + zTadOffset[i];
                         auto oY = y + tadOffsets[i];
 
@@ -418,10 +418,10 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    
+
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
-                    
+
                         auto oZ = z + zTadOffset[i];
                         auto oY = y + tadOffsets[i];
 
@@ -437,21 +437,21 @@ namespace functions {
 
                     uint xShapeInfoCast[MAX_RANK];
                     uint tadShapeShapeInfoCast[MAX_RANK];
-                    uint tadShapeInfoZCast[MAX_RANK];                    
+                    uint tadShapeInfoZCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);                
+                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
                     bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
                     PRAGMA_OMP_PARALLEL_FOR_THREADS(threads)
                     for (int i = 0; i < tads; i++) {
-                    
+
                         auto oZ = z + zTadOffset[i];
                         auto oY = y + tadOffsets[i];
 
                         PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, lenX, canCastX);
-                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastY);                            
+                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCastY);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, lenZ, canCastZ);
                             oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
                         }

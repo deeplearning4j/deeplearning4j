@@ -85,7 +85,7 @@ namespace helpers {
 
     }
 
-    nd4j::NDArray* processCondition(int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar) {
+    nd4j::NDArray* processCondition(nd4j::LaunchContext * context, int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar) {
         BUILD_SINGLE_SELECTOR(arg->dataType(), return processCondition_, (mode, arg, comp, output, numResult, compScalar), FLOAT_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template NDArray* processCondition_, (int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar), FLOAT_TYPES);
@@ -99,24 +99,24 @@ namespace helpers {
 
     }
 
-    void chooseFunctorArray(NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults) {
+    void chooseFunctorArray(nd4j::LaunchContext * context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults) {
         if(arg->isScalar() || comp->isScalar()) {
             if(arg->isScalar()) {
-                processCondition(mode,comp,nullptr,result,numResults, *arg);
+                processCondition(context, mode,comp,nullptr,result,numResults, *arg);
             }
             else {
-                processCondition(mode,arg,nullptr,result,numResults, *comp);
+                processCondition(context, mode,arg,nullptr,result,numResults, *comp);
             }
         }
         else {
             auto zero = NDArrayFactory::create<float>(0);
-            processCondition(mode,arg,comp,result,numResults, zero);
+            processCondition(context, mode,arg,comp,result,numResults, zero);
         }
     }
 
-    void chooseFunctorScalar(NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
+    void chooseFunctorScalar(nd4j::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
         NDArray scalarA = NDArrayFactory::create(scalar);
-        processCondition(mode, arg, nullptr,result, numResults, scalarA);
+        processCondition(context, mode, arg, nullptr,result, numResults, scalarA);
     }
 
 }

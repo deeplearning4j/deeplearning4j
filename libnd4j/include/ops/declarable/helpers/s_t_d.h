@@ -24,7 +24,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void _spaceTodepth(NDArray *input, NDArray *output, int block_size, bool isNHWC);
+    void _spaceTodepth(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC);
 }
 }
 }

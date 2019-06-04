@@ -33,7 +33,7 @@ namespace helpers {
                     output->p<T>(k * maxIndex + i,  T(1.0f));
     }
 
-    void sequenceMask(NDArray* input, NDArray* output, int maxIndex) {
+    void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
         BUILD_SINGLE_SELECTOR(input->dataType(), sequenceMask_, (input, output, maxIndex), LIBND4J_TYPES);
     }
 

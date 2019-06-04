@@ -36,7 +36,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            helpers::concat({x, tmp}, *z, x->rankOf()-1);
+            helpers::concat(block.launchContext(), {x, tmp}, *z, x->rankOf()-1);
             // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
             // TODO: make this configurable?
@@ -63,7 +63,7 @@ namespace nd4j {
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
             
             shape[shape.size()-1] *= 2;
-            Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
 
             return SHAPELIST(newShape);
         }
@@ -83,7 +83,7 @@ namespace nd4j {
 
             // now we do RELU backward pass
             //actv->applyPairwiseTransform(pairwise::RELUDerivativeE, *epsilon, nullptr);
-            helpers::reluDerivative(actv, epsilonNext);
+            helpers::reluDerivative(block.launchContext(), actv, epsilonNext);
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;
             auto dec = opc.execute({input, input, actv}, {}, {-1}, {});
@@ -110,10 +110,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(crelu_bp) {
             auto inShape = inputShape->at(0);
-            Nd4jLong* newShape;
-            COPY_SHAPE(inShape, newShape);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape)));
         }
     }
 }

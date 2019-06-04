@@ -20,6 +20,8 @@
 
 #include <ops/declarable/LegacyReduce3Op.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -28,30 +30,49 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
             nd4j_debug("Executing LegacyReduce3Op: [%i]\n", opNum);
 
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext(), "LegacyReduce3Op");
+
             if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar
-                NativeOpExcutioner::execReduce3Scalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo());
+                NativeOpExecutioner::execReduce3Scalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        extras.argumentsAsT(z->dataType()),
+                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
             } else {
-                std::vector<int> dims(*block.getIArguments());
+                std::vector<int> dims(*block.getAxis());
                 for (int e = 0; e < dims.size(); e++)
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
 
-                std::sort(dims.begin(), dims.end());
+                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                NativeOpExcutioner::execReduce3(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size());
+                auto xTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadX.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo));
+                auto xTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadX.tadOffsets, tadX.numTads * sizeof(Nd4jLong));
+
+                auto yTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadY.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo));
+                auto yTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadY.tadOffsets, tadY.numTads * sizeof(Nd4jLong));
+
+                NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        extras.argumentsAsT(z->dataType()),
+                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                        dims.data(), dims.size(), xTadShape, xTadOffsets, yTadShape, yTadOffsets);
             }
 
-
+            manager.synchronize();
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         LegacyReduce3Op::LegacyReduce3Op() : LegacyOp::LegacyOp(2) {
@@ -88,8 +109,7 @@ namespace nd4j {
                 zShape[6] = 1;
                 zShape[7] = 99;
             } else {
-                auto array = new NDArray(nullptr, xShape, block.getWorkspace());
-                array->triggerAllocationFlag(false, false);
+                auto array = new NDArray(nullptr, xShape, block.launchContext());
 
                 xShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
 

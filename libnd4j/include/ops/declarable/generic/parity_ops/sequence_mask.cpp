@@ -46,7 +46,7 @@ namespace nd4j {
             else
                 maxInd = static_cast<Nd4jLong>(max);
 
-            helpers::sequenceMask(input, output, maxInd);
+            helpers::sequenceMask(block.launchContext(), input, output, maxInd);
 
             return Status::OK();
         }
@@ -82,7 +82,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
-            return SHAPELIST(outShapeInfo);
+            return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
         DECLARE_TYPES(sequence_mask) {

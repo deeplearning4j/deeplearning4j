@@ -162,7 +162,7 @@ namespace functions {
 
                         comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
                     }
-                } 
+                }
                 else {
                     for (int i = 1; i < tadLength; i ++) {
                         auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
@@ -175,7 +175,7 @@ namespace functions {
                 }
 
                 z[r] = OpType::getValue(biasCorrected, comp);
-            }     
+            }
         }
 
 

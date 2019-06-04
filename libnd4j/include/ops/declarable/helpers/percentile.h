@@ -28,7 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void percentile(const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation);
+    void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation);
     
 
 }

@@ -37,7 +37,9 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     const bool calcUV = (bool)INT_ARG(1);
     const int switchNum = INT_ARG(2);    
     
-    helpers::svd(x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
+    #ifndef __CUDABLAS__
+    helpers::svd(block.launchContext(), x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
+    #endif
          
     return Status::OK();;
 }
@@ -95,9 +97,14 @@ DECLARE_SHAPE_FN(svd) {
         shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
         shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
     
-        return SHAPELIST(sShapeInfo, uShapeInfo, vShapeInfo);        
-    }         
-    return SHAPELIST(sShapeInfo);
+        auto result = SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(sShapeInfo)), ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(uShapeInfo)), ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(vShapeInfo)));
+        RELEASE(sShapeInfo, block.workspace());
+        RELEASE(uShapeInfo, block.workspace());
+        RELEASE(vShapeInfo, block.workspace());
+        return result;
+    }
+
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createFromExisting(sShapeInfo, block.workspace()));
 }
 
 

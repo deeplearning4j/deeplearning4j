@@ -116,8 +116,6 @@ namespace nd4j {
 
                     NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-                    RELEASE(newShape, x->getWorkspace());
-
 
                     // keepDims processing, for TF compatibility
                     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
@@ -164,19 +162,18 @@ namespace nd4j {
                     newShape[5] = 0;
                     newShape[6] = 1;
                     newShape[7] = 99;
-                    ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
+                    //ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
                 } else {
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
                     newShape[0] = 0;
                     newShape[1] = 0;
                     newShape[2] = 1;
                     newShape[3] = 99;
-                    ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
+                    //ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
                 }
             } else {
                 // in this case we're building proper shape for reduction
                 auto array = new NDArray(nullptr, inShape, block.getWorkspace());
-                array->triggerAllocationFlag(false, false);
 
                 newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array, false, false, block.workspace());
 

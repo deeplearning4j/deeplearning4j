@@ -218,9 +218,10 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_6) {
 }
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_7) {
+    int zero = 0;
     auto matrix = NDArrayFactory::create<double>('c', {5, 4});
-    auto b = NDArrayFactory::create<int>('c', {1}, {(int)0});
-    auto e = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto b = NDArrayFactory::create<int>('c', {1}, {zero});
+    auto e = NDArrayFactory::create<int>('c', {1}, {zero});
     auto s = NDArrayFactory::create<int>('c', {1}, {1});
 
     //auto exp = NDArrayFactory::create<double>('c', {1,2,2}, {0.0f, 0.0f, 0., 0.});
@@ -252,20 +253,6 @@ TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-
-TEST_F(DeclarableOpsTests6, Test_gather_Edge_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 3, 2});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x, &indices}, {}, {-2});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
 
     delete result;
 }
@@ -574,7 +561,7 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_1) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 // ------------------------------------
@@ -594,7 +581,7 @@ TEST_F(DeclarableOpsTests6, BinCount_1) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_2) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -619,7 +606,7 @@ TEST_F(DeclarableOpsTests6, BinCount_2) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_3) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -644,7 +631,7 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_4) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
         1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -669,7 +656,7 @@ TEST_F(DeclarableOpsTests6, BinCount_4) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_5) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {
+    auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {
             1, 2, 0, 1, 2, 2, 1, 2}
     );
 
@@ -685,8 +672,8 @@ TEST_F(DeclarableOpsTests6, BinCount_5) {
     nd4j::ops::bincount op;
 
     auto res = op.execute({&x, &weights, &minV, &maxV}, {}, {});
-    res->at(0)->printBuffer("BC out");
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    res->at(0)->printBuffer("BC out");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
@@ -1334,39 +1321,6 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto indices = NDArrayFactory::create<int>('c', {2}, {1, 0});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x, &indices}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(e.isSameShape(z));
-    ASSERT_TRUE(e.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119_2) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
-    auto e = NDArrayFactory::create<double>('c', {2, 2}, {3, 4, 1, 2});
-
-    nd4j::ops::gather op;
-    auto result = op.execute({&x}, {}, {0, 1, 0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(e.isSameShape(z));
-    ASSERT_TRUE(e.equalsTo(z));
 
     delete result;
 }
@@ -2318,10 +2272,10 @@ TEST_F(DeclarableOpsTests6, concat_test14) {
     
     NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
     NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
-    
+
     x0 = 1.;
-    x1 = 2.;    
-    
+    x1 = 2.;
+
     nd4j::ops::concat op;
     auto result = op.execute({&x0, &x1}, {}, {0}, {});
     ASSERT_EQ(Status::OK(), result->status());

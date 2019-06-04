@@ -23,6 +23,7 @@
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <ops/declarable/headers/broadcastable.h>
+#include <MmulHelper.h>
 
 
 using namespace nd4j;
@@ -960,7 +961,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformFloat_test1) {
         return;
 
     NDArray x1('c', {2,2}, {0, 4, 9, 16}, nd4j::DataType::INT64);
-    NDArray x2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);    
+    NDArray x2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);
     NDArray x3('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
         
@@ -1372,6 +1373,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
 
 }
 
+#ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyLambda_test1) {
             
@@ -1589,6 +1591,8 @@ TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
     ASSERT_EQ(x8, exp);    
 }
 
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 
@@ -1605,7 +1609,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 
     NDArray* vec2 = x1.applyIndexReduce(nd4j::indexreduce::IndexMax, {0});
     ASSERT_EQ(*vec2, exp3);
-
+    
     delete scalar;
     delete vec1;
     delete vec2;
@@ -1614,7 +1618,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
-    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);   
+    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
     NDArray scalar('c', {0}, {5}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {2,2}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {1,1,1}, nd4j::DataType::INT64);
@@ -1984,4 +1988,35 @@ TEST_F(MultiDataTypeTests, divide_bool_test1) {
         printf("%s\n", message.what());
         ASSERT_TRUE(1);    
     }        
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, aaa) {
+    
+    NDArray z('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);    
+    z.permutei({1,0});        
+
+    nd4j::graph::RandomGenerator gen(119,5);
+    std::vector<double> extraArguments = {1.5, 2.5};
+
+    NativeOpExecutioner::execRandom(nullptr, nd4j::random::UniformDistribution,
+                                &gen,
+                                z.buffer(), z.getShapeInfo(), nullptr, nullptr,                                 
+                                extraArguments.data());
+    z.printIndexedBuffer();
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(MultiDataTypeTests, assign_2)
+{    
+    NDArray x('c', {4}, {1.5,2.5,3.5,4.5}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {4}, nd4j::DataType::INT32);
+    NDArray expected('c', {4}, {1,2,3,4}, nd4j::DataType::INT32);
+    
+    y.assign(x);
+    y.printBuffer();
+    
+    ASSERT_TRUE(expected.equalsTo(&y));
 }

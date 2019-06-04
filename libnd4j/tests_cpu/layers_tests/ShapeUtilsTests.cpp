@@ -32,24 +32,6 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, BasicInject1) {
-    std::vector<Nd4jLong> shape({1, 4});
-
-    ShapeUtils::insertDimension(2, shape.data(), -1, 3);
-    ASSERT_EQ(4, shape.at(0));
-    ASSERT_EQ(3, shape.at(1));
-}
-
-//////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, BasicInject2) {
-    std::vector<Nd4jLong> shape({1, 4});
-
-    ShapeUtils::insertDimension(2, shape.data(), 0, 3);
-    ASSERT_EQ(3, shape.at(0));
-    ASSERT_EQ(4, shape.at(1));
-}
-
-//////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalDimsToExclude_1) {
     std::vector<int> res = ShapeUtils::evalDimsToExclude(3, {0});
 
@@ -80,29 +62,25 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
 
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
-        
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
 {
 
-    Nd4jLong xShapeInfo[]   = {4, 8, 1, 6, 1, 6,   6,  1, 1, 8192, 1, 99};    
+    Nd4jLong xShapeInfo[]   = {4, 8, 1, 6, 1, 6,   6,  1, 1, 8192, 1, 99};
     Nd4jLong yShapeInfo[]   = {3,    7, 1, 5,      5,  5, 1, 8192, 1, 99};
-    Nd4jLong expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 8192, 1, 99};    
+    Nd4jLong expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 8192, 1, 99};
 
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
 
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
-        
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -119,9 +97,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
     Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
 
-    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
-
-    RELEASE(newShapeInfo, x.getWorkspace());
+    ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -129,7 +105,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
 {
 
     Nd4jLong xShapeInfo[]   = {3, 8, 1, 3,  3, 3, 1, 8192, 1, 99};
-    Nd4jLong yShapeInfo[]   = {2,    4, 3,     3, 1, 8192, 1, 99};    
+    Nd4jLong yShapeInfo[]   = {2,    4, 3,     3, 1, 8192, 1, 99};
     Nd4jLong expShapeInfo[] = {3, 8, 4, 3, 12, 3, 1, 8192, 1, 99};
 
     NDArray x(xShapeInfo);
@@ -142,68 +118,59 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
     //  std::cout<<std::endl;
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
-
-    RELEASE(newShapeInfo, x.getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1)
 {
-    
+
     auto x = NDArrayFactory::create<float>('c',{2,3,4,5});
     auto expected = NDArrayFactory::create<float>('c', {2,4,5});
     std::vector<int> dimensions = {1};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());    
-    
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());
 
-    delete []newShapeInfo;
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2)
 {
-    
+
     auto x = NDArrayFactory::create<float>('c',{2,3,4,5});
     auto expected = NDArrayFactory::create<float>('c', {2,1,4,5});
     std::vector<int> dimensions = {1};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
-    
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
 
-    delete []newShapeInfo;
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test3)
 {
-    
+
     auto x = NDArrayFactory::create<float>('c',{2,3,4,5});
     auto expected = NDArrayFactory::create<float>('c', {1,1,1,5});
     std::vector<int> dimensions = {0,1,2};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
-    
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
+
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
-    delete []newShapeInfo;
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test4)
 {
-    
+
     auto x = NDArrayFactory::create<float>('c',{2,3,4,5});
     auto expected = NDArrayFactory::create<float>('c', {1,1,1,1});
     std::vector<int> dimensions = {0,1,2,3};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
-    
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
 
-    delete []newShapeInfo;
+    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 }
 
 TEST_F(ShapeUtilsTests, Test_Strings_1) {
@@ -248,79 +215,79 @@ TEST_F(ShapeUtilsTests, Test_Backward_Axis_3) {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalPermutFromTo_test1) {
-    
+
     int a=1, b=2, c=3, d=4;
-    std::vector<int> expected = {2, 3, 0, 1};    
-    
-    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {c,d,a,b});    
-    
-    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));    
-    
+    std::vector<int> expected = {2, 3, 0, 1};
+
+    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {c,d,a,b});
+
+    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));
+
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, evalPermutFromTo_test2) {    
-    
+TEST_F(ShapeUtilsTests, evalPermutFromTo_test2) {
+
     int a=1, b=2, c=3, d=4;
-    std::vector<int> expected = {0, 1, 3, 2};    
-    
-    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,d,c});    
-    
-    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));    
-    
+    std::vector<int> expected = {0, 1, 3, 2};
+
+    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,d,c});
+
+    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));
+
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(ShapeUtilsTests, evalPermutFromTo_test3) {    
-    
+TEST_F(ShapeUtilsTests, evalPermutFromTo_test3) {
+
     int a=2, b=2, c=3, d=2;
-    std::vector<int> expected = {0, 1, 3, 2};    
-    
-    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,d,c});    
-    
-    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));    
-    
+    std::vector<int> expected = {0, 1, 3, 2};
+
+    std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,d,c});
+
+    ASSERT_TRUE(std::equal(begin(expected), end(expected), begin(result)));
+
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalPermutFromTo_test4) {
-    
-    int a=2, b=3, c=4, d=5;    
-    
+
+    int a=2, b=3, c=4, d=5;
+
     std::vector<int> result = ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,c,d});
-    
-    ASSERT_TRUE(result.empty());    
-    
+
+    ASSERT_TRUE(result.empty());
+
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalPermutFromTo_test5) {
-    
+
     int a=1, b=2, c=3, d=4;
-    
-    // EXPECT_THROW(ShapeUtils::evalPermutFromTo({a,b,c,d}, {c,d,a,8}), const char*);              
+
+    // EXPECT_THROW(ShapeUtils::evalPermutFromTo({a,b,c,d}, {c,d,a,8}), const char*);
     ASSERT_TRUE(1);
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalPermutFromTo_test6) {
-    
+
     int a=1, b=2, c=3, d=4;
-        
-    // EXPECT_THROW(ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,c,d,d}), const char*);    
+
+    // EXPECT_THROW(ShapeUtils::evalPermutFromTo({a,b,c,d}, {a,b,c,d,d}), const char*);
     ASSERT_TRUE(1);
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, isPermutNecessary_test1) {
-         
-    ASSERT_TRUE(ShapeUtils::isPermutNecessary({1,0,2,3}));        
+
+    ASSERT_TRUE(ShapeUtils::isPermutNecessary({1,0,2,3}));
 }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, isPermutNecessary_test2) {
-         
-    ASSERT_TRUE(!ShapeUtils::isPermutNecessary({0,1,2,3}));        
+
+    ASSERT_TRUE(!ShapeUtils::isPermutNecessary({0,1,2,3}));
 }
 
 

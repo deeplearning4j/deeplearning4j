@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     
     REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", input->rankOf());
 
-    helpers::trace(*input, *output);
+    helpers::trace(block.launchContext(), *input, *output);
 
     return Status::OK();
 }
@@ -58,8 +58,9 @@ DECLARE_SHAPE_FN(trace) {
         outShapeInfo[i] = inShapeInfo[i];
 
     shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
-    return SHAPELIST(outShapeInfo);
+    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo)));
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(result);
 }
 
 }

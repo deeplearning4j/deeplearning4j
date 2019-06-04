@@ -40,7 +40,7 @@ namespace nd4j {
             else {
 //                if (!input->isVector() && reverse)
 //                    n->assign(lastDim - n->e<Nd4jLong>(0) - 1);
-                helpers::nthElementFunctor(input, n, output, reverse);
+                helpers::nthElementFunctor(block.launchContext(), input, n, output, reverse);
             }
             return ND4J_STATUS_OK;
         }
@@ -57,13 +57,14 @@ namespace nd4j {
                 outputShape[e + 1] = in[e + 1];
 
                 ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+                outputShape = CONSTANT(outputShape);
             }
             else if (outRank == 1) {
-                outputShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), shape::sizeAt(in, 0), block.workspace());
+                outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outputShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(in), block.workspace());
+                outputShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in));
             }
             return SHAPELIST(outputShape);
         }

@@ -40,9 +40,7 @@ namespace nd4j {
     namespace graph {
         class ND4J_EXPORT VariableSpace {
         protected:
-
-            nd4j::memory::Workspace _workspace;
-            nd4j::random::RandomBuffer* _rng = nullptr;
+            nd4j::memory::Workspace *_workspace;
 
             // stash is NOT cloned
             nd4j::graph::Stash _stash;
@@ -77,11 +75,9 @@ namespace nd4j {
 
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable*>* getPlaceholders();
-            virtual nd4j::random::RandomBuffer* getRNG();
-            virtual void setRNG(nd4j::random::RandomBuffer* rng);
             virtual void setWorkspace(nd4j::memory::Workspace *workspace);
-            
-            virtual nd4j::memory::Workspace *workspace();
+
+            virtual LaunchContext* launchContext();
 
             virtual bool hasExternalVariable(int it);
             virtual bool hasExternalVariable(std::pair<int,int>& pair);

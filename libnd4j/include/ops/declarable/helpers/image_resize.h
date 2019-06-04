@@ -26,9 +26,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int resizeBilinearFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
-    int resizeNeighborFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
-    void cropAndResizeFunctor(NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
+    int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height, bool center, NDArray* output);
+    int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height, bool center, NDArray* output);
+    void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 }
 }
 }

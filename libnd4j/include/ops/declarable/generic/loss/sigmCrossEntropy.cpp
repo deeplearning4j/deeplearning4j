@@ -59,10 +59,10 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing, newLabels, nullptr);
 	}
 	
-	NDArray E(labels, false, block.getWorkspace());
+	NDArray E(labels, false, block.launchContext());
 
 	// logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-	helpers::sigmCrossEntropy(logits, newLabels, &E);
+	helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
 
     // multiply E on weights
     E *= *weightsBroad;
@@ -139,9 +139,9 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
     Nd4jLong* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
-    	outShapeInfo = ShapeBuilders::createScalarShapeInfo(outType, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
     else 							// in this case output has the same shape as labels and logits
-    	outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+    	outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 	
     return SHAPELIST(outShapeInfo);    
 }
@@ -161,7 +161,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     auto dLdl = OUTPUT_VARIABLE(2);		// dL/dlabels
 
     
-    float labelsSmoothing = T_ARG(0);
+    NDArray labelsSmoothing = NDArrayFactory::create(logits->dataType(), T_ARG(0), block.launchContext());
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     // take into account Alex's proposition to treat "none" the same as "weighted_sum" mode when calculating gradients
@@ -184,21 +184,22 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	
 	// If labelsSmoothing is nonzero, smooth the labels towards 1/2:
 	auto newLabels = labels;
-	if(labelsSmoothing != 0.) {
+	if(labelsSmoothing.e<float>(0) != 0.f) {
 		newLabels = new NDArray(*labels);
-    	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing, newLabels, nullptr);
+    	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing.e<float>(0), newLabels, nullptr);
 	}
 	
-	NDArray E(labels, false, block.getWorkspace());	
+	NDArray E(labels, false, block.launchContext());
 
 	// logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-	helpers::sigmCrossEntropy(logits, newLabels, &E);
+	helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
 
 	// dLdp = 1 - labels - 1 / (1 + exp(logits))
-	helpers::sigmCrossEntropyGrad(logits, newLabels, dLdp);
+	helpers::sigmCrossEntropyGrad(block.launchContext(), logits, newLabels, dLdp);
 	
 	// dLdl = -logits
-	dLdl->assign(*logits * (labelsSmoothing - 1.f));
+	labelsSmoothing -= 1.f;
+	dLdl->assign(*logits * labelsSmoothing);
 
 	switch (reductionMode) {		
 		case 1: {											// 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -241,7 +242,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
 				}					
 				else 
-					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));					
+					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
 			}
 			break;
 		}
@@ -260,7 +261,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				*dLdw = 0.;
 			}
 			else {
-				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeightsScalar);
@@ -310,11 +311,11 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss_grad) {
 
 	DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-    Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());    
-    Nd4jLong *dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());    
-    Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());    
+    auto dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());
+    auto dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
+    auto dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 	
-    return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
+    return SHAPELIST(CONSTANT(dLdpShapeInfo), CONSTANT(dLdwShapeInfo), CONSTANT(dLdlShapeInfo));
 }
 
 

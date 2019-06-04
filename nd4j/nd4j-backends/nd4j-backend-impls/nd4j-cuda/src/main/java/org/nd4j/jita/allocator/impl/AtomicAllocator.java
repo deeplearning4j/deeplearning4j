@@ -434,6 +434,21 @@ public class AtomicAllocator implements Allocator {
         return point;
     }
 
+
+    public AllocationPoint pickExternalBuffer(DataBuffer buffer) {
+        AllocationPoint point = new AllocationPoint();
+        Long allocId = objectsTracker.getAndIncrement();
+        point.setObjectId(allocId);
+        point.setConstant(true);
+
+        allocationsMap.put(allocId, point);
+
+        point.tickDeviceWrite();
+        point.tickHostRead();
+
+        return point;
+    }
+
     /**
      * This method allocates required chunk of memory in specific location
      * <p>

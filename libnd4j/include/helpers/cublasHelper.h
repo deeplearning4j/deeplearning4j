@@ -24,6 +24,8 @@
 namespace nd4j {
     namespace cublas {
         void* handle();
+
+        void destroyHandle(void* handle);
     }
 }
 

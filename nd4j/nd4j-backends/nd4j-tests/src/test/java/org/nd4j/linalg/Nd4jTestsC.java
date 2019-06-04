@@ -408,7 +408,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
-        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {1, 2});
+        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new float[] {-4, -4}), arr.getRow(0));
@@ -771,6 +771,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         //[0 0 0 2 2 0] -> [0 0 0 1 0 0]
         assertEquals(Nd4j.create(new boolean[] {false, false, false, true, false, false}), Transforms.isMax(Nd4j.create(new double[] {0, 0, 0, 2, 2, 0}), DataType.BOOL));
+    }
+
+    @Test
+    public void testIMaxVector_1() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(0).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_2() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax(Integer.MAX_VALUE).getInt(0);
+        assertEquals(0, idx);
+    }
+
+    @Test
+    public void testIMaxVector_3() {
+        val array = Nd4j.ones(3);
+        val idx = array.argMax().getInt(0);
+        assertEquals(0, idx);
     }
 
     @Test
@@ -2167,6 +2188,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testTensorDot() {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2).castTo(DataType.DOUBLE);
@@ -4324,20 +4346,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(1.0, norm2, 0.001);
         assertEquals(1.0, norm1, 0.001);
         assertEquals(1.0, sum, 0.001);
-    }
-
-    @Test
-    public void sumResultArrayEdgeCase() {
-        INDArray delta = Nd4j.create(1, 3);
-        delta.assign(Nd4j.rand(delta.shape()));
-
-        INDArray out = delta.sum(0);
-
-        INDArray out2 = Nd4j.zeros(new long[] {1, 3}, 'c');
-        INDArray res = delta.sum(out2, 0);
-
-        assertEquals(out, out2);
-        assertTrue(res == out2);
     }
 
 
@@ -7741,6 +7749,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+
+    @Test
+    public void testSumEdgeCase(){
+        INDArray row = Nd4j.create(1,3);
+        INDArray sum = row.sum(0);
+        assertArrayEquals(new long[]{3}, sum.shape());
+
+        INDArray twoD = Nd4j.create(2,3);
+        INDArray sum2 = twoD.sum(0);
+        assertArrayEquals(new long[]{3}, sum2.shape());
+    }
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {

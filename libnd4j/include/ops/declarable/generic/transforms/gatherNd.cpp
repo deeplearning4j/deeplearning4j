@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
     int lastIndDim = indices->sizeAt(-1);
     REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
 
-    helpers::gatherND(*input, *indices, *output);
+    helpers::gatherND(block.launchContext(), *input, *indices, *output);
     
     return Status::OK();
 }
@@ -80,7 +80,7 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
     //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

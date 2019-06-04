@@ -39,14 +39,13 @@ namespace nd4j {
             } else {
                 auto axisVector = INPUT_VARIABLE(1);
                 dims.resize(axisVector->lengthOf());
-                helpers::adjustAxis(input, axisVector, dims);
+                helpers::adjustAxis(input->rankOf(), axisVector, dims);
                 axisVector->printIndexedBuffer("AXIS");
                 auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, false);
                 if (!shape::equalsStrict(shape, output->shapeInfo())) {
-                    output = new NDArray(shape, false, block.getWorkspace());
+                    output = new NDArray(shape, false, block.launchContext());
                     overwrite = true;
                 }
-                RELEASE(shape, input->getWorkspace());
             }
             output->printShapeInfo("Output Shape Info");
             switch(mode) {

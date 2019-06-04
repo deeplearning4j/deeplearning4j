@@ -31,13 +31,13 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_max: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
 
-            auto expected = NDArrayFactory::create(0.f, block.getWorkspace());
-            auto wrong = NDArrayFactory::create(0.f, block.getWorkspace());
+            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_max: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
             segmentedOutput->nullify();
-            helpers::segmentMaxFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentMaxFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -48,7 +48,8 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
-            int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
+            idxVector->syncToHost();
+            int val = (*idxVector).e<Nd4jLong>(idxVector->lengthOf() - 1);
 
             int numOfClasses = val + 1;
 
@@ -61,13 +62,15 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         DECLARE_TYPES(segment_max) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setSameMode(false);
         }
         CUSTOM_OP_IMPL(segment_max_bp, 3, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -76,7 +79,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
-            return helpers::segmentMaxFunctorBP(input, indices, gradOut, output);
+            return helpers::segmentMaxFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_max_bp){
             Nd4jLong* in = inputShape->at(0);
@@ -86,7 +89,7 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
 
         }
         DECLARE_TYPES(segment_max_bp) {

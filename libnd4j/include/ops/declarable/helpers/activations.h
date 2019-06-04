@@ -27,21 +27,23 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void softMaxForVector(const NDArray &input, NDArray &output);
+    void softMaxForVector(nd4j::LaunchContext * context, const NDArray &input, NDArray &output);
 
-    void logSoftMaxForVector(const NDArray &input, NDArray &output);
+    void logSoftMaxForVector(nd4j::LaunchContext * context, const NDArray &input, NDArray &output);
 
-    void softmax(const NDArray &input, NDArray &output, const int dimension);
+    void softmax(nd4j::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
 
-    void prelu(const NDArray &input, const NDArray &alpha, NDArray &output);
+    void logSoftmax(nd4j::LaunchContext * context, const NDArray &input, NDArray &output, const int dimension);
 
-    void preluBP(const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
+    void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension);
 
-    bool checkAlphaShapeLen(std::vector<Nd4jLong> const &expectedShape, Nd4jLong shapeLen);
+    void prelu(nd4j::LaunchContext * context, const NDArray &input, const NDArray &alpha, NDArray &output);
 
-    void thresholdRelu(const NDArray &input, double threshold, NDArray &output);
+    void preluBP(nd4j::LaunchContext * context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
 
-    void thresholdReluDerivative(NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
+    void thresholdRelu(nd4j::LaunchContext * context, const NDArray &input, double threshold, NDArray &output);
+
+    void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
 }
 }
 }

@@ -33,11 +33,13 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             std::vector<int> dims(*block.getAxis());
             if (dims.size() == 0 && block.width() > 2) {
                 auto axis = INPUT_VARIABLE(2);
-                helpers::adjustAxis(x, axis, dims);
-                //dims = ShapeUtils::evalDimsToExclude(z->rankOf(), dims);
+                helpers::adjustAxis(x->rankOf(), axis, dims);
+                //dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
             }
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
@@ -45,19 +47,33 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
-            auto tadLen = shape::length(tadPack.primaryShapeInfo());
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+
+            auto tadLen = shape::length(packX.primaryShapeInfo());
             REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
 
+            PointersManager manager(block.launchContext(),"LegacyBroadcastOp");
+            auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+            auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
             if (x == z)
-                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+                NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->shapeInfo(), dims);
+                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
-                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
+                auto zTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
+                auto zTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));
+
+                NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                        dims.data(), dims.size(), pTadShape, pTadOffsets, zTadShape, zTadOffsets);
             }
 
+            manager.synchronize();
             STORE_RESULT(*z);
 
             return Status::OK();
@@ -86,7 +102,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(CONSTANT(newShape));
         }
     }
 }

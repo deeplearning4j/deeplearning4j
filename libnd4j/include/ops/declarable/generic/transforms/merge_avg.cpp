@@ -38,7 +38,7 @@ OP_IMPL(mergeavg, -1, 1, false) {
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
-    helpers::mergeAvg(inArrs, *output);
+    helpers::mergeAvg(block.launchContext(), inArrs, *output);
 
     return Status::OK();
 }

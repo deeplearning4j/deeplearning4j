@@ -42,7 +42,7 @@ namespace nd4j {
                 REQUIRE_TRUE(q->e<float>(i) > 0.f, 0, "ZETA op: all elements of q array must be > 0 !");
             }
 
-            helpers::zeta(*x, *q, output);
+            helpers::zeta(block.launchContext(), *x, *q, *output);
 
             return Status::OK();
         }

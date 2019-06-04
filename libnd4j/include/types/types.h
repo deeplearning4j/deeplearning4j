@@ -148,6 +148,14 @@
         (nd4j::DataType::BFLOAT16, bfloat16)
 
 
+#define GENERIC_NUMERIC_TYPES \
+        (nd4j::DataType::HALF, float16), \
+        (nd4j::DataType::FLOAT32, float), \
+        (nd4j::DataType::DOUBLE, double), \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong), \
+        (nd4j::DataType::BFLOAT16, bfloat16)
+
 
 #ifdef __ND4J_EXPERIMENTAL__
 #define PAIRWISE_TYPES_0 \

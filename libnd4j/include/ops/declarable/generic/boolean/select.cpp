@@ -93,7 +93,7 @@ namespace nd4j {
             Nd4jLong *newshape;
             COPY_SHAPE(inShape, newshape);
 
-            return SHAPELIST(newshape);
+            return SHAPELIST(CONSTANT(newshape));
         }
 
         DECLARE_TYPES(select) {

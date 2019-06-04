@@ -84,7 +84,7 @@ namespace nd4j {
 
                 std::vector<int> dims = ShapeUtils::evalDimsToExclude(width, {0});
 
-                helpers::_where(*condition, *output, block.workspace());
+                helpers::_where(block.launchContext(), *condition, *output, block.workspace());
             }
             return ND4J_STATUS_OK;
         }
@@ -95,7 +95,7 @@ namespace nd4j {
                 Nd4jLong *newshape;
                 COPY_SHAPE(inShape, newshape);
 
-                return SHAPELIST(newshape);
+                return SHAPELIST(CONSTANT(newshape));
             } else {
                 // FIXME: we can't estimate result here in this case
                 // output shape is the 2D tensor num_true x rankOf (inShape)
@@ -118,12 +118,12 @@ namespace nd4j {
                     newShape[5] = 0;
                     newShape[6] = 1;
                     newShape[7] = 99;
+                    ShapeUtils::updateStridesAndType(newShape, nd4j::DataType::INT64, 'c');
 
-                    ArrayOptions::setDataType(newShape, nd4j::DataType::INT64);
+                    newShape = CONSTANT(newShape);
                 }
                 else {
-                    newShape = ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace());
-                    ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
+                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64);
                 }
 
                 return SHAPELIST(newShape);

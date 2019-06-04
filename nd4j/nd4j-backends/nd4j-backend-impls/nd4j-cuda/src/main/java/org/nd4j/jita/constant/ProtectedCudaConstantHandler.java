@@ -38,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -119,6 +120,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public synchronized long moveToConstantSpace(DataBuffer dataBuffer) {
+        if (1 > 0)
+            throw new RuntimeException("This code shouldn't be called, ever");
+
         // now, we move things to constant memory
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
         ensureMaps(deviceId);
@@ -167,35 +171,6 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         }
 
         long bytes = requiredMemoryBytes;
-        // hack for misalignment avoidance for 16bit data opType
-        /*
-        if (dataBuffer.dataType() == DataType.UBYTE || dataBuffer.dataType() == DataType.BYTE || dataBuffer.dataType() == DataType.BOOL) {
-            if (bytes % 4 != 0) {
-                bytes += bytes % 4;
-            }
-        } else if (dataBuffer.dataType() == DataType.HALF || dataBuffer.dataType() == DataType.SHORT) {
-            if (bytes % 4 != 0) {
-                bytes += 2;
-            }
-        } else if (dataBuffer.dataType() == DataType.DOUBLE || dataBuffer.dataType() == DataType.LONG) {
-            // for double data opType, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
-            long div = bytes / 4;
-            if (div % 2 != 0)
-                bytes += 4;
-
-            // for possible changes of dtype in the same jvm, we skip few bytes in constant memory
-            div = currentOffset / 4;
-            while (div % 2 != 0) {
-                currentOffset = constantOffsets.get(deviceId).addAndGet(4);
-                div = currentOffset / 4;
-
-                // just break out, if we're stepped beyond constant memory space
-                if (currentOffset > MAX_CONSTANT_LENGTH)
-                    break;
-            }
-        }
-        */
-
         currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
 
         if (currentOffset >= MAX_CONSTANT_LENGTH) {
@@ -320,7 +295,34 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(int[] array, DataType type) {
-        //  logger.info("getConstantBuffer(int[]) called");
+        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+    }
+
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
+    @Override
+    public DataBuffer getConstantBuffer(float[] array, DataType type) {
+        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+    }
+
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
+    @Override
+    public DataBuffer getConstantBuffer(double[] array, DataType type) {
+        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        /*
         ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -332,23 +334,26 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
-            if (constantOffsets.get(deviceId).get() + (array.length * 4) < MAX_CONSTANT_LENGTH) {
+            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
                 // now we move data to constant memory, and keep happy
                 moveToConstantSpace(buffer);
 
                 buffersCache.get(deviceId).put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * 4);
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
             }
             return buffer;
         } //else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
+         */
     }
 
     @Override
     public DataBuffer getConstantBuffer(long[] array, DataType type) {
+        return Nd4j.getExecutioner().createConstantBuffer(array, type);
+        /*
         //  logger.info("getConstantBuffer(int[]) called");
         ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
@@ -374,108 +379,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         } //else logger.info("Reusing constant buffer...");
 
         return buffersCache.get(deviceId).get(descriptor);
-    }
-
-    /**
-     * This method returns DataBuffer with contant equal to input array.
-     *
-     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
-     *
-     * @param array
-     * @return
-     */
-    @Override
-    public DataBuffer getConstantBuffer(float[] array, DataType type) {
-        //   logger.info("getConstantBuffer(float[]) called");
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
-
-        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
-
-        ensureMaps(deviceId);
-
-        if (!buffersCache.get(deviceId).containsKey(descriptor)) {
-            // we create new databuffer
-                 //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
-
-            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
-                buffer.setConstant(true);
-                // now we move data to constant memory, and keep happy
-                moveToConstantSpace(buffer);
-
-                buffersCache.get(deviceId).put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
-            }
-            return buffer;
-        } // else logger.info("Reusing constant buffer...");
-
-        return buffersCache.get(deviceId).get(descriptor);
-    }
-
-    /**
-     * This method returns DataBuffer with contant equal to input array.
-     *
-     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
-     *
-     * @param array
-     * @return
-     */
-    @Override
-    public DataBuffer getConstantBuffer(double[] array, DataType type) {
-                //logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
-
-        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
-
-        ensureMaps(deviceId);
-
-        if (!buffersCache.get(deviceId).containsKey(descriptor)) {
-            // we create new databuffer
-            //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
-
-            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
-                buffer.setConstant(true);
-                // now we move data to constant memory, and keep happy
-                moveToConstantSpace(buffer);
-
-                buffersCache.get(deviceId).put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
-            }
-            return buffer;
-        } //else logger.info("Reusing constant buffer...");
-
-        return buffersCache.get(deviceId).get(descriptor);
+         */
     }
 
     @Override
     public DataBuffer getConstantBuffer(boolean[] array, DataType dataType) {
-        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
-
-        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
-
-        ensureMaps(deviceId);
-
-        if (!buffersCache.get(deviceId).containsKey(descriptor)) {
-            // we create new databuffer
-            //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createTypedBuffer(array, dataType);
-
-            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
-                buffer.setConstant(true);
-                // now we move data to constant memory, and keep happy
-                moveToConstantSpace(buffer);
-
-                buffersCache.get(deviceId).put(descriptor, buffer);
-
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
-            }
-            return buffer;
-        } //else logger.info("Reusing constant buffer...");
-
-        return buffersCache.get(deviceId).get(descriptor);
+        return getConstantBuffer(ArrayUtil.toLongs(array), dataType);
     }
 
     @Override

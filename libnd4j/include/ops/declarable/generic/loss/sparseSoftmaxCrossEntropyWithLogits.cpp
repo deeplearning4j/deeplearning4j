@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
     auto logitsExp = (*logits - maxAlongDim).transform(transform::Exp, nullptr);
     auto logSoftMax = ( logitsExp / logitsExp.reduceAlongDims(reduce::Sum, dimension, true) ).transform(transform::Log);
 
-    ScatterHelper::scatterForLoss(*labels, -logSoftMax, *output, false);
+    helpers::scatterForLoss(block.launchContext(), *labels, -logSoftMax, *output, false);
 
     return Status::OK();
 }
@@ -83,9 +83,9 @@ DECLARE_SHAPE_FN(sparse_softmax_cross_entropy_loss_with_logits) {
     
     REQUIRE_TRUE(equalSoft, 0, "SPARSE_SOFTMAX_CROSS_ENTROPY_LOSS_WITH_LOGITS OP: wrong shape of labels array, its shape should be the same as logits shape with last dimension excluded, however got labels_shape = %s and logits_shape = %s instead !", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
-    Nd4jLong *outShapeInfo =  ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, logitsShapeInfo, false, block.getWorkspace());
-    
-    return SHAPELIST(outShapeInfo);
+    auto outShapeInfo =  ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, logitsShapeInfo, false, block.getWorkspace());
+
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 
@@ -124,7 +124,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
     dLdp->assign(softmax);
 
     // subtract unities at appropriate indexes of dLdp array    
-    ScatterHelper::scatterForLoss(*labels, *dLdp, *labels /*actually third array is unnecessary for gradient calculation*/, true);
+    helpers::scatterForLoss(block.launchContext(), *labels, *dLdp, *labels /*actually third array is unnecessary for gradient calculation*/, true);
 
     return Status::OK();
 }
@@ -157,7 +157,7 @@ DECLARE_SHAPE_FN(sparse_softmax_cross_entropy_loss_with_logits_grad) {
 
     Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());    
     
-    return SHAPELIST(dLdpShapeInfo);
+    return SHAPELIST(CONSTANT(dLdpShapeInfo));
 }
 
 

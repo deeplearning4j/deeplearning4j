@@ -262,4 +262,3 @@ TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
     ASSERT_NE(z0.size(), negs);
 }
 
-//#endif

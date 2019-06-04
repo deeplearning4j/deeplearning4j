@@ -58,11 +58,65 @@ namespace helpers {
     };
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(void *vptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *vptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides) {
+    void _execute(nd4j::LaunchContext * context, void *vptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *vptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides) {
         auto ptrSpace = reinterpret_cast<T *>(vptrSpace);
         auto ptrBatch = reinterpret_cast<T *>(vptrBatch);
         SpaceToBatchHelper<NUM_BLOCK_DIMS, B2S>::run(ptrSpace, space_shape, space_strides, block_shape, pad_start, block_offsets, ptrBatch, batch_shape, batch_strides);
     };
+
+    Nd4jStatus _spaceToBatch(nd4j::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *paddings) {
+        auto in = input->reshape('c', internal_input_shape);
+        auto out = output->reshape('c', internal_output_shape);
+        switch (internal_block_dims) {
+            case 1:
+                _prepare<1, false>(context, in, out, block_shape, paddings);
+                break;
+            case 2:
+                _prepare<2, false>(context, in, out, block_shape, paddings);
+                break;
+            case 3:
+                _prepare<3, false>(context, in, out, block_shape, paddings);
+                break;
+            case 4:
+                _prepare<4, false>(context, in, out, block_shape, paddings);
+                break;
+            default: {
+                return Status::THROW("SpaceToBatch: Wrong number of internal_block_dims");
+            }
+        }
+
+        delete in;
+        delete out;
+
+        return Status::OK();
+    }
+
+    Nd4jStatus _batchToSpace(nd4j::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
+        auto in = input->reshape('c', internal_input_shape);
+        auto out = output->reshape('c', internal_output_shape);
+        switch (internal_block_dims) {
+            case 1:
+                _prepare<1, true>(context, in, out, block_shape, crops);
+                break;
+            case 2:
+                _prepare<2, true>(context, in, out, block_shape, crops);
+                break;
+            case 3:
+                _prepare<3, true>(context, in, out, block_shape, crops);
+                break;
+            case 4:
+                _prepare<4, true>(context, in, out, block_shape, crops);
+                break;
+            default: {
+                return Status::THROW("BatchToSpace: Wrong number of internal_block_dims");
+            }
+        }
+
+        delete in;
+        delete out;
+
+        return Status::OK();
+    }
 
 #define STB_DIM (0, 1),\
                 (1, 2),\
@@ -72,7 +126,7 @@ namespace helpers {
 #define STB_BOOL (0, false),\
                  (1, true)
 
-    BUILD_TRIPLE_TEMPLATE(template void _execute, (void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
+    BUILD_TRIPLE_TEMPLATE(template void _execute, (nd4j::LaunchContext * context, void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
 
 #undef STB_BOOL
 #undef STB_DIM

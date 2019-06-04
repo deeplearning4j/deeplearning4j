@@ -22,6 +22,8 @@
 #ifndef DEV_TESTS_TRANSFORMBENCHMARK_H
 #define DEV_TESTS_TRANSFORMBENCHMARK_H
 
+using namespace nd4j::graph;
+
 namespace nd4j {
     class ND4J_EXPORT TransformBenchmark : public OpBenchmark {
 
@@ -78,30 +80,26 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            if(_opType == 0){
-                if (_z != nullptr)
-                    NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                else
-                    NativeOpExcutioner::execTransformStrict(_opNum, _x->buffer(), _x->shapeInfo(),  _x->buffer(), _x->shapeInfo(), nullptr, nullptr, nullptr);
-            } else if(_opType == 1){
-                if (_z != nullptr){
-                    NativeOpExcutioner::execTransformSame(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                } else {
-                    NativeOpExcutioner::execTransformSame(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                }
-            } else if(_opType == 2){
-                if (_z != nullptr){
-                    NativeOpExcutioner::execTransformAny(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                } else {
-                    NativeOpExcutioner::execTransformAny(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                }
-            } else {
-                if (_z != nullptr){
-                    NativeOpExcutioner::execTransformFloat(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                } else {
-                    NativeOpExcutioner::execTransformFloat(_opNum, _x->buffer(), _x->shapeInfo(), _z->buffer(), _z->shapeInfo(), nullptr, nullptr, nullptr);
-                }
+            PointersManager manager(LaunchContext::defaultContext(), "TransformBM");
+
+            auto z = _z == nullptr ? _x : _z;
+
+            switch (_opType) {
+                case 0:
+                    NativeOpExecutioner::execTransformStrict(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
+                    break;
+                case 1:
+                    NativeOpExecutioner::execTransformSame(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
+                    break;
+                case 2:
+                    NativeOpExecutioner::execTransformAny(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
+                    break;
+                case 3:
+                    NativeOpExecutioner::execTransformFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr);
+                    break;
             }
+
+            manager.synchronize();
         }
 
         std::string axis() override {

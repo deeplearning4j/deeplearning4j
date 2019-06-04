@@ -38,7 +38,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(l2_loss) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
         }
 
         DECLARE_TYPES(l2_loss) {

@@ -16,7 +16,9 @@
 
 package org.nd4j.jita.allocator.tad;
 
+import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -53,61 +55,12 @@ public class BasicTADManager implements TADManager {
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
 
-        boolean isScalar = dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE);
-
-        // FIXME: this is fast triage, remove it later
-        int targetRank = isScalar ? 2 : array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-        long offsetLength = 0;
-        long tadLength = 1;
-
-        if(!isScalar)
-            for (int i = 0; i < dimension.length; i++) {
-                tadLength *= array.shape()[dimension[i]];
-            }
-
-        if(!isScalar)
-            offsetLength = array.lengthLong() / tadLength;
-        else
-            offsetLength = 1;
-        //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
-        //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
-
-        DataBuffer outputBuffer = new CudaLongDataBuffer(targetRank * 2 + 4);
-        DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
-
-        AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
-        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
-
-        DataBuffer dimensionBuffer = AtomicAllocator.getInstance().getConstantBuffer(dimension);
-        Pointer dimensionPointer = AtomicAllocator.getInstance().getHostPointer(dimensionBuffer);
-
-        Pointer xShapeInfo = AddressRetriever.retrieveHostPointer(array.shapeInfoDataBuffer());
-        Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
-        Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
-        if(!isScalar)
-            nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                    (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
-
-        else  {
-            outputBuffer.put(0,2);
-            outputBuffer.put(1,1);
-            outputBuffer.put(2,1);
-            outputBuffer.put(3,1);
-            outputBuffer.put(4,1);
-            outputBuffer.put(5,0);
-            outputBuffer.put(6,0);
-            outputBuffer.put(7,99);
-
-        }
-
-        AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
-        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickHostWrite();
+        val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
 
         //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
         // now we need to copy this buffer to either device global memory or device cache
 
-        return new Pair<>(outputBuffer, offsetsBuffer);
-
+        return new Pair<>(pack.getTadShapeInfo(), pack.getTadOffsets());
     }
 
     /**

@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void adjust_saturation_single_(NDArray *array, NDArray *output, float delta, bool isNHWC) {
+    static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
         // we're 100% sure it's 3
         const int numChannels = 3;
         int tuples = array->lengthOf() /  numChannels;
@@ -43,10 +43,10 @@ namespace helpers {
 
                 T h, s, v;
                 // Convert the RGB color to Hue/V-range.
-                helpers::rgb_to_hsv(i[0], i[1], i[2], &h, &s, &v);
+                helpers::rgb_to_hsv(context, i[0], i[1], i[2], &h, &s, &v);
                 s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
                 // Convert the hue and v-range back into RGB.
-                helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
+                helpers::hsv_to_rgb(context, h, s, v, o, o + 1, o + 2);
             }
         } else {
             auto tadsChannelsIn = array->allTensorsAlongDimension({0});
@@ -72,10 +72,10 @@ namespace helpers {
 
                 T h, s, v;
                 // Convert the RGB color to Hue/V-range.
-                helpers::rgb_to_hsv(_ri[0], _gi[0], _bi[0], &h, &s, &v);
+                helpers::rgb_to_hsv(context, _ri[0], _gi[0], _bi[0], &h, &s, &v);
                 s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
                 // Convert the hue and v-range back into RGB.
-                helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
+                helpers::hsv_to_rgb(context, h, s, v, _ro, _go, _bo);
             }
 
             delete tadsChannelsIn;
@@ -83,7 +83,7 @@ namespace helpers {
         }
     }
 
-    void adjust_saturation(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+    void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
 
         float d = delta->e<float>(0);
@@ -95,19 +95,19 @@ namespace helpers {
             // FIXME: template selector should be moved out of loop
             PRAGMA_OMP_PARALLEL_FOR
             for (int e = 0; e < tSize; e++) {
-                BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
             }
             
 
             delete tadsIn;
             delete tadsOut;
-        } 
+        }
         else {
-            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (array, output, d, isNHWC);, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, array, output, d, isNHWC);, FLOAT_TYPES);
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
 
 }
 }

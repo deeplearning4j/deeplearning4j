@@ -57,15 +57,7 @@ namespace nd4j {
             auto it = INT_ARG(0);
             DataType newType = DataTypeUtils::fromInt(it);
 
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-            ArrayOptions::setDataType(newShape, newType);
-			
-            if(INPUT_VARIABLE(0)->isEmpty()){
-                ArrayOptions::setPropertyBit(newShape, ARRAY_EMPTY);
-            }
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, newType)));
         }
 
         DECLARE_TYPES(cast) {

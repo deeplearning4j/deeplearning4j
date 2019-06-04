@@ -24,6 +24,7 @@
 #include <ops/random_ops.h>
 #include <helpers/shape.h>
 #include <graph/RandomGenerator.h>
+#include <specials_cuda.h>
 
 namespace randomOps {
 
@@ -57,11 +58,15 @@ namespace randomOps {
             __shared__ Nd4jLong xEWS;
             __shared__ Nd4jLong yEWS;
             __shared__ Nd4jLong zEWS;
+            __shared__ char xOrder;
+            __shared__ char yOrder;
+            __shared__ char zOrder;
 
             __shared__ nd4j::graph::RandomGenerator *rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
             __shared__ nd4j::graph::RandomGenerator *devRng;
+
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 rng = (nd4j::graph::RandomGenerator*) shmem;
@@ -76,6 +81,9 @@ namespace randomOps {
                 xEWS = shape::elementWiseStride(xShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
+                xOrder = shape::order(xShapeBuffer);
+                yOrder = shape::order(yShapeBuffer);
+                zOrder = shape::order(zShapeBuffer);
             }
             __syncthreads();
 
@@ -83,11 +91,11 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                 cB[e] = dB[e];
             }
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
+            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
                 for (Nd4jLong e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
                     T prob = rng->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
@@ -99,7 +107,9 @@ namespace randomOps {
                             z[e * zEWS] = x[f * xEWS];
                             f += yLength;
                         }
+//                        __syncthreads();  // Eliminated due RTX20xx specific
                     }
+//                    __syncthreads();  // Eliminated due RTX20xx specific
                 }
             } 
             else {
@@ -122,11 +132,13 @@ namespace randomOps {
                             z[zOffset2] = x[xOffset2];
                             f += yLength;
                         }
+//                        __syncthreads();  // Eliminated due RTX20xx specific
                     }
+//                    __syncthreads();  // Eliminated due RTX20xx specific
                 }
             }
 
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
             if (threadIdx.x == 0 && blockIdx.x == 0)
                 devRng->rewindH(zLength);
         }
@@ -219,6 +231,7 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+
             __shared__ T epsilon;
             __shared__ T two_pi;
 
@@ -261,10 +274,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-            __syncthreads();
+
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -273,20 +286,23 @@ namespace randomOps {
 
             for (int e = tid; e < middle; e += step) {
                 auto epm = e + middle;
-
                 // we need to get random values
                 T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
                 T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
                 T realMean0 = y == z ? mean : y[e * yEWS];
 
-                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] = (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                 if (epm < zLength) {
                     T realMean1 = y == z ? mean : y[epm * yEWS];
                     z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                 }
             }
+
+//            __syncthreads();          // Eliminated due RTX20xx specific
+            if (threadIdx.x == 0 && blockIdx.x == 0)
+                devRng->rewindH(zLength);
         }
 #endif
 
@@ -388,7 +404,7 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                 cB[e] = dB[e];
             }
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -407,6 +423,10 @@ namespace randomOps {
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = static_cast<T>(success);
             }
+
+//            __syncthreads();  // Eliminated due RTX20xx specific
+            if (trials > 0 && threadIdx.x == 0 && blockIdx.x == 0)
+                devRng->rewindH(zLength * trials);
         }
 #endif
 
@@ -505,7 +525,7 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                 cB[e] = dB[e];
             }
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -659,7 +679,7 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                 cB[e] = dB[e];
             }
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -771,7 +791,7 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
                 cB[e] = dB[e];
             }
-            __syncthreads();
+//            __syncthreads();  // Eliminated due RTX20xx specific
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 

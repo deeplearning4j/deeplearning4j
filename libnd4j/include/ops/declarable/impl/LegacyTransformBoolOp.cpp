@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyTransformBoolOp.h>
 
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 
 
 namespace nd4j {
@@ -41,13 +41,21 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {input});
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execTransformBool(opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext(),"LegacyTransformBoolOp");
 
+            NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
+                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                    extras.argumentsAsT(input->dataType()), nullptr, nullptr);
+
+            manager.synchronize();
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
@@ -57,12 +65,7 @@ namespace nd4j {
         */
         ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
-
-            Nd4jLong *newShape;
-            COPY_SHAPE(inShape, newShape);
-            ArrayOptions::setDataType(newShape, DataType::BOOL);
-
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

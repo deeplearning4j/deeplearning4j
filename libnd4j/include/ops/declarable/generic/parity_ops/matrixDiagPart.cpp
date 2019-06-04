@@ -32,7 +32,7 @@ namespace nd4j {
             REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
             output->nullify();
-            return helpers::matrixDiagPart(input, output);
+            return helpers::matrixDiagPart(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_diag_part) {
@@ -46,7 +46,7 @@ namespace nd4j {
             int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {
                 //output shape is a vector with size min(sizeAt(0), sizeAt(1))
-                outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), lastDimension, block.workspace());
+                outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
             }
             else {
                 ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
@@ -56,6 +56,7 @@ namespace nd4j {
                 outShapeInfo[outRank] = lastDimension;
 
                 ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
+                outShapeInfo = CONSTANT(outShapeInfo);
             }
             return SHAPELIST(outShapeInfo);
     }

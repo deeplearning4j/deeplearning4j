@@ -42,8 +42,8 @@ namespace nd4j {
             int dY = INT_ARG(6);			//Dilation in height/y dimension
             int dX = INT_ARG(7);			//Dilation in width/x dimension
 
-            LaunchContext ctx;
-            helpers::col2im(ctx, *x, *z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
+            LaunchContext* ctx = block.launchContext();
+            helpers::col2im(*ctx, *x, *z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
 
             STORE_RESULT(*z);
 
@@ -79,7 +79,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
-            return SHAPELIST(zShape);
+            return SHAPELIST(CONSTANT(zShape));
         }
 
         DECLARE_TYPES(col2im) {

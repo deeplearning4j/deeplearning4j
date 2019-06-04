@@ -85,7 +85,7 @@ static void clipping(NDArray* arr, T limit) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
     // xt   input [bS x inSize]
@@ -217,7 +217,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
     nd4j::ops::concat concat;
     Context cContext(119);
-    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getWorkspace());
+    auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getContext());
     cContext.setInputArray(0, const_cast<NDArray*>(xt), false);
     cContext.setInputArray(1, const_cast<NDArray*>(yLast), false);
     cContext.setOutputArray(0, &concatOut, false);
@@ -295,7 +295,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                   NDArray* h, NDArray* c, const std::vector<double>& params) {
     
     // x  input [time x bS x inSize]
@@ -322,7 +322,7 @@ void lstmTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* c0, const 
         auto ht = (*h)({t,t+1, 0,0, 0,0});
         auto ct = (*c)({t,t+1, 0,0, 0,0});
 
-        helpers::lstmCell(&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
+        helpers::lstmCell(context, &xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
         currentH.assign(ht);
         currentC.assign(ct);
     }

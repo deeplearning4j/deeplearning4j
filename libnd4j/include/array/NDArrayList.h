@@ -34,7 +34,8 @@ namespace nd4j {
     class ND4J_EXPORT NDArrayList {
     private:
         // workspace where chunks belong to
-        nd4j::memory::Workspace* _workspace = nullptr;
+        //nd4j::memory::Workspace* _workspace = nullptr;
+        nd4j::LaunchContext * _context = nd4j::LaunchContext ::defaultContext();
 
         // numeric and symbolic ids of this list
         std::pair<int, int> _id;
@@ -81,8 +82,8 @@ namespace nd4j {
 
         std::pair<int,int>& id();
         std::string& name();
-        nd4j::memory::Workspace* workspace();
-
+        //nd4j::memory::Workspace* workspace();
+        nd4j::LaunchContext * context();
         NDArrayList* clone();
 
         bool equals(NDArrayList& other);

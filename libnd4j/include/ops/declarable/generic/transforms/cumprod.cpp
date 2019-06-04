@@ -37,7 +37,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 2 && block.width() == 1) {
                 // all at once case
-                nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, exclusive, reverse);
+                nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Multiply, input, output, exclusive, reverse);
             } else {
                 std::vector<int> dims(block.numI() - 2);
 
@@ -54,7 +54,7 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += input->rankOf();
 
-                nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, dims, exclusive, reverse);
+                nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
             }
 
             return Status::OK();
@@ -98,35 +98,35 @@ namespace nd4j {
                     dims[e] = INT_ARG(e + 2);
             }
 
-            nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, dims, exclusive, reverse);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
             std::unique_ptr<NDArray> val(output->dup());
  
             gradOut->applyPairwiseTransform(pairwise::Multiply, output, val.get(), nullptr);
             val->applyPairwiseTransform(pairwise::Divide, input, val.get(), nullptr);
             if (!exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, false, true);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, false, true);
     
             }
             else if (!exclusive && reverse){
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, false, false);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, dims, false, false);
                 else
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, false, false);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, false, false);
             }
             else if (exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, true);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, true);
                 else
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, true, true);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, true, true);
             }
             else {
                 if (dims.size())
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, false);
                 else
-                    nd4j::ops::helpers::_prefix(scalar::Add, val.get(), output, true, false);
+                    nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, val.get(), output, true, false);
             }
                 
             return Status::OK();
@@ -139,12 +139,12 @@ namespace nd4j {
             COPY_SHAPE(inp, newShapeX);
 
             if (block.width() == 2) {
-                return SHAPELIST(newShapeX);
+                return SHAPELIST(CONSTANT(newShapeX));
             } else {
                 Nd4jLong *newShapeA = nullptr;
                 COPY_SHAPE(inputShape->at(1), newShapeA);
 
-                return SHAPELIST(newShapeX, newShapeA);
+                return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));
             }
         }
     }

@@ -51,7 +51,7 @@ namespace nd4j {
                     center = 0 != INT_ARG(2);
             }
 
-            return helpers::resizeBilinearFunctor(image, width, height, center, output);
+            return helpers::resizeBilinearFunctor(block.launchContext(), image, width, height, center, output);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {
@@ -83,7 +83,7 @@ namespace nd4j {
             outputShape[4] = in[4];
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            shapeList->push_back(outputShape); 
+            shapeList->push_back(CONSTANT(outputShape));
             return shapeList;
         }
         DECLARE_TYPES(resize_bilinear) {

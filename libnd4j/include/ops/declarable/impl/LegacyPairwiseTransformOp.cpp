@@ -41,6 +41,8 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
+            NDArray::prepareSpecialUse({z}, {x, y});
+
             if (!x->isSameShape(y)) {
                 std::string sx = ShapeUtils::shapeAsString(x);
                 std::string sy = ShapeUtils::shapeAsString(y);
@@ -49,11 +51,18 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execPairwiseTransform(opNum, x->getBuffer(), x->getShapeInfo(), y->getBuffer(), y->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext(), "LegacyPairwiseTransformOp");
 
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    y->getBuffer(), y->getShapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                    extras.argumentsAsT(z->dataType()));
+
+            manager.synchronize();
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
@@ -65,7 +74,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(CONSTANT(newShape));
         }
     }
 }

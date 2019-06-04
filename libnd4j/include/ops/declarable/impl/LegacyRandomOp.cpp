@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyRandomOp.h>
 #include <helpers/RandomLauncher.h>
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 #include <NDArrayFactory.h>
 #include <Status.h>
 #include <ops/declarable/CustomOperations.h>
@@ -88,49 +88,31 @@ namespace nd4j {
                 }
                     break;
                 case nd4j::random::DropOut: {
-                    auto z = OUTPUT_VARIABLE(0);
+                        auto z = OUTPUT_VARIABLE(0);
 
-                    T prob;
-                    if (block.width() > 1) {
-                        auto arg = INPUT_VARIABLE(1);
-                        REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
+                        T prob;
+                        if (block.width() > 1) {
+                            auto arg = INPUT_VARIABLE(1);
+                            REQUIRE_TRUE(arg->isScalar(), 0, "DropOut: Second argument must be scalar");
 
-                        prob = arg->e<T>(0);
-                    } else if (block.getTArguments()->size() > 0) {
-                        prob = T_ARG(0);
-                    } else {
-                        REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
+                            prob = arg->e<T>(0);
+                        } else if (block.getTArguments()->size() > 0) {
+                            prob = T_ARG(0);
+                        } else {
+                            REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
+                        }
+
+                        if (!block.isInplace())
+                            z->assign(input);
+
+                        RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
                     }
-
-                    if (!block.isInplace())
-                        z->assign(input);
-
-                    RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
-                }
                     break;
                 case nd4j::random::DropOutInverted: {
-                    auto z = OUTPUT_VARIABLE(0);
-                    nd4j::ops::dropout op;
-                    return op.execute(&block);
-                    /*
-                    T prob;
-                    if (block.width() > 1) {
-                        auto arg = INPUT_VARIABLE(1);
-                        REQUIRE_TRUE(arg->isScalar(), 0, "InvertedDropOut: Second argument must be scalar");
-
-                        prob = arg->e<T>(0);
-                    } else if (block.getTArguments()->size() == 1) {
-                        prob = T_ARG(0);
-                    } else {
-                        REQUIRE_TRUE(false, 0, "InvertedDropOut requires either TArgs or second argument to be present");
+                        auto z = OUTPUT_VARIABLE(0);
+                        nd4j::ops::dropout op;
+                        return op.execute(&block);
                     }
-
-                    if (!block.isInplace())
-                        z->assign(input);
-
-                    RandomLauncher::applyInvertedDropOut(block.randomGenerator(), z, prob);
-                     */
-                }
                     break;
                 case nd4j::random::GaussianDistribution: {
                     // gaussian distribution
@@ -365,7 +347,7 @@ namespace nd4j {
                 auto zShapeVector = zShapeArr->asVectorT<Nd4jLong>();
                 auto dtype = block.dataType();
 
-                newShape = ShapeBuilders::createShapeInfo(dtype, 'c', zShapeVector, block.workspace());
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', zShapeVector);
                 return SHAPELIST(newShape);
             } else
                 throw std::runtime_error("LegacyRandomOp: Unknown input data type!");

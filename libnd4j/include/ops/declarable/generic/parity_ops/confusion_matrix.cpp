@@ -56,7 +56,7 @@ namespace nd4j {
             REQUIRE_TRUE(predictions->isVector(), 0, "CONFUSION_MATRIX: Predictions input should be Vector, but got %iD instead", predictions->rankOf());
             REQUIRE_TRUE(labels->isSameShape(predictions),0, "CONFUSION_MATRIX: Labels and predictions should have equal shape");
 
-            helpers::confusionFunctor(labels, predictions, weights, output);
+            helpers::confusionFunctor(block.launchContext(), labels, predictions, weights, output);
 
             return Status::OK();
         }
@@ -81,8 +81,7 @@ namespace nd4j {
             }
             
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            Nd4jLong* newShape = nd4j::ShapeBuilders::createShapeInfo(dtype, 'c', 2, shape.data(), block.getWorkspace());            
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', 2, shape.data());
             return SHAPELIST(newShape);
         }
     }

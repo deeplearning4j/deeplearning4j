@@ -23,7 +23,7 @@
 #if NOT_EXCLUDED(OP_pnormpool2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 namespace nd4j {
     namespace ops {
@@ -68,7 +68,7 @@ namespace nd4j {
                 ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-            ConvolutionUtils::pooling2d(block, *input, *output, kY, kX, sY, sX, pY, pX, dY, dX, 2, extraParam0);
+            ConvolutionUtils::pooling2d(*block.launchContext(), *input, *output, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::PNORM_POOL, extraParam0);
 
             if (!isNCHW) {
                 delete input;
@@ -117,23 +117,20 @@ namespace nd4j {
             int oH, oW;
             ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
-            Nd4jLong* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
+            Nd4jLong newShape[4];
 
-            newShapeInfo[0] = 4;        // rank
-            newShapeInfo[1] = bS;
+            newShape[0] = bS;
             if (isNCHW) {
-                newShapeInfo[2] = iC;
-                newShapeInfo[3] = oH;
-                newShapeInfo[4] = oW;
+                newShape[1] = iC;
+                newShape[2] = oH;
+                newShape[3] = oW;
             } else {
-                newShapeInfo[2] = oH;
-                newShapeInfo[3] = oW;
-                newShapeInfo[4] = iC;
+                newShape[1] = oH;
+                newShape[2] = oW;
+                newShape[3] = iC;
             }
-            ShapeUtils::updateStridesAndType(newShapeInfo, inShape, order); // as TF says
 
-            return SHAPELIST(newShapeInfo);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), order, newShape, 4)));
         }
 
 
@@ -212,7 +209,7 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
         
-    ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
+    ConvolutionUtils::pooling2dBP(*block.launchContext(), *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
 
     if(!isNCHW) {
         delete input;
@@ -231,10 +228,8 @@ DECLARE_SHAPE_FN(pnormpool2d_bp) {
                 
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "PNORMPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "PNORMPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
-    
-    Nd4jLong* gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());    
-    
-    return SHAPELIST(gradIShapeInfo);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
 }
 
 }

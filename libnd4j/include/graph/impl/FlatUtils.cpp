@@ -77,8 +77,7 @@ namespace nd4j {
                     auto len = end - start;
 
                     auto c = (char *) malloc(len+1);
-                    nd4j_printf("<String %i> start: %lld; end: %lld; length: %lld;\n", e, start, end, len);
-                    CHECK_ALLOC(c, "Failed temp allocation");
+                    CHECK_ALLOC(c, "Failed temp allocation", len + 1);
                     memset(c, '\0', len + 1);
                     memcpy(c, charPtr + start, len);
 
@@ -98,10 +97,9 @@ namespace nd4j {
 
             BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
 
-            auto array = new NDArray(newBuffer, newShape);
-            //array->printIndexedBuffer("restored");
-            array->triggerAllocationFlag(true, true);
+            auto array = new NDArray(newBuffer, newShape, nd4j::LaunchContext::defaultContext(), true);
 
+            delete[] newShape;
             return array;
         }
     }

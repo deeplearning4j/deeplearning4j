@@ -50,7 +50,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
-            helpers::cubeDerivative(input, epsilon, z);
+            helpers::cubeDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

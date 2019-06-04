@@ -335,8 +335,8 @@ namespace nd4j {
             }
         }
 
-        nd4j::memory::Workspace * nd4j::graph::VariableSpace::workspace() {
-            return &_workspace;
+        LaunchContext* nd4j::graph::VariableSpace::launchContext() {
+            return LaunchContext::defaultContext();
         }
 
         std::vector<Variable*>* nd4j::graph::VariableSpace::handles() {
@@ -363,12 +363,6 @@ namespace nd4j {
                 delete p;
 
             _lists.clear();
-
-            if (_rng != nullptr) {
-                delete[] _rng->getBuffer();
-                NativeOps nativeOps;
-                nativeOps.destroyRandom(_rng);
-            }
         }
 
         VariableSpace& VariableSpace::operator=(const VariableSpace& other) {
@@ -436,13 +430,6 @@ namespace nd4j {
 
         }
 
-        void VariableSpace::setRNG(nd4j::random::RandomBuffer* rng) {
-            _rng = rng;
-        }
-
-        nd4j::random::RandomBuffer* VariableSpace::getRNG() {
-            return _rng;
-        }
 
         void VariableSpace::setFlowPath(FlowPath* flow) {
             _flow = flow;

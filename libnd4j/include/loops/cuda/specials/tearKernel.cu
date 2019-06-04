@@ -29,30 +29,25 @@ namespace nd4j {
     tearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
                Nd4jLong *tadOffsets) {
 
-        auto x = static_cast<T *>(vx);
 
-        __shared__
-        Nd4jLong tadLength;
+
+        __shared__         Nd4jLong tadLength;
         __shared__ int tadEWS;
         __shared__ int zEWS;
-        __shared__ int tadRank;
-        __shared__
-        Nd4jLong numTads;
-        __shared__ int zRank;
-        __shared__
-        Nd4jLong *tadShape;
-        __shared__
-        Nd4jLong *tadStride;
-        __shared__
-        Nd4jLong *zShape;
-        __shared__
-        Nd4jLong *zStride;
-
+//        __shared__ int tadRank;
+        __shared__         Nd4jLong numTads;
+//        __shared__ int zRank;
+//        __shared__        Nd4jLong *tadShape;
+//        __shared__        Nd4jLong *tadStride;
+//        __shared__        Nd4jLong *zShape;
+//        __shared__        Nd4jLong *zStride;
+        __shared__ T* x;
         if (threadIdx.x == 0) {
             tadLength = shape::length(tadShapeInfo);
             tadEWS = shape::elementWiseStride(tadShapeInfo);
             zEWS = shape::elementWiseStride(zShapeInfo);
             numTads = shape::length(xShapeInfo) / tadLength;
+            x = static_cast<T *>(vx);
         }
         __syncthreads();
 
@@ -65,7 +60,7 @@ namespace nd4j {
                     z[i * zEWS] = s[i * tadEWS];
             } else {
 
-                for (Nd4jLong j = 0; j < tadLength; j++) {
+                for (Nd4jLong j = threadIdx.x; j < tadLength; j += blockDim.x) {
                     auto xOffset = shape::getIndexOffset(j, tadShapeInfo, tadLength);
                     auto zOffset = shape::getIndexOffset(j, zShapeInfo, tadLength);
 

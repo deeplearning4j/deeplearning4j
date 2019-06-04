@@ -84,7 +84,7 @@ namespace nd4j {
                 //
                 auto result = SHAPELIST();
                 for (Nd4jLong e = 0; e < shape::length(inShape); e++)
-                    result->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace()));
+                    result->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape)));
                 return result;
             }
 
@@ -106,7 +106,7 @@ namespace nd4j {
 
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                Nd4jLong *newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
                 result->push_back(newShape);
             }
             return result;

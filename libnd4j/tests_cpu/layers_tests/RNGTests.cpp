@@ -272,6 +272,8 @@ TEST_F(RNGTests, Test_Gaussian_21) {
 
     delete result;
 }
+
+#ifndef DEBUG_BUILD
 TEST_F(RNGTests, Test_Gaussian_22) {
     auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
     auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
@@ -312,7 +314,6 @@ TEST_F(RNGTests, Test_Gaussian_3) {
     ASSERT_NEAR(0.0, mean, 1e-3);
     ASSERT_NEAR(1.0, stdev, 1e-3);
 }
-
 
 TEST_F(RNGTests, Test_LogNormal_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
@@ -544,6 +545,7 @@ TEST_F(RNGTests, Test_Truncated_3) {
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.3);
 }
+#endif
 
 TEST_F(RNGTests, Test_Binomial_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
@@ -914,6 +916,7 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
             delete v;
 }
 
+#ifndef DEBUG_BUILD
 TEST_F(RNGTests, Test_Reproducibility_2) {
     NativeOps ops;
     Nd4jLong seed = 123;
@@ -975,6 +978,7 @@ TEST_F(RNGTests, Test_Uniform_4) {
     ASSERT_NEAR(mean.e<double>(0), 1.5, 1e-3);
     ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
 }
+#endif
 
 TEST_F(RNGTests, test_choice_1) {
     auto x = NDArrayFactory::linspace<double>(0, 10, 11);
@@ -982,7 +986,7 @@ TEST_F(RNGTests, test_choice_1) {
     auto z = NDArrayFactory::create<double>('c', {1000});
 
     RandomGenerator rng(119, 256);
-    NativeOpExcutioner::execRandom(random::Choice, &rng, x->buffer(), x->shapeInfo(), prob->buffer(), prob->shapeInfo(), z.buffer(), z.shapeInfo(), nullptr);
+    NativeOpExecutioner::execRandom(nd4j::LaunchContext ::defaultContext(), random::Choice, &rng, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), prob->buffer(), prob->shapeInfo(), prob->specialBuffer(), prob->specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
 
     // z.printIndexedBuffer("z");
 

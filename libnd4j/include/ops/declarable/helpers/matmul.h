@@ -28,7 +28,7 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
 
-            void _matmul(NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha = 1., double beta = 0.);
+            void _matmul(nd4j::LaunchContext * context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha = 1., double beta = 0.);
         }
     }
 }

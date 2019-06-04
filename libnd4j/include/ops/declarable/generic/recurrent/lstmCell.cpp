@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTMCELL operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
     
     // calculations    
-    helpers::lstmCell(xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b,   ht,ct,   {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
+    helpers::lstmCell(block.launchContext(), xt,ht_1,ct_1, Wx,Wh,Wc,Wp, b,   ht,ct,   {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
     
     return Status::OK();
 }
@@ -149,8 +149,11 @@ DECLARE_SHAPE_FN(lstmCell) {
 
     ShapeUtils::updateStridesAndType(hShapeInfo, xtShapeInfo, shape::order(ht_1ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, xtShapeInfo, shape::order(ct_1ShapeInfo));
-         
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+
+    auto result = SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(hShapeInfo), ConstantShapeHelper::getInstance()->createShapeInfo(cShapeInfo));
+    RELEASE(hShapeInfo, block.workspace());
+    RELEASE(cShapeInfo, block.workspace());
+    return result;
 }   
 
 }

@@ -22,9 +22,10 @@
 #define DEV_TESTS_TADDESCRIPTOR_H
 
 #include "ShapeDescriptor.h"
+#include <dll.h>
 
 namespace nd4j {
-    class TadDescriptor {
+    class ND4J_EXPORT TadDescriptor {
     private:
         ShapeDescriptor _originalShape;
 

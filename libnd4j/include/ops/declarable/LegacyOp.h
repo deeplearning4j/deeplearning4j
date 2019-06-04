@@ -22,6 +22,7 @@
 #define LIBND4J_LEGACYOP_H
 
 #include <ops/declarable/DeclarableOp.h>
+#include <PointersManager.h>
 
 namespace nd4j {
     namespace ops {

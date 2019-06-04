@@ -118,6 +118,9 @@ TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
 }
 
 TEST_F(OmpLaunchHelperTests, test_tad_threads_2) {
+    if (omp_get_max_threads() <= 1)
+        return;
+
     Nd4jLong numTads = 2;
     Nd4jLong tadLength = Environment::getInstance()->elementwiseThreshold();
 

@@ -37,7 +37,7 @@ namespace nd4j {
         * Output shape of any BooleanOp is ALWAYS scalar
         */
         ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
-            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(DataType::BOOL, block.getWorkspace()));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::BOOL));
         }
 
         bool BooleanOp::evaluate(nd4j::graph::Context &block) {
@@ -82,7 +82,7 @@ namespace nd4j {
                 auto var = ctx.variable(pair);
 
                 if (!var->hasNDArray()) {
-                    var->setNDArray(NDArrayFactory::create_<bool>(false, ctx.getWorkspace()));
+                    var->setNDArray(NDArrayFactory::create_<bool>(false, ctx.launchContext()));
                     var->markRemovable(true);
                 }
             }

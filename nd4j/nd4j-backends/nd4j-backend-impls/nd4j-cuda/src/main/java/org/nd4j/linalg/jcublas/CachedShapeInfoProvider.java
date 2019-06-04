@@ -16,7 +16,9 @@
 
 package org.nd4j.linalg.jcublas;
 
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.constant.ProtectedCudaShapeInfoProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -38,8 +40,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type) {
-        return provider.createShapeInformation(shape, stride, elementWiseStride, order, type);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type, boolean empty) {
+        return provider.createShapeInformation(shape, stride, elementWiseStride, order, type, empty);
     }
 
 

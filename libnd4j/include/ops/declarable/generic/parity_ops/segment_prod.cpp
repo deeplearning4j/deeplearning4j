@@ -30,13 +30,13 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "segment_prod: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            auto expected = NDArrayFactory::create(0.f, block.getWorkspace());
-            auto wrong = NDArrayFactory::create(0.f, block.getWorkspace());
+            auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
+            auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
             segmentedOutput->nullify();
-            helpers::segmentProdFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentProdFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -60,7 +60,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            return SHAPELIST(outputShape);
+            return SHAPELIST(CONSTANT(outputShape));
         }
 
         CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
@@ -70,13 +70,19 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
-            return helpers::segmentProdFunctorBP(input, indices, gradOut, output);
+            #ifndef __CUDABLAS__
+            helpers::segmentProdFunctorBP(block.launchContext(), input, indices, gradOut, output);
+            #endif
+
+            return Status::OK();
         }
 
         DECLARE_TYPES(segment_prod) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setSameMode(false);
         }
 
 
@@ -88,7 +94,7 @@ namespace nd4j {
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
-            return SHAPELIST(outShape, outIndex);
+            return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
         }
 
         DECLARE_TYPES(segment_prod_bp) {

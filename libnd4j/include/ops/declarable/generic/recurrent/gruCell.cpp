@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 // 
-// created by Yurii Shyrma on 05.12.2017, Alex Black
+// @aurhot Yurii Shyrma
+// @author Alex Black
 //
 
 #include <op_boilerplate.h>
@@ -61,7 +62,7 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
                  r->sizeAt(1)==nU && u->sizeAt(1)==nU && c->sizeAt(1)==nU && h->sizeAt(1)==nU,
                  0, "gruCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == numUnits");
 
-    helpers::gruCell(x, hLast, Wru, Wc, bru, bc, r, u, c, h);
+    helpers::gruCell(block.launchContext(), x, hLast, Wru, Wc, bru, bc, r, u, c, h);
 
     return Status::OK();
 }
@@ -101,21 +102,18 @@ DECLARE_SHAPE_FN(gruCell) {
     REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
     REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==numUnits, 0, "gruCell: cell biases must be rank 1, size numUnits");
 
-    Nd4jLong *s(nullptr);
-    ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
+    Nd4jLong *s0(nullptr);
+    ALLOCATE(s0, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
-    s[0] = rank;
-    s[1] = bS;
-    s[2] = numUnits;
+    s0[0] = rank;
+    s0[1] = bS;
+    s0[2] = numUnits;
 
-    ShapeUtils::updateStridesAndType(s, x, shape::order(hLast));
+    ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
+    auto ts0 = ConstantShapeHelper::getInstance()->createFromExisting(s0, block.workspace());
 
-    Nd4jLong *s1, *s2, *s3;
-    COPY_SHAPE(s, s1);
-    COPY_SHAPE(s, s2);
-    COPY_SHAPE(s, s3);
-
-    return SHAPELIST(s, s1, s2, s3);
+    //4 output shapes, all [bs, numUnits]
+    return SHAPELIST(ts0, ts0, ts0, ts0);
 }
 
 
@@ -178,7 +176,7 @@ CUSTOM_OP_IMPL(gruCell_bp, 6, 5, false, 0, 0) {
         REQUIRE_TRUE(dLdbiShape == dLdbiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdbi array (gradient wrt biases at previous time step), expected is %s, but got %s instead !", dLdbiCorrectShape.c_str(), dLdbiShape.c_str());
     }
 
-    helpers::gruCellBP(x,  hi, Wx, Wh, b, dLdh, dLdWxi, dLdWhi, dLdbi, dLdx, dLdhi, dLdWx, dLdWh, dLdb);
+    helpers::gruCellBP(block.launchContext(), x,  hi, Wx, Wh, b, dLdh, dLdWxi, dLdWhi, dLdbi, dLdx, dLdhi, dLdWx, dLdWh, dLdb);
 
     return Status::OK();
 }

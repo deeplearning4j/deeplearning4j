@@ -41,6 +41,9 @@ namespace nd4j {
         Nd4jStatus LegacyReduceFloatOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
 
+            auto z = OUTPUT_VARIABLE(0);
+
+            NDArray::prepareSpecialUse({z}, {x});
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
             nd4j_debug("Executing LegacyReduceFloatOp: [%i]\n", opNum);
@@ -48,8 +51,10 @@ namespace nd4j {
             bool allAxes = false;
             auto axis = *block.getAxis();
 
+            ExtraArguments extras(*block.getTArguments());
+            PointersManager manager(block.launchContext(), "LegacyReduceFloatOp");
+
             if (block.width() == 1) {
-                auto z = OUTPUT_VARIABLE(0);
 
                 if (axis.size() == x->rankOf())
                     allAxes = true;
@@ -58,7 +63,8 @@ namespace nd4j {
                 //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
-                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getAxis());
@@ -67,13 +73,17 @@ namespace nd4j {
                         if (dims[e] < 0)
                             dims[e] += x->rankOf();
 
-                    std::sort(dims.begin(), dims.end());
-
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
+                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
-                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+                    auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                            dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
+
                 }
 
                 STORE_RESULT(*z);
@@ -84,39 +94,34 @@ namespace nd4j {
 
                 //indices->printIndexedBuffer("indices");
 
-                std::vector<int> axis(indices->lengthOf());
+                std::vector<int> dims(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
                     int f = indices->e<int>(e);
-                    axis[e] = f >= 0 ? f : f += x->rankOf();
+                    dims[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
-                    auto z = OUTPUT_VARIABLE(0);
-
-                    auto b = x->getBuffer();
-                    auto s = x->shapeInfo();
-                    auto e = block.numT() > 0 ? block.getTArguments()->data() : nullptr;
-
-                    //x->printIndexedBuffer("x");
-
                     // scalar
-                    NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
+                    NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
-                    if (indices->lengthOf() > 1)
-                        std::sort(axis.begin(), axis.end());
+                    REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
+                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
+                    auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    auto z = OUTPUT_VARIABLE(0);
+                    NativeOpExecutioner::execReduceFloat(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                            dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
 
-                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tadPack.primaryShapeInfo(), tadPack.primaryOffsets());
+
                 }
             }
 
+            manager.synchronize();
             return Status::OK();
         }
 
@@ -140,11 +145,7 @@ namespace nd4j {
                 allAxes = true;
 
             // in this case we're building proper shape for reduction
-            auto array = new NDArray(nullptr, inShape, block.getWorkspace());
-            array->triggerAllocationFlag(false, false);
-            newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, *array, keepDims, !newFormat, block.workspace());
-            //ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inShape)));
-            delete array;
+            newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, inShape, keepDims, !newFormat, block.workspace());
 
             return SHAPELIST(newShape);
         }

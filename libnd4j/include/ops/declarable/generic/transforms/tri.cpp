@@ -27,13 +27,16 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
-	
+
     auto output = OUTPUT_VARIABLE(0);
 
     const int diag = block.numI() > 2 ? INT_ARG(2) : 0;
 
-    output->setValueInDiagMatrix(1., diag,   'l');          // fill with unities lower triangular block of matrix
-    output->setValueInDiagMatrix(0., diag+1, 'u');          // fill with zeros upper triangular block of matrix
+    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (1., diag + 1, 0,    'l'), LIBND4J_TYPES);  // fill with unities lower triangular block of matrix
+    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (0., 0,        diag, 'u'), LIBND4J_TYPES);  // fill with zeros upper triangular block of matrix
+
+    // output->setValueInDiagMatrix(1., diag,   'l');
+    // output->setValueInDiagMatrix(0., diag+1, 'u');
 
     return Status::OK();
 }
@@ -47,9 +50,8 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 DECLARE_SHAPE_FN(tri) {
 	const int rows = INT_ARG(0);
     const int cols = block.numI() > 1 ? INT_ARG(1) : rows;
-    const int rank = 2;
 
-    return SHAPELIST(ShapeBuilders::createShapeInfo(block.dataType(), 'c', {rows, cols}, block.workspace()));
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {rows, cols}));
 }
 
 

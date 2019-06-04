@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_im2col)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 
@@ -50,8 +50,8 @@ namespace nd4j {
                 zeroPadVal = T_ARG(0);
 
             // FIXME: zeropad value is void
-            LaunchContext ctx;
-            nd4j::ops::helpers::im2col(ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.getWorkspace()));
+            LaunchContext* ctx = block.launchContext();
+            nd4j::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.launchContext()));
 
             STORE_RESULT(*z);
 
@@ -101,7 +101,7 @@ namespace nd4j {
 
             ShapeUtils::updateStridesAndType(zShape, inShape, 'c');            
 
-            return SHAPELIST(zShape);
+            return SHAPELIST(CONSTANT(zShape));
         }
 
 		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
@@ -130,9 +130,9 @@ namespace nd4j {
 			int imgH = input->sizeAt(2);
 			int imgW = input->sizeAt(3);
 			
-            LaunchContext ctx;
+            LaunchContext* ctx = block.launchContext();
             // FIXME:: all helpers should accept NDArray
-			ops::helpers::col2im(ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+			ops::helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
             return Status::OK();
         }
@@ -155,7 +155,7 @@ namespace nd4j {
             Nd4jLong *inShape;
             COPY_SHAPE(inputShape->at(0), inShape);
 
-			return SHAPELIST(inShape);
+			return SHAPELIST(CONSTANT(inShape));
 		}
     }
 }

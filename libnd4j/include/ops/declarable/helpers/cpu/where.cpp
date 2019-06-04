@@ -35,7 +35,7 @@ namespace nd4j {
 
                     auto offset = shape::getOffset(0, condition.shapeOf(), condition.stridesOf(), idx, condition.rankOf());
                     if (condition.e<bool>(offset)) {
-                        auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), workspace);
+                        auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());
                         for (int f = 0; f < condition.rankOf(); f++)
                             array->p(f, (T) idx[f]);
 
@@ -49,7 +49,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
 
-            void _where(NDArray &condition, NDArray& output, memory::Workspace *workspace) {
+            void _where(nd4j::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
                 BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), LIBND4J_TYPES);
             }
         }

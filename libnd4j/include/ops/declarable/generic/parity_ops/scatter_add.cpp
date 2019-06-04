@@ -70,7 +70,7 @@ namespace nd4j {
             if (!block.isInplace())
                 output->assign(input);
 
-            ScatterHelper::scatter(pairwise::Add, *indices, *updates, *output, lock);
+            helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
 
             return Status::OK();
         }

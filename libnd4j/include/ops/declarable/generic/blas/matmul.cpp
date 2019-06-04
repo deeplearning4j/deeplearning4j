@@ -142,8 +142,7 @@ namespace nd4j {
             // we just pick the higher data type out of X and Y
             auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
 
-            auto newShape = ShapeBuilders::createShapeInfo(dtypeZ, zOrder, zShapeOnly, block.getWorkspace());
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtypeZ, zOrder, zShapeOnly);
             return SHAPELIST(newShape);
         }
 
@@ -193,7 +192,7 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
             COPY_SHAPE(inputShape->at(0), xShapeInfo);
             COPY_SHAPE(inputShape->at(1), yShapeInfo);
 
-            return SHAPELIST(xShapeInfo, yShapeInfo);
+            return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(yShapeInfo));
         }
 
         DECLARE_TYPES(matmul_bp) {

@@ -36,19 +36,19 @@ struct bfloat16;
 
 struct ihalf : public __half {
     public:
-        ihalf() : half() {
+        __host__ __device__ ihalf() : half() {
             //
         }
 
-        inline unsigned short * getXP() {
+        inline __host__ __device__ unsigned short * getXP() {
            return &this->__x;
         }
 
-        inline unsigned short getX() const  {
+        inline __host__ __device__ unsigned short getX() const  {
             return this->__x;
         }
 
-        inline void assign(const half f) {
+        inline __host__ __device__ void assign(const half f) {
             this->__x = ((__half_raw *) &f)->x;
         }
 };
@@ -56,19 +56,19 @@ struct ihalf : public __half {
 #else
 struct ihalf : public __half {
     public:
-        ihalf() : half() {
+        __host__ __device__ ihalf() : half() {
             //
         }
 
-        unsigned short * getXP() {
+        inline __host__ __device__ unsigned short * getXP() {
             return &this->x;
         }
 
-        unsigned short getX() const {
+        inline __host__ __device__ unsigned short getX() const {
             return this->x;
         }
 
-        inline void assign(const half f) {
+        inline __host__ __device__ void assign(const half f) {
             this->x = ((__half *) &f)->x;
         }
 };

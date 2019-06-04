@@ -85,7 +85,7 @@ namespace helpers {
         }
     }
 
-    void rollFunctorFull(NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
+    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
 
         if (!inplace)
             output->assign(input);
@@ -104,7 +104,7 @@ namespace helpers {
                         theShift -= fullLen * (theShift / fullLen - 1);
                 }
                 for (int k = 0; k < fullLen; k++) {
-                    rollFunctorLinear(listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
+                    rollFunctorLinear(context, listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
                 }
             }
             else {
@@ -150,7 +150,7 @@ namespace helpers {
         }
     }
 
-    void rollFunctorLinear(NDArray* input, NDArray* output, int shift, bool inplace){
+    void rollFunctorLinear(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
         BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), LIBND4J_TYPES);
     }
 

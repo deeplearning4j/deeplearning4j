@@ -2,6 +2,7 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts/
 .vscode/
+.vs/
 libnd4j.xcodeproj/
 runtests*/
 .csettings/

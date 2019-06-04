@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_avgpool3dnew)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 namespace nd4j {
 namespace ops  {
@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
     
     //T extraParams[] = {};    
-    ConvolutionUtils::pooling3d(block, *input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
+    ConvolutionUtils::pooling3d(*block.launchContext(), *input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
    
     if(!isNCDHW) {              
         delete input;
@@ -119,27 +119,23 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     int oD, oH, oW;                         // output depth, height, width
     ConvolutionUtils::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
     
-    Nd4jLong* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
+    Nd4jLong outputShape[5];
 
-    outputShapeInfo[0] = 5;
-    outputShapeInfo[1] = bS;
+    outputShape[0] = bS;
 
-    if (isNCDHW) {    
-        outputShapeInfo[2] = iC;
-        outputShapeInfo[3] = oD;
-        outputShapeInfo[4] = oH;
-        outputShapeInfo[5] = oW;
+    if (isNCDHW) {
+        outputShape[1] = iC;
+        outputShape[2] = oD;
+        outputShape[3] = oH;
+        outputShape[4] = oW;
     } else {
-        outputShapeInfo[2] = oD;
-        outputShapeInfo[3] = oH;
-        outputShapeInfo[4] = oW;
-        outputShapeInfo[5] = iC;
+        outputShape[1] = oD;
+        outputShape[2] = oH;
+        outputShape[3] = oW;
+        outputShape[4] = iC;
     }
     // TF DOC: A Tensor. Has the same type as input.
-    ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-
-    return SHAPELIST(outputShapeInfo);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5)));
 }
 
         DECLARE_TYPES(avgpool3dnew_bp) {
@@ -193,7 +189,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
     
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    ConvolutionUtils::pooling3dBP(block, *input, *gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
+    ConvolutionUtils::pooling3dBP(*block.launchContext(), *input, *gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
 
     if(!isNCDHW) {
         delete input;
@@ -206,9 +202,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
 
 DECLARE_SHAPE_FN(avgpool3dnew_bp) {
-
-    Nd4jLong* gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), inputShape->at(1), false, block.getWorkspace());
-    return SHAPELIST(gradIshapeInfo);        
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
 }
 
 

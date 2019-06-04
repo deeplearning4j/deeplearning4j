@@ -87,8 +87,7 @@ DECLARE_SHAPE_FN(tile) {
     for (int e = 0; e < shape::rank(inShape); e++)
         shape[e] = shape::sizeAt(inShape, e) * reps[e];
 
-    Nd4jLong* newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape, block.getWorkspace());    
-
+    auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
     return SHAPELIST(newShape);
 }
 
@@ -125,7 +124,7 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
     for (int i = 0; i < inRank; ++i)
         REQUIRE_TRUE(gradO->sizeAt(i) == gradI->sizeAt(i) * reps[i], 0, "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
             
-    helpers::tileBP(*gradO, *gradI, reps);
+    helpers::tileBP(block.launchContext(), *gradO, *gradI, reps);
 
     return Status::OK();
 }
@@ -168,7 +167,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     Nd4jLong *gradIShape;
     COPY_SHAPE(inShape, gradIShape);
 
-    return SHAPELIST(gradIShape);
+    return SHAPELIST(CONSTANT(gradIShape));
 
 }
 

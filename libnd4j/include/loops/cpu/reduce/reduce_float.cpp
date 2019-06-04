@@ -184,7 +184,7 @@ namespace functions {
                 auto tadOffsets = tadOffset;
 
                 if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    if (dimensionLength < 1)
+                    if (dimensionLength < 0)
                         return;
 
                     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);

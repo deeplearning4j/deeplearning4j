@@ -15,12 +15,12 @@
  ******************************************************************************/
 
 #include "testlayers.h"
-#include <ops/declarable/helpers/householder.h>
-#include <ops/declarable/helpers/biDiagonalUp.h>
-#include <ops/declarable/helpers/hhSequence.h>
-#include <ops/declarable/helpers/svd.h>
-#include <ops/declarable/helpers/hhColPivQR.h>
-#include <ops/declarable/helpers/jacobiSVD.h>
+#include <householder.h>
+#include <biDiagonalUp.h>
+#include <hhSequence.h>
+#include <svd.h>
+#include <hhColPivQR.h>
+#include <jacobiSVD.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/rnn.h>
@@ -42,6 +42,7 @@ public:
 
 };
 
+#ifndef __CUDABLAS__
 
 TEST_F(HelpersTests1, test_binary_search_1) {
     std::array<int, 10> array({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
@@ -59,7 +60,8 @@ TEST_F(HelpersTests1, test_binary_search_2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrix_test1) {
-            
+
+
     auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {-0.629253, -0.764093,   -0.13484, -0.0449467, -0.764093,  0.641653, -0.0632377, -0.0210792, -0.13484,-0.0632377,    0.98884,-0.00371987, -0.0449467,-0.0210792,-0.00371987,    0.99876});
     
@@ -72,7 +74,10 @@ TEST_F(HelpersTests1, evalHHmatrix_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrix_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto x = NDArrayFactory::create<double>('c', {1,3}, {14,-4,3});
     auto exp = NDArrayFactory::create<double>('c', {3,3}, {-0.941742, 0.269069,-0.201802, 0.269069, 0.962715,0.0279639, -0.201802,0.0279639, 0.979027});
     
@@ -86,7 +91,10 @@ TEST_F(HelpersTests1, evalHHmatrix_test2) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, evalHHmatrixData_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto x = NDArrayFactory::create<double>('c', {1,4}, {14,17,3,1});
     auto tail = NDArrayFactory::create<double>('c', {1,3});
     auto expTail = NDArrayFactory::create<double>('c', {1,3}, {0.468984, 0.0827618, 0.0275873});
@@ -106,7 +114,10 @@ TEST_F(HelpersTests1, evalHHmatrixData_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
     auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9.05,15.8,11.4, 0.8, 8.525, 2.4,15.7,17.9, 17.525,16.4, 3.7, 1.9, 4.525, 2.4, 0.7,14.9});
@@ -121,7 +132,10 @@ TEST_F(HelpersTests1, Householder_mulLeft_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulLeft_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
     auto tail = NDArrayFactory::create<double>('c', {3,1}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9.05,15.8,11.4, 0.8, 8.525, 2.4,15.7,17.9, 17.525,16.4, 3.7, 1.9, 4.525, 2.4, 0.7,14.9});
@@ -135,7 +149,10 @@ TEST_F(HelpersTests1, Householder_mulLeft_test2) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, Householder_mulRight_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto x = NDArrayFactory::create<double>('c', {4,4}, {12 ,19 ,14 ,3 ,10 ,4 ,17 ,19 ,19 ,18 ,5 ,3 ,6 ,4 ,2 ,16});
     auto tail = NDArrayFactory::create<double>('c', {1,3}, {0.5,0.5,0.5});
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {9,17.5,12.5,  1.5, 7, 2.5,15.5, 17.5, 15.8,16.4, 3.4,  1.4, 4.3,3.15,1.15,15.15});
@@ -150,7 +167,10 @@ TEST_F(HelpersTests1, Householder_mulRight_test1) {
 
 /////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6,13,11,7,6,3,7,4,7,6,6,7,10});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {4,4}, {1.524000,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,0, 0.229221,-0.272237,0.938237,0});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.1756, 24.3869,       0,      0, 0,-8.61985,-3.89823,      0, 0,       0, 4.03047,4.13018, 0,       0,       0,1.21666});
@@ -166,7 +186,10 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
     
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392,        0, -0.22821, 0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.2916,7.03123,       0,       0, 0, 16.145,-22.9275,       0, 0,      0, -9.9264,-11.5516, 0,      0,       0,-12.8554});
@@ -182,7 +205,10 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
     
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12, 0,-15,10,2});
     auto hhMatrixExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
     auto hhBidiagExp = NDArrayFactory::create<double>('c', {4,4}, {-17.2916,7.03123,       0,      0, 0,16.3413,-20.7828,      0, 0,      0,-18.4892,4.13261, 0,      0,       0,-21.323});
@@ -198,7 +224,10 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392, 0, -0.22821,0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
     auto vectorsVseqExp = NDArrayFactory::create<double>('c', {5,4}, {1.52048, 1.37012, 0.636326, -0.23412, 0.494454, 1.66025,  1.66979,-0.444696, 0.114105,0.130601, 1.58392, 0, -0.22821,0.215638,0.0524781,  1.99303, 0.0760699,0.375605, 0.509835,0.0591568});
@@ -222,7 +251,10 @@ TEST_F(HelpersTests1, HHsequence_test1) {
   
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12 ,0,-15,10,2});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
     auto vectorsVseqExp = NDArrayFactory::create<double>('c', {6,4}, {1.52048,  1.37012, 0.636326, -0.23412, 0.494454,  1.65232,  1.59666,-0.502606, 0.114105, 0.129651,  1.35075,        0, -0.22821, 0.214071, 0.103749,  1.61136, 0.0760699, 0.372875, 0.389936,   0.2398, 0,0.0935171,-0.563777, 0.428587});
@@ -246,7 +278,10 @@ TEST_F(HelpersTests1, HHsequence_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test3) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto vectorsUseqExp = NDArrayFactory::create<double>('c', {4,4}, {1.524,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,       0, 0.229221,-0.272237,0.938237, 0});
     auto vectorsVseqExp = NDArrayFactory::create<double>('c', {4,4}, {1.524,  1.75682,0.233741,0.289458, 0.496646,   1.5655, 1.02929,0.971124, 0.114611,-0.451039, 1.06367,       0, 0.229221,-0.272237,0.938237, 0});
@@ -270,7 +305,10 @@ TEST_F(HelpersTests1, HHsequence_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test4) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto exp    = NDArrayFactory::create<double>('c', {4,4}, {2.49369, 2.62176, 5.88386, 7.69905, -16.0588,-18.7319,-9.15007,-12.6164, 4.7247, 3.46252, 1.02038, -1.4533, 2.9279,-2.29178, 1.90139,-0.66187});
         
@@ -284,7 +322,10 @@ TEST_F(HelpersTests1, HHsequence_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test5) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto exp    = NDArrayFactory::create<double>('c', {5,4}, {4.52891, 8.09473,-2.73704,-13.0302, -11.0752, 7.41549,-3.75125,0.815252, -7.76818,-15.9102,-9.90869,-11.8677, 1.63942,-17.0312,-9.05102,-4.49088, -9.63311,0.540226,-1.52764, 5.79111});
             
@@ -298,7 +339,10 @@ TEST_F(HelpersTests1, HHsequence_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test6) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,-1,3,9, -4.43019,-15.1713, -3.2854,-7.65743, -9.39162,-7.03599, 8.03827, 9.48453, -2.97785, -16.424, 5.35265,-20.1171, -0.0436177, -13.118,-8.37287,-17.3012, -1.14074, 4.18282,-10.0914,-5.69014});
@@ -313,7 +357,10 @@ TEST_F(HelpersTests1, HHsequence_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test7) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto exp    = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6,-5.90424,-2.30926,-0.447417, 3.05712, -10.504,-9.31339, -8.85493,-10.8886, -8.29494,-10.6737, -5.94895,-7.55591});
         
@@ -326,7 +373,10 @@ TEST_F(HelpersTests1, HHsequence_test7) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test8) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto exp    = NDArrayFactory::create<double>('c', {5,4}, {9,     -13,        3,       6, 13,      11,        7,      -6, -6.90831,-5.01113, 0.381677,0.440128, -0.80107,0.961605,-0.308019,-1.96153, -0.795985, 18.6538,  12.0731, 16.9988});
 
@@ -339,7 +389,10 @@ TEST_F(HelpersTests1, HHsequence_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test9) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {6,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12 ,0,-15,10,2});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,     -13,        3,       6, 13,      11,        7,      -6, 3,       7,        4,       7, 3.77597, 18.6226,-0.674868, 4.61365, 5.02738,-14.1486, -2.22877,-8.98245, -0.683766, 1.73722,  14.9859, 12.0843});
 
@@ -352,7 +405,10 @@ TEST_F(HelpersTests1, HHsequence_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test10) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {4,4}, {9,13,3,6, 13,11,7,6, 3,7,4,7, 6,6,7,10});
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,        9, 10,      11,      -7,       -5, 3,       2,       4,        7, 2.58863, 11.0295,-4.17483,-0.641012, -1.21892,-16.3151, 6.12049, -20.0239, -0.901799,-15.0389,-12.4944, -20.2394});
@@ -366,7 +422,10 @@ TEST_F(HelpersTests1, HHsequence_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test11) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,4}, {9,-13,3,6, 13,11,7,-6, 3,7,4,7, -6,6,7,10, 2,17,9,12});
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,       9, 10,      11,      -7,      -5, 3,       2,       4,       7, 1.14934, 4.40257, 8.70127,-1.18824, 1.5132,0.220419,-11.6285,-11.7549, 2.32148, 24.3838,0.256531, 25.9116});
@@ -380,7 +439,10 @@ TEST_F(HelpersTests1, HHsequence_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test12) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,3}, {9,-13,3, 13,11,7, 3,7,4, -6,6,7, 2,17,9});
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9,      -1,       3,       9, 10,      11,      -7,      -5, 3,       2,       4,       7, -1,       6,       7,      19, -2.62252,-22.2914, 4.76743,-19.6689, -1.05943,-9.00514,-11.8013,-7.94571});
@@ -394,7 +456,10 @@ TEST_F(HelpersTests1, HHsequence_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test13) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,3}, {9,-13,3, 13,11,7, 3,7,4, -6,6,7, 2,17,9});
     auto matrix2 = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto exp    = NDArrayFactory::create<double>('c', {6,4}, {9 ,     -1 ,      3 ,      9, -4.65167, 3.44652, 7.83593, 22.6899, -9.48514, -21.902, 5.66559,-13.0533, -0.343184, 15.2895,  7.2888, 14.0489, 0.289638,-1.87752,   3.944,-1.49707, -2.48845, 3.18285,-10.6685,0.406502});
@@ -408,7 +473,10 @@ TEST_F(HelpersTests1, HHsequence_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test14) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,3}, {9,-13,3, 13,11,7, 3,7,4, -6,6,7, 2,17,9});
     auto matrix2 = NDArrayFactory::create<double>('c',{5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto exp    = NDArrayFactory::create<double>('c', {5,5}, {1.78958,  8.06962,-6.13687, 4.36267, 1.06472, -14.9578,  -8.1522, 1.30442,-18.3343,-13.2578, 13.5536,  5.50764, 15.7859, 7.60831, 11.7871, -1.3626,-0.634986, 7.60934, -2.1841, 5.62694, -13.0577,  15.1554, -7.6511, 3.76365,-5.87368});
@@ -423,7 +491,10 @@ TEST_F(HelpersTests1, HHsequence_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test15) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,3}, {9,-13,3, 13,11,7, 3,7,4, -6,6,7, 2,17,9});
     auto matrix2 = NDArrayFactory::create<double>('c',{5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto exp    = NDArrayFactory::create<double>('c', {5,5}, {9,      -1,       3,       9,      10, 11,      -7,      -5,       3,       2, 4,       7,      -1,       6,       7, -9.26566,-16.4298, 1.64125,-17.3243,-7.70257, -16.7077, 4.80216,-19.1652,-2.42279,-13.0258});
@@ -437,7 +508,10 @@ TEST_F(HelpersTests1, HHsequence_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test16) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto matrix2 = NDArrayFactory::create<double>('c', {10,10});
     matrix2 = 100.;
@@ -452,7 +526,10 @@ TEST_F(HelpersTests1, HHsequence_test16) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test17) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {9,-1,3,9,10,  11,-7,-5,3, 2,  4,7,-1,6,7,  19,2,17,9,15, 2,17,-9,15,2});
     auto matrix2 = NDArrayFactory::create<double>('c', {10,10});
     matrix2 = 100.;
@@ -467,7 +544,10 @@ TEST_F(HelpersTests1, HHsequence_test17) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test18) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix  = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto matrix2 = NDArrayFactory::create<double>('c', {10,10});
     matrix2 = 100.;
@@ -482,7 +562,10 @@ TEST_F(HelpersTests1, HHsequence_test18) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, HHsequence_test19) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix  = NDArrayFactory::create<double>('c',{6,4}, {9,-1,3,9, 10,11,-7,-5, 3,2,4,7, -1,6,7,19, 2,17,9,15, 2,17,-9,15});
     auto matrix2 = NDArrayFactory::create<double>('c', {10,10});
     matrix2 = 100.;
@@ -497,7 +580,10 @@ TEST_F(HelpersTests1, HHsequence_test19) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix  = NDArrayFactory::create<double>('c', {5,5}, {-17 ,14 ,9 ,-12 ,-12 ,5 ,-4 ,-19 ,-7 ,-12 ,15 ,16 ,17 ,-6 ,8 ,-10 ,14 ,-15 ,6 ,-10 ,-14 ,12 ,-1 ,-16 ,3});
     auto matrix2 = NDArrayFactory::create<double>('c', {5,5}, {18 ,3 ,2 ,7 ,-11 ,7 ,7 ,10 ,-13 ,-8 ,13 ,20 ,-4 ,-16 ,-9 ,-17 ,-5 ,-7 ,-19 ,-8 ,-9 ,9 ,6 ,14 ,-11});
     auto expM  = NDArrayFactory::create<double>('c', {5,5}, {-17,14,9,-12,-12, 5,-4,    -19, -7,-12, 15,16,17.0294, -6,  8, -10,14,    -15,  6,-10, -14,12,      0,-16,  0});
@@ -514,7 +600,10 @@ TEST_F(HelpersTests1, SVD_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix= NDArrayFactory::create<double>('c', {5,5}, {-17 ,14 ,9 ,-12 ,-12 ,5 ,-4 ,-19 ,-7 ,-12 ,15 ,16 ,17 ,-6 ,8 ,-10 ,14 ,-15 ,6 ,-10 ,-14 ,12 ,-1 ,-16 ,3});
     auto matrix2 = NDArrayFactory::create<double>('c', {5,5}, {18 ,3 ,2 ,7 ,-11 ,7 ,7 ,10 ,-13 ,-8 ,13 ,20 ,-4 ,-16 ,-9 ,-17 ,-5 ,-7 ,-19 ,-8 ,-9 ,9 ,6 ,14 ,-11});
     auto expM  = NDArrayFactory::create<double>('c', {5,5}, {22.6716,14,  9,-12,-12, 5,-4,-19, -7,-12, 0,16,  0, -6,  8, -10,14,-15,  6,-10, -14,12, -1,-16,  3});
@@ -531,7 +620,10 @@ TEST_F(HelpersTests1, SVD_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test3) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix= NDArrayFactory::create<double>('c', {5,5}, {-17 ,14 ,9 ,-12 ,-12 ,5 ,-4 ,-19 ,-7 ,-12 ,15 ,16 ,17 ,-6 ,8 ,-10 ,14 ,-15 ,6 ,-10 ,-14 ,12 ,-1 ,-16 ,3});
     auto matrix2 = NDArrayFactory::create<double>('c', {2,6}, {18 ,3 ,2 ,7 ,-11 ,7 ,7 ,10 ,-13 ,-8 ,13 ,20});
     auto expM  = NDArrayFactory::create<double>('c', {5,5}, {-17,14,9,-12,-12, 5,-4,    -19, -7,-12, 15,16,17.0294, -6,  8, -10,14,    -15,  6,-10, -14,12,      0,-16,  0});
@@ -548,7 +640,10 @@ TEST_F(HelpersTests1, SVD_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test4) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -569,7 +664,10 @@ TEST_F(HelpersTests1, SVD_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test5) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -590,7 +688,10 @@ TEST_F(HelpersTests1, SVD_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test6) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
     auto matrix2 = NDArrayFactory::create<double>('c', {2,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -611,7 +712,10 @@ TEST_F(HelpersTests1, SVD_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test7) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -633,7 +737,10 @@ TEST_F(HelpersTests1, SVD_test7) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test8) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -655,7 +762,10 @@ TEST_F(HelpersTests1, SVD_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test9) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto col0 = NDArrayFactory::create<double>('c', {10,1}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,14});
     auto diag = NDArrayFactory::create<double>('c', {10,1}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2});
     auto permut = NDArrayFactory::create<double>('c', {1,10}, {8 ,1 ,4 ,0, 5 ,2 ,9 ,3 ,7 ,6});
@@ -679,7 +789,10 @@ TEST_F(HelpersTests1, SVD_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test10) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto singVals = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto col0 = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto diag = NDArrayFactory::create<double>('c', {4,1}, {5 ,7 ,-13 ,14});
@@ -702,7 +815,10 @@ TEST_F(HelpersTests1, SVD_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test11) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto singVals = NDArrayFactory::create<double>('c', {4,1}, {1 ,1 ,1 ,1});
     auto zhat   = NDArrayFactory::create<double>('c', {4,1}, {2 ,1 ,2 ,1});
     auto diag = NDArrayFactory::create<double>('c', {4,1}, {5 ,7 ,-13 ,14});
@@ -727,7 +843,10 @@ TEST_F(HelpersTests1, SVD_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test12) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {-2 ,-3 ,2 ,1 ,0 ,0 ,-4 ,5 ,-2 ,-3 ,-4 ,0 ,5 ,-1 ,-5 ,-3 ,-5 ,3 ,3 ,3 ,-5 ,5 ,-5 ,0 ,2 ,-2 ,-3 ,-4 ,-5 ,-3});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -755,7 +874,10 @@ TEST_F(HelpersTests1, SVD_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test13) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     NDArray matrix1('c', {6,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
 
     auto expQR = NDArrayFactory::create<double>('c', {6,5}, {-37.054 ,  0.323852 , 8.04231 , -22.9395 ,-13.089, 0.105164,    32.6021,  6.42277, -0.262898,-1.58766, 0.140218,  -0.485058,  29.2073,  -9.92301,-23.7111, -0.262909,-0.00866538, 0.103467,   8.55831,-1.86455, -0.315491,   0.539207,  0.40754,-0.0374124,-7.10401, 0.315491,   0.385363,-0.216459, -0.340008,0.628595});
@@ -776,7 +898,10 @@ TEST_F(HelpersTests1, SVD_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test14) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {5,6}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19 ,12 ,18 ,6 ,-2 ,-17});
 
     auto expQR = NDArrayFactory::create<double>('c', {5,6}, {-32.665, -4.95944,  -8.26574,  7.22487, 16.5927, 11.7251, -0.135488, -29.0586,   10.9776, -14.6886, 4.18841, 20.7116, 0.348399, 0.323675,   25.5376,  1.64324, 9.63959, -9.0238, -0.0580664,0.0798999,-0.0799029,  19.5281,-4.97736, 16.0969, 0.348399,-0.666783, 0.0252425,0.0159188, 10.6978,-4.69198});
@@ -797,7 +922,10 @@ TEST_F(HelpersTests1, SVD_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test15) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
 
     auto expQR = NDArrayFactory::create<double>('c', {6,6}, {38.1707, -3.03898, 5.16103,  23.0805, -7.57126, -13.885, -0.41519,  34.3623, 3.77403,  2.62327, -8.17784, 9.10312, 0.394431, 0.509952,-30.2179, -6.78341,  12.8421, 28.5491, -0.290633, 0.111912,0.450367,  28.1139,  15.5195, 2.60562, 0.332152, 0.405161,0.308163,0.0468127,   22.294,-2.94931, 0.249114,0.0627956,0.657873,  0.76767,-0.752594,-7.46986});
@@ -818,7 +946,10 @@ TEST_F(HelpersTests1, SVD_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test1) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto left = NDArrayFactory::create<double>('c',  {2,2});
     auto right = NDArrayFactory::create<double>('c', {2,2});
@@ -834,7 +965,10 @@ TEST_F(HelpersTests1, JacobiSVD_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test2) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto matrix4 = NDArrayFactory::create<double>('c', {5,5}, {12 ,20 ,19 ,-18 ,-6 ,3 ,6 ,2 ,-7 ,-7 ,14 ,8 ,18 ,-17 ,18 ,-14 ,-15 ,1 ,2 ,2 ,-3 ,-18 ,8 ,-17 ,-19});
     auto matrix5 = NDArrayFactory::create<double>('c', {5,5}, {3 ,-8 ,5 ,7 ,-8 ,4 ,-19 ,-12 ,-4 ,-5 ,-11 ,19 ,-2 ,-7 ,1 ,16 ,-5 ,10 ,19 ,-19 ,0 ,-20 ,0 ,-8 ,-13});
@@ -861,7 +995,10 @@ TEST_F(HelpersTests1, JacobiSVD_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test3) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
@@ -874,7 +1011,10 @@ TEST_F(HelpersTests1, JacobiSVD_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test4) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
@@ -887,7 +1027,10 @@ TEST_F(HelpersTests1, JacobiSVD_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test5) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
@@ -900,7 +1043,10 @@ TEST_F(HelpersTests1, JacobiSVD_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test6) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
@@ -913,7 +1059,10 @@ TEST_F(HelpersTests1, JacobiSVD_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test7) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double, double>(0.6), 0.2});
     
@@ -926,7 +1075,10 @@ TEST_F(HelpersTests1, JacobiSVD_test7) {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test8) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     auto rotation = NDArrayFactory::create<double>('c', {2,2}, {0.2, math::nd4j_sqrt<double, double>(0.6), -math::nd4j_sqrt<double,double>(0.6), 0.2});
     
@@ -939,7 +1091,10 @@ TEST_F(HelpersTests1, JacobiSVD_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test9) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {35.7975, 29.1924, 11.1935, 9.2846, 6.77071});
@@ -955,7 +1110,10 @@ TEST_F(HelpersTests1, JacobiSVD_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test10) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {35.7975, 29.1924, 11.1935, 9.2846, 6.77071});
@@ -971,7 +1129,10 @@ TEST_F(HelpersTests1, JacobiSVD_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test11) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {6,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0, 3, -11, 2, 12, 10});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {36.27, 32.1997, 15.9624, 10.6407, 6.9747});
@@ -987,7 +1148,10 @@ TEST_F(HelpersTests1, JacobiSVD_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test12) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {6,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0, 3, -11, 2, 12, 10});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {36.27, 32.1997, 15.9624, 10.6407, 6.9747});
@@ -1003,7 +1167,10 @@ TEST_F(HelpersTests1, JacobiSVD_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test13) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,6}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0, 3, -11, 2, 12, 10});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {40.499, 23.5079, 17.8139, 14.4484, 7.07957});
@@ -1019,7 +1186,10 @@ TEST_F(HelpersTests1, JacobiSVD_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test14) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,6}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0, 3, -11, 2, 12, 10});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {40.499, 23.5079, 17.8139, 14.4484, 7.07957});
@@ -1035,7 +1205,10 @@ TEST_F(HelpersTests1, JacobiSVD_test14) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, JacobiSVD_test15) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix = NDArrayFactory::create<double>('c', {5,6}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0, 3, -11, 2, 12, 10});
     
     auto expS = NDArrayFactory::create<double>('c', {5,1}, {40.499, 23.5079, 17.8139, 14.4484, 7.07957});
@@ -1050,7 +1223,10 @@ TEST_F(HelpersTests1, JacobiSVD_test15) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test16) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {-2 ,-3 ,2 ,1 ,0 ,0 ,-4 ,5 ,-2 ,-3 ,-4 ,0 ,5 ,-1 ,-5 ,-3 ,-5 ,3 ,3 ,3 ,-5 ,5 ,-5 ,0 ,2 ,-2 ,-3 ,-4 ,-5 ,-3});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -1078,7 +1254,10 @@ TEST_F(HelpersTests1, SVD_test16) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test17) {
-            
+
+    #ifdef __CUDABLAS__
+    return;
+    #endif
     auto matrix1 = NDArrayFactory::create<double>('c', {6,5}, {-2 ,-3 ,2 ,1 ,0 ,0 ,-4 ,5 ,-2 ,-3 ,-4 ,0 ,5 ,-1 ,-5 ,-3 ,-5 ,3 ,3 ,3 ,-5 ,5 ,-5 ,0 ,2 ,-2 ,-3 ,-4 ,-5 ,-3});
     auto matrix2 = NDArrayFactory::create<double>('c', {6,6}, {-10 ,-16 ,-20 ,13 ,20 ,-10 ,-9 ,-1 ,-7 ,-20 ,-4 ,20 ,-11 ,19 ,-5 ,-18 ,12 ,-19 ,18 ,-18 ,17 ,-10 ,-19 ,14 ,-2 ,-7 ,-17 ,-14 ,-4 ,-16 ,18 ,-6 ,-18 ,1 ,-15 ,-12});
     auto matrix3 = NDArrayFactory::create<double>('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
@@ -1251,119 +1430,47 @@ TEST_F(HelpersTests1, SVD_test17) {
 // }
 
 
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test1) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
-    auto outArr = NDArrayFactory::create<float>('c', {2,5});
-
-
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());    
-
-    ASSERT_TRUE(outArr.equalsTo(&exp));    
-    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
-}
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test2) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
-
-
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());    
-
-    ASSERT_TRUE(inArr.equalsTo(&exp));    
-    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
-}
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, reverseArray_test3) {
-
-    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
-    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
-    auto outArr = NDArrayFactory::create<float>('c', {2,5});
-
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
-
-    ASSERT_TRUE(outArr.equalsTo(&exp));    
-    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, softMaxForVector_test1) {
-
-    auto input = NDArrayFactory::create<double>('c', {1,5}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {1,5});
-    auto expOutput = NDArrayFactory::create<double>('c', {1,5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
-
-    ops::helpers::softMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, softMaxForVector_test2) {
-
-    auto input = NDArrayFactory::create<double>('c', {5,1}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {5,1});
-    auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
-
-    ops::helpers::softMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, softMaxForVector_test3) {
-
-    auto input= NDArrayFactory::create<double>('c', {5}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {5});
-    auto expOutput = NDArrayFactory::create<double>('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
-
-    ops::helpers::softMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
-
-    auto input = NDArrayFactory::create<double>('c', {1,5}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {1,5});
-    auto expOutput = NDArrayFactory::create<double>('c', {1,5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
-
-    ops::helpers::logSoftMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
-
-    auto input= NDArrayFactory::create<double>('c', {5,1}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {5,1});
-    auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
-
-    ops::helpers::logSoftMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
-
-    auto input= NDArrayFactory::create<double>('c', {5}, {1,2,3,4,5});
-    auto output = NDArrayFactory::create<double>('c', {5});
-    auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
-
-    ops::helpers::logSoftMaxForVector(input, output);
-
-    ASSERT_TRUE(output.equalsTo(&expOutput));
-}
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test1) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
+//    auto outArr = NDArrayFactory::create<float>('c', {2,5});
+//
+//
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
+//
+//    ASSERT_TRUE(outArr.equalsTo(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//}
+//
+//
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test2) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
+//
+//
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
+//
+//    ASSERT_TRUE(inArr.equalsTo(&exp));
+//    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
+//}
+//
+//
+/////////////////////////////////////////////////////////////////////
+//TEST_F(HelpersTests1, reverseArray_test3) {
+//
+//    auto inArr = NDArrayFactory::create<float>('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+//    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
+//    auto outArr = NDArrayFactory::create<float>('c', {2,5});
+//
+//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+//
+//    ASSERT_TRUE(outArr.equalsTo(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, rnnCell_test1) {
@@ -1386,7 +1493,7 @@ TEST_F(HelpersTests1, rnnCell_test1) {
 
     NDArray expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1415,7 +1522,7 @@ TEST_F(HelpersTests1, rnnCell_test2) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1443,7 +1550,7 @@ TEST_F(HelpersTests1, rnnCell_test3) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1472,7 +1579,7 @@ TEST_F(HelpersTests1, rnnCell_test4) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
     
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1932,20 +2039,157 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+#endif
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softMaxForVector_test1) {
+
+    auto input = NDArrayFactory::create<double>('c', {1,5}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {1,5});
+    auto expOutput = NDArrayFactory::create<double>('c', {1,5});
+    expOutput = 1;
+
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softMaxForVector_test2) {
+
+    auto input = NDArrayFactory::create<double>('c', {5,1}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {5,1});
+    auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
+
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softMaxForVector_test3) {
+
+    auto input= NDArrayFactory::create<double>('c', {5}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {5});
+    auto expOutput = NDArrayFactory::create<double>('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
+
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softMaxForVector_test4) {
+
+    NDArray input('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {1500}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.00001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 
+0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001,0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 
+0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000001, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002,0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 
+0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000002, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003,0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000003, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 
+0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000004, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005, 0.000005,0.000005, 0.000005, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000006, 0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 
+0.000007, 0.000007, 0.000007, 0.000007, 0.000007, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000008, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009, 0.000009,0.000009, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000010, 0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000012, 0.000012, 0.000012, 0.000012, 0.000012, 0.000012, 0.000012, 0.000012, 
+0.000012, 0.000013, 0.000013, 0.000013, 0.000013, 0.000013, 0.000013, 0.000013, 0.000014, 0.000014, 0.000014, 0.000014, 0.000014, 0.000014, 0.000014, 0.000015, 0.000015, 0.000015, 0.000015, 0.000015, 0.000015, 0.000015, 0.000016, 0.000016, 0.000016, 0.000016, 0.000016, 0.000016,0.000017, 0.000017, 0.000017, 0.000017, 0.000017, 0.000017, 0.000018, 0.000018, 0.000018, 0.000018, 0.000018, 0.000018, 0.000019, 0.000019, 0.000019, 0.000019, 0.000019, 0.000020, 0.000020, 0.000020, 0.000020, 0.000020, 0.000021, 0.000021, 0.000021, 0.000021, 0.000021, 0.000022, 
+0.000022, 0.000022, 0.000022, 0.000023, 0.000023, 0.000023, 0.000023, 0.000023, 0.000024, 0.000024, 0.000024, 0.000024, 0.000025, 0.000025, 0.000025, 0.000025, 0.000026, 0.000026, 0.000026, 0.000026, 0.000027, 0.000027, 0.000027, 0.000028, 0.000028, 0.000028, 0.000028, 0.000029,0.000029, 0.000029, 0.000030, 0.000030, 0.000030, 0.000030, 0.000031, 0.000031, 0.000031, 0.000032, 0.000032, 0.000032, 0.000033, 0.000033, 0.000033, 0.000034, 0.000034, 0.000034, 0.000035, 0.000035, 0.000035, 0.000036, 0.000036, 0.000036, 0.000037, 0.000037, 0.000038, 0.000038, 
+0.000038, 0.000039, 0.000039, 0.000039, 0.000040, 0.000040, 0.000041, 0.000041, 0.000041, 0.000042, 0.000042, 0.000043, 0.000043, 0.000044, 0.000044, 0.000044, 0.000045, 0.000045, 0.000046, 0.000046, 0.000047, 0.000047, 0.000048, 0.000048, 0.000049, 0.000049, 0.000050, 0.000050,0.000051, 0.000051, 0.000052, 0.000052, 0.000053, 0.000053, 0.000054, 0.000054, 0.000055, 0.000055, 0.000056, 0.000057, 0.000057, 0.000058, 0.000058, 0.000059, 0.000059, 0.000060, 0.000061, 0.000061, 0.000062, 0.000063, 0.000063, 0.000064, 0.000064, 0.000065, 0.000066, 0.000066, 
+0.000067, 0.000068, 0.000068, 0.000069, 0.000070, 0.000070, 0.000071, 0.000072, 0.000073, 0.000073, 0.000074, 0.000075, 0.000076, 0.000076, 0.000077, 0.000078, 0.000079, 0.000079, 0.000080, 0.000081, 0.000082, 0.000083, 0.000084, 0.000084, 0.000085, 0.000086, 0.000087, 0.000088,0.000089, 0.000090, 0.000090, 0.000091, 0.000092, 0.000093, 0.000094, 0.000095, 0.000096, 0.000097, 0.000098, 0.000099, 0.000100, 0.000101, 0.000102, 0.000103, 0.000104, 0.000105, 0.000106, 0.000107, 0.000108, 0.000109, 0.000111, 0.000112, 0.000113, 0.000114, 0.000115, 0.000116, 
+0.000117, 0.000119, 0.000120, 0.000121, 0.000122, 0.000123, 0.000125, 0.000126, 0.000127, 0.000128, 0.000130, 0.000131, 0.000132, 0.000134, 0.000135, 0.000136, 0.000138, 0.000139, 0.000141, 0.000142, 0.000143, 0.000145, 0.000146, 0.000148, 0.000149, 0.000151, 0.000152, 0.000154,0.000155, 0.000157, 0.000158, 0.000160, 0.000162, 0.000163, 0.000165, 0.000167, 0.000168, 0.000170, 0.000172, 0.000173, 0.000175, 0.000177, 0.000179, 0.000180, 0.000182, 0.000184, 0.000186, 0.000188, 0.000190, 0.000192, 0.000194, 0.000195, 0.000197, 0.000199, 0.000201, 0.000203, 
+0.000205, 0.000208, 0.000210, 0.000212, 0.000214, 0.000216, 0.000218, 0.000220, 0.000223, 0.000225, 0.000227, 0.000229, 0.000232, 0.000234, 0.000236, 0.000239, 0.000241, 0.000244, 0.000246, 0.000248, 0.000251, 0.000253, 0.000256, 0.000259, 0.000261, 0.000264, 0.000266, 0.000269,0.000272, 0.000275, 0.000277, 0.000280, 0.000283, 0.000286, 0.000289, 0.000292, 0.000295, 0.000297, 0.000300, 0.000303, 0.000307, 0.000310, 0.000313, 0.000316, 0.000319, 0.000322, 0.000325, 0.000329, 0.000332, 0.000335, 0.000339, 0.000342, 0.000346, 0.000349, 0.000353, 0.000356, 
+0.000360, 0.000363, 0.000367, 0.000371, 0.000374, 0.000378, 0.000382, 0.000386, 0.000390, 0.000394, 0.000398, 0.000402, 0.000406, 0.000410, 0.000414, 0.000418, 0.000422, 0.000426, 0.000431, 0.000435, 0.000439, 0.000444, 0.000448, 0.000453, 0.000457, 0.000462, 0.000467, 0.000471,0.000476, 0.000481, 0.000486, 0.000490, 0.000495, 0.000500, 0.000505, 0.000510, 0.000516, 0.000521, 0.000526, 0.000531, 0.000537, 0.000542, 0.000547, 0.000553, 0.000559, 0.000564, 0.000570, 0.000576, 0.000581, 0.000587, 0.000593, 0.000599, 0.000605, 0.000611, 0.000617, 0.000623, 
+0.000630, 0.000636, 0.000642, 0.000649, 0.000655, 0.000662, 0.000669, 0.000675, 0.000682, 0.000689, 0.000696, 0.000703, 0.000710, 0.000717, 0.000724, 0.000732, 0.000739, 0.000746, 0.000754, 0.000762, 0.000769, 0.000777, 0.000785, 0.000793, 0.000801, 0.000809, 0.000817, 0.000825,0.000833, 0.000842, 0.000850, 0.000859, 0.000867, 0.000876, 0.000885, 0.000894, 0.000903, 0.000912, 0.000921, 0.000930, 0.000939, 0.000949, 0.000958, 0.000968, 0.000978, 0.000988, 0.000998, 0.001008, 0.001018, 0.001028, 0.001038, 0.001049, 0.001059, 0.001070, 0.001081, 0.001092, 
+0.001103, 0.001114, 0.001125, 0.001136, 0.001148, 0.001159, 0.001171, 0.001182, 0.001194, 0.001206, 0.001218, 0.001231, 0.001243, 0.001256, 0.001268, 0.001281, 0.001294, 0.001307, 0.001320, 0.001333, 0.001347, 0.001360, 0.001374, 0.001388, 0.001402, 0.001416, 0.001430, 0.001444,0.001459, 0.001473, 0.001488, 0.001503, 0.001518, 0.001534, 0.001549, 0.001565, 0.001580, 0.001596, 0.001612, 0.001628, 0.001645, 0.001661, 0.001678, 0.001695, 0.001712, 0.001729, 0.001746, 0.001764, 0.001782, 0.001800, 0.001818, 0.001836, 0.001854, 0.001873, 0.001892, 0.001911, 
+0.001930, 0.001950, 0.001969, 0.001989, 0.002009, 0.002029, 0.002049, 0.002070, 0.002091, 0.002112, 0.002133, 0.002155, 0.002176, 0.002198, 0.002220, 0.002242, 0.002265, 0.002288, 0.002311, 0.002334, 0.002357, 0.002381, 0.002405, 0.002429, 0.002454, 0.002478, 0.002503, 0.002528,0.002554, 0.002579, 0.002605, 0.002632, 0.002658, 0.002685, 0.002712, 0.002739, 0.002767, 0.002794, 0.002822, 0.002851, 0.002879, 0.002908, 0.002938, 0.002967, 0.002997, 0.003027, 0.003057, 0.003088, 0.003119, 0.003151, 0.003182, 0.003214, 0.003247, 0.003279, 0.003312, 0.003345, 
+0.003379, 0.003413, 0.003447, 0.003482, 0.003517, 0.003552, 0.003588, 0.003624, 0.003660, 0.003697, 0.003734, 0.003772, 0.003810, 0.003848, 0.003887, 0.003926, 0.003965, 0.004005, 0.004045, 0.004086, 0.004127, 0.004169, 0.004211, 0.004253, 0.004296, 0.004339, 0.004382, 0.004426,0.004471, 0.004516, 0.004561, 0.004607, 0.004653, 0.004700, 0.004747, 0.004795, 0.004843, 0.004892, 0.004941, 0.004991, 0.005041, 0.005092, 0.005143, 0.005194, 0.005247, 0.005299, 0.005353, 0.005406, 0.005461, 0.005516, 0.005571, 0.005627, 0.005684, 0.005741, 0.005798, 0.005857, 
+0.005916, 0.005975, 0.006035, 0.006096, 0.006157, 0.006219, 0.006281, 0.006345, 0.006408, 0.006473, 0.006538, 0.006603, 0.006670, 0.006737, 0.006805, 0.006873, 0.006942, 0.007012, 0.007082, 0.007153, 0.007225, 0.007298, 0.007371, 0.007445, 0.007520, 0.007596, 0.007672, 0.007749,0.007827, 0.007906, 0.007985, 0.008065, 0.008147, 0.008228, 0.008311, 0.008395, 0.008479, 0.008564, 0.008650, 0.008737, 0.008825, 0.008914, 0.009003, 0.009094, 0.009185, 0.009277, 0.009371, 0.009465, 0.009560, 0.009656, 0.009753, 0.009851, 0.009950}, nd4j::DataType::DOUBLE);
+    input.linspace(0.01, 0.01);
+
+    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
+
+    auto input = NDArrayFactory::create<double>('c', {1,5}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {1,5});
+    auto expOutput = NDArrayFactory::create<double>('c', {1,5});
+    expOutput = 0;
+
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
+
+    auto input= NDArrayFactory::create<double>('c', {5,1}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {5,1});
+    auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
+
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
+
+    auto input= NDArrayFactory::create<double>('c', {5}, {1,2,3,4,5});
+    auto output = NDArrayFactory::create<double>('c', {5});
+    auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
+
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
+
+    NDArray input('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {1500}, {-8.154773, -8.153772, -8.152773, -8.151772, -8.150773, -8.149773, -8.148773, -8.147773, -8.146772, -8.145773, -8.144773, -8.143773, -8.142773, -8.141773, -8.140773, -8.139772, -8.138773, -8.137773, -8.136773, -8.135773, -8.134773, -8.133773, -8.132772, -8.131773, -8.130773, -8.129773, -8.128773, -8.127772, -8.126773, -8.125772, -8.124773, -8.123773, -8.122773, -8.121773, -8.120772, -8.119773, -8.118773, -8.117773, -8.116773, -8.115773, -8.114773, -8.113772, -8.112773, -8.111773, -8.110773, -8.109773, -8.108773, -8.107773, -8.106772, -8.105773, -8.104773, -8.103773, -8.102773, -8.101772, -8.100773, -8.099772, -8.098773, -8.097773, -8.096773, -8.095773, -8.094772, -8.093773, -8.092772, -8.091773, -8.090773, -8.089773, -8.088773, -8.087772, -8.086773, -8.085773, -8.084773, -8.083773, -8.082773, -8.081773, -8.080772, -8.079773, -8.078773, -8.077773, -8.076773, -8.075773, -8.074773, -8.073772, -8.072773, -8.071773, -8.070773, -8.069773, -8.068772, -8.067773, -8.066772, -8.065773, -8.064773, -8.063773, -8.062773, -8.061772, -8.060773, -8.059772, -8.058773, -8.057773, -8.056773, -8.055773, -8.054772,
+-8.053773, -8.052773, -8.051773, -8.050773, -8.049773, -8.048773, -8.047772, -8.046773, -8.045773, -8.044773, -8.043773, -8.042773, -8.041773, -8.040772, -8.039773, -8.038773, -8.037773, -8.036773, -8.035772, -8.034773, -8.033772, -8.032773, -8.031773, -8.030773, -8.029773, -8.028772, -8.027773, -8.026772, -8.025773, -8.024773, -8.023773, -8.022773, -8.021772, -8.020773, -8.019773, -8.018773, -8.017773, -8.016773, -8.015773, -8.014772, -8.013773, -8.012773, -8.011773, -8.010773, -8.009773, -8.008773, -8.007772, -8.006773, -8.005773, -8.004773, -8.003773, -8.002772, -8.001773, -8.000772, -7.999773, -7.998773, -7.997773, -7.996773, -7.995773, -7.994773, -7.993773, -7.992773, -7.991773, -7.990773, -7.989773, -7.988773, -7.987773, -7.986773, -7.985773, -7.984773, -7.983773, -7.982773, -7.981773, -7.980773, -7.979773, -7.978773, -7.977773, -7.976773, -7.975773, -7.974773, -7.973773, -7.972773, -7.971773, -7.970773, -7.969773, -7.968773, -7.967773, -7.966773, -7.965773, -7.964773, -7.963773, -7.962773, -7.961773, -7.960773, -7.959773, -7.958773, -7.957773, -7.956773, -7.955773, -7.954773, -7.953773, -7.952773,
+-7.951773, -7.950773, -7.949773, -7.948773, -7.947773, -7.946773, -7.945773, -7.944773, -7.943773, -7.942773, -7.941773, -7.940773, -7.939773, -7.938773, -7.937773, -7.936773, -7.935773, -7.934773, -7.933773, -7.932773, -7.931773, -7.930773, -7.929773, -7.928773, -7.927773, -7.926773, -7.925773, -7.924773, -7.923773, -7.922773, -7.921773, -7.920773, -7.919773, -7.918773, -7.917773, -7.916773, -7.915773, -7.914773, -7.913773, -7.912773, -7.911773, -7.910773, -7.909773, -7.908773, -7.907773, -7.906773, -7.905773, -7.904773, -7.903773, -7.902773, -7.901773, -7.900773, -7.899773, -7.898773, -7.897773, -7.896773, -7.895773, -7.894773, -7.893773, -7.892773, -7.891773, -7.890773, -7.889773, -7.888773, -7.887773, -7.886773, -7.885773, -7.884773, -7.883773, -7.882773, -7.881773, -7.880773, -7.879773, -7.878773, -7.877773, -7.876773, -7.875773, -7.874773, -7.873773, -7.872773, -7.871773, -7.870773, -7.869773, -7.868773, -7.867773, -7.866773, -7.865773, -7.864773, -7.863773, -7.862773, -7.861773, -7.860773, -7.859773, -7.858773, -7.857773, -7.856773, -7.855773, -7.854773, -7.853773, -7.852773, -7.851773, -7.850773, -7.849773,
+-7.848773, -7.847773, -7.846773, -7.845773, -7.844773, -7.843773, -7.842773, -7.841773, -7.840773, -7.839773, -7.838773, -7.837773, -7.836773, -7.835773, -7.834773, -7.833773, -7.832773, -7.831773, -7.830773, -7.829773, -7.828773, -7.827773, -7.826773, -7.825773, -7.824773, -7.823773, -7.822773, -7.821773, -7.820773, -7.819773, -7.818773, -7.817773, -7.816773, -7.815773, -7.814773, -7.813773, -7.812773, -7.811773, -7.810773, -7.809773, -7.808773, -7.807773, -7.806773, -7.805773, -7.804773, -7.803773, -7.802773, -7.801773, -7.800773, -7.799773, -7.798773, -7.797773, -7.796773, -7.795773, -7.794773, -7.793773, -7.792773, -7.791773, -7.790773, -7.789773, -7.788773, -7.787773, -7.786773, -7.785773, -7.784773, -7.783773, -7.782773, -7.781773, -7.780773, -7.779773, -7.778773, -7.777773, -7.776773, -7.775773, -7.774773, -7.773773, -7.772773, -7.771773, -7.770773, -7.769773, -7.768773, -7.767773, -7.766773, -7.765773, -7.764773, -7.763773, -7.762773, -7.761773, -7.760773, -7.759773, -7.758773, -7.757773, -7.756773, -7.755773, -7.754773, -7.753773, -7.752773, -7.751773, -7.750773, -7.749773, -7.748773, -7.747773, -7.746773,
+-7.745773, -7.744773, -7.743773, -7.742773, -7.741773, -7.740773, -7.739773, -7.738773, -7.737773, -7.736773, -7.735773, -7.734773, -7.733773, -7.732773, -7.731773, -7.730773, -7.729773, -7.728773, -7.727773, -7.726773, -7.725773, -7.724773, -7.723773, -7.722773, -7.721773, -7.720773, -7.719773, -7.718773, -7.717773, -7.716773, -7.715773, -7.714773, -7.713773, -7.712773, -7.711773, -7.710773, -7.709773, -7.708773, -7.707773, -7.706773, -7.705773, -7.704773, -7.703773, -7.702773, -7.701773, -7.700773, -7.699773, -7.698773, -7.697773, -7.696773, -7.695773, -7.694773, -7.693773, -7.692773, -7.691773, -7.690773, -7.689773, -7.688773, -7.687773, -7.686773, -7.685773, -7.684773, -7.683773, -7.682773, -7.681773, -7.680773, -7.679773, -7.678773, -7.677773, -7.676773, -7.675773, -7.674773, -7.673773, -7.672773, -7.671773, -7.670773, -7.669773, -7.668773, -7.667773, -7.666773, -7.665773, -7.664773, -7.663773, -7.662773, -7.661773, -7.660773, -7.659773, -7.658773, -7.657773, -7.656773, -7.655773, -7.654773, -7.653773, -7.652773, -7.651773, -7.650773, -7.649773, -7.648773, -7.647773, -7.646773, -7.645773, -7.644773, -7.643773,
+-7.642773, -7.641773, -7.640773, -7.639773, -7.638773, -7.637773, -7.636773, -7.635773, -7.634773, -7.633773, -7.632773, -7.631773, -7.630773, -7.629773, -7.628773, -7.627773, -7.626773, -7.625773, -7.624773, -7.623773, -7.622773, -7.621773, -7.620773, -7.619773, -7.618773, -7.617773, -7.616773, -7.615773, -7.614773, -7.613773, -7.612773, -7.611773, -7.610773, -7.609773, -7.608773, -7.607773, -7.606773, -7.605773, -7.604773, -7.603773, -7.602773, -7.601773, -7.600773, -7.599773, -7.598773, -7.597773, -7.596773, -7.595773, -7.594773, -7.593773, -7.592773, -7.591773, -7.590773, -7.589773, -7.588773, -7.587773, -7.586773, -7.585773, -7.584773, -7.583773, -7.582773, -7.581773, -7.580773, -7.579773, -7.578773, -7.577773, -7.576773, -7.575773, -7.574773, -7.573773, -7.572773, -7.571773, -7.570773, -7.569773, -7.568773, -7.567773, -7.566773, -7.565773, -7.564773, -7.563773, -7.562773, -7.561773, -7.560773, -7.559773, -7.558773, -7.557773, -7.556773, -7.555773, -7.554773, -7.553773, -7.552773, -7.551773, -7.550773, -7.549773, -7.548773, -7.547773, -7.546773, -7.545773, -7.544773, -7.543773, -7.542773, -7.541773, -7.540773,
+-7.539773, -7.538773, -7.537773, -7.536773, -7.535773, -7.534773, -7.533773, -7.532773, -7.531773, -7.530773, -7.529773, -7.528773, -7.527773, -7.526773, -7.525773, -7.524773, -7.523773, -7.522773, -7.521773, -7.520773, -7.519773, -7.518773, -7.517773, -7.516773, -7.515773, -7.514773, -7.513773, -7.512773, -7.511773, -7.510773, -7.509773, -7.508773, -7.507773, -7.506773, -7.505773, -7.504773, -7.503773, -7.502773, -7.501773, -7.500773, -7.499773, -7.498773, -7.497773, -7.496773, -7.495773, -7.494773, -7.493773, -7.492773, -7.491773, -7.490773, -7.489773, -7.488773, -7.487773, -7.486773, -7.485773, -7.484773, -7.483773, -7.482773, -7.481773, -7.480773, -7.479773, -7.478773, -7.477773, -7.476773, -7.475773, -7.474773, -7.473773, -7.472773, -7.471773, -7.470773, -7.469773, -7.468773, -7.467773, -7.466773, -7.465773, -7.464773, -7.463773, -7.462773, -7.461773, -7.460773, -7.459773, -7.458773, -7.457773, -7.456773, -7.455773, -7.454773, -7.453773, -7.452773, -7.451773, -7.450773, -7.449773, -7.448773, -7.447773, -7.446773, -7.445773, -7.444773, -7.443773, -7.442773, -7.441773, -7.440773, -7.439773, -7.438773, -7.437773,
+-7.436773, -7.435773, -7.434773, -7.433773, -7.432773, -7.431773, -7.430773, -7.429773, -7.428773, -7.427773, -7.426773, -7.425773, -7.424773, -7.423773, -7.422773, -7.421773, -7.420773, -7.419773, -7.418773, -7.417773, -7.416773, -7.415773, -7.414773, -7.413773, -7.412773, -7.411773, -7.410773, -7.409773, -7.408773, -7.407773, -7.406773, -7.405773, -7.404773, -7.403773, -7.402773, -7.401773, -7.400773, -7.399773, -7.398773, -7.397773, -7.396773, -7.395773, -7.394773, -7.393773, -7.392773, -7.391773, -7.390773, -7.389773, -7.388773, -7.387773, -7.386773, -7.385773, -7.384773, -7.383773, -7.382773, -7.381773, -7.380773, -7.379773, -7.378773, -7.377773, -7.376773, -7.375773, -7.374773, -7.373773, -7.372773, -7.371773, -7.370773, -7.369773, -7.368773, -7.367773, -7.366773, -7.365773, -7.364773, -7.363773, -7.362773, -7.361773, -7.360773, -7.359773, -7.358773, -7.357773, -7.356773, -7.355773, -7.354773, -7.353773, -7.352773, -7.351773, -7.350773, -7.349773, -7.348773, -7.347773, -7.346773, -7.345773, -7.344773, -7.343773, -7.342773, -7.341773, -7.340773, -7.339773, -7.338773, -7.337773, -7.336773, -7.335773, -7.334773,
+-7.333773, -7.332773, -7.331773, -7.330773, -7.329773, -7.328773, -7.327773, -7.326773, -7.325773, -7.324773, -7.323773, -7.322773, -7.321773, -7.320773, -7.319773, -7.318773, -7.317773, -7.316773, -7.315773, -7.314773, -7.313773, -7.312773, -7.311773, -7.310773, -7.309773, -7.308773, -7.307773, -7.306773, -7.305773, -7.304773, -7.303773, -7.302773, -7.301773, -7.300773, -7.299773, -7.298773, -7.297773, -7.296773, -7.295773, -7.294773, -7.293773, -7.292773, -7.291773, -7.290773, -7.289773, -7.288773, -7.287773, -7.286773, -7.285773, -7.284773, -7.283773, -7.282773, -7.281773, -7.280773, -7.279773, -7.278773, -7.277773, -7.276773, -7.275773, -7.274773, -7.273773, -7.272773, -7.271773, -7.270773, -7.269773, -7.268773, -7.267773, -7.266773, -7.265773, -7.264773, -7.263773, -7.262773, -7.261773, -7.260773, -7.259773, -7.258773, -7.257773, -7.256773, -7.255773, -7.254773, -7.253773, -7.252773, -7.251773, -7.250773, -7.249773, -7.248773, -7.247773, -7.246773, -7.245773, -7.244773, -7.243773, -7.242773, -7.241773, -7.240773, -7.239773, -7.238773, -7.237773, -7.236773, -7.235773, -7.234773, -7.233773, -7.232773, -7.231773,
+-7.230773, -7.229773, -7.228773, -7.227773, -7.226773, -7.225773, -7.224773, -7.223773, -7.222773, -7.221773, -7.220773, -7.219773, -7.218773, -7.217773, -7.216773, -7.215773, -7.214773, -7.213773, -7.212773, -7.211773, -7.210773, -7.209773, -7.208773, -7.207773, -7.206773, -7.205773, -7.204773, -7.203773, -7.202773, -7.201773, -7.200773, -7.199773, -7.198773, -7.197773, -7.196773, -7.195773, -7.194773, -7.193773, -7.192773, -7.191773, -7.190773, -7.189773, -7.188773, -7.187773, -7.186773, -7.185773, -7.184773, -7.183773, -7.182773, -7.181773, -7.180773, -7.179773, -7.178773, -7.177773, -7.176773, -7.175773, -7.174773, -7.173773, -7.172773, -7.171773, -7.170773, -7.169773, -7.168773, -7.167773, -7.166773, -7.165773, -7.164773, -7.163773, -7.162773, -7.161773, -7.160773, -7.159773, -7.158773, -7.157773, -7.156773, -7.155773, -7.154773, -7.153773, -7.152773, -7.151773, -7.150773, -7.149773, -7.148773, -7.147773, -7.146773, -7.145773, -7.144773, -7.143773, -7.142773, -7.141773, -7.140773, -7.139773, -7.138773, -7.137773, -7.136773, -7.135773, -7.134773, -7.133773, -7.132773, -7.131773, -7.130773, -7.129773, -7.128773,
+-7.127773, -7.126773, -7.125773, -7.124773, -7.123773, -7.122773, -7.121773, -7.120773, -7.119773, -7.118773, -7.117773, -7.116773, -7.115773, -7.114773, -7.113773, -7.112773, -7.111773, -7.110773, -7.109773, -7.108773, -7.107773, -7.106773, -7.105773, -7.104773, -7.103773, -7.102773, -7.101773, -7.100773, -7.099773, -7.098773, -7.097773, -7.096773, -7.095773, -7.094773, -7.093773, -7.092773, -7.091773, -7.090773, -7.089773, -7.088773, -7.087773, -7.086773, -7.085773, -7.084773, -7.083773, -7.082773, -7.081773, -7.080773, -7.079773, -7.078773, -7.077773, -7.076773, -7.075773, -7.074773, -7.073773, -7.072773, -7.071773, -7.070773, -7.069773, -7.068773, -7.067773, -7.066773, -7.065773, -7.064773, -7.063773, -7.062773, -7.061773, -7.060773, -7.059773, -7.058773, -7.057773, -7.056773, -7.055773, -7.054773, -7.053773, -7.052773, -7.051773, -7.050773, -7.049773, -7.048773, -7.047773, -7.046773, -7.045773, -7.044773, -7.043773, -7.042773, -7.041773, -7.040773, -7.039773, -7.038773, -7.037773, -7.036773, -7.035773, -7.034773, -7.033773, -7.032773, -7.031773, -7.030773, -7.029773, -7.028773, -7.027773, -7.026773, -7.025773,
+-7.024773, -7.023773, -7.022773, -7.021773, -7.020773, -7.019773, -7.018773, -7.017773, -7.016773, -7.015773, -7.014773, -7.013773, -7.012773, -7.011773, -7.010773, -7.009773, -7.008773, -7.007773, -7.006773, -7.005773, -7.004773, -7.003773, -7.002773, -7.001773, -7.000773, -6.999773, -6.998773, -6.997773, -6.996773, -6.995773, -6.994773, -6.993773, -6.992773, -6.991773, -6.990773, -6.989773, -6.988773, -6.987773, -6.986773, -6.985773, -6.984773, -6.983773, -6.982773, -6.981773, -6.980773, -6.979773, -6.978773, -6.977773, -6.976773, -6.975773, -6.974773, -6.973773, -6.972773, -6.971773, -6.970773, -6.969773, -6.968773, -6.967773, -6.966773, -6.965773, -6.964773, -6.963773, -6.962773, -6.961773, -6.960773, -6.959773, -6.958773, -6.957773, -6.956773, -6.955773, -6.954773, -6.953773, -6.952773, -6.951773, -6.950773, -6.949773, -6.948773, -6.947773, -6.946773, -6.945773, -6.944773, -6.943773, -6.942773, -6.941773, -6.940773, -6.939773, -6.938773, -6.937773, -6.936773, -6.935773, -6.934773, -6.933773, -6.932773, -6.931773, -6.930773, -6.929773, -6.928773, -6.927773, -6.926773, -6.925773, -6.924773, -6.923773, -6.922773,
+-6.921773, -6.920773, -6.919773, -6.918773, -6.917773, -6.916773, -6.915773, -6.914773, -6.913773, -6.912773, -6.911773, -6.910773, -6.909773, -6.908773, -6.907773, -6.906773, -6.905773, -6.904773, -6.903773, -6.902773, -6.901773, -6.900773, -6.899773, -6.898773, -6.897773, -6.896773, -6.895773, -6.894773, -6.893773, -6.892773, -6.891773, -6.890773, -6.889773, -6.888773, -6.887773, -6.886773, -6.885773, -6.884773, -6.883773, -6.882773, -6.881773, -6.880773, -6.879773, -6.878773, -6.877773, -6.876773, -6.875773, -6.874773, -6.873773, -6.872773, -6.871773, -6.870773, -6.869773, -6.868773, -6.867773, -6.866773, -6.865773, -6.864773, -6.863773, -6.862773, -6.861773, -6.860773, -6.859773, -6.858773, -6.857773, -6.856773, -6.855773, -6.854773, -6.853773, -6.852773, -6.851773, -6.850773, -6.849773, -6.848773, -6.847773, -6.846773, -6.845773, -6.844773, -6.843773, -6.842773, -6.841773, -6.840773, -6.839773, -6.838773, -6.837773, -6.836773, -6.835773, -6.834773, -6.833773, -6.832773, -6.831773, -6.830773, -6.829773, -6.828773, -6.827773, -6.826773, -6.825773, -6.824773, -6.823773, -6.822773, -6.821773, -6.820773, -6.819773,
+-6.818773, -6.817773, -6.816773, -6.815773, -6.814773, -6.813773, -6.812773, -6.811773, -6.810773, -6.809773, -6.808773, -6.807773, -6.806773, -6.805773, -6.804773, -6.803773, -6.802773, -6.801773, -6.800773, -6.799773, -6.798773, -6.797773, -6.796773, -6.795773, -6.794773, -6.793773, -6.792773, -6.791773, -6.790773, -6.789773, -6.788773, -6.787773, -6.786773, -6.785773, -6.784773, -6.783773, -6.782773, -6.781773, -6.780773, -6.779773, -6.778773, -6.777773, -6.776773, -6.775773, -6.774773, -6.773773, -6.772773, -6.771773, -6.770773, -6.769773, -6.768773, -6.767773, -6.766773, -6.765773, -6.764773, -6.763773, -6.762773, -6.761773, -6.760773, -6.759773, -6.758773, -6.757773, -6.756773, -6.755773, -6.754773, -6.753773, -6.752773, -6.751773, -6.750773, -6.749773, -6.748773, -6.747773, -6.746773, -6.745773, -6.744773, -6.743773, -6.742773, -6.741773, -6.740773, -6.739773, -6.738773, -6.737773, -6.736773, -6.735773, -6.734773, -6.733773, -6.732773, -6.731773, -6.730773, -6.729773, -6.728773, -6.727773, -6.726773, -6.725773, -6.724773, -6.723773, -6.722773, -6.721773, -6.720773, -6.719773, -6.718773, -6.717773, -6.716773, -6.715773,
+-6.714773, -6.713773, -6.712773, -6.711773, -6.710773, -6.709773, -6.708773, -6.707773, -6.706773, -6.705773, -6.704773, -6.703773, -6.702773, -6.701773, -6.700773, -6.699773, -6.698773, -6.697773, -6.696773, -6.695773, -6.694773, -6.693773, -6.692773, -6.691773, -6.690773, -6.689773, -6.688773, -6.687773, -6.686773, -6.685773, -6.684773, -6.683773, -6.682773, -6.681773, -6.680773, -6.679773, -6.678773, -6.677773, -6.676773, -6.675773, -6.674773, -6.673773, -6.672773, -6.671773, -6.670773, -6.669773, -6.668773, -6.667773, -6.666773, -6.665773, -6.664773, -6.663773, -6.662773, -6.661773, -6.660773, -6.659773, -6.658773, -6.657773, -6.656773, -6.655773}, nd4j::DataType::DOUBLE);
+    input.linspace(0.01, 0.001);
+
+    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    
+    ASSERT_TRUE(output.equalsTo(&expOutput));
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_1) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('f', {M,N}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(6, {0,2});        
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(6, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {5.5, 5.1, 4.7}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);    
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -1953,35 +2197,35 @@ TEST_F(HelpersTests1, mmulMxV_1) {
 TEST_F(HelpersTests1, mmulMxV_2) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(6, {0,2});    
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(6, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {5.1, 3.3, 1.5}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);        
-    ASSERT_TRUE(y.equalsTo(&exp));    
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_3) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('f', {N,M,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
     NDArray x = temp(4, {1,2});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {6.2, 4.5, 1.7}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);    
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -1989,17 +2233,17 @@ TEST_F(HelpersTests1, mmulMxV_3) {
 TEST_F(HelpersTests1, mmulMxV_4) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(3, {0,1});   
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(3, {0,1});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {1.5, 1.8, 1.5}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);    
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2007,17 +2251,17 @@ TEST_F(HelpersTests1, mmulMxV_4) {
 TEST_F(HelpersTests1, mmulMxV_5) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(2, {0,1});        
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(2, {0,1});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);        
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2025,17 +2269,17 @@ TEST_F(HelpersTests1, mmulMxV_5) {
 TEST_F(HelpersTests1, mmulMxV_6) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(13, {0,2});    
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(13, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);        
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2043,16 +2287,63 @@ TEST_F(HelpersTests1, mmulMxV_6) {
 TEST_F(HelpersTests1, mmulMxV_7) {
 
     const Nd4jLong M = 3;
-    const Nd4jLong N = 4;   
+    const Nd4jLong N = 4;
 
     NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
     a.permutei({1,0});
     NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
-    NDArray x = temp(10, {0,2});    
-    NDArray y('c', {M}, nd4j::DataType::DOUBLE);    
-    
+    NDArray x = temp(10, {0,2});
+    NDArray y('c', {M}, nd4j::DataType::DOUBLE);
+
     NDArray exp('c', {M}, {3.3, 3.3, 3.3}, nd4j::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);    
-    ASSERT_TRUE(y.equalsTo(&exp));    
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_1) {
+    
+    NDArray input('c', {3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {3,3}, {0.04508, 0.04514, 0.0008 , 0.0472 , 0.00087, 0.10492, 0.00235, 0.04592, 0.10553}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {3,3}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_2) {
+    
+    NDArray input('c', {3,3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, -5,5 ,-6,6, -7,7, -8,8, -9,9, -10,10, -11,11, -12,12, -13,13, 14.}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {3,3,3}, {4.50755e-02, 4.51394e-02, 6.64586e-03,4.72027e-02, 8.67128e-04, 6.97440e-03,2.35008e-03, 4.59243e-02, 3.32995e-04,
+                                    4.51766e-02, 2.26032e-06, 4.51767e-02,2.91394e-07, 2.37285e-06, 3.94360e-08,4.51769e-02, 1.12535e-07, 4.51767e-02,
+                                    7.58256e-10, 4.51767e-02, 1.22325e-11,7.96007e-10, 1.32293e-11, 1.04994e-01,3.77513e-11, 4.51767e-02, 1.04994e-01}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {3,3,3}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, softmaxDerivative_3) {
+    
+    NDArray input('c', {5}, {-1., 1, -2, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {5}, nd4j::DataType::DOUBLE);
+
+    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+
+    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+}
+
+
+

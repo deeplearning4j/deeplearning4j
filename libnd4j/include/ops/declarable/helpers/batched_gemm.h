@@ -22,9 +22,11 @@
 #include <NDArray.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
-            void _bgemm(std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC);
-        }
-    }
+namespace ops {
+namespace helpers {
+
+void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc);
+
+}
+}
 }

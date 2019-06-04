@@ -40,7 +40,7 @@ namespace nd4j {
         __shared__ int numTads;
 
         if (threadIdx.x == 0) {
-            tadLength = shape::tadLength(zShapeInfo, dimension, dimensionLength);
+            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(zShapeInfo, dimension, dimensionLength);
             tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
             numTads = shape::length(zShapeInfo) / tadLength;
         }

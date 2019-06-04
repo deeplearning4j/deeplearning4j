@@ -18,6 +18,8 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -28,7 +30,9 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
@@ -431,4 +435,32 @@ public interface OpExecutioner {
      * @param array
      */
     INDArrayStatistics inspectArray(INDArray array);
+
+
+    /**
+     * This method returns shapeInfo DataBuffer
+     *
+     * @param shape
+     * @param stride
+     * @param elementWiseStride
+     * @param order
+     * @param dtype
+     * @return
+     */
+    DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty);
+
+    /**
+     * This method returns host/device tad buffers
+     */
+    TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension);
+
+    /**
+     * This method returns constant buffer for the given jvm array
+     * @param values
+     * @return
+     */
+    DataBuffer createConstantBuffer(long[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(int[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(float[] values, DataType desiredType);
+    DataBuffer createConstantBuffer(double[] values, DataType desiredType);
 }

@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void matrixBandPart(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand);
+    void matrixBandPart(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand);
 
 
 }

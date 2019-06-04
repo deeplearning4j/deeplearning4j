@@ -23,8 +23,8 @@
 #include <Status.h>
 #include <helpers/ShapeUtils.h>
 #include <NDArrayFactory.h>
-#include <graph/exceptions/graph_exception.h>
-#include <graph/exceptions/unresolved_input_exception.h>
+#include <exceptions/graph_exception.h>
+#include <exceptions/unresolved_input_exception.h>
 
 namespace nd4j {
     namespace ops {
@@ -71,6 +71,9 @@ namespace nd4j {
         DeclarableOp::~DeclarableOp() {
             if (_descriptor != nullptr)
                 delete _descriptor;
+
+            if (_scalar != nullptr)
+                delete _scalar;
         }
 
         OpDescriptor* DeclarableOp::getOpDescriptor() {
@@ -188,6 +191,7 @@ namespace nd4j {
                 results = outSha->size();
 
                 // we must "validate" our output shapes
+                /*
                 for (int e = 0; e < results; e++) {
                     auto ptr = outSha->at(e);
 
@@ -210,6 +214,7 @@ namespace nd4j {
                             throw std::runtime_error("ShapeFunction returned input shape instance as output [" + *_descriptor->getOpName() + "]");
                     }
                 }
+                */
 
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
@@ -230,7 +235,7 @@ namespace nd4j {
                             if (Environment::getInstance()->isDebugAndVerbose())
                                 shape::printShapeInfoLinear("Going to create variable with shape", out);
 
-                            auto outArr = new NDArray(out, true, workspace);
+                            auto outArr = new NDArray(out, true, ctx.launchContext());
 
                             ctx.pushNDArrayToVariableSpace(pair, outArr);
                         } else {
@@ -242,7 +247,7 @@ namespace nd4j {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(shape);
 
-                                outSha->destroy();
+                                //outSha->destroy();
                                 delete outSha;
 
                                 nd4j_printf("Expected vs provided shapes mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), pair.second);
@@ -254,7 +259,7 @@ namespace nd4j {
                         auto idx = cnt++;
                         if (fout.size() <= idx) {
                             // array doesnt exist
-                            auto outArr = new NDArray(out, true, workspace);
+                            auto outArr = new NDArray(out, true, ctx.launchContext());
                             ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];
@@ -262,7 +267,7 @@ namespace nd4j {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
 
-                                outSha->destroy();
+                                //outSha->destroy();
                                 delete outSha;
 
                                 nd4j_printf("Expected vs provided shape mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), idx);
@@ -272,7 +277,7 @@ namespace nd4j {
                     }
                 }
 
-                outSha->destroy();
+                //outSha->destroy();
                 delete outSha;
 
                 // saving arrayTime
@@ -307,19 +312,15 @@ namespace nd4j {
 
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                int8_t * buffer;
-                ALLOCATE(buffer, workspace, len, int8_t);
 
-                var->setNDArray(new NDArray(buffer, __shape, workspace));
-                var->getNDArray()->triggerAllocationFlag(true, true);
-            } else if(var->getNDArray()->lengthOf() != len) {
+                std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
+            }
+            else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                int8_t * buffer;
-                ALLOCATE(buffer, workspace, len, int8_t);
-
-                var->setNDArray(new NDArray(buffer, __shape, workspace));
-                var->getNDArray()->triggerAllocationFlag(true, true);
+                std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
+                var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
             }
 
             return true;
@@ -333,13 +334,11 @@ namespace nd4j {
             Nd4jLong len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
-                var->getNDArray()->triggerAllocationFlag(true, true);
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
-                var->getNDArray()->triggerAllocationFlag(true, true);
+                var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
             }
 
             return true;
@@ -773,7 +772,7 @@ namespace nd4j {
                 in.push_back(cnt);
                 variableSpace.putVariable(cnt--, var);
             }
-            
+
             Context block(1, &variableSpace, false);
             block.setDataType(0, type);
             block.fillInputs(in);
@@ -807,6 +806,7 @@ namespace nd4j {
                     auto arr = var->getNDArray();
                     if (!arr->isAttached()) {
                         var->markRemovable(false);
+                        arr->setContext(nd4j::LaunchContext ::defaultContext());
                         arrayList->push_back(arr);
                     } else {
                         arrayList->push_back(arr->detach());

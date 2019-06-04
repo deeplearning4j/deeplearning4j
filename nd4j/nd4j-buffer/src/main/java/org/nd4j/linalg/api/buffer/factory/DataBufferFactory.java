@@ -630,6 +630,8 @@ public interface DataBufferFactory {
      */
     DataBuffer create(Pointer pointer, DataType type, long length, Indexer indexer);
 
+    DataBuffer create(Pointer pointer, Pointer specialPointer, DataType type, long length, Indexer indexer);
+
     /**
      *
      * @param doublePointer

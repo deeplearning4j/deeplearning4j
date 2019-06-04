@@ -28,7 +28,10 @@ namespace nd4j {
         LIST_OP_IMPL(size_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);
 
-            auto result = NDArrayFactory::create_<int>(list->height(), block.workspace());
+            auto result = NDArrayFactory::create_<int>(list->height(), block.launchContext());
+
+            //nd4j_printf("List size: [%i]\n", list->height());
+            result->printIndexedBuffer("actual height");
 
             //nd4j_printf("List size: [%i]\n", list->height());
             result->printIndexedBuffer("actual height");

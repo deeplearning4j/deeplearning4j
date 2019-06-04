@@ -272,8 +272,6 @@
         (6, AMin) ,\
         (7, ReduceSameBenchmarkOp)
 
-
-
 #define REDUCE_FLOAT_OPS \
         (0, Mean), \
         (1, AMean) ,\

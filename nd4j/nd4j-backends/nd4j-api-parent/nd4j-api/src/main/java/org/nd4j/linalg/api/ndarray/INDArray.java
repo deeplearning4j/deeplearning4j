@@ -836,6 +836,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray assign(Number value);
 
+    /**
+     * Set all entries of the ndarray to the specified value
+     *
+     * @param value the value to assign
+     * @return the ndarray with the values
+     */
+    INDArray assign(boolean value);
 
     /**
      * Get the linear index of the data in to

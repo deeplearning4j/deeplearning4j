@@ -166,7 +166,7 @@ namespace ops {
         Nd4jLong* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
         Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
-        helpers::_spaceToBatch(internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
+        helpers::_spaceToBatch(block.launchContext(), internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
 
         if (order_changed)
             delete input;
@@ -242,7 +242,7 @@ namespace ops {
             // just return input shape here
             Nd4jLong *newShape;
             COPY_SHAPE(in, newShape);
-            return SHAPELIST(newShape);   
+            return SHAPELIST(CONSTANT(newShape));
         }
 
         // go full route otherwise
@@ -287,7 +287,7 @@ namespace ops {
         internal_output_shape.emplace_back(depth);
 
         // we always give out C order here
-        Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape, block.getWorkspace());
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape);
         return SHAPELIST(newShape);
     }
 }

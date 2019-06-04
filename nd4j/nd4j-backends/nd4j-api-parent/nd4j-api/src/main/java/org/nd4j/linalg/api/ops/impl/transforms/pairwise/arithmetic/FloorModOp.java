@@ -20,7 +20,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
@@ -31,11 +33,15 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class FloorModOp extends DynamicCustomOp {
+public class FloorModOp extends BaseDynamicTransformOp {
     public FloorModOp() {}
 
     public FloorModOp(SameDiff sameDiff, SDVariable x, SDVariable y) {
-        super(null, sameDiff, new SDVariable[]{x, y});
+        super(sameDiff, new SDVariable[]{x, y}, false);
+    }
+
+    public FloorModOp(INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
     @Override

@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(reduce_stdev, 1, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     if (block.getBArguments()->size()) {
@@ -61,13 +61,14 @@ CUSTOM_OP_IMPL(reduce_stdev, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(reduce_stdev) {
-    
-    bool keepDims      = false;//block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+        auto in = inputShape->at(0);
+        auto rank = shape::rank(in);
+        bool keepDims      = false;//block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     auto dimensions = *block.getIArguments();
-    
+
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(rank, axesVector, dimensions);
     }
 
     if (block.getBArguments()->size()) {
@@ -77,12 +78,12 @@ DECLARE_SHAPE_FN(reduce_stdev) {
         keepDims = (bool)T_ARG(0);
     }
 
-    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_STDEV OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    REQUIRE_TRUE(dimensions.size() <= rank, 0, "REDUCE_STDEV OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_STDEV OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
@@ -92,7 +93,7 @@ DECLARE_TYPES(reduce_stdev) {
         ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
-     
+
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
@@ -107,7 +108,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 
     if (block.getBArguments()->size()) {
@@ -124,24 +125,23 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_STDEV_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);        
+        REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;               
 
     auto mean = input->reduceAlongDims(reduce::Mean, dimensions, true);
     
-    NDArray variance(mean.getShapeInfo(), true, block.getWorkspace());                    // create empty array with shape matching shape of mean array
+    NDArray variance(mean.getShapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
     input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, &variance, biasCorrected, dimensions);
 
     gradI->assign( (*input - mean) / (variance * NminusOne));                              // automatic broadcasting happens here
 
     if(!keepDims) {
-        Nd4jLong* gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());                    
+        auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
         gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-        RELEASE(gradOShapeKeepDims, block.getWorkspace());
     }
-    
+
     *gradI *= *gradO;           // automatic broadcasting happens here
     
     if(!keepDims)
@@ -151,22 +151,23 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(reduce_stdev_bp) {
-
+    auto in = inputShape->at(0);
+    auto rank = shape::rank(in);
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(rank, axesVector, dimensions);
     }
 
-    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_STDEV_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    REQUIRE_TRUE(dimensions.size() <= rank, 0, "REDUCE_STDEV_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
     
     Nd4jLong* gradIshapeInfo(nullptr);
-    COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
+    COPY_SHAPE(in, gradIshapeInfo);
         
-    return SHAPELIST(gradIshapeInfo);
+    return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_stdev_bp) {

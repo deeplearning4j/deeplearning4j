@@ -29,8 +29,6 @@ namespace nd4j {
         CUSTOM_OP_IMPL(testcustom, 1, 1, false, 0, -1) {
             auto z = this->getZ(block);
 
-            //new NDArray<T>('c', {100, 100});
-
             STORE_RESULT(*z);
             return Status::OK();
         }
@@ -41,10 +39,8 @@ namespace nd4j {
             for (int e = 0; e < shape::rank(inputShape->at(0)); e++)
                 shapeOf[e] = inputShape->at(0)[e+1] * 2;
 
-            Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(block.dataType(), 'c', shape::rank(inputShape->at(0)), shapeOf, block.getWorkspace());                        
-
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape::rank(inputShape->at(0)), shapeOf);
             RELEASE(shapeOf, block.getWorkspace());
-
             return SHAPELIST(newShape);
         }
 

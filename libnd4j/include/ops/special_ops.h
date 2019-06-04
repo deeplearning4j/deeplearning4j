@@ -507,46 +507,49 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
-			int kernelHeight = (int)extraParams[0];
-			int kernelWidth = (int)extraParams[1];
-			int strideY = (int)extraParams[2];
-			int strideX = (int)extraParams[3];
-			int padHeight = (int)extraParams[4];
-			int padWidth = (int)extraParams[5];
-			int dY = (int)extraParams[6];			//Dilation, height/y dimension
-			int dX = (int)extraParams[7];			//Dilation, width/x dimension
-			int kSize = kernelWidth * kernelHeight;
-			T zeroPadVal = (T)extraParams[9];	//Value to use when value is padding. Usually 0 but not always
+			__shared__ int kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, kSize, samples, depth, height, width, strideex, stridech, strideh, stridew, height_col, width_col, n;
+			__shared__ T zeroPadVal;
+			__shared__ Nd4jLong *outShape, *outStride, *inShape, *inStride;
+			__shared__ char resultOrder;
 
-			auto outShape = shape::shapeOf(zShapeBuffer);
-			auto resultOrder = shape::order(zShapeBuffer);
-			auto outStride = shape::stride(zShapeBuffer);
+			if (threadIdx.x == 0) {
+			    kernelHeight = (int) extraParams[0];
+			    kernelWidth = (int) extraParams[1];
+			    strideY = (int) extraParams[2];
+			    strideX = (int) extraParams[3];
+			    padHeight = (int) extraParams[4];
+			    padWidth = (int) extraParams[5];
+			    dY = (int) extraParams[6];			//Dilation, height/y dimension
+			    dX = (int) extraParams[7];			//Dilation, width/x dimension
+                kSize = kernelWidth * kernelHeight;
+                zeroPadVal = (T) extraParams[9];	//Value to use when value is padding. Usually 0 but not always
 
-			auto inShape = shape::shapeOf(xShapeBuffer);
-			auto inStride = shape::stride(xShapeBuffer);
+                outShape = shape::shapeOf(zShapeBuffer);
+                resultOrder = shape::order(zShapeBuffer);
+			    outStride = shape::stride(zShapeBuffer);
 
-			int samples = inShape[0];
-			int depth = inShape[1];
-			int height = inShape[2];
-			int width = inShape[3];
+			    inShape = shape::shapeOf(xShapeBuffer);
+                inStride = shape::stride(xShapeBuffer);
+
+                samples = (int) inShape[0];
+                depth = (int) inShape[1];
+                height = (int) inShape[2];
+                width = (int) inShape[3];
 
 
-			int strideex = inStride[0];
-			int stridech = inStride[1];
-			int strideh = inStride[2];
-			int stridew = inStride[3];
+                strideex = (int) inStride[0];
+			    stridech = (int) inStride[1];
+			    strideh = (int) inStride[2];
+                stridew = (int) inStride[3];
 
-			// (height + 2 * padHeight - kernelHeight) / strideX + 1; //
-			// (width + 2 * padWidth - kernelWidth) / strideY + 1; //
-			int height_col = outShape[4];
-			int width_col = outShape[5];
+			    // (height + 2 * padHeight - kernelHeight) / strideX + 1; //
+			    // (width + 2 * padWidth - kernelWidth) / strideY + 1; //
+			    height_col = (int) outShape[4];
+			    width_col = (int) outShape[5];
 
-			int n = samples * depth * height_col * width_col;
-			/*
-			if (threadIdx.x == 0)
-			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
-			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, height, width, depth, n, samples);
-			*/
+			    n = samples * depth * height_col * width_col;
+			}
+			__syncthreads();
 
 			int index = blockIdx.x * blockDim.x + threadIdx.x;
 			for (; index < n; index += blockDim.x*gridDim.x) {
@@ -909,51 +912,52 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             X *reductionPointer, 
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-			auto inShape = shape::shapeOf(xShapeBuffer);
-			auto inStride = shape::stride(xShapeBuffer);
+		    __shared__ int strideex, stridech, stridekrow, stridekcol, striderow, stridecol, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX, samples, depth, imgH, imgW, height_col, width_col, n, kEffectiveW, kEffectiveH;
+		    __shared__ Nd4jLong *inShape, *inStride, *outShape, *outStride;
+		    __shared__ char resultOrder;
 
-			int strideex = inStride[0];
-			int stridech = inStride[1];
-			int stridekrow = inStride[2];
-			int stridekcol = inStride[3];
-			int striderow = inStride[4];
-			int stridecol = inStride[5];
+		    if (threadIdx.x == 0) {
+			    inShape = shape::shapeOf(xShapeBuffer);
+                inStride = shape::stride(xShapeBuffer);
 
-			int kernelHeight = inShape[2];
-			int kernelWidth = inShape[3];
+			    strideex = (int) inStride[0];
+                stridech = (int) inStride[1];
+                stridekrow = (int) inStride[2];
+                stridekcol = (int) inStride[3];
+                striderow = (int) inStride[4];
+                stridecol = (int) inStride[5];
 
-			// C
+			    kernelHeight = (int) inShape[2];
+                kernelWidth = (int) inShape[3];
 
-			int strideY = (int)extraParams[0];
-			int strideX = (int)extraParams[1];
-            int padHeight = (int)extraParams[2];
-			int padWidth = (int)extraParams[3];
-            int imgHeight = (int)extraParams[4];
-            int imgWidth = (int)extraParams[5];
-			int dY = (int)extraParams[6];			//Dilation in height/y dimension
-            int dX = (int)extraParams[7];			//Dilation in width/x dimension
+                strideY = (int) extraParams[0];
+                strideX = (int) extraParams[1];
+                padHeight = (int) extraParams[2];
+			    padWidth = (int) extraParams[3];
+                imgHeight = (int) extraParams[4];
+                imgWidth = (int) extraParams[5];
+                dY = (int) extraParams[6];			//Dilation in height/y dimension
+                dX = (int) extraParams[7];			//Dilation in width/x dimension
 
-			auto outShape = shape::shapeOf(zShapeBuffer);
-			auto resultOrder = shape::order(zShapeBuffer);
-			auto outStride = shape::stride(zShapeBuffer);
+			    outShape = shape::shapeOf(zShapeBuffer);
+			    resultOrder = shape::order(zShapeBuffer);
+			    outStride = shape::stride(zShapeBuffer);
 
-			int samples = outShape[0];
-			int depth = outShape[1];
-			int imgH = outShape[2];
-			int imgW = outShape[3];
+                samples = (int) outShape[0];
+                depth = (int) outShape[1];
+                imgH = (int) outShape[2];
+                imgW = (int) outShape[3];
 
-			int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
-			int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+                height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
+			    width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
 
-			int n = samples * depth * imgHeight * imgWidth;
+			    n = samples * depth * imgHeight * imgWidth;
 
-			/*if (threadIdx.x == 0)
-			printf("Kernel h: [%i], w: [%i]; Col h: [%i], w: [%i]; Stride x: [%i], y: [%i]; Height: [%i], Width: [%i], Depth: [%i], N: [%i], Samples: [%i]\n",
-			kernelHeight, kernelWidth, height_col, width_col, strideX, strideY, imgHeight, imgWidth, depth, n, samples);*/
-
-			//Effective kernel size, accounting for dilation
-			int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
-			int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
+			    //Effective kernel size, accounting for dilation
+                kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
+                kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
+			}
+		    __syncthreads();
 
 			for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
 				X val = 0;
@@ -2291,9 +2295,10 @@ PRAGMA_OMP_CRITICAL
 
 					tadShapeShapeInfo = tadPack.primaryShapeInfo();
 					tadOffsets = tadPack.primaryOffsets();
+                    tadShapeInfo = tadShapeShapeInfo;
 				}						                                				
 
-                auto tadLength = shape::tadLength(xShapeBuffer, dimension, dimensionLength);
+                auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeBuffer, dimension, dimensionLength);
                 auto tads = shape::length(xShapeBuffer) / tadLength;
 
                 int tadsPerThread = tads / TAD_THRESHOLD;

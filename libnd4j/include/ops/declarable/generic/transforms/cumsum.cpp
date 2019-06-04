@@ -38,7 +38,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
     if (block.getIArguments()->size() == 2 && block.width() == 1) {
         // all at once case
-        nd4j::ops::helpers::_prefix(scalar::Add, input, output, exclusive, reverse);
+        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
     } 
     else {
         std::vector<int> dims(block.numI() - 2);
@@ -57,7 +57,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
             if (dims[e] < 0)
                 dims[e] += input->rankOf();
         
-        nd4j::ops::helpers::_prefix(scalar::Add, input, output, dims, exclusive, reverse);
+        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
     }
     
     return Status::OK();
@@ -93,28 +93,28 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
     }
     if (!exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, false, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, false, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
 
     }
     else if (!exclusive && reverse){
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, false, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, false, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
     }
     else if (exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, true, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, true, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
     }
     else {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, true, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, true, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
     }
         
     return Status::OK();
@@ -132,12 +132,12 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
         COPY_SHAPE(inp, newShapeX);
 
         if (block.width() == 2) {
-            return SHAPELIST(newShapeX);
+            return SHAPELIST(CONSTANT(newShapeX));
         } else {
             Nd4jLong *newShapeA = nullptr;
             COPY_SHAPE(inputShape->at(1), newShapeA);
 
-            return SHAPELIST(newShapeX, newShapeA);
+            return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));
         }
     }
 }

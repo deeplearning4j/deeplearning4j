@@ -50,7 +50,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::SELUDerivativeE, epsilon, z, nullptr);
-            helpers::seluDerivative(input, epsilon, z);
+            helpers::seluDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
 	
-	helpers::stack(inArrs, *output, dim);
+	helpers::stack(block.launchContext(), inArrs, output, dim);
 	
 	// remove unity from output shape if input arrays are vectors 
 	// if(input->isVector())	{
@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(stack) {
 	 REQUIRE_TRUE(dim <= inShapeInfo[0], 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", inShapeInfo[0], dim);
 	
 	if(rank == 0) {
-  		return SHAPELIST(ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(inShapeInfo), block.width(), block.workspace()));
+  		return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
 	}
 	
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
@@ -91,21 +91,7 @@ DECLARE_SHAPE_FN(stack) {
 	
 	// insert (int) block.width() at dim position of input shape to get output shape	
 	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
-	
-	// evaluate output ShapeInfo
-	int newRank = outShape.size();
-	Nd4jLong* outShapeInfo = nullptr;
-  	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(newRank), Nd4jLong);
-  	outShapeInfo[0] = newRank;
-  	
-  	for(int i=1; i <= newRank; ++i)
-  		outShapeInfo[i] = outShape[i-1];
-  	
-  	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-  	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
-
-  	
-  	return SHAPELIST(outShapeInfo);
+  	return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
 }
 
 // 1) 1х4 + 1х4 = 2х1х4 (along dim=0) = 2x4 

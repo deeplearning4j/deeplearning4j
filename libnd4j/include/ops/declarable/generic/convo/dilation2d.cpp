@@ -71,12 +71,12 @@ namespace ops {
         int pad_top = 0, pad_left = 0;
         int out_rows = 0, out_cols = 0;
 
-        helpers::_dilation_hw(input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::_dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
 
         REQUIRE_TRUE(out_rows > 0 && out_cols > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", out_rows, out_cols);
 
-        helpers::dilation2d(input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
+        helpers::dilation2d(block.launchContext(), input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
 
         return Status::OK();
     }
@@ -109,7 +109,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                newShape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
+                newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
                 
@@ -126,10 +126,10 @@ namespace ops {
         int pad_top = 0, pad_left = 0;
         int out_rows = 0, out_cols = 0;
 
-        helpers::_dilation_hw(input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::_dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
-        newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), block.getWorkspace());        
+        newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

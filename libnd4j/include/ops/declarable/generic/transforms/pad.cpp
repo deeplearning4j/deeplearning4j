@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 
-	NDArray padValue(input->dataType(), block.workspace());
+	NDArray padValue(input->dataType(), block.launchContext());
 
 	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 	
 	if (INT_ARG(0) == 0) { // CONSTANT mode
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
  //    std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
     
 	// helpers::recursiveLoopForPad(INT_ARG(0), *input, *paddings, *output, dimensions, 0, 0, 0, padValue);
-	helpers::pad(INT_ARG(0), *input, *paddings, *output, padValue);
+	helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
 	
     return Status::OK();
 }
@@ -101,8 +101,9 @@ DECLARE_SHAPE_FN(pad) {
     	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
 	
     ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-
-    return SHAPELIST(outShapeInfo);
+    ShapeDescriptor descriptor(outShapeInfo);
+    RELEASE(outShapeInfo, block.getWorkspace());
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
     
 }
 

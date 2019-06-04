@@ -34,8 +34,6 @@ namespace nd4j {
 
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable*>* getPlaceholders();
-            virtual nd4j::random::RandomBuffer* getRNG();
-            virtual void setRNG(nd4j::random::RandomBuffer* rng);
 
             virtual nd4j::memory::Workspace *workspace();
 

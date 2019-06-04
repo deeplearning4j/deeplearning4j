@@ -19,10 +19,13 @@
 //
 
 #include <helpers/StringUtils.h>
+#include <helpers/TAD.h>
 #include "../OpBenchmark.h"
 
 #ifndef DEV_TESTS_REDUCEBENCHMARK_H
 #define DEV_TESTS_REDUCEBENCHMARK_H
+
+using namespace nd4j::graph;
 
 namespace nd4j {
     class ND4J_EXPORT ReductionBenchmark : public OpBenchmark {
@@ -77,17 +80,26 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            if(_opType == 0){
-                if (_z->isScalar())
-                    NativeOpExcutioner::execReduceFloatScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
+            PointersManager manager(LaunchContext::defaultContext(), "reductionBM");
+
+            if (_z->isScalar() || _y == nullptr)
+                if (_opType == 0)
+                    NativeOpExecutioner::execReduceFloatScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
                 else
-                    NativeOpExcutioner::execReduceFloat(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
-            } else {
-                if (_z->isScalar())
-                    NativeOpExcutioner::execReduceSameScalar(_opNum, _x->buffer(), _x->shapeInfo(), nullptr, _z->buffer(), _z->shapeInfo());
+                    NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
+            else {
+                auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_x->shapeInfo(), _axis);
+
+                auto tadOnlyShapeInfo = Environment::getInstance()->isCPU() ? pack.primaryShapeInfo() : pack.specialShapeInfo();
+                auto tadOffsets = Environment::getInstance()->isCPU() ? pack.primaryOffsets() : pack.specialOffsets();
+
+                if (_opType == 0)
+                    NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(), tadOnlyShapeInfo, tadOffsets);
                 else
-                    NativeOpExcutioner::execReduceSame(_opNum, _x->buffer(), _x->shapeInfo(), nullptr,  _z->buffer(), _z->shapeInfo(), _axis.data(), _axis.size(), nullptr, nullptr);
+                    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(), tadOnlyShapeInfo, tadOffsets);
             }
+
+            manager.synchronize();
         }
 
         std::string orders() override {

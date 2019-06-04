@@ -27,9 +27,9 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T>
-            static void toggle_bits__(NDArray& in, NDArray& out);
+            static void toggle_bits__(nd4j::LaunchContext * context, NDArray& in, NDArray& out);
 
-            void __toggle_bits(NDArray& in, NDArray& out);
+            void __toggle_bits(nd4j::LaunchContext * context, NDArray& in, NDArray& out);
         }
     }
 }

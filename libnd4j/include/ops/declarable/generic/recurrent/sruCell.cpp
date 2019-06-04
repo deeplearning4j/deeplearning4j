@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
 
     // fixme: shitty initializer lists
-    helpers::sruCell(xt, ct_1, w, b, ht, ct);
+    helpers::sruCell(block.launchContext(), xt, ct_1, w, b, ht, ct);
     
     return Status::OK();
 }
@@ -103,7 +103,7 @@ DECLARE_SHAPE_FN(sruCell) {
     ShapeUtils::updateStridesAndType(hShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
     ShapeUtils::updateStridesAndType(cShapeInfo, ct_1ShapeInfo, shape::order(ct_1ShapeInfo));
          
-    return SHAPELIST(hShapeInfo, cShapeInfo);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createFromExisting(hShapeInfo, block.workspace()), ConstantShapeHelper::getInstance()->createFromExisting(cShapeInfo, block.workspace()));
 }   
 
 

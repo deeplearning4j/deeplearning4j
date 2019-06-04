@@ -61,10 +61,7 @@ namespace nd4j {
                 auto var = block.getVariable(e);
                 if (var->variableType() == VariableType::NDARRAY) {
                     auto inShape = inputShape->at(e);
-                    Nd4jLong *newShape;
-                    COPY_SHAPE(inShape, newShape);
-
-                    shapeList->push_back(newShape);
+                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape)));
                 }
             }
 

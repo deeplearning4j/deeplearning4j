@@ -19,7 +19,7 @@
 //
 
 #include <ops/declarable/helpers/max_pooling.h>
-#include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 
 namespace nd4j {
@@ -57,7 +57,7 @@ namespace helpers {
                 ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-            ConvolutionUtils::pooling2d(block, *input, *values, kY, kX, sY, sX, pY, pX, dY, dX, 0, 1);
+            ConvolutionUtils::pooling2d(*block.launchContext(), *input, *values, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::MAX_POOL, 1);
             
             if (nullptr != indices) {
                 // for max_pool_with_argmax 
@@ -72,7 +72,7 @@ namespace helpers {
 
     }
 
-    void maxPoolingFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
+    void maxPoolingFunctor(nd4j::LaunchContext * context, nd4j::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
         BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (block, input, values, params, indices), FLOAT_TYPES);
     }
 

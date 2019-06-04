@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cache.TadDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
@@ -72,6 +73,20 @@ public class CpuTADManager implements TADManager {
         if (dimension != null && dimension.length > 1)
             Arrays.sort(dimension);
 
+        if (dimension == null)
+            dimension = new int[] {Integer.MAX_VALUE};
+
+        val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
+
+        //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
+        // now we need to copy this buffer to either device global memory or device cache
+
+        return new Pair<>(pack.getTadShapeInfo(), pack.getTadOffsets());
+
+        /*
+        if (dimension != null && dimension.length > 1)
+            Arrays.sort(dimension);
+
         if (dimension == null || dimension.length >= 1 && dimension[0] == Integer.MAX_VALUE) {
             return new Pair<>(array.shapeInfoDataBuffer(), null);
         } else {
@@ -100,8 +115,9 @@ public class CpuTADManager implements TADManager {
                 Pointer targetPointer = outputBuffer.addressPointer();
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
-                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                                (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
+                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length);
+                if (1 > 0)
+                    throw new RuntimeException();
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side
@@ -118,6 +134,7 @@ public class CpuTADManager implements TADManager {
 
             return cache.get(descriptor);
         }
+        */
     }
 
     @Override

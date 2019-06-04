@@ -71,7 +71,7 @@ namespace nd4j {
                 output->assign(input);
 
             // ScatterHelper<T>::template scatterApply<simdOps::Divide<T>>(output, indices, updates);        
-            ScatterHelper::scatter(pairwise::Divide, *indices, *updates, *output, lock);
+            helpers::scatter(block.launchContext(), pairwise::Divide, *indices, *updates, *output, lock);
             return Status::OK();
         }
         DECLARE_SYN(ScatterDiv, scatter_div);

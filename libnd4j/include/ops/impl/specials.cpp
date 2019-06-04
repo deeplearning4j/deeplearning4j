@@ -324,6 +324,25 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         }
     }
 
+    template<typename S, typename T>
+    void SpecialTypeConverter::convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+        auto x = reinterpret_cast<S *>(dx);
+        auto z = reinterpret_cast<T *>(dz);
+
+        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
+            for (int i = 0; i < N; i++) {
+                z[i] = static_cast<T>(x[i]);
+            }
+        } else {
+
+            PRAGMA_OMP_PARALLEL_FOR
+            for (int i = 0; i < N; i++) {
+                z[i] = static_cast<T>(x[i]);
+            }
+        }
+    };
+    BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES);
+
     template<typename T>
     Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto dx = reinterpret_cast<T *>(vx);

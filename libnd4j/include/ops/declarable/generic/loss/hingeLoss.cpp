@@ -127,9 +127,9 @@ namespace nd4j {
             Nd4jLong* outShapeInfo = nullptr;
 
             if(INT_ARG(0) != 0) 			// in this case output is scalar
-                outShapeInfo = ShapeBuilders::createScalarShapeInfo(outType, block.getWorkspace());
+                outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
             else 							// in this case output has the same shape as labels and predictions
-                outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+                outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
             return SHAPELIST(outShapeInfo);
 
@@ -243,7 +243,7 @@ namespace nd4j {
                         *dLdw = 0.;
                     }
                     else {
-                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
                         if(weights->isScalar())
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

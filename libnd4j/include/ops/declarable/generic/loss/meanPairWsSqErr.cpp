@@ -199,11 +199,10 @@ namespace nd4j {
             Nd4jLong* outShapeInfo = nullptr;
 
             if(INT_ARG(0) != 0) 			// in this case output is scalar
-                outShapeInfo = ShapeBuilders::createScalarShapeInfo(outType, block.getWorkspace());
+                outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
             else { 							// in this case output has the shape as labels and logits minus last dimension
                 std::vector<int> dimensions = {-1};
                 outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo, false, true, block.getWorkspace());
-                ArrayOptions::setDataType(outShapeInfo, outType);
 
                 // weights array can be single scalar or has the same rank as output, and must be broadcastable to output
                 REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(outShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS OP: weights array should be scalar or have the same rank as output array, but got %i and %i correspondingly!", shape::rank(weightsShapeInfo), shape::rank(outShapeInfo));
@@ -322,7 +321,7 @@ namespace nd4j {
                         *dLdw = 0.;
                     }
                     else {
-                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+                        auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
                         if(weights->isScalar())
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));

@@ -19,11 +19,15 @@ elseif(WIN32)
         set(CMAKE_CXX_FLAGS_DEBUG  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
     else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true /wd4804")
-        set(CMAKE_CXX_FLAGS_DEBUG  " -g")
+        set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc /wd4661 /wd4804 /wd4267 /wd4244 /wd4251 /wd4305")
     endif()
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+
+    if (CPU_BLAS)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+    endif()
 endif()
 
 if(NATIVE)
@@ -81,7 +85,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
-    include_directories(blas/ include/ include/helpers include/loops include/graph include/ops include/types include/array include/cnpy)
+    include_directories(blas/ include/ include/helpers include/loops include/graph include/execution include/ops include/types include/array include/cnpy include/exceptions)
     add_subdirectory(blas)
     if(BUILD_TESTS)
         # tests are always compiled with all ops included
@@ -93,6 +97,10 @@ endif ()
 
 if ($ENV{CLION_IDE})
     add_subdirectory(tests_cpu)
+endif ()
+
+if (MSVC_DEV)
+    set(LIBND4J_BUILD_MINIFIER false)
 endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)

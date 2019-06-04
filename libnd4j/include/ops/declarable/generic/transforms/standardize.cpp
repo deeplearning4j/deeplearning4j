@@ -88,7 +88,7 @@ namespace ops  {
 
         auto dldu_sum = -output->reduceAlongDims(reduce::Sum, axis, true);
 
-        NDArray dldx_u(input->shapeInfo(), false, block.workspace());
+        NDArray dldx_u(input->shapeInfo(), false, block.launchContext());
         std::vector<NDArray*> meanBpArgs = {input, &dldu_sum};
         std::vector<NDArray*> meanBpOutput = {&dldx_u};
         std::vector<double> meanBpTArgs = {};
@@ -99,14 +99,14 @@ namespace ops  {
         *output += dldx_u;
 
         // (eps * (means - input) / (stdev * stdev))
-        NDArray tmp(eps->shapeInfo(), false, block.workspace());
+        NDArray tmp(eps->shapeInfo(), false, block.launchContext());
         means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
         tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &tmp, nullptr);
         stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, &stdev, &stdev, nullptr);
         tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
 
         auto dlds_sum = tmp.reduceAlongDims(reduce::Sum, axis, true);
-        NDArray dldx_s(input->shapeInfo(), false, block.workspace());
+        NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
         std::vector<NDArray*> stdevBpArgs = {input, &dlds_sum};
         std::vector<NDArray*> stdevBpOutput = {&dldx_s};
         std::vector<double> stdevBpTArgs = {};
@@ -131,7 +131,7 @@ namespace ops  {
         Nd4jLong *out;
         COPY_SHAPE(in, out);
 
-        return SHAPELIST(out);
+        return SHAPELIST(CONSTANT(out));
     }
 
 }
