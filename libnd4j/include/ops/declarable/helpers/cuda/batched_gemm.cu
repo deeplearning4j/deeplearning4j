@@ -25,7 +25,6 @@
 #include <op_boilerplate.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
-#include <helpers/BlasHelper.h>
 #include <PointersManager.h>
 
 
