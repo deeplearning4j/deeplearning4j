@@ -55,7 +55,15 @@ namespace nd4j {
             int outRank = shape::rank(in);
             Nd4jLong *outputShape = nullptr;
 
-            int maxOutputSize = INT_ARG(0);
+            int maxOutputSize;
+            if (block.width() > 2)
+                maxOutputSize = INPUT_VARIABLE(2)->e<int>(0);
+            else if (block.getIArguments()->size() == 1)
+                maxOutputSize = INT_ARG(0);
+            else
+                REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
+
+
             Nd4jLong boxSize = shape::sizeAt(in, 0);
             if (boxSize < maxOutputSize) 
                 maxOutputSize = boxSize;

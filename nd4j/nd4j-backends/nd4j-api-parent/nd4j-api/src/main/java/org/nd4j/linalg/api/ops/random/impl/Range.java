@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -55,6 +56,14 @@ public class Range extends DynamicCustomOp {
 
     public Range(SameDiff sd, double from, double to, double step, DataType dataType){
         super(null, sd, new SDVariable[0]);
+        addTArgument(from, to, step);
+        this.from = from;
+        this.to = to;
+        this.delta = step;
+        this.dataType = dataType;
+    }
+
+    public Range(double from, double to, double step, DataType dataType){
         addTArgument(from, to, step);
         this.from = from;
         this.to = to;
@@ -100,7 +109,7 @@ public class Range extends DynamicCustomOp {
         val inputArgs = inputArguments();
         int cnt = 0;
 
-        if(args().length > 1) {
+        if(sameDiff != null && args().length > 1) {
             if (inputArgs.length > 0)
                 return Nd4j.getExecutioner().calculateOutputShape(this);
         } else if (iArgs.length > 0) {

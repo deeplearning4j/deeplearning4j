@@ -33,41 +33,53 @@ namespace nd4j {
             int x_rank = input->rankOf();
 
             std::vector<int> begin;
-            std::vector<int> end;
+            std::vector<int> sz;
 
             if (block.width() == 3) {
                 auto b = INPUT_VARIABLE(1);
                 auto e = INPUT_VARIABLE(2);
 
                 begin = b->template asVectorT<int>();
-                end = e->template asVectorT<int>();
+                sz = e->template asVectorT<int>();
             } else {
                 REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead", x_rank * 2, block.numI());
 
                 ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
-                ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+                ShapeUtils::copyVectorPart(sz, *(block.getIArguments()), x_rank, x_rank);
             }
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
-            REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
+            REQUIRE_TRUE(sz.size() == x_rank, 0, "size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
 
             std::vector<Nd4jLong> indices(2 * x_rank);
+            auto empty = false;
             for (int e = 0; e < x_rank; e++) {
-                int size = end[e];
+                int size = sz[e];
                 int start = begin[e];
 
                 REQUIRE_TRUE(start >= 0, 0, "Slice: start index should not be negative");
 
-                REQUIRE_TRUE(start < input->sizeAt(e), 0, "Index %i is invalid for dimension %i with size %i.", start, e, input->shapeInfo()[e + 1]);
+                REQUIRE_TRUE(start <= input->sizeAt(e), 0, "Index %i is invalid for dimension %i with size %i.", start, e, input->shapeInfo()[e + 1]);
                 if (size == -1){
                     size = input->sizeAt(e) - start;
                 }
-                REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1");
+                REQUIRE_TRUE(size >= 0, 0, "Slice: interval for dimension %i is less then 1");
                 REQUIRE_TRUE(start + size <= input->sizeAt(e), 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, input->sizeAt(e));
+
+                if(start == input->sizeAt(e) || size == 0 ){
+                    empty = true;
+                    //Don't break to perform input validation on other dims
+                }
                 
                 indices[2*e]   = start;
                 indices[2*e+1] = start + size;
             }
+
+            if(empty){
+                REQUIRE_TRUE(output->isEmpty(), 0, "Slice: empty array indices requested, but output array is not empty");
+                return Status::OK();
+            }
+
             auto sub = (*input)(indices, true);
             output->assign(sub);
 
@@ -87,34 +99,48 @@ namespace nd4j {
             auto x_rank = shape::rank(inShape);
 
             std::vector<int> begin;
-            std::vector<int> end;
+            std::vector<int> sz;
 
             if (block.width() == 3) {
                 auto b = INPUT_VARIABLE(1);
                 auto e = INPUT_VARIABLE(2);
 
                 begin = b->template asVectorT<int>();
-                end = e->template asVectorT<int>();
+                sz = e->template asVectorT<int>();
             } else {
                 REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead", x_rank * 2, block.numI());
 
                 ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
-                ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+                ShapeUtils::copyVectorPart(sz, *(block.getIArguments()), x_rank, x_rank);
             }
 
-            REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
-            REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank, end.size());
+            REQUIRE_TRUE(begin.size() == x_rank, 0, "Begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
+            REQUIRE_TRUE(sz.size() == x_rank, 0, "Size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
             
             std::vector<Nd4jLong> shape;
+            auto empty = false;
             for (int e = 0; e < x_rank; e++) {
-                auto stop = end[e];
+                auto size = sz[e];
                 auto start = begin[e];
 
-                if(stop == -1){
-                    stop = inShape[e+1] - start;
+                if(size == -1){
+                    size = inShape[e+1] - start;
                 }
 
-                shape.emplace_back(stop);
+                //Bounds checking. Note that begin[i] == size[i] means empty array
+                REQUIRE_TRUE(start >= 0 && start <= inShape[e+1], 0, "Invalid begin[%i] value: Begin must satisfy 0 <= begin <= size[i], got begin=%i for dimension size %i", e, start, inShape[e+1]);
+                REQUIRE_TRUE(size == -1 || size >= 0, 0, "Invalid size[%i] value: must be positive (or -1 for 'all remaining'), got %i", e, size, inShape[e+1]);
+                REQUIRE_TRUE(start >= 0 && start <= inShape[e+1], 0, "Invalid begin[%i] value: Begin must satisfy 0 <= begin <= size[i], got begin=%i for dimension size %i", e, start, inShape[e+1]);
+                REQUIRE_TRUE(start + size <= inShape[e+1], 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, inShape[e+1]);
+                if(start == inShape[e+1] || size == 0 ){
+                    empty = true;
+                }
+
+                shape.emplace_back(size);
+            }
+
+            if(empty){
+                return SHAPELIST(ShapeBuilders::emptyShapeInfo(nd4j::DataType::INT32, block.getWorkspace()));
             }
 
             Nd4jLong *newShape = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape, block.getWorkspace());
