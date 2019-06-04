@@ -630,7 +630,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
         auto hTADShapeInfo = tadPack.primaryShapeInfo();
         auto hTADOffsets = tadPack.primaryOffsets();
 
-        NativeOpExecutioner::execReduce3TAD(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, hTADShapeInfo, hTADOffsets);
+        NativeOpExecutioner::execReduce3TAD(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, hTADShapeInfo, hTADOffsets, nullptr, nullptr);
     }
 }
 
