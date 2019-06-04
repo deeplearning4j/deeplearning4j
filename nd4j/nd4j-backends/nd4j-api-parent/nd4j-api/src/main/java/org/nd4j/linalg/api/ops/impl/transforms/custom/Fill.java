@@ -124,14 +124,15 @@ public class Fill extends DynamicCustomOp {
             return Collections.emptyList();
 
         SDVariable[] args = args();
-        INDArray shape = args()[0].getArr();
+        INDArray shape = !inputArguments.isEmpty() ? inputArguments.get(0) : args()[0].getArr();
         INDArray value = (args.length > 1 ? args()[1].getArr() : null);
         if(shape == null)
             return Collections.emptyList();
         else {
             //TODO properly allow customizing datatype
-            if(shape.isEmpty()){
-                //Edge case, mainly for TF import
+            if(shape.isEmpty() || (shape.length() > 0 && shape.minNumber().intValue() == 0)){
+                //Empty shape: Edge case, mainly for TF import
+                //Also 'shape with zero' are empty arrays in TF
                 return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));   //TODO is this OK?
             } else {
                 return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));
