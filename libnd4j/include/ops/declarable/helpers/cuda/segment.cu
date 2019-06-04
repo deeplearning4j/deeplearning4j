@@ -294,21 +294,21 @@ namespace helpers {
     }
     // segment max
     template <typename T, typename I>
-    static __global__ void segmentMaxTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+    static __global__ void segmentMaxTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
         __shared__ T* val;
         __shared__ Nd4jLong len, segment, zIndex, total;
         __shared__ T* z;
         __shared__ int threadsPerSegment, start, finish;
 
         if (threadIdx.x == 0) {
-            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-            segment = blockIdx.x / threadsPerSegment;
+            //threadsPerSegment = (gridDim.x / numOfClasses) + gridDim.x % numOfClasses;
+            segment = indices[blockIdx.x]; // / threadsPerSegment;
             //x = reinterpret_cast<T*>(input) + inputTadOffsets[segment];
             z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
             len = shape::length(inputTads);
             // = shape::length(outputShape);
 
-            if (segment < numOfClasses) {
+//            if (segment < numOfClasses) {
 //                zIndex = shape::getIndexOffset(segment, outputShape, zLen);
                 start = starts[segment];
                 finish = start + lengths[segment];
@@ -319,16 +319,11 @@ namespace helpers {
                 //val[segment] = z[zIndex];
 //                auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[segment];
 
-            }
+//            }
             //printf("Segment is %d\n", segment);
             total = shape::sizeAt(inputShape, 0);
-            printf("Total rows %lld. %lld per each.\n", total, len);
-            auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[starts[segment]];
-            for (auto e = 0; e < len; e++) {
-                auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                z[xIndex] = x[xIndex];
-            }
+//            printf("Current segment is %lld, %u.\n", segment, blockIdx.x);
+//            auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[starts[segment]];
 
         }
         __syncthreads();
@@ -347,16 +342,40 @@ namespace helpers {
 //                }
 //            }
 //            else
-        for (auto idx = start + blockIdx.x + 1; idx < finish; idx += gridDim.x) {
-            auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-            //printf("Segment: %d; Idx: %d (%d)\n", segment, idx, starts[segment]);
-            for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+//    for (auto idx = start + blockIdx.x; idx < finish; idx += gridDim.x) {
+//        if (segment < numOfClasses) {
+//            auto idx = blockIdx.x;
+//            auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
+////            printf("Segment: %lld; Idx: %llu (%d)\n", (long long)segment, (unsigned long long)blockIdx.x, start);
+//            //if (idx == start)
+//            printf("Init segment %d, %d\n", idx, starts[segment]);
+//            for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+//                auto xIndex = shape::getIndexOffset(e, inputTads, len);
+//                auto zIndex = shape::getIndexOffset(e, outputTads, len);
+//                z[xIndex] = x[xIndex];
+//            }
+//            else if (idx > start && idx < finish)
+            auto idx = blockIdx.x;
+            if (blockIdx.x <= total) {
+                auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+                if (blockIdx.x == start) {
+                    for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                        auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                        auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                        z[zIndex] = x[xIndex];
+                    }
+                }
+                else {
+                    for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                        auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                        auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                        nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                    }
+                }
             }
-        }
-}
+//        }
+    }
+
     template <typename T, typename I>
     static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
         //int numClasses = output->sizeAt(0);
@@ -386,7 +405,7 @@ namespace helpers {
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            segmentMaxTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+            segmentMaxTadKernel<T,I><<<input->sizeAt(0) + 1, 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
     }
 

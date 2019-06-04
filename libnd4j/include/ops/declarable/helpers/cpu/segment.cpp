@@ -46,11 +46,6 @@ namespace helpers {
             }
         }
         else {
-//            std::vector<int> restDims(input->rankOf() - 1);
-            Nd4jLong loop_size = input->rankOf();
-//            PRAGMA_OMP_PARALLEL_FOR
-//            for (Nd4jLong e = 1; e < loop_size; e++)
-//                restDims[e - 1] = e;
             std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
             auto listOfTensors = input->allTensorsAlongDimension(restDims);
             auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
