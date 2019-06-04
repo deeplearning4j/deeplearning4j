@@ -35,6 +35,12 @@ namespace nd4j {
             auto t = block.numT();
 
             REQUIRE_TRUE( w > 1 || t > 0 || i > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
+
+            if(output->isEmpty()){
+                //Empty output array - no-op
+                return Status::OK();
+            }
+
             if (w > 1) {
                 output->assign(INPUT_VARIABLE(1));
             } else {
@@ -65,8 +71,11 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            
 
             newShape[0] = len;
-            for (int e = 0; e < shapeArray->lengthOf(); e++)
+            auto empty = false;
+            for (int e = 0; e < shapeArray->lengthOf(); e++){
                 newShape[e+1] = shapeArray->e<Nd4jLong>(e);
+                empty |= (newShape[e+1] == 0);  //Support "zeros in shape as empty" for TF import
+            }
 
             nd4j::DataType dataType;
 
@@ -80,6 +89,10 @@ namespace nd4j {
                 dataType = nd4j::DataType::BOOL;
             } else
                 throw std::runtime_error("Fill: missing value to fill output array with");
+
+            if(empty){
+                return SHAPELIST(ShapeBuilders::emptyShapeInfo(dataType, block.getWorkspace()));
+            }
 
             ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 

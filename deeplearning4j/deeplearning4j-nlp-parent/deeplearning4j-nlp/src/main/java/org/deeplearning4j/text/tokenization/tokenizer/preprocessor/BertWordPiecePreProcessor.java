@@ -70,14 +70,14 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
             if(cp == 0 || cp == REPLACEMENT_CHAR || isControlCharacter(cp) || (stripAccents && Character.getType(cp) == Character.NON_SPACING_MARK))
                 continue;
 
-            if(charSet != null && !charSet.contains(cp)){
-                //Skip unknown character (out-of-vocab - though this should rarely happen)
-                continue;
-            }
-
             //Replace whitespace chars with space
             if(isWhiteSpace(cp)) {
                 sb.append(' ');
+                continue;
+            }
+
+            if(charSet != null && !charSet.contains(cp)){
+                //Skip unknown character (out-of-vocab - though this should rarely happen)
                 continue;
             }
 
