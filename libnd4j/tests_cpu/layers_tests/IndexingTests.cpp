@@ -429,6 +429,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
+    delete result;
 }
 
 

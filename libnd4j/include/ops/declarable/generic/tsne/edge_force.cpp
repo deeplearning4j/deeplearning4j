@@ -59,7 +59,7 @@ namespace ops  {
         Nd4jLong* bufShape;
         Nd4jLong* outShapeInfo;
         outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
-        return SHAPELIST(outShapeInfo);
+        return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
 
