@@ -24,102 +24,104 @@
 #include <helpers/BlasHelper.h>
 
 
-namespace nd4j {
-    namespace ops {
-        namespace helpers {
-        
+namespace nd4j    {
+namespace ops     {
+namespace helpers {
 
-            template <typename T>
-            void __bgemm(nd4j::LaunchContext * context, std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
-                int batchSize = vA.size();
-                if (BlasHelper::getInstance()->hasBatchedGEMM<T>()) {
-                    auto arr = vA.at(0);
-                    CBLAS_TRANSPOSE *tA, *tB;
-                    int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
-                    // mkl requires mnk etc as arrays, cuda doesn't
-                    ALLOCATE(tA, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(tB, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(tM, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tN, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tK, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldA, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldB, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldC, arr->getContext()->getWorkspace(), batchSize, int);
-                    ALLOCATE(tsize, arr->getContext()->getWorkspace(), batchSize, int);
 
-                    shape::fill(tA, (CBLAS_TRANSPOSE) transA, batchSize);
-                    shape::fill(tB, (CBLAS_TRANSPOSE) transB, batchSize);
+template <typename T>
+void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc) {
 
-                    shape::fill(tM, M, batchSize);
-                    shape::fill(tN, N, batchSize);
-                    shape::fill(tK, K, batchSize);
-                    shape::fill(tldA, ldA, batchSize);
-                    shape::fill(tldB, ldB, batchSize);
-                    shape::fill(tldC, ldC, batchSize);
-                    shape::fill(tsize, 1, batchSize);
+    int batchSize = vA.size();
 
-                    std::vector<T*> buffersA(batchSize);
-                    std::vector<T*> buffersB(batchSize);
-                    std::vector<T*> buffersC(batchSize);
+    if (BlasHelper::getInstance()->hasBatchedGEMM<T>()) {
+        auto arr = vA.at(0);
+        CBLAS_TRANSPOSE *tA, *tB;
+        int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
+        // mkl requires mnk etc as arrays, cuda doesn't
+        ALLOCATE(tA, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+        ALLOCATE(tB, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+        ALLOCATE(tM, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tN, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tK, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tldA, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tldB, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tldC, arr->getContext()->getWorkspace(), batchSize, int);
+        ALLOCATE(tsize, arr->getContext()->getWorkspace(), batchSize, int);
 
-                    for (int e = 0; e < batchSize; e++) {
-                        buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
-                        buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
-                        buffersC[e] = reinterpret_cast<T *>(vC[e]->buffer());
-                    }
+        shape::fill(tA, (CBLAS_TRANSPOSE) transA, batchSize);
+        shape::fill(tB, (CBLAS_TRANSPOSE) transB, batchSize);
 
-                    if (std::is_same<T, double>::value) {
-                        BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->buffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->buffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
-                    } else if (std::is_same<T, float >::value) {
-                        BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->buffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->buffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
-                    }
+        shape::fill(tM, M, batchSize);
+        shape::fill(tN, N, batchSize);
+        shape::fill(tK, K, batchSize);
+        shape::fill(tldA, lda, batchSize);
+        shape::fill(tldB, ldb, batchSize);
+        shape::fill(tldC, ldc, batchSize);
+        shape::fill(tsize, 1, batchSize);
 
-                    // release temporary arrays
-                    RELEASE(tA, arr->getContext()->getWorkspace());
-                    RELEASE(tB, arr->getContext()->getWorkspace());
-                    RELEASE(tM, arr->getContext()->getWorkspace());
-                    RELEASE(tN, arr->getContext()->getWorkspace());
-                    RELEASE(tK, arr->getContext()->getWorkspace());
-                    RELEASE(tldA, arr->getContext()->getWorkspace());
-                    RELEASE(tldB, arr->getContext()->getWorkspace());
-                    RELEASE(tldC, arr->getContext()->getWorkspace());
-                    RELEASE(tsize, arr->getContext()->getWorkspace());
-                } else {
-                    CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
-                    CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
+        std::vector<T*> buffersA(batchSize);
+        std::vector<T*> buffersB(batchSize);
+        std::vector<T*> buffersC(batchSize);
 
-                    int vaSize = vA.size();
+        for (int e = 0; e < batchSize; e++) {
+            buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
+            buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
+            buffersC[e] = reinterpret_cast<T *>(vC[e]->buffer());
+        }
 
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (int p = 0; p < vaSize; ++p) {
-                        auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
-                        auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
-                        auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
-                        auto alpha = alphas->e<T>(p);
-                        auto beta = betas->e<T>(p);
-                        for (int m = 0; m < M; ++m) {
-                            for (int n = 0; n < N; ++n) {
-                                T c_mnp = 0;
+        if (std::is_same<T, double>::value) {
+            BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->getBuffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->getBuffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
+        } else if (std::is_same<T, float >::value) {
+            BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->getBuffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->getBuffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
+        }
 
-                                PRAGMA_OMP_SIMD
-                                for (int k = 0; k < K; ++k)
-                                    c_mnp += A[tA == CblasNoTrans ? (m + k * ldA) : (m * ldA + k)] * B[tB == CblasNoTrans ? (k + n * ldB) : (k * ldB + n)];
+        // release temporary arrays
+        RELEASE(tA, arr->getContext()->getWorkspace());
+        RELEASE(tB, arr->getContext()->getWorkspace());
+        RELEASE(tM, arr->getContext()->getWorkspace());
+        RELEASE(tN, arr->getContext()->getWorkspace());
+        RELEASE(tK, arr->getContext()->getWorkspace());
+        RELEASE(tldA, arr->getContext()->getWorkspace());
+        RELEASE(tldB, arr->getContext()->getWorkspace());
+        RELEASE(tldC, arr->getContext()->getWorkspace());
+        RELEASE(tsize, arr->getContext()->getWorkspace());
+    } else {
+        CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
+        CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
 
-                                C[m + n * ldC] = alpha * c_mnp + beta * C[m + n * ldC];
-                            } 
-                        } 
-                    }
+        int vaSize = vA.size();
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int p = 0; p < vaSize; ++p) {
+            auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
+            auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
+            auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
+            auto alpha = alphas->e<T>(p);
+            auto beta = betas->e<T>(p);
+            for (int m = 0; m < M; ++m) {
+                for (int n = 0; n < N; ++n) {
+                    T c_mnp = 0;
+
+                    PRAGMA_OMP_SIMD
+                    for (int k = 0; k < K; ++k)
+                        c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] * B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
+
+                    C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
                 }
-            };
-
-
-            void _bgemm(nd4j::LaunchContext * context, std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
-                auto xType = vA.at(0)->dataType();
-
-                BUILD_SINGLE_SELECTOR(xType, __bgemm, (context, vA, vB, vC, alphas, betas, transA, transB, M, N, K, ldA, ldB, ldC), FLOAT_TYPES);
             }
-
-            BUILD_SINGLE_TEMPLATE(template void __bgemm, (nd4j::LaunchContext * context, std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC), FLOAT_TYPES);
         }
     }
+}
+
+
+void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc) {
+    auto xType = vA.at(0)->dataType();
+    BUILD_SINGLE_SELECTOR(xType, bgemm_, (vA, vB, vC, alphas, betas, transA, transB, M, N, K, lda, ldb, ldc), FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void bgemm_, (const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc), FLOAT_TYPES);
+
+}
+}
 }
