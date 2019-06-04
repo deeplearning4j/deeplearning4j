@@ -382,16 +382,17 @@ public class CudaAffinityManager extends BasicAffinityManager {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
         switch (location) {
             case HOST: {
-                AtomicAllocator.getInstance().synchronizeHostData(array);
+                    AtomicAllocator.getInstance().synchronizeHostData(array);
                 }
                 break;
             case DEVICE:{
-                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                    AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                 }
                 break;
             case EVERYWHERE:
             default: {
-                throw new UnsupportedOperationException("Unknown location specified: " + location);
+                AtomicAllocator.getInstance().synchronizeHostData(array);
+                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
             }
         }
     }

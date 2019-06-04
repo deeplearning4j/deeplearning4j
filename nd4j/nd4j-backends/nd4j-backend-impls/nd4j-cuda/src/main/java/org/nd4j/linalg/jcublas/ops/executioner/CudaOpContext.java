@@ -21,9 +21,11 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.Nd4jCuda;
@@ -66,6 +68,9 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
+        // FIXME: remove
+        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
+
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         context.setInputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
@@ -74,6 +79,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
+        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
+
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         context.setOutputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
@@ -86,15 +93,19 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
             if (v.isEmpty())
                 continue;
 
-            if (context.isInplace())
-                AtomicAllocator.getInstance().getAllocationPoint(v).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(v).tickHostRead();
+            AtomicAllocator.getInstance().getAllocationPoint(v).tickDeviceRead();
+
+            //if (context.isInplace())
+                //AtomicAllocator.getInstance().getAllocationPoint(v).tickDeviceWrite();
         }
 
         for (val v:fastpath_out.values()) {
             if (v.isEmpty())
                 continue;
 
-            AtomicAllocator.getInstance().getAllocationPoint(v).tickDeviceWrite();
+            AtomicAllocator.getInstance().getAllocationPoint(v).tickHostRead();
+            AtomicAllocator.getInstance().getAllocationPoint(v).tickDeviceRead();
         }
 
         return context;

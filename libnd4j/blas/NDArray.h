@@ -592,6 +592,9 @@ namespace nd4j {
         */
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
+        // FIXME: remove this method eventually
+        void makeBothActual() const        { syncToDevice(); syncToHost(); }
+
 
         void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
         void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);

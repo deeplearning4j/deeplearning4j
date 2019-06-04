@@ -2563,7 +2563,18 @@ int NativeOps::execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPoint
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
     auto context = reinterpret_cast<Context*>(opContext);
 
-    return op->execute(context);
+    auto result = op->execute(context);
+
+    // FIXME: remove once CUDA backend is 100% ready
+    for (auto v:context->fastpath_in()) {
+        v->makeBothActual();
+    }
+
+    for (auto v:context->fastpath_out()) {
+        v->makeBothActual();
+    }
+
+    return result;
 }
 
 int NativeOps::registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer) {
