@@ -120,6 +120,10 @@ public class CheckpointListener extends BaseListener implements Serializable {
             saveEveryMs = TimeUnit.MILLISECONDS.convert(saveEveryAmount, saveEveryUnit);
         }
 
+        if(!rootDir.exists()){
+            rootDir.mkdir();
+        }
+
         this.checkpointRecordFile = new File(rootDir, "checkpointInfo.txt");
         if(this.checkpointRecordFile.exists() && this.checkpointRecordFile.length() > 0){
 
