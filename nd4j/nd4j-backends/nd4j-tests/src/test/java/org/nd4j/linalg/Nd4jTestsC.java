@@ -4348,20 +4348,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(1.0, sum, 0.001);
     }
 
-    @Test
-    public void sumResultArrayEdgeCase() {
-        INDArray delta = Nd4j.create(1, 3);
-        delta.assign(Nd4j.rand(delta.shape()));
-
-        INDArray out = delta.sum(0);
-
-        INDArray out2 = Nd4j.zeros(new long[] {1, 3}, 'c');
-        INDArray res = delta.sum(out2, 0);
-
-        assertEquals(out, out2);
-        assertTrue(res == out2);
-    }
-
 
     @Test
     public void tesAbsReductions1() {
