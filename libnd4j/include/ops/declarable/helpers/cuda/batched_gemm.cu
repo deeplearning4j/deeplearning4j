@@ -16,18 +16,148 @@
 
 //
 //  @author raver119@gmail.com
+//  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#include <exceptions/cuda_exception.h>
+#include <cublas_v2.h>
+#include <specials_cuda.h>
 #include <op_boilerplate.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <helpers/BlasHelper.h>
+#include <PointersManager.h>
 
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
-        
+namespace ops {
+namespace helpers {
+
+//////////////////////////////////////////////////////////////////////////////
+// bsxMXK x bSxKxN = bSxMxN
+static void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int ldA, const int ldB, const int ldC) {
+
+    // const auto bS = vA.size();      // batch size
+
+    // std::vector<NDArray*> pA(bS), pB(bS), pC(bS);
+
+    // std::vector<NDArray*> toDelete;
+
+    // for(int i = 0; i < bS; ++i) {
+
+    //     if(vA[i]->ews() != 1) {
+    //         pA[i] = vA[i]->dup('f');
+    //         toDelete.emplace_back(pA[i]);
+    //     }
+    //     else
+    //         pA[i] = vA[i];
+
+    //     if(vB[i]->ews() != 1) {
+    //         pB[i] = vB[i]->dup('f');
+    //         toDelete.emplace_back(pB[i]);
+    //     }
+    //     else
+    //         pB[i] = vB[i];
+
+    //     if(vC[i]->ews() != 1) {
+    //         pC[i] = vC[i]->dup('f');
+    //         toDelete.emplace_back(pC[i]);
+    //     }
+    //     else
+    //         pC[i] = vC[i];
+
+    //     if(pC[i]->ordering() != 'f') {
+    //         auto temp = pA[i];
+    //         pA[i] = pB[i]->permute({1,0});
+    //         pB[i] = temp ->permute({1,0});
+    //         pC[i] = pC[i]->permute({1,0});
+    //         toDelete.push_back(pA[i]);
+    //         toDelete.push_back(pB[i]);
+    //         toDelete.push_back(pC[i]);
+    //         M = pA[i]->sizeAt(0);
+    //         K = pA[i]->sizeAt(1);
+    //         N = pB[i]->sizeAt(1);
+    //     }
+
+    //     NDArray::prepareSpecialUse ({pC[i]}, {pA[i], pB[i]});
+    //     NDArray::registerSpecialUse({pC[i]}, {pA[i], pB[i]});
+    // }
+
+    // NDArray::prepareSpecialUse ({}, {alphas, betas});
+    // NDArray::registerSpecialUse({}, {alphas, betas});
+
+    // std::vector<void*> pAbuffs(bS), pBbuffs(bS), pCbuffs(bS);
+    // for(int i = 0; i < bS; ++i) {
+    //     pAbuffs[i] = pA[i]->getSpecialBuffer();
+    //     pBbuffs[i] = pB[i]->getSpecialBuffer();
+    //     pCbuffs[i] = pC[i]->getSpecialBuffer();
+    // }
+
+    // nd4j::LaunchContext* context = vA[0]->getContext();
+    // PointersManager manager(context, "helpers::bgemm cuda");
+
+    // const void** aBuffers = reinterpret_cast<void**>(manager.replicatePointer(pAbuffs.data(), bS * sizeof(void*)));
+    // const void** bBuffers = reinterpret_cast<void**>(manager.replicatePointer(pBbuffs.data(), bS * sizeof(void*)));
+    // const void** cBuffers = reinterpret_cast<void**>(manager.replicatePointer(pCbuffs.data(), bS * sizeof(void*)));
+
+    // const auto aOrder = pA->ordering();
+    // const auto bOrder = pB->ordering();
+
+    // const bool transA = aOrder != 'f';
+    // const bool transB = bOrder != 'f';
+
+    // const cublasOperation_t transAblas = transA == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
+    // const cublasOperation_t transBblas = transB == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+    // const int lda = aOrder == 'f' ? M : K;
+    // const int ldb = bOrder == 'f' ? K : N;
+    // const int ldc = M; // cOrder == 'f' ? M : N;
+
+    // const auto aType = pA[0]->dataType();
+    // const auto bType = pB[0]->dataType();
+    // const auto cType = pC[0]->dataType();
+
+    // auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
+    // auto stream = context->getCudaStream();
+
+    // auto status = cublasSetStream_v2(*handle, *stream);
+
+
+    auto handle = reinterpret_cast<cublasHandle_t*>(vA[0]->getContext()->getCublasHandle());
+    auto stream = vA[0]->getContext()->getCudaStream();
+
+    auto status = cublasSetStream_v2(*handle, *stream);
+    // if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+
+    // const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
+
+    // // choose appropriate cuda gemm api depending on data types
+    // if(ABC && aType == DataType::DOUBLE)
+    //     status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, (double*)alpha->getSpecialBuffer(), (double**)aBuffers, lda, (double**)bBuffers, ldb, (double*)betas->getSpecialBuffer(), (double**)cBuffers, ldc);
+    // else if(ABC && aType == DataType::FLOAT32)
+    //     status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, (float*)alpha->getSpecialBuffer(), (float**)aBuffers, lda, (float**)bBuffers, ldb, (float*)betas->getSpecialBuffer(), (float**)cBuffers, ldc);
+    // else if(ABC && aType == DataType::HALF)
+    //     status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, (__half*)alpha->getSpecialBuffer(), (__half**)aBuffers, lda, (__half**)bBuffers, ldb, (__half*)betas->getSpecialBuffer(), (__half**)cBuffers, ldc);
+    // else if(AB && aType == DataType::INT8 && cType == DataType::FLOAT32)
+    //     status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, alpha->getSpecialBuffer(), aBuffers, CUDA_R_8I, lda, bBuffers, CUDA_R_8I, ldb, betas->getSpecialBuffer(), cBuffers, CUDA_R_32F, ldc);
+    // else if(AB && aType == DataType::HALF && cType == DataType::FLOAT32)
+    //     status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, alpha->getSpecialBuffer(), aBuffers, CUDA_R_16F, lda, bBuffers, CUDA_R_16F, ldb, betas->getSpecialBuffer(), cBuffers, CUDA_R_32F, ldc);
+    // else
+
+
+    // if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+
+    // auto cudaResult = cudaStreamSynchronize(*stream);
+    // if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+
+    // for(int i = 0; i < bS; ++i)
+    // if(vC[i]->ews() != 1)
+    //     vC[i]->assign(pC[i]);
+
+    // for(int i = toDelete.size() - 1; i >= 0; --i)
+    //     delete toDelete[i];
+}
+
 
             template <typename T>
             void __bgemm(std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC) {
@@ -42,6 +172,7 @@ namespace nd4j {
             }
 
             BUILD_SINGLE_TEMPLATE(template void __bgemm, (std::vector<NDArray*>& vA, std::vector<NDArray*>& vB, std::vector<NDArray*>& vC, NDArray* alphas, NDArray* betas, int transA, int transB, int M, int N, int K, int ldA, int ldB, int ldC), FLOAT_TYPES);
-        }
-    }
+
+}
+}
 }
