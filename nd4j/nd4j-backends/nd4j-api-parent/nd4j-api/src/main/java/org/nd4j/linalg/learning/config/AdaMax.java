@@ -24,6 +24,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * The AdaMax updater, a variant of Adam.
@@ -87,6 +88,13 @@ public class AdaMax implements IUpdater {
         gradientShape[1] /= 2;
         a.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return a;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        AdaMaxUpdater u = new AdaMaxUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
+        return u;
     }
 
     @Override

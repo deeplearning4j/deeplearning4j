@@ -77,6 +77,14 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
             return new Int8Buffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.UBYTE) {
             return new UInt8Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UINT16) {
+            return new UInt16Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UINT32) {
+            return new UInt32Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UINT64) {
+            return new UInt64Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.BFLOAT16) {
+            return new BFloat16Buffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.HALF) {
             return new HalfBuffer(underlyingBuffer, length, offset);
         }
@@ -280,6 +288,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new FloatBuffer(length, initialize);
             case HALF:
                 return new HalfBuffer(length, initialize);
+            case BFLOAT16:
+                return new BFloat16Buffer(length, initialize);
             case LONG:
                 return new LongBuffer(length, initialize);
             case INT:
@@ -288,6 +298,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new Int16Buffer(length, initialize);
             case UBYTE:
                 return new UInt8Buffer(length, initialize);
+            case UINT16:
+                return new UInt16Buffer(length, initialize);
+            case UINT32:
+                return new UInt32Buffer(length, initialize);
+            case UINT64:
+                return new UInt64Buffer(length, initialize);
             case BYTE:
                 return new Int8Buffer(length, initialize);
             case BOOL:
@@ -306,6 +322,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new DoubleBuffer(length, initialize, workspace);
             case FLOAT:
                 return new FloatBuffer(length, initialize, workspace);
+            case BFLOAT16:
+                return new BFloat16Buffer(length, initialize, workspace);
             case HALF:
                 return new HalfBuffer(length, initialize, workspace);
             case LONG:
@@ -316,6 +334,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new Int16Buffer(length, initialize, workspace);
             case UBYTE:
                 return new UInt8Buffer(length, initialize, workspace);
+            case UINT16:
+                return new UInt16Buffer(length, initialize, workspace);
+            case UINT32:
+                return new UInt32Buffer(length, initialize, workspace);
+            case UINT64:
+                return new UInt64Buffer(length, initialize, workspace);
             case BYTE:
                 return new Int8Buffer(length, initialize, workspace);
             case BOOL:
@@ -570,6 +594,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new Int8Buffer(pointer, indexer, length);
             case UBYTE:
                 return new UInt8Buffer(pointer, indexer, length);
+            case UINT16:
+                return new UInt16Buffer(pointer, indexer, length);
+            case UINT32:
+                return new UInt32Buffer(pointer, indexer, length);
+            case UINT64:
+                return new UInt64Buffer(pointer, indexer, length);
             case SHORT:
                 return new Int16Buffer(pointer, indexer, length);
             case INT:
@@ -578,6 +608,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new LongBuffer(pointer, indexer, length);
             case HALF:
                 return new HalfBuffer(pointer, indexer, length);
+            case BFLOAT16:
+                return new BFloat16Buffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
             case DOUBLE:

@@ -57,9 +57,9 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 }
 
     DECLARE_TYPES(tile) {
-        getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
+        getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_INTS})
-                ->setAllowedOutputTypes({ALL_FLOATS});
+                ->setAllowedOutputTypes(nd4j::DataType::ANY);
     }
 
 
@@ -101,8 +101,6 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
     
     const int inRank = input->rankOf();
 
-    REQUIRE_TRUE(inRank == gradO->rankOf(), 0, "TILE_BP op: the ranks of input array and output's gradients array (next epsilon) must be equal, but got %i and %i correspondingly !", inRank, gradO->rankOf());
-
     std::vector<Nd4jLong> reps;
 
     if (block.getIArguments()->size() == inRank) {
@@ -120,6 +118,8 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
     else {
         REQUIRE_TRUE(false, 0, "TILE_BP op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
     }
+
+    REQUIRE_TRUE(inRank == gradO->rankOf(), 0, "TILE_BP op: the ranks of input array and output's gradients array (next epsilon) must be equal, but got %i and %i correspondingly !", inRank, gradO->rankOf());
 
     for (int i = 0; i < inRank; ++i)
         REQUIRE_TRUE(gradO->sizeAt(i) == gradI->sizeAt(i) * reps[i], 0, "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
@@ -143,23 +143,23 @@ DECLARE_SHAPE_FN(tile_bp) {
     Nd4jLong* gradOShape = inputShape->at(1);
     const int inRank = inShape[0];
 
-    REQUIRE_TRUE(inRank == gradOShape[0], 0, "TILE_BP op: the ranks of input array and output's gradients array (next epsilon) must be equal, but got %i and %i correspondingly !", inRank, gradOShape[0]);
-
     std::vector<Nd4jLong> reps;
 
     if (block.getIArguments()->size() == inRank) {
 
         reps = ArrayUtils::toLongVector(*(block.getIArguments()));        
     } 
-    else if (block.width() > 1)  {
-        
+    else if (block.width() > 2)  {
         auto reps_vector = INPUT_VARIABLE(1);
         REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0, "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", reps_vector->lengthOf(), inRank);
         reps = reps_vector->template asVectorT<Nd4jLong>();
+        gradOShape = inputShape->at(2);
     }
     else {
         REQUIRE_TRUE(false, 0, "TILE_BP op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
     }
+
+    REQUIRE_TRUE(inRank == gradOShape[0], 0, "TILE_BP op: the ranks of input array and output's gradients array (next epsilon) must be equal, but got %i and %i correspondingly !", inRank, gradOShape[0]);
     
     for (int i = 0; i < inRank; ++i)
         REQUIRE_TRUE(shape::sizeAt(gradOShape, i) == shape::sizeAt(inShape, i) * reps[i], 0, "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");

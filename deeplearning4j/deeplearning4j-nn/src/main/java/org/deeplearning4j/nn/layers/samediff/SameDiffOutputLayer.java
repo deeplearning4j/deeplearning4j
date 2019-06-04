@@ -128,6 +128,12 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 "If labels are not required for this SameDiff output layer, override SameDiffOutputLayer.labelsRequired()" +
                 " to return false instead");
 
+        if(sameDiff == null){
+            //Usually doInit will be called in forward pass; not necessarily the case in output layers
+            // (for efficiency, we skip output layer forward pass in MultiLayerNetwork/ComputationGraph)
+            doInit();
+        }
+
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;

@@ -86,6 +86,12 @@
           <artifactId>commons-lang3</artifactId>
           <version>${commonslang.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.github.vinhkhuc</groupId>
+        <artifactId>jfasttext</artifactId>
+        <version>0.4</version>
+      </dependency>
+
   </dependencies>
 
     <profiles>

@@ -18,7 +18,7 @@ Unlike other machine learning or deep learning frameworks, DL4J treats the tasks
 
 Before the algorithm can start learning, you have to prepare the data, even if you already have a trained model. Preparing data means loading it and putting it in the right shape and value range (e.g. normalization, zero-mean and unit variance). Building these processes from scratch is error prone, so use DataVec wherever possible.
 
-Deeplearning4j works with a lot of different data types, such as images, CSV, ARFF, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel), pretty much any other data type you can think of.
+Deeplearning4j works with a lot of different data types, such as images, CSV, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel), pretty much any other data type you can think of.
 
 To use DataVec, you will need one of the implementations of the [RecordReader](/api/{{page.version}}/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](/api/{{page.version}}/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html).
 

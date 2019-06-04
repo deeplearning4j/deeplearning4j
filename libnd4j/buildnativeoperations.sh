@@ -169,6 +169,12 @@ case "$OS" in
     fi
     ;;
 
+    linux-arm64)
+    if [ -z "$ARCH" ]; then
+        ARCH="armv8-a"
+    fi
+    ;;
+
     android-arm)
     if [ -z "$ARCH" ]; then
         ARCH="armv7-a"

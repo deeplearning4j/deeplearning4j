@@ -20,6 +20,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -50,6 +51,10 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Ignore("AB 2019/05/23 - Failing on linux-x86_64-cuda-9.2 - see issue #7657")
 public class DoubleDataBufferTest extends BaseNd4jTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     DataType initialType;
 
     public DoubleDataBufferTest(Nd4jBackend backend) {
@@ -119,10 +124,11 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSerialization() {
+    public void testSerialization() throws Exception {
+        File dir = testDir.newFolder();
         DataBuffer buf = Nd4j.createBuffer(5);
         String fileName = "buf.ser";
-        File file = new File(fileName);
+        File file = new File(dir, fileName);
         file.deleteOnExit();
         SerializationUtils.saveObject(buf, file);
         DataBuffer buf2 = SerializationUtils.readObject(file);

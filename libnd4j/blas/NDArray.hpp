@@ -549,6 +549,9 @@ template ND4J_EXPORT NDArray& NDArray::operator=(const Nd4jLong scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const int scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const int8_t scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const uint8_t scalar);
+template ND4J_EXPORT NDArray& NDArray::operator=(const uint16_t scalar);
+template ND4J_EXPORT NDArray& NDArray::operator=(const uint32_t scalar);
+template ND4J_EXPORT NDArray& NDArray::operator=(const uint64_t scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const int16_t scalar);
 template ND4J_EXPORT NDArray& NDArray::operator=(const bool scalar);
 
@@ -636,6 +639,33 @@ void NDArray::assign(const int16_t value) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const uint8_t value) {
+    // just fire scalar
+    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
+    prepareSpecialUse({this}, {&temp});
+    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
+    registerSpecialUse({this}, {&temp});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::assign(const uint16_t value) {
+    // just fire scalar
+    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
+    prepareSpecialUse({this}, {&temp});
+    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
+    registerSpecialUse({this}, {&temp});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::assign(const uint32_t value) {
+    // just fire scalar
+    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
+    prepareSpecialUse({this}, {&temp});
+    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
+    registerSpecialUse({this}, {&temp});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::assign(const uint64_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
     prepareSpecialUse({this}, {&temp});
@@ -3732,6 +3762,9 @@ template void NDArray::p(const Nd4jLong i, const Nd4jLong value);
 template void NDArray::p(const Nd4jLong i, const int value);
 template void NDArray::p(const Nd4jLong i, const int8_t value);
 template void NDArray::p(const Nd4jLong i, const uint8_t value);
+template void NDArray::p(const Nd4jLong i, const uint16_t value);
+template void NDArray::p(const Nd4jLong i, const uint32_t value);
+template void NDArray::p(const Nd4jLong i, const uint64_t value);
 template void NDArray::p(const Nd4jLong i, const int16_t value);
 template void NDArray::p(const Nd4jLong i, const bool value);
 
@@ -3759,6 +3792,9 @@ template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong valu
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int8_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint16_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint32_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint64_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
 
@@ -3786,6 +3822,9 @@ template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, c
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint16_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint32_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint64_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
@@ -3812,6 +3851,9 @@ template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, c
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint16_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint32_t value);
+template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint64_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 

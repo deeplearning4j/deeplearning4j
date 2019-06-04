@@ -126,7 +126,34 @@ class FlatGraph(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatGraphStart(builder): builder.StartObject(7)
+    # FlatGraph
+    def TrainingConfig(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+    # FlatGraph
+    def UpdaterState(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from .UpdaterState import UpdaterState
+            obj = UpdaterState()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # FlatGraph
+    def UpdaterStateLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def FlatGraphStart(builder): builder.StartObject(9)
 def FlatGraphAddId(builder, id): builder.PrependInt64Slot(0, id, 0)
 def FlatGraphAddVariables(builder, variables): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(variables), 0)
 def FlatGraphStartVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
@@ -139,4 +166,7 @@ def FlatGraphAddPlaceholders(builder, placeholders): builder.PrependUOffsetTRela
 def FlatGraphStartPlaceholdersVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatGraphAddLossVariables(builder, lossVariables): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(lossVariables), 0)
 def FlatGraphStartLossVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatGraphAddTrainingConfig(builder, trainingConfig): builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(trainingConfig), 0)
+def FlatGraphAddUpdaterState(builder, updaterState): builder.PrependUOffsetTRelativeSlot(8, flatbuffers.number_types.UOffsetTFlags.py_type(updaterState), 0)
+def FlatGraphStartUpdaterStateVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatGraphEnd(builder): return builder.EndObject()

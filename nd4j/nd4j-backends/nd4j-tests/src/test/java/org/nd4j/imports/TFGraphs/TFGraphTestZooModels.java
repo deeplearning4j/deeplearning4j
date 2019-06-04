@@ -19,6 +19,7 @@ package org.nd4j.imports.TFGraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -55,14 +57,24 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //2019/01/10 - Need TensorArray support - https://github.com/deeplearning4j/deeplearning4j/issues/6972
+            //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+
+            //2019/05/15 - CUSTOM CONV2D OP: rank of input array must be equal to 4, but got 0 instead !
+            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
-            "deeplabv3_pascal_train_aug_2018_01_04",
-            "deeplab_mobilenetv2_coco_voc_trainval",
+            //2019/05/15 - Strided slice: "Can't assign new value to the array: this shape [3]; other shape: [3, 3]"
+            //2019/05/17 - https://github.com/deeplearning4j/deeplearning4j/issues/7751
+            "faster_rcnn_resnet101_coco_2018_01_28"
+    };
+
+    public static final String[] IGNORE_REGEXES_LIBND4J_EXEC_ONLY = {
+            // 2019/05/20 - Buffer is too big to export? https://github.com/deeplearning4j/deeplearning4j/issues/7760
+            // File: C:/DL4J/Git/deeplearning4j/libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h, Line 668
+            //Expression: size() < FLATBUFFERS_MAX_BUFFER_SIZE
+            "deeplabv3_pascal_train_aug_2018_01_04"
     };
 
     @Rule
@@ -130,16 +142,30 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                         //Extract specific file
                         toExtract = split[2];
                     } else {
+                        List<String> pbFiles = new ArrayList<>();
                         for (String f : files) {
                             if (f.endsWith(".pb")) {
-                                if (toExtract != null) {
-                                    throw new IllegalStateException("Found multiple .pb files in archive: " + toExtract + " and " + f);
+                                pbFiles.add(f);
+                            }
+                        }
+
+                        if(pbFiles.size() == 1){
+                            toExtract = pbFiles.get(0);
+                        } else if(pbFiles.size() == 0){
+                            toExtract = null;
+                        } else {
+                            //Multiple files... try to find "frozen_inference_graph.pb"
+                            for(String str : pbFiles){
+                                if(str.endsWith("frozen_inference_graph.pb")){
+                                    toExtract = str;
                                 }
-                                toExtract = f;
+                            }
+                            if(toExtract == null){
+                                throw new IllegalStateException("Found multiple .pb files in archive: " + localFile + " - pb files in archive: " + pbFiles);
                             }
                         }
                     }
-                    Preconditions.checkState(toExtract != null, "Found to .pb files in archive: %s", localFile.getAbsolutePath());
+                    Preconditions.checkState(toExtract != null, "Found no .pb files in archive: %s", localFile.getAbsolutePath());
 
                     Preconditions.checkNotNull(currentTestDir, "currentTestDir has not been set (is null)");
                     modelFile = new File(currentTestDir, "tf_model.pb");
@@ -213,11 +239,9 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Nd4j.getMemoryManager().setAutoGcWindow(2000);
 
         Nd4j.create(1);
-        for(String s : IGNORE_REGEXES){
-            if(modelName.matches(s)){
-                log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
-                OpValidationSuite.ignoreFailing();
-            }
+        if(ArrayUtils.contains(IGNORE_REGEXES, modelName)){
+            log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, modelName);
+            OpValidationSuite.ignoreFailing();
         }
 
         Double maxRE = 1e-3;
@@ -227,6 +251,10 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
 
+        if(ArrayUtils.contains(IGNORE_REGEXES_LIBND4J_EXEC_ONLY, modelName)){
+            log.warn("\n\tIGNORING MODEL FOR LIBND4J EXECUTION ONLY: ");
+            return;
+        }
 
         //Libnd4j exec:
         currentTestDir = testDir.newFolder();

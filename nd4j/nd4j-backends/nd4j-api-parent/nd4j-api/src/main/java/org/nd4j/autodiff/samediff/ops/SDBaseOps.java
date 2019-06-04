@@ -2828,6 +2828,20 @@ public abstract class SDBaseOps {
     }
 
     /**
+     * @see #tile(String, SDVariable, int...)
+     */
+    public SDVariable tile(SDVariable x, SDVariable repeat) {
+        return tile(null, x, repeat);
+    }
+
+    /**
+     * @see #tile(String, SDVariable, int...)
+     */
+    public SDVariable tile(String name, SDVariable x, SDVariable repeat) {
+        SDVariable result = f().tile(x, repeat);
+        return updateVariableNameAndReference(result, name);
+    }
+    /**
      * Matrix transpose operation: If input has shape [a,b] output has shape [b,a]
      *
      * @param x Input variable

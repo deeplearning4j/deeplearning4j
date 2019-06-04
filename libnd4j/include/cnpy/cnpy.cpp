@@ -104,6 +104,60 @@ char cnpy::mapType() {
     else return '?';
 }
 
+nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
+
+    // indices for type & data size
+    const int st = 10;
+    const int ti = 22;
+    const int si = 23;
+
+    // read first char to make sure it looks like a header
+    if (data == nullptr || data[st] != '{')
+        throw std::runtime_error("cnpy::dataTypeFromHeader() - provided pointer doesn't look like a pointer to numpy header");
+
+    const auto t = data[ti];
+    const auto s = data[si];
+
+    switch (t) {
+        case 'i':
+            switch (s) {
+                case '1': return nd4j::DataType::INT8;
+                case '2': return nd4j::DataType::INT16;
+                case '4': return nd4j::DataType::INT32;
+                case '8': return nd4j::DataType::INT64;
+                default:
+                    throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Integer data types import");
+            }
+            break;
+        case 'f':
+            switch (s) {
+                case '1': return nd4j::DataType::FLOAT8;
+                case '2': return nd4j::DataType::HALF;
+                case '4': return nd4j::DataType::FLOAT32;
+                case '8': return nd4j::DataType::DOUBLE;
+                default:
+                    throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Float data types import");
+            }
+            break;
+        case 'u':
+            switch (s) {
+                case '1': return nd4j::DataType::UINT8;
+                case '2': return nd4j::DataType::UINT16;
+                case '4': return nd4j::DataType::UINT32;
+                case '8': return nd4j::DataType::UINT64;
+                default:
+                    throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Unsigned data types import");
+            }
+            break;
+        case 'c':
+            throw std::runtime_error("Import of complex data types isn't supported yet");
+        default:
+            throw std::runtime_error("Unknown type marker");
+    }
+
+    return nd4j::DataType::INHERIT;
+}
+
 template <typename T>
 std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs) {
     //write in little endian

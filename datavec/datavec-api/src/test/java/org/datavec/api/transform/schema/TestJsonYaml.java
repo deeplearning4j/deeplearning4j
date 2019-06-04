@@ -30,12 +30,23 @@ public class TestJsonYaml {
     @Test
     public void testToFromJsonYaml() {
 
-        Schema schema = new Schema.Builder().addColumnCategorical("Cat", "State1", "State2").addColumnDouble("Dbl")
-                        .addColumnDouble("Dbl2", null, 100.0, true, false).addColumnInteger("Int")
-                        .addColumnInteger("Int2", 0, 10).addColumnLong("Long").addColumnLong("Long2", -100L, null)
-                        .addColumnString("Str").addColumnString("Str2", "someregexhere", 1, null)
-                        .addColumnTime("TimeCol", DateTimeZone.UTC)
-                        .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L).build();
+        Schema schema = new Schema.Builder()
+                .addColumnCategorical("Cat", "State1", "State2")
+                .addColumnDouble("Dbl")
+                .addColumnDouble("Dbl2", null, 100.0, true, false)
+                .addColumnInteger("Int")
+                .addColumnInteger("Int2", 0, 10)
+                .addColumnLong("Long")
+                .addColumnLong("Long2", -100L, null)
+                .addColumnString("Str")
+                .addColumnString("Str2", "someregexhere", 1, null)
+                .addColumnTime("TimeCol", DateTimeZone.UTC)
+                .addColumnTime("TimeCol2", DateTimeZone.UTC, null, 1000L)
+                .addColumnNDArray("ndarray", new long[]{1, 10})
+                .addColumnBoolean("boolean")
+                .addColumnFloat("float")
+                .addColumnFloat("float2", -100f, 100f, true, false)
+                .build();
 
         String asJson = schema.toJson();
         //        System.out.println(asJson);

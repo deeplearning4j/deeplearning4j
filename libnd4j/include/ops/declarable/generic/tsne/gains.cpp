@@ -14,37 +14,36 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff.samediff.flow;
+//
+// @author George A. Shulinok <sgazeos@gmail.com), created on 4/18/2019.
+//
 
-import lombok.Data;
-import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_barnes_gains)
 
-/**
- * This class describe Node state during execution time.
- *
- * @author raver119@gmail.com
- */
-@Data
-public class NodeState {
-    private String nodeName;
-    private boolean active = true;
-    private int activeBranch = 0;
-    private boolean executed = false;
-    private long numCycles = 0;
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/BarnesHutTsne.h>
 
-    private int rewindPosition = -1;
-    private String rewindNode;
+namespace nd4j {
+namespace ops  {
+		
+    OP_IMPL(barnes_gains, 3, 1, true) {
+        auto input  = INPUT_VARIABLE(0);
+        auto gradX = INPUT_VARIABLE(1);
+        auto epsilon = INPUT_VARIABLE(2);
 
-    public NodeState(@NonNull String nodeName) {
-        this.nodeName = nodeName;
+        auto output = OUTPUT_VARIABLE(0);
+
+        helpers::barnes_gains(input, gradX, epsilon, output);
+        return Status::OK();
     }
 
-    public void incrementNumberOfCycles() {
-        numCycles++;
-    }
-
-    public long getNumberOfCycles() {
-        return numCycles;
+    DECLARE_TYPES(barnes_gains) {
+        getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setSameMode(true);
     }
 }
+}
+
+#endif

@@ -2689,6 +2689,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native Pointer getNpyArrayFromMap(Pointer map, int index);
 
+    public native int dataTypeFromNpyHeader(Pointer header);
+
     public native Pointer getNpyArrayData(Pointer npArray);
 
     public native int getNpyArrayRank(Pointer npArray);
@@ -11975,6 +11977,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
 // #include <ops/declarable/headers/tests.h>
+// #include <ops/declarable/headers/BarnesHutTsne.h>
 // #include <dll.h>
 // #include <helpers/shape.h>
 // #include <helpers/TAD.h>

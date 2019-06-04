@@ -223,7 +223,7 @@ namespace nd4j {
                     (*slice_dim0) &= (e == 0 && stride_idx == 1) || begin_and_end_masked;
                 }
 
-                int interval_length;
+                int interval_length = 1;
                 bool known_interval = false;
                 if (dense_spec.begin_valid && dense_spec.end_valid) {
                     interval_length = end_idx - begin_idx;
@@ -246,7 +246,7 @@ namespace nd4j {
                 if (known_interval) {
                     int size_i;
                     if (interval_length == 0 || ((interval_length < 0) != (stride_idx < 0))) {
-                        size_i = 0;
+                        size_i = input_shape.size() == 2 && input_shape[0] == 1? 1: 0;
                     } else {
                         size_i = interval_length / stride_idx + (interval_length % stride_idx != 0 ? 1 : 0);
                     }
@@ -283,7 +283,10 @@ namespace nd4j {
             final_shape->clear();
             for (auto gather_index : dense_spec.final_shape_gather_indices) {
                 if (gather_index >= 0) {
-                    final_shape->emplace_back(preshape.at(gather_index));
+                    if (preshape.size() > gather_index)
+                        final_shape->emplace_back(preshape.at(gather_index));
+                    else
+                        final_shape->emplace_back(1);
                 } else if (gather_index == kNewAxis) {
                     final_shape->emplace_back(1);
                 }
@@ -345,6 +348,7 @@ namespace nd4j {
                 elements = v_begin->lengthOf();
 
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
+                REQUIRE_TRUE((v_begin->rankOf() == 1 ) && (v_begin->rankOf() == v_end->rankOf()), 0, "StridedSlice: Rank of begin and ends should be 1, but %i given instead", (int)v_end->rankOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
                     begin.emplace_back(v_begin->e<int>(e));
@@ -356,6 +360,7 @@ namespace nd4j {
                     auto v_stride = INPUT_VARIABLE(3);
 
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
+                    REQUIRE_TRUE((v_begin->rankOf() == v_stride->rankOf()), 0, "StridedSlice: Rank of begin and ends should be %i, but %i given instead", (int) v_begin->rankOf(), v_stride->rankOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
                         strides.emplace_back(v_stride->e<int>(e));
@@ -399,16 +404,15 @@ namespace nd4j {
             bool is_dim0;
 
             // FIXME: remove this method once we get 1D vectors supported
-            vectorize(input_shape);
+            //vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
-
-            if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
-                z->assign(x->e<float>(indices[0]));
-            }
-            else {
-                auto sub = (*x)(indices, true, true);
-                z->assign(sub);
-            }
+//            if(z->lengthOf() == 1 && !z->isEmpty() && (input_shape.size() == 2 && input_shape[0] == 1)) { //(indices.size() == 6) && (indices[2] - indices[0] == 1)) {
+//                z->assign(x->e<float>(indices[0]));
+//            }
+//            else {
+            auto sub = (*x)(indices, true, true);
+            z->assign(sub);
+//            }
 
             return Status::OK();
         }
@@ -435,7 +439,7 @@ namespace nd4j {
             std::vector<int> strides;
 
             // if that's live - shape will be resolved in runtime
-            if (dim_values == 0 ) {
+            if (block.width() > 1) {
                 begin = INPUT_VARIABLE(1)->template asVectorT<int>();
                 end = INPUT_VARIABLE(2)->template asVectorT<int>();
                 strides = INPUT_VARIABLE(3)->template asVectorT<int>();
@@ -479,19 +483,21 @@ namespace nd4j {
             }
 
             Nd4jLong *newShape;
-            std::vector<Nd4jLong> input_shape(shape::rank(inShape));
+            std::vector<Nd4jLong> input_shape; //(shape::rank(inShape));
             auto inputLen = shape::length(inShape);
             std::vector<Nd4jLong> shape;
-            
-            for (int e = 0; e < shape::rank(inShape); e++)
-                input_shape[e] = shape::shapeOf(inShape)[e];
+
+            auto rank = shape::rank(inShape);
+            auto shortShape = shape::shapeOf(inShape);
+            for (auto e = 0; e < rank; e++)
+                input_shape.emplace_back(shortShape[e]);
 
             bool is_identity;
             bool is_simple_slice;
             bool is_dim0;
 
             // FIXME: remove this, once we bring in 1D NDArrays 
-            vectorize(input_shape);
+            //vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
             bool nonEmpty = shape.size() > 0;
             if (nonEmpty)
@@ -558,8 +564,8 @@ namespace nd4j {
             } else if (block.width() >= 3) {
                 isLive = true;
 
-                auto v_begin = INPUT_VARIABLE(1);
-                auto v_end = INPUT_VARIABLE(2);
+                auto v_begin = INPUT_VARIABLE(2);
+                auto v_end = INPUT_VARIABLE(3);
 
                 elements = v_begin->lengthOf();
 
@@ -572,7 +578,7 @@ namespace nd4j {
                     end.emplace_back(v_end->e<int>(e));
 
                 if (block.width() >= 4) {
-                    auto v_stride = INPUT_VARIABLE(3);
+                    auto v_stride = INPUT_VARIABLE(4);
 
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSliceBP: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 

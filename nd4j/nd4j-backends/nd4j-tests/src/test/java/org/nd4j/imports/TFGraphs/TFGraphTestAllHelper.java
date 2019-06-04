@@ -190,8 +190,24 @@ public class TFGraphTestAllHelper {
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
+                    if(!tfPred.equalShapes(nd4jPred)){
+                        fail("Output node \"" + outputNode + "\" SameDiff output shape does not match TF output shape: SameDiff shape: " +
+                                Arrays.toString(nd4jPred.shape()) + " vs. TF shape: " + Arrays.toString(tfPred.shape()));
+                    }
+
+                    if(tfPred.dataType() != nd4jPred.dataType()){
+                        fail("Output node \"" + outputNode + "\" SameDiff output datatype does not match TF output : SameDiff type: " +
+                                nd4jPred.dataType() + " vs. TF datatype: " + tfPred.dataType());
+                    }
+
+                    if(!tfPred.dataType().isFPType()){
+                        //Can't do relative error on long type...
+                        tfPred = tfPred.castTo(DataType.DOUBLE);
+                        nd4jPred = nd4jPred.castTo(DataType.DOUBLE);
+                    }
+
                     INDArray diff = Transforms.abs(tfPred.sub(nd4jPred), false);
-                    INDArray absErrorMask = diff.gte(minAbsErrorOverride).castTo(Nd4j.defaultFloatingPointType());   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
+                    INDArray absErrorMask = diff.gte(minAbsErrorOverride).castTo(tfPred.dataType());   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
                     INDArray sumAbs = Transforms.abs(tfPred, true).addi(Transforms.abs(nd4jPred, true));
                     BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
                     INDArray relError = diff.divi(sumAbs);

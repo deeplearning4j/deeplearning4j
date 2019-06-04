@@ -106,7 +106,7 @@ public class CudaTests extends BaseNd4jTest {
         assertEquals(exp, arrayA);
     }
 
-    @Test(timeout = 10000L)
+    @Test(timeout = 40000L)
     public void testContextSpam() throws Exception {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
@@ -145,7 +145,7 @@ public class CudaTests extends BaseNd4jTest {
     }
 
     @Ignore
-    @Test(timeout = 100000L)
+    @Test(timeout = 180000L)
     public void testContextSpam_2() throws Exception {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;

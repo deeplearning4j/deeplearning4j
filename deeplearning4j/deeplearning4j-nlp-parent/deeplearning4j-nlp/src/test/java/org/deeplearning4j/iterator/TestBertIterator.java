@@ -53,7 +53,7 @@ public class TestBertIterator {
 
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
 
         BertIterator b = BertIterator.builder()
                 .tokenizer(t)
@@ -125,7 +125,7 @@ public class TestBertIterator {
     @Test(timeout = 20000L)
     public void testBertUnsupervised() throws Exception {
         //Task 1: Unsupervised
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         BertIterator b = BertIterator.builder()
                 .tokenizer(t)
                 .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
@@ -156,7 +156,7 @@ public class TestBertIterator {
     public void testLengthHandling() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
         List<String> tokens = t.create(toTokenize1).getTokens();
@@ -225,7 +225,7 @@ public class TestBertIterator {
     public void testMinibatchPadding() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
-        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, c);
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
         List<String> tokens = t.create(toTokenize1).getTokens();

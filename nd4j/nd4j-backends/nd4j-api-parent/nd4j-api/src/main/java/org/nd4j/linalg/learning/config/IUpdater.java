@@ -24,6 +24,7 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * IUpdater interface: used for configuration and instantiation of updaters - both built-in and custom.<br>
@@ -54,6 +55,8 @@ public interface IUpdater extends Serializable, Cloneable {
      * @return
      */
     GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray);
+
+    GradientUpdater instantiate(Map<String,INDArray> updaterState, boolean initializeStateArrays);
 
     boolean equals(Object updater);
 
