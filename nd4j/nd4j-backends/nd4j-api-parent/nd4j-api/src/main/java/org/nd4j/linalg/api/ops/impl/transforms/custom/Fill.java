@@ -68,6 +68,10 @@ public class Fill extends DynamicCustomOp {
         this.value = value;
     }
 
+    public Fill(INDArray shape, INDArray value, INDArray result) {
+        super(null, new INDArray[]{shape, value}, new INDArray[]{result});
+    }
+
 
     protected void addArgs() {
         addTArgument(value);
@@ -119,22 +123,42 @@ public class Fill extends DynamicCustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
 
-        int numArgs = args().length;
-        if(numArgs < 1)
-            return Collections.emptyList();
 
-        SDVariable[] args = args();
-        INDArray shape = args()[0].getArr();
-        INDArray value = (args.length > 1 ? args()[1].getArr() : null);
+        INDArray shape;
+        DataType dt = outputDataType;
+        if(sameDiff != null ) {
+
+            int numArgs = args().length;
+            if (numArgs < 1)
+                return Collections.emptyList();
+
+            SDVariable[] args = args();
+            shape = !inputArguments.isEmpty() ? inputArguments.get(0) : args()[0].getArr();
+            if(args.length > 1){
+                dt = arg(1).getArr().dataType();
+            } else if(inputArguments.size() > 1){
+                dt = inputArguments.get(1).dataType();
+            }
+        } else {
+            if(numInputArguments() == 0) {
+                shape = null;
+            } else {
+                shape = inputArguments.get(0);
+                if(inputArguments.size() > 1){
+                    dt = inputArguments.get(1).dataType();
+                }
+            }
+        }
         if(shape == null)
             return Collections.emptyList();
         else {
             //TODO properly allow customizing datatype
-            if(shape.isEmpty()){
-                //Edge case, mainly for TF import
-                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));   //TODO is this OK?
+            if(shape.isEmpty() || (shape.length() > 0 && shape.minNumber().intValue() == 0)){
+                //Empty shape: Edge case, mainly for TF import
+                //Also 'shape with zero' are empty arrays in TF
+                return Collections.singletonList(LongShapeDescriptor.empty(dt));
             } else {
-                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));
+                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), dt));
             }
         }
     }

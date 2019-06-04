@@ -144,6 +144,11 @@ public class LongShapeDescriptor {
         return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, false);
     }
 
+    public static LongShapeDescriptor empty(@NonNull DataType dataType){
+        long[] l = new long[0];
+        return fromShape(l, l, 1, 'c', dataType, true);
+    }
+
     public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty){
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
