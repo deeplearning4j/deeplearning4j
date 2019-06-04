@@ -50,7 +50,7 @@ public class NearestNeighborTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    @Ignore("AB 2019/05/21 - Failing - Issue #7657")
+    //@Ignore("AB 2019/05/21 - Failing - Issue #7657")
     public void testNearestNeighbor() {
         double[][] data = new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}};
         INDArray arr = Nd4j.create(data);

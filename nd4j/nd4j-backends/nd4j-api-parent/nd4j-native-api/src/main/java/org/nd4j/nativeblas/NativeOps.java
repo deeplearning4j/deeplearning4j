@@ -1146,6 +1146,16 @@ public abstract class NativeOps extends Pointer {
      */
     public abstract void tryPointer(Pointer extras, Pointer buffer, int numBytesToRead);
 
+
+    /**
+     * This method returns data type from npy header
+     *
+     * PLEASE NOTE: dont use output directly, use DataType.fromInt(output) instead
+     * @param numpyHeader
+     * @return
+     */
+    public abstract int dataTypeFromNpyHeader(Pointer numpyHeader);
+
     public abstract Pointer shapeBuffer(int rank, @Cast("Nd4jLong *") LongPointer shape, @Cast("Nd4jLong *") LongPointer strides, int dtype, char order, long ews, boolean empty);
 
     public abstract Pointer constantBuffer(int dtype, DoublePointer data, int length);

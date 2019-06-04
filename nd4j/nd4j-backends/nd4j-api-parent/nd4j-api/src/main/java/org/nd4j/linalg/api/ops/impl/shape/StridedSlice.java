@@ -142,23 +142,6 @@ public class StridedSlice extends DynamicCustomOp {
         val inputEnd = nodeDef.getInput(2);
         val inputStrides = nodeDef.getInput(3);
 
-        NodeDef beginNode = null;
-        NodeDef endNode = null;
-        NodeDef strides = null;
-
-        for(int i = 0; i < graph.getNodeCount(); i++) {
-            if(graph.getNode(i).getName().equals(inputBegin)) {
-                beginNode = graph.getNode(i);
-            }
-            if(graph.getNode(i).getName().equals(inputEnd)) {
-                endNode = graph.getNode(i);
-            }
-            if(graph.getNode(i).getName().equals(inputStrides)) {
-                strides = graph.getNode(i);
-            }
-        }
-
-
         // bit masks for this slice
         val bm = nodeDef.getAttrOrThrow("begin_mask");
         val xm = nodeDef.getAttrOrThrow("ellipsis_mask");
@@ -166,12 +149,17 @@ public class StridedSlice extends DynamicCustomOp {
         val nm = nodeDef.getAttrOrThrow("new_axis_mask");
         val sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
 
-        addIArgument((int) bm.getI());
-        addIArgument((int) xm.getI());
-        addIArgument((int) em.getI());
+        beginMask = (int)bm.getI();
+        ellipsisMask = (int) xm.getI();
+        endMask = (int) em.getI();
+        newAxisMask = (int) nm.getI();
+        shrinkAxisMask = (int) sm.getI();
 
-        addIArgument((int) nm.getI());
-        addIArgument((int) sm.getI());
+        addIArgument(beginMask);
+        addIArgument(ellipsisMask);
+        addIArgument(endMask);
+        addIArgument(newAxisMask);
+        addIArgument(shrinkAxisMask);
     }
 
 

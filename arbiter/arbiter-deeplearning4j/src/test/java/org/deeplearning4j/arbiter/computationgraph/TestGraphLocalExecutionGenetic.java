@@ -86,8 +86,7 @@ public class TestGraphLocalExecutionGenetic {
 
     @Test
     public void testLocalExecutionDataSources() throws Exception {
-
-        for( int dataApproach = 0; dataApproach<3; dataApproach++ ) {
+        for (int dataApproach = 0; dataApproach < 3; dataApproach++) {
             log.info("////////////////// Starting Test: {} ///////////////////", dataApproach);
 
             //Define: network config (hyperparameter space)
@@ -97,9 +96,8 @@ public class TestGraphLocalExecutionGenetic {
                     .l2(new ContinuousParameterSpace(0.0001, 0.01))
                     .addInputs("in")
                     .addLayer("0",
-                            new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(10, 20))
-                                    .activation(new DiscreteParameterSpace<>(Activation.RELU,
-                                            Activation.TANH))
+                            new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(5, 32))
+                                    .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH, Activation.LEAKYRELU))
                                     .build(), "in") //1-2 identical layers (except nIn)
                     .addLayer("1", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "0")
@@ -114,7 +112,7 @@ public class TestGraphLocalExecutionGenetic {
 
             TestSetLossScoreFunction scoreFunction = new TestSetLossScoreFunction();
 
-            if(dataApproach == 0){
+            if (dataApproach == 0) {
                 ds = TestDL4JLocalExecution.MnistDataSource.class;
                 dsP = new Properties();
                 dsP.setProperty("minibatch", "8");
@@ -122,7 +120,7 @@ public class TestGraphLocalExecutionGenetic {
                 candidateGenerator = new GeneticSearchCandidateGenerator.Builder(mls, scoreFunction)
                         .populationModel(new PopulationModel.Builder().populationSize(5).build())
                         .build();
-            } else if(dataApproach == 1) {
+            } else if (dataApproach == 1) {
                 //DataProvider approach
                 dp = new TestDL4JLocalExecution.MnistDataProvider();
 
@@ -154,7 +152,7 @@ public class TestGraphLocalExecutionGenetic {
                             new MaxCandidatesCondition(10))
                     .build();
 
-            IOptimizationRunner runner = new LocalOptimizationRunner(configuration,new ComputationGraphTaskCreator(new ClassificationEvaluator()));
+            IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new ComputationGraphTaskCreator(new ClassificationEvaluator()));
 
             runner.execute();
 

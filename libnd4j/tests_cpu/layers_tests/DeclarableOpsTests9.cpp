@@ -688,6 +688,47 @@ TEST_F(DeclarableOpsTests9, tile_bp_test6) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_bp_test7) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2, 1, 3}, {1.,2.,3.,4.,5.,6.});
+    auto reps     = NDArrayFactory::create<int>('c', {1, 3}, {1, 3, 2});
+    auto gradO    = NDArrayFactory::create<double>('c', {2, 3, 6});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 1, 3}, {0.51, 0.57, 0.63, 1.59, 1.65, 1.71});
+
+    gradO.linspace(0.01, 0.01);
+
+    nd4j::ops::tile_bp op;
+    auto results = op.execute({&input, &reps, &gradO}, {}, {});
+    auto gradI = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_test1) {
+
+    auto input  = NDArrayFactory::create<double>('c', {1, 6}, {1.,2.,3.,4.,5.,6.});
+    auto reps   = NDArrayFactory::create<int>('c', {1, 2}, {2, 1});
+    auto expOut = NDArrayFactory::create<double>('c', {2, 6,}, {1.,2.,3.,4.,5.,6., 1.,2.,3.,4.,5.,6.});
+
+    expOut.printIndexedBuffer("expOut");
+
+    nd4j::ops::tile op;
+    auto results = op.execute({&input, &reps}, {}, {});
+    auto out = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expOut.isSameShape(out));
+    ASSERT_TRUE(expOut.equalsTo(out));
+
+    delete results;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, matmul_test1) {

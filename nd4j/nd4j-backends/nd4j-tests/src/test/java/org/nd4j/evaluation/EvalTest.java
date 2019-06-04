@@ -28,6 +28,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -1044,6 +1045,49 @@ public class EvalTest extends BaseNd4jTest {
 
         String s2 = e1.stats();
         assertEquals(s1, s2);
+    }
 
+    @Test
+    public void testEvalStatsBinaryCase(){
+        //Make sure we report class 1 precision/recall/f1 not macro averaged, for binary case
+
+        Evaluation e = new Evaluation();
+
+        INDArray l0 = Nd4j.createFromArray(new double[]{1,0}).reshape(1,2);
+        INDArray l1 = Nd4j.createFromArray(new double[]{0,1}).reshape(1,2);
+
+        e.eval(l1, l1);
+        e.eval(l1, l1);
+        e.eval(l1, l1);
+        e.eval(l0, l0);
+        e.eval(l1, l0);
+        e.eval(l1, l0);
+        e.eval(l0, l1);
+
+        double tp = 3;
+        double fp = 1;
+        double fn = 2;
+
+        double prec = tp / (tp + fp);
+        double rec = tp / (tp + fn);
+        double f1 = 2 * prec * rec / (prec + rec);
+
+        assertEquals(prec, e.precision(), 1e-6);
+        assertEquals(rec, e.recall(), 1e-6);
+
+        DecimalFormat df = new DecimalFormat("0.0000");
+
+        String stats = e.stats();
+        //System.out.println(stats);
+
+        String stats2 = stats.replaceAll("( )+", " ");
+
+        String recS = " Recall: " + df.format(rec);
+        String preS = " Precision: " + df.format(prec);
+        String f1S = "F1 Score: " + df.format(f1);
+
+        assertTrue(stats2, stats2.contains(recS));
+        assertTrue(stats2, stats2.contains(preS));
+        assertTrue(stats2, stats2.contains(f1S));
     }
 }

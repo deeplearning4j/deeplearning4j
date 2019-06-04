@@ -2244,4 +2244,42 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         Nd4j.exec(op);  //Execution is OK
     }
+
+    @Test
+    public void testEmptySlice1(){
+        INDArray in = Nd4j.createFromArray(38);
+        INDArray begin = Nd4j.createFromArray(1);
+        INDArray size = Nd4j.createFromArray(-1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("slice")
+                .addInputs(in, begin, size)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertTrue(l.get(0).isEmpty());
+
+        INDArray out = Nd4j.empty(DataType.INT);
+        op.setOutputArgument(0, out);
+
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testEmptySlice2(){
+        INDArray in = Nd4j.createFromArray(38);
+        INDArray begin = Nd4j.createFromArray(0);
+        INDArray size = Nd4j.createFromArray(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("slice")
+                .addInputs(in, begin, size)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertTrue(l.get(0).isEmpty());
+
+        INDArray out = Nd4j.empty(DataType.INT);
+        op.setOutputArgument(0, out);
+
+        Nd4j.exec(op);
+    }
 }

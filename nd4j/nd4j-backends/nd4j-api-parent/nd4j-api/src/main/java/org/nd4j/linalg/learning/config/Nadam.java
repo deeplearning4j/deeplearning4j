@@ -25,6 +25,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Setup and DynamicCustomOpsBuilder for Nadam updater.
@@ -88,6 +89,13 @@ public class Nadam implements IUpdater {
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
+        return u;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        NadamUpdater u = new NadamUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
         return u;
     }
 

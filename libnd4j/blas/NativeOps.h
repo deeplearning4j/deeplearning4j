@@ -1460,6 +1460,8 @@ public:
         throw std::runtime_error("No array at index.");
     }
 
+    int dataTypeFromNpyHeader(void *header);
+
     void* getNpyArrayData(void *npArray){
         cnpy::NpyArray* npyArray2 = reinterpret_cast<cnpy::NpyArray*>(npArray);
         return reinterpret_cast<void*>(npyArray2->data);

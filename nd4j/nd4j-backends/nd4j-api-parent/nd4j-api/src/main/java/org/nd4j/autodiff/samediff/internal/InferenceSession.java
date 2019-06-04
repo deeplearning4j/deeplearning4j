@@ -19,6 +19,8 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -101,7 +103,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs) {
+    public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
+        INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        if(listeners != null && listeners.size() > 0){
+            SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+            for(Listener l : listeners){
+                l.opExecution(sameDiff, at, sdOp, out);
+            }
+        }
+        return out;
+    }
+
+    public INDArray[] getOutputsHelper(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                       Set<String> constAndPhInputs){
 
         int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size())
                 + (allIterInputs == null ? 0 : allIterInputs.size());

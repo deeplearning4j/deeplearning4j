@@ -35,12 +35,11 @@ enum UIEventType {
   UIEventType_SUMMARY_STATISTICS = 6,
   UIEventType_OP_TIMING = 7,
   UIEventType_HARDWARE_STATE = 8,
-  UIEventType_GC_EVENT = 9,
   UIEventType_MIN = UIEventType_ADD_NAME,
-  UIEventType_MAX = UIEventType_GC_EVENT
+  UIEventType_MAX = UIEventType_HARDWARE_STATE
 };
 
-inline const UIEventType (&EnumValuesUIEventType())[10] {
+inline const UIEventType (&EnumValuesUIEventType())[9] {
   static const UIEventType values[] = {
     UIEventType_ADD_NAME,
     UIEventType_SCALAR,
@@ -50,8 +49,7 @@ inline const UIEventType (&EnumValuesUIEventType())[10] {
     UIEventType_IMAGE,
     UIEventType_SUMMARY_STATISTICS,
     UIEventType_OP_TIMING,
-    UIEventType_HARDWARE_STATE,
-    UIEventType_GC_EVENT
+    UIEventType_HARDWARE_STATE
   };
   return values;
 }
@@ -67,7 +65,6 @@ inline const char * const *EnumNamesUIEventType() {
     "SUMMARY_STATISTICS",
     "OP_TIMING",
     "HARDWARE_STATE",
-    "GC_EVENT",
     nullptr
   };
   return names;
@@ -76,6 +73,59 @@ inline const char * const *EnumNamesUIEventType() {
 inline const char *EnumNameUIEventType(UIEventType e) {
   const size_t index = static_cast<int>(e);
   return EnumNamesUIEventType()[index];
+}
+
+enum UIEventSubtype {
+  UIEventSubtype_NONE = 0,
+  UIEventSubtype_EVALUATION = 1,
+  UIEventSubtype_LOSS = 2,
+  UIEventSubtype_LEARNING_RATE = 3,
+  UIEventSubtype_TUNING_METRIC = 4,
+  UIEventSubtype_PERFORMANCE = 5,
+  UIEventSubtype_PROFILING = 6,
+  UIEventSubtype_FEATURE_LABEL = 7,
+  UIEventSubtype_PREDICTION = 8,
+  UIEventSubtype_USER_CUSTOM = 9,
+  UIEventSubtype_MIN = UIEventSubtype_NONE,
+  UIEventSubtype_MAX = UIEventSubtype_USER_CUSTOM
+};
+
+inline const UIEventSubtype (&EnumValuesUIEventSubtype())[10] {
+  static const UIEventSubtype values[] = {
+    UIEventSubtype_NONE,
+    UIEventSubtype_EVALUATION,
+    UIEventSubtype_LOSS,
+    UIEventSubtype_LEARNING_RATE,
+    UIEventSubtype_TUNING_METRIC,
+    UIEventSubtype_PERFORMANCE,
+    UIEventSubtype_PROFILING,
+    UIEventSubtype_FEATURE_LABEL,
+    UIEventSubtype_PREDICTION,
+    UIEventSubtype_USER_CUSTOM
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesUIEventSubtype() {
+  static const char * const names[] = {
+    "NONE",
+    "EVALUATION",
+    "LOSS",
+    "LEARNING_RATE",
+    "TUNING_METRIC",
+    "PERFORMANCE",
+    "PROFILING",
+    "FEATURE_LABEL",
+    "PREDICTION",
+    "USER_CUSTOM",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameUIEventSubtype(UIEventSubtype e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesUIEventSubtype()[index];
 }
 
 enum UIHistogramType {
@@ -113,16 +163,20 @@ inline const char *EnumNameUIHistogramType(UIHistogramType e) {
 struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_EVENTTYPE = 4,
-    VT_NAMEIDX = 6,
-    VT_TIMESTAMP = 8,
-    VT_ITERATION = 10,
-    VT_EPOCH = 12,
-    VT_VARIABLEID = 14,
-    VT_FRAMEITER = 16,
-    VT_PLUGIN = 18
+    VT_EVENTSUBTYPE = 6,
+    VT_NAMEIDX = 8,
+    VT_TIMESTAMP = 10,
+    VT_ITERATION = 12,
+    VT_EPOCH = 14,
+    VT_VARIABLEID = 16,
+    VT_FRAMEITER = 18,
+    VT_PLUGIN = 20
   };
   UIEventType eventType() const {
     return static_cast<UIEventType>(GetField<int8_t>(VT_EVENTTYPE, 0));
+  }
+  UIEventSubtype eventSubType() const {
+    return static_cast<UIEventSubtype>(GetField<int8_t>(VT_EVENTSUBTYPE, 0));
   }
   int32_t nameIdx() const {
     return GetField<int32_t>(VT_NAMEIDX, 0);
@@ -148,6 +202,7 @@ struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_EVENTTYPE) &&
+           VerifyField<int8_t>(verifier, VT_EVENTSUBTYPE) &&
            VerifyField<int32_t>(verifier, VT_NAMEIDX) &&
            VerifyField<int64_t>(verifier, VT_TIMESTAMP) &&
            VerifyField<int32_t>(verifier, VT_ITERATION) &&
@@ -165,6 +220,9 @@ struct UIEventBuilder {
   flatbuffers::uoffset_t start_;
   void add_eventType(UIEventType eventType) {
     fbb_.AddElement<int8_t>(UIEvent::VT_EVENTTYPE, static_cast<int8_t>(eventType), 0);
+  }
+  void add_eventSubType(UIEventSubtype eventSubType) {
+    fbb_.AddElement<int8_t>(UIEvent::VT_EVENTSUBTYPE, static_cast<int8_t>(eventSubType), 0);
   }
   void add_nameIdx(int32_t nameIdx) {
     fbb_.AddElement<int32_t>(UIEvent::VT_NAMEIDX, nameIdx, 0);
@@ -202,6 +260,7 @@ struct UIEventBuilder {
 inline flatbuffers::Offset<UIEvent> CreateUIEvent(
     flatbuffers::FlatBufferBuilder &_fbb,
     UIEventType eventType = UIEventType_ADD_NAME,
+    UIEventSubtype eventSubType = UIEventSubtype_NONE,
     int32_t nameIdx = 0,
     int64_t timestamp = 0,
     int32_t iteration = 0,
@@ -217,6 +276,7 @@ inline flatbuffers::Offset<UIEvent> CreateUIEvent(
   builder_.add_nameIdx(nameIdx);
   builder_.add_plugin(plugin);
   builder_.add_variableId(variableId);
+  builder_.add_eventSubType(eventSubType);
   builder_.add_eventType(eventType);
   return builder_.Finish();
 }

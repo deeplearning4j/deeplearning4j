@@ -34,10 +34,8 @@ public abstract class BaseConvolutionConfig {
         try {
             return property.get(this);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
-        return null;
     }
 
 

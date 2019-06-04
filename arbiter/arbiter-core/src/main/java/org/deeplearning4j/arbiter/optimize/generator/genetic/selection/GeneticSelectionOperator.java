@@ -39,7 +39,7 @@ import java.util.Arrays;
 public class GeneticSelectionOperator extends SelectionOperator {
 
     private final static int PREVIOUS_GENES_TO_KEEP = 100;
-    private final static int MAX_NUM_GENERATION_ATTEMPTS = 100;
+    private final static int MAX_NUM_GENERATION_ATTEMPTS = 1024;
 
     private final CrossoverOperator crossoverOperator;
     private final MutationOperator mutationOperator;

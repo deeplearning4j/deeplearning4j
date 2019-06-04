@@ -120,7 +120,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testArgMaxImport_2() throws Exception {
         val graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("/tf_graphs/examples/reductions/argmax3,4,5_-1/frozen_graph.pbtxt").getInputStream());
 
-        graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/argmax_macos.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+        graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/argmax_macos.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build(), true);
 
         log.info(graph.asFlatPrint());
     }
@@ -338,7 +338,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         tg.setArrayForVariable("input",ipod);
 
-        val buffer = tg.asFlatBuffers();
+        val buffer = tg.asFlatBuffers(true);
         assertNotNull(buffer);
 
     }
@@ -353,7 +353,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
 
-        val graph = FlatGraph.getRootAsFlatGraph(tg.asFlatBuffers());
+        val graph = FlatGraph.getRootAsFlatGraph(tg.asFlatBuffers(true));
 
         assertEquals(6, graph.variablesLength());
 //        assertEquals("alpha/Assign", graph.nodes(0).name());
@@ -376,7 +376,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
         // now converting to FlatBuffer
-        val fb = tg.asFlatBuffers();
+        val fb = tg.asFlatBuffers(true);
         assertNotNull(fb);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
@@ -409,7 +409,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
 
         // now converting to FlatBuffer
-        val fb = tg.asFlatBuffers();
+        val fb = tg.asFlatBuffers(true);
         assertNotNull(fb);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
@@ -481,7 +481,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val firstSlice = tg.getVariable("strided_slice");
 
 
-        val fb = tg.asFlatBuffers();
+        val fb = tg.asFlatBuffers(true);
         assertNotNull(fb);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
@@ -504,7 +504,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.setArrayForVariable("input_matrix",input);
         assertNotNull(tg);
 
-        val fb = tg.asFlatBuffers();
+        val fb = tg.asFlatBuffers(true);
         assertNotNull(fb);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
@@ -558,7 +558,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(func.getDimensions());
         assertEquals(0,func.getDimensions()[0]);*/
 
-        ByteBuffer fb = tg.asFlatBuffers();
+        ByteBuffer fb = tg.asFlatBuffers(true);
         assertNotNull(fb);
 
         FlatGraph graph = FlatGraph.getRootAsFlatGraph(fb);
@@ -1011,7 +1011,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
 
-        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_false.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_false.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build(), true);
     }
 
     @Test
@@ -1022,7 +1022,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim_true.pb.txt").getInputStream());
         assertNotNull(tg);
 
-        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_true.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_true.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build(), true);
     }
 
     @Test
@@ -1094,7 +1094,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/g_08/frozen_model.pb").getInputStream());
 
-        val g = tg.asFlatBuffers();
+        val g = tg.asFlatBuffers(true);
     }
 
     @Test

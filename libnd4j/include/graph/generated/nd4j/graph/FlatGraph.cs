@@ -29,6 +29,15 @@ public struct FlatGraph : IFlatbufferObject
   public int PlaceholdersLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
   public string LossVariables(int j) { int o = __p.__offset(16); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
   public int LossVariablesLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string TrainingConfig { get { int o = __p.__offset(18); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetTrainingConfigBytes() { return __p.__vector_as_span(18); }
+#else
+  public ArraySegment<byte>? GetTrainingConfigBytes() { return __p.__vector_as_arraysegment(18); }
+#endif
+  public byte[] GetTrainingConfigArray() { return __p.__vector_as_array<byte>(18); }
+  public UpdaterState? UpdaterState(int j) { int o = __p.__offset(20); return o != 0 ? (UpdaterState?)(new UpdaterState()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
+  public int UpdaterStateLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<FlatGraph> CreateFlatGraph(FlatBufferBuilder builder,
       long id = 0,
@@ -37,9 +46,13 @@ public struct FlatGraph : IFlatbufferObject
       VectorOffset outputsOffset = default(VectorOffset),
       Offset<FlatConfiguration> configurationOffset = default(Offset<FlatConfiguration>),
       VectorOffset placeholdersOffset = default(VectorOffset),
-      VectorOffset lossVariablesOffset = default(VectorOffset)) {
-    builder.StartObject(7);
+      VectorOffset lossVariablesOffset = default(VectorOffset),
+      StringOffset trainingConfigOffset = default(StringOffset),
+      VectorOffset updaterStateOffset = default(VectorOffset)) {
+    builder.StartObject(9);
     FlatGraph.AddId(builder, id);
+    FlatGraph.AddUpdaterState(builder, updaterStateOffset);
+    FlatGraph.AddTrainingConfig(builder, trainingConfigOffset);
     FlatGraph.AddLossVariables(builder, lossVariablesOffset);
     FlatGraph.AddPlaceholders(builder, placeholdersOffset);
     FlatGraph.AddConfiguration(builder, configurationOffset);
@@ -49,7 +62,7 @@ public struct FlatGraph : IFlatbufferObject
     return FlatGraph.EndFlatGraph(builder);
   }
 
-  public static void StartFlatGraph(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartFlatGraph(FlatBufferBuilder builder) { builder.StartObject(9); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
   public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
@@ -72,6 +85,11 @@ public struct FlatGraph : IFlatbufferObject
   public static VectorOffset CreateLossVariablesVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateLossVariablesVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartLossVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddTrainingConfig(FlatBufferBuilder builder, StringOffset trainingConfigOffset) { builder.AddOffset(7, trainingConfigOffset.Value, 0); }
+  public static void AddUpdaterState(FlatBufferBuilder builder, VectorOffset updaterStateOffset) { builder.AddOffset(8, updaterStateOffset.Value, 0); }
+  public static VectorOffset CreateUpdaterStateVector(FlatBufferBuilder builder, Offset<UpdaterState>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateUpdaterStateVectorBlock(FlatBufferBuilder builder, Offset<UpdaterState>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartUpdaterStateVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatGraph> EndFlatGraph(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatGraph>(o);

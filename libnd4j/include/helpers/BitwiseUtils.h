@@ -107,6 +107,18 @@ namespace nd4j {
             return ~v;
         }
 
+        static uint16_t FORCEINLINE flip_bits(uint16_t v) {
+            return ~v;
+        }
+
+        static uint32_t FORCEINLINE flip_bits(uint32_t v) {
+            return ~v;
+        }
+
+        static uint64_t FORCEINLINE flip_bits(uint64_t v) {
+            return ~v;
+        }
+
         static Nd4jLong FORCEINLINE flip_bits(Nd4jLong v) {
             return ~v;
         }

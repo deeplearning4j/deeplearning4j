@@ -21,8 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.compression.BasicNDArrayCompressor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
@@ -46,9 +47,6 @@ public class HistoryProcessor implements IHistoryProcessor {
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private CircularFifoQueue<INDArray> history;
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
-    public static BasicNDArrayCompressor compressor =
-                    BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
-
 
     public HistoryProcessor(Configuration conf) {
         this.conf = conf;
@@ -110,7 +108,7 @@ public class HistoryProcessor implements IHistoryProcessor {
     public INDArray[] getHistory() {
         INDArray[] array = new INDArray[getConf().getHistoryLength()];
         for (int i = 0; i < conf.getHistoryLength(); i++) {
-            array[i] = history.get(i);
+            array[i] = history.get(i).castTo(Nd4j.dataType());
         }
         return array;
     }
@@ -139,7 +137,7 @@ public class HistoryProcessor implements IHistoryProcessor {
         }
         //System.out.println(out.shapeInfoToString());
         out = out.reshape(1, conf.getCroppingHeight(), conf.getCroppingWidth());
-        INDArray compressed = compressor.compress(out);
+        INDArray compressed = out.castTo(DataType.UBYTE);
         return compressed;
     }
 

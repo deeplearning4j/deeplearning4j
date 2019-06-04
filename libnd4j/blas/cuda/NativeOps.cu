@@ -3085,6 +3085,9 @@ void NativeOps::tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
     cudaStreamDestroy(stream);
 }
 
+int NativeOps::dataTypeFromNpyHeader(void *header) {
+    return (int) cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header));
+}
 nd4j::ConstantDataBuffer* NativeOps::shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty) {
     auto buffer = new ConstantDataBuffer();
     *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));

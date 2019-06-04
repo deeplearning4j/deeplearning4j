@@ -70,6 +70,11 @@ public class TestInstantiation extends BaseDL4JTest {
         System.gc();
     }
 
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
+
     @Test
     public void testCnnTrainingDarknet() throws Exception {
         runTest(Darknet19.builder().numClasses(10).build(), "Darknet19", 10);

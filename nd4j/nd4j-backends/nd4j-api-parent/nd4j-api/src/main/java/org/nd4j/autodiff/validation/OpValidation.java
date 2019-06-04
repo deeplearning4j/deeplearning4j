@@ -142,7 +142,7 @@ public class OpValidation {
         //Check serialization
         ByteBuffer serializedBeforeExec = null;
         if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
-            serializedBeforeExec = testCase.sameDiff().asFlatBuffers();
+            serializedBeforeExec = testCase.sameDiff().asFlatBuffers(true);
             Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
         }
 
@@ -182,7 +182,7 @@ public class OpValidation {
 
             ByteBuffer serializedAfterExec = null;
             if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
-                serializedAfterExec = testCase.sameDiff().asFlatBuffers();
+                serializedAfterExec = testCase.sameDiff().asFlatBuffers(true);
                 Preconditions.checkNotNull(serializedAfterExec, "Serialization failed? Null output");
             }
 

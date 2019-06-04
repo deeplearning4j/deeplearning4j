@@ -181,6 +181,9 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray NDArrayFactory::create(DataType type, const int scalar, nd4j::LaunchContext * context);
     template NDArray NDArrayFactory::create(DataType type, const int8_t scalar, nd4j::LaunchContext * context);
     template NDArray NDArrayFactory::create(DataType type, const uint8_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(DataType type, const uint16_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const uint32_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const uint64_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(DataType type, const int16_t scalar, nd4j::LaunchContext * context);
     template NDArray NDArrayFactory::create(DataType type, const bool scalar, nd4j::LaunchContext * context);
 
@@ -207,6 +210,9 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray NDArrayFactory::create(const int8_t scalar, nd4j::LaunchContext * context);
     template NDArray NDArrayFactory::create(const uint8_t scalar, nd4j::LaunchContext * context);
     template NDArray NDArrayFactory::create(const int16_t scalar, nd4j::LaunchContext * context);
+    template NDArray NDArrayFactory::create(const uint16_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(const uint32_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(const uint64_t scalar, nd4j::memory::Workspace* workspace);
     template NDArray NDArrayFactory::create(const bool scalar, nd4j::LaunchContext * context);
 
 
@@ -282,6 +288,9 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     template NDArray* NDArrayFactory::linspace(const int from, const int to, const Nd4jLong numElements);
     template NDArray* NDArrayFactory::linspace(const int16_t from, const int16_t to, const Nd4jLong numElements);
     template NDArray* NDArrayFactory::linspace(const uint8_t from, const uint8_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const uint16_t from, const uint16_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const uint32_t from, const uint32_t to, const Nd4jLong numElements);
+    template NDArray* NDArrayFactory::linspace(const uint64_t from, const uint64_t to, const Nd4jLong numElements);
     template NDArray* NDArrayFactory::linspace(const int8_t from, const int8_t to, const Nd4jLong numElements);
     template NDArray* NDArrayFactory::linspace(const bool from, const bool to, const Nd4jLong numElements);
 
@@ -307,6 +316,9 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const Nd4jLong startingValue, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const int startingValue, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint8_t startingValue, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint16_t startingValue, nd4j::memory::Workspace *workspace);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint32_t startingValue, nd4j::memory::Workspace *workspace);
+    template NDArray* NDArrayFactory::vector(Nd4jLong length, const uint64_t startingValue, nd4j::memory::Workspace *workspace);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const int8_t startingValue, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const int16_t startingValue, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const bool startingValue, nd4j::LaunchContext * context);

@@ -24,6 +24,7 @@ import org.datavec.api.io.labels.PatternPathLabelGenerator;
 import org.junit.Test;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -127,6 +128,27 @@ public class InputSplitTests {
         assertTrue(boostrap.needsBootstrapForWrite());
         boostrap.bootStrapForWrite();
         assertTrue(tmpDir.listFiles() != null);
+    }
+
+    @Test
+    public void testSampleNoBias() throws URISyntaxException {
+        Random random = new Random(7);
+        RandomPathFilter randomPathFilter = new RandomPathFilter(random, null, 100);
+
+        URI[] paths = new URI[1000];
+        for (int i = 0; i < paths.length; i++) {
+            paths[i] = new URI("file:///label" + (i/100) + "/image" + i);
+        }
+
+        boolean notOnlyFirstLabel = false;
+        URI[] paths2 = randomPathFilter.filter(paths);
+        assertEquals(100, paths2.length);
+        for (int i = 0; i < paths2.length; i++) {
+            if (!paths2[i].toString().startsWith("file:///label0/")) {
+                notOnlyFirstLabel = true;
+            }
+        }
+        assertTrue(notOnlyFirstLabel);
     }
 
 }

@@ -1848,6 +1848,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     sb.append(Shape.shapeToStringShort(inputArgs[i]));
                 }
                 sb.append(")]");
+                if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+                    appendSameDiffInfo(sb, (DifferentialFunction) op);
+                }
+
                 log.error("Failed to calculate output shapes for op " + op.opName() + ". Attempted to execute with " +
                         String.valueOf(op.numInputArguments()) + " inputs, " +
                         String.valueOf(op.numOutputArguments()) + " outputs, "+
@@ -2046,6 +2050,63 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 return new INDArray[0];
             else
                 return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+        } catch (Exception e) {
+            val sb = new StringBuilder();
+            sb.append("Inputs: [(");
+            int nIn = (context.getInputArrays() == null ? 0 : context.getInputArrays().size());
+            for (int i = 0; i < nIn; i++) {
+                if (i > 0)
+                    sb.append("), (");
+                sb.append(Shape.shapeToStringShort(context.getInputArrays().get(i)));
+            }
+            sb.append(")]. Outputs: [(");
+            int nOut = (context.getOutputArrays() == null ? 0 : context.getOutputArrays().size());
+            for (int i = 0; i < nOut; i++) {
+                if (i > 0)
+                    sb.append("), (");
+                sb.append(Shape.shapeToStringShort(context.getOutputArrays().get(i)));
+            }
+            sb.append(")]. tArgs: ");
+            int nT = (context.getTArguments() == null ? 0 : context.getTArguments().size());
+            if (nT > 0) {
+                sb.append(context.getTArguments());
+            } else {
+                sb.append("-");
+            }
+            sb.append(". iArgs: ");
+            int nI = (context.getIArguments() == null ? 0 : context.getIArguments().size());
+            if (nI > 0) {
+                sb.append(context.getIArguments());
+            } else {
+                sb.append("-");
+            }
+            sb.append(". bArgs: ");
+            int nB = (context.getBArguments() == null ? 0 : context.getBArguments().size());
+            if (nB > 0) {
+                sb.append(context.getBArguments());
+            } else {
+                sb.append("-");
+            }
+            if (op instanceof DifferentialFunction) {
+                String n = ((DifferentialFunction) op).getOwnName();
+                if (n != null && !n.equals(op.opName())) {
+                    sb.append(". Op own name: \"").append(n).append("\"");
+                }
+            }
+
+            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+                appendSameDiffInfo(sb, (DifferentialFunction) op);
+            }
+
+            log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
+                    nIn + " inputs, " +
+                    nOut + " outputs, " +
+                    nT + " targs," +
+                    nB + " bargs and " +
+                    nI + " iargs. " +
+                    sb.toString() +
+                    " - Please see above message (printed out from c++) for a possible cause of error.");
+            throw e;
         } finally {
             if (mklOverride)
                 Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
@@ -2086,5 +2147,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val tadOffsets = new LongBuffer(pack.primaryOffsets(), pack.numberOfTads());
 
         return new TadPack(tadShape, tadOffsets);
+    }
+
+    protected void appendSameDiffInfo(StringBuilder sb, DifferentialFunction df){
+        String[] inNames = df.argNames();
+        String[] outNames = df.outputVariablesNames();
+        if(inNames != null){
+            sb.append(". Input var names: ").append(Arrays.toString(inNames));
+        }
+        if(outNames != null){
+            sb.append(". Output var names: ").append(Arrays.toString(outNames));
+        }
     }
 }

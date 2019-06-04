@@ -19,10 +19,12 @@ package org.nd4j.parameterserver.client;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.parameterserver.BaseNd4jTest;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 10/3/16.
  */
-public class ParameterServerClientTest {
+public class ParameterServerClientTest extends BaseNd4jTest {
     private static MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);
     private static Aeron aeron;
@@ -43,7 +45,7 @@ public class ParameterServerClientTest {
     private static int parameterLength = 1000;
 
     @BeforeClass
-    public static void before() throws Exception {
+    public static void beforeClass() throws Exception {
         mediaDriver = MediaDriver.launchEmbedded(AeronUtil.getMediaDriverContext(parameterLength));
         System.setProperty("play.server.dir", "/tmp");
         aeron = Aeron.connect(getContext());
@@ -88,6 +90,7 @@ public class ParameterServerClientTest {
 
 
     @Test(timeout = 60000L)
+    @Ignore("AB 2019/05/31 - Intermittent failures on CI - see issue 7657")
     public void testServer() throws Exception {
         int subscriberPort = 40625 + new java.util.Random().nextInt(100);
         ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)

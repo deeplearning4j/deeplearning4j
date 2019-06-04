@@ -40,7 +40,7 @@ public abstract class BaseImageLoader implements Serializable {
     protected static final Logger log = LoggerFactory.getLogger(BaseImageLoader.class);
 
     public enum MultiPageMode {
-        MINIBATCH, CHANNELS, FIRST
+        MINIBATCH, FIRST //, CHANNELS,
     }
 
     public static final File BASE_DIR = new File(System.getProperty("user.home"));

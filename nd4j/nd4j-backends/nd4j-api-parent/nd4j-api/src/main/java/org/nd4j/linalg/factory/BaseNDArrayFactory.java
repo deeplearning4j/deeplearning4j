@@ -25,6 +25,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.random.impl.Range;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -337,7 +340,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray arange(double begin, double end, double step) {
-        return Nd4j.create(ArrayUtil.toDoubles(ArrayUtil.range((int) begin, (int) end,  (int)step)));
+        long length = (long)Math.floor((end-begin)/step);
+        DynamicCustomOp op = new Range(begin, end, step, DataType.FLOAT);
+        INDArray out = Nd4j.create(op.calculateOutputShape().get(0));
+        op.setOutputArgument(0, out);
+        Nd4j.exec(op);
+        return out;
     }
 
     /**
@@ -1281,12 +1289,17 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                 return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType, ws);
             case FLOAT:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case BFLOAT16:
+                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
             case HALF:
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT32:
             case INT:
                 return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT64:
             case LONG:
                 return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT16:
             case SHORT:
                 return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
             case BYTE:

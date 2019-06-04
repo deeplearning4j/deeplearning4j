@@ -83,6 +83,36 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class LogFileWriter {
+    public enum EventSubtype {NONE, EVALUATION, LOSS, LEARNING_RATE, TUNING_METRIC, PERFORMANCE, PROFILING, FEATURE_LABEL, PREDICTION, USER_CUSTOM;
+
+        public byte asUIEventSubtype(){
+            switch (this){
+                case NONE:
+                    return UIEventSubtype.NONE;
+                case EVALUATION:
+                    return UIEventSubtype.EVALUATION;
+                case LOSS:
+                    return UIEventSubtype.LOSS;
+                case LEARNING_RATE:
+                    return UIEventSubtype.LEARNING_RATE;
+                case TUNING_METRIC:
+                    return UIEventSubtype.TUNING_METRIC;
+                case PERFORMANCE:
+                    return UIEventSubtype.PERFORMANCE;
+                case PROFILING:
+                    return UIEventSubtype.PROFILING;
+                case FEATURE_LABEL:
+                    return UIEventSubtype.FEATURE_LABEL;
+                case PREDICTION:
+                    return UIEventSubtype.PREDICTION;
+                case USER_CUSTOM:
+                    return UIEventSubtype.USER_CUSTOM;
+                default:
+                    throw new RuntimeException();
+            }
+        }
+    }
+
     private final File file;
     private long endStaticInfoOffset = -1;
     private final AtomicInteger nameIndexCounter = new AtomicInteger(0);
@@ -91,6 +121,35 @@ public class LogFileWriter {
 
     public LogFileWriter(File file) throws IOException {
         this.file = file;
+        if(file.exists()){
+            //Restore state
+            StaticInfo si = readStatic();
+            List<Pair<UIStaticInfoRecord, Table>> staticList = si.getData();
+            long staticInfoOffset = 0;
+            boolean seenEndStatic = false;
+            for( int i=0; i<staticList.size(); i++ ){
+                UIStaticInfoRecord r = staticList.get(i).getFirst();
+                if(r.infoType() == UIInfoType.START_EVENTS){
+                    seenEndStatic = true;
+                }
+                staticInfoOffset += r.getByteBuffer().capacity();
+            }
+
+//            if(seenEndStatic)
+//                endStaticInfoOffset = staticInfoOffset;
+            endStaticInfoOffset = si.getFileOffset();
+
+            //Restore names:
+            List<Pair<UIEvent, Table>> events = readEvents();
+            for(Pair<UIEvent, Table> p : events){
+                if(p.getFirst().eventType() == UIEventType.ADD_NAME){
+                    nameIndexCounter.getAndIncrement();
+                    UIAddName name = (UIAddName) p.getSecond();
+                    nameIndexMap.put(name.nameIdx(), name.name());
+                    indexNameMap.put(name.name(), name.nameIdx());
+                }
+            }
+        }
     }
 
     /**
@@ -257,6 +316,19 @@ public class LogFileWriter {
         }
     }
 
+    public boolean registeredEventName(String name){
+        return indexNameMap.containsKey(name);
+    }
+
+    public long registerEventNameQuiet(String name) {
+        Preconditions.checkState(!registeredEventName(name), "Event name \"%s\" has already been registered", name);
+        try {
+            return registerEventName(name);
+        } catch (IOException e){
+            throw new RuntimeException("Error writing to log file", e);
+        }
+    }
+
     /**
      * Register the event name - "accuracy", "loss", etc for later use in recording events.
      * @param name Name to register
@@ -267,7 +339,7 @@ public class LogFileWriter {
 
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
         long time = System.currentTimeMillis();
-        int offset = UIEvent.createUIEvent(fbb, UIEventType.ADD_NAME, -1, time, 0, 0, (short)-1, 0, 0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.ADD_NAME, UIEventSubtype.NONE, -1, time, 0, 0, (short)-1, 0, 0);
         fbb.finish(offset);
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
@@ -291,12 +363,12 @@ public class LogFileWriter {
      * @param scalar    Scalar value to write
      * @return          Number of bytes written
      */
-    public long writeScalarEvent(String name, long time, int iteration, int epoch, Number scalar) throws IOException {
+    public long writeScalarEvent(String name, EventSubtype subtype, long time, int iteration, int epoch, Number scalar) throws IOException {
         //TODO add support for plugin, variable and frame/iter
         Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
         int idx = indexNameMap.get(name);
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
-        int offset = UIEvent.createUIEvent(fbb, UIEventType.SCALAR, idx, time, iteration, epoch, (short)-1, 0, 0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.SCALAR, subtype.asUIEventSubtype(), idx, time, iteration, epoch, (short)-1, 0, 0);
         fbb.finish(offset);
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
@@ -306,7 +378,7 @@ public class LogFileWriter {
         return append(fbb, fbb2);
     }
 
-    public long writeHistogramEventDiscrete(@NonNull String name, long time, int iteration, int epoch, List<String> binLabels, @NonNull INDArray y) throws IOException {
+    public long writeHistogramEventDiscrete(@NonNull String name, EventSubtype subtype, long time, int iteration, int epoch, List<String> binLabels, @NonNull INDArray y) throws IOException {
         Preconditions.checkState(binLabels == null || binLabels.size() == y.length(), "Number of bin labels (if present) must " +
                 "be same as Y array length - got %s bins, array shape %ndShape", (binLabels == null ? 0L : binLabels.size()), y.length());
         Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
@@ -316,7 +388,7 @@ public class LogFileWriter {
         int idx = indexNameMap.get(name);
 
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
-        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, subtype.asUIEventSubtype(), idx, time, iteration, epoch, (short)-1, 0, 0);
         fbb.finish(offset);
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
@@ -338,7 +410,7 @@ public class LogFileWriter {
         return append(fbb, fbb2);
     }
 
-    public long writeHistogramEventEqualSpacing(String name, long time, int iteration, int epoch, double min, double max, INDArray y) throws IOException {
+    public long writeHistogramEventEqualSpacing(String name, EventSubtype subtype, long time, int iteration, int epoch, double min, double max, INDArray y) throws IOException {
         Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
         Preconditions.checkState(max > min, "Maximum histogram value must be greater than minimum - got max=%s, min=%s", max, min);
 
@@ -348,7 +420,7 @@ public class LogFileWriter {
         int idx = indexNameMap.get(name);
 
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
-        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, subtype.asUIEventSubtype(), idx, time, iteration, epoch, (short)-1, 0, 0);
         fbb.finish(offset);
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
@@ -363,7 +435,7 @@ public class LogFileWriter {
         return append(fbb, fbb2);
     }
 
-    public long writeHistogramEventCustomBins(String name, long time, int iteration, int epoch, INDArray bins, INDArray y) throws IOException {
+    public long writeHistogramEventCustomBins(String name, EventSubtype subtype, long time, int iteration, int epoch, INDArray bins, INDArray y) throws IOException {
         Preconditions.checkState(y.rank() == 1, "Y array must be rank 1, got Y array with shape %ndShape", y);
         Preconditions.checkState(bins.rank() == 2, "Bins array must have shape [2,numBins], got bins array with shape %ndShape", bins);
         Preconditions.checkState(y.length() == bins.size(1), "Bins array must have shape [2,numBins], where numBins must match y.length()=%s, got bins array with shape %ndShape", y.length(), bins);
@@ -374,7 +446,7 @@ public class LogFileWriter {
         int idx = indexNameMap.get(name);
 
         FlatBufferBuilder fbb = new FlatBufferBuilder(0);
-        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, idx, time, iteration, epoch, (short)-1, 0, 0);
+        int offset = UIEvent.createUIEvent(fbb, UIEventType.HISTOGRAM, subtype.asUIEventSubtype(), idx, time, iteration, epoch, (short)-1, 0, 0);
         fbb.finish(offset);
 
         FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);

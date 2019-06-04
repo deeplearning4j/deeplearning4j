@@ -31,6 +31,9 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.Loss;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -58,6 +61,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
@@ -68,10 +72,10 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -119,16 +123,16 @@ public class SameDiff extends SDBaseOps {
 
     private final List<String> lossVariables = new ArrayList<>();
 
+    private List<Listener> listeners = new ArrayList<>();
+
+    private final List<NameScope> nameScopes = new ArrayList<>();  //Used as a stack
+
     ///////////////////////////////////////
     //Fields related to training
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
     @Getter
     private boolean initializedTraining;                            //True if training setup has been done
-    @Getter
-    private INDArray updaterState;                                  //Updater state array (1d, length equal to number of trainable parameters)
-    @Getter
-    private Map<String,INDArray> updaterViews;                      //Views of updaterState array for each trainable parameter
     @Getter
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
@@ -248,9 +252,6 @@ public class SameDiff extends SDBaseOps {
 
     @Getter
     private SameDiff child;
-
-    public final static String TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME = "trainingConfig.json";
-    public final static String SAMEDIFF_FILE_ENTRY_NAME = "samediff.fb";
 
     static {
         opMethods = new HashMap<>();
@@ -411,6 +412,112 @@ public class SameDiff extends SDBaseOps {
      */
     public DifferentialFunctionFactory f() {
         return functionFactory;
+    }
+
+    public void setListeners(Listener... listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void setListeners(Collection<? extends Listener> listeners){
+        this.listeners.clear();
+        addListeners(listeners);
+    }
+
+    public void addListeners(Listener... listeners){
+        addListeners(Arrays.asList(listeners));
+    }
+
+    public void addListeners(Collection<? extends Listener> listeners){
+        this.listeners.addAll(listeners);
+    }
+
+    /**
+     * @return The current name scope, if any (null otherwise). See {@link #withNameScope(String)} for more details.
+     */
+    public String currentNameScope(){
+        if(nameScopes.isEmpty())
+            return null;
+
+        //Would use String.join but that is Java 8+
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(NameScope ns : nameScopes){
+            if(!first){
+                sb.append("/");
+            }
+            sb.append(ns.getName());
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    /**
+     * @return The name with the current name scope (if any) appended. See {@link #withNameScope(String)}
+     */
+    protected String nameWithScope(String name){
+        String scope = currentNameScope();
+        if(scope == null){
+            return name;
+        }
+        return scope + "/" + name;
+    }
+
+    //Intentionally package private
+    void addNameScope(NameScope nameScope){
+        nameScopes.add(nameScope);
+    }
+
+    //Intentionally package private
+    void closeNameScope(NameScope nameScope){
+        //Check that the name scope is closed correctly/in order
+        Preconditions.checkState(!nameScopes.isEmpty(), "Cannot close name scope: no name scopes are currently defined");
+        Preconditions.checkState(nameScopes.get(nameScopes.size()-1).equals(nameScope),
+                "Cannot close name scope %s: Name scopes must be closed in order. Current name scopes: \"%s\"", nameScope, currentNameScope());
+
+        nameScopes.remove(nameScopes.size()-1);
+    }
+
+    /**
+     * Create a name scope. Name scopes append a prefix to the names of any variables and ops created while they are open.
+     * <pre>
+     *  {@code
+     *  SameDiff sd = SameDiff.create();
+     *  SDVariable x = sd.var("x", DataType.FLOAT, 5);
+     *  SDVariable y;
+     *  try(NameScope ns = sd.withNameScope("myScope"){
+     *      y = sd.var("y", DataType.FLOAT, 5);
+     *  }
+     *  SDVariable z = sd.var("z", DataType.FLOAT, 5);
+     *
+     *  String xName = x.getVarName();      //RESULT: "x"
+     *  String yName = y.getVarName();      //RESULT: "myScope/y"
+     *  String zName = z.getVarName();      //RESULT: "z"
+     *  }
+     * </pre>
+     *
+     * Note that name scopes can also be nested:
+     * <pre>
+     *  {@code
+     *  SameDiff sd = SameDiff.create();
+     *  SDVariable x;
+     *  try(NameScope ns = sd.withNameScope("first"){
+     *      try(NameScope ns2 = sd.withNameScope("second"){
+     *          x = sd.var("x", DataType.FLOAT, 5);
+     *      }
+     *  }
+     *  String xName = x.getVarName();      //RESULT: "first/second/x"
+     *  }
+     * </pre>
+     *
+     *
+     * @param nameScope Name of the name scope to open/create
+     * @return The NameScope object
+     */
+    public NameScope withNameScope(String nameScope){
+        NameScope ns = new NameScope(this, nameScope);
+        addNameScope(ns);
+        return ns;
     }
 
 
@@ -802,7 +909,6 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable \"%s\" has datatype %s: cannot associate array with type %s with this variable",
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
-        // FIXME: remove this before release
         if (sessions.get(Thread.currentThread().getId()) == null) {
             sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
         }
@@ -839,7 +945,15 @@ public class SameDiff extends SDBaseOps {
                 val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
                 session.getNodeOutputs().put(varId, arr);
                 //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
+                break;
             case PLACEHOLDER:
+                //Validate placeholder shapes:
+                long[] phShape = variable.placeholderShape();
+                Preconditions.checkState(phShape == null || Shape.shapeMatchesPlaceholder(phShape, arr.shape()),
+                        "Invalid array shape: cannot associate an array with shape %ndShape with a placeholder of shape %s:" +
+                                "shape is wrong rank or does not match on one or more dimensions", arr, phShape);
+
+
                 long tid = Thread.currentThread().getId();
                 if(!placeholdersPerThread.containsKey(tid)){
                     placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
@@ -1316,8 +1430,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Returns the inputs (placeholders)
-     * for the samediff graph
+     * Returns the inputs (placeholders) for the SameDiff graph
      * @return the inputs for this graph
      */
     public List<String> inputs() {
@@ -1374,6 +1487,7 @@ public class SameDiff extends SDBaseOps {
     public List<SDVariable> variables() {
         return new ArrayList<>(variableMap().values());
     }
+
 
     /**
      * Get the names of variables (if any) that have been marked as loss variables to be minimized.<br>
@@ -1482,7 +1596,22 @@ public class SameDiff extends SDBaseOps {
     }
 
     //Synchronized for thread safety
-    protected synchronized void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+    protected synchronized void fit(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount) {
+        boolean async = iter.asyncSupported();
+        if(async){
+            iter = new AsyncMultiDataSetIterator(iter, 3, true);
+        }
+        try{
+            fitHelper(iter, numEpochs, incrementEpochCount);
+        } finally {
+            if(async){
+                ((AsyncMultiDataSetIterator)iter).shutdown();
+            }
+        }
+    }
+
+    //fitHelper should only be called from fit method above
+    protected synchronized void fitHelper(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
         Preconditions.checkNotNull(iter, "Iterator must not be null");
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
@@ -1495,9 +1624,30 @@ public class SameDiff extends SDBaseOps {
 
         boolean performedValidation = false;
 
+        int trainThreadNum = 0;
+        long jThreadId = Thread.currentThread().getId();
+        boolean hasListeners = !listeners.isEmpty();
+        At at = At.builder()
+                .epoch(trainingConfig.getEpochCount())
+                .iteration(trainingConfig.getIterationCount())
+                .trainingThreadNum(trainThreadNum)
+                .javaThreadNum(jThreadId)
+                .build();
+
+
         for(int i = 0; i < numEpochs; i++) {
+
+            if(incrementEpochCount && hasListeners){
+                at.setEpoch(trainingConfig.getEpochCount());
+                for(Listener l : listeners){
+                    l.epochStart(this, at);
+                }
+            }
+
             while (iter.hasNext()) {
+                long dataStart = hasListeners ? System.currentTimeMillis() : 0;
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
                 if(!performedValidation){
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
@@ -1509,6 +1659,13 @@ public class SameDiff extends SDBaseOps {
                                     " the number of dataset label arrays (%s)", lblSize, ds.numLabelsArrays());
 
                     performedValidation = true;
+                }
+
+                if(hasListeners){
+                    at.setIteration(trainingConfig.getIterationCount());
+                    for(Listener l : listeners){
+                        l.iterationStart(this, at, ds, (dataEnd-dataStart));
+                    }
                 }
 
                 //Create placeholder variable map
@@ -1525,12 +1682,22 @@ public class SameDiff extends SDBaseOps {
                 if (!initializedTraining)
                     initializeTraining();
 
+                Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
+                if(hasListeners){
+                    regScore = new HashMap<>();
+                }
+
                 int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
-                for (String s : trainingConfig.getTrainableParams()) {
-                    //TODO fix using inference session
-                    INDArray param = variables.get(s).getVariable().getArr();
-                    SDVariable gradVar = variables.get(s).getVariable().getGradient();
+                for(Variable v : variables.values()){
+                    //Only update trainable params - float type parameters (variable type vars)
+                    SDVariable sdv = v.getVariable();
+                    if(sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType())
+                        continue;
+
+
+                    INDArray param = sdv.getArr();
+                    SDVariable gradVar = sdv.getGradient();
                     if(gradVar == null){
                         //Not all trainable parameters have gradients defined.
                         //Consider graph: in1->loss1; in2->loss2, where we optimize only loss1.
@@ -1556,13 +1723,13 @@ public class SameDiff extends SDBaseOps {
 
                     //Apply updater. Note that we need to reshape to [1,length] for updater
                     INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
-                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", s);
-                    GradientUpdater u = updaterMap.get(s);
+                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", sdv);
+                    GradientUpdater u = updaterMap.get(sdv.getVarName());
                     try {
                         u.applyUpdater(reshapedView, iteration, e);
                     } catch (Throwable t) {
-                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + s
-                                + "\": either parameter size is inconsistent between iterations, or \"" + s + "\" should not be a trainable parameter?", t);
+                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + sdv.getVarName()
+                                + "\": either parameter size is inconsistent between iterations, or \"" + sdv.getVarName() + "\" should not be a trainable parameter?", t);
                     }
 
                     //Post-apply regularization (weight decay)
@@ -1570,9 +1737,23 @@ public class SameDiff extends SDBaseOps {
                         for(Regularization reg : r){
                             if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
                                 reg.apply(param, grad, lr, iterCount, epochCount);
+                                if(hasListeners){
+                                    double score = reg.score(param, iterCount, epochCount);
+                                    if(!regScore.containsKey(reg.getClass())){
+                                        regScore.put(reg.getClass(), new AtomicDouble());
+                                    }
+                                    regScore.get(reg.getClass()).addAndGet(score);
+                                }
                             }
                         }
                     }
+
+                    if(hasListeners){
+                        for(Listener l : listeners){
+                            l.preUpdate(this, at, v, reshapedView);
+                        }
+                    }
+
 
                     if (trainingConfig.isMinimize()) {
                         param.subi(grad);
@@ -1581,15 +1762,53 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+                if(hasListeners){
+                    double[] d = new double[lossVariables.size() + regScore.size()];
+                    List<String> lossVars;
+                    if(regScore.size() > 0){
+                        lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
+                        lossVars.addAll(lossVariables);
+                        int s=regScore.size();
+                        //Collect regularization losses
+                        for(Map.Entry<Class<?>,AtomicDouble> entry : regScore.entrySet()){
+                            lossVars.add(entry.getKey().getSimpleName());
+                            d[s] = entry.getValue().get();
+                        }
+                    } else {
+                        lossVars = lossVariables;
+                    }
+
+
+                    //Collect the losses...
+                    SameDiff gradFn = sameDiffFunctionInstances.get("grad");
+                    int count=0;
+                    for(String s : lossVariables){
+                        INDArray arr = gradFn.getArrForVarName(s);
+                        double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                        d[count++] = l;
+                    }
+
+                    Loss loss = new Loss(lossVars, d);
+                    for(Listener l : listeners){
+                        l.iterationDone(this, at, ds, loss);
+                    }
+                }
+
                 trainingConfig.incrementIterationCount();
+            }
+
+            if(incrementEpochCount) {
+                if(hasListeners){
+                    for(Listener l : listeners){
+                        l.epochEnd(this, at);
+                    }
+                }
+                trainingConfig.incrementEpochCount();
             }
 
             if(i < numEpochs - 1) {
                 iter.reset();
             }
-
-            if(incrementEpochCount)
-                trainingConfig.incrementEpochCount();
         }
     }
 
@@ -1608,14 +1827,16 @@ public class SameDiff extends SDBaseOps {
             return 0.0;
         }
 
-        if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().isEmpty())
-            initializeTraining();
-
         List<Regularization> l = trainingConfig.getRegularization();
         double loss = 0.0;
-        for (String s : trainingConfig.getTrainableParams()) {
+        for(Variable v : variables.values()){
+            SDVariable sdv = v.getVariable();
+            if(sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType()){
+                //Only trainable parameters (FP and variable type vars) contribute to regularization score
+                continue;
+            }
             for(Regularization r : l){
-                INDArray arr = getVariable(s).getArr();
+                INDArray arr = sdv.getArr();
                 loss += r.score(arr, trainingConfig.getIterationCount(), trainingConfig.getEpochCount());
             }
         }
@@ -1632,62 +1853,17 @@ public class SameDiff extends SDBaseOps {
             if(trainingConfig == null) {
                 throw new ND4JIllegalStateException("Please specify a training config with setTrainingConfig");
             }
-            //First: infer the variables to be optimized if required
-            if(trainingConfig.getTrainableParams() == null || trainingConfig.getTrainableParams().size() == 0) {
-                //Variable is trainable if it's not the output of some function
-                //TODO also - should be floating point type
-                List<String> trainVarList = new ArrayList<>();
-                for(Variable var : variables.values()){
-                    SDVariable v = var.getVariable();
-                    String n = v.getVarName();
-                    if(variables.get(n).getOutputOfOp() == null &&       //Is a leaf (not the output of a function)
-                            !isPlaceHolder(n) &&                                //and not a placeholder
-                            !variables.get(n).getVariable().isConstant() &&     //and not a constant
-                            (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
-                            (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
-                            (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
-                            (trainingConfig.getDataSetLabelMaskMapping() == null || !trainingConfig.getDataSetLabelMaskMapping().contains(n))){  //and not a label input (this really should be a placeholder, but we can't guarantee that...)
-                        trainVarList.add(n);
-                    }
-                }
-
-                trainingConfig.setTrainableParams(trainVarList);
-                log.info("Inferred trainable variables: {}", trainVarList);
-            }
-
-            //Allocate updater state
-            long numTrainableParams = 0;
-            DataType dt = null;             //TODO support mixed precision variables - https://github.com/deeplearning4j/deeplearning4j/issues/6992
-            for(String s : trainingConfig.getTrainableParams()) {
-                SDVariable v = variables.get(s).getVariable();
-                Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
-
-                INDArray arr = v.getArr();
-                Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
-                numTrainableParams += arr.length();
-                if(dt == null)
-                    dt = arr.dataType();
-            }
-
-            long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
-
-            if(updaterStateSize > 0) {
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
-                }
-            }
-
-            long viewSoFar = 0;
-            updaterViews = new HashMap<>();
             updaterMap = new HashMap<>();
-            for(String s : trainingConfig.getTrainableParams()) {
-                long thisSize = trainingConfig.getUpdater().stateSize(variables.get(s).getVariable().getArr().length());
-                INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
-                        updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
+            for(Variable v : variables.values()){
+                if(v.getVariable().getVariableType() != VariableType.VARIABLE || !v.getVariable().dataType().isFPType()){
+                    //Skip non-trainable parameters
+                    continue;
+                }
 
-                updaterViews.put(s, view);
-                updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, true));
-                viewSoFar += thisSize;
+                INDArray arr = v.getVariable().getArr();
+                long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
+                INDArray view = stateSize == 0 ? null : Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
+                updaterMap.put(v.getName(), trainingConfig.getUpdater().instantiate(view, true));
             }
 
             initializedTraining = true;
@@ -2054,7 +2230,8 @@ public class SameDiff extends SDBaseOps {
      * @param shape    the shape of the variable if any
      * @return SDVariable placeholder
      */
-    public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+        Preconditions.checkState(!variables.containsKey(name), "Variable already exists with name %s", name);
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -2076,8 +2253,15 @@ public class SameDiff extends SDBaseOps {
     //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                              org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+        String withScope = nameWithScope(name);
+        if (variables.containsKey(withScope)) {
+            if(nameScopes.isEmpty()){
+                throw new IllegalArgumentException("Another variable with the name " + name + " already exists (current name scope: \""
+                        + currentNameScope() + "\"");
+            } else {
+                throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+            }
+        }
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
@@ -2385,51 +2569,16 @@ public class SameDiff extends SDBaseOps {
         }
 
 
-        if(trainingConfig != null){
-            Set<String> toRemove = new HashSet<>();
-            boolean anyTrainableParmsModified = false;
-            List<String> origTrainableParams = trainingConfig.getTrainableParams();
-            for(SDVariable v : variables){
-                toRemove.add(v.getVarName());
-                if(!anyTrainableParmsModified && origTrainableParams.contains(v.getVarName())){
-                    anyTrainableParmsModified = true;
-                }
-            }
-
-
-            //Remove updater state for this variable: updaterState, updaterViews, updaterMap
-            if(anyTrainableParmsModified) {
-                List<String> newTrainableParams = new ArrayList<>();
-                for (String s : origTrainableParams) {
-                    if (!toRemove.contains(s)) {
-                        newTrainableParams.add(s);
+        if (trainingConfig != null && initializedTraining) {
+            //Remove updater state for now constant variables
+            for (SDVariable v : variables) {
+                GradientUpdater gu = updaterMap.remove(v.getVarName());
+                Map<String,INDArray> m = gu.getState();
+                if(m != null){
+                    for(INDArray arr : m.values()){
+                        if(arr.closeable())
+                            arr.close();
                     }
-                }
-                trainingConfig.setTrainableParams(newTrainableParams);
-            }
-
-            if(initializedTraining){
-                List<INDArray> newUpdaterState = new ArrayList<>();
-                for (String s : origTrainableParams) {
-                    INDArray stateArr = updaterViews.get(s);
-                    if (!toRemove.contains(s)) {
-                        newUpdaterState.add(stateArr);
-                    }
-                }
-
-                updaterState = newUpdaterState.isEmpty() ? null : Nd4j.concat(0, newUpdaterState.toArray(new INDArray[newUpdaterState.size()]));
-                //Now, update updaterViews map:
-                long viewSoFar = 0;
-                updaterViews = new HashMap<>();
-                updaterMap = new HashMap<>();
-                for(String s : trainingConfig.getTrainableParams()) {
-                    long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
-                    INDArray view = (updaterState == null || thisSize == 0 ? null :
-                            updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
-
-                    updaterViews.put(s, view);
-                    updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, false));
-                    viewSoFar += thisSize;
                 }
             }
         }
@@ -2494,43 +2643,140 @@ public class SameDiff extends SDBaseOps {
 
 
         //For training: need to add new updater state
-        if(trainingConfig != null){
-            List<String> newTrainableParams = new ArrayList<>(trainingConfig.getTrainableParams());
-            List<String> convertedToVars = new ArrayList<>();
-            for(SDVariable v : constants){
-                newTrainableParams.add(v.getVarName());
-                convertedToVars.add(v.getVarName());
-            }
-            trainingConfig.setTrainableParams(newTrainableParams);
-
-
+        if (trainingConfig != null && initializedTraining) {
             //Add updater state for this variable: updaterState, updaterViews, updaterMap
-            if(initializedTraining){
-                long extraStateSize = 0;
-                for (String s : convertedToVars) {
-                    INDArray arr = getVariable(s).getArr();
-                    long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
-                    extraStateSize += stateSize;
-                }
-                if(extraStateSize > 0) {
-                    INDArray newState = Nd4j.createUninitialized(updaterState.dataType(), 1, extraStateSize);
-
-                    updaterState = (updaterState == null ? newState : Nd4j.concat(1, updaterState, newState));
-                    //Now, update updaterViews map:
-                    long viewSoFar = 0;
-                    updaterViews = new HashMap<>();
-                    updaterMap = new HashMap<>();
-                    for (String s : trainingConfig.getTrainableParams()) {
-                        long thisSize = trainingConfig.getUpdater().stateSize(this.variables.get(s).getVariable().getArr().length());
-                        INDArray view = (updaterState == null || thisSize == 0 ? null :
-                                updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
-
-                        updaterViews.put(s, view);
-                        boolean init = convertedToVars.contains(s); //Only initialize/zero the states for the new variables
-                        updaterMap.put(s, trainingConfig.getUpdater().instantiate(view, init));
-                        viewSoFar += thisSize;
+            for (SDVariable v : constants) {
+                if (!updaterMap.containsKey(v.getOwnName())) {
+                    //Create new updater state
+                    INDArray arr = v.getArr();
+                    long thisSize = trainingConfig.getUpdater().stateSize(arr.length());
+                    if (thisSize > 0) {
+                        INDArray stateArr = Nd4j.create(arr.dataType(), 1, thisSize);
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
+                        updaterMap.put(v.getVarName(), u);
+                    } else {
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray)null, true);
+                        updaterMap.put(v.getVarName(), u);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Rename the specified variable to the new name.
+     *
+     * @param from The variable to rename - this variable must exist
+     * @param to   The new name for the variable - no variable with this name must already exist
+     */
+    public void renameVariable(String from, String to){
+        Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
+        Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
+
+        Variable v = variables.get(from);
+        v.setName(to);
+        v.getVariable().setVarName(to);
+        if(v.getInputsForOp() != null){
+            for(String opName : v.getInputsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newInputs = new ArrayList<>(op.getInputsToOp());
+                while(newInputs.contains(from)){
+                    newInputs.set(newInputs.indexOf(from), to);
+                }
+                op.setInputsToOp(newInputs);
+            }
+        }
+
+        if(v.getControlDepsForOp() != null){
+            for(String opName : v.getControlDepsForOp()){
+                SameDiffOp op = ops.get(opName);
+                List<String> newCDs = new ArrayList<>(op.getControlDeps());
+                while(newCDs.contains(from)){
+                    newCDs.set(newCDs.indexOf(from), to);
+                }
+                op.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDepsForVar() != null){
+            for(String varName : v.getControlDepsForVar()){
+                Variable var = variables.get(varName);
+                List<String> newCDs = new ArrayList<>(var.getControlDeps());
+                while(newCDs.contains(from)){
+                    newCDs.set(newCDs.indexOf(from), to);
+                }
+                var.setControlDeps(newCDs);
+            }
+        }
+
+        if(v.getControlDeps() != null){
+            for(String varName : v.getControlDeps()){
+                Variable var = variables.get(varName);
+                List<String> newCDsFor = new ArrayList<>(var.getControlDepsForVar());
+                while(newCDsFor.contains(from)){
+                    newCDsFor.set(newCDsFor.indexOf(from), to);
+                }
+                var.setControlDepsForVar(newCDsFor);
+            }
+        }
+
+        if(v.getOutputOfOp() != null){
+            SameDiffOp op = ops.get(v.getOutputOfOp());
+            List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
+            while(newOuts.contains(from)){
+                newOuts.set(newOuts.indexOf(from), to);
+            }
+            op.setOutputsOfOp(newOuts);
+        }
+
+        variables.remove(from);
+        variables.put(to, v);
+
+        if(trainingConfig != null){
+            if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMapping(l);
+            }
+
+            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetFeatureMaskMapping(l);
+            }
+
+            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setDataSetLabelMaskMapping(l);
+            }
+
+            if(trainingConfig.getLossVariables() != null && trainingConfig.getLossVariables().contains(from)){
+                List<String> l = new ArrayList<>(trainingConfig.getLossVariables());
+                while(l.contains(from)){
+                    l.set(l.indexOf(from), to);
+                }
+                trainingConfig.setLossVariables(l);
+            }
+        }
+
+        for(SameDiff sd : sameDiffFunctionInstances.values()){
+            if(sd.hasVariable(from)){
+                sd.renameVariable(from, to);
             }
         }
     }
@@ -2839,7 +3085,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.getSameDiff() == this, "Samediff instance must be the same.");
 
         if (variables.containsKey(variable.getVarName()) && !variables.get(variable.getVarName()).getVariable().equals(variable)) {
-            throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
+            throw new IllegalArgumentException("Variable with name \"" + variable.getVarName() + "\" already exists");
         }
 
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");
@@ -3205,7 +3451,7 @@ public class SameDiff extends SDBaseOps {
      *
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
-    public void execBackwards(Map<String,INDArray> placeholders){
+    public void execBackwards(Map<String,INDArray> placeholders) {
         if (getFunction("grad") == null) {
             createGradFunction();
         }
@@ -3221,6 +3467,11 @@ public class SameDiff extends SDBaseOps {
                     varGradNames.add(g.getVarName());
                 }
             }
+        }
+
+        //Also add loss values - we need these so we can report them to listeners...
+        if(!listeners.isEmpty()){
+            varGradNames.addAll(lossVariables);
         }
 
         //Edge case: if no variables, no variable gradients to calculate...
@@ -3259,7 +3510,17 @@ public class SameDiff extends SDBaseOps {
             return;
         }
 
-        sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
+        SameDiff sd = sameDiffFunctionInstances.get("grad");
+        sd.listeners = listeners;
+
+        At at = new At(0, 0, 0, Thread.currentThread().getId());
+        if(trainingConfig != null){
+            at.setIteration(trainingConfig.getIterationCount());
+            at.setEpoch(trainingConfig.getEpochCount());
+        }
+
+        //TODO is this 'train' flag the best approach?
+        sd.exec(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
     }
 
     /**
@@ -3671,7 +3932,8 @@ public class SameDiff extends SDBaseOps {
                 for(String s : minimalSubgraphVars){
                     if(lossVariables.contains(s))
                         continue;
-                    SDVariable g = variables.get(s).getVariable().gradient();
+                    SDVariable v = variables.get(s).getVariable();
+                    SDVariable g = v.gradient();
                     if(g == null){
                         throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s + "\" was calculated");
                     }
@@ -3756,7 +4018,8 @@ public class SameDiff extends SDBaseOps {
         for (Map.Entry<String,INDArray> e : arrays.entrySet()) {
             SDVariable varForName = getVariable(e.getKey());
             if (varForName == null) {
-                throw new ND4JIllegalStateException("No variable name found for " + e.getKey());
+                throw new ND4JIllegalStateException("A placeholder array was provided for variable with name \"" + e.getKey() +
+                        "\" but no variable with this name exists");
             }
 
             Variable v = variables.get(e.getKey());
@@ -3817,6 +4080,13 @@ public class SameDiff extends SDBaseOps {
 
         if (newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
             return varToUpdate;
+        }
+
+        String nameScope = currentNameScope();
+        if(nameScope != null){
+            if(!newVarName.startsWith(nameScope)){
+                newVarName = nameScope + "/" + newVarName;
+            }
         }
 
         val oldVarName = varToUpdate.getVarName();
@@ -3905,7 +4175,11 @@ public class SameDiff extends SDBaseOps {
         return exec(placeholders, outputs.toArray(new String[outputs.size()]));
     }
 
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs){
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
+        return exec(placeholders, false, null, outputs);
+    }
+
+    protected Map<String,INDArray> exec(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if(!sessions.containsKey(threadId)){
@@ -3919,17 +4193,10 @@ public class SameDiff extends SDBaseOps {
             placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
         }
 
-        //Check that all placeholders are provided
-        if(phNames != null && phNames.size() > 0) {
-            Preconditions.checkNotNull(placeholders, "No placeholders were provided. Network has placeholders: %s", phNames);
-            for (String s : phNames) {
-                Preconditions.checkState(placeholders.containsKey(s), "No placeholder variable was provided for variable \"%s\"." +
-                        " Cannot execute without all placeholders set", s);
-            }
-        }
+        //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
         return ret;
     }
 
@@ -4173,10 +4440,11 @@ public class SameDiff extends SDBaseOps {
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
      * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
-        return asFlatBuffers(0, configuration);
+    public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
+        return asFlatBuffers(0, configuration, includeUpdaterState);
     }
 
     /**
@@ -4184,9 +4452,10 @@ public class SameDiff extends SDBaseOps {
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
      * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration) {
+    public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
         Nd4j.getExecutioner().commit();
         val bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
@@ -4232,13 +4501,17 @@ public class SameDiff extends SDBaseOps {
 
 
             reverseMap.put(variable.getVarName(), varIdx);
-            log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
+            log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
             int shape = 0;
             int name = bufferBuilder.createString(variable.getVarName());
-            int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
+            int array = 0;
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
-            byte varType = (byte)variable.getVariableType().ordinal();
+            byte varType = (byte) variable.getVariableType().ordinal();
+            if(variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE) {
+                //Don't export array type (i.e., activations), these are always replaced/re-calculated on each step
+                array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
+            }
 
             if (variable.getVariableType() == VariableType.PLACEHOLDER) {
                 val shp = variable.getShape();
@@ -4322,8 +4595,41 @@ public class SameDiff extends SDBaseOps {
         }
         int lossVarOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsets);
 
+        int trainingConfigOffset = 0;
+        int updaterStateOffset = 0;
+        if(trainingConfig != null){
+            String json = trainingConfig.toJson();
+            trainingConfigOffset = bufferBuilder.createString(json);
+        }
+        if(includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()){
+            int[] updaterOffsets = new int[updaterMap.size()];
+            int updaterNum = 0;
+            for(Map.Entry<String,GradientUpdater> g : updaterMap.entrySet()){
+                int paramNameOffset = bufferBuilder.createString(g.getKey());
+                int stateKeyOffset = 0;
+                int stateValuesOffset = 0;
+                Map<String,INDArray> state = g.getValue().getState();
+                if(state != null && !state.isEmpty()){
+                    int[] keysOffsets = new int[state.size()];
+                    int[] valuesOffsets = new int[state.size()];
+                    int i=0;
+                    for(Map.Entry<String,INDArray> e : state.entrySet()){
+                        keysOffsets[i] = bufferBuilder.createString(e.getKey());
+                        valuesOffsets[i] = e.getValue().toFlatArray(bufferBuilder);
+                        i++;
+                    }
+
+                    stateKeyOffset = UpdaterState.createUpdaterStateKeysVector(bufferBuilder, keysOffsets);
+                    stateValuesOffset = UpdaterState.createUpdaterStateValuesVector(bufferBuilder, valuesOffsets);
+                }
+                updaterOffsets[updaterNum++] = UpdaterState.createUpdaterState(bufferBuilder, paramNameOffset, stateKeyOffset, stateValuesOffset);
+            }
+
+            updaterStateOffset = FlatGraph.createUpdaterStateVector(bufferBuilder, updaterOffsets);
+        }
+
         int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset,
-                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset);
+                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset, trainingConfigOffset, updaterStateOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -4331,31 +4637,32 @@ public class SameDiff extends SDBaseOps {
                 this.variables.get(e.getKey()).setVariableIndex(e.getValue());
             }
         }
-
         return bufferBuilder.dataBuffer();
     }
 
-    public FlatGraph asFlatGraph() {
-        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers());
+    public FlatGraph asFlatGraph(boolean includeUpdaterState) {
+        return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers(includeUpdaterState));
     }
 
     /**
      * This method returns FlatGraph structure
      *
      * @param configuration
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return
      */
-    public FlatGraph asFlatGraph(long graphId, ExecutorConfiguration configuration) {
-        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(graphId, configuration));
+    public FlatGraph asFlatGraph(long graphId, ExecutorConfiguration configuration, boolean includeUpdaterState) {
+        return FlatGraph.getRootAsFlatGraph(asFlatBuffers(graphId, configuration, includeUpdaterState));
     }
 
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
-    public ByteBuffer asFlatBuffers() {
+    public ByteBuffer asFlatBuffers(boolean includeUpdaterState) {
         val configuration = ExecutorConfiguration.builder()
                 .outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
@@ -4363,119 +4670,56 @@ public class SameDiff extends SDBaseOps {
                 .gatherTimings(true)
                 .build();
 
-        return asFlatBuffers(configuration);
+        return asFlatBuffers(configuration, includeUpdaterState);
     }
 
-
     /**
-     * Save this samediff instance with its training config.
-     * Note that if a training configuration is not defined,
-     * an {@link IllegalStateException} is thrown.
+     * Save the SameDiff instance to a file. Files can be loaded using {@link #load(File, boolean)}
      *
-     * @param outputStream the output stream to write to
-     * @throws IOException
+     * @param file             File to save to
+     * @param saveUpdaterState If true: save the updater state (arrays etc for Adam, Nesterov, RmsProp etc). If false: don't save
+     *                         the updater state. If you want to continue training after loading your model, this should be true,
+     *                         however may increase the file size significantly.
+     *                         If the network is to be used for inference only, set this to false to save space
      */
-    public void saveWithTrainingConfig(OutputStream outputStream) throws IOException {
-        if(this.trainingConfig == null) {
-            throw new IllegalStateException("No training configuration found!");
-        }
-
-        saveWithTrainingConfig(this.trainingConfig,outputStream);
-    }
-
-
-
-    /**
-     * Save this samediff instance with its training config.
-     * Note that if a training configuration is not defined,
-     * an {@link IllegalStateException} is thrown.
-     *
-     * @param outputFile the output stream to write to
-     * @throws IOException
-     */
-    public void saveWithTrainingConfig(File outputFile) throws IOException {
-        if(this.trainingConfig == null) {
-            throw new IllegalStateException("No training configuration found!");
-        }
-
-        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            saveWithTrainingConfig(this.trainingConfig, bufferedOutputStream);
-            bufferedOutputStream.flush();
-        }
-
-    }
-
-
-    /**
-     * Save this samediff instance as a zip file
-     * with the training configuration
-     * @param trainingConfig the training configuration to save
-     * @param outputStream the output stream to write to
-     * @throws IOException
-     */
-    public void saveWithTrainingConfig(TrainingConfig trainingConfig,OutputStream outputStream) throws  IOException {
-        ObjectMapper objectMapper = ObjectMapperHolder.getJsonMapper();
-        String configJson = objectMapper.writeValueAsString(trainingConfig);
-        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(outputStream));
-        ZipEntry config = new ZipEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
-        zipfile.putNextEntry(config);
-        zipfile.write(configJson.getBytes());
-
-        ZipEntry sameDiff = new ZipEntry(SAMEDIFF_FILE_ENTRY_NAME);
-        zipfile.putNextEntry(sameDiff);
-
-        val fb = asFlatBuffers();
-        val offset = fb.position();
-
-        val array = fb.array();
-
-        try (BufferedOutputStream zipFileOutputStream = new BufferedOutputStream(zipfile);
-             val dos = new DataOutputStream(zipFileOutputStream)) {
-            dos.write(array, offset, array.length - offset);
+    public void save(File file, boolean saveUpdaterState) {
+        try {
+            asFlatFile(file, saveUpdaterState);
+        } catch (IOException e) {
+            throw new RuntimeException("Error saving SameDiff instance to file", e);
         }
     }
 
-
     /**
-     * Restore a {@link SameDiff}
-     * instance from a configuration
-     * zip file
-     * @param file the file to restore from
-     * @return the associated samediff instance
-     * @throws IOException
+     * Load the SameDiff instance previously saved with {@link #save(File, boolean)}
+     * @param file             The file to load the network from
+     * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
+     *                         For inference only, this should be false, as the updater state will take more memory, but
+     *                         is not required for training.
+     *                         If the network is to be trained further, this should be true.
+     *                         The updater state can only be loaded if it was saved with the network.
+     * @return The loaded SameDiff network
      */
-    public static SameDiff restoreFromTrainingConfigZip(File file) throws IOException {
-        ZipFile zipFile = new ZipFile(file);
-        ZipEntry config = zipFile.getEntry(TRAINING_CONFIG_JSON_ZIP_ENTRY_NAME);
-        TrainingConfig trainingConfig = null;
-        try(InputStream stream = zipFile.getInputStream(config)) {
-            byte[] read = IOUtils.toByteArray(stream);
-            trainingConfig = ObjectMapperHolder.getJsonMapper().readValue(read,TrainingConfig.class);
+    public static SameDiff load(File file, boolean loadUpdaterState) {
+        try{
+            return fromFlatFile(file, loadUpdaterState);
+        } catch (IOException e){
+            throw new RuntimeException("Error loading SameDiff instance from file", e);
         }
-
-        SameDiff ret = null;
-
-        ZipEntry sameDiffFile = zipFile.getEntry(SAMEDIFF_FILE_ENTRY_NAME);
-        try(InputStream stream = zipFile.getInputStream(sameDiffFile)) {
-            byte[] read = IOUtils.toByteArray(stream);
-            ret = SameDiff.fromFlatBuffers(ByteBuffer.wrap(read));
-        }
-
-
-        ret.setTrainingConfig(trainingConfig);
-        ret.initializeTraining();
-        return ret;
     }
 
     /**
-     * This method converts SameDiff instance to
-     * FlatBuffers and saves it to file which
-     * can be restored later
+     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later<br>
+     * This includes the updater state, if applicable
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
     public void asFlatFile(@NonNull File file) throws IOException {
-        val fb = asFlatBuffers();
+        asFlatFile(file, true);
+    }
+
+    public void asFlatFile(@NonNull File file, boolean withUpdaterState) throws IOException {
+        val fb = asFlatBuffers(withUpdaterState);
         val offset = fb.position();
 
         val array = fb.array();
@@ -4489,9 +4733,10 @@ public class SameDiff extends SDBaseOps {
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
+     * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      */
-    public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration) throws IOException {
-        val fb = asFlatBuffers(configuration);
+    public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) throws IOException {
+        val fb = asFlatBuffers(configuration, includeUpdaterState);
         val offset = fb.position();
 
         val array = fb.array();
@@ -4503,22 +4748,32 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Create a {@link SameDiff}
-     * instance from a file.
-     * The method to save the file is
-     * {@link #asFlatFile(File)}
+     * Create a {@link SameDiff} instance from a file, including the updater state
+     * The method to save the file is {@link #save(File, boolean)}
      * @param file the file to load from
      * @return the loaded same diff instance
      * @throws IOException
      */
     public static SameDiff fromFlatFile(@NonNull File file) throws IOException {
+        return fromFlatFile(file, true);
+    }
+
+    /**
+     * Create a {@link SameDiff} instance from a file, optionally also loading the updater state
+     * The method to save the file is {@link #save(File, boolean)}
+     * @param file the file to load from
+     * @param loadUpdaterState If true, load the updater state (Adam etc state). For training, use true. For inference, use false
+     * @return the loaded same diff instance
+     * @throws IOException
+     */
+    public static SameDiff fromFlatFile(@NonNull File file, boolean loadUpdaterState) throws IOException {
         byte[] bytes;
         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
             bytes = IOUtils.toByteArray(is);
         }
 
         ByteBuffer bbIn = ByteBuffer.wrap(bytes);
-        return fromFlatBuffers(bbIn);
+        return fromFlatBuffers(bbIn, loadUpdaterState);
     }
 
     /**
@@ -4530,6 +4785,10 @@ public class SameDiff extends SDBaseOps {
      * @throws IOException
      */
     public static SameDiff fromFlatBuffers(ByteBuffer bbIn) throws IOException {
+        return fromFlatBuffers(bbIn, true);
+    }
+
+    public static SameDiff fromFlatBuffers(ByteBuffer bbIn, boolean loadUpdaterState) throws IOException {
 
         FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
 
@@ -4658,7 +4917,9 @@ public class SameDiff extends SDBaseOps {
                     v.setInputsForOp(new ArrayList<String>());
                 }
                 if(!v.getInputsForOp().contains(df.getOwnName())){
-                    v.getInputsForOp().add(df.getOwnName());
+                    v.getInputsForOp(
+
+                    ).add(df.getOwnName());
                 }
             }
 
@@ -4715,6 +4976,38 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
+        //Reconstruct training config
+        String tc = fg.trainingConfig();
+        if(tc != null){
+            sd.trainingConfig = TrainingConfig.fromJson(tc);
+        }
+
+        if(loadUpdaterState) {
+            //Reconstruct updater state
+            if (fg.updaterStateLength() > 0) {
+                sd.updaterMap = new HashMap<>();
+                int n = fg.updaterStateLength();
+                for (int i = 0; i < n; i++) {
+                    UpdaterState us = fg.updaterState(i);
+                    String name = us.paramName();
+                    int nKeys = us.updaterStateKeysLength();
+                    Map<String, INDArray> m = new HashMap<>();
+                    for (int j = 0; j < nKeys; j++) {
+                        String key = us.updaterStateKeys(j);
+                        FlatArray fa = us.updaterStateValues(j);
+                        INDArray stateArr = Nd4j.createFromFlatArray(fa);
+                        m.put(key, stateArr);
+                    }
+
+                    //Initialize the updater
+                    GradientUpdater gu = sd.trainingConfig.getUpdater().instantiate(m, false);
+                    sd.updaterMap.put(name, gu);
+                }
+
+                sd.initializedTraining = true;
+            }
+        }
+
         return sd;
     }
 
@@ -4726,13 +5019,13 @@ public class SameDiff extends SDBaseOps {
      */
     public String asFlatPrint() {
         val sb = new StringBuilder();
-        val fb = asFlatBuffers();
+        val fb = asFlatBuffers(false);
 
         val graph = FlatGraph.getRootAsFlatGraph(fb);
 
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
-            val var = graph.variables(e);
+            FlatVariable var = graph.variables(e);
             INDArray ndarray = null;
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 FlatArray fa = var.ndarray();
@@ -4776,7 +5069,7 @@ public class SameDiff extends SDBaseOps {
 
         sb.append("\nOps sequence:\n\n");
         for (int e = 0; e < graph.nodesLength(); e++) {
-            val node = graph.nodes(e);
+            FlatNode node = graph.nodes(e);
 
             log.info("{}:<{}>", node.id(), node.name());
             sb.append(node.id())
@@ -4802,7 +5095,7 @@ public class SameDiff extends SDBaseOps {
             sb.append("; Inputs: {");
 
             for (int i = 0; i < node.inputPairedLength(); i++) {
-                val pair = node.inputPaired(i);
+                IntPair pair = node.inputPaired(i);
 
                 sb.append("[").append(pair.first()).append(":").append(pair.second()).append("]");
 
@@ -4886,6 +5179,12 @@ public class SameDiff extends SDBaseOps {
             String arrayShape = "-";
             if (arr != null) {
                 arrayShape = Arrays.toString(arr.shape());
+            } else if(varMap.get(s).isPlaceHolder()){
+                SDVariable v = varMap.get(s);
+                long[] phShape = v.placeholderShape();
+                if(phShape != null){
+                    arrayShape = Arrays.toString(phShape);
+                }
             }
             String varType = getVariable(s).getVariableType().toString();
             String dtype = getVariable(s).dataType().toString();
@@ -4972,7 +5271,7 @@ public class SameDiff extends SDBaseOps {
                 phValues.put(v.getName(), dt);
             }
         }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false, null);
         return out;
     }
 

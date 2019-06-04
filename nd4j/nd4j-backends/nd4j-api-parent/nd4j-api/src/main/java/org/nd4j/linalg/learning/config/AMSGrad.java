@@ -26,6 +26,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * The AMSGrad updater<br>
@@ -89,6 +90,13 @@ public class AMSGrad implements IUpdater {
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 3;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
+        return u;
+    }
+
+    @Override
+    public GradientUpdater instantiate(Map<String, INDArray> updaterState, boolean initializeStateArrays) {
+        AMSGradUpdater u = new AMSGradUpdater(this);
+        u.setState(updaterState, initializeStateArrays);
         return u;
     }
 

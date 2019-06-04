@@ -202,6 +202,15 @@ public class ArrayUtil {
         return result;
     }
 
+
+    public static short toBFloat16(float data) {
+        return (short) (Float.floatToIntBits(data) << 16);
+    }
+
+    public static short toBFloat16(double data) {
+        return toBFloat16((float) data);
+    }
+
     public static short toHalf(float data) {
         return fromFloat(data);
     }
@@ -230,6 +239,30 @@ public class ArrayUtil {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = fromFloat((float) data[i]);
+        }
+        return ret;
+    }
+
+    public static short[] toBfloats(float[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+
+    public static short[] toBfloats(int[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16((float) data[i]);
+        }
+        return ret;
+    }
+
+    public static short[] toBfloats(long[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16((float) data[i]);
         }
         return ret;
     }

@@ -175,7 +175,7 @@ DECLARE_SHAPE_FN(range) {
                 delta = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
             }
 
-            nd4j_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
+            //nd4j_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
 
             if (limit == start)
                 return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));

@@ -80,15 +80,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         throw new UnsupportedOperationException();
     }
 
-    public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration, Map<Integer, Node> intermediate) {
-        log.info("Configuration: {}", configuration);
-
-        return sd.asFlatBuffers(configuration);
-    }
-
     @Override
     public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration) {
-        return convertToFlatBuffers(sd, configuration, new HashMap<Integer, Node>());
+        return sd.asFlatBuffers(configuration, true);
     }
 
     /**
@@ -100,9 +94,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     @Override
     public INDArray[] executeGraph(SameDiff sd, ExecutorConfiguration configuration) {
 
-        Map<Integer, Node> intermediate = new HashMap<>();
-
-        ByteBuffer buffer = convertToFlatBuffers(sd, configuration, intermediate);
+        ByteBuffer buffer = convertToFlatBuffers(sd, configuration);
 
         BytePointer bPtr = new BytePointer(buffer);
 
