@@ -471,7 +471,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testDim1() {
         INDArray sum = Nd4j.linspace(1, 2, 2, DataType.DOUBLE).reshape(2, 1);
         INDArray same = sum.dup();
-        assertEquals(same.sum(1), sum);
+        assertEquals(same.sum(1), sum.reshape(2));
     }
 
     @Test
