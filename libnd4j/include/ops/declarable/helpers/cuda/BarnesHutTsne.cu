@@ -72,7 +72,9 @@ namespace helpers {
     }
     BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
 
-
+    template <typename T>
+    void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
+    }
 
     void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
 

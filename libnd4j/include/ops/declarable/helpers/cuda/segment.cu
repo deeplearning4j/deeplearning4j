@@ -68,7 +68,7 @@ namespace helpers {
              //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
 //             if (val[segment] < x[xIndex])
 //                 val[segment] = x[xIndex];
-             nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+//             nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
          }
 //        __syncthreads();
 //        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
@@ -121,7 +121,7 @@ namespace helpers {
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
             //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-           nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
+//           nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
 //            if (val[segment] > x[xIndex])
 //                val[segment] = x[xIndex];
 //            printf("%d(%lld): %lf > %lf\n", e, segment, x[xIndex], val[segment]);
@@ -172,7 +172,7 @@ namespace helpers {
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+//            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
         }
     }
     template <typename T, typename I>
@@ -211,7 +211,7 @@ namespace helpers {
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
             //val[segment] = nd4j::math::nd4j_max<T>(x[xIndex], val[segment]);
-            nd4j::math::atomics::nd4j_atomicAdd(&val[segment], x[xIndex]);
+//            nd4j::math::atomics::nd4j_atomicAdd(&val[segment], x[xIndex]);
         }
         __syncthreads();
 
@@ -254,7 +254,7 @@ namespace helpers {
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-            nd4j::math::atomics::nd4j_atomicMul(&val[segment], x[xIndex]);
+//            nd4j::math::atomics::nd4j_atomicMul(&val[segment], x[xIndex]);
         }
         __syncthreads();
 
@@ -287,9 +287,9 @@ namespace helpers {
 //                 classesRangesStart[pos] = j;
 //            result[pos] = nd4j::math::nd4j_min<int>(classesRangesStart[pos], j);
             //atomicMin(&classesRangesStart[pos], j);
-            nd4j::math::atomics::nd4j_atomicMin(&classesRangesStart[pos], (int)j);
+//            nd4j::math::atomics::nd4j_atomicMin(&classesRangesStart[pos], (int)j);
 //             = nd4j::math::nd4j_min<int>(classesRangesStart[pos], result[pos]);
-            nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
+//            nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
         }
     }
     // segment max
@@ -369,11 +369,50 @@ namespace helpers {
                     for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                         auto xIndex = shape::getIndexOffset(e, inputTads, len);
                         auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                        nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+//                        nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                     }
                 }
             }
 //        }
+    }
+
+    // SegmentMin kernel
+    template <typename T, typename I>
+    static __global__ void segmentMinTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+        __shared__ T* val;
+        __shared__ Nd4jLong len, segment, zIndex, total;
+        __shared__ T* z;
+        __shared__ int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+            segment = indices[blockIdx.x]; // / threadsPerSegment;
+            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
+            len = shape::length(inputTads);
+            start = starts[segment];
+            finish = start + lengths[segment];
+            total = shape::sizeAt(inputShape, 0);
+
+        }
+        __syncthreads();
+
+        auto idx = blockIdx.x;
+        if (blockIdx.x <= total) {
+            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            if (blockIdx.x == start) {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    z[zIndex] = x[xIndex];
+                }
+            }
+            else {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+//                    nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
+                }
+            }
+        }
     }
 
     template <typename T, typename I>
@@ -429,6 +468,14 @@ namespace helpers {
             segmentMinLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
         }
         else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            segmentMinTadKernel<T,I><<<input->sizeAt(0) + 1, 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
 
         }
     }
