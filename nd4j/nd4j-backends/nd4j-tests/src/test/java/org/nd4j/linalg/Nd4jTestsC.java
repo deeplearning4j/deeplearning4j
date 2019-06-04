@@ -7737,7 +7737,64 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(in1, in2);
         }
+    }
 
+
+    @Test
+    public void testToXMatrix(){
+
+        List<long[]> shapes = Arrays.asList(new long[]{3, 4}, new long[]{3, 1}, new long[]{1,3});
+        for(long[] shape : shapes){
+            long length = ArrayUtil.prodLong(shape);
+            INDArray orig = Nd4j.arange(length).castTo(DataType.DOUBLE).reshape(shape);
+            for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT,
+                    DataType.LONG, DataType.SHORT, DataType.UBYTE, DataType.UINT16, DataType.UINT32, DataType.UINT64, DataType.BFLOAT16}) {
+                INDArray arr = orig.castTo(dt);
+
+                float[][] fArr = arr.toFloatMatrix();
+                double[][] dArr = arr.toDoubleMatrix();
+                int[][] iArr = arr.toIntMatrix();
+                long[][] lArr = arr.toLongMatrix();
+
+                INDArray f = Nd4j.createFromArray(fArr).castTo(dt);
+                INDArray d = Nd4j.createFromArray(dArr).castTo(dt);
+                INDArray i = Nd4j.createFromArray(iArr).castTo(dt);
+                INDArray l = Nd4j.createFromArray(lArr).castTo(dt);
+
+                assertEquals(arr, f);
+                assertEquals(arr, d);
+                assertEquals(arr, i);
+                assertEquals(arr, l);
+            }
+        }
+    }
+
+    @Test
+    public void testToXVector(){
+
+        List<long[]> shapes = Arrays.asList(new long[]{3}, new long[]{3, 1}, new long[]{1,3});
+        for(long[] shape : shapes){
+            INDArray orig = Nd4j.arange(3).castTo(DataType.DOUBLE).reshape(shape);
+            for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT,
+                    DataType.LONG, DataType.SHORT, DataType.UBYTE, DataType.UINT16, DataType.UINT32, DataType.UINT64, DataType.BFLOAT16}) {
+                INDArray arr = orig.castTo(dt);
+
+                float[] fArr = arr.toFloatVector();
+                double[] dArr = arr.toDoubleVector();
+                int[] iArr = arr.toIntVector();
+                long[] lArr = arr.toLongVector();
+
+                INDArray f = Nd4j.createFromArray(fArr).castTo(dt).reshape(shape);
+                INDArray d = Nd4j.createFromArray(dArr).castTo(dt).reshape(shape);
+                INDArray i = Nd4j.createFromArray(iArr).castTo(dt).reshape(shape);
+                INDArray l = Nd4j.createFromArray(lArr).castTo(dt).reshape(shape);
+
+                assertEquals(arr, f);
+                assertEquals(arr, d);
+                assertEquals(arr, i);
+                assertEquals(arr, l);
+            }
+        }
     }
 
 

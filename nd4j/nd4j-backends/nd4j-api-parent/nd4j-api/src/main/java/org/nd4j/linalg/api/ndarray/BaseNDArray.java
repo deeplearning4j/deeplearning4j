@@ -2152,13 +2152,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     /**
      * Returns true if this ndarray is 2d
-     * or 3d with a singleton element
      *
      * @return true if the element is a matrix, false otherwise
      */
     public boolean isMatrix() {
-        int rank = rank();
-        return (rank == 2 && (size(0) != 1 && size(1) != 1));
+        return rank() == 2;
     }
 
     protected INDArray newShape(long[] newShape, char ordering) {
