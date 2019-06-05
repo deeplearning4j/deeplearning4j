@@ -132,7 +132,7 @@ namespace helpers {
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-//            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
         }
     }
     template <typename T, typename I>
@@ -148,8 +148,8 @@ namespace helpers {
             segment = blockIdx.x / threadsPerSegment;
             x = reinterpret_cast<T*>(input);
             z = reinterpret_cast<T*>(output);
-            extern __shared__ unsigned char shmem[];
-            val = reinterpret_cast<T*>(shmem);
+//            extern __shared__ unsigned char shmem[];
+//            val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
 
@@ -159,8 +159,8 @@ namespace helpers {
                 start = starts[segment];
                 finish = start + lengths[segment];
                 //val[segment] = ;
-                z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
-                val[segment] = z[zIndex];
+                z[zIndex] = T(x[shape::getIndexOffset(start, inputShape, xLen)] / lengths[segment]);
+//                val[segment] = z[zIndex];
             }
 
         }
@@ -168,14 +168,14 @@ namespace helpers {
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-
-            nd4j::math::atomics::nd4j_atomicAdd(&val[segment], x[xIndex]);
+            if (lengths[segment])
+            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], T(x[xIndex] / lengths[segment]));
         }
         __syncthreads();
 
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment] / lengths[segment];
-        }
+//        if (threadIdx.x == 0) {
+//            z[zIndex] = val[segment] / lengths[segment];
+//        }
     }
 
     template <typename T, typename I>
@@ -323,6 +323,124 @@ namespace helpers {
         }
     }
 
+    // SegmentSum kernel
+    template <typename T, typename I>
+    static __global__ void segmentSumTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+        __shared__ T* val;
+        __shared__ Nd4jLong len, segment, zIndex, total;
+        __shared__ T* z;
+        __shared__ int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+            segment = indices[blockIdx.x]; // / threadsPerSegment;
+            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
+            len = shape::length(inputTads);
+            start = starts[segment];
+            finish = start + lengths[segment];
+            total = shape::sizeAt(inputShape, 0);
+
+        }
+        __syncthreads();
+
+        auto idx = blockIdx.x;
+        if (blockIdx.x <= total) {
+            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            if (blockIdx.x == start) {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    z[zIndex] = x[xIndex];
+                }
+            }
+            else {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    if (lengths[segment])
+                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+                }
+            }
+        }
+    }
+
+    // SegmentMean kernel
+    template <typename T, typename I>
+    static __global__ void segmentMeanTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+        __shared__ T* val;
+        __shared__ Nd4jLong len, segment, zIndex, total;
+        __shared__ T* z;
+        __shared__ int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+            segment = indices[blockIdx.x]; // / threadsPerSegment;
+            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
+            len = shape::length(inputTads);
+            start = starts[segment];
+            finish = start + lengths[segment];
+            total = shape::sizeAt(inputShape, 0);
+
+        }
+        __syncthreads();
+
+        auto idx = blockIdx.x;
+        if (blockIdx.x <= total) {
+            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            if (blockIdx.x == start) {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    z[zIndex] = T(x[xIndex]/lengths[segment]);
+                }
+            }
+            else {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    if (lengths[segment])
+                        nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], T(x[xIndex]/lengths[segment]));
+                }
+            }
+        }
+    }
+    // SegmentProd kernel
+    template <typename T, typename I>
+    static __global__ void segmentProdTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+        __shared__ T* val;
+        __shared__ Nd4jLong len, segment, zIndex, total;
+        __shared__ T* z;
+        __shared__ int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+            segment = indices[blockIdx.x]; // / threadsPerSegment;
+            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
+            len = shape::length(inputTads);
+            start = starts[segment];
+            finish = start + lengths[segment];
+            total = shape::sizeAt(inputShape, 0);
+
+        }
+        __syncthreads();
+
+        auto idx = blockIdx.x;
+        if (blockIdx.x <= total) {
+            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            if (blockIdx.x == start) {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    z[zIndex] = x[xIndex];
+                }
+            }
+            else {
+                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
+                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
+                }
+            }
+        }
+    }
+
     template <typename T, typename I>
     static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
         //int numClasses = output->sizeAt(0);
@@ -408,7 +526,14 @@ namespace helpers {
             segmentMeanLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
         }
         else {
-
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            segmentMeanTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
     }
@@ -432,7 +557,14 @@ namespace helpers {
             segmentSumLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
         }
         else {
-
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            segmentSumTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
     }
@@ -456,7 +588,14 @@ namespace helpers {
             segmentProdLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
         }
         else {
-
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            segmentProdTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
     }
@@ -475,7 +614,7 @@ namespace helpers {
     }
 
     void segmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), FLOAT_TYPES, INTEGER_TYPES);
     }
 
     void segmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output) {
@@ -493,7 +632,7 @@ namespace helpers {
     BUILD_DOUBLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), NUMERIC_TYPES, INTEGER_TYPES);
     BUILD_DOUBLE_TEMPLATE(template void segmentProdFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
     BUILD_DOUBLE_TEMPLATE(template void segmentSumFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
-    BUILD_DOUBLE_TEMPLATE(template void segmentMeanFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void segmentMeanFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
     BUILD_DOUBLE_TEMPLATE(template void segmentMinFunctor_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
     BUILD_DOUBLE_TEMPLATE(template void segmentMaxFunctor_, (LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
     // -------------------------------------------------------------------------------------------------------------- //
