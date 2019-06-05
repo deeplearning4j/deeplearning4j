@@ -20,6 +20,7 @@
 #include <NDArray.h>
 #include <array/NDArrayList.h>
 #include <MmulHelper.h>
+#include <PointersManager.h>
 
 
 using namespace nd4j;
@@ -410,7 +411,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);        
+    auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -583,6 +584,21 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
 
     delete exp;
     delete result;
+
+    // std::vector<void*> pAbuffs(3);
+    // for(int i = 0; i < 3; ++i)
+    //     pAbuffs[i] = x.getSpecialBuffer();
+
+    // nd4j::LaunchContext* context = x.getContext();
+    // PointersManager manager(context, "helpers::bgemm cuda");
+
+    // const void** aBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pAbuffs.data(), 3 * sizeof(void*)));
+
+    // void** p[3];
+
+    // cudaMemcpy(p, aBuffers, 3*sizeof(void*), cudaMemcpyDeviceToHost);
+
+    // manager.printDevContentOnHost<float>(*p, 9);
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
@@ -2721,7 +2737,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     delete results;
 }
-  
 
 
 
@@ -2730,5 +2745,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
 
 
- 
- 
+
+
+
