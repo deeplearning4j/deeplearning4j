@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -17,10 +18,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,30 +26,30 @@ import java.util.Map;
 @Slf4j
 @AllArgsConstructor
 @lombok.Builder
-public class FastText implements WordVectors {
+public class FastText implements WordVectors, Serializable {
 
-    private boolean supervised;
-    private boolean quantize;
-    private boolean predict;
-    private boolean predict_prob;
+    @Getter private boolean supervised;
+    @Getter private boolean quantize;
+    @Getter private boolean predict;
+    @Getter private boolean predict_prob;
 
     private boolean skipgram;
     @Builder.Default  private int bucket = 100;
     @Builder.Default  private int minCount = 1;
 
-    private boolean cbow;
-    private boolean nn;
-    private boolean analogies;
-    private String inputFile;
-    private String outputFile;
-    private SentenceIterator iterator;
-    private String modelName;
-    private String lossName;
+    @Getter private boolean cbow;
+    @Getter private boolean nn;
+    @Getter private boolean analogies;
+    @Getter private String inputFile;
+    @Getter private String outputFile;
+    @Getter private SentenceIterator iterator;
+    @Getter private String modelName;
+    @Getter private String lossName;
     //TODO:
-    private double[] pretrainedVectors;
+    @Getter private double[] pretrainedVectors;
 
-    private JFastText fastTextImpl;
-    private boolean modelLoaded;
+    private transient JFastText fastTextImpl;
+    @Getter private boolean modelLoaded;
     private VocabCache vocabCache;
 
     public FastText(File modelPath) {
@@ -80,6 +78,14 @@ public class FastText implements WordVectors {
                 log.error(e.getMessage());
             }
         }
+        /*if (modelUtils == null) {
+            val vocabCache = new AbstractCache.Builder().build();
+
+            val lookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).build();
+
+            modelUtils = new BasicModelUtils<>();
+            modelUtils.init(lookupTable);
+        }*/
     }
 
     public void fit() {
@@ -210,7 +216,7 @@ public class FastText implements WordVectors {
         return fastTextImpl.getWords().contains(word);
     }
 
-    protected transient ModelUtils modelUtils = new BasicModelUtils<>();
+    protected transient ModelUtils modelUtils;
 
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {

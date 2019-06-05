@@ -32,6 +32,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import org.deeplearning4j.models.fasttext.FastText;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
@@ -92,7 +93,7 @@ public class WordVectorSerializer {
     /**
      * @param modelFile
      * @return
-     * @throws FileNotFoundException
+     * @throws FileNotFoundExceptionцк
      * @throws IOException
      * @throws NumberFormatException
      */
@@ -3089,6 +3090,43 @@ public class WordVectorSerializer {
         word2Vec.setModelUtils(vectors.getModelUtils());
         return word2Vec;
     }
+
+    public static void writeWordVectors(@NonNull FastText vectors, @NonNull File path) throws IOException {
+        ObjectOutputStream outputStream = null;
+        try {
+            outputStream = new ObjectOutputStream(new FileOutputStream(path ));
+            outputStream.writeObject(vectors);
+        }
+        finally {
+            try {
+                if (outputStream != null) {
+                    outputStream.flush();
+                    outputStream.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static FastText readWordVectors(File path) {
+        FastText result = null;
+        try {
+            FileInputStream fileIn = new FileInputStream(path);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            try {
+                result = (FastText) in.readObject();
+            } catch (ClassNotFoundException ex) {
+
+            }
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return result;
+    }
+
 
     public static void printOutProjectedMemoryUse(long numWords, int vectorLength, int numTables) {
         double memSize = numWords * vectorLength * Nd4j.sizeOfDataType() * numTables;

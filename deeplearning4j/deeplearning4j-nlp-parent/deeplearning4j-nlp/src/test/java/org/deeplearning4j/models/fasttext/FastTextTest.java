@@ -116,27 +116,6 @@ public class FastTextTest {
     }
 
     @Test
-    public void testWordsStatistics() throws IOException {
-
-        File output = testDir.newFile();
-
-        FastText fastText =
-                FastText.builder().skipgram(true).
-                        inputFile(inputFile.getAbsolutePath()).
-                        outputFile(output.getAbsolutePath()).build();
-        log.info("\nTraining supervised model ...\n");
-        fastText.init();
-        fastText.fit();
-
-        fastText.setModelUtils(new BasicModelUtils());
-
-        fastText.wordsNearest("association", 3);
-        fastText.similarity("Football", "teams");
-        fastText.similarity("professional", "minutes");
-        fastText.similarity("java","cpp");
-    }
-
-    @Test
     public void testPredictProbability() throws IOException {
         String text = "I like soccer";
 

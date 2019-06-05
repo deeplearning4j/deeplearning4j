@@ -25,6 +25,7 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
+import org.deeplearning4j.models.fasttext.FastText;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -37,10 +38,12 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -287,5 +290,33 @@ public class WordVectorSerializerTest {
                             ((InMemoryLookupTable<VocabWord>) deser).getSyn0().getDouble(r,c), 1e-5);
             }
         }
+    }
+
+    @Test
+    public void FastText_Correct_WhenDeserialized() throws IOException {
+
+        FastText fastText =
+                FastText.builder().cbow(true).build();
+
+        WordVectorSerializer.writeWordVectors(fastText, new File("some.data"));
+
+        FastText deser = null;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            deser = WordVectorSerializer.readWordVectors(new File("some.data"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+
+        assertNotNull(deser);
+        assertEquals(fastText.isCbow(), deser.isCbow());
+        assertEquals(fastText.isModelLoaded(), deser.isModelLoaded());
+        assertEquals(fastText.isAnalogies(), deser.isAnalogies());
+        assertEquals(fastText.isNn(), deser.isNn());
+        assertEquals(fastText.isPredict(), deser.isPredict());
+        assertEquals(fastText.isPredict_prob(), deser.isPredict_prob());
+        assertEquals(fastText.isQuantize(), deser.isQuantize());
+        assertEquals(fastText.getInputFile(), deser.getInputFile());
     }
 }

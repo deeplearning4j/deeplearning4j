@@ -68,7 +68,7 @@ public class Word2VecTests {
 
     @Before
     public void before() throws Exception {
-        File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
+        File googleModelTextFile = Resources.asFile("word2vecserialization/google_news_30.txt");
         googleModel = WordVectorSerializer.readWord2VecModel(googleModelTextFile);
         inputFile = Resources.asFile("big/raw_sentences.txt");
         inputFile2 = Resources.asFile("big/raw_sentences_2.txt");
