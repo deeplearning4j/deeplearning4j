@@ -188,6 +188,57 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
     manager.synchronize();
 }
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void invertPermutationCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo) {
+
+    const T* x = reinterpret_cast<const T*>(vx);
+          T* z = reinterpret_cast<T*>(vz);
+
+    __shared__ Nd4jLong len, totalThreads;
+
+    if (threadIdx.x == 0) {
+
+        len  = shape::length(xShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < len; i += totalThreads) {
+
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+        const Nd4jLong index = x[xOffset];
+        const auto zOffset = shape::getIndexOffset(index, zShapeInfo, len);
+        z[zOffset] = i;
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ static void invertPermutationCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
+                                                   const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo) {
+
+    invertPermutationCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+}
+BUILD_SINGLE_TEMPLATE(template void invertPermutationCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo), LIBND4J_TYPES);
+
+////////////////////////////////////////////////////////////////////////
+void invertPermutation(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+
+    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+
+    PointersManager manager(context, "invertPermutation");
+
+    NDArray::prepareSpecialUse({&output}, {&input});
+    BUILD_SINGLE_SELECTOR(input.dataType(), invertPermutationCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input});
+
+    manager.synchronize();
+}
 
 
 
@@ -246,11 +297,6 @@ void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, co
     }
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
-
-    ////////////////////////////////////////////////////////////////////////
-    void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
-
-    }
 
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
