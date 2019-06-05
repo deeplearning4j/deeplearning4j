@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.mdp.*;
 import org.deeplearning4j.rl4j.mdp.HistoryProcessorMDPRunner;
 import org.deeplearning4j.rl4j.mdp.IMDPRunner;
 import org.deeplearning4j.rl4j.mdp.MDPRunner;
@@ -28,7 +29,6 @@ import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
-import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
@@ -41,6 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.rl4j.mdp.BaseMDPRunner;
 
 import java.util.ArrayList;
 
@@ -72,14 +73,15 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Setter
     private IDQN targetDQN;
 
-    @Getter // FIXME: Remove, was added to help unit tests
+    @Getter @Setter // FIXME: Remove, was added to help unit tests
     private int lastAction;
 
     private double accuReward = 0;
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
-    // FIXME: Temporary refac class
-    IMDPRunner.GetHStackContext getHStackContext = new IMDPRunner.GetHStackContext();
+    @Getter // FIXME: Remove, was added to help unit tests
+    private BaseMDPRunner<O, Integer> mdpRunner; // FIXME: Change type to IMDPRunner
+    //private IMDPRunner mdpRunner; // FIXME: Temporary refac code
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                              DataManager dataManager, int epsilonNbStep) {
@@ -104,7 +106,17 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     }
 
     public void preEpoch() {
-        getHStackContext.setHistory(null);
+        // FIXME: Temporary refac code ---
+        // FIXME: Find a way to set the HistoryProcessor in the ctor
+        if(getHistoryProcessor() != null) {
+            mdpRunner = new HistoryProcessorMDPRunner(getHistoryProcessor());
+        } else {
+            mdpRunner = new MDPRunner();
+        }
+        // ---
+
+        mdpRunner.onPreEpoch();
+
         lastAction = 0;
         accuReward = 0;
 
@@ -127,40 +139,17 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         Integer action;
         INDArray input = getInput(obs);
 
-        // FIXME: Temporary refac code ---
-        IMDPRunner mdpRunner;
-        if(getHistoryProcessor() != null) {
-            mdpRunner = new HistoryProcessorMDPRunner(getHistoryProcessor());
-        } else {
-            mdpRunner = new MDPRunner();
-        }
-        // ---
-
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
 
         if (isHistoryProcessor)
             getHistoryProcessor().record(input);
 
-        int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
-        int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
-        int updateStart = getConfiguration().getUpdateStart()
-                + ((getConfiguration().getBatchSize() + historyLength) * skipFrame);
+        mdpRunner.setStep(getStepCounter());
+        mdpRunner.setMaxQ(Double.NaN); //ignore if Nan for stats
 
-        Double maxQ = Double.NaN; //ignore if Nan for stats
-
-        //if step of training, just repeat lastAction
-        if (getStepCounter() % skipFrame != 0) {
-            action = lastAction;
-        } else {
-            INDArray hstack = mdpRunner.getHStack(input, getHStackContext);
-
-            INDArray qs = getCurrentDQN().output(hstack);
-            int maxAction = Learning.getMaxAction(qs);
-
-            maxQ = qs.getDouble(maxAction);
-            action = getEgPolicy().nextAction(hstack);
-        }
+        action = mdpRunner.getNextAction(getCurrentDQN(), getEgPolicy(), input);
+        action = action == null ? lastAction : action;
 
         lastAction = action;
 
@@ -168,6 +157,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
+        int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
         //if it's not a skipped frame, you can do a step of training
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
@@ -177,20 +167,23 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[] {ninput};
 
-            Transition<Integer> trans = new Transition(getHStackContext.getHistory(), action, accuReward, stepReply.isDone(), nhistory[0]);
+            Transition<Integer> trans = new Transition(mdpRunner.getHistory(), action, accuReward, stepReply.isDone(), nhistory[0]);
             getExpReplay().store(trans);
 
+            int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
+            int updateStart = getConfiguration().getUpdateStart()
+                    + ((getConfiguration().getBatchSize() + historyLength) * skipFrame);
             if (getStepCounter() > updateStart) {
                 Pair<INDArray, INDArray> targets = setTarget(getExpReplay().getBatch());
                 getCurrentDQN().fit(targets.getFirst(), targets.getSecond());
             }
 
-            getHStackContext.setHistory(nhistory);
+            mdpRunner.setHistory(nhistory);
             accuReward = 0;
         }
 
 
-        return new QLStepReturn<O>(maxQ, getCurrentDQN().getLatestScore(), stepReply);
+        return new QLStepReturn<O>(mdpRunner.getMaxQ(), getCurrentDQN().getLatestScore(), stepReply);
 
     }
 

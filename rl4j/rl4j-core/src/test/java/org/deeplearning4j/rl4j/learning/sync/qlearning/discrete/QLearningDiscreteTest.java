@@ -3,16 +3,18 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 import org.deeplearning4j.rl4j.learning.TestHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.TestMDP;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
+import org.deeplearning4j.rl4j.mdp.BaseMDPRunner;
 import org.deeplearning4j.rl4j.policy.TestEpsGreedyPolicy;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
 public class QLearningDiscreteTest {
 
@@ -309,4 +311,63 @@ public class QLearningDiscreteTest {
         result =  sut.testTrainStep(new TestMDP.TestObservation());
         assertEquals(4.0, result.getMaxQ(), 0.0);
     }
+
+
+    @Test
+    public void preEpoch_WithHistoryProcessor_ShouldResetHistory() throws IOException {
+
+        // Arrange
+        TestHistoryProcessor hp = new TestHistoryProcessor(2);
+        TestMDP mdp = new TestMDP();
+        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, hp);
+        TestEpsGreedyPolicy policy = new TestEpsGreedyPolicy(new int[] { 4, 3, 2, 1 });
+        sut.setEgPolicy(policy);
+        //sut.getMdpRunner().setHistory(new INDArray[0]); // FIXME Uncomment when mdpRunner is instanciated in ctor
+
+        // Act
+        sut.preEpoch();
+
+        // Assert
+        assertNull(sut.getMdpRunner().getHistory());
+    }
+
+    /*
+    FIXME: Uncomment once mdpRunner is instanciated in ctor
+    @Test
+    public void preEpoch_NoHistoryProcessor_ShouldResetHistory() throws IOException {
+
+        // Arrange
+        TestHistoryProcessor hp = null;
+        TestMDP mdp = new TestMDP();
+        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, hp);
+        TestEpsGreedyPolicy policy = new TestEpsGreedyPolicy(new int[] { 4, 3, 2, 1 });
+        sut.setEgPolicy(policy);
+        sut.getMdpRunner().setHistory(new INDArray[0]);
+
+        // Act
+        sut.preEpoch();
+
+        // Assert
+        assertNull(sut.getMdpRunner().getHistory());
+    }
+
+    @Test
+    public void preEpoch_WithHistoryProcessor_ShouldResetLastAction() throws IOException {
+
+        // Arrange
+        TestHistoryProcessor hp = new TestHistoryProcessor(2);
+        TestMDP mdp = new TestMDP();
+        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, hp);
+        TestEpsGreedyPolicy policy = new TestEpsGreedyPolicy(new int[] { 4, 3, 2, 1 });
+        sut.setEgPolicy(policy);
+        sut.setLastAction(-1);
+
+        // Act
+        sut.preEpoch();
+
+        // Assert
+        assertEquals(0, sut.getLastAction());
+    }
+
+     */
 }

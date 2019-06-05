@@ -1,25 +1,32 @@
 package org.deeplearning4j.rl4j.mdp;
 
+import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.rl4j.mdp.BaseMDPRunner;
 
-public class HistoryProcessorMDPRunner implements IMDPRunner {
+public class HistoryProcessorMDPRunner<O extends Encodable, A> extends BaseMDPRunner<O, A> {
 
     private final IHistoryProcessor historyProcessor;
+
+    @Setter
+    private int step;
 
     public HistoryProcessorMDPRunner(IHistoryProcessor historyProcessor) {
 
         this.historyProcessor = historyProcessor;
     }
 
-    public <O extends Encodable, A, AS extends ActionSpace<A>> Learning.InitMdp<O> initMdp(MDP<O, A, AS> mdp) {
+    public <AS extends ActionSpace<A>> Learning.InitMdp<O> initMdp(MDP<O, A, AS> mdp) {
 
         O obs = mdp.reset();
 
@@ -53,13 +60,13 @@ public class HistoryProcessorMDPRunner implements IMDPRunner {
     }
 
     // FIXME: Work in progress
-    public INDArray getHStack(INDArray input, IMDPRunner.GetHStackContext context) {
-        INDArray[] history = context.getHistory();
+    public INDArray getHStack(INDArray input) {
+        INDArray[] history = getHistory();
 
         if (history == null) {
             historyProcessor.add(input);
             history = historyProcessor.getHistory();
-            context.setHistory(history);
+            setHistory(history);
         }
         //concat the history into a single INDArray input
         INDArray hstack = Transition.concat(Transition.dup(history));
@@ -75,4 +82,16 @@ public class HistoryProcessorMDPRunner implements IMDPRunner {
         return hstack;
     }
 
+    public A getNextAction(IDQN currentDQN, Policy<O, A> policy, INDArray input) {
+        int skipFrame = historyProcessor.getConf().getSkipFrame();
+
+        setMaxQ(Double.NaN); //ignore if Nan for stats
+
+        //if step of training, just repeat lastAction
+        if (step % skipFrame != 0) {
+            return null;
+        } else {
+            return super.getNextAction(currentDQN, policy, input);
+        }
+    }
 }

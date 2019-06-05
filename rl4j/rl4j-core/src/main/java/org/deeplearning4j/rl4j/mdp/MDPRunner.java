@@ -9,9 +9,10 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.rl4j.mdp.BaseMDPRunner;
 
-public class MDPRunner implements IMDPRunner {
-    public <O extends Encodable, A, AS extends ActionSpace<A>> Learning.InitMdp<O> initMdp(MDP<O, A, AS> mdp) {
+public class MDPRunner<O extends Encodable, A> extends BaseMDPRunner<O, A> {
+    public <AS extends ActionSpace<A>> Learning.InitMdp<O> initMdp(MDP<O, A, AS> mdp) {
         O obs = mdp.reset();
         O nextO = obs;
 
@@ -23,13 +24,13 @@ public class MDPRunner implements IMDPRunner {
     }
 
     // FIXME: Work in progress
-    public INDArray getHStack(INDArray input, IMDPRunner.GetHStackContext context) {
-        INDArray[] history = context.getHistory();
+    public INDArray getHStack(INDArray input) {
+        INDArray[] history = getHistory();
 
         if (history == null) {
             // FIXME: maybe have a History class with its own init/update behavior
             history = new INDArray[] {input};
-            context.setHistory(history);
+            setHistory(history);
         }
 
         INDArray hstack = Transition.concat(Transition.dup(history)); // FIXME: check if equivalent to hstack = history[0] in this case
@@ -42,5 +43,9 @@ public class MDPRunner implements IMDPRunner {
         }
 
         return hstack;
+    }
+
+    public void setStep(int step) {
+        // Do nothing
     }
 }
