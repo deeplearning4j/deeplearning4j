@@ -66,6 +66,48 @@ namespace helpers {
     }
 
     template <typename T, typename I>
+    static __global__ void unsortedSegmentMaxLinearKernel(void* input, Nd4jLong* inputShape, void* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
+        __shared__ T* val;
+        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
+        __shared__ T* x;
+        __shared__ T* z;
+        __shared__ I* y; //int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+//            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
+            segment = blockIdx.x;// / threadsPerSegment;
+            x = reinterpret_cast<T*>(input);
+            z = reinterpret_cast<T*>(output);
+            y = reinterpret_cast<I*>(indices);
+//            extern __shared__ unsigned char shmem[];
+//            val = reinterpret_cast<T*>(shmem);
+            xLen = shape::length(inputShape);
+            zLen = shape::length(outputShape);
+
+//            if (segment < numOfClasses) {
+            zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+            //start = starts[segment];
+            //finish = start + lengths[segment];
+            if (lengths[segment] > 0)
+                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)];
+            else
+                z[zIndex] = -DataTypeUtils::max<T>();
+//                val[segment] = z[zIndex];
+//            }
+
+        }
+        __syncthreads();
+        if (lengths[segment] > 0)
+        for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
+            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+            auto yIndex = shape::getIndexOffset(e, indicesShape, xLen);
+            if (y[yIndex] == segment) {
+                nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+            }
+        }
+    }
+
+    template <typename T, typename I>
     static __global__ void segmentMinLinearKernel(void* input, Nd4jLong* inputShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
         __shared__ T* val;
         __shared__ Nd4jLong xLen, zLen, segment, zIndex;
@@ -100,6 +142,49 @@ namespace helpers {
         }
 
     }
+
+    template <typename T, typename I>
+    static __global__ void unsortedSegmentMinLinearKernel(void* input, Nd4jLong* inputShape, void* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
+        __shared__ T* val;
+        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
+        __shared__ T* x;
+        __shared__ T* z;
+        __shared__ I* y; //int threadsPerSegment, start, finish;
+
+        if (threadIdx.x == 0) {
+//            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
+            segment = blockIdx.x;// / threadsPerSegment;
+            x = reinterpret_cast<T*>(input);
+            z = reinterpret_cast<T*>(output);
+            y = reinterpret_cast<I*>(indices);
+//            extern __shared__ unsigned char shmem[];
+//            val = reinterpret_cast<T*>(shmem);
+            xLen = shape::length(inputShape);
+            zLen = shape::length(outputShape);
+
+//            if (segment < numOfClasses) {
+            zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+            //start = starts[segment];
+            //finish = start + lengths[segment];
+            if (lengths[segment] > 0)
+                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)];
+            else
+                z[zIndex] = DataTypeUtils::max<T>();
+//                val[segment] = z[zIndex];
+//            }
+
+        }
+        __syncthreads();
+        if (lengths[segment] > 0)
+            for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
+                auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+                auto yIndex = shape::getIndexOffset(e, indicesShape, xLen);
+                if (y[yIndex] == segment) {
+                    nd4j::math::atomics::nd4j_atomicMin(&z[zIndex], x[xIndex]);
+                }
+            }
+    }
+
     template <typename T, typename I>
     static __global__ void segmentSumLinearKernel(void* input, Nd4jLong* inputShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
         __shared__ T* val;
@@ -221,7 +306,7 @@ namespace helpers {
         }
 
     }
-
+    // fill up segments starts and ends - ordered case
     template <typename I>
     static __global__ void fillUpSegmentsKernel(void* indices, Nd4jLong* indexShape, int numClasses, int* classesRangesStart, int* classesRangesLenghts) {
         __shared__ I* idxBuf;
@@ -242,11 +327,36 @@ namespace helpers {
             nd4j::math::atomics::nd4j_atomicAdd(&classesRangesLenghts[pos], 1);
         }
     }
+
+    // fill up segments starts and counts - unsorted case
+    template <typename I>
+    static __global__ void fillUpUnsortedSegmentsKernel(void* indices, Nd4jLong* indexShape, int numClasses, int* classes) {
+        __shared__ I* idxBuf;
+        __shared__ Nd4jLong idxLen;
+        __shared__ int* result;
+        if (threadIdx.x == 0) {
+            idxBuf = reinterpret_cast<I*>(indices);
+            idxLen = shape::length(indexShape);
+        }
+        __syncthreads();
+
+        auto tid = threadIdx.x + blockDim.x * blockIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (auto j = tid; j < idxLen; j += step) {
+            auto k = idxBuf[j];
+            auto beginPos = 2 * k;
+            auto sizePos = beginPos + 1;
+            printf("%d, %d\n", beginPos, sizePos);
+            nd4j::math::atomics::nd4j_atomicMin(&classes[beginPos], (int)j);
+            nd4j::math::atomics::nd4j_atomicAdd(&classes[sizePos], 1);
+        }
+    }
     // segment max
     template <typename T, typename I>
     static __global__ void segmentMaxTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads,
             Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf,
-            Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+            Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets, T filler = 0) {
 
         __shared__ T* val;
         __shared__ Nd4jLong len, segment, zIndex, total;
@@ -643,27 +753,87 @@ namespace helpers {
         return true;
     }
 
-    template <typename T>
-    static void unsortedSegmentMaxFunctor_(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    template <typename T, typename I>
+    static void unsortedSegmentMaxFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        auto stream = context->getCudaStream();
+//        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
+//        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
+//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
+        classesRangesBegs.assign(indices->lengthOf());
+        classesRangesLens.assign(0);
+        dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
+//        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
+        int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
+        int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+        fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(), numOfClasses, begins, lengths);
+        classesRangesBegs.syncToHost();
+        classesRangesLens.syncToHost();
+
+        if (input->isVector()) {
+            unsortedSegmentMaxLinearKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            dims.x = input->sizeAt(0);
+            output->assign(-DataTypeUtils::max<T>());
+            segmentMaxTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+        }
 
     }
 
-    void unsortedSegmentMaxFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMaxFunctor_, (input, indices, numOfClasses, output), NUMERIC_TYPES);
+    void unsortedSegmentMaxFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMaxFunctor_, (context, input, indices, numOfClasses, output), NUMERIC_TYPES, INTEGER_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMaxFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentMaxFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
-    template <typename T>
-    static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    template <typename T, typename I>
+    static void unsortedSegmentMinFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        auto stream = context->getCudaStream();
+//        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
+//        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
+//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
+        classesRangesBegs.assign(indices->lengthOf());
+        classesRangesLens.assign(0);
+        dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
+//        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
+        int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
+        int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+        fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(), numOfClasses, begins, lengths);
+
+        if (input->isVector()) {
+            unsortedSegmentMinLinearKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            output->assign(DataTypeUtils::max<T>());
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            dims.x = input->sizeAt(0);
+            segmentMinTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+        }
 
     }
 
     void unsortedSegmentMinFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), unsortedSegmentMinFunctor_, (input, indices, numOfClasses, output),
-                              NUMERIC_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMinFunctor_, (context, input, indices, numOfClasses, output),
+                              NUMERIC_TYPES, INTEGER_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
     void unsortedSegmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
 
@@ -691,6 +861,7 @@ namespace helpers {
     // segment max
     template <typename T>
     int segmentMaxFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+
         return Status::OK();
     }
 
