@@ -64,7 +64,8 @@ public class FastText implements WordVectors {
     }
 
     public void init() {
-        fastTextImpl = new JFastText();
+        if (fastTextImpl == null)
+            fastTextImpl = new JFastText();
         if (iterator != null) {
             try {
                 File tempFile = File.createTempFile("FTX", ".txt");
@@ -109,6 +110,10 @@ public class FastText implements WordVectors {
     public void unloadBinaryModel() {
         fastTextImpl.unloadModel();
         modelLoaded = false;
+    }
+
+    public void test(File testFile) {
+        fastTextImpl.test(testFile.getAbsolutePath());
     }
 
     public String predict(String text) {
