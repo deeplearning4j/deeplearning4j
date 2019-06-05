@@ -9,11 +9,18 @@ public class TestHistoryProcessor implements IHistoryProcessor {
     public int getHistoryCallCount;
     public int getScaleCallCount;
 
-    private Configuration conf = new Configuration.ConfigurationBuilder()
-            .skipFrame(3)
-            .historyLength(10)
-            .build();
+    private final Configuration conf;
 
+    public TestHistoryProcessor(int skipFrame) {
+        conf = new Configuration.ConfigurationBuilder()
+                .skipFrame(skipFrame)
+                .historyLength(10)
+                .build();
+    }
+
+    public TestHistoryProcessor() {
+        this(3);
+    }
 
     @Override
     public Configuration getConf() {
@@ -23,7 +30,11 @@ public class TestHistoryProcessor implements IHistoryProcessor {
     @Override
     public INDArray[] getHistory() {
         ++getHistoryCallCount;
-        return new INDArray[] { Nd4j.create(new int[] { 1, 1 })};
+
+        INDArray result = Nd4j.create(new int[] { 1, 1 });
+        result.putScalar(new int[] { 0, 0 }, getHistoryCallCount);
+
+        return new INDArray[] { result };
     }
 
     @Override
@@ -54,6 +65,6 @@ public class TestHistoryProcessor implements IHistoryProcessor {
     @Override
     public double getScale() {
         ++getScaleCallCount;
-        return 0;
+        return 1.0;
     }
 }

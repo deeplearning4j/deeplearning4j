@@ -12,6 +12,7 @@ public class TestMDP implements MDP<TestMDP.TestObservation, Integer, DiscreteSp
     public ObservationSpace<TestObservation> observationSpace = new TestObservationSpace();
     public DiscreteSpace actionSpace = new DiscreteSpace(2);
 
+    private double observation;
     private int count;
 
     @Override
@@ -37,7 +38,7 @@ public class TestMDP implements MDP<TestMDP.TestObservation, Integer, DiscreteSp
     @Override
     public StepReply<TestObservation> step(Integer action) {
         boolean isDone = (action == 1);
-        return new StepReply<>(new TestObservation(), 1.0, isDone, null);
+        return new StepReply<>(new TestObservation(++observation), 1.0, isDone, null);
     }
 
     @Override
@@ -52,9 +53,19 @@ public class TestMDP implements MDP<TestMDP.TestObservation, Integer, DiscreteSp
 
     public static class TestObservation implements Encodable {
 
+        private final double obs;
+
+        public TestObservation(double obs) {
+            this.obs = obs;
+        }
+
+        public TestObservation() {
+            this.obs = 0.0;
+        }
+
         @Override
         public double[] toArray() {
-            return new double[] { 0 };
+            return new double[] { obs };
         }
     }
 

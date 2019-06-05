@@ -15,6 +15,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestQLearningDiscrete extends QLearningDiscrete<TestMDP.TestObservation> {
 
@@ -40,6 +42,8 @@ public class TestQLearningDiscrete extends QLearningDiscrete<TestMDP.TestObserva
     }
 
     public static class TestDQN implements IDQN {
+
+        public final List<INDArray> batches = new ArrayList<INDArray>();
 
         @Override
         public NeuralNetwork[] getNeuralNetworks() {
@@ -67,8 +71,13 @@ public class TestQLearningDiscrete extends QLearningDiscrete<TestMDP.TestObserva
         }
 
         @Override
-        public INDArray output(INDArray batch) {
-            return Nd4j.create(new int[] { 1, 1 });
+        public INDArray output(INDArray batch)
+        {
+            batches.add(batch);
+            INDArray result = Nd4j.create(new int[] { 1, 2 });
+            result.putScalar(new int[] { 0, 0 }, (double)batches.size());
+            result.putScalar(new int[] { 0, 1 }, (double)batches.size() / 10.0);
+            return result;
         }
 
         @Override
