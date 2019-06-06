@@ -4714,6 +4714,7 @@ INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4j
     shape::index2coords(rank, shape, index, arrLen, coords, order);
 }
 
+//////////////////////////////////////////////////////////////////////
 INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong arrLen, Nd4jLong *coords, const char order) {
 
     if(order == 'c') {

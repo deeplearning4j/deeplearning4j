@@ -1377,11 +1377,11 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     auto results = op.execute({&input}, {}, {});
     auto output = results->at(0);
     double traceM = matrix.getTrace();
-    nd4j_printf("Trace for matrix is %f\n", traceM);
+    // nd4j_printf("Trace for matrix is %f\n", traceM);
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(output));
-    exp.printIndexedBuffer("EXP TRACE");
-    output->printIndexedBuffer("OUT TRACE");
+    // exp.printIndexedBuffer("EXP TRACE");
+    // output->printIndexedBuffer("OUT TRACE");
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete results;

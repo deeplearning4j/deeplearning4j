@@ -240,6 +240,92 @@ void invertPermutation(nd4j::LaunchContext* context, const NDArray& input, NDArr
     manager.synchronize();
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint diagLen) {
+
+    const auto x = reinterpret_cast<const T*>(vx);
+          auto z = reinterpret_cast<T*>(vz);
+
+    __shared__ T* sharedMem;
+    __shared__ int xRank, zRank;        // xRank = zRank + 2
+    __shared__ Nd4jLong xLen, zLen, *coordsMem;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<T*>(shmem);
+        coordsMem = reinterpret_cast<Nd4jLong*>(shmem + blockDim.x * sizeof(T));
+
+        xRank = shape::rank(xShapeInfo);
+        zRank = shape::rank(zShapeInfo);
+        xLen = shape::length(xShapeInfo);
+        zLen = shape::length(zShapeInfo);   // corresponds to number of matrices
+
+    }
+    __syncthreads();
+
+    Nd4jLong* coords = coordsMem + threadIdx.x * xRank;
+
+    for (uint m = blockIdx.x; m < zLen; m += gridDim.x) {   // one block per each element of z, that is per each matrix
+
+        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), m, zLen, coords);
+        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
+
+        sharedMem[threadIdx.x] = 0;
+
+          for (uint i = threadIdx.x; i < diagLen; i += blockDim.x) {
+
+            coords[zRank] = coords[zRank + 1] = i;
+            const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+            sharedMem[threadIdx.x] += x[xOffset];
+          }
+
+          __syncthreads();
+
+        // aggregate sum
+        for (Nd4jLong activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+            if (threadIdx.x < activeThreads)
+                sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
+            __syncthreads();
+        }
+
+          __syncthreads();
+
+        if (threadIdx.x == 0)
+            z[zOffset] = *sharedMem;
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                              const void *vx, const Nd4jLong *xShapeInfo,
+                                    void *vz, const Nd4jLong *zShapeInfo,
+                                    const uint diagLen) {
+
+    traceCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, diagLen);
+}
+BUILD_SINGLE_TEMPLATE(template void traceCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint diagLen), LIBND4J_TYPES);
+
+///////////////////////////////////////////////////////////////////
+void trace(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+
+    PointersManager manager(context, "trace");
+
+    const uint diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * (sizeof(Nd4jLong) * input.rankOf() + input.sizeOfT()) + 128;
+
+    NDArray::prepareSpecialUse({&output}, {&input});
+    BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input});
+
+    manager.synchronize();
+}
+
+
 
 
 
@@ -274,17 +360,6 @@ void invertPermutation(nd4j::LaunchContext* context, const NDArray& input, NDArr
 
     BUILD_SINGLE_TEMPLATE(template void triuBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
 
-    //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    static void trace_(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
-
-    }
-
-    void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (context, input, output), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void trace_, (nd4j::LaunchContext * context, const NDArray& input, NDArray& output), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
