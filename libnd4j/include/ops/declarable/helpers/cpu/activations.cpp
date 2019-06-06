@@ -153,7 +153,7 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
         if (inEWS == 1) {
             PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
-                max = nd4j::math::nd4j_max<T>(max, outBuff[i]);
+                max = nd4j::math::nd4j_max<T>(max, inBuff[i]);
 
             PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
@@ -171,7 +171,7 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
 
             PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
-                max = nd4j::math::nd4j_max<T>(max, outBuff[i * inEWS]);
+                max = nd4j::math::nd4j_max<T>(max, inBuff[i * inEWS]);
 
             PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
@@ -204,7 +204,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
     const int rank = input.rankOf();
 
     if(input.isVector()) {
-        
+
         if(rank == 1 || input.sizeAt(dimension) != 1)
             softMaxForVector_<T>(input.getBuffer(), input.getShapeInfo(), output.buffer(), output.getShapeInfo());
         else
@@ -228,7 +228,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
 
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0;
-                        
+
                 for(uint j = 0; j < tadLen; ++j)
                     max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
 
@@ -237,9 +237,9 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
                     outBuff[j] = temp;
                     sum += temp;
                 }
-            
+
                 for (uint j = 0; j < tadLen; ++j)
-                    outBuff[j] /= sum;            
+                    outBuff[j] /= sum;
             }
         }
         else {
