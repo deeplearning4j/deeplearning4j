@@ -1,0 +1,34 @@
+site_name: Scalnet documentation
+theme: readthedocs
+docs_dir: doc_sources
+repo_url: https://github.com/deeplearning4j/deeplearning4j/tree/master/scalnet
+site_url: http://deeplearning4j.org
+site_description: 'Scalnet documentation'
+
+dev_addr: '0.0.0.0:8000'
+
+pages:
+- Home: index.md
+- Why ScalNet: why-scalnet.md
+- Getting started:
+  - Guide to Sequential: getting-started/scalnet-sequential-guide.md
+  - Guide to NeuralNet: getting-started/scalnet-model-guide.md
+- Models:
+  - About Scalnet models: models/about-scalnet.md
+  - Sequential: models/sequential.md
+  - NeuralNet: models/neural-net.md
+- Layers:
+  - About ScalNet layers: layers/about-scalnet-layers.md
+  - Core Layers: layers/core.md
+  - Convolutional Layers: layers/convolutional.md
+  - Pooling Layers: layers/pooling.md
+  - Recurrent Layers: layers/recurrent.md
+  - Embedding Layers: layers/embeddings.md
+  - Advanced Activations Layers: layers/advanced-activations.md
+  - Noise layers: layers/noise.md
+- Losses: losses.md
+- Optimizers: optimizers.md
+- Activations: activations.md
+- Initializers: initializers.md
+- Regularizers: regularizers.md
+- Constraints: constraints.md

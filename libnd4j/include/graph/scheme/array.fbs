@@ -1,0 +1,56 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+namespace nd4j.graph;
+
+// byte order for arrays/buffers
+enum ByteOrder:byte {
+    LE,
+    BE,
+}
+
+// DataType for arrays/buffers
+enum DataType:byte {
+    INHERIT,
+    BOOL,
+    FLOAT8,
+    HALF,
+    HALF2,
+    FLOAT,
+    DOUBLE,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    QINT8,
+    QINT16,
+    BFLOAT16 = 17,
+    UTF8 = 50,
+}
+
+// this structure describe NDArray
+table FlatArray {
+    shape:[long]; // shape in Nd4j format
+    buffer:[byte]; // byte buffer with data
+    dtype:DataType; // data type of actual data within buffer
+    byteOrder:ByteOrder; // byte order of buffer
+}
+
+root_type FlatArray;

@@ -1,0 +1,85 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+namespace nd4j.graph;
+
+table LongPair {
+    first:long; // first
+    second:long; // second
+}
+
+table LongTriple {
+    first:long;
+    second:long;
+    third:long;
+}
+
+table IntPair {
+    first:int;
+    second:int;
+}
+
+table IntTriple {
+    first:int;
+    second:int;
+    third:int;
+}
+
+enum OpType:byte {
+    TRANSFORM_FLOAT = 0,
+    TRANSFORM_SAME = 1,
+    TRANSFORM_BOOL = 2,
+    TRANSFORM_STRICT = 3,
+    TRANSFORM_ANY = 4,
+    REDUCE_FLOAT = 5, // for both reduce & reduce3
+    REDUCE_SAME = 6,
+    REDUCE_LONG = 7,
+    REDUCE_BOOL = 8,
+    INDEX_REDUCE = 9,
+    SCALAR = 10,
+    SCALAR_BOOL = 11,
+    BROADCAST = 12,
+    BROADCAST_BOOL = 13,
+    PAIRWISE = 14,
+    PAIRWISE_BOOL = 15,
+    REDUCE_3 = 16,
+    SUMMARYSTATS = 17,
+    SHAPE = 18,
+    AGGREGATION = 19, // ???
+    RANDOM = 20, //
+    CUSTOM = 21, // custom ops
+    GRAPH = 22, // another graph used as op
+    VARIABLE = 40,
+    BOOLEAN = 60, // booleanOps, for conditionals
+    LOGIC = 119, //
+}
+
+enum InputType:byte {
+    UNDEFINED,
+    NUMERIC,
+    STRINGULAR,
+    NUMERIC_SET,
+    STRINGULAR_SET,
+}
+
+enum OpClass:byte {
+    TRANSFORM = 0, // ops of this class return the same shape as primary input
+    REDUCTION = 1, // ops of this class return accumulation shape
+    MULTIPLICATOR = 2, // ops of this class may return whatever they want
+    GRAPH = 3, // embedded graph
+    CONDITIONAL = 4, // IF
+    LOOP = 5, // Various LOOPS
+}

@@ -1,0 +1,712 @@
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<!--
+
+CacheManager Configuration
+==========================
+An ehcache.xml corresponds to a single CacheManager.
+
+See instructions below or the ehcache schema (ehcache.xsd) on how to configure.
+
+System property tokens can be specified in this file which are replaced when the configuration
+is loaded. For example multicastGroupPort=${multicastGroupPort} can be replaced with the
+System property either from an environment variable or a system property specified with a
+command line switch such as -DmulticastGroupPort=4446. Another example, useful for Terracotta
+server based deployments is <terracottaConfig url="${serverAndPort}"/ and specify a command line
+switch of -Dserver36:9510
+
+The attributes of <ehcache> are:
+* name - an optional name for the CacheManager.  The name is optional and primarily used
+for documentation or to distinguish Terracotta clustered cache state.  With Terracotta
+clustered caches, a combination of CacheManager name and cache name uniquely identify a
+particular cache store in the Terracotta clustered memory.
+* updateCheck - an optional boolean flag specifying whether this CacheManager should check
+for new versions of Ehcache over the Internet.  If not specified, updateCheck="true".
+* dynamicConfig - an optional setting that can be used to disable dynamic configuration of caches
+associated with this CacheManager.  By default this is set to true - i.e. dynamic configuration
+is enabled.  Dynamically configurable caches can have their TTI, TTL and maximum disk and
+in-memory capacity changed at runtime through the cache's configuration object.
+* monitoring - an optional setting that determines whether the CacheManager should
+automatically register the SampledCacheMBean with the system MBean server.
+
+Currently, this monitoring is only useful when using Terracotta clustering and using the
+Terracotta Developer Console. With the "autodetect" value, the presence of Terracotta clustering
+will be detected and monitoring, via the Developer Console, will be enabled. Other allowed values
+are "on" and "off".  The default is "autodetect". This setting does not perform any function when
+used with JMX monitors.
+
+* maxBytesLocalHeap - optional setting that constraints the memory usage of the Caches managed by the CacheManager
+to use at most the specified number of bytes of the local VM's heap.
+* maxBytesLocalOffHeap - optional setting that constraints the offHeap usage of the Caches managed by the CacheManager
+to use at most the specified number of bytes of the local VM's offHeap memory.
+* maxBytesLocalDisk - optional setting that constraints the disk usage of the Caches managed by the CacheManager
+to use at most the specified number of bytes of the local disk.
+
+These settings let you define "resource pools", caches will share. For instance setting maxBytesLocalHeap to 100M, will result in
+all caches sharing 100 MegaBytes of ram. The CacheManager will balance these 100 MB across all caches based on their respective usage
+patterns. You can allocate a precise amount of bytes to a particular cache by setting the appropriate maxBytes* attribute for that cache.
+That amount will be subtracted from the CacheManager pools, so that if a cache a specified 30M requirement, the other caches will share
+the remaining 70M.
+
+Also, specifying a maxBytesLocalOffHeap at the CacheManager level will result in overflowToOffHeap to be true by default. If you don't want
+a specific cache to overflow to off heap, you'll have to set overflowToOffHeap="false" explicitly
+
+Here is an example of CacheManager level resource tuning, which will use up to 400M of heap and 2G of offHeap:
+
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="ehcache.xsd"
+         updateCheck="true" monitoring="autodetect"
+         dynamicConfig="true" maxBytesLocalHeap="400M" maxBytesLocalOffHeap="2G">
+
+-->
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd" updateCheck="true" monitoring="autodetect" dynamicConfig="true">
+    <!--
+
+        DiskStore configuration
+        =======================
+
+        The diskStore element is optional. To turn off disk store path creation, comment out the diskStore
+        element below.
+
+        Configure it if you have disk persistence enabled for any cache or if you use
+        unclustered indexed search.
+
+        If it is not configured, and a cache is created which requires a disk store, a warning will be
+         issued and java.io.tmpdir will automatically be used.
+
+        diskStore has only one attribute - "path". It is the path to the directory where
+        any required disk files will be created.
+
+        If the path is one of the following Java System Property it is replaced by its value in the
+        running VM. For backward compatibility these should be specified without being enclosed in the ${token}
+        replacement syntax.
+
+        The following properties are translated:
+        * user.home - User's home directory
+        * user.dir - User's current working directory
+        * java.io.tmpdir - Default temp file path
+        * ehcache.disk.store.dir - A system property you would normally specify on the command line
+          e.g. java -Dehcache.disk.store.dir=/u01/myapp/diskdir ...
+
+        Subdirectories can be specified below the property e.g. java.io.tmpdir/one
+
+
+    -->
+    <diskStore path="."/>
+    <!--
+
+        TransactionManagerLookup configuration
+        ======================================
+        This class is used by ehcache to lookup the JTA TransactionManager use in the application
+        using an XA enabled ehcache. If no class is specified then DefaultTransactionManagerLookup
+        will find the TransactionManager in the following order
+
+         *GenericJNDI (i.e. jboss, where the property jndiName controls the name of the
+                        TransactionManager object to look up)
+         *Bitronix
+         *Atomikos
+
+        You can provide you own lookup class that implements the
+        net.sf.ehcache.transaction.manager.TransactionManagerLookup interface.
+
+    -->
+    <transactionManagerLookup class="net.sf.ehcache.transaction.manager.DefaultTransactionManagerLookup" properties="jndiName=java:/TransactionManager" propertySeparator=";"/>
+    <!--
+
+        CacheManagerEventListener
+        =========================
+        Specifies a CacheManagerEventListenerFactory which is notified when Caches are added
+        or removed from the CacheManager.
+
+        The attributes of CacheManagerEventListenerFactory are:
+        * class - a fully qualified factory class name
+        * properties - comma separated properties having meaning only to the factory.
+
+        Sets the fully qualified class name to be registered as the CacheManager event listener.
+
+        The events include:
+        * adding a Cache
+        * removing a Cache
+
+        Callbacks to listener methods are synchronous and unsynchronized. It is the responsibility
+        of the implementer to safely handle the potential performance and thread safety issues
+        depending on what their listener is doing.
+
+        If no class is specified, no listener is created. There is no default.
+
+    -->
+    <cacheManagerEventListenerFactory class="" properties=""/>
+    <!--
+
+        TerracottaConfig
+        ========================
+        (Enable for Terracotta clustered operation)
+
+        Note: You need to install and run one or more Terracotta servers to use Terracotta clustering.
+        See http://www.terracotta.org/web/display/orgsite/Download.
+
+        Specifies a TerracottaConfig which will be used to configure the Terracotta
+        runtime for this CacheManager.
+
+        Configuration can be specified in two main ways: by reference to a source of
+        configuration or by use of an embedded Terracotta configuration file.
+
+        To specify a reference to a source (or sources) of configuration, use the url
+        attribute.  The url attribute must contain a comma-separated list of:
+        * path to Terracotta configuration file (usually named tc-config.xml)
+        * URL to Terracotta configuration file
+        * <server host>:<port> of running Terracotta Server instance
+
+        Simplest example for pointing to a Terracotta server on this machine:
+        <terracottaConfig url="localhost:9510"/>
+
+        This element has two attributes "rejoin" and "wanEnabledTSA", which can take values of either "true" or "false":
+        <terracottaConfig rejoin="true" wanEnabledTSA="true" url="localhost:9510" />
+
+        By default, these attributes are false.
+
+        Without rejoin, if the Terracotta Server is restarted the client cannot connect back to the
+        server. When enabled, this allows the client to connect to the new cluster without the
+        need to restart the node.
+
+        When wanEnabledTSA is true, the client will wait for the WAN Orchestrator to provide the
+        list of WAN enabled caches. Once the Orchestrator is up and running then the client will proceed
+        to create the clustered data structures.
+
+        Example using a path to Terracotta configuration file:
+        <terracottaConfig url="/app/config/tc-config.xml"/>
+
+        Example using a URL to a Terracotta configuration file:
+        <terracottaConfig url="http://internal/ehcache/app/tc-config.xml"/>
+
+        Example using multiple Terracotta server instance URLs (for fault tolerance):
+        <terracottaConfig url="host1:9510,host2:9510,host3:9510"/>
+
+        To embed a Terracotta configuration file within the ehcache configuration, simply
+        place a normal Terracotta XML config within the <terracottaConfig> element.
+
+        Example:
+        <terracottaConfig>
+            <tc-config>
+                <servers>
+                    <server host="server1" name="s1"/>
+                    <server host="server2" name="s2"/>
+                </servers>
+                <clients>
+                    <logs>app/logs-%i</logs>
+                </clients>
+            </tc-config>
+        </terracottaConfig>
+
+        For more information on the Terracotta configuration, see the Terracotta documentation.
+
+    -->
+    <terracottaConfig url="localhost:9510"/>
+    <!--
+
+        Cache configuration
+        ===================
+
+        The following attributes are required.
+
+        name:
+        Sets the name of the cache. This is used to identify the cache. It must be unique.
+
+        maxEntriesLocalHeap:
+        Sets the maximum number of objects that will be created in memory.  0 = no limit.
+        In practice no limit means Integer.MAX_SIZE (2147483647) unless the cache is distributed
+        with a Terracotta server in which case it is limited by resources.
+
+        maxEntriesLocalDisk:
+        Sets the maximum number of objects that will be maintained in the DiskStore
+        The default value is zero, meaning unlimited.
+
+        eternal:
+        Sets whether elements are eternal. If eternal,  timeouts are ignored and the
+        element is never expired.
+
+        The following attributes and elements are optional.
+
+        maxEntriesInCache:
+        This feature is applicable only to Terracotta distributed caches.
+        Sets the maximum number of entries that can be stored in the cluster. 0 = no limit.
+        Note that clustered cache will still perform eviction if resource usage requires it.
+        This property can be modified dynamically while the cache is operating.
+
+        overflowToOffHeap:
+        (boolean) This feature is available only in enterprise versions of Ehcache.
+        When set to true, enables the cache to utilize off-heap memory
+        storage to improve performance. Off-heap memory is not subject to Java
+        GC. The default value is false.
+
+        maxBytesLocalHeap:
+        Defines how many bytes the cache may use from the VM's heap. If a CacheManager
+        maxBytesLocalHeap has been defined, this Cache's specified amount will be
+        subtracted from the CacheManager. Other caches will share the remainder.
+        This attribute's values are given as <number>k|K|m|M|g|G for
+        kilobytes (k|K), megabytes (m|M), or gigabytes (g|G).
+        For example, maxBytesLocalHeap="2g" allots 2 gigabytes of heap memory.
+        If you specify a maxBytesLocalHeap, you can't use the maxEntriesLocalHeap attribute.
+        maxEntriesLocalHeap can't be used if a CacheManager maxBytesLocalHeap is set.
+
+        Elements put into the cache will be measured in size using net.sf.ehcache.pool.sizeof.SizeOf
+        If you wish to ignore some part of the object graph, see net.sf.ehcache.pool.sizeof.annotations.IgnoreSizeOf
+
+        maxBytesLocalOffHeap:
+        This feature is available only in enterprise versions of Ehcache.
+        Sets the amount of off-heap memory this cache can use, and will reserve.
+
+        This setting will set overflowToOffHeap to true. Set explicitly to false to disable overflow behavior.
+
+        Note that it is recommended to set maxEntriesLocalHeap to at least 100 elements
+        when using an off-heap store, otherwise performance will be seriously degraded,
+        and a warning will be logged.
+
+        The minimum amount that can be allocated is 128MB. There is no maximum.
+
+        maxBytesLocalDisk:
+        As for maxBytesLocalHeap, but specifies the limit of disk storage this cache will ever use.
+
+        timeToIdleSeconds:
+        Sets the time to idle for an element before it expires.
+        i.e. The maximum amount of time between accesses before an element expires
+        Is only used if the element is not eternal.
+        Optional attribute. A value of 0 means that an Element can idle for infinity.
+        The default value is 0.
+
+        timeToLiveSeconds:
+        Sets the time to live for an element before it expires.
+        i.e. The maximum time between creation time and when an element expires.
+        Is only used if the element is not eternal.
+        Optional attribute. A value of 0 means that and Element can live for infinity.
+        The default value is 0.
+
+        diskExpiryThreadIntervalSeconds:
+        The number of seconds between runs of the disk expiry thread. The default value
+        is 120 seconds.
+
+        diskSpoolBufferSizeMB:
+        This is the size to allocate the DiskStore for a spool buffer. Writes are made
+        to this area and then asynchronously written to disk. The default size is 30MB.
+        Each spool buffer is used only by its cache. If you get OutOfMemory errors consider
+        lowering this value. To improve DiskStore performance consider increasing it. Trace level
+        logging in the DiskStore will show if put back ups are occurring.
+
+        clearOnFlush:
+        whether the MemoryStore should be cleared when flush() is called on the cache.
+        By default, this is true i.e. the MemoryStore is cleared.
+
+        memoryStoreEvictionPolicy:
+        Policy would be enforced upon reaching the maxEntriesLocalHeap limit. Default
+        policy is Least Recently Used (specified as LRU). Other policies available -
+        First In First Out (specified as FIFO) and Less Frequently Used
+        (specified as LFU)
+
+        copyOnRead:
+        Whether an Element is copied when being read from a cache.
+        By default this is false.
+
+        copyOnWrite:
+        Whether an Element is copied when being added to the cache.
+        By default this is false.
+
+        Cache persistence is configured through the persistence sub-element.  The attributes of the
+        persistence element are:
+
+        strategy:
+        Configures the type of persistence provided by the configured cache.  This must be one of the
+        following values:
+
+        * localRestartable - Enables the RestartStore and copies all cache entries (on-heap and/or off-heap)
+        to disk. This option provides fast restartability with fault tolerant cache persistence on disk.
+        It is available for Enterprise Ehcache users only.
+
+        * localTempSwap - Swaps cache entries (on-heap and/or off-heap) to disk when the cache is full.
+        "localTempSwap" is not persistent.
+
+        * none - Does not persist cache entries.
+
+        * distributed - Defers to the <terracotta> configuration for persistence settings. This option
+        is not applicable for standalone.
+
+        synchronousWrites:
+        When set to true write operations on the cache do not return until after the operations data has been
+        successfully flushed to the disk storage.  This option is only valid when used with the "localRestartable"
+        strategy, and defaults to false.
+
+        The following example configuration shows a cache configured for localTempSwap restartability.
+
+        <cache name="persistentCache" maxEntriesLocalHeap="1000">
+            <persistence strategy="localTempSwap"/>
+        </cache>
+
+        Cache elements can also contain sub elements which take the same format of a factory class
+        and properties. Defined sub-elements are:
+
+        * cacheEventListenerFactory - Enables registration of listeners for cache events, such as
+          put, remove, update, and expire.
+
+        * bootstrapCacheLoaderFactory - Specifies a BootstrapCacheLoader, which is called by a
+          cache on initialisation to prepopulate itself.
+
+        * cacheExtensionFactory - Specifies a CacheExtension, a generic mechanism to tie a class
+          which holds a reference to a cache to the cache lifecycle.
+
+        * cacheExceptionHandlerFactory - Specifies a CacheExceptionHandler, which is called when
+          cache exceptions occur.
+
+        * cacheLoaderFactory - Specifies a CacheLoader, which can be used both asynchronously and
+          synchronously to load objects into a cache. More than one cacheLoaderFactory element
+          can be added, in which case the loaders form a chain which are executed in order. If a
+          loader returns null, the next in chain is called.
+
+        * copyStrategy - Specifies a fully qualified class which implements
+          net.sf.ehcache.store.compound.CopyStrategy. This strategy will be used for copyOnRead
+          and copyOnWrite in place of the default which is serialization.
+
+        Example of cache level resource tuning:
+        <cache name="memBound" maxBytesLocalHeap="100m" maxBytesLocalOffHeap="4g" maxBytesLocalDisk="200g" />
+
+
+        Cache Event Listeners
+        +++++++++++++++++++++
+
+        All cacheEventListenerFactory elements can take an optional property listenFor that describes
+        which events will be delivered in a clustered environment.  The listenFor attribute has the
+        following allowed values:
+
+        * all - the default is to deliver all local and remote events
+        * local - deliver only events originating in the current node
+        * remote - deliver only events originating in other nodes
+
+        Example of setting up a logging listener for local cache events:
+
+        <cacheEventListenerFactory class="my.company.log.CacheLogger"
+            listenFor="local" />
+
+
+        Search
+        ++++++
+
+        A <cache> can be made searchable by adding a <searchable/> sub-element. By default the keys
+        and value objects of elements put into the cache will be attributes against which
+        queries can be expressed.
+
+        <cache>
+            <searchable/>
+        </cache>
+
+
+        An "attribute" of the cache elements can also be defined to be searchable. In the example below
+        an attribute with the name "age" will be available for use in queries. The value for the "age"
+        attribute will be computed by calling the method "getAge()" on the value object of each element
+        in the cache. See net.sf.ehcache.search.attribute.ReflectionAttributeExtractor for the format of
+        attribute expressions. Attribute values must also conform to the set of types documented in the
+        net.sf.ehcache.search.attribute.AttributeExtractor interface
+
+        <cache>
+            <searchable>
+                <searchAttribute name="age" expression="value.getAge()"/>
+            </searchable>
+        </cache>
+
+
+        Attributes may also be defined using a JavaBean style. With the following attribute declaration
+        a public method getAge() will be expected to be found on either the key or value for cache elements
+
+        <cache>
+            <searchable>
+                <searchAttribute name="age"/>
+            </searchable>
+        </cache>
+
+        In more complex situations you can create your own attribute extractor by implementing the
+        AttributeExtractor interface. Providing your extractor class is shown in the following example:
+
+        <cache>
+            <searchable>
+                <searchAttribute name="age" class="com.example.MyAttributeExtractor"/>
+            </searchable>
+        </cache>
+
+        Use properties to pass state to your attribute extractor if needed. Your implementation must provide
+        a public constructor that takes a single java.movingwindow.Properties instance
+
+        <cache>
+            <searchable>
+                <searchAttribute name="age" class="com.example.MyAttributeExtractor" properties="foo=1,bar=2"/>
+            </searchable>
+        </cache>
+
+        If you intend to use dynamic attribute extraction (see net.sf.ehcache.Cache.registerDynamicAttributesExtractor) then
+        you need to enable it as follows:
+
+        <cache>
+            <searchable allowDynamicIndexing="true"/>
+        </cache>
+
+
+        Cache Exception Handling
+        ++++++++++++++++++++++++
+
+        By default, most cache operations will propagate a runtime CacheException on failure. An
+        interceptor, using a dynamic proxy, may be configured so that a CacheExceptionHandler can
+        be configured to intercept Exceptions. Errors are not intercepted.
+
+        It is configured as per the following example:
+
+          <cacheExceptionHandlerFactory class="com.example.ExampleExceptionHandlerFactory"
+                                          properties="logLevel=FINE"/>
+
+        Caches with ExceptionHandling configured are not of type Cache, but are of type Ehcache only,
+        and are not available using CacheManager.getCache(), but using CacheManager.getEhcache().
+
+
+        Cache Loader
+        ++++++++++++
+
+        A default CacheLoader may be set which loads objects into the cache through asynchronous and
+        synchronous methods on Cache. This is different to the bootstrap cache loader, which is used
+        only in distributed caching.
+
+        It is configured as per the following example:
+
+            <cacheLoaderFactory class="com.example.ExampleCacheLoaderFactory"
+                                          properties="type=int,startCounter=10"/>
+
+        Element value comparator
+        ++++++++++++++++++++++++
+
+        These two cache atomic methods:
+          removeElement(Element e)
+          replace(Element old, Element element)
+
+        rely on comparison of cached elements value. The default implementation relies on Object.equals()
+        but that can be changed in case you want to use a different way to compute equality of two elements.
+
+        This is configured as per the following example:
+
+        <elementValueComparator class="com.company.xyz.MyElementComparator"/>
+
+        The MyElementComparator class must implement the is net.sf.ehcache.store.ElementValueComparator
+        interface. The default implementation is net.sf.ehcache.store.DefaultElementValueComparator.
+
+
+        SizeOf Policy
+        +++++++++++++
+
+        Control how deep the SizeOf engine can go when sizing on-heap elements.
+
+        This is configured as per the following example:
+
+        <sizeOfPolicy maxDepth="100" maxDepthExceededBehavior="abort"/>
+
+        maxDepth controls how many linked objects can be visited before the SizeOf engine takes any action.
+        maxDepthExceededBehavior specifies what happens when the max depth is exceeded while sizing an object graph.
+         "continue" makes the SizeOf engine log a warning and continue the sizing. This is the default.
+         "abort"    makes the SizeOf engine abort the sizing, log a warning and mark the cache as not correctly tracking
+                    memory usage. This makes Ehcache.hasAbortedSizeOf() return true when this happens.
+
+        The SizeOf policy can be configured at the cache manager level (directly under <ehcache>) and at
+        the cache level (under <cache> or <defaultCache>). The cache policy always overrides the cache manager
+        one if both are set. This element has no effect on distributed caches.
+
+        Transactions
+        ++++++++++++
+
+        To enable an ehcache as transactions, set the transactionalMode
+
+        transactionalMode="xa" - high performance JTA/XA implementation
+        transactionalMode="xa_strict" - canonically correct JTA/XA implementation
+        transactionMode="local" - high performance local transactions involving caches only
+        transactionalMode="off" - the default, no transactions
+
+        If set, all cache operations will need to be done through transactions.
+
+        To prevent users keeping references on stored elements and modifying them outside of any transaction's control,
+        transactions also require the cache to be configured copyOnRead and copyOnWrite.
+
+        CacheWriter
+        ++++++++++++
+
+        A CacheWriter can be set to write to an underlying resource. Only one CacheWriter can be
+        configured per cache.
+
+        The following is an example of how to configure CacheWriter for write-through:
+
+            <cacheWriter writeMode="write-through" notifyListenersOnException="true">
+                <cacheWriterFactory class="net.sf.ehcache.writer.TestCacheWriterFactory"
+                                    properties="type=int,startCounter=10"/>
+            </cacheWriter>
+
+        The following is an example of how to configure CacheWriter for write-behind:
+
+            <cacheWriter writeMode="write-behind" minWriteDelay="1" maxWriteDelay="5"
+                         rateLimitPerSecond="5" writeCoalescing="true" writeBatching="true" writeBatchSize="1"
+                         retryAttempts="2" retryAttemptDelaySeconds="1">
+                <cacheWriterFactory class="net.sf.ehcache.writer.TestCacheWriterFactory"
+                                    properties="type=int,startCounter=10"/>
+            </cacheWriter>
+
+        The cacheWriter element has the following attributes:
+        * writeMode: the write mode, write-through or write-behind
+
+        These attributes only apply to write-through mode:
+        * notifyListenersOnException: Sets whether to notify listeners when an exception occurs on a writer operation.
+
+        These attributes only apply to write-behind mode:
+        * minWriteDelay: Set the minimum number of seconds to wait before writing behind. If set to a value greater than 0,
+          it permits operations to build up in the queue. This is different from the maximum write delay in that by waiting
+          a minimum amount of time, work is always being built up. If the minimum write delay is set to zero and the
+          CacheWriter performs its work very quickly, the overhead of processing the write behind queue items becomes very
+          noticeable in a cluster since all the operations might be done for individual items instead of for a collection
+          of them.
+        * maxWriteDelay: Set the maximum number of seconds to wait before writing behind. If set to a value greater than 0,
+          it permits operations to build up in the queue to enable effective coalescing and batching optimisations.
+        * writeBatching: Sets whether to batch write operations. If set to true, writeAll and deleteAll will be called on
+          the CacheWriter rather than write and delete being called for each key. Resources such as databases can perform
+          more efficiently if updates are batched, thus reducing load.
+        * writeBatchSize: Sets the number of operations to include in each batch when writeBatching is enabled. If there are
+          less entries in the write-behind queue than the batch size, the queue length size is used.
+        * rateLimitPerSecond: Sets the maximum number of write operations to allow per second when writeBatching is enabled.
+        * writeCoalescing: Sets whether to use write coalescing. If set to true and multiple operations on the same key are
+          present in the write-behind queue, only the latest write is done, as the others are redundant.
+        * retryAttempts: Sets the number of times the operation is retried in the CacheWriter, this happens after the
+          original operation.
+        * retryAttemptDelaySeconds: Sets the number of seconds to wait before retrying an failed operation.
+
+        Pinning
+        +++++++
+
+        Use this element when data should remain in the cache regardless of resource constraints.
+        Unexpired entries can never be flushed to a lower tier or be evicted.
+
+        This element has a required attribute (store) to specify which data tiers the cache should be pinned to:
+        * localMemory: Cache data is pinned to the local heap (or off-heap for BigMemory Go and BigMemory Max).
+        * inCache: Cache data is pinned in the cache, which can be in any tier cache data is stored.
+
+        Example:
+            <pinning store="inCache"/>
+
+        Cache Extension
+        +++++++++++++++
+
+        CacheExtensions are a general purpose mechanism to allow generic extensions to a Cache.
+        CacheExtensions are tied into the Cache lifecycle.
+
+        CacheExtensions are created using the CacheExtensionFactory which has a
+        <code>createCacheCacheExtension()</code> method which takes as a parameter a
+        Cache and properties. It can thus call back into any public method on Cache, including, of
+        course, the load methods.
+
+        Extensions are added as per the following example:
+
+             <cacheExtensionFactory class="com.example.FileWatchingCacheRefresherExtensionFactory"
+                                 properties="refreshIntervalMillis=18000, loaderTimeout=3000,
+                                             flushPeriod=whatever, someOtherProperty=someValue ..."/>
+
+        Cache Decorator Factory
+        +++++++++++++++++++++++
+
+        Cache decorators can be configured directly in ehcache.xml. The decorators will be created and added to the CacheManager.
+        It accepts the name of a concrete class that extends net.sf.ehcache.constructs.CacheDecoratorFactory
+        The properties will be parsed according to the delimiter (default is comma ',') and passed to the concrete factory's
+        <code>createDecoratedEhcache(Ehcache cache, Properties properties)</code> method along with the reference to the owning cache.
+
+        It is configured as per the following example:
+
+            <cacheDecoratorFactory
+          class="com.company.DecoratedCacheFactory"
+          properties="property1=true ..." />
+
+        Distributed Caching with Terracotta
+        +++++++++++++++++++++++++++++++++++
+
+        Distributed Caches connect to a Terracotta Server Array. They are configured with the <terracotta> sub-element.
+
+        The <terracotta> sub-element has the following attributes:
+
+        * clustered=true|false - indicates whether this cache should be clustered (distributed) with Terracotta. By
+          default, if the <terracotta> element is included, clustered=true.
+
+        * copyOnRead=true|false - indicates whether cache values are deserialized on every read or if the
+          materialized cache value can be re-used between get() calls. This setting is useful if a cache
+          is being shared by callers with disparate classloaders or to prevent local drift if keys/values
+          are mutated locally without being put back in the cache.
+
+          The default is false.
+
+        * consistency=strong|eventual - Indicates whether this cache should have strong consistency or eventual
+          consistency. The default is eventual. See the documentation for the meaning of these terms.
+
+        * synchronousWrites=true|false
+
+          Synchronous writes (synchronousWrites="true")  maximize data safety by blocking the client thread until
+          the write has been written to the Terracotta Server Array.
+
+          This option is only available with consistency=strong. The default is false.
+
+        * concurrency - the number of segments that will be used by the map underneath the Terracotta Store.
+          Its optional and has default value of 0, which means will use default values based on the internal
+          Map being used underneath the store.
+
+          This value cannot be changed programmatically once a cache is initialized.
+
+        The <terracotta> sub-element also has a <nonstop> sub-element to allow configuration of cache behaviour if a distributed
+        cache operation cannot be completed within a set time or in the event of a clusterOffline message. If this element does not appear, nonstop behavior is off.
+
+        <nonstop> has the following attributes:
+
+        *  enabled="true" - defaults to true.
+
+        *  timeoutMillis - An SLA setting, so that if a cache operation takes longer than the allowed ms, it will timeout.
+
+        *  searchTimeoutMillis - If a cache search operation in the nonstop mode takes longer than the allowed ms, it will timeout.
+
+        *  immediateTimeout="true|false" - What to do on receipt of a ClusterOffline event indicating that communications
+           with the Terracotta Server Array were interrupted.
+
+        <nonstop> has one sub-element, <timeoutBehavior> which has the following attribute:
+
+        *  type="noop|exception|localReads|localReadsAndExceptionOnWrite" - What to do when a timeout has occurred. Exception is the default.
+
+        Simplest example to indicate clustering:
+            <terracotta/>
+
+        To indicate the cache should not be clustered (or remove the <terracotta> element altogether):
+            <terracotta clustered="false"/>
+
+        To indicate the cache should be clustered using "eventual" consistency mode for better performance :
+            <terracotta clustered="true" consistency="eventual"/>
+
+        To indicate the cache should be clustered using synchronous-write locking level:
+            <terracotta clustered="true" synchronousWrites="true"/>
+
+    -->
+
+
+    <cache name="cache" eternal="true"
+           diskPersistent="true"
+           maxEntriesLocalHeap="1000000"
+           overflowToDisk="true"
+           diskSpoolBufferSizeMB="2000"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off">
+    </cache>
+
+
+</ehcache>

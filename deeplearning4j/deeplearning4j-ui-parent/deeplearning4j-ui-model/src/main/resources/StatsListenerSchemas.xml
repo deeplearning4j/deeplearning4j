@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="org.deeplearning4j.ui.stats.sbe"
+                   id="1"
+                   version="0"
+                   semanticVersion="0.6.1"
+                   description="Deeplearning4j Stats Listener: Static Information and Updates"
+                   byteOrder="littleEndian">
+    <!--
+    Schemas for encoding information for the stats listener using SBE - Simple Binary Encoding.
+    Two schemas are defined here:
+    (a) StaticInfo - once-off information, passed once upon initialization
+    (b) Update - posted periodically
+    (c) Meta data - type information, for use with the Java SbeStorageMetaData class
+
+    SBE uses code generation to create high-performance binary encoding/decoding classes. These are generated directly
+    from this XML data schema (for Java or C++), using the SBE Java tool.
+    The generated code files are then used in the project, as normal Java files (requires only Agrona as a dependency)
+
+    To build the encoder/decoder files:
+    1. Download sbe-all-1.5.1.jar (later versions should be fine) - http://repo1.maven.org/maven2/uk/co/real-logic/sbe-all/1.5.1/
+    2. Change directory to the directory containing the above jar
+    3. Run the following:
+       java -Dsbe.output.dir=<path>/deeplearning4j-ui-parent/deeplearning4j-ui-model/src/main/java/ -jar sbe-all-1.5.1.jar <path>/deeplearning4j-ui-parent/deeplearning4j-ui-model/src/main/resources/StatsListenerSchemas.xml
+       Where <path> is the path to the DL4J project root directory
+       The "package" property above (org.deeplearning4j...) defines the rest of the output path relative to the output directory
+
+    Some key points to note with SBE:
+    - There are specific rules regarding the formats and ordering for the Schema. You need to understand these before
+      messing with this file, or generating new SBE formats
+    - Encoding and decoding MUST follow the order defined in the schema exactly. Not doing this can result in corrupted
+      data being read. Consequently, to decode any part of the message, you must decode everything that came before it.
+
+    +++ References +++
+    Overview, performance:      http://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html
+    Wiki:                       https://github.com/real-logic/simple-binary-encoding/wiki
+    SBE tool:                   https://github.com/real-logic/simple-binary-encoding/wiki/Sbe-Tool-Guide
+    SBE tool via Maven:         https://github.com/real-logic/simple-binary-encoding/wiki/Sbe-Tool-Maven
+    Schema:                     https://github.com/real-logic/simple-binary-encoding/wiki/FIX-SBE-XML-Primer
+    Using the generated code:   https://github.com/real-logic/simple-binary-encoding/wiki/Java-Users-Guide
+    Example:                    https://github.com/real-logic/simple-binary-encoding/blob/master/sbe-samples/src/main/java/uk/co/real_logic/sbe/examples/ExampleUsingGeneratedStub.java
+
+    Author: Alex Black
+    -->
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="VarDataUTF8">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+    </types>
+    <types>
+        <!-- Initialization: Set for encoding presence/absence of software, hardware and model information -->
+        <set name="InitFieldsPresent" encodingType="uint8" semanticType="FieldsPresent">
+            <choice name="softwareInfo">0</choice>
+            <choice name="hardwareInfo">1</choice>
+            <choice name="modelInfo">2</choice>
+        </set>
+
+        <!-- Updates: Set for encoding present/absence of various entries -->
+        <set name="UpdateFieldsPresent" encodingType="uint32" semanticType="UpdateFieldsPresent">
+            <choice name="score">0</choice>
+            <choice name="memoryUse">1</choice>
+            <choice name="performance">2</choice>
+            <choice name="garbageCollection">3</choice>
+            <choice name="histogramParameters">4</choice>
+            <choice name="histogramGradients">5</choice>
+            <choice name="histogramUpdates">6</choice>
+            <choice name="histogramActivations">7</choice>
+            <choice name="meanParameters">8</choice>
+            <choice name="meanGradients">9</choice>
+            <choice name="meanUpdates">10</choice>
+            <choice name="meanActivations">11</choice>
+            <choice name="stdevParameters">12</choice>
+            <choice name="stdevGradients">13</choice>
+            <choice name="stdevUpdates">14</choice>
+            <choice name="stdevActivations">15</choice>
+            <choice name="meanMagnitudeParameters">16</choice>
+            <choice name="meanMagnitudeGradients">17</choice>
+            <choice name="meanMagnitudeUpdates">18</choice>
+            <choice name="meanMagnitudeActivations">19</choice>
+            <choice name="learningRatesPresent">20</choice>
+            <choice name="dataSetMetaDataPresent">21</choice>
+        </set>
+        <enum name="MemoryType" encodingType="uint8">
+            <validValue name="JvmCurrent">0</validValue>
+            <validValue name="JvmMax">1</validValue>
+            <validValue name="OffHeapCurrent">2</validValue>
+            <validValue name="OffHeapMax">3</validValue>
+            <validValue name="DeviceCurrent">4</validValue>
+            <validValue name="DeviceMax">5</validValue>
+        </enum>
+
+        <enum name="StatsType" encodingType="uint8">
+            <validValue name="Parameters">0</validValue>
+            <validValue name="Gradients">1</validValue>
+            <validValue name="Updates">2</validValue>
+            <validValue name="Activations">3</validValue>
+        </enum>
+        <enum name="SummaryType" encodingType="uint8">
+            <validValue name="Mean">0</validValue>
+            <validValue name="Stdev">1</validValue>
+            <validValue name="MeanMagnitude">2</validValue>
+        </enum>
+    </types>
+
+    <!-- Message 1: Static information -->
+    <sbe:message name="StaticInfo" id="1" description="Static information for hardware, software, and model">
+        <!-- Fixed length fields. These always appear first in SBE -->
+        <field name="time" id="1" type="int64"/>
+        <field name="fieldsPresent" id="2" type="InitFieldsPresent"/>
+        <field name="hwJvmProcessors" id="3" type="uint16"/>
+        <field name="hwNumDevices" id="4" type="uint8"/>
+        <field name="hwJvmMaxMemory" id="5" type="int64"/>
+        <field name="hwOffheapMaxMemory" id="6" type="int64"/>
+        <field name="modelNumLayers" id="7" type="int32"/>
+        <field name="modelNumParams" id="8" type="int64"/>
+        <!-- Groups - always second in SBE. Two groups here: GPU/Device info, and model param names -->
+        <group name="hwDeviceInfoGroup" id="9" dimensionType="groupSizeEncoding">
+            <field name="deviceMemoryMax" id="10" type="int64"/>
+            <data name="deviceDescription" id="50" type="VarDataUTF8"/> <!-- Variable length: last field in a group; must be encoded at end -->
+        </group>
+        <group name="swEnvironmentInfo" id="12" dimensionType="groupSizeEncoding">
+            <data name="envKey" id="51" type="VarDataUTF8"/>
+            <data name="envValue" id="52" type="VarDataUTF8"/>
+        </group>
+        <group name="modelParamNames" id="11" dimensionType="groupSizeEncoding">
+            <data name="modelParamNames" id="53" type="VarDataUTF8"/>
+        </group>
+        <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups.
+         Also can't have variable length in composite types, hence separate data fields instead of grouped by sw/hw/model -->
+        <data name="sessionID" id="100" type="VarDataUTF8"/>
+        <data name="typeID" id="101" type="VarDataUTF8"/>
+        <data name="workerID" id="102" type="VarDataUTF8"/>
+        <data name="swArch" id="201" type="VarDataUTF8"/>
+        <data name="swOsName" id="202" type="VarDataUTF8"/>
+        <data name="swJvmName" id="203" type="VarDataUTF8"/>
+        <data name="swJvmVersion" id="204" type="VarDataUTF8"/>
+        <data name="swJvmSpecVersion" id="205" type="VarDataUTF8"/>
+        <data name="swNd4jBackendClass" id="206" type="VarDataUTF8"/>
+        <data name="swNd4jDataTypeName" id="207" type="VarDataUTF8"/>
+        <data name="swHostName" id="208" type="VarDataUTF8"/>
+        <data name="swJvmUID" id="209" type="VarDataUTF8"/>
+        <data name="hwHardwareUID" id="300" type="VarDataUTF8"/>
+        <data name="modelConfigClassName" id="400" type="VarDataUTF8"/>
+        <data name="modelConfigJson" id="401" type="VarDataUTF8"/>
+    </sbe:message>
+
+    <!-- Message 2: Updates -->
+    <sbe:message name="Update" id="2" description="Model status update">
+        <!-- Fixed length fields. These always appear first in SBE -->
+        <field name="time" id="1" type="int64"/>
+        <field name="deltaTime" id="2" type="int32"/>   <!-- Time since last report, MS -->
+        <field name="iterationCount" id="3" type="int32"/>
+        <field name="fieldsPresent" id="4" type="UpdateFieldsPresent"/>
+        <field name="statsCollectionDuration" id="5" type="int32"/>
+        <field name="score" id="6" type="double"/>
+
+        <!-- Groups - always second in SBE -->
+        <group name="memoryUse" id="100" dimensionType="groupSizeEncoding">
+            <field name="memoryType" id="101" type="MemoryType"/>
+            <field name="memoryBytes" id="102" type="int64"/>
+        </group>
+        <group name="performance" id="200" dimensionType="groupSizeEncoding">
+            <field name="totalRuntimeMs" id="201" type="int64"/>
+            <field name="totalExamples" id="202" type="int64"/>
+            <field name="totalMinibatches" id="203" type="int64"/>
+            <field name="examplesPerSecond" id="204" type="float"/>
+            <field name="minibatchesPerSecond" id="205" type="float"/>
+        </group>
+        <group name="gcStats" id="300" dimensionType="groupSizeEncoding">
+            <field name="deltaGCCount" id="301" type="int32"/>
+            <field name="deltaGCTimeMs" id="302" type="int32"/>
+            <data name="gcName" id="1000" type="VarDataUTF8"/>
+        </group>
+        <group name="paramNames" id="350" dimensionType="groupSizeEncoding">
+            <data name="paramName" id="1100" type="VarDataUTF8"/>
+        </group>
+        <group name="layerNames" id="351" dimensionType="groupSizeEncoding">
+            <data name="layerName" id="1101" type="VarDataUTF8"/>
+        </group>
+        <!-- Per parameter and per stats: summary and histograms. mean/stdev/meanMag for each of params/gradients/updates/activations;
+         histograms for params/gradients/updates/activations. Assumption here is that per param stats are encoded first, followed by
+          per layer stats-->
+        <group name="perParameterStats" id="400" dimensionType="groupSizeEncoding">
+            <field name="learningRate" id="401" type="float"/>
+            <group name="summaryStat" id="402" dimensionType="groupSizeEncoding">
+                <field name="statType" id="403" type="StatsType"/>       <!-- Parameters, Gradients, Updates, Activations -->
+                <field name="summaryType" id="404" type="SummaryType"/>   <!-- Mean, stdev, mean magnitude -->
+                <field name="value" id="405" type="double"/>
+            </group>
+            <group name="histograms" id="406" dimensionType="groupSizeEncoding">
+                <field name="statType" id="407" type="StatsType"/>      <!-- Parameters, Gradients, Updates, Activations -->
+                <field name="minValue" id="408" type="double"/>
+                <field name="maxValue" id="409" type="double"/>
+                <field name="nBins" id="410" type="int32"/>
+                <group name="histogramCounts" id="411" dimensionType="groupSizeEncoding">
+                    <field name="binCount" id="412" type="uint32"/>
+                </group>
+            </group>
+        </group>
+        <group name="dataSetMetaDataBytes" id="500" dimensionType="groupSizeEncoding">
+            <group name="metaDataBytes" id="501" dimensionType="groupSizeEncoding">
+                <field name="bytes" id="502" type="int8"/>
+            </group>
+        </group>
+        <!-- Variable Length Data. By SBE design, all variable length fields must be encoded after fields and groups-->
+        <data name="sessionID" id="1200" type="VarDataUTF8"/>
+        <data name="typeID" id="1201" type="VarDataUTF8"/>
+        <data name="workerID" id="1202" type="VarDataUTF8"/>
+        <data name="dataSetMetaDataClassName" id="1300" type="VarDataUTF8"/>
+    </sbe:message>
+
+    <!-- Message 3: Simple MetaData for class for SbeStorageMetaData -->
+    <sbe:message name="StorageMetaData" id="3" description="StorageMetaData">
+        <!-- Fixed length fields: only timestamp -->
+        <field name="timeStamp" id="1" type="int64"/>
+        <!-- Groups: only 1 group - ExtraMetaDataBytes -->
+        <group name="extraMetaDataBytes" id="2" description="Extra metadata bytes">
+            <field name="bytes" id="3" type="int8"/>
+        </group>
+        <!-- Variable length data -->
+        <data name="sessionID" id="4" type="VarDataUTF8"/>
+        <data name="typeID" id="5" type="VarDataUTF8"/>
+        <data name="workerID" id="6" type="VarDataUTF8"/>
+        <data name="initTypeClass" id="7" type="VarDataUTF8"/>
+        <data name="updateTypeClass" id="8" type="VarDataUTF8"/>
+    </sbe:message>
+</sbe:messageSchema>

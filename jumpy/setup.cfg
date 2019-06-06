@@ -1,0 +1,5 @@
+[metadata]
+description-file = README.md
+
+[aliases]
+test=pytest

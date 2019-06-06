@@ -1,0 +1,32 @@
+server:
+#  softNofileLimit: 1000
+#  hardNofileLimit: 1000
+  applicationConnectors:
+    - type: http
+      port: 8080
+      acceptorThreads: 5
+      selectorThreads: 3
+  maxThreads : 30
+  minThreads : 2
+  adminMinThreads: 3
+  adminMaxThreads: 10
+  adminConnectors:
+    - type: http
+      port: 8081
+
+# Logging settings.
+logging:
+
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+
+  # Logger-specific levels.
+  loggers:
+
+    # Sets the level for 'com.example.app' to DEBUG.
+    org.deeplearning4j: INFO
+    org.eclipse.jetty: DEBUG
+
+  appenders:
+    - type: console
+

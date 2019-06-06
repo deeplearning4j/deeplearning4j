@@ -1,0 +1,157 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+package org.deeplearning4j.optimize.solvers.accumulation;
+
+
+import EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.compression.ThresholdCompression;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.AtomicBoolean;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+/**
+ * This class provides additional functionality to FancyBlockingQueue: it tracks memory use of stored compressed INDArrays, and if their size becomes too big, it:
+ * a) decompresses them into single INDArray
+ * b) removes original updates messages
+ * c) keeps updating single INDArray until it gets consumed
+ * d) once that happened - it automatically switches back to original behavior
+ *
+ * @author raver119@gmail.com
+ */
+@Slf4j
+public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
+    protected final ReaderPreferenceReadWriteLock smartLock = new ReaderPreferenceReadWriteLock();
+    protected int decompressionThreshold = 32;
+    protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
+
+
+    protected final long[] paramsShape;
+    protected final char paramsOrder;
+
+    public SmartFancyBlockingQueue(int decompressionThreshold, @NonNull INDArray paramsMatrix) {
+        this(decompressionThreshold, new LinkedBlockingQueue<INDArray>(1024), paramsMatrix);
+    }
+
+    public SmartFancyBlockingQueue(int decompressionThreshold, BlockingQueue<INDArray> queue, @NonNull INDArray paramsMatrix) {
+        super(queue);
+        this.decompressionThreshold = decompressionThreshold;
+
+        this.paramsShape = paramsMatrix.shape();
+        this.paramsOrder = paramsMatrix.ordering();
+    }
+
+    protected INDArray smartDecompress(INDArray encoded, INDArray target) {
+        INDArray result = target == null ? Nd4j.create(paramsShape, paramsOrder) : target;
+
+        if (encoded.isCompressed() || encoded.data().dataType() == DataType.INT) {
+            int encoding = encoded.data().getInt(3);
+            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
+                Nd4j.getExecutioner().thresholdDecode(encoded, result);
+            } else if (encoding == ThresholdCompression.BITMAP_ENCODING) {
+                Nd4j.getExecutioner().bitmapDecode(encoded, result);
+            } else
+                throw new ND4JIllegalStateException("Unknown encoding mode: [" + encoding + "]");
+        } else {
+            result.addi(encoded);
+        }
+
+        return result;
+    }
+/*
+    @Override
+    public void registerConsumers(int consumers) {
+        try {
+            smartLock.writeLock().acquire();
+
+            super.registerConsumers(consumers);
+        } catch (InterruptedException e) {
+            smartLock.writeLock().release();
+        }
+    }
+*/
+    @Override
+    public boolean isEmpty() {
+        try {
+            // we use this lock to make
+            smartLock.readLock().acquire();
+
+            if (currentConsumers.get() > 0)
+                synchronize(currentConsumers.get());
+
+            return super.isEmpty();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            smartLock.readLock().release();
+        }
+    }
+
+    @Override
+    public void put(INDArray array) throws InterruptedException {
+        try {
+            smartLock.writeLock().acquire();
+
+            if (backingQueue.size() > decompressionThreshold || collapsedMode.get()) {
+                log.trace("Collapsing updates...");
+
+                // if we're already in collapsed mode - we'll just poll back our single collapsed array and update it
+                INDArray params = smartDecompress(array, (collapsedMode.get() && backingQueue.size() == 1) ? backingQueue.poll() : null);
+                while (!backingQueue.isEmpty()) {
+                    val arr = backingQueue.poll();
+                    smartDecompress(arr, params);
+                }
+
+                numElementsDrained.set(0);
+                numElementsReady.set(1);
+                collapsedMode.set(true);
+
+                // now just put single array back
+                super.put(params);
+            } else
+                super.put(array);
+        } finally {
+            smartLock.writeLock().release();
+        }
+    }
+
+    @Override
+    public INDArray poll() {
+        try {
+            // we use this lock to make
+            smartLock.readLock().acquire();
+
+            // from now on this SFBQ instance won't add up to single compressed array
+            collapsedMode.set(false);
+
+            return super.poll();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        } finally {
+            smartLock.readLock().release();
+        }
+    }
+}

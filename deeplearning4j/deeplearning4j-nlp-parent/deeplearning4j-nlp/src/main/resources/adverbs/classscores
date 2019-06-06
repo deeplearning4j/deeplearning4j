@@ -1,0 +1,5 @@
+affirmative	.85
+doubt	.35
+intense	.65
+negative	-.85
+weakintense	.45

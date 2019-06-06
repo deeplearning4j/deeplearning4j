@@ -1,0 +1,36 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+package org.deeplearning4j.nn.layers;
+
+import java.util.Map;
+
+public interface LayerHelper {
+
+    /**
+     * Return the currently allocated memory for the helper.<br>
+     * (a) Excludes: any shared memory used by multiple helpers/layers<br>
+     * (b) Excludes any temporary memory
+     * (c) Includes all memory that persists for longer than the helper method<br>
+     * This is mainly used for debugging and reporting purposes. Returns a map:<br>
+     * Key: The name of the type of memory<br>
+     * Value: The amount of memory<br>
+     *
+     * @return Map of memory, may be null if none is used.
+     */
+    Map<String,Long> helperMemoryUse();
+
+}

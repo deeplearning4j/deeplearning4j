@@ -1,0 +1,96 @@
+branches:
+  only:
+    - master
+notifications:
+  email: false
+dist: trusty
+sudo: required
+cache:
+  directories:
+    - $HOME/.m2
+language: java
+services:
+  - docker
+matrix:
+  include:
+    - os: linux
+      env: OS=android-arm SCALA=2.10
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: linux
+      env: OS=android-arm64 SCALA=2.11
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: linux
+      env: OS=android-x86 SCALA=2.10
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: linux
+      env: OS=android-x86_64 SCALA=2.11
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: osx
+      osx_image: xcode7.3
+      env: OS=ios-arm64 SCALA=2.10
+      install: true
+      script: bash ./ci/build-ios.sh
+    - os: osx
+      osx_image: xcode7.3
+      env: OS=ios-x86_64 SCALA=2.11
+      install: true
+      script: bash ./ci/build-ios.sh
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.10
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 EXT=avx2 SCALA=2.11
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 EXT=avx512 SCALA=2.11
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 CUDA=8.0 SCALA=2.10
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 CUDA=9.0 SCALA=2.11
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 CUDA=9.1 SCALA=2.11
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: osx
+      osx_image: xcode7.3
+      env: OS=macosx-x86_64 SCALA=2.10
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+    - os: osx
+      osx_image: xcode7.3
+      env: OS=macosx-x86_64 EXT=avx2 SCALA=2.11
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+    - os: osx
+      osx_image: xcode9.2
+      env: OS=macosx-x86_64 EXT=avx512 SCALA=2.11
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+    - os: osx
+      osx_image: xcode7.3
+      env: OS=macosx-x86_64 CUDA=8.0 SCALA=2.10
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+    - os: osx
+      osx_image: xcode8.3
+      env: OS=macosx-x86_64 CUDA=9.0 SCALA=2.11
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+    - os: osx
+      osx_image: xcode8.3
+      env: OS=macosx-x86_64 CUDA=9.1 SCALA=2.11
+      install: true
+      script: bash ./ci/build-macosx-x86_64.sh
+

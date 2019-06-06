@@ -1,0 +1,173 @@
+cmake_minimum_required(VERSION 3.6)
+project(libnd4j)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+option(NATIVE "Optimize for build machine (might not work on others)" OFF)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+#ensure we create lib files
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+
+option(BUILD_TESTS "Build tests" OFF)
+
+# -fsanitize=address
+# -fsanitize=leak
+if (APPLE)
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+elseif(WIN32)
+    if (NOT CUDA_BLAS)
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true /wd4804")
+        set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc /wd4661 /wd4804 /wd4267 /wd4244 /wd4251 /wd4305")
+    endif()
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+
+    if (CPU_BLAS)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+    endif()
+endif()
+
+if(NATIVE)
+    IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
+    ELSE()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    ENDIF()
+endif()
+
+if(NOT CUDA_BLAS)
+    if (NOT "${MKLDNN_PATH}" STREQUAL "")
+        set(HAVE_MKLDNN 1)
+        include_directories(${MKLDNN_PATH}/include/)
+        link_directories(${MKLDNN_PATH} ${MKLDNN_PATH}/lib/)
+        IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+            set(MKLDNN_LIBRARIES mkldnn mklml_intel)
+        else()
+            set(MKLDNN_LIBRARIES mkldnn mklml)
+        endif()
+    elseif (NOT "${OPENBLAS_PATH}" STREQUAL "")
+        set(HAVE_OPENBLAS 1)
+        include_directories(${OPENBLAS_PATH}/include/)
+        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
+        set(OPENBLAS_LIBRARIES openblas)
+    endif()
+endif()
+
+# Download and unpack flatbuffers at configure time
+configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+  message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
+if(result)
+  message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+endif()
+
+# Add flatbuffers directly to our build.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+                 EXCLUDE_FROM_ALL)
+
+set(HAVE_FLATBUFFERS 1)
+set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
+include_directories(${FLATBUFFERS_PATH}/include)
+
+configure_file(include/config.h.in include/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+
+if (NOT DEFINED ENV{CLION_IDE})
+    message("NOT CLION")
+    include_directories(blas/ include/ include/helpers include/loops include/graph include/execution include/ops include/types include/array include/cnpy include/exceptions)
+    add_subdirectory(blas)
+    if(BUILD_TESTS)
+        # tests are always compiled with all ops included
+        set(LIBND4J_ALL_OPS true)
+        set(LIBND4J_BUILD_MINIFIER true)
+        add_subdirectory(tests_cpu)
+    endif()
+endif ()
+
+if ($ENV{CLION_IDE})
+    add_subdirectory(tests_cpu)
+endif ()
+
+if (MSVC_DEV)
+    set(LIBND4J_BUILD_MINIFIER false)
+endif ()
+
+set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
+
+# Set package information
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
+set(CPACK_PACKAGE_RELEASE 1)
+set(CPACK_PACKAGE_CONTACT "raver119 <raver119@skymind.io>")
+set(CPACK_PACKAGE_VENDOR "Skymind")
+set(CPACK_SETDESTDIR "false")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
+set(CPACK_PACKAGE_NAME "libnd4j")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "8")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+# Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH
+execute_process(COMMAND lsb_release -si OUTPUT_VARIABLE DISTRIBUTION OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND uname -i OUTPUT_VARIABLE ARCHITECTURE)
+
+# Set package name and type (deb vs rpm)
+if(DISTRIBUTION STREQUAL "Ubuntu")
+
+  # Set Ubuntu-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
+  if(ARCHITECTURE MATCHES ".*x86_64.*")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+  else()
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+  endif()
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "raver119")
+  set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+  set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
+  # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
+  # Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_GENERATOR "DEB")
+  set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
+
+elseif(DISTRIBUTION STREQUAL "CentOS")
+
+  # Set Fedora-specific information (see http://www.cmake.org/Wiki/CMake:CPackPackageGenerators)
+  execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(ARCHITECTURE MATCHES ".*x86_64.*")
+    set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+  else()
+    set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
+  endif()
+  set(CPACK_PACKAGE_CONTACT "raver119")
+  set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
+  set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
+  set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
+  # Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
+  set(CPACK_RPM_PACKAGE_REQUIRES "")
+  set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_GENERATOR "RPM")
+  set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
+  set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
+  set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
+  set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
+
+endif()
+
+include(CPack)

@@ -1,0 +1,11 @@
+language: scala
+scala: dummy
+jdk: oraclejdk8
+
+script:
+  - sbt ++2.11.12 clean compile test
+  - sbt ++2.10.7 clean compile test
+  - ./change-scala-versions.sh "2.11"
+  - mvn -q clean package
+  - ./change-scala-versions.sh "2.10"
+  - mvn -q clean package

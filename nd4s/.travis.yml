@@ -1,0 +1,17 @@
+language: scala
+scala:
+  - "2.10.6"
+jdk:
+  - oraclejdk7
+sudo: false
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.mvn/
+script:
+  - ./nd4j_install.sh
+  - sbt ++${TRAVIS_SCALA_VERSION} test
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  - if [[ ${JAVA_HOME} == $(jdk_switcher home oraclejdk7) ]]; then rm -rf $HOME/.ivy2/cache ; fi
+ 

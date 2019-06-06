@@ -1,0 +1,11 @@
+{
+   "compilerOptions": {
+      "outFile": "../../../../resources/assets/dl4j-ui.js",
+      "removeComments": true,
+      "sourceMap": true,
+      "declaration": true
+   },
+   "filesGlob": [
+      "**/*.ts"
+    ]
+}

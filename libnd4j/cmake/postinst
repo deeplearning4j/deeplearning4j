@@ -1,0 +1,12 @@
+#!/bin/sh
+if [ -f "/usr/local/lib/libnd4jcpu.so" ]; then
+    cat >/etc/ld.so.conf.d/libnd4jcpu.conf <<EOF
+/usr/local/lib/libnd4jcpu.so
+EOF
+else if [ -f "/usr/local/lib/libnd4jcuda.so" ]; then
+    cat >/etc/ld.so.conf.d/libnd4jcuda.conf <<EOF
+/usr/local/lib/libnd4jcuda.so
+EOF
+     fi
+fi
+ldconfig

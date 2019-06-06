@@ -1,0 +1,28 @@
+branches:
+  only:
+    - master
+notifications:
+  email: false
+dist: trusty
+sudo: false
+cache:
+  directories:
+    - $HOME/.m2
+language: java
+jdk:
+  - openjdk8
+matrix:
+  include:
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.10 SPARK=1
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.11 SPARK=1
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.11 SPARK=2
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+

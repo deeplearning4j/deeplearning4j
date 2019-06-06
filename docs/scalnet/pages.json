@@ -1,0 +1,54 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "pages":[
+    {
+      "page": "models/model-import.md",
+      "class": [
+        "models/Model.scala"
+      ]
+    },
+    {
+      "page": "models/sequential.md",
+      "class": [
+        "models/Sequential.scala"
+      ]
+    },
+    {
+      "page": "models/neural-net.md",
+      "class": [
+        "models/NeuralNet.scala"
+      ]
+    },
+    {
+      "page": "layers/core.md",
+      "module": "layers/core"
+    },
+    {
+      "page": "layers/convolutional.md",
+      "module": "layers/convolutional"
+    },
+    {
+      "page": "layers/pooling.md",
+      "module": "layers/pooling"
+    },
+    {
+      "page": "layers/recurrent.md",
+      "module": "layers/recurrent"
+    },
+    {
+      "page": "layers/embeddings.md",
+      "module": "layers/embeddings"
+    },
+    {
+      "page": "layers/advanced-activations.md",
+      "module": "layers/advanced/activations"
+    },
+    {
+      "page": "layers/noise.md",
+      "module": "layers/noise"
+    }
+  ]
+}
+
