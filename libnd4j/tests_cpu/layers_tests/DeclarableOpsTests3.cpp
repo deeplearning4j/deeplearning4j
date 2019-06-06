@@ -20,6 +20,7 @@
 #include <NDArray.h>
 #include <array/NDArrayList.h>
 #include <MmulHelper.h>
+#include <PointersManager.h>
 
 
 using namespace nd4j;
@@ -410,7 +411,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);        
+    auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -2721,7 +2722,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     delete results;
 }
-  
 
 
 
@@ -2730,5 +2730,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
 
 
- 
- 
+
+
+
