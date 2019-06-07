@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -358,7 +359,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
@@ -390,7 +391,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
-                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                .addLayer("0", new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")

@@ -159,7 +159,6 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
     @Test
     public void testGradientBNWithCNNandSubsampling() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
         //Parameterized test, testing combinations of:
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
@@ -188,12 +187,16 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         }
 
         DataSet ds = new DataSet(input, labels);
-
+        Random rng = new Random(12345);
         for(boolean useLogStd : new boolean[]{true, false}) {
             for (Activation afn : activFns) {
                 for (boolean doLearningFirst : characteristic) {
                     for (int i = 0; i < lossFunctions.length; i++) {
                         for (int j = 0; j < l2vals.length; j++) {
+                            //Skip 2 of every 3 tests: from 48 cases to 16, still with decent coverage
+                            if(rng.nextInt(3) != 0)
+                                continue;
+
                             LossFunctions.LossFunction lf = lossFunctions[i];
                             Activation outputActivation = outputActivations[i];
 
@@ -264,7 +267,6 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                 }
             }
         }
-        OpProfiler.getInstance().printOutDashboard();
     }
 
 

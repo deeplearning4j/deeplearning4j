@@ -151,7 +151,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
 
                                             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
                                                     DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
-                                                    RETURN_ON_FIRST_FAILURE, input, labels);
+                                                    RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 128);
 
                                             assertTrue(msg, gradOK);
 
