@@ -24,6 +24,7 @@ import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -79,6 +80,7 @@ import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
+import org.nd4j.linalg.util.ND4JFileUtils;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
@@ -4682,7 +4684,7 @@ public class SameDiff extends SDBaseOps {
      *                         however may increase the file size significantly.
      *                         If the network is to be used for inference only, set this to false to save space
      */
-    public void save(File file, boolean saveUpdaterState) {
+    public void save(@NonNull File file, boolean saveUpdaterState) {
         try {
             asFlatFile(file, saveUpdaterState);
         } catch (IOException e) {
@@ -4691,7 +4693,36 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * As per {@link #save(File, boolean)} but the serialized SameDiff instance is written to the output stream instead.
+     * Note that this temporarily saves to disk (using {@link ND4JFileUtils#createTempFile(String, String)} then copies all
+     * file bytes to the stream
+     *
+     * @param outputStream Stream to write the serialized SameDiff instance to
+     * @param saveUpdater  If true: save the updater state (arrays etc for Adam, Nesterov, RmsProp etc). If false: don't save
+     *                     the updater state. If you want to continue training after loading your model, this should be true,
+     *                     however may increase the file size significantly.
+     *                     If the network is to be used for inference only, set this to false to save space.
+     */
+    public void save(@NonNull OutputStream outputStream, boolean saveUpdater) {
+        File tempFile = ND4JFileUtils.createTempFile("SameDiffFile", "temp");
+        try {
+            save(tempFile, saveUpdater);
+            if (!(outputStream instanceof BufferedOutputStream)) {
+                outputStream = new BufferedOutputStream(outputStream);
+            }
+            try (OutputStream os = outputStream; InputStream is = new BufferedInputStream(new FileInputStream(tempFile))) {
+                IOUtils.copy(is, os);
+            } catch (IOException e) {
+                throw new RuntimeException("Error writing to output stream (or reading from temp file)", e);
+            }
+        } finally {
+            tempFile.delete();
+        }
+    }
+
+    /**
      * Load the SameDiff instance previously saved with {@link #save(File, boolean)}
+     *
      * @param file             The file to load the network from
      * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
      *                         For inference only, this should be false, as the updater state will take more memory, but
@@ -4700,11 +4731,36 @@ public class SameDiff extends SDBaseOps {
      *                         The updater state can only be loaded if it was saved with the network.
      * @return The loaded SameDiff network
      */
-    public static SameDiff load(File file, boolean loadUpdaterState) {
-        try{
+    public static SameDiff load(@NonNull File file, boolean loadUpdaterState) {
+        try {
             return fromFlatFile(file, loadUpdaterState);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException("Error loading SameDiff instance from file", e);
+        }
+    }
+
+    /**
+     * As per {@link #load(File, boolean)} but the SameDiff instance
+     *
+     * @param is               Input stream to load the saved network from
+     * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
+     *                         For inference only, this should be false, as the updater state will take more memory, but
+     *                         is not required for training.
+     *                         If the network is to be trained further, this should be true.
+     *                         The updater state can only be loaded if it was saved with the network.
+     * @return The loaded SameDiff network
+     */
+    public static SameDiff load(@NonNull InputStream is, boolean loadUpdaterState) {
+        File tempFile = ND4JFileUtils.createTempFile("SameDiffFile", "temp");
+        try {
+            try (OutputStream os = new BufferedOutputStream(new FileOutputStream(tempFile))) {
+                IOUtils.copy(is, os);
+            }
+            return fromFlatFile(tempFile, loadUpdaterState);
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading SameDiff instance from file", e);
+        } finally {
+            tempFile.delete();
         }
     }
 

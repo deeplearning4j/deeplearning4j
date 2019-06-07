@@ -137,6 +137,12 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 INDArray outLoaded = netLoaded.output(in);
 
                 assertEquals(outExp, outLoaded);
+
+                //Sanity check on different minibatch sizes:
+                INDArray newIn = Nd4j.vstack(in, in);
+                INDArray outMbsd = net.output(newIn);
+                INDArray outMb = net2.output(newIn);
+                assertEquals(outMb, outMbsd);
             }
         }
     }
@@ -314,6 +320,12 @@ public class TestSameDiffDense extends BaseDL4JTest {
                     netSD.computeGradientAndScore();
 //                    netStandard.computeGradientAndScore();
 //                    assertEquals(netStandard.gradient().gradient(), netSD.gradient().gradient());
+
+                    //Sanity check on different minibatch sizes:
+                    INDArray newIn = Nd4j.vstack(in, in);
+                    INDArray outMbsd = netSD.output(newIn);
+                    INDArray outMb = netStandard.output(newIn);
+                    assertEquals(outMb, outMbsd);
                 }
             }
         }
@@ -377,6 +389,12 @@ public class TestSameDiffDense extends BaseDL4JTest {
             assertEquals(s, netStandard.params(), netSD.params());
             assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
         }
+
+        //Sanity check on different minibatch sizes:
+        INDArray newIn = Nd4j.vstack(ds.getFeatures(), ds.getFeatures());
+        INDArray outMbsd = netSD.output(newIn);
+        INDArray outMb = netStandard.output(newIn);
+        assertEquals(outMb, outMbsd);
     }
 
     @Test
@@ -417,6 +435,10 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 assertTrue(msg, gradOK);
 
                 TestUtils.testModelSerialization(net);
+
+                //Sanity check on different minibatch sizes:
+                INDArray newIn = Nd4j.vstack(f, f);
+                net.output(newIn);
             }
         }
     }

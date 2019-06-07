@@ -114,7 +114,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
         assertEquals("in", fg.placeholders(0));
 
         //Check loss variables:
-        //assertEquals(sd.getLossVariables(), fg)
+        assertEquals(sd.getLossVariables().size(), fg.lossVariablesLength());
     }
 
     @Test
@@ -209,11 +209,37 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
 
                 //Check placeholders
                 Map<String,SDVariable> vBefore = sd.variableMap();
-                Map<String,SDVariable> vAfter = sd.variableMap();
+                Map<String,SDVariable> vAfter = restored.variableMap();
                 assertEquals(vBefore.keySet(), vAfter.keySet());
                 for(String s : vBefore.keySet()){
                     assertEquals(s, vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder());
                     assertEquals(s, vBefore.get(s).isConstant(), vAfter.get(s).isConstant());
+                }
+
+
+                //Check save methods
+                for(boolean withUpdaterState : new boolean[]{false, true}) {
+
+                    File f2 = testDir.newFile();
+                    sd.save(f2, withUpdaterState);
+                    SameDiff r2 = SameDiff.load(f2, withUpdaterState);
+                    assertEquals(varsOrig.size(), r2.variables().size());
+                    assertEquals(fOrig.length, r2.functions().length);
+                    assertEquals(sd.getLossVariables(), r2.getLossVariables());
+
+                    //Save via stream:
+                    File f3 = testDir.newFile();
+                    try(OutputStream os = new BufferedOutputStream(new FileOutputStream(f3))){
+                        sd.save(os, withUpdaterState);
+                    }
+
+                    //Load via stream:
+                    try(InputStream is = new BufferedInputStream(new FileInputStream(f3))) {
+                        SameDiff r3 = SameDiff.load(is, withUpdaterState);
+                        assertEquals(varsOrig.size(), r3.variables().size());
+                        assertEquals(fOrig.length, r3.functions().length);
+                        assertEquals(sd.getLossVariables(), r3.getLossVariables());
+                    }
                 }
             }
         }

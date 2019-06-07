@@ -115,6 +115,12 @@ public class TestSameDiffLambda extends BaseDL4JTest {
         outStd = std.outputSingle(in);
 
         assertEquals(outStd, outLambda);
+
+        //Sanity check on different minibatch sizes:
+        INDArray newIn = Nd4j.vstack(in, in);
+        INDArray outMbsd = lambda.output(newIn)[0];
+        INDArray outMb = std.output(newIn)[0];
+        assertEquals(outMb, outMbsd);
     }
 
     @Test
@@ -186,5 +192,12 @@ public class TestSameDiffLambda extends BaseDL4JTest {
         outStd = std.output(in1, in2)[0];
 
         assertEquals(outStd, outLambda);
+
+        //Sanity check on different minibatch sizes:
+        INDArray newIn1 = Nd4j.vstack(in1, in1);
+        INDArray newIn2 = Nd4j.vstack(in2, in2);
+        INDArray outMbsd = lambda.output(newIn1, newIn2)[0];
+        INDArray outMb = std.output(newIn1, newIn2)[0];
+        assertEquals(outMb, outMbsd);
     }
 }

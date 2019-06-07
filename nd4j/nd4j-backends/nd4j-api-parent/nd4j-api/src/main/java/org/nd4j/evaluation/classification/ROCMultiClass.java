@@ -45,6 +45,12 @@ import java.util.List;
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
+    /**
+     * AUROC: Area under ROC curve<br>
+     * AUPRC: Area under Precision-Recall Curve
+     */
+    public enum Metric {AUROC, AUPRC}
+
     private int thresholdSteps;
     private boolean rocRemoveRedundantPts;
     @JsonSerialize(using = ROCArraySerializer.class)
@@ -343,5 +349,17 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
     public static ROCMultiClass fromJson(String json){
         return fromJson(json, ROCMultiClass.class);
+    }
+
+    public double scoreForMetric(Metric metric, int idx){
+        assertIndex(idx);
+        switch (metric){
+            case AUROC:
+                return calculateAUC(idx);
+            case AUPRC:
+                return calculateAUCPR(idx);
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 }

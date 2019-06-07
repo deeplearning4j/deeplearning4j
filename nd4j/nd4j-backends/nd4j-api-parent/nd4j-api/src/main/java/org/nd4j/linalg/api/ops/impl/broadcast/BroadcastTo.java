@@ -17,12 +17,16 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Broadcast;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -43,6 +47,14 @@ public class BroadcastTo extends DynamicCustomOp {
 
     public BroadcastTo(SameDiff sameDiff, SDVariable input, SDVariable shape) {
         super(null, sameDiff, new SDVariable[] {input,shape}, false);
+    }
+
+    public BroadcastTo(@NonNull INDArray input, @NonNull long[] shape, @NonNull INDArray output){
+        this(input, Nd4j.createFromArray(shape), output);
+    }
+
+    public BroadcastTo(@NonNull INDArray input, @NonNull INDArray shape, @NonNull INDArray output){
+        super(null, new INDArray[]{input, shape}, new INDArray[]{output});
     }
 
     @Override

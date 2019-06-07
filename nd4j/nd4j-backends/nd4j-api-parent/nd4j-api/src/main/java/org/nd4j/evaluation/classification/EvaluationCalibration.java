@@ -369,7 +369,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @param classIdx Index of the class to get the reliability diagram for
      */
     public ReliabilityDiagram getReliabilityDiagram(int classIdx) {
-
+        Preconditions.checkState(rDiagBinPosCount != null, "Unable to get reliability diagram: no evaluation has been performed (no data)");
         INDArray totalCountBins = rDiagBinTotalCount.getColumn(classIdx);
         INDArray countPositiveBins = rDiagBinPosCount.getColumn(classIdx);
 
@@ -441,6 +441,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Residual plot (histogram) - all predictions/classes
      */
     public Histogram getResidualPlot(int labelClassIdx) {
+        Preconditions.checkState(rDiagBinPosCount != null, "Unable to get residual plot: no evaluation has been performed (no data)");
         String title = "Residual Plot - Predictions for Label Class " + labelClassIdx;
         int[] counts = residualPlotByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
@@ -465,6 +466,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Probability histogram
      */
     public Histogram getProbabilityHistogram(int labelClassIdx) {
+        Preconditions.checkState(rDiagBinPosCount != null, "Unable to get probability histogram: no evaluation has been performed (no data)");
         String title = "Network Probabilities Histogram - P(class " + labelClassIdx + ") - Data Labelled Class "
                         + labelClassIdx + " Only";
         int[] counts = probHistogramByLabelClass.getColumn(labelClassIdx).dup().data().asInt();

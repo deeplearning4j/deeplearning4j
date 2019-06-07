@@ -24,6 +24,8 @@ import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
@@ -33,6 +35,7 @@ import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicBoolean;
 import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicDouble;
 import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicBoolean;
 import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicDouble;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -44,6 +47,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -215,11 +219,11 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
             if(mask == null){
                 return reshapeSameShapeTo2d(axis, labels, predictions, mask);
             } else {
-                if(labels.rank() == 3){
-                    if(mask.rank() == 2){
+                if(labels.rank() == 3) {
+                    if (mask.rank() == 2) {
                         //Per time step masking
-                        Pair<INDArray,INDArray> p = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, mask);
-                        if(p == null){
+                        Pair<INDArray, INDArray> p = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, mask);
+                        if (p == null) {
                             return null;
                         }
                         return new Triple<>(p.getFirst(), p.getSecond(), null);
@@ -237,8 +241,26 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                     if(labels.equalShapes(mask)){
                         //Per output masking case
                         return reshapeSameShapeTo2d(axis, labels, predictions, mask);
+                    } else if(mask.rank() == 1){
+                        //Treat 1D mask as per-example masking
+                        Preconditions.checkState(mask.length() == labels.size(0), "For rank 4 labels with shape %ndShape and 1d" +
+                                " mask of shape %ndShape, the mask array length must equal labels dimension 0 size", labels, mask);
+                        long[] reshape = ArrayUtil.nTimes(labels.rank(), 1L);
+                        reshape[0] = mask.size(0);
+                        INDArray mReshape = mask.reshape(reshape);
+                        INDArray bMask = Nd4j.createUninitialized(mask.dataType(), labels.shape());
+                        BroadcastTo b = new BroadcastTo(mReshape, labels.shape(), bMask);
+                        Nd4j.exec(b);
+                        return reshapeSameShapeTo2d(axis, labels, predictions, bMask);
+                    } else if(mask.rank() == labels.rank() && Shape.areShapesBroadcastable(mask.shape(), labels.shape())){
+                        //Same rank, but different shape -> broadcast
+                        INDArray bMask = Nd4j.createUninitialized(mask.dataType(), labels.shape());
+                        BroadcastTo b = new BroadcastTo(mask, labels.shape(), bMask);
+                        Nd4j.exec(b);
+                        return reshapeSameShapeTo2d(axis, labels, predictions, bMask);
                     }
-                    throw new UnsupportedOperationException("Evaluation case not yet implemented: rank 4/5 labels with non-per-output mask arrays");
+                    throw new UnsupportedOperationException("Evaluation case not supported: labels shape " + Arrays.toString(labels.shape()) +
+                            " with mask shape " + Arrays.toString(mask.shape()));
                 }
             }
         } else {

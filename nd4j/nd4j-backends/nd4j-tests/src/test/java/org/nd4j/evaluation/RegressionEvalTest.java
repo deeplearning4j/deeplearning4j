@@ -21,9 +21,12 @@ import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +49,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void testEvalParameters() {
         int specCols = 5;
         INDArray labels = Nd4j.ones(3);
@@ -226,5 +229,190 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         e2.eval(labelSub2, outSub2);
 
         assertEquals(e1, e2);
+    }
+
+    @Test
+    public void testRegressionEval3d() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        RegressionEvaluation e3d = new RegressionEvaluation();
+        RegressionEvaluation e2d = new RegressionEvaluation();
+
+        e3d.eval(label, prediction);
+        e2d.eval(l2d, p2d);
+
+        for (RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()) {
+            double d1 = e3d.scoreForMetric(m);
+            double d2 = e2d.scoreForMetric(m);
+            assertEquals(m.toString(), d2, d1, 1e-6);
+        }
+    }
+
+    @Test
+    public void testRegressionEval4d() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        RegressionEvaluation e4d = new RegressionEvaluation();
+        RegressionEvaluation e2d = new RegressionEvaluation();
+
+        e4d.eval(label, prediction);
+        e2d.eval(l2d, p2d);
+
+        for (RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()) {
+            double d1 = e4d.scoreForMetric(m);
+            double d2 = e2d.scoreForMetric(m);
+            assertEquals(m.toString(), d2, d1, 1e-6);
+        }
+    }
+
+    @Test
+    public void testRegressionEval3dMasking() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+
+        //Check "DL4J-style" 2d per timestep masking [minibatch, seqLength] mask shape
+        INDArray mask2d = Nd4j.randomBernoulli(0.5, 2, 10);
+        rowsP.clear();
+        rowsL.clear();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            if(mask2d.getDouble(idx[0], idx[1]) != 0.0) {
+                INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+                rowsP.add(prediction.get(idxs));
+                rowsL.add(label.get(idxs));
+            }
+        }
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        RegressionEvaluation e3d_m2d = new RegressionEvaluation();
+        RegressionEvaluation e2d_m2d = new RegressionEvaluation();
+        e3d_m2d.eval(label, prediction, mask2d);
+        e2d_m2d.eval(l2d, p2d);
+
+
+
+        //Check per-output masking:
+        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        rowsP.clear();
+        rowsL.clear();
+        List<INDArray> rowsM = new ArrayList<>();
+        iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+            rowsM.add(perOutMask.get(idxs));
+        }
+        p2d = Nd4j.vstack(rowsP);
+        l2d = Nd4j.vstack(rowsL);
+        INDArray m2d = Nd4j.vstack(rowsM);
+
+        RegressionEvaluation e4d_m2 = new RegressionEvaluation();
+        RegressionEvaluation e2d_m2 = new RegressionEvaluation();
+        e4d_m2.eval(label, prediction, perOutMask);
+        e2d_m2.eval(l2d, p2d, m2d);
+        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+            double d1 = e4d_m2.scoreForMetric(m);
+            double d2 = e2d_m2.scoreForMetric(m);
+            assertEquals(m.toString(), d2, d1, 1e-6);
+        }
+    }
+
+    @Test
+    public void testRegressionEval4dMasking() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+
+        //Check per-example masking:
+        INDArray mask1dPerEx = Nd4j.createFromArray(1, 0);
+
+        NdIndexIterator iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            if(mask1dPerEx.getDouble(idx[0]) != 0.0) {
+                INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+                rowsP.add(prediction.get(idxs));
+                rowsL.add(label.get(idxs));
+            }
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        RegressionEvaluation e4d_m1 = new RegressionEvaluation();
+        RegressionEvaluation e2d_m1 = new RegressionEvaluation();
+        e4d_m1.eval(label, prediction, mask1dPerEx);
+        e2d_m1.eval(l2d, p2d);
+        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+            double d1 = e4d_m1.scoreForMetric(m);
+            double d2 = e2d_m1.scoreForMetric(m);
+            assertEquals(m.toString(), d2, d1, 1e-6);
+        }
+
+        //Check per-output masking:
+        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        rowsP.clear();
+        rowsL.clear();
+        List<INDArray> rowsM = new ArrayList<>();
+        iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+            rowsM.add(perOutMask.get(idxs));
+        }
+        p2d = Nd4j.vstack(rowsP);
+        l2d = Nd4j.vstack(rowsL);
+        INDArray m2d = Nd4j.vstack(rowsM);
+
+        RegressionEvaluation e4d_m2 = new RegressionEvaluation();
+        RegressionEvaluation e2d_m2 = new RegressionEvaluation();
+        e4d_m2.eval(label, prediction, perOutMask);
+        e2d_m2.eval(l2d, p2d, m2d);
+        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+            double d1 = e4d_m2.scoreForMetric(m);
+            double d2 = e2d_m2.scoreForMetric(m);
+            assertEquals(m.toString(), d2, d1, 1e-6);
+        }
     }
 }

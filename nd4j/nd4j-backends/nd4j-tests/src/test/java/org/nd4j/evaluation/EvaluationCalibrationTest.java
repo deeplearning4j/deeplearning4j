@@ -21,13 +21,17 @@ import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -361,5 +365,67 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
                 assertEquals(e2d, e);
             }
         }
+    }
+
+    @Test
+    public void testEvaluationCalibration3d() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        EvaluationCalibration e3d = new EvaluationCalibration();
+        EvaluationCalibration e2d = new EvaluationCalibration();
+
+        e3d.eval(label, prediction);
+        e2d.eval(l2d, p2d);
+
+        System.out.println(e2d.stats());
+
+        assertEquals(e2d, e3d);
+
+        assertEquals(e2d.stats(), e3d.stats());
+    }
+
+    @Test
+    public void testEvaluationCalibration3dMasking() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+
+        //Check "DL4J-style" 2d per timestep masking [minibatch, seqLength] mask shape
+        INDArray mask2d = Nd4j.randomBernoulli(0.5, 2, 10);
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            if(mask2d.getDouble(idx[0], idx[1]) != 0.0) {
+                INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+                rowsP.add(prediction.get(idxs));
+                rowsL.add(label.get(idxs));
+            }
+        }
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        EvaluationCalibration e3d_m2d = new EvaluationCalibration();
+        EvaluationCalibration e2d_m2d = new EvaluationCalibration();
+        e3d_m2d.eval(label, prediction, mask2d);
+        e2d_m2d.eval(l2d, p2d);
+
+        assertEquals(e3d_m2d, e2d_m2d);
     }
 }
