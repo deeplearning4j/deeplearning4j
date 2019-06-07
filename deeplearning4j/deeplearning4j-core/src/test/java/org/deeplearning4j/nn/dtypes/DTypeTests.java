@@ -446,7 +446,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new ActivationLayer(Activation.LEAKYRELU))
                             .layer(secondLast)
                             .layer(ol)
-                            .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                            .setInputType(InputType.convolutionalFlat(8, 8, 1))
                             .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -457,16 +457,16 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
                     assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
 
-                    INDArray in = Nd4j.rand(networkDtype, 2, 28 * 28);
+                    INDArray in = Nd4j.rand(networkDtype, 2, 8 * 8);
                     INDArray label;
                     if (outputLayer < 3) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                     } else if (outputLayer == 3) {
                         //CNN loss
-                        label = Nd4j.rand(networkDtype, 2, 3, 28, 28);
+                        label = Nd4j.rand(networkDtype, 2, 3, 8, 8);
                     } else if (outputLayer == 4) {
                         //YOLO
-                        label = Nd4j.ones(networkDtype, 2, 6, 28, 28);
+                        label = Nd4j.ones(networkDtype, 2, 6, 8, 8);
                     } else {
                         throw new IllegalStateException();
                     }
@@ -550,7 +550,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new Upsampling3D.Builder().size(2).build())
                             .layer(secondLast)
                             .layer(ol)
-                            .setInputType(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 28, 28, 28, 1))
+                            .setInputType(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 12, 12, 12, 1))
                             .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -561,13 +561,13 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
                     assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
 
-                    INDArray in = Nd4j.rand(networkDtype, 2, 1, 28, 28, 28);
+                    INDArray in = Nd4j.rand(networkDtype, 2, 1, 12, 12, 12);
                     INDArray label;
                     if (outputLayer == 0) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                     } else if (outputLayer == 1) {
                         //CNN3D loss
-                        label = Nd4j.rand(networkDtype, 2, 3, 28, 28, 28);
+                        label = Nd4j.rand(networkDtype, 2, 3, 12, 12, 12);
                     } else if (outputLayer == 2) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                     } else {
@@ -1219,9 +1219,9 @@ public class DTypeTests extends BaseDL4JTest {
                                     .addLayer("2", new LocallyConnected1D.Builder().kernelSize(2).nOut(4).build(), "1")
                                     .addLayer("out", new RnnOutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out")
-                                    .setInputTypes(InputType.recurrent(5, 4));
-                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 5, 4)};
-                            label = TestUtils.randomOneHotTimeSeries(2, 10, 4);
+                                    .setInputTypes(InputType.recurrent(5, 2));
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 5, 2)};
+                            label = TestUtils.randomOneHotTimeSeries(2, 10, 2);
                             break;
                         case 1:
                             b.addInputs("in")
@@ -1229,8 +1229,8 @@ public class DTypeTests extends BaseDL4JTest {
                                     .addLayer("2", new LocallyConnected2D.Builder().kernelSize(2, 2).nOut(5).build(), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out")
-                                    .setInputTypes(InputType.convolutional(28, 28, 1));
-                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+                                    .setInputTypes(InputType.convolutional(8, 8, 1));
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 8, 8)};
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;
                         default:
