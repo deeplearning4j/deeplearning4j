@@ -35,7 +35,7 @@ public class ImportDebugListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
         //No op
 
         for( int i=0; i<outputs.length; i++ ) {

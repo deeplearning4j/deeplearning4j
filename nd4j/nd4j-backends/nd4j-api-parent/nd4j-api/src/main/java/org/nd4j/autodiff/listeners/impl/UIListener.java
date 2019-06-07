@@ -401,13 +401,13 @@ public class UIListener extends BaseListener {
 
 
     @Override
-    public void opExecution(SameDiff sd, At at, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
 
 
         //Do training set evaluation, if required
         //Note we'll do it in opExecution not iterationDone because we can't be sure arrays will be stil be around in the future
         //i.e., we'll eventually add workspaces and clear activation arrays once they have been consumed
-        if(trainEvalMetrics != null && trainEvalMetrics.size() > 0){
+        if(training && trainEvalMetrics != null && trainEvalMetrics.size() > 0){
             long time = System.currentTimeMillis();
 
             //First: check if this op is relevant at all to evaluation...

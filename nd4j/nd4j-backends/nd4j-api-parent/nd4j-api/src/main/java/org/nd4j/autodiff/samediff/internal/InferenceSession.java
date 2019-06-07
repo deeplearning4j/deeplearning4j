@@ -109,7 +109,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
             for(Listener l : listeners){
-                l.opExecution(sameDiff, at, sdOp, out);
+                l.opExecution(sameDiff, at, training, sdOp, out);
             }
         }
         return out;

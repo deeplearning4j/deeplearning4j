@@ -57,7 +57,7 @@ public interface Listener {
      * @param op      Operation that has just been executed
      * @param outputs The output arrays for the just-executed operation
      */
-    void opExecution(SameDiff sd, At at, SameDiffOp op, INDArray[] outputs);
+    void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs);
 
     /**
      * Called just before each parameter is to be updated - i.e., just before each parameter is modified
