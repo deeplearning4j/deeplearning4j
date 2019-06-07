@@ -931,7 +931,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMinBP_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_1) {
     auto x = NDArrayFactory::create<double>({1.8, 2.5,  4.,  9., 2.1, 2.4,  3.,  9., 2.1, 2.1, 0.7, 0.1, 3., 4.2,  2.2, 1.});
-    auto idx = NDArrayFactory::create<double>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
+    auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
     auto exp = NDArrayFactory::create<double>({ 1.,   0.,  0., 0.,  2.,   0.,  3.,  0.,  4.,  4.,  0., 5.,  0.,  0.,  0.,  0.});
     auto eps = NDArrayFactory::create<double>('c', {5});
     eps.linspace(1);
@@ -950,7 +950,7 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_2) {
     auto x = NDArrayFactory::create<double>({3., 1.8, 2.5,  4.,  9., 2.1, 2.4,  9., 2.1, 2.1, 0.7, 0.1, 3., 4.2,  2.2, 1.});
-    auto idx = NDArrayFactory::create<double>({2, 0, 0, 1, 1, 1, 1, 3, 3, 3, 4, 4, 4, 4, 4, 4});
+    auto idx = NDArrayFactory::create<int>({2, 0, 0, 1, 1, 1, 1, 3, 3, 3, 4, 4, 4, 4, 4, 4});
     auto exp = NDArrayFactory::create<double>({3., 1.,   0.,  0., 0.,  2.,   0.,  0.,  4.,  4.,  0., 5.,  0.,  0.,  0.,  0.});
     auto eps = NDArrayFactory::create<double>('c', {5});
     eps.linspace(1);
