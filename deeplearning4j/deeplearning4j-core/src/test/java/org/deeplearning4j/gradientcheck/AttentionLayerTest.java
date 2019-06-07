@@ -44,7 +44,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private static final boolean PRINT_RESULTS = false;
+    private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
@@ -58,7 +58,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
         int layerSize = 8;
 
         Random r = new Random(12345);
-        for (int mb : new int[]{1, 2, 3}) {
+        for (int mb : new int[]{1, 3}) {
             for (boolean inputMask : new boolean[]{false, true}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
@@ -107,7 +107,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -124,7 +124,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                     INDArray labels = Nd4j.create(mb, nOut);
@@ -172,7 +172,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -210,7 +210,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                     INDArray labels = Nd4j.create(mb, nOut);
                     for (int i = 0; i < mb; i++) {
@@ -236,7 +236,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     System.out.println("Starting test: " + name);
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -284,12 +284,12 @@ public class AttentionLayerTest extends BaseDL4JTest {
     public void testRecurrentAttentionLayer() {
         int nIn = 9;
         int nOut = 5;
-        int tsLength = 4;
+        int tsLength = 3;
         int layerSize = 8;
 
 
         Random r = new Random(12345);
-        for (int mb : new int[]{3, 2, 1}) {
+        for (int mb : new int[]{3, 1}) {
             for (boolean inputMask : new boolean[]{true, false}) {
                 INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                 INDArray labels = Nd4j.create(mb, nOut);
@@ -335,8 +335,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
                 //System.out.println("Original");
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, false, -1, null
-                );
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100, null);
                 assertTrue(name, gradOK);
             }
         }
@@ -346,12 +345,12 @@ public class AttentionLayerTest extends BaseDL4JTest {
     public void testAttentionVertex() {
         int nIn = 3;
         int nOut = 5;
-        int tsLength = 4;
+        int tsLength = 3;
         int layerSize = 8;
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                     INDArray labels = Nd4j.create(mb, nOut);
@@ -418,7 +417,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                     INDArray labels = Nd4j.create(mb, nOut);
@@ -467,7 +466,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
+                            new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
                     assertTrue(name, gradOK);
                 }
             }

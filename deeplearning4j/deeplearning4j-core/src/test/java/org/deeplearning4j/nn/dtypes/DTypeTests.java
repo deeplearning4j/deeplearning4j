@@ -825,12 +825,12 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
                     assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
 
-                    INDArray in = Nd4j.rand(networkDtype, 2, 5, 4);
+                    INDArray in = Nd4j.rand(networkDtype, 2, 5, 2);
                     INDArray label;
                     if (outputLayer == 2) {
                         label = TestUtils.randomOneHot(2, 5).castTo(networkDtype);
                     } else {
-                        label = TestUtils.randomOneHotTimeSeries(2, 5, 4).castTo(networkDtype);
+                        label = TestUtils.randomOneHotTimeSeries(2, 5, 2).castTo(networkDtype);
                     }
 
 
@@ -845,7 +845,7 @@ public class DTypeTests extends BaseDL4JTest {
                     net.setLabels(label);
                     net.computeGradientAndScore();
 
-                    net.fit(new DataSet(in, label, Nd4j.ones(networkDtype, 2, 4), outputLayer == 2 ? null : Nd4j.ones(networkDtype, 2, 4)));
+                    net.fit(new DataSet(in, label, Nd4j.ones(networkDtype, 2, 2), outputLayer == 2 ? null : Nd4j.ones(networkDtype, 2, 2)));
 
                     logUsedClasses(net);
 
