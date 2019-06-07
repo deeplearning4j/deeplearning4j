@@ -234,7 +234,8 @@ void NDArray::synchronize(const char* msg) const {
 void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
-        a->syncToDevice();
+        if(a != nullptr)
+            a->syncToDevice();
 
     for (const auto& a : writeList) {
         a->getDataBuffer()->allocateSpecial();
@@ -247,7 +248,8 @@ void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& wri
 void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
-        p->tickReadDevice();
+        if(p != nullptr)
+            p->tickReadDevice();
 
     for (const auto& p : writeList)
         p->tickWriteDevice();
@@ -257,6 +259,7 @@ void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& wr
 void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
+        if(a != nullptr)
             a->syncToHost();
 
     for (const auto& a : writeList) {
@@ -270,7 +273,8 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
 void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
-        p->tickReadHost();
+        if(p != nullptr)
+            p->tickReadHost();
 
     for (const auto& p : writeList)
         p->tickWriteHost();
