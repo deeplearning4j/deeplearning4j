@@ -815,68 +815,66 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
 
-        int[] minibatchSizes = {1, 3};
+
         int width = 6;
         int height = 6;
-        int[] inputDepths = {1, 3};
+
 
         int[] kernel = {2, 2};
         int[] stride = {1, 1};
         int[] padding = {0, 0};
 
+        int[] minibatchSizes = {1, 3, 2};
+        int[] inputDepths = {1, 3, 2};
         int[][] zeroPadLayer = new int[][]{{0, 0, 0, 0}, {1, 1, 0, 0}, {2, 2, 2, 2}};
 
-        for (int inputDepth : inputDepths) {
-            for (int minibatchSize : minibatchSizes) {
-                INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
-                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                for (int i = 0; i < minibatchSize; i++) {
-                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
-                }
-                for (int[] zeroPad : zeroPadLayer) {
+        for( int i=0; i<minibatchSizes.length; i++ ){
+            int minibatchSize = minibatchSizes[i];
+            int inputDepth = inputDepths[i];
+            int[] zeroPad = zeroPadLayer[i];
+            INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{minibatchSize, inputDepth, height, width});
+            INDArray labels = TestUtils.randomOneHot(minibatchSize, nOut);
 
-                    MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                    .dataType(DataType.DOUBLE)
-                                    .dist(new NormalDistribution(0, 1)).list()
-                                    .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
-                                            .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
-                                    .layer(1, new ZeroPaddingLayer.Builder(zeroPad).build()).layer(2,
-                                    new ConvolutionLayer.Builder(kernel, stride,
-                                            padding).nIn(3).nOut(3).build())//output: (6-2+0)/1+1 = 5
-                                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nOut(4).build())
-                                    .setInputType(InputType.convolutional(height, width, inputDepth))
-                                    .build();
+            MultiLayerConfiguration conf =
+                    new NeuralNetConfiguration.Builder().updater(new NoOp())
+                            .dataType(DataType.DOUBLE)
+                            .dist(new NormalDistribution(0, 1)).list()
+                            .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
+                            .layer(1, new ZeroPaddingLayer.Builder(zeroPad).build()).layer(2,
+                            new ConvolutionLayer.Builder(kernel, stride,
+                                    padding).nIn(3).nOut(3).build())//output: (6-2+0)/1+1 = 5
+                            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(4).build())
+                            .setInputType(InputType.convolutional(height, width, inputDepth))
+                            .build();
 
-                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                    net.init();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
 
-                    //Check zero padding activation shape
-                    org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer zpl =
-                            (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
-                    val expShape = new long[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
-                            width + zeroPad[2] + zeroPad[3]};
-                    INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
-                    assertArrayEquals(expShape, out.shape());
+            //Check zero padding activation shape
+            org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer zpl =
+                    (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
+            val expShape = new long[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
+                    width + zeroPad[2] + zeroPad[3]};
+            INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(expShape, out.shape());
 
-                    String msg = "minibatch=" + minibatchSize + ", channels=" + inputDepth + ", zeroPad = "
-                            + Arrays.toString(zeroPad);
+            String msg = "minibatch=" + minibatchSize + ", channels=" + inputDepth + ", zeroPad = "
+                    + Arrays.toString(zeroPad);
 
-                    if (PRINT_RESULTS) {
-                        System.out.println(msg);
-                        for (int j = 0; j < net.getnLayers(); j++)
-                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
-                    }
-
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                    assertTrue(msg, gradOK);
-
-                    TestUtils.testModelSerialization(net);
-                }
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < net.getnLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
             }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
         }
     }
 

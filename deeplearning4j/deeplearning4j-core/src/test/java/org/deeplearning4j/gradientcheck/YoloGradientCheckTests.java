@@ -229,7 +229,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         INDArray l = ds.getLabels();
 
         boolean ok = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null, true, 64);
 
         assertTrue(ok);
         TestUtils.testModelSerialization(net);
