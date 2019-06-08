@@ -369,10 +369,10 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
     public void testLSTM() throws Exception {
 
         Nd4j.getRandom().setSeed(12345);
-        int minibatch = 10;
-        int inputSize = 8;
-        int lstmLayerSize = 7;
-        int timeSeriesLength = 6;
+        int minibatch = 4;
+        int inputSize = 3;
+        int lstmLayerSize = 4;
+        int timeSeriesLength = 3;
         int nOut = 4;
         INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
         INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
@@ -417,7 +417,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 32);
 
         assertTrue(gradOK);
     }

@@ -151,6 +151,9 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         for (boolean inputMask : new boolean[]{false, true}) {
                             for (boolean hasLayerNorm : new boolean[]{true, false}) {
                                 for (int l = 0; l < l1s.length; l++) {
+                                    //Only run 1 of 5 (on average - note RNG seed for deterministic testing) - 25 of 128 test cases (to minimize test time)
+                                    if(r.nextInt(5) != 0)
+                                        continue;
 
                                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                                     INDArray labels = Nd4j.create(mb, nOut, tsLength);

@@ -1201,16 +1201,16 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int depthMultiplier = 2;
         int nOut = nIn * depthMultiplier;
 
-        int width = 8;
-        int height = 8;
+        int width = 5;
+        int height = 5;
 
         Nd4j.getRandom().setSeed(12345);
 
-        int[] ks = new int[]{1,3,1,3,1,3,1,3};
-        int[] ss = new int[]{1,1,2,2,1,1,2,2};
+        int[] ks = new int[]{1,3,3,1,3};
+        int[] ss = new int[]{1,1,1,2,2};
         ConvolutionMode[] cms = new ConvolutionMode[]{
-                Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
-        int[] mb = new int[]{1,1,3,3,3,1,3,3};
+                Truncate, Truncate, Truncate, Truncate, Truncate};
+        int[] mb = new int[]{1,1,1,3,3};
 
         for( int t=0; t<ks.length; t++ ){
 
@@ -1256,7 +1256,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             System.out.println(msg);
 
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 256);
 
             assertTrue(msg, gradOK);
 

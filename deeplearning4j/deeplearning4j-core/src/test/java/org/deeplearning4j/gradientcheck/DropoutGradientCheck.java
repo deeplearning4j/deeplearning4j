@@ -100,15 +100,15 @@ public class DropoutGradientCheck extends BaseDL4JTest {
                         .list();
 
                 if(cnn){
-                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
-                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
-                    builder.setInputType(InputType.convolutional(8,8,3));
+                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(2,2).nOut(2).build());
+                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(2,2).nOut(2).build());
+                    builder.setInputType(InputType.convolutional(6,6,2));
                 } else {
-                    builder.layer(new DenseLayer.Builder().nOut(12).build());
-                    builder.layer(new DenseLayer.Builder().nOut(12).build());
-                    builder.setInputType(InputType.feedForward(8));
+                    builder.layer(new DenseLayer.Builder().nOut(3).build());
+                    builder.layer(new DenseLayer.Builder().nOut(3).build());
+                    builder.setInputType(InputType.feedForward(6));
                 }
-                builder.layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunction.MCXENT).build());
+                builder.layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunction.MCXENT).build());
 
                 MultiLayerConfiguration conf = builder.build();
                 //Remove spatial dropout from output layer - can't be used for 2d input
@@ -123,11 +123,11 @@ public class DropoutGradientCheck extends BaseDL4JTest {
 
                 INDArray f;
                 if(cnn){
-                    f = Nd4j.rand(new int[]{minibatch, 3, 8, 8}).muli(10).subi(5);
+                    f = Nd4j.rand(new int[]{minibatch, 2, 6, 6}).muli(10).subi(5);
                 } else {
-                    f = Nd4j.rand(minibatch, 8).muli(10).subi(5);
+                    f = Nd4j.rand(minibatch, 6).muli(10).subi(5);
                 }
-                INDArray l = TestUtils.randomOneHot(minibatch, 10);
+                INDArray l = TestUtils.randomOneHot(minibatch, 3);
 
                 log.info("*** Starting test: " + msg + " ***");
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,

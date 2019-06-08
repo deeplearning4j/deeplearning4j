@@ -391,21 +391,14 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
         int[] timeSeriesLength = {1, 5, 1};
         int[] miniBatchSize = {7, 1, 1};
 
-        int nIn = 7;
-        int layerSize = 9;
-        int nOut = 4;
+        int nIn = 3;
+        int layerSize = 4;
+        int nOut = 2;
 
         for (int i = 0; i < timeSeriesLength.length; i++) {
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(miniBatchSize[i], nIn, timeSeriesLength[i]);
-            for (int m = 0; m < miniBatchSize[i]; m++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength[i]; k++) {
-                        input.putScalar(new int[] {m, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(DataType.DOUBLE, miniBatchSize[i], nIn, timeSeriesLength[i]).subi(0.5);
 
             INDArray labels = Nd4j.zeros(miniBatchSize[i], nOut, timeSeriesLength[i]);
             for (int m = 0; m < miniBatchSize[i]; m++) {
@@ -431,7 +424,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             mln.init();
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 128);
 
             String msg = "testGradientGravesLSTMEdgeCases() - timeSeriesLength=" + timeSeriesLength[i]
                             + ", miniBatchSize=" + miniBatchSize[i];

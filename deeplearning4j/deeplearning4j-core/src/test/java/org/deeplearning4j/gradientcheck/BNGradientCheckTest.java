@@ -277,15 +277,15 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
         // (d) l1 and l2 values
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+        Activation[] activFns = {Activation.TANH, Activation.IDENTITY};
+        boolean[] characteristic = {true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                 {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
         Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
-        double[] l2vals = {0.0, 0.1, 0.1};
-        double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
+        double[] l2vals = {0.0, 0.1};
+        double[] l1vals = {0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
 
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;
