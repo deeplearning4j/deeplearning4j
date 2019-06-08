@@ -1023,23 +1023,6 @@ namespace shape {
     */
     ND4J_EXPORT _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo, const Nd4jLong numOfSubArrs, const int dimsSize, const int* dimsToExclude, Nd4jLong* subArrShapeInfo, Nd4jLong* subArrOffsets, bool keepUnitiesInShape = false);
 
-    /**
-    * insert dimension at shape[axis] position
-    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, dimension = 10 result is -> shape = {2,10,4,5}
-    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 3, dimension = 10 result is -> shape = {2,4,5,10}
-    * so be careful and provide shape buffer with enough (at least rank+1) length
-    * axis should be within [0, rank] range
-    */
-    ND4J_EXPORT _CUDA_HD void insertDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis, const Nd4jLong dimension);
-
-    /**
-    * erase dimension at shape[axis] position
-    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, result is -> shape = {2,5}
-    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 2, result is -> shape = {2,4}
-    * axis should be within [0, rank-1] range
-    */
-    ND4J_EXPORT _CUDA_HD void eraseDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis);
-
 
 
 
@@ -4932,21 +4915,6 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
     }
 }
 
-//////////////////////////////////////////////////////////////////////
-INLINEDEF _CUDA_HD void insertDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis, const Nd4jLong dimension) {
-
-    for (int i = rank; i > axis; --i)
-        shape[i] = shape[i - 1];
-
-    shape[axis] = dimension;
-}
-
-//////////////////////////////////////////////////////////////////////
-INLINEDEF _CUDA_HD void eraseDimension(const int rank, Nd4jLong *shape, const Nd4jLong axis) {
-
-    for (int i = axis; i < rank - 1; ++i)
-        shape[i] = shape[i + 1];
-}
 
 
 }

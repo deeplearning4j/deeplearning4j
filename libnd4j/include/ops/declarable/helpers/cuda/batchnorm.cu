@@ -41,7 +41,7 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
 									const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
 									const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
 									const T epsilon) {
-
+printf("!!!!!!\n");
 	const auto x    	= reinterpret_cast<const T*>(vx);
           auto z        = reinterpret_cast<T*>(vz);
 	const auto mean 	= reinterpret_cast<const T*>(vMean);
@@ -61,7 +61,6 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
         tadLen = shape::length(xShapeInfo) / minLen;
     }
     __syncthreads();
-
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -94,6 +93,81 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo,
+                                    const void* vMean, const Nd4jLong* meanShapeInfo,
+                                    const void* vVariance, const Nd4jLong* varianceShapeInfo,
+                                    const void* vGamma, const Nd4jLong* gammaShapeInfo,
+                                    const void* vBeta, const Nd4jLong* betaShapeInfo,
+                                          void* vz, const Nd4jLong* zShapeInfo,
+                                    const int numDims, const int* dims,
+                                    const T epsilon) {
+
+    const auto x        = reinterpret_cast<const T*>(vx);
+          auto z        = reinterpret_cast<T*>(vz);
+    const auto mean     = reinterpret_cast<const T*>(vMean);
+    const auto variance = reinterpret_cast<const T*>(vVariance);
+    const auto gamma    = reinterpret_cast<const T*>(vGamma);
+    const auto beta     = reinterpret_cast<const T*>(vBeta);
+    const auto zRank    = reinterpret_cast<T*>(vz);
+
+    __shared__ int xRank, minRank;       // xRank == zRank. minRank = meanRank = varianceRank = gammaRank = betaRank
+    __shared__ Nd4jLong xLen, totalThreads, *sharedMem; // xLen = zLen
+
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem    = reinterpret_cast<Nd4jLong*>(shmem);
+        totalThreads = gridDim.x * blockDim.x;
+
+        xLen    = shape::length(xShapeInfo);
+        xRank   = shape::rank(xShapeInfo);
+        minRank = shape::rank(meanShapeInfo);
+    }
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * xRank;
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (uint i = tid; i < xLen; i += totalThreads) {
+
+        shape::index2coords(xRank, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, xLen, coords);
+
+        const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, xRank);
+
+        if(minRank == xRank) {
+            for (uint i = 0, j = 0; i < xRank; ++i) {
+                if(j < numDims && i != dims[j])
+                    coords[i] = 0;
+                else
+                    ++j;
+            }
+        }
+        else    // minRank = numDims = 1 in this case
+            coords[0] = coords[dims[0]];
+
+        const auto meanOffset     = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(meanShapeInfo)), shape::stride(const_cast<Nd4jLong*>(meanShapeInfo)), coords, minRank);
+        const auto varianceOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(varianceShapeInfo)), shape::stride(const_cast<Nd4jLong*>(varianceShapeInfo)), coords, minRank);
+
+        T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
+
+        if(gamma != nullptr) {
+            const auto gammaOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(gammaShapeInfo)), shape::stride(const_cast<Nd4jLong*>(gammaShapeInfo)), coords, minRank);
+            sigmaInvGam *= gamma[gammaOffset];
+        }
+
+        z[zOffset] = (x[xOffset] - mean[meanOffset]) * sigmaInvGam;
+
+        if(beta != nullptr) {
+            const auto betaOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(betaShapeInfo)), shape::stride(const_cast<Nd4jLong*>(betaShapeInfo)), coords, minRank);
+            z[zOffset] += beta[betaOffset];
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ static void batchnormCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
@@ -110,6 +184,22 @@ __host__ static void batchnormCudaLauncher(const int blocksPerGrid, const int th
     batchnormCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, static_cast<T>(epsilon));
 }
 BUILD_SINGLE_TEMPLATE(template void batchnormCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vMean, const Nd4jLong* meanShapeInfo, const void* vVariance, const Nd4jLong* varianceShapeInfo, const void* vGamma, const Nd4jLong* gammaShapeInfo, const void* vBeta, const Nd4jLong* betaShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets, const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets, const double epsilon), FLOAT_TYPES);
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ static void batchnormCudaLauncher2(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                            const void* vx, const Nd4jLong* xShapeInfo,
+                                            const void* vMean, const Nd4jLong* meanShapeInfo,
+                                            const void* vVariance, const Nd4jLong* varianceShapeInfo,
+                                            const void* vGamma, const Nd4jLong* gammaShapeInfo,
+                                            const void* vBeta, const Nd4jLong* betaShapeInfo,
+                                                  void* vz, const Nd4jLong* zShapeInfo,
+                                            const int numDims, const int* dims,
+                                            const double epsilon) {
+
+    batchnormCuda2<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, numDims, dims, static_cast<T>(epsilon));
+}
+BUILD_SINGLE_TEMPLATE(template void batchnormCudaLauncher2, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vMean, const Nd4jLong* meanShapeInfo, const void* vVariance, const Nd4jLong* varianceShapeInfo, const void* vGamma, const Nd4jLong* gammaShapeInfo, const void* vBeta, const Nd4jLong* betaShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int numDims, const int* dims, const double epsilon), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
@@ -131,6 +221,21 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
     NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 
     manager.synchronize();
+
+
+    // const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    // const int blocksPerGrid = (input->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    // const int sharedMem = sizeof(Nd4jLong) * threadsPerBlock * input->rankOf() + 128;
+
+    // PointersManager manager(input->getContext(), "batchnorm");
+
+    // const int* dims = reinterpret_cast<int*>(manager.replicatePointer(axes.data(), axes.size() * sizeof(int)));
+
+    // NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
+    // BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2, (blocksPerGrid, threadsPerBlock, sharedMem, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), axes.size(), dims, epsilon), FLOAT_TYPES);
+    // NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
+
+    // manager.synchronize();
 }
 
 
