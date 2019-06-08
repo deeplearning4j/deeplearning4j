@@ -588,7 +588,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
     @Test
     public void testDropout() {
-        int minibatch = 3;
+        int minibatch = 2;
 
         for (boolean cnn : new boolean[]{false, true}) {
             Nd4j.getRandom().setSeed(12345);
@@ -605,15 +605,15 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                     .list();
 
             if (cnn) {
-                builder.layer(new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).nOut(3).build());
-                builder.layer(new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).nOut(3).build());
-                builder.setInputType(InputType.convolutional(8, 8, 3));
+                builder.layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(2, 2).nOut(2).build());
+                builder.layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(2, 2).nOut(2).build());
+                builder.setInputType(InputType.convolutional(8, 8, 2));
             } else {
-                builder.layer(new DenseLayer.Builder().nOut(12).build());
-                builder.layer(new DenseLayer.Builder().nOut(12).build());
-                builder.setInputType(InputType.feedForward(8));
+                builder.layer(new DenseLayer.Builder().nOut(8).build());
+                builder.layer(new DenseLayer.Builder().nOut(8).build());
+                builder.setInputType(InputType.feedForward(6));
             }
-            builder.layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build());
+            builder.layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build());
             MultiLayerConfiguration conf = builder.build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -621,11 +621,11 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
             INDArray f;
             if (cnn) {
-                f = Nd4j.rand(new int[]{minibatch, 3, 8, 8}).muli(10).subi(5);
+                f = Nd4j.rand(new int[]{minibatch, 2, 8, 8}).muli(10).subi(5);
             } else {
-                f = Nd4j.rand(minibatch, 8).muli(10).subi(5);
+                f = Nd4j.rand(minibatch, 6).muli(10).subi(5);
             }
-            INDArray l = TestUtils.randomOneHot(minibatch, 10);
+            INDArray l = TestUtils.randomOneHot(minibatch, 3);
 
             mln.output(f, true);
 
