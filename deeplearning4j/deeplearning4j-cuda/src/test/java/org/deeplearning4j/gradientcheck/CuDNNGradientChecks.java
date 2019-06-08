@@ -489,10 +489,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         int width = 8;
         int height = 8;
         int inputDepth = 3;
-        int[] kernelSizes = new int[]{2, 3};
-        int[] strides = {1, 2};
-        int[] dilation = {2, 3};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same};
+
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -502,85 +499,88 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         Field f2 = org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class.getDeclaredField("helper");
         f2.setAccessible(true);
 
+        int[] kernelSizes = new int[]{2, 3, 2};
+        int[] strides = {1, 2, 2};
+        int[] dilation = {2, 3, 2};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same, ConvolutionMode.Truncate};
+
         for (boolean subsampling : new boolean[]{false, true}) {
-            for (int k : kernelSizes) {
-                for (int s : strides) {
-                    for (int d : dilation) {
-                        for (ConvolutionMode cm : cModes) {
+            for (int t = 0; t < kernelSizes.length; t++) {
+                int k = kernelSizes[t];
+                int s = strides[t];
+                int d = dilation[t];
+                ConvolutionMode cm = cModes[t];
 
-                            //Use larger input with larger dilation values (to avoid invalid config)
-                            int w = d * width;
-                            int h = d * height;
+                //Use larger input with larger dilation values (to avoid invalid config)
+                int w = d * width;
+                int h = d * height;
 
-                            INDArray input = Nd4j.rand(minibatchSize, w * h * inputDepth);
-                            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                            for (int i = 0; i < minibatchSize; i++) {
-                                labels.putScalar(new int[]{i, i % nOut}, 1.0);
-                            }
-
-                            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
-                                    .dataType(DataType.DOUBLE)
-                                    .updater(new NoOp())
-                                    .activation(Activation.TANH).convolutionMode(cm).list()
-                                    .layer(new ConvolutionLayer.Builder().name("layer 0")
-                                            .kernelSize(k, k)
-                                            .stride(s, s)
-                                            .dilation(d, d)
-                                            .nIn(inputDepth).nOut(2).build());
-                            if (subsampling) {
-                                b.layer(new SubsamplingLayer.Builder()
-                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                                        .kernelSize(k, k)
-                                        .stride(s, s)
-                                        .dilation(d, d)
-                                        .build());
-                            } else {
-                                b.layer(new ConvolutionLayer.Builder().nIn(2).nOut(2)
-                                        .kernelSize(k, k)
-                                        .stride(s, s)
-                                        .dilation(d, d)
-                                        .build());
-                            }
-
-                            MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
-                                    .setInputType(InputType.convolutionalFlat(h, w, inputDepth)).build();
-
-                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                            net.init();
-
-                            org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c0 =
-                                    (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer)net.getLayer(0);
-                            ConvolutionHelper ch0 = (ConvolutionHelper) f.get(c0);
-                            assertTrue(ch0 instanceof CudnnConvolutionHelper);
-
-                            if(subsampling){
-                                org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer s1 =
-                                        (org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer)net.getLayer(1);
-                                SubsamplingHelper sh1 = (SubsamplingHelper) f2.get(s1);
-                                assertTrue(sh1 instanceof SubsamplingHelper);
-                            } else {
-                                org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1 =
-                                        (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer)net.getLayer(1);
-                                ConvolutionHelper ch1 = (ConvolutionHelper) f.get(c1);
-                                assertTrue(ch1 instanceof CudnnConvolutionHelper);
-                            }
-
-                            for (int i = 0; i < net.getLayers().length; i++) {
-                                System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
-                            }
-
-                            String msg = (subsampling ? "subsampling" : "conv") + " - mb=" + minibatchSize + ", k="
-                                    + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
-                            System.out.println(msg);
-
-                            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                            assertTrue(msg, gradOK);
-                        }
-                    }
+                INDArray input = Nd4j.rand(minibatchSize, w * h * inputDepth);
+                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                for (int i = 0; i < minibatchSize; i++) {
+                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
                 }
+
+                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                        .dataType(DataType.DOUBLE)
+                        .updater(new NoOp())
+                        .activation(Activation.TANH).convolutionMode(cm).list()
+                        .layer(new ConvolutionLayer.Builder().name("layer 0")
+                                .kernelSize(k, k)
+                                .stride(s, s)
+                                .dilation(d, d)
+                                .nIn(inputDepth).nOut(2).build());
+                if (subsampling) {
+                    b.layer(new SubsamplingLayer.Builder()
+                            .poolingType(SubsamplingLayer.PoolingType.MAX)
+                            .kernelSize(k, k)
+                            .stride(s, s)
+                            .dilation(d, d)
+                            .build());
+                } else {
+                    b.layer(new ConvolutionLayer.Builder().nIn(2).nOut(2)
+                            .kernelSize(k, k)
+                            .stride(s, s)
+                            .dilation(d, d)
+                            .build());
+                }
+
+                MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nOut(nOut).build())
+                        .setInputType(InputType.convolutionalFlat(h, w, inputDepth)).build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c0 =
+                        (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) net.getLayer(0);
+                ConvolutionHelper ch0 = (ConvolutionHelper) f.get(c0);
+                assertTrue(ch0 instanceof CudnnConvolutionHelper);
+
+                if (subsampling) {
+                    org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer s1 =
+                            (org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer) net.getLayer(1);
+                    SubsamplingHelper sh1 = (SubsamplingHelper) f2.get(s1);
+                    assertTrue(sh1 instanceof SubsamplingHelper);
+                } else {
+                    org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1 =
+                            (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) net.getLayer(1);
+                    ConvolutionHelper ch1 = (ConvolutionHelper) f.get(c1);
+                    assertTrue(ch1 instanceof CudnnConvolutionHelper);
+                }
+
+                for (int i = 0; i < net.getLayers().length; i++) {
+                    System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
+                }
+
+                String msg = (subsampling ? "subsampling" : "conv") + " - mb=" + minibatchSize + ", k="
+                        + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
+                System.out.println(msg);
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                assertTrue(msg, gradOK);
             }
         }
     }

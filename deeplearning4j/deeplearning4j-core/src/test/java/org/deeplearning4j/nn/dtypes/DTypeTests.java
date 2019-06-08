@@ -550,7 +550,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new Upsampling3D.Builder().size(2).build())
                             .layer(secondLast)
                             .layer(ol)
-                            .setInputType(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 12, 12, 12, 1))
+                            .setInputType(InputType.convolutional3D(Convolution3D.DataFormat.NCDHW, 8, 8, 8, 1))
                             .build();
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -561,13 +561,13 @@ public class DTypeTests extends BaseDL4JTest {
                     assertEquals(msg, networkDtype, net.getFlattenedGradients().dataType());
                     assertEquals(msg, networkDtype, net.getUpdater(true).getStateViewArray().dataType());
 
-                    INDArray in = Nd4j.rand(networkDtype, 2, 1, 12, 12, 12);
+                    INDArray in = Nd4j.rand(networkDtype, 2, 1, 8, 8, 8);
                     INDArray label;
                     if (outputLayer == 0) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                     } else if (outputLayer == 1) {
                         //CNN3D loss
-                        label = Nd4j.rand(networkDtype, 2, 3, 12, 12, 12);
+                        label = Nd4j.rand(networkDtype, 2, 3, 8, 8, 8);
                     } else if (outputLayer == 2) {
                         label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                     } else {
@@ -787,15 +787,15 @@ public class DTypeTests extends BaseDL4JTest {
                     switch (outputLayer) {
                         case 0:
                             ol = new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
-                            secondLast = new LSTM.Builder().nOut(5).activation(Activation.TANH).build();
+                            secondLast = new SimpleRnn.Builder().nOut(5).activation(Activation.TANH).build();
                             break;
                         case 1:
                             ol = new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build();
-                            secondLast = new LSTM.Builder().nOut(5).activation(Activation.TANH).build();
+                            secondLast = new SimpleRnn.Builder().nOut(5).activation(Activation.TANH).build();
                             break;
                         case 2:
                             ol = new OutputLayer.Builder().nOut(5).build();
-                            secondLast = new LastTimeStep(new LSTM.Builder().nOut(5).activation(Activation.TANH).build());
+                            secondLast = new LastTimeStep(new SimpleRnn.Builder().nOut(5).activation(Activation.TANH).build());
                             break;
                         default:
                             throw new RuntimeException();

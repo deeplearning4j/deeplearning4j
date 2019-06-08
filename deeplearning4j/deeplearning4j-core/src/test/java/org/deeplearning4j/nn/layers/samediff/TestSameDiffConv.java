@@ -117,11 +117,8 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                 for (int[] dilation : new int[][]{{1, 1}, {2, 2}, {1, 2}}) {
                                     for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
                                         for (Activation a : afns) {
-                                            int i = r.nextInt(m);
-                                            if (i >= n) {
-                                                //Example: n=2, m=3... skip on i=2, run test on i=0, i=1
+                                            if(r.nextInt(50) != 0)
                                                 continue;
-                                            }
 
                                             String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", nIn=" + nIn
                                                     + ", nOut=" + nOut + ", kernel=" + Arrays.toString(kernel) + ", stride="

@@ -303,84 +303,68 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
         int miniBatchSize = 3;
 
         Random r = new Random(12345L);
-        INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < nIn; j++) {
-                for (int k = 0; k < timeSeriesLength; k++) {
-                    input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                }
-            }
-        }
+        INDArray input = Nd4j.rand(DataType.DOUBLE, miniBatchSize, nIn, timeSeriesLength).subi(0.5);
 
-        INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
-        for (int i = 0; i < miniBatchSize; i++) {
-            for (int j = 0; j < timeSeriesLength; j++) {
-                int idx = r.nextInt(nOut);
-                labels.putScalar(new int[] {i, idx, j}, 1.0f);
-            }
-        }
-
+        INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize, nOut, timeSeriesLength);
 
         //use l2vals[i] with l1vals[i]
-        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
-        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
-        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
+        double[] l2vals = {0.4, 0.0};
+        double[] l1vals = {0.5, 0.0};
+        double[] biasL2 = {0.0, 0.2};
+        double[] biasL1 = {0.0, 0.6};
 
-        for (Activation afn : activFns) {
-            for (int i = 0; i < lossFunctions.length; i++) {
-                for (int k = 0; k < l2vals.length; k++) {
-                    LossFunction lf = lossFunctions[i];
-                    Activation outputActivation = outputActivations[i];
-                    double l2 = l2vals[k];
-                    double l1 = l1vals[k];
+        for (int i = 0; i < lossFunctions.length; i++) {
+            for (int k = 0; k < l2vals.length; k++) {
+                Activation afn = activFns[i];
+                LossFunction lf = lossFunctions[i];
+                Activation outputActivation = outputActivations[i];
+                double l2 = l2vals[k];
+                double l1 = l1vals[k];
 
-                    NeuralNetConfiguration.Builder conf =
-                                    new NeuralNetConfiguration.Builder();
-                    if (l1 > 0.0)
-                        conf.l1(l1);
-                    if (l2 > 0.0)
-                        conf.l2(l2);
-                    if (biasL2[k] > 0)
-                        conf.l2Bias(biasL2[k]);
-                    if (biasL1[k] > 0)
-                        conf.l1Bias(biasL1[k]);
+                NeuralNetConfiguration.Builder conf =
+                        new NeuralNetConfiguration.Builder();
+                if (l1 > 0.0)
+                    conf.l1(l1);
+                if (l2 > 0.0)
+                    conf.l2(l2);
+                if (biasL2[k] > 0)
+                    conf.l2Bias(biasL2[k]);
+                if (biasL1[k] > 0)
+                    conf.l1Bias(biasL1[k]);
 
-                    MultiLayerConfiguration mlc = conf.seed(12345L)
-                                    .dataType(DataType.DOUBLE)
-                                    .list().layer(0,
-                                                    new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+                MultiLayerConfiguration mlc = conf.seed(12345L)
+                        .dataType(DataType.DOUBLE)
+                        .updater(new NoOp())
+                        .list().layer(0,
+                                new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                        .weightInit(new NormalDistribution(0, 1))
+                                        .activation(afn)
+                                        .build())
+                        .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize)
+                                .nOut(nOut)
+                                .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
+                        .build();
 
-                                                                    .dist(new NormalDistribution(0, 1))
-                                                                    .activation(afn).updater(
-                                                                                    Updater.NONE)
-                                                                    .build())
-                                    .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize)
-                                                    .nOut(nOut)
-                                                    .dist(new NormalDistribution(0, 1)).updater(new NoOp()).build())
-                                    .build();
 
+                MultiLayerNetwork mln = new MultiLayerNetwork(mlc);
 
-                    MultiLayerNetwork mln = new MultiLayerNetwork(mlc);
+                mln.init();
 
-                    mln.init();
-
-                    if (PRINT_RESULTS) {
-                        System.out.println("testGradientGravesBidirectionalLSTMFull() - activationFn=" + afn
-                                        + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", l2=" + l2
-                                        + ", l1=" + l1);
-                        for (int j = 0; j < mln.getnLayers(); j++)
-                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                    }
-
-                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                    String msg = "testGradientGravesLSTMFull() - activationFn=" + afn + ", lossFn=" + lf
-                                    + ", outputActivation=" + outputActivation + ", l2=" + l2 + ", l1=" + l1;
-                    assertTrue(msg, gradOK);
-                    TestUtils.testModelSerialization(mln);
+                if (PRINT_RESULTS) {
+                    System.out.println("testGradientGravesBidirectionalLSTMFull() - activationFn=" + afn
+                            + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", l2=" + l2
+                            + ", l1=" + l1);
+                    for (int j = 0; j < mln.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                 }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                String msg = "testGradientGravesLSTMFull() - activationFn=" + afn + ", lossFn=" + lf
+                        + ", outputActivation=" + outputActivation + ", l2=" + l2 + ", l1=" + l1;
+                assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
