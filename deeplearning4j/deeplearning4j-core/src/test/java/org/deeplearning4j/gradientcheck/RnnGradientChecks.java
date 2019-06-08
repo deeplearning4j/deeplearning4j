@@ -224,6 +224,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
             for (boolean inputMask : new boolean[]{false, true}) {
                 for (boolean simple : new boolean[]{false, true}) {
                     for (boolean hasLayerNorm : new boolean[]{true, false}) {
+                        if(!simple && hasLayerNorm)
+                            continue;
 
 
                         INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
@@ -272,7 +274,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         net.init();
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 16);
                         assertTrue(name, gradOK);
                         TestUtils.testModelSerialization(net);
                     }

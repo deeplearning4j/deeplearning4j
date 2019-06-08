@@ -809,7 +809,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input,
-                                    labels);
+                                    labels, null, null, true, 128);
 
                             assertTrue(msg, gradOK);
 
@@ -896,12 +896,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     public void testDeconvolution2D() {
         int nOut = 2;
 
-        int[] minibatchSizes = new int[]{1, 3, 1, 3, 1, 3, 1, 3};
-        int[] kernelSizes = new int[]{1, 1, 3, 3, 1, 1, 3, 3};
-        int[] strides = {1, 1, 1, 1, 2, 2, 2, 2};
-        int[] dilation = {1, 2, 2, 1, 1, 1, 2, 2};
-        Activation[] activations = new Activation[]{Activation.SIGMOID, Activation.TANH, Activation.TANH, Activation.TANH, Activation.TANH, Activation.SIGMOID, Activation.SIGMOID, Activation.SIGMOID};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{Same, Same, Same, Same, Truncate, Truncate, Truncate, Truncate};
+        int[] minibatchSizes = new int[]{1, 3, 3, 1, 3};
+        int[] kernelSizes = new int[]{1, 1, 1, 3, 3};
+        int[] strides = {1, 1, 2, 2, 2};
+        int[] dilation = {1, 2, 1, 2, 2};
+        Activation[] activations = new Activation[]{Activation.SIGMOID, Activation.TANH, Activation.SIGMOID, Activation.SIGMOID, Activation.SIGMOID};
+        ConvolutionMode[] cModes = new ConvolutionMode[]{Same, Same, Truncate, Truncate, Truncate};
         int width = 7;
         int height = 7;
         int inputDepth = 3;
@@ -954,7 +954,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             System.out.println(msg);
 
             boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 100);
 
             assertTrue(msg, gradOK);
 
@@ -1126,7 +1126,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     @Test
     public void testCropping2DLayer() {
         Nd4j.getRandom().setSeed(12345);
-        int nOut = 4;
+        int nOut = 2;
 
         int[] minibatchSizes = {1, 3};
         int width = 12;
@@ -1155,11 +1155,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                     .convolutionMode(ConvolutionMode.Same)
                                     .weightInit(new NormalDistribution(0, 1)).list()
                                     .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
-                                            .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
+                                            .nIn(inputDepth).nOut(2).build())//output: (6-2+0)/1+1 = 5
                                     .layer(new Cropping2D(crop))
-                                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).build())
+                                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding).nIn(2).nOut(2).build())
+                                    .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG).kernelSize(3, 3).stride(3, 3).build())
                                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nOut(4).build())
+                                            .activation(Activation.SOFTMAX).nOut(nOut).build())
                                     .setInputType(InputType.convolutional(height, width, inputDepth))
                                     .build();
 
@@ -1184,7 +1185,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 160);
 
                     assertTrue(msg, gradOK);
 

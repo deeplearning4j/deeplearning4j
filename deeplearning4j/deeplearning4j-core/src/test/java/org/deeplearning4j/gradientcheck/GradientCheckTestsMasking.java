@@ -157,15 +157,14 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         int timeSeriesLength = 5;
         int nIn = 5;
-        int layerSize = 4;
+        int layerSize = 3;
         int nOut = 3;
 
-        int miniBatchSize = 3;
+        int miniBatchSize = 2;
 
-        INDArray[] masks = new INDArray[] {null,
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}}),
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}}),
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {0, 0, 1, 1, 1}})};
+        INDArray[] masks = new INDArray[] {
+                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}}),
+                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}})};
 
         int testNum = 0;
         for (INDArray mask : masks) {
@@ -202,7 +201,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask, true, 16);
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);

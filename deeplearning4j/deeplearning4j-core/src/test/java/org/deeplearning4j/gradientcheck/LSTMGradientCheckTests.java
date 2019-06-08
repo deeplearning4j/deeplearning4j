@@ -162,13 +162,13 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
 
             //use l2vals[i] with l1vals[i]
-            double[] l2vals = {0.4, 0.0, 0.4, 0.4};
-            double[] l1vals = {0.0, 0.0, 0.5, 0.0};
-            double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
-            double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
-            Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN, Activation.TANH, Activation.TANH};
-            LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE, LossFunction.MSE, LossFunction.MCXENT};
-            Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH, Activation.IDENTITY, Activation.SOFTMAX};
+            double[] l2vals = {0.4, 0.0};
+            double[] l1vals = {0.0, 0.5};
+            double[] biasL2 = {0.3, 0.0};
+            double[] biasL1 = {0.0, 0.6};
+            Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN};
+            LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+            Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH};
 
             for (int i = 0; i < l2vals.length; i++) {
 
@@ -218,7 +218,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 128);
 
                 assertTrue(testName, gradOK);
                 TestUtils.testModelSerialization(mln);
