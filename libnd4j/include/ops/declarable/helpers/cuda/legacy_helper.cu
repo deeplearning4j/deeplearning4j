@@ -118,7 +118,7 @@ namespace helpers {
         auto functor = LAMBDA_TT(x, y){
             return y * (3 * x * x);
         };
-        
+
         input->applyPairwiseLambda(epsilon, functor, output);
     }
 
@@ -143,7 +143,7 @@ namespace helpers {
     void reduceNorm1(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reduceNorm1_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
-    
+
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
@@ -164,11 +164,11 @@ namespace helpers {
     template <typename T>
     linkage void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
         // 1 - labels - 1 / (1 + exp(logits))
-        auto functor = LAMBDA_TT(x, y) {            
+        auto functor = LAMBDA_TT(x, y) {
             if(x <= 0)
                 return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + nd4j::math::nd4j_exp<T,T>(x));
             auto e = nd4j::math::nd4j_exp<T,T>(-x);
-            return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);            
+            return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
         };
 
         logits->applyPairwiseLambda(labels, functor, output);
@@ -179,7 +179,7 @@ namespace helpers {
     void sigmCrossEntropyGrad(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), FLOAT_TYPES);
     }
-    
+
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
@@ -354,6 +354,17 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), FLOAT_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void logSumExp_, (NDArray* input, NDArray* subtrah, NDArray* axis, NDArray*output);, FLOAT_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+
+}
+
+void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+    BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void weightedCrossEntropyWithLogitsFunctor_, (NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output), FLOAT_TYPES);
 
 }
 }

@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
 
 #include <ops/declarable/headers/parity_ops.h>
-#include <ops/declarable/helpers/cross.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
 namespace ops {
