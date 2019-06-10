@@ -78,4 +78,22 @@ public class BaseCudaDataBufferTest {
 
         assertArrayEquals(row.shapeInfoJava(), tad.shapeInfoJava());
     }
+
+
+    @Test
+    public void testHostAllocation_1() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 5);
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+        assertNotNull(pointX);
+
+        assertNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+
+        x.getDouble(0);
+
+        assertNotNull(pointX.getHostPointer());
+    }
 }

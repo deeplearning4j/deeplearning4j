@@ -272,6 +272,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair tmpPair = new PointersPair();
 
                 // if the initial memory location is device, there's a chance we don't have zero memory allocated
+                /*
                 if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
                     tmpPair = alloc(AllocationStatus.HOST, point, point.getShape(), initialize);
 
@@ -281,11 +282,15 @@ public class CudaZeroHandler implements MemoryHandler {
                     point.setAllocationStatus(AllocationStatus.HOST);
                     point.setPointers(tmpPair);
                 }
+                */
 /*
                 if (reqMemory < configuration.getMaximumSingleHostAllocation()
                                 && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration
                                                 .getMaximumDeviceAllocation()) {
 */
+
+                if (point.getPointers() == null)
+                    point.setPointers(tmpPair);
 
 
                     //val timeStart = System.nanoTime();

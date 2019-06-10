@@ -370,7 +370,7 @@ public class AtomicAllocator implements Allocator {
         //Nd4j.getExecutioner().push();
 
         // we don't synchronize constant buffers, since we assume they are always valid on host side
-        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8) {
+        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8 || AtomicAllocator.getInstance().getAllocationPoint(buffer).getPointers().getHostPointer() == null) {
             return;
         }
 
