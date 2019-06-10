@@ -768,11 +768,12 @@ namespace helpers {
 
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
-
         dim3 dims(256, 512, 256);
         int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
         fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(), numClasses, begins, lengths);
+
+        NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
 
         if (input->isVector()) {
             segmentMaxLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
@@ -787,6 +788,7 @@ namespace helpers {
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
             segmentMaxTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
+        NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
     }
 
     // segmen min 
@@ -804,6 +806,7 @@ namespace helpers {
         int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
         fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(), numClasses, begins, lengths);
+        NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
 
         if (input->isVector()) {
             segmentMinLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
@@ -819,6 +822,8 @@ namespace helpers {
             segmentMinTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
 
         }
+        NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
+
     }
 
     // segmen mean
@@ -1228,7 +1233,65 @@ namespace helpers {
     // segment max
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
+    static __global__ void segmentMaxBPLinearKernel(void* inputBuf, Nd4jLong* inputShape, void* forwardOutput,
+            Nd4jLong* forwardShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
+            void* outputBuf, Nd4jLong* outputShape) {
+        __shared__ T* x;
+        __shared__ T* gradIn;
+        __shared__ T* gradOut;
+        __shared__ I* y;
+        __shared__ T* z;
+        __shared__ Nd4jLong xLen, gradLen;
+
+        if (threadIdx.x == 0) {
+            xLen = shape::length(inputShape);
+            x = reinterpret_cast<T*>(inputBuf);
+            y = reinterpret_cast<I*>(indicesBuf);
+            z = reinterpret_cast<T*>(outputBuf);
+            gradIn = reinterpret_cast<T*>(forwardOutput);
+            gradOut = reinterpret_cast<T*>(eps);
+            gradLen = shape::length(epsShape);
+        }
+
+        auto start = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = gridDim.x * blockDim.x;
+
+        for (auto e = start; e < xLen; e += step) {
+
+            auto zOffset = shape::getIndexOffset(e, outputShape, xLen);
+            auto xOffset = shape::getIndexOffset(e, inputShape, xLen);
+            auto yOffset = shape::getIndexOffset(e, indicesShape, xLen);
+            auto classIndex = y[yOffset];
+            auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape, gradLen);
+            auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape, gradLen);
+
+            if (nd4j::math::nd4j_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+                z[zOffset] = gradOut[gradOffsetO];
+            }
+        }
+    }
+
+    template <typename T, typename I>
     int segmentMaxFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        //int numOfClasses = gradOut->sizeAt(0);
+        // if input is a vector: (as if in doc sample)
+        auto stream = context->getCudaStream();
+        NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
+        segmentMaxFunctor_<T, I>(context, input, indices, &tempRes);
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
+            auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
+            segmentMaxBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
