@@ -675,6 +675,23 @@ template void NDArray::applyIndexedLambda(const std::function<uint16_t (Nd4jLong
     template void NDArray::applyIndexedLambda(const std::function<int8_t(Nd4jLong, int8_t)>& func, NDArray* target);
 template void NDArray::applyIndexedLambda(const std::function<bool(Nd4jLong, bool)>& func, NDArray* target);
 
+////////////////////////////////////////////////////////////////////////
+    void* NDArray::specialBuffer() {
+
+        if (_buffer->special() == nullptr)
+            return getBuffer();
+        // FIXME: this should be fixed once CUDA backend added
+        return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+    }
+
+////////////////////////////////////////////////////////////////////////
+    void* NDArray::getSpecialBuffer() const {
+        if (_buffer->special() == nullptr)
+            return getBuffer();
+        // FIXME: this should be fixed once CUDA backend added
+        return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+    }
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(Nd4jLong, T, T)>& func, NDArray* target) {

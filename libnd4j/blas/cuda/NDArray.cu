@@ -431,9 +431,26 @@ void NDArray::repeat(int dimension, NDArray& target) const {
     NDArray::registerSpecialUse({&target}, {this});
 }
 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {\
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
 
     if(_length == 0)
             { printf("NDArray::printActualBuffer: array length is zero !\n"); return; }
