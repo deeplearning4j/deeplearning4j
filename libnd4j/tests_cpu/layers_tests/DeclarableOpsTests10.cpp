@@ -2322,6 +2322,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);
+    // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));

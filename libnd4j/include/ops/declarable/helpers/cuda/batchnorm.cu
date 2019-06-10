@@ -41,14 +41,13 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
 									const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
 									const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
 									const T epsilon) {
-printf("!!!!!!\n");
+
 	const auto x    	= reinterpret_cast<const T*>(vx);
           auto z        = reinterpret_cast<T*>(vz);
 	const auto mean 	= reinterpret_cast<const T*>(vMean);
 	const auto variance = reinterpret_cast<const T*>(vVariance);
 	const auto gamma    = reinterpret_cast<const T*>(vGamma);
 	const auto beta     = reinterpret_cast<const T*>(vBeta);
-	const auto zRank    = reinterpret_cast<T*>(vz);
 
     // maxRank = xRank = zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
     __shared__ Nd4jLong minLen, tadLen, totalThreads;
@@ -81,9 +80,20 @@ printf("!!!!!!\n");
     	const auto xTad = x + xTadOffsets[i];
     		  auto zTad = z + zTadOffsets[i];
 
+        // if(i == 3) {
+        //     printf("meanOffset = %lld, varianceOffset = %lld, betaOffset = %lld, xTadOffsets = %lld, zTadOffsets = %lld \n", meanOffset, varianceOffset, betaOffset, xTadOffsets[i], zTadOffsets[i] );
+        //     printf("%f\n", sigmaInvGam);
+        // }
+
+
     	for (uint j = 0; j < tadLen; ++j) {
+
     		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo, tadLen);
     		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo, tadLen);
+
+            // if(i == 3) {
+            // printf("xTadOffsets = %lld, zTadOffsets = %lld \n", xTadOffset, zTadOffset );
+        // }
 
     		zTad[zTadOffset] = (xTad[xTadOffset] - mean[meanOffset]) * sigmaInvGam;
 
@@ -110,7 +120,6 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
     const auto variance = reinterpret_cast<const T*>(vVariance);
     const auto gamma    = reinterpret_cast<const T*>(vGamma);
     const auto beta     = reinterpret_cast<const T*>(vBeta);
-    const auto zRank    = reinterpret_cast<T*>(vz);
 
     __shared__ int xRank, minRank;       // xRank == zRank. minRank = meanRank = varianceRank = gammaRank = betaRank
     __shared__ Nd4jLong xLen, totalThreads, *sharedMem; // xLen = zLen
@@ -204,14 +213,12 @@ BUILD_SINGLE_TEMPLATE(template void batchnormCudaLauncher2, (const int blocksPer
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
-	std::vector<int> copy = axes;
-	if (axes.size() > 1)
-        std::sort(copy.begin(), copy.end());
+	std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
-	auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), copy);
+	auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
 
-    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (mean->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     PointersManager manager(input->getContext(), "batchnorm");
