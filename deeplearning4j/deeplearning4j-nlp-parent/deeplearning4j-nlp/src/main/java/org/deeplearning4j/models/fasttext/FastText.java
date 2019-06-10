@@ -88,7 +88,7 @@ public class FastText implements WordVectors, Serializable {
 
     @Getter private SentenceIterator iterator;
 
-    private transient JFastText fastTextImpl;
+    @Builder.Default private transient JFastText fastTextImpl = new JFastText();
     private transient Word2Vec word2Vec;
     @Getter private boolean modelLoaded;
     @Getter private boolean modelVectorsLoaded;

@@ -207,7 +207,11 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
-
+        if (mean.rank() == 0 || mean.rank() > 2) {
+            throw new IllegalStateException("Invalid rank for wordsNearest method");
+        }
+        else if (mean.rank() == 1)
+            mean = mean.reshape(1,-1);
         Collection<String> tempRes = wordsNearest(mean, top + positive.size() + negative.size());
         List<String> realResults = new ArrayList<>();
 

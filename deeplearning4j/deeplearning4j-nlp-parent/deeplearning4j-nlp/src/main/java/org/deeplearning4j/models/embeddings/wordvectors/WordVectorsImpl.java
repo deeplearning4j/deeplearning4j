@@ -135,6 +135,12 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
+
+        if (words.rank() == 0 || words.rank() > 2) {
+            throw new IllegalStateException("Invalid rank for wordsNearest method");
+        }
+        else if (words.rank() == 1)
+            words.reshape(1,-1);
         return modelUtils.wordsNearest(words, top);
     }
 
