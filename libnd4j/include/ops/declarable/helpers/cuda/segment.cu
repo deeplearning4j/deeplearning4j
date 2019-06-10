@@ -1272,6 +1272,16 @@ namespace helpers {
     }
 
     template <typename T, typename I>
+    static __global__ void segmentMaxBPTadKernel(void* inputBuf, Nd4jLong* inputShape, void* forwardOutput,
+                                                    Nd4jLong* forwardShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
+                                                    void* outputBuf, Nd4jLong* outputShape,Nd4jLong* inputTad,
+                                                    Nd4jLong* inputOffsets, Nd4jLong* gradInTad, Nd4jLong* gradInOffsets,
+                                                    Nd4jLong* gradOutTad, Nd4jLong* gradOutOffsets, Nd4jLong* outTad,
+                                                    Nd4jLong* outOffsets) {
+
+    }
+
+    template <typename T, typename I>
     int segmentMaxFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         //int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
@@ -1287,9 +1297,25 @@ namespace helpers {
                     indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
         }
         else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
+            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
+            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
+            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+
             segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
-                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+                    inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
+                    outputTads, outputTadOffsets);
         }
         NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
@@ -1297,21 +1323,155 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     int segmentMinFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        //int numOfClasses = gradOut->sizeAt(0);
+        // if input is a vector: (as if in doc sample)
+        auto stream = context->getCudaStream();
+        NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
+        segmentMinFunctor_<T, I>(context, input, indices, &tempRes);
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
+            auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
+            segmentMaxBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
+            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
+            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
+            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+
+            segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+                    inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
+                    outputTads, outputTadOffsets);
+        }
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     int segmentSumFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        auto stream = context->getCudaStream();
+        NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
+        segmentSumFunctor_<T, I>(context, input, indices, &tempRes);
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
+            auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
+            segmentMaxBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
+            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
+            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
+            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+
+            segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+                    inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
+                    outputTads, outputTadOffsets);
+        }
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     int segmentMeanFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        auto stream = context->getCudaStream();
+        NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
+        segmentMeanFunctor_<T, I>(context, input, indices, &tempRes);
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
+            auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
+            segmentMaxBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
+            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
+            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
+            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+
+            segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+                    inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
+                    outputTads, outputTadOffsets);
+        }
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     int segmentProdFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        auto stream = context->getCudaStream();
+        NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
+        segmentProdFunctor_<T, I>(context, input, indices, &tempRes);
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        if (input->isVector()) {
+            Nd4jLong loop_size = input->lengthOf();
+            auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
+            segmentMaxBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
+        }
+        else {
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            Nd4jLong* inputTads = packX.specialShapeInfo();
+            Nd4jLong* inputTadOffsets = packX.specialOffsets();
+            Nd4jLong* outputTads = packZ.specialShapeInfo();
+            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
+            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
+            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
+            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+
+            segmentMaxBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                    tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
+                    indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+                    inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
+                    outputTads, outputTadOffsets);
+        }
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
         return Status::OK();
     }
 
