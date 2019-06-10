@@ -28,19 +28,19 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-    template<typename X, typename Y, typename Z>
+    template<typename X, typename Y>
     __global__ static void gatherCudaLinearKernel(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo,
     void* vz, const Nd4jLong* zShapeInfo) {
 
 
     __shared__ const X* x;
     __shared__ const Y* y;
-    __shared__ Z* z;
+    __shared__ X* z;
     __shared__ Nd4jLong xLen, yLen, zLen;
 
     if (threadIdx.x == 0) {
         x = reinterpret_cast<const X*>(vx);
-        z = reinterpret_cast<Z*>(vz);
+        z = reinterpret_cast<X*>(vz);
         y = reinterpret_cast<const Y *>(vy);
         xLen = shape::length(xShapeInfo);
         yLen = shape::length(yShapeInfo);
@@ -61,24 +61,24 @@ namespace helpers {
 }
 
 //////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-__global__ static void gatherCuda(const int numOfSubArrs, 
+template<typename X, typename Y>
+__global__ static void gatherCuda(const int numOfSubArrs,
                                     const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets,
                                     const void* vy, const Nd4jLong* yShapeInfo,
                                           void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets) {
 
     const Y* y = reinterpret_cast<const Y*>(vy);
     __shared__ const X* x;
-    __shared__ Z* z;
-    
+    __shared__ X* z;
+
     const Nd4jLong len = shape::length(xShapeInfo);
     //const Nd4jLong zLen = shape::length(zShapeInfo);
     for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
-        
+
         if (threadIdx.x == 0) {
-                        
+
             x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)]];
-            z = reinterpret_cast<Z*>(vz) + zOffsets[i];            
+            z = reinterpret_cast<X*>(vz) + zOffsets[i];
         }
         __syncthreads();
 
@@ -92,26 +92,26 @@ __global__ static void gatherCuda(const int numOfSubArrs,
     }
 }
 
-template<typename X, typename Y, typename Z>
+template<typename X, typename Y>
 __host__ static void gatherCudaLinear(const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo,
                                             void* vz, const Nd4jLong* zShapeInfo) {
-    gatherCudaLinearKernel<X,Y,Z><<<128, 256, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+    gatherCudaLinearKernel<X,Y><<<128, 256, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
+template<typename X, typename Y>
 __host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int numOfSubArrs,
                                     const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets,
                                     const void* vy, const Nd4jLong* yShapeInfo,
                                           void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets) {
-    gatherCuda<X,Y,Z><<<numOfSubArrs, MAX_NUM_THREADS, 1024, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, vz, zShapeInfo, zOffsets);
+    gatherCuda<X,Y><<<numOfSubArrs, MAX_NUM_THREADS, 1024, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, vz, zShapeInfo, zOffsets);
 }
 
 //////////////////////////////////////////////////////////////////////
 void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
     const int inputRank = input->rankOf();
-    int axis = intArgs.size() > 0 ? intArgs[0] : 0;    
+    int axis = intArgs.size() > 0 ? intArgs[0] : 0;
     if(axis < 0)
         axis += inputRank;
 
@@ -126,24 +126,24 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
             auto idx = indices->e<Nd4jLong>(0);
             auto scalarNDArray = input->e(idx);
             output->assign(scalarNDArray);
-        } 
-        else {                
-            NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});            
+        }
+        else {
+            NDArray inSubArr = (*input)(indices->e<Nd4jLong>(0), {axis});
             output->assign(inSubArr);
         }
-    }    
+    }
     else {
 
         NDArray* pIndices = const_cast<NDArray*>(indices);
-        if(indices == nullptr)          
+        if(indices == nullptr)
             pIndices = new NDArray(input->ordering(), {numOfIntArgs-1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, input->getContext());
-        
+
         std::vector<int> dimsOut(pIndices->rankOf());
         std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+pIndices->rankOf()-1
-        
+
         const Nd4jLong numOfSubArrs = pIndices->lengthOf();
 
-        Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);        
+        Nd4jLong *outSubArrShapeInfo(nullptr), *inSubArrShapeInfo(nullptr), *outSubArrOffsets(nullptr), *inSubArrOffsets(nullptr);
         input-> getSubArrShapeAndOffsets({axis},  inSubArrShapeInfo,  inSubArrOffsets);
         output->getSubArrShapeAndOffsets(dimsOut, outSubArrShapeInfo, outSubArrOffsets);
         if (output->rankOf() > 1) {
@@ -164,29 +164,25 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
                                                                                   sizeof(Nd4jLong)));
 
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLauncher,
-                                  (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets),
-                                  NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets), NUMERIC_TYPES, INTEGER_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
             manager.synchronize();
         }
         else {
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_TRIPLE_SELECTOR(input->dataType(), pIndices->dataType(), output->dataType(), gatherCudaLinear,
-                                  (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()),
-                                  NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLinear, (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), NUMERIC_TYPES, INTEGER_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
 
         }
 
         if(indices == nullptr)
             delete pIndices;
-    }        
-}    
+    }
+}
 
 
-BUILD_TRIPLE_TEMPLATE(template void gatherCudaLauncher, (const cudaStream_t *stream, const int numOfSubArrs, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
-BUILD_TRIPLE_TEMPLATE(template void gatherCudaLinear, (const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES, INTEGER_TYPES, NUMERIC_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void gatherCudaLauncher, (const cudaStream_t *stream, const int numOfSubArrs, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets), NUMERIC_TYPES, INTEGER_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void gatherCudaLinear, (const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES, INTEGER_TYPES);
 
 
 
