@@ -64,8 +64,8 @@ void NDArray::tickWriteDevice() const       { }
 void NDArray::tickReadHost() const          { }
 void NDArray::tickReadDevice() const        { }
 void NDArray::tickBothActual() const        { }
-bool NDArray::isActualOnHostSide() const    { }
-bool NDArray::isActualOnDeviceSide() const  { }
+bool NDArray::isActualOnHostSide() const    { return true; }
+bool NDArray::isActualOnDeviceSide() const  { return true; }
 void NDArray::makeBothBuffersActual() const { }
 
 
