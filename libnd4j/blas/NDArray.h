@@ -687,7 +687,7 @@ namespace nd4j {
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 
-#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
+#if defined(__CUDABLAS__) //&& defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -2140,7 +2140,7 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 }
 
 
-#if defined(__CUDACC__) && defined(BUILD_TESTS)
+#if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif

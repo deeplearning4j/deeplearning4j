@@ -457,8 +457,9 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
         void* pHost = operator new(sizeof(T) * _length);
 
         if (ews() != 1) {
-            for (uint i = 0; i < _length; i++)
-                cudaMemcpyAsync(pHost + i * sizeof(T), getSpecialBuffer() + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
+            //for (uint i = 0; i < _length; i++)
+                //cudaMemcpyAsync(pHost + i * sizeof(T), getSpecialBuffer() + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
+                throw std::runtime_error("FIXME!");
         }
         else
             cudaMemcpyAsync(pHost, getSpecialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
