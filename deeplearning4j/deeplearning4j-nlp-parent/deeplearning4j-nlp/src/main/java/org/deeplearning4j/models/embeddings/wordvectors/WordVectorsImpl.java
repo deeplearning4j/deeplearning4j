@@ -357,4 +357,9 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     public boolean jsonSerializable() {
         return false;
     }
+
+    @Override
+    public boolean outOfVocabularySupported() {
+        return false;
+    }
 }

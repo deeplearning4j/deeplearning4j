@@ -288,4 +288,33 @@ public class WordVectorSerializerTest {
             }
         }
     }
+
+    @Test
+    public void FastText_Correct_WhenDeserialized() throws IOException {
+
+         FastText fastText =
+                FastText.builder().cbow(true).build();
+
+         WordVectorSerializer.writeWordVectors(fastText, new File("some.data"));
+
+         FastText deser = null;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            deser = WordVectorSerializer.readWordVectors(new File("some.data"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
+
+         assertNotNull(deser);
+        assertEquals(fastText.isCbow(), deser.isCbow());
+        assertEquals(fastText.isModelLoaded(), deser.isModelLoaded());
+        assertEquals(fastText.isAnalogies(), deser.isAnalogies());
+        assertEquals(fastText.isNn(), deser.isNn());
+        assertEquals(fastText.isPredict(), deser.isPredict());
+        assertEquals(fastText.isPredict_prob(), deser.isPredict_prob());
+        assertEquals(fastText.isQuantize(), deser.isQuantize());
+        assertEquals(fastText.getInputFile(), deser.getInputFile());
+        assertEquals(fastText.getOutputFile(), deser.getOutputFile());
+    }
 }

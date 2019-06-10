@@ -6,10 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -17,41 +20,78 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 @Slf4j
 @AllArgsConstructor
 @lombok.Builder
-public class FastText implements WordVectors {
+public class FastText implements WordVectors, Serializable {
 
-    private boolean supervised;
-    private boolean quantize;
-    private boolean predict;
-    private boolean predict_prob;
+    // Mandatory
+    @Getter private String inputFile;
+    @Getter private String outputFile;
 
-    private boolean skipgram;
-    @Builder.Default  private int bucket = 100;
-    @Builder.Default  private int minCount = 1;
+    // Optional for dictionary
+    @Builder.Default  private int bucket = -1;
+    @Builder.Default  private int minCount = -1;
+    @Builder.Default  private int minCountLabel = -1;
+    @Builder.Default  private int wordNgrams = -1;
+    @Builder.Default  private int minNgramLength = -1;
+    @Builder.Default  private int maxNgramLength = -1;
+    @Builder.Default  private int samplingThreshold = -1;
+    private String labelPrefix;
 
-    private boolean cbow;
-    private boolean nn;
-    private boolean analogies;
-    private String inputFile;
-    private String outputFile;
-    private SentenceIterator iterator;
-    private String modelName;
-    private String lossName;
-    //TODO:
-    private double[] pretrainedVectors;
+    // Optional for training
+    @Getter private boolean supervised;
+    @Getter private boolean quantize;
+    @Getter private boolean predict;
+    @Getter private boolean predict_prob;
+    @Getter private boolean skipgram;
+    @Getter private boolean cbow;
+    @Getter private boolean nn;
+    @Getter private boolean analogies;
+    @Getter private String pretrainedVectorsFile;
+    @Getter
+    @Builder.Default
+    private double learningRate = -1.0;
+    @Getter private double learningRateUpdate = -1.0;
+    @Getter
+    @Builder.Default
+    private int dim = -1;
+    @Getter
+    @Builder.Default
+    private int contextWindowSize = -1;
+    @Getter
+    @Builder.Default
+    private int epochs = -1;
+    @Getter private String modelName;
+    @Getter private String lossName;
+    @Getter
+    @Builder.Default
+    private int negativeSamples = -1;
+    @Getter
+    @Builder.Default
+    private int numThreads = -1;
+    @Getter private boolean saveOutput = false;
 
-    private JFastText fastTextImpl;
-    private boolean modelLoaded;
+    // Optional for quantization
+    @Getter
+    @Builder.Default
+    private int cutOff = -1;
+    @Getter private boolean retrain;
+    @Getter private boolean qnorm;
+    @Getter private boolean qout;
+    @Getter
+    @Builder.Default
+    private int dsub = -1;
+
+    @Getter private SentenceIterator iterator;
+
+    private transient JFastText fastTextImpl;
+    private transient Word2Vec word2Vec;
+    @Getter private boolean modelLoaded;
+    @Getter private boolean modelVectorsLoaded;
     private VocabCache vocabCache;
 
     public FastText(File modelPath) {
@@ -64,7 +104,12 @@ public class FastText implements WordVectors {
     }
 
     public void init() {
-        fastTextImpl = new JFastText();
+        if (fastTextImpl == null)
+            fastTextImpl = new JFastText();
+
+        if (StringUtils.isNotEmpty(pretrainedVectorsFile))
+            modelLoaded = true;
+
         if (iterator != null) {
             try {
                 File tempFile = File.createTempFile("FTX", ".txt");
@@ -79,26 +124,111 @@ public class FastText implements WordVectors {
                 log.error(e.getMessage());
             }
         }
+        /*if (modelUtils == null) {
+            val vocabCache = new AbstractCache.Builder().build();
+
+            val lookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).build();
+
+            modelUtils = new BasicModelUtils<>();
+            modelUtils.init(lookupTable);
+        }*/
+    }
+
+    private static class ArgsFactory {
+
+        private List<String> args = new ArrayList<>();
+
+        private void add(String label, String value) {
+            args.add(label);
+            args.add(value);
+        }
+
+        private void addOptional(String label, int value) {
+            if (value >= 0) {
+                args.add(label);
+                args.add(Integer.toString(value));
+            }
+        }
+
+        private void addOptional(String label, double value) {
+            if (value >= 0.0) {
+                args.add(label);
+                args.add(Double.toString(value));
+            }
+        }
+
+        private void addOptional(String label, String value) {
+            if (StringUtils.isNotEmpty(value)) {
+                args.add(label);
+                args.add(value);
+            }
+        }
+
+        private void addOptional(String label, boolean value) {
+            if (value) {
+                args.add(label);
+            }
+        }
+
+
+        public String[] args() {
+            String[] asArray = new String[args.size()];
+            return args.toArray(asArray);
+        }
+    }
+
+    private String[] makeArgs() {
+        ArgsFactory argsFactory = new ArgsFactory();
+
+        argsFactory.addOptional("cbow", cbow);
+        argsFactory.addOptional("skipgram", skipgram);
+        argsFactory.addOptional("supervised", supervised);
+        argsFactory.addOptional("quantize", quantize);
+        argsFactory.addOptional("predict", predict);
+        argsFactory.addOptional("predict_prob", predict_prob);
+
+        argsFactory.add("-input", inputFile);
+        argsFactory.add("-output", outputFile );
+
+        argsFactory.addOptional("-pretrainedVectors", pretrainedVectorsFile);
+
+        argsFactory.addOptional("-bucket", bucket);
+        argsFactory.addOptional("-minCount", minCount);
+        argsFactory.addOptional("-minCountLabel", minCountLabel);
+        argsFactory.addOptional("-wordNgrams", wordNgrams);
+        argsFactory.addOptional("-minn", minNgramLength);
+        argsFactory.addOptional("-maxn", maxNgramLength);
+        argsFactory.addOptional("-t", samplingThreshold);
+        argsFactory.addOptional("-label", labelPrefix);
+        argsFactory.addOptional("analogies",analogies);
+        argsFactory.addOptional("-lr", learningRate);
+        argsFactory.addOptional("-lrUpdateRate", learningRateUpdate);
+        argsFactory.addOptional("-dim", dim);
+        argsFactory.addOptional("-ws", contextWindowSize);
+        argsFactory.addOptional("-epoch", epochs);
+        argsFactory.addOptional("-loss", lossName);
+        argsFactory.addOptional("-neg", negativeSamples);
+        argsFactory.addOptional("-thread", numThreads);
+        argsFactory.addOptional("-saveOutput", saveOutput);
+        argsFactory.addOptional("-cutoff", cutOff);
+        argsFactory.addOptional("-retrain", retrain);
+        argsFactory.addOptional("-qnorm", qnorm);
+        argsFactory.addOptional("-qout", qout);
+        argsFactory.addOptional("-dsub", dsub);
+
+        return argsFactory.args();
     }
 
     public void fit() {
-
-        String[] cmd;
-        if (skipgram) {
-            cmd = new String[]{"skipgram", "-bucket", Integer.toString(bucket), "-minCount", Integer.toString(minCount),
-                    "-input", inputFile, "-output", outputFile};
-        }
-        else if (cbow) {
-            cmd = new String[]{"cbow", "-bucket", Integer.toString(bucket), "-minCount", Integer.toString(minCount),
-                    "-input", inputFile, "-output", outputFile};
-        }
-        else if (supervised)
-            cmd = new String[]{"supervised", "-input", inputFile,
-                    "-output", outputFile};
-        else
-            cmd = new String[]{"-input", inputFile,
-                    "-output", outputFile};
+        String[] cmd = makeArgs();
         fastTextImpl.runCmd(cmd);
+    }
+
+    public void loadPretrainedVectors(File vectorsFile) {
+        word2Vec = WordVectorSerializer.readWord2VecModel(vectorsFile);
+        modelVectorsLoaded = true;
+        log.info("Loaded vectorized representation from file %s. Functionality will be restricted.",
+                vectorsFile.getAbsolutePath());
     }
 
     public void loadBinaryModel(String modelPath) {
@@ -109,6 +239,10 @@ public class FastText implements WordVectors {
     public void unloadBinaryModel() {
         fastTextImpl.unloadModel();
         modelLoaded = false;
+    }
+
+    public void test(File testFile) {
+        fastTextImpl.test(testFile.getAbsolutePath());
     }
 
     public String predict(String text) {
@@ -135,27 +269,39 @@ public class FastText implements WordVectors {
 
     @Override
     public VocabCache vocab() {
-        if (!modelLoaded)
-            throw new IllegalStateException("Load model before calling vocab()");
-
-        if (vocabCache == null) {
-            vocabCache = new AbstractCache();
+        if (modelVectorsLoaded) {
+            vocabCache = word2Vec.vocab();
         }
-        List<String> words = fastTextImpl.getWords();
-        for (int i = 0; i < words.size(); ++i) {
-            vocabCache.addWordToIndex(i, words.get(i));
-            VocabWord word = new VocabWord();
-            word.setWord(words.get(i));
-            vocabCache.addToken(word);
+        else {
+            if (!modelLoaded)
+                throw new IllegalStateException("Load model before calling vocab()");
+
+            if (vocabCache == null) {
+                vocabCache = new AbstractCache();
+            }
+            List<String> words = fastTextImpl.getWords();
+            for (int i = 0; i < words.size(); ++i) {
+                vocabCache.addWordToIndex(i, words.get(i));
+                VocabWord word = new VocabWord();
+                word.setWord(words.get(i));
+                vocabCache.addToken(word);
+            }
         }
         return vocabCache;
     }
 
     @Override
     public long vocabSize() {
-        if (!modelLoaded)
-            throw new IllegalStateException("Load model before calling vocab()");
-        return fastTextImpl.getNWords();
+        long result = 0;
+        if (modelVectorsLoaded) {
+            result = word2Vec.vocabSize();
+        }
+        else {
+            if (!modelLoaded)
+                throw new IllegalStateException("Load model before calling vocab()");
+            result = fastTextImpl.getNWords();
+        }
+        return result;
     }
 
     @Override
@@ -170,99 +316,160 @@ public class FastText implements WordVectors {
 
     @Override
     public double[] getWordVector(String word) {
-        List<Float> vectors = fastTextImpl.getVector(word);
-        double[] retVal = new double[vectors.size()];
-        for (int i = 0; i < vectors.size(); ++i) {
-            retVal[i] = vectors.get(i);
+        if (modelVectorsLoaded) {
+            return word2Vec.getWordVector(word);
         }
-        return retVal;
+        else {
+            List<Float> vectors = fastTextImpl.getVector(word);
+            double[] retVal = new double[vectors.size()];
+            for (int i = 0; i < vectors.size(); ++i) {
+                retVal[i] = vectors.get(i);
+            }
+            return retVal;
+        }
     }
 
     @Override
     public INDArray getWordVectorMatrixNormalized(String word) {
-        INDArray r = getWordVectorMatrix(word);
-        return r.divi(Nd4j.getBlasWrapper().nrm2(r));
+        if (modelVectorsLoaded) {
+            return word2Vec.getWordVectorMatrixNormalized(word);
+        }
+        else {
+            INDArray r = getWordVectorMatrix(word);
+            return r.divi(Nd4j.getBlasWrapper().nrm2(r));
+        }
     }
 
     @Override
     public INDArray getWordVectorMatrix(String word) {
-        double[] values = getWordVector(word);
-        return Nd4j.createFromArray(values);
+        if (modelVectorsLoaded) {
+            return word2Vec.getWordVectorMatrix(word);
+        }
+        else {
+            double[] values = getWordVector(word);
+            return Nd4j.createFromArray(values);
+        }
     }
 
     @Override
     public INDArray getWordVectors(Collection<String> labels) {
+        if (modelVectorsLoaded) {
+            return word2Vec.getWordVectors(labels);
+        }
         return null;
     }
 
     @Override
     public INDArray getWordVectorsMean(Collection<String> labels) {
+        if (modelVectorsLoaded) {
+            return word2Vec.getWordVectorsMean(labels);
+        }
         return null;
     }
 
+    private List<String> words = new ArrayList<>();
+
     @Override
     public boolean hasWord(String word) {
-        return fastTextImpl.getWords().contains(word);
+        if (modelVectorsLoaded) {
+            return word2Vec.outOfVocabularySupported();
+        }
+        if (words.isEmpty())
+            words = fastTextImpl.getWords();
+        return words.contains(word);
     }
 
-    protected transient ModelUtils modelUtils = new BasicModelUtils<>();
+    protected transient ModelUtils modelUtils;
 
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearest(words, top);
+        }
         return modelUtils.wordsNearest(words, top);
     }
 
     @Override
     public Collection<String> wordsNearestSum(INDArray words, int top) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearestSum(words, top);
+        }
         return modelUtils.wordsNearestSum(words, top);
     }
 
     @Override
     public Collection<String> wordsNearestSum(String word, int n) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearestSum(word, n);
+        }
         return modelUtils.wordsNearestSum(word, n);
     }
 
 
     @Override
     public Collection<String> wordsNearestSum(Collection<String> positive, Collection<String> negative, int top) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearestSum(positive, negative, top);
+        }
         return modelUtils.wordsNearestSum(positive, negative, top);
     }
 
     @Override
     public Map<String, Double> accuracy(List<String> questions) {
+        if (modelVectorsLoaded) {
+            return word2Vec.accuracy(questions);
+        }
         return modelUtils.accuracy(questions);
     }
 
     @Override
     public int indexOf(String word) {
+        if (modelVectorsLoaded) {
+            return word2Vec.indexOf(word);
+        }
         return vocab().indexOf(word);
     }
 
 
     @Override
     public List<String> similarWordsInVocabTo(String word, double accuracy) {
+        if (modelVectorsLoaded) {
+            return word2Vec.similarWordsInVocabTo(word, accuracy);
+        }
         return modelUtils.similarWordsInVocabTo(word, accuracy);
     }
 
     @Override
     public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearest(positive, negative, top);
+        }
         return modelUtils.wordsNearest(positive, negative, top);
     }
 
 
     @Override
     public Collection<String> wordsNearest(String word, int n) {
+        if (modelVectorsLoaded) {
+            return word2Vec.wordsNearest(word,n);
+        }
         return modelUtils.wordsNearestSum(word, n);
     }
 
 
     @Override
     public double similarity(String word, String word2) {
+        if (modelVectorsLoaded) {
+            return word2Vec.similarity(word, word2);
+        }
         return modelUtils.similarity(word, word2);
     }
 
     @Override
     public WeightLookupTable lookupTable() {
+        if (modelVectorsLoaded) {
+            return word2Vec.lookupTable();
+        }
         return null;
     }
 
@@ -318,6 +525,11 @@ public class FastText implements WordVectors {
 
     public String getLabelPrefix() {
         return fastTextImpl.getLabelPrefix();
+    }
+
+    @Override
+    public boolean outOfVocabularySupported() {
+        return true;
     }
 
 }
