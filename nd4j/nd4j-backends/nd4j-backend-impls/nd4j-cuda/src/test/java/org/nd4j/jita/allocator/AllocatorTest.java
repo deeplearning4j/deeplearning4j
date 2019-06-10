@@ -18,18 +18,24 @@ package org.nd4j.jita.allocator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import lombok.val;
 
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
@@ -39,6 +45,12 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.linalg.primitives.Pair;
+
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.*;
 
