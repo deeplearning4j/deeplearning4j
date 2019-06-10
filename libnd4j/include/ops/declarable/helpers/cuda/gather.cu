@@ -177,6 +177,7 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
 
         if(indices == nullptr)
             delete pIndices;
+
     }
 }
 
