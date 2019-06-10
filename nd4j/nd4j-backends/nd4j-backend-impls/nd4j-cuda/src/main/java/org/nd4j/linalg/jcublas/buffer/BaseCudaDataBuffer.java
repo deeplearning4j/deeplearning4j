@@ -1518,13 +1518,41 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                     break;
+                case BFLOAT16:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = Bfloat16Indexer.create((ShortPointer) pointer);
+                    break;
                 case HALF:
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
+                case LONG:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
+                    break;
+                case UINT64:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
+                    break;
                 case INT:
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                case UINT32:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                case SHORT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = ShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case UINT16:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = UShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case BYTE:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
+                    indexer = ByteIndexer.create((BytePointer) pointer);
                     break;
                 default:
                     throw new UnsupportedOperationException();
