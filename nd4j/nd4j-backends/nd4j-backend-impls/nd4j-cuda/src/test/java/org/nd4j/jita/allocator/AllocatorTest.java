@@ -17,6 +17,7 @@
 package org.nd4j.jita.allocator;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
@@ -378,18 +379,25 @@ public class AllocatorTest {
     @Test
     public void testReallocate() {
         INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
-        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
-        assertEquals(64, pointX.getShape().getNumberOfBytes());
+        var pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+        assertNotNull(pointX);
+
+        assertEquals(200, pointX.getShape().getNumberOfBytes());
+
         val hostP = pointX.getHostPointer();
         val deviceP = pointX.getDevicePointer();
 
         assertEquals(50, x.data().capacity());
         x.data().reallocate(500);
-        assertEquals(500, x.data().capacity());
-        assertEquals(64, pointX.getShape().getNumberOfBytes());
 
-        assertEquals(hostP, pointX.getHostPointer());
-        assertEquals(deviceP, pointX.getDevicePointer());
+        pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+        assertEquals(500, x.data().capacity());
+        assertEquals(2000, pointX.getShape().getNumberOfBytes());
+
+        assertNotEquals(hostP, pointX.getHostPointer());
+        assertNotEquals(deviceP, pointX.getDevicePointer());
     }
 
     @Test

@@ -1551,6 +1551,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // we're keeping pointer reference for JVM
             pointer.address();
 
+
             // we need to update length with new value now
             //this.length = length;
         if(isAttached()){
