@@ -32,6 +32,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
+import org.deeplearning4j.models.fasttext.FastText;
 import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;

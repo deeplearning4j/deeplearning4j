@@ -25,6 +25,7 @@ import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
+import org.deeplearning4j.models.fasttext.FastText;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
