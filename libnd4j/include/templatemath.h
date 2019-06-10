@@ -1197,6 +1197,46 @@ inline __device__ float nd4j_atomicMul<float>(float* address, float val) {
 }
 
 template <>
+inline __device__ signed char nd4j_atomicMul<signed char>(signed char* address, signed char val) {
+    return 0;
+}
+
+template <>
+inline __device__ unsigned char nd4j_atomicMul<unsigned char>(unsigned char* address, unsigned char val) {
+    return 0;
+}
+
+template <>
+inline __device__ signed short nd4j_atomicMul<signed short>(signed short* address, signed short val) {
+    return 0;
+}
+
+template <>
+inline __device__ unsigned short nd4j_atomicMul<unsigned short>(unsigned short* address, unsigned short val) {
+    return 0;
+}
+
+template <>
+inline __device__ int nd4j_atomicMul<int>(int* address, int val) {
+    return 0;
+}
+
+template <>
+inline __device__ unsigned int nd4j_atomicMul<unsigned int>(unsigned int* address, unsigned int val) {
+    return 0;
+}
+
+template <>
+inline __device__ unsigned long long nd4j_atomicMul<unsigned long long>(unsigned long long* address, unsigned long long val) {
+    return 0;
+}
+
+template <>
+inline __device__ long long nd4j_atomicMul<long long>(long long* address, long long val) {
+    return 0;
+}
+
+template <>
 inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
 	int* address_as_ull = (int*) address;
 

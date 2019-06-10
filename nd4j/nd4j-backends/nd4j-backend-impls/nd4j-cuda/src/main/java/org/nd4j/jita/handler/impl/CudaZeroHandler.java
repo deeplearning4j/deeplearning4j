@@ -607,8 +607,8 @@ public class CudaZeroHandler implements MemoryHandler {
             PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), prof, point.getNumberOfBytes(),MemcpyDirection.HOST_TO_DEVICE);
 
             flowController.registerAction(tContext, point);
+            point.tickDeviceWrite();
         }
-        point.tickDeviceWrite();
     }
 
     @Override

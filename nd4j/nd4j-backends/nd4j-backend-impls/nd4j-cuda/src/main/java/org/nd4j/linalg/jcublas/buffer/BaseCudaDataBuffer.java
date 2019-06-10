@@ -75,7 +75,7 @@ import java.util.Collection;
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
 
     @Getter
-    protected transient AllocationPoint allocationPoint;
+    protected transient volatile AllocationPoint allocationPoint;
 
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -247,8 +247,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     protected void initHostPointerAndIndexer() {
         if (allocationPoint.getPointers().getHostPointer() == null) {
+            val location = allocationPoint.getAllocationStatus();
             val ptr = AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.HOST, this.allocationPoint, this.allocationPoint.getShape(), false);
             this.allocationPoint.getPointers().setHostPointer(ptr.getHostPointer());
+            this.allocationPoint.setAllocationStatus(location);
+            this.allocationPoint.tickDeviceWrite();
         }
 
         switch (dataType()) {
@@ -305,8 +308,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     protected void initPointers(long length, int elementSize, boolean initialize) {
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        val p = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
-        this.allocationPoint = p;
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
         this.elementSize =  (byte) elementSize;
