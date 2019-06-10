@@ -47,9 +47,9 @@ namespace ops {
         auto o = OUTPUT_VARIABLE(0);
 
         if (a->lengthOf() == 3) {
-            helpers::_cross(block.launchContext(), a, b, o);
+            helpers::cross(block.launchContext(), a, b, o);
         } else {
-            helpers::_crossBatched(block.launchContext(), a, b, o);
+            helpers::crossBatched(block.launchContext(), a, b, o);
         }
 
         return Status::OK();

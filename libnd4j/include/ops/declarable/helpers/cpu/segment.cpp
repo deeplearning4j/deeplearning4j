@@ -658,15 +658,12 @@ namespace helpers {
             PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong e = 0; e < loop_size; ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                if (nd4j::math::nd4j_abs(tempRes->e<T>(classNum) -input->e<T>(e) <= T(1.e-6)))
+                if (nd4j::math::nd4j_abs(tempRes->e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
                     output->p(e, gradOut->e<T>(classNum));
             }
         }
         else {
-            std::vector<int> restDims(input->rankOf() - 1);
-            Nd4jLong loop_size = input->rankOf();
-            for (int e = 1; e < loop_size; e++)
-                restDims[e - 1] = e;
+            std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
             std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
@@ -675,8 +672,6 @@ namespace helpers {
 
             //int numOfClasses = tempRes->sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-
-            int pos = 0;
 
             PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
