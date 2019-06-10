@@ -80,20 +80,10 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
     	const auto xTad = x + xTadOffsets[i];
     		  auto zTad = z + zTadOffsets[i];
 
-        // if(i == 3) {
-        //     printf("meanOffset = %lld, varianceOffset = %lld, betaOffset = %lld, xTadOffsets = %lld, zTadOffsets = %lld \n", meanOffset, varianceOffset, betaOffset, xTadOffsets[i], zTadOffsets[i] );
-        //     printf("%f\n", sigmaInvGam);
-        // }
-
-
     	for (uint j = 0; j < tadLen; ++j) {
 
     		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo, tadLen);
     		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo, tadLen);
-
-            // if(i == 3) {
-            // printf("xTadOffsets = %lld, zTadOffsets = %lld \n", xTadOffset, zTadOffset );
-        // }
 
     		zTad[zTadOffset] = (xTad[xTadOffset] - mean[meanOffset]) * sigmaInvGam;
 
