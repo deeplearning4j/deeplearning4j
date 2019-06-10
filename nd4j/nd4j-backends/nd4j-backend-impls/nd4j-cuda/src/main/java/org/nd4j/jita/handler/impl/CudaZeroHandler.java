@@ -556,77 +556,57 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        AllocationPoint point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
-        // we update host memory regardless.
-        //Pointer dP = new Pointer((point.getAllocationStatus() == AllocationStatus.DEVICE ? point.getPointers().getDevicePointer().address() : point.getPointers().getHostPointer().address()) + dstOffset);
-        Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
-        //        Pointer sP = new Pointer(srcPointer.getNativePointer());
-        //log.info("Location: " + point.getAllocationStatus());
-        //        if (length > 4)
-        //log.info("memcpyAsync:  ["+ srcPointer.getNativePointer()+"] -> ["+ dP.getNativePointer()+"], length: [" + length+ "], offset: ["+ dstOffset+"], dstBufferOffset: ["+(dstBuffer.getElementSize() * dstBuffer.offset()) + "/" + dstBuffer.offset() +"]");
-
+        val point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         CudaContext tContext = null;
 
         if (dstBuffer.isConstant()) {
-
-            org.bytedeco.javacpp.Pointer dstPointer =
-                            new CudaPointer(point.getPointers().getHostPointer().address() + dstOffset, 0L);
+            org.bytedeco.javacpp.Pointer dstPointer = new CudaPointer(point.getPointers().getHostPointer().address() + dstOffset, 0L);
             org.bytedeco.javacpp.Pointer srcPointerJ = new CudaPointer(srcPointer, length);
 
-            //   log.info("JCPP Memcpy: [{}] -> [{}], length: [{}]", srcPointerJ.address(), dstPointer.address(), length);
-
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
-
             org.bytedeco.javacpp.Pointer.memcpy(dstPointer, srcPointerJ, length);
-
             PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), profD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_HOST);
-
 
             point.tickHostRead();
         } else {
-            //log.info("Memcpy pointers: [{}] -> [{}]", srcPointer.address(),  dP.address());
+            // we optionally copy to host memory
+            if (point.getPointers().getHostPointer() != null) {
+                Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
 
-            CudaContext context = flowController.prepareAction(point);
-            tContext = context;
+                CudaContext context = flowController.prepareAction(point);
+                tContext = context;
 
-            val prof = PerformanceTracker.getInstance().helperStartTransaction();
+                val prof = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost,
-                            context.getSpecialStream()) == 0)
-                throw new IllegalStateException(
-                                "MemcpyAsync H2H failed: [" + srcPointer.address() + "] -> [" + dP.address() + "]");
+                if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getSpecialStream()) == 0)
+                    throw new IllegalStateException("MemcpyAsync H2H failed: [" + srcPointer.address() + "] -> [" + dP.address() + "]");
 
-            flowController.commitTransfer(tContext.getSpecialStream());
+                flowController.commitTransfer(tContext.getSpecialStream());
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), prof, point.getNumberOfBytes(),MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), prof, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_HOST);
 
-            if (point.getAllocationStatus() == AllocationStatus.HOST)
-                flowController.registerAction(context, point);
+                if (point.getAllocationStatus() == AllocationStatus.HOST)
+                    flowController.registerAction(context, point);
+            }
         }
 
         // if we're copying something into host memory, but we're on device - we need to provide exact copy to device as well
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            // TODO: this sounds wrong, and probably memcpy whould check initial direction, like relocate did before
             Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
             if (tContext == null)
                 tContext = flowController.prepareAction(point);
-            //log.info("MemcpyAsync to device... [{}] -> [{}]", dP.getNativePointer(), rDP.getNativePointer());
 
             val prof = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice,
-                            tContext.getSpecialStream()) == 0)
-                throw new IllegalStateException(
-                                "MemcpyAsync H2D failed: [" + dP.address() + "] -> [" + rDP.address() + "]");
+            if (nativeOps.memcpyAsync(rDP, srcPointer, length, CudaConstants.cudaMemcpyHostToDevice, tContext.getSpecialStream()) == 0)
+                throw new IllegalStateException("MemcpyAsync H2D failed: [" + srcPointer.address() + "] -> [" + rDP.address() + "]");
 
             flowController.commitTransfer(tContext.getSpecialStream());
 
             PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), prof, point.getNumberOfBytes(),MemcpyDirection.HOST_TO_DEVICE);
 
             flowController.registerAction(tContext, point);
-
-
         }
         point.tickDeviceWrite();
     }

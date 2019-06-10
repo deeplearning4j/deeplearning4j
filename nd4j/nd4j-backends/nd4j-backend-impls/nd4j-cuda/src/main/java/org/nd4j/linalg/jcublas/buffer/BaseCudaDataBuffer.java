@@ -305,7 +305,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     protected void initPointers(long length, int elementSize, boolean initialize) {
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
+        val p = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
+        this.allocationPoint = p;
         this.length = length;
         //allocationPoint.attachBuffer(this);
         this.elementSize =  (byte) elementSize;
