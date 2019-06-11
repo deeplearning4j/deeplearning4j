@@ -1106,13 +1106,14 @@ public class CudaZeroHandler implements MemoryHandler {
         flowController.waitTillReleased(point);
 
         // we call for caseless deallocation here
-        //JCudaDriver.cuCtxSetCurrent(contextPool.getCuContextForDevice(0));
-        free(point, AllocationStatus.HOST);
+        if (point.getHostPointer() != null) {
+            free(point, AllocationStatus.HOST);
+
+            long reqMem = AllocationUtils.getRequiredMemory(point.getShape()) * -1;
+            zeroUseCounter.addAndGet(reqMem);
+        }
 
         point.setAllocationStatus(AllocationStatus.DEALLOCATED);
-
-        long reqMem = AllocationUtils.getRequiredMemory(point.getShape()) * -1;
-        zeroUseCounter.addAndGet(reqMem);
     }
 
     @Override
@@ -1120,7 +1121,8 @@ public class CudaZeroHandler implements MemoryHandler {
         if (location == AllocationStatus.DEVICE) {
             deviceAllocations.get(point.getDeviceId()).remove(point.getObjectId());
         } else if (location == AllocationStatus.HOST) {
-            zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
+            if (point.getHostPointer() != null)
+                zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
         }
     }
 

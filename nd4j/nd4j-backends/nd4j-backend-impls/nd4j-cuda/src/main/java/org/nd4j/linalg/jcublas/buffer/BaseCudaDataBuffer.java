@@ -1236,10 +1236,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public String toString() {
-        //lazyAllocateHostPointer();
-        //AtomicAllocator.getInstance().synchronizeHostData(this);
-        //return super.toString();
-        return "-119";
+        lazyAllocateHostPointer();
+        AtomicAllocator.getInstance().synchronizeHostData(this);
+        return super.toString();
     }
 
     @Override
