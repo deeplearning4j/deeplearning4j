@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -135,12 +136,6 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
-
-        if (words.rank() == 0 || words.rank() > 2) {
-            throw new IllegalStateException("Invalid rank for wordsNearest method");
-        }
-        else if (words.rank() == 1)
-            words.reshape(1,-1);
         return modelUtils.wordsNearest(words, top);
     }
 

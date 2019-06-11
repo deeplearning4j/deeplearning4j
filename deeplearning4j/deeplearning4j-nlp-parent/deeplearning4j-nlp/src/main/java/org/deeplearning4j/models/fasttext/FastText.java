@@ -245,10 +245,14 @@ public class FastText implements WordVectors, Serializable {
         fastTextImpl.test(testFile.getAbsolutePath());
     }
 
+    private void assertModelLoaded() {
+        if (!modelLoaded && !modelVectorsLoaded)
+            throw new IllegalStateException("Model must be loaded before predict!");
+    }
+
     public String predict(String text) {
 
-        if (!modelLoaded)
-            throw new IllegalStateException("Model must be loaded before predict!");
+        assertModelLoaded();
 
         String label = fastTextImpl.predict(text);
         return label;
@@ -256,8 +260,7 @@ public class FastText implements WordVectors, Serializable {
 
     public Pair<String, Float> predictProbability(String text) {
 
-        if (!modelLoaded)
-            throw new IllegalStateException("Model must be loaded before predict!");
+        assertModelLoaded();
 
         JFastText.ProbLabel predictedProbLabel = fastTextImpl.predictProba(text);
 

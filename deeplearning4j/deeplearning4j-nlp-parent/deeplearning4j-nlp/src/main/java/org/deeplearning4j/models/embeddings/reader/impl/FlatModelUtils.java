@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.embeddings.reader.impl;
 
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -63,6 +64,8 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
         Counter<String> distances = new Counter<>();
+
+        words = adjustRank(words);
 
         for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
