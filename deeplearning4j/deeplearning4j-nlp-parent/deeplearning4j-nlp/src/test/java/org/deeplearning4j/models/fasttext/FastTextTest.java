@@ -45,7 +45,6 @@ public class FastTextTest {
                  inputFile(inputFile.getAbsolutePath()).
                  outputFile(output.getAbsolutePath()).build();
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
     }
 
@@ -59,7 +58,6 @@ public class FastTextTest {
                         inputFile(inputFile.getAbsolutePath()).
                         outputFile(output.getAbsolutePath()).build();
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
     }
 
@@ -74,7 +72,6 @@ public class FastTextTest {
                         inputFile(inputFile.getAbsolutePath()).
                         outputFile(output.getAbsolutePath()).build();
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
     }
 
@@ -88,7 +85,6 @@ public class FastTextTest {
                         inputFile(inputFile.getAbsolutePath()).
                         outputFile(output.getAbsolutePath()).build();
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
     }
 
@@ -164,7 +160,7 @@ public class FastTextTest {
             SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
             FastText fastText =
                     FastText.builder().supervised(true).iterator(iter).build();
-            fastText.init();
+            fastText.loadIterator();
 
         } catch (IOException e) {
             log.error(e.toString());
@@ -187,7 +183,6 @@ public class FastTextTest {
                         pretrainedVectorsFile(supervisedVectors.getAbsolutePath()).
                         outputFile(output.getAbsolutePath()).build();
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
     }
 
@@ -202,7 +197,6 @@ public class FastTextTest {
                         outputFile(output.getAbsolutePath()).build();
 
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
         fastText.fit();
 
         Word2Vec word2Vec = WordVectorSerializer.readAsCsv(new File(output.getAbsolutePath() + ".vec"));
@@ -225,7 +219,6 @@ public class FastTextTest {
         fastText.loadPretrainedVectors(supervisedVectors);
 
         log.info("\nTraining supervised model ...\n");
-        fastText.init();
 
         assertEquals(48,  fastText.vocab().numWords());
 

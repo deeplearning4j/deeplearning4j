@@ -103,37 +103,6 @@ public class FastText implements WordVectors, Serializable {
         fastTextImpl = new JFastText();
     }
 
-    public void init() {
-        if (fastTextImpl == null)
-            fastTextImpl = new JFastText();
-
-        if (StringUtils.isNotEmpty(pretrainedVectorsFile))
-            modelLoaded = true;
-
-        if (iterator != null) {
-            try {
-                File tempFile = File.createTempFile("FTX", ".txt");
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
-                while (iterator.hasNext()) {
-                    String sentence = iterator.nextSentence();
-                    writer.write(sentence);
-                }
-
-                fastTextImpl = new JFastText();
-            } catch (IOException e) {
-                log.error(e.getMessage());
-            }
-        }
-        /*if (modelUtils == null) {
-            val vocabCache = new AbstractCache.Builder().build();
-
-            val lookupTable = new InMemoryLookupTable.Builder().cache(vocabCache).build();
-
-            modelUtils = new BasicModelUtils<>();
-            modelUtils.init(lookupTable);
-        }*/
-    }
-
     private static class ArgsFactory {
 
         private List<String> args = new ArrayList<>();
@@ -222,6 +191,23 @@ public class FastText implements WordVectors, Serializable {
     public void fit() {
         String[] cmd = makeArgs();
         fastTextImpl.runCmd(cmd);
+    }
+
+    public void loadIterator() {
+        if (iterator != null) {
+            try {
+                File tempFile = File.createTempFile("FTX", ".txt");
+                BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+                while (iterator.hasNext()) {
+                    String sentence = iterator.nextSentence();
+                    writer.write(sentence);
+                }
+
+                fastTextImpl = new JFastText();
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            }
+        }
     }
 
     public void loadPretrainedVectors(File vectorsFile) {
