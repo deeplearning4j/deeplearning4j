@@ -365,52 +365,43 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int[] padding = {0, 0};
         int size = 2;
 
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        for (int minibatchSize : minibatchSizes) {
+            INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+            INDArray labels = TestUtils.randomOneHot(minibatchSize, nOut);
 
-        for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
-            for (int minibatchSize : minibatchSizes) {
-                INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
-                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                for (int i = 0; i < minibatchSize; i++) {
-                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
-                }
+            MultiLayerConfiguration conf =
+                    new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
+                            .updater(new NoOp())
+                            .dist(new NormalDistribution(0, 1))
+                            .list().layer(new ConvolutionLayer.Builder(kernel,
+                            stride, padding).nIn(inputDepth)
+                            .nOut(3).build())//output: (5-2+0)/1+1 = 4
+                            .layer(new Upsampling2D.Builder().size(size).build()) //output: 4*2 =8 -> 8x8x3
+                            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(8 * 8 * 3)
+                                    .nOut(4).build())
+                            .setInputType(InputType.convolutionalFlat(height, width,
+                                    inputDepth))
+                            .build();
 
-                MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                .dataType(DataType.DOUBLE)
-                                .updater(new NoOp())
-                                .dist(new NormalDistribution(0, 1))
-                                .list().layer(new ConvolutionLayer.Builder(kernel,
-                                stride, padding).nIn(inputDepth)
-                                .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                .layer(new Upsampling2D.Builder().size(size).build()) //output: 4*2 =8 -> 8x8x3
-                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nIn(8 * 8 * 3)
-                                        .nOut(4).build())
-                                .setInputType(InputType.convolutionalFlat(height, width,
-                                        inputDepth))
-                                .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+            String msg = "Upsampling - minibatch=" + minibatchSize;
 
-                String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize;
-
-                if (PRINT_RESULTS) {
-                    System.out.println(msg);
-                    for (int j = 0; j < net.getnLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
-                }
-
-                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                assertTrue(msg, gradOK);
-
-                TestUtils.testModelSerialization(net);
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < net.getnLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
             }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
         }
     }
 

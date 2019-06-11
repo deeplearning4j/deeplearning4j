@@ -100,7 +100,7 @@ public class TestOptimizers extends BaseDL4JTest {
         ds.normalizeZeroMeanZeroUnitVariance();
 
         for (OptimizationAlgorithm oa : toTest) {
-            int nIter = 10;
+            int nIter = 5;
             MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
             network.init();
             double score = network.score(ds);
@@ -109,7 +109,7 @@ public class TestOptimizers extends BaseDL4JTest {
             if (PRINT_OPT_RESULTS)
                 System.out.println("testOptimizersMLP() - " + oa);
 
-            int nCallsToOptimizer = 30;
+            int nCallsToOptimizer = 10;
             double[] scores = new double[nCallsToOptimizer + 1];
             scores[0] = score;
             for (int i = 0; i < nCallsToOptimizer; i++) {
@@ -255,34 +255,6 @@ public class TestOptimizers extends BaseDL4JTest {
                 throw new UnsupportedOperationException();
         }
     }
-
-
-    @Test
-    public void testSphereFnOptStochGradDescentMultipleSteps() {
-        //Earlier tests: only do a single line search, though each line search will do multiple iterations
-        // of line search algorithm.
-        //Here, do multiple optimization runs + multiple line search iterations within each run
-        //i.e., gradient is re-calculated at each step/run
-        //Single step tests earlier won't test storing of state between iterations
-
-        testSphereFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT, 100, 5);
-    }
-
-    @Test
-    public void testSphereFnOptLineGradDescentMultipleSteps() {
-        testSphereFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT, 100, 5);
-    }
-
-    @Test
-    public void testSphereFnOptCGMultipleSteps() {
-        testSphereFnMultipleStepsHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT, 100, 5);
-    }
-
-    @Test
-    public void testSphereFnOptLBFGSMultipleSteps() {
-        testSphereFnMultipleStepsHelper(OptimizationAlgorithm.LBFGS, 100, 5);
-    }
-
 
     private static void testSphereFnMultipleStepsHelper(OptimizationAlgorithm oa, int nOptIter,
                     int maxNumLineSearchIter) {
