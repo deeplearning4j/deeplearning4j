@@ -108,7 +108,11 @@ public class BaseCudaDataBufferTest {
         assertNull(pointX.getHostPointer());
         assertNotNull(pointX.getDevicePointer());
 
-        assertEquals(15, x.sumNumber().doubleValue(), 1e-5);
+        val sum = x.sumNumber().doubleValue();
+
+        assertNull(pointX.getHostPointer());
+
+        assertEquals(15, sum, 1e-5);
 
         x.getDouble(0);
 
