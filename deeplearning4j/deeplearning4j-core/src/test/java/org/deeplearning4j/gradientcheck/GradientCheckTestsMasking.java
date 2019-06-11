@@ -285,9 +285,9 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         //For RNNs: per-output masking uses 3d masks (same shape as output/labels), as compared to the standard
         // 2d masks (used for per *example* masking)
 
-        int nIn = 4;
-        int layerSize = 4;
-        int nOut = 4;
+        int nIn = 3;
+        int layerSize = 3;
+        int nOut = 2;
 
         //1 example, TS length 3
         INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0}, new int[] {1, nOut, 3}, 'f');

@@ -7376,7 +7376,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 }
             }
 
-            int iterations = 100;
+            int iterations = 20;
             val timeStart = System.nanoTime();
             for (int e = 0; e < iterations; e++) {
                 try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {

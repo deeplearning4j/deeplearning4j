@@ -165,7 +165,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         // (c) Loss function (with specified output activations)
         // (d) l1 and l2 values
         Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+        boolean[] characteristic = {true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                 {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
@@ -175,16 +175,12 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
 
         Nd4j.getRandom().setSeed(12345);
-        int minibatch = 10;
+        int minibatch = 4;
         int depth = 2;
         int hw = 5;
-        int nOut = 3;
+        int nOut = 2;
         INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw}).muli(5).subi(2.5);
-        INDArray labels = Nd4j.zeros(minibatch, nOut);
-        Random r = new Random(12345);
-        for (int i = 0; i < minibatch; i++) {
-            labels.putScalar(i, r.nextInt(nOut), 1.0);
-        }
+        INDArray labels = TestUtils.randomOneHot(minibatch, nOut);
 
         DataSet ds = new DataSet(input, labels);
         Random rng = new Random(12345);
@@ -193,7 +189,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                 for (boolean doLearningFirst : characteristic) {
                     for (int i = 0; i < lossFunctions.length; i++) {
                         for (int j = 0; j < l2vals.length; j++) {
-                            //Skip 2 of every 3 tests: from 48 cases to 16, still with decent coverage
+                            //Skip 2 of every 3 tests: from 24 cases to 8, still with decent coverage
                             if (rng.nextInt(3) != 0)
                                 continue;
 
@@ -258,7 +254,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
                             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
                             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 25, excludeParams); //Most params are in output layer, only these should be skipped with this threshold
 
                             assertTrue(gradOK);
                             TestUtils.testModelSerialization(mln);
