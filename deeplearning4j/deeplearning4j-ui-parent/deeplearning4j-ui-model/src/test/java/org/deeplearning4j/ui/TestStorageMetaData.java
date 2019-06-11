@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 07/10/2016.
  */
-public class TestStorageMetaData {
+public class TestStorageMetaData extends BaseDL4JTest {
 
     @Test
     public void testStorageMetaData() {

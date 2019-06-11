@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
 import org.nd4j.resources.Resources;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fartovii on 01.12.15.
  */
-public class AggregatingSentenceIteratorTest {
+public class AggregatingSentenceIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testHasNext() throws Exception {

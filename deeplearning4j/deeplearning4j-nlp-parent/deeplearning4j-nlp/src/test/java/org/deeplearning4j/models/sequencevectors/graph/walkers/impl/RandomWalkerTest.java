@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.exception.NoEdgesException;
@@ -36,7 +37,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-public class RandomWalkerTest {
+public class RandomWalkerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;
     private static IGraph<VocabWord, Double> graphBig;

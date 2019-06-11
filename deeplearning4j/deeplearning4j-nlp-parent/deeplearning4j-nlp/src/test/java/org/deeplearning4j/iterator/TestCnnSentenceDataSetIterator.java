@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -37,7 +38,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 28/01/2017.
  */
-public class TestCnnSentenceDataSetIterator {
+public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
     @Before
     public void before(){

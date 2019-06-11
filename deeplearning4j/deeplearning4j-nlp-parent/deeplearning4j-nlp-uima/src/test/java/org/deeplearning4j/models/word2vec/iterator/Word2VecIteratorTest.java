@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Created by agibsonccc on 3/5/15.
  */
-public class Word2VecIteratorTest {
+public class Word2VecIteratorTest extends BaseDL4JTest {
     private Word2Vec vec;
 
     @Rule

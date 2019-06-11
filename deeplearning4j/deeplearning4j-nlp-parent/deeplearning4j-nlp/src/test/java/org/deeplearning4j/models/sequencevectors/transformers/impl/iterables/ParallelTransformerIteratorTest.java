@@ -18,6 +18,7 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Ignore;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class ParallelTransformerIteratorTest {
+public class ParallelTransformerIteratorTest extends BaseDL4JTest {
     private TokenizerFactory factory = new DefaultTokenizerFactory();
 
     @Before

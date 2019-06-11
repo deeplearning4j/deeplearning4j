@@ -22,6 +22,7 @@ import lombok.Setter;
 import lombok.val;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -73,7 +74,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Ignore
-public class SequenceVectorsTest {
+public class SequenceVectorsTest extends BaseDL4JTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SequenceVectorsTest.class);
 

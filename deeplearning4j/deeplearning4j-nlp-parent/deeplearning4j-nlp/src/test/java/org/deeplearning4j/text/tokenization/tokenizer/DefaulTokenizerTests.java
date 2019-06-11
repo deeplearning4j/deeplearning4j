@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -29,7 +30,7 @@ import java.io.ByteArrayInputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class DefaulTokenizerTests {
+public class DefaulTokenizerTests extends BaseDL4JTest {
 
     protected static final Logger log = LoggerFactory.getLogger(DefaulTokenizerTests.class);
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class IndexedTailTest {
+public class IndexedTailTest extends BaseDL4JTest {
 
     @Test
     public void testDeltas_1() throws Exception {
@@ -238,7 +239,7 @@ public class IndexedTailTest {
         val numReaders = 4;
         final val tail = new IndexedTail(numReaders);
 
-        val sums = new long[numReaders];
+        final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             val f = e;
@@ -293,7 +294,7 @@ public class IndexedTailTest {
         val numWriters = 4;
         final val tail = new IndexedTail(numReaders);
 
-        val sums = new long[numReaders];
+        final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             val f = e;
@@ -367,7 +368,7 @@ public class IndexedTailTest {
         val numWriters = 4;
         final val tail = new IndexedTail(numReaders, true, new long[]{5, 5});
 
-        val sums = new long[numReaders];
+        final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             val f = e;
@@ -391,7 +392,7 @@ public class IndexedTailTest {
             readers.add(t);
         }
 
-        val sum = new AtomicInteger(0);
+        final AtomicInteger sum = new AtomicInteger(0);
         val writers = new ArrayList<Thread>();
         for (int e = 0; e < numWriters; e++) {
             val f = e;

@@ -19,6 +19,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -50,7 +51,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-public class VocabConstructorTest {
+public class VocabConstructorTest extends BaseDL4JTest {
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Test;
 
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fartovii on 08.11.15.
  */
-public class VocabularyHolderTest {
+public class VocabularyHolderTest extends BaseDL4JTest {
 
     @Test
     public void testTransferBackToVocabCache() throws Exception {

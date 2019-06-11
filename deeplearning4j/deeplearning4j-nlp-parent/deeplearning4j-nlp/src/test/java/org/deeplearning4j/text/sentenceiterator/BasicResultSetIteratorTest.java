@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Brad Heap nzv8fan@gmail.com
  */
-public class BasicResultSetIteratorTest {
+public class BasicResultSetIteratorTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

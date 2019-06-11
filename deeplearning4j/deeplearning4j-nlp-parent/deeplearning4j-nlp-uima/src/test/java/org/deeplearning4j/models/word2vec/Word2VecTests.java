@@ -21,6 +21,7 @@ import com.google.common.primitives.Ints;
 import lombok.val;
 import net.didion.jwnl.data.Word;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
@@ -57,7 +58,7 @@ import static org.junit.Assert.*;
 /**
  * @author jeffreytang
  */
-public class Word2VecTests {
+public class Word2VecTests extends BaseDL4JTest {
 
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 

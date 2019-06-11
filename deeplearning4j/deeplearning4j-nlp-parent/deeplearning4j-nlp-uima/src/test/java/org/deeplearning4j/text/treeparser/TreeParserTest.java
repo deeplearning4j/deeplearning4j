@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.treeparser;
 
 import org.cleartk.syntax.constituent.type.TreebankNode;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.corpora.treeparser.TreeParser;
 import org.junit.Before;
@@ -32,8 +33,7 @@ import static org.junit.Assert.assertEquals;
  * Basic Tree parser tests
  * @author  Adam Gibson
  */
-public class TreeParserTest {
-    private static final Logger log = LoggerFactory.getLogger(TreeParserTest.class);
+public class TreeParserTest extends BaseDL4JTest {
     private TreeParser parser;
 
     @Before

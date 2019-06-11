@@ -22,6 +22,7 @@ import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -67,7 +68,7 @@ import static org.junit.Assert.*;
  * @author jeffreytang
  * @author raver119@gmail.com
  */
-public class WordVectorSerializerTest {
+public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

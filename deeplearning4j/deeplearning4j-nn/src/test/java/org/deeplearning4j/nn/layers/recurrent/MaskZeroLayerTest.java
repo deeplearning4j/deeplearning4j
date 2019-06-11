@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -36,7 +37,7 @@ import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 
 
-public class MaskZeroLayerTest {
+public class MaskZeroLayerTest extends BaseDL4JTest {
 
     @Test
     public void activate() {

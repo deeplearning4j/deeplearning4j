@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.treeparser;
 
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.deeplearning4j.text.corpora.treeparser.BinarizeTreeTransformer;
 import org.deeplearning4j.text.corpora.treeparser.CollapseUnaries;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 7/1/14.
  */
-public class TreeTransformerTests {
+public class TreeTransformerTests extends BaseDL4JTest {
 
     private static final Logger log = LoggerFactory.getLogger(TreeTransformerTests.class);
     private TreeParser parser;
