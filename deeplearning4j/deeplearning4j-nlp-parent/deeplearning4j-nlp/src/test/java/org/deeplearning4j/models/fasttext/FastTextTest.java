@@ -205,7 +205,7 @@ public class FastTextTest {
         fastText.init();
         fastText.fit();
 
-        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(output);
+        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(new File(output.getAbsolutePath() + ".vec"));
 
         assertEquals(48,  word2Vec.getVocab().numWords());
 
