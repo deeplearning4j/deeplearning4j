@@ -642,7 +642,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_1) {
     eps.linspace(1);
     auto result = op.execute({&x, &idx, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("OutputMaxBP");
+//    result->at(0)->printIndexedBuffer("OutputMaxBP");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -1846,8 +1846,8 @@ TEST_F(DeclarableOpsTests7, TestSegmentProdBP_1) {
 
     auto result = op.execute({&x, &idx, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    //result->at(0)->printIndexedBuffer("ProdBP Output");
-    //exp.printIndexedBuffer("ProdBP Expect");
+//    result->at(0)->printIndexedBuffer("ProdBP Output");
+//    exp.printIndexedBuffer("ProdBP Expect");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
