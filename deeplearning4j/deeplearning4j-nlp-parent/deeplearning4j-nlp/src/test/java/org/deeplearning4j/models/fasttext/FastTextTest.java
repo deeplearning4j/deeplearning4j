@@ -197,7 +197,7 @@ public class FastTextTest {
         File output = testDir.newFile();
 
         FastText fastText =
-                FastText.builder().skipgram(true).
+                FastText.builder().supervised(true).
                         inputFile(inputFile.getAbsolutePath()).
                         outputFile(output.getAbsolutePath()).build();
 
