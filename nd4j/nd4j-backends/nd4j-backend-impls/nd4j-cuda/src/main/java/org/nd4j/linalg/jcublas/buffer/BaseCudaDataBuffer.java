@@ -473,6 +473,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
+        // in case of view creation, we initialize underlying buffer regardless of anything
+        ((BaseCudaDataBuffer) underlyingBuffer).lazyAllocateHostPointer();;
+
         switch (underlyingBuffer.dataType()) {
             case DOUBLE:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asDoublePointer();
