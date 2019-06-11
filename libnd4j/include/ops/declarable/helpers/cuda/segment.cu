@@ -1552,8 +1552,6 @@ namespace helpers {
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-//            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
-//            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
             Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
             Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
 
@@ -1571,11 +1569,11 @@ namespace helpers {
         auto stream = context->getCudaStream();
         NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(), context);//->shapeInfo(), context);
         segmentProdFunctor_<T, I>(context, input, indices, &tempRes);
-        NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         if (input->isVector()) {
-            Nd4jLong loop_size = input->lengthOf();
+            Nd4jLong loopSize = input->lengthOf();
             auto numOfClasses = gradOut->lengthOf(); //indices->e<Nd4jLong>(loop_size - 1);
-            segmentProdBPLinearKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+            segmentProdBPLinearKernel<T,I><<<gradOut->lengthOf(), loopSize, 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
                     indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
         }
@@ -1600,7 +1598,7 @@ namespace helpers {
                     inputTads, inputTadOffsets, gradInTads, gradInTadOffsets, gradOutTads, gradOutTadOffsets,
                     outputTads, outputTadOffsets);
         }
-        NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
         return Status::OK();
     }
 
