@@ -245,7 +245,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "WS132143452343");
 
-        for( int j=0; j<10000; j++ ){
+        for( int j=0; j<100; j++ ){
 
             try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
