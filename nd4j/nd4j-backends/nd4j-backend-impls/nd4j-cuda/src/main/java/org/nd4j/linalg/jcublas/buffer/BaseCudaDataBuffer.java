@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -248,8 +249,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     protected void initHostPointerAndIndexer() {
         if (allocationPoint.getPointers().getHostPointer() == null) {
             val location = allocationPoint.getAllocationStatus();
-            val ptr = AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.HOST, this.allocationPoint, this.allocationPoint.getShape(), false);
-            this.allocationPoint.getPointers().setHostPointer(ptr.getHostPointer());
+            if (parentWorkspace == null) {
+                val ptr = AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.HOST, this.allocationPoint, this.allocationPoint.getShape(), false);
+                this.allocationPoint.getPointers().setHostPointer(ptr.getHostPointer());
+            } else {
+                val ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
+                this.allocationPoint.getPointers().setHostPointer(ptr);
+            }
             this.allocationPoint.setAllocationStatus(location);
             this.allocationPoint.tickDeviceWrite();
         }
@@ -346,91 +352,63 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         Nd4j.getDeallocatorService().pickObject(this);
 
+        workspaceGenerationId = workspace.getGenerationId();
+        this.attached = true;
+        this.parentWorkspace = workspace;
+
+        if (allocationPoint.getHostPointer() == null)
+            return;
+
         switch (dataType()) {
             case DOUBLE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
                 indexer = DoubleIndexer.create((DoublePointer) pointer);
                 break;
             case FLOAT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
             case INT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
                 break;
             case BFLOAT16:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = Bfloat16Indexer.create((ShortPointer) pointer);
                 break;
             case HALF:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
             case UINT64:
             case LONG:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
                 break;
             case BOOL:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBooleanPointer();
                 indexer = BooleanIndexer.create((BooleanPointer) pointer);
                 break;
             case UINT16:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = UShortIndexer.create((ShortPointer) pointer);
                 break;
             case SHORT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = ShortIndexer.create((ShortPointer) pointer);
                 break;
             case BYTE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
             case UBYTE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
                 indexer = UByteIndexer.create((BytePointer) pointer);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown data type: " + dataType());
         }
-
-        workspaceGenerationId = workspace.getGenerationId();
     }
 
     @Override

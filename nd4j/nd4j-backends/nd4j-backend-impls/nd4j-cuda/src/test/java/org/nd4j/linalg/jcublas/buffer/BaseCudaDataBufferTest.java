@@ -5,6 +5,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
@@ -117,5 +118,27 @@ public class BaseCudaDataBufferTest {
         x.getDouble(0);
 
         assertNotNull(pointX.getHostPointer());
+    }
+
+    @Test
+    public void testHostAllocation_3() {
+        val wsConf = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024 * 1024)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "someworkspaceid")) {
+            val x = Nd4j.create(DataType.DOUBLE, 3, 5);
+
+            val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+            assertNotNull(pointX);
+
+            assertNull(pointX.getHostPointer());
+            assertNotNull(pointX.getDevicePointer());
+
+            x.getDouble(0);
+
+            assertNotNull(pointX.getHostPointer());
+        }
     }
 }
