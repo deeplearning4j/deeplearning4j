@@ -376,6 +376,11 @@ public class StaticWord2Vec implements WordVectors {
         return false;
     }
 
+    @Override
+    public boolean outOfVocabularySupported() {
+        return false;
+    }
+
     public static class Builder {
 
         private AbstractStorage<Integer> storage;

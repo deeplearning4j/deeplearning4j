@@ -22,6 +22,7 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
+import sun.misc.ThreadGroupUtils;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
@@ -85,10 +86,12 @@ public class DeallocatorService {
     private class DeallocatorServiceThread extends Thread implements Runnable {
         private final ReferenceQueue<Deallocatable> queue;
         private final int threadIdx;
+        public static final String DeallocatorThreadNamePrefix = "DeallocatorServiceThread thread ";
 
         private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx) {
             this.queue = queue;
             this.threadIdx = threadIdx;
+            this.setName(DeallocatorThreadNamePrefix + threadIdx);
         }
 
         @Override
