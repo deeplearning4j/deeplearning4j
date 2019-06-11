@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
@@ -50,7 +51,7 @@ import java.nio.file.StandardCopyOption;
  * @author Max Pumperla
  */
 @Slf4j
-public class KerasYolo9000PredictTest {
+public class KerasYolo9000PredictTest extends BaseDL4JTest {
 
     private static final String DL4J_MODEL_FILE_NAME = ".";
     private static ImagePreProcessingScaler IMAGE_PREPROCESSING_SCALER = new ImagePreProcessingScaler(0, 1);

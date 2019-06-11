@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-public class MiscTests {
+public class MiscTests extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

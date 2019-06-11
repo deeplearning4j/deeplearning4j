@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.dropout.SpatialDropout;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasSpatialDropout2DTest {
+public class KerasSpatialDropout2DTest extends BaseDL4JTest {
 
     String LAYER_NAME = "spatial_dropout_2d";
     private final double RATE_KERAS = 0.3;

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.weights;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
-public class KerasWeightSettingTests {
+public class KerasWeightSettingTests extends BaseDL4JTest {
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();

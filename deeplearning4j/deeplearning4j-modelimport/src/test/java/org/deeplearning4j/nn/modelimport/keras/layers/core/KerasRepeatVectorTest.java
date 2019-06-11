@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasRepeatVectorTest {
+public class KerasRepeatVectorTest extends BaseDL4JTest {
 
     String LAYER_NAME = "repeat";
     private int REPEAT = 4;

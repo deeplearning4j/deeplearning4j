@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasBidirectionalTest {
+public class KerasBidirectionalTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";
     private final String ACTIVATION_DL4J = "identity";

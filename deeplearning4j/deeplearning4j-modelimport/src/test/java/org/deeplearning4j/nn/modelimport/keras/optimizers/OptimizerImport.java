@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.optimizers;
 
 import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.e2e.KerasModelEndToEndTest;
@@ -33,7 +34,7 @@ import java.nio.file.StandardCopyOption;
 
 import static java.io.File.createTempFile;
 
-public class OptimizerImport {
+public class OptimizerImport extends BaseDL4JTest {
 
     @Test
     public void importAdam() throws Exception {

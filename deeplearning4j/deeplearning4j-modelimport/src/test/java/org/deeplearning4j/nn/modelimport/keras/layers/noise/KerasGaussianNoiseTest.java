@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasGaussianNoiseTest {
+public class KerasGaussianNoiseTest extends BaseDL4JTest {
 
     String LAYER_NAME = "gaussian_noise";
     private final double STDDEV = 0.3;

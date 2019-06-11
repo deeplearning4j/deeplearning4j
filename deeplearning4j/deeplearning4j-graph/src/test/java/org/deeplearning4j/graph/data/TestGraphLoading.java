@@ -17,6 +17,7 @@
 package org.deeplearning4j.graph.data;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
@@ -32,7 +33,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class TestGraphLoading {
+public class TestGraphLoading extends BaseDL4JTest {
 
     @Test(timeout = 10000L)
     public void testEdgeListGraphLoading() throws IOException {
