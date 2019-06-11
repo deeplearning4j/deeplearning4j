@@ -251,9 +251,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     }
                 }
 
-
                 PointersPair pair = memoryProvider.malloc(shape, point, targetMode);
-
 
                 if (initialize) {
                     org.bytedeco.javacpp.Pointer.memset(pair.getHostPointer(), 0, reqMemory);
@@ -271,33 +269,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 PointersPair returnPair = new PointersPair();
                 PointersPair tmpPair = new PointersPair();
 
-                // if the initial memory location is device, there's a chance we don't have zero memory allocated
-                /*
-                if (point.getPointers() == null || point.getPointers().getHostPointer() == null) {
-                    tmpPair = alloc(AllocationStatus.HOST, point, point.getShape(), initialize);
-
-                    returnPair.setDevicePointer(tmpPair.getHostPointer());
-                    returnPair.setHostPointer(tmpPair.getHostPointer());
-
-                    point.setAllocationStatus(AllocationStatus.HOST);
-                    point.setPointers(tmpPair);
-                }
-                */
-/*
-                if (reqMemory < configuration.getMaximumSingleHostAllocation()
-                                && deviceMemoryTracker.getAllocatedSize(deviceId) + reqMemory < configuration
-                                                .getMaximumDeviceAllocation()) {
-*/
-
                 if (point.getPointers() == null)
                     point.setPointers(tmpPair);
-
-
-                    //val timeStart = System.nanoTime();
-                    //long free = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory();
-                    //val timeEnd = System.nanoTime();
-
-                    //log.info("Free time: {} ns; Free memory: {} bytes", (timeEnd - timeStart), free);
 
                     if (deviceMemoryTracker.reserveAllocationIfPossible(Thread.currentThread().getId(), deviceId, reqMemory)) {
                         point.setDeviceId(deviceId);
@@ -327,21 +300,13 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
 
-                            //  point.tickDeviceWrite();
-                            point.tickHostWrite();
-
                             if (!initialize) {
                                 point.tickDeviceWrite();
-                                point.tickHostRead();
                             } else {
-                                nativeOps.memsetAsync(pair.getDevicePointer(), 0, reqMemory, 0,
-                                                context.getSpecialStream());
+                                nativeOps.memsetAsync(pair.getDevicePointer(), 0, reqMemory, 0, context.getSpecialStream());
                                 context.getSpecialStream().synchronize();
 
                                 point.tickDeviceWrite();
-                                point.tickHostRead();
-
-                                //AtomicAllocator.getInstance().getFlowController().registerAction(ctx, point);
                             }
                         } else {
                             log.warn("Out of [DEVICE] memory, host memory will be used instead: deviceId: [{}], requested bytes: [{}]; Approximate free bytes: {}; Real free bytes: {}", deviceId, reqMemory, MemoryTracker.getInstance().getApproximateFreeMemory(deviceId), MemoryTracker.getInstance().getPreciseFreeMemory(deviceId));
@@ -755,45 +720,13 @@ public class CudaZeroHandler implements MemoryHandler {
         //getCudaContext().syncOldStream();
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
-        //log.info("getDevicePointer called");
-        /*
-        if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED && dstPoint.getAllocationStatus() == AllocationStatus.HOST) {
-        
-            // if we have constant buffer (aka shapeInfo or other constant stuff)
-            if (buffer.isConstant()) {
-                Nd4j.getConstantHandler().moveToConstantSpace(buffer);
-            } else {
-                PointersPair pair = memoryProvider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
-        
-                if (pair != null) {
-                    Integer deviceId = getDeviceId();
-        
-                    dstPoint.getPointers().setDevicePointer(pair.getDevicePointer());
-                    dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
-        
-                    deviceAllocations.get(deviceId).put(dstPoint.getObjectId(), dstPoint.getObjectId());
-        
-                    zeroAllocations.get(dstPoint.getBucketId()).remove(dstPoint.getObjectId());
-                    deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, AllocationUtils.getRequiredMemory(dstPoint.getShape()));
-        
-        
-                    dstPoint.tickHostWrite();
-                }
-            }
-        }
-        */
-
-
         // if that's device state, we probably might want to update device memory state
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
             if (!dstPoint.isActualOnDeviceSide()) {
                 //                log.info("Relocating to GPU");
                 relocate(AllocationStatus.HOST, AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), context);
-            } else {
-                //  log.info("Buffer is actual on device side: " + dstPoint.getShape());
             }
-        } //else log.info("Not on [DEVICE]");
-
+        }
 
         //  we update memory use counter, to announce that it's somehow used on device
         dstPoint.tickDeviceRead();
@@ -810,10 +743,14 @@ public class CudaZeroHandler implements MemoryHandler {
                 return p.asDoublePointer();
             case FLOAT:
                 return p.asFloatPointer();
+            case UINT32:
             case INT:
                 return p.asIntPointer();
+            case SHORT:
+            case UINT16:
             case HALF:
                 return p.asShortPointer();
+            case UINT64:
             case LONG:
                 return p.asLongPointer();
             default:

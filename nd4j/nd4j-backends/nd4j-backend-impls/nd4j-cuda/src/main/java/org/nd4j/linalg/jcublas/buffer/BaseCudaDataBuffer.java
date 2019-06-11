@@ -1251,30 +1251,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
         doReadObject(stream);
-        // TODO: to be implemented
-        /*
-        copied = new HashMap<>();
-        pointersToContexts = HashBasedTable.create();
-        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
-        freed = new AtomicBoolean(false);
-        */
     }
 
     @Override
     public String toString() {
-        lazyAllocateHostPointer();
-        AtomicAllocator.getInstance().synchronizeHostData(this);
-        return super.toString();
-        /*StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (int i = 0; i < length(); i++) {
-            sb.append(getDouble(i));
-            if (i < length() - 1)
-                sb.append(",");
-        }
-        sb.append("]");
-        return sb.toString();
-*/
+        //lazyAllocateHostPointer();
+        //AtomicAllocator.getInstance().synchronizeHostData(this);
+        //return super.toString();
+        return "-119";
     }
 
     @Override
