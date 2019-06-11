@@ -173,18 +173,18 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,
                             "ITER");
 
-            assertEquals((x + 1) * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals((x + 1) * 100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
         }
 
         Nd4jWorkspace ws1 =
                         (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER");
-        assertEquals(100 * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+        assertEquals(100 * 100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
 
         // just to trigger reset
         ws1.notifyScopeEntered();
 
         // confirming reset
-        //        assertEquals(0, ws1.getHostOffset());
+        //        assertEquals(0, ws1.getPrimaryOffset());
 
         ws1.notifyScopeLeft();
 
@@ -239,15 +239,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             INDArray array3 = null;
 
             long reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
-            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                             .notifyScopeEntered()) {
 
                 INDArray array2 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
                 reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
-                assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
-                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+                assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
+                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
 
                 try (Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                                 .notifyScopeBorrowed()) {
@@ -256,15 +256,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
                     array3 = array2.unsafeDuplication();
                     assertTrue(ws1 == array3.data().getParentWorkspace());
-                    assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
-                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+                    assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
+                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
                 }
 
                 log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
                 assertTrue(ws2 == Nd4j.getMemoryManager().getCurrentWorkspace());
 
-                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
-                assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
+                assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
 
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
@@ -284,15 +284,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             long reqMem = 5 * Nd4j.sizeOfDataType();
-            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                             .notifyScopeEntered()) {
 
                 INDArray array2 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
                 reqMem = 5 * Nd4j.sizeOfDataType();
-                assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
-                assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
+                assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
+                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
 
                 try (Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                                 .notifyScopeBorrowed()) {
@@ -300,8 +300,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
                     INDArray array3 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
-                    assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
-                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
+                    assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
+                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
                 }
             }
         }
@@ -328,7 +328,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 DataInputStream dis = new DataInputStream(bis);
                 restored = Nd4j.read(dis);
 
-                assertEquals(0, workspace.getHostOffset());
+                assertEquals(0, workspace.getPrimaryOffset());
 
                 assertEquals(array.length(), restored.length());
                 assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
@@ -359,7 +359,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             restored = Nd4j.read(dis);
 
             long requiredMemory = 10 * Nd4j.sizeOfDataType();
-            assertEquals(requiredMemory + requiredMemory % 8, workspace.getHostOffset());
+            assertEquals(requiredMemory + requiredMemory % 8, workspace.getPrimaryOffset());
 
             assertEquals(array.length(), restored.length());
             assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
@@ -405,7 +405,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertEquals(10 * 1024L * 1024L, workspace.getCurrentSize());
-        assertEquals(0, workspace.getHostOffset());
+        assertEquals(0, workspace.getPrimaryOffset());
         assertEquals(1, workspace.getNumberOfExternalAllocations());
 
         for (int i = 0; i < 11 * 1024 * 1024; i += 10000 * Nd4j.sizeOfDataType()) {
@@ -442,7 +442,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(shiftedSize * 4, workspace.getCurrentSize());
-        assertEquals(0, workspace.getHostOffset());
+        assertEquals(0, workspace.getPrimaryOffset());
         assertEquals(0, workspace.getDeviceOffset());
 
         assertEquals(1, workspace.getCyclesCount());
@@ -454,7 +454,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             array1 = Nd4j.create(8, 128, 100);
         }
 
-        assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getPrimaryOffset());
         assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
 
         assertEquals(2, workspace.getCyclesCount());
@@ -467,7 +467,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         // offsets should be intact, allocation happened as pinned
-        assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getPrimaryOffset());
         assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
 
         assertEquals(1, workspace.getNumberOfPinnedAllocations());
@@ -508,7 +508,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
 
         //assertEquals(shiftedSize * 4, workspace.getCurrentSize());
-        assertEquals(workspace.getCurrentSize(), workspace.getHostOffset());
+        assertEquals(workspace.getCurrentSize(), workspace.getPrimaryOffset());
         assertEquals(workspace.getCurrentSize(), workspace.getDeviceOffset());
 
     }
@@ -576,9 +576,9 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             assertEquals(10 * 1024 * 1024L, workspace.getCurrentSize());
             log.info("Current step number: {}", workspace.getStepNumber());
             if (i == 0)
-                assertEquals(0, workspace.getHostOffset());
+                assertEquals(0, workspace.getPrimaryOffset());
             else if (i == 1)
-                assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
+                assertEquals(workspace.getInitialBlockSize(), workspace.getPrimaryOffset());
         }
 
     }
@@ -790,12 +790,12 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             }
 
             long reqMem = 200 * Nd4j.sizeOfDataType();
-            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
 
             INDArray array3 = Nd4j.create(100);
 
             reqMem = 300 * Nd4j.sizeOfDataType();
-            assertEquals(reqMem + reqMem % 8, ws1.getHostOffset());
+            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -818,19 +818,19 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                                 .notifyScopeEntered()) {
                     INDArray array3 = Nd4j.create(100);
 
-                    assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-                    assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
-                    assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
+                    assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getPrimaryOffset());
                 }
 
                 INDArray array2b = Nd4j.create(100);
 
-                assertEquals(200 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                assertEquals(200 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
             }
 
             INDArray array1b = Nd4j.create(100);
 
-            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
         }
 
         Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
@@ -838,9 +838,9 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS3");
 
 
-        assertEquals(0 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-        assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
-        assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
+        assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getPrimaryOffset());
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -856,34 +856,34 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             INDArray array1 = Nd4j.create(100);
 
-            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
 
             // we open first nested workspace
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                             .notifyScopeEntered()) {
-                assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
 
                 INDArray array2 = Nd4j.create(100);
 
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
             }
 
             // and second nexted workspace
             try (Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS3")
                             .notifyScopeEntered()) {
-                assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+                assertEquals(0 * Nd4j.sizeOfDataType(), ws3.getPrimaryOffset());
 
                 INDArray array2 = Nd4j.create(100);
 
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getHostOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws3.getPrimaryOffset());
             }
 
             // this allocation should happen within top-level workspace
             INDArray array1b = Nd4j.create(100);
 
-            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals(200 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
         }
 
         assertEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -900,7 +900,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             INDArray array1 = Nd4j.create(100);
 
-            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
 
             for (int x = 1; x <= 100; x++) {
                 try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
@@ -933,16 +933,16 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             INDArray array1 = Nd4j.create(100);
 
-            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+            assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
 
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                             .notifyScopeEntered()) {
-                assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                assertEquals(0 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
 
                 INDArray array2 = Nd4j.create(100);
 
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-                assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getHostOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
+                assertEquals(100 * Nd4j.sizeOfDataType(), ws2.getPrimaryOffset());
             }
         }
 

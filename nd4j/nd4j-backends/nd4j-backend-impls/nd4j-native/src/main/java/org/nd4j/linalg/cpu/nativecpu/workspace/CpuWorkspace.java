@@ -199,4 +199,9 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
     protected List<PointersPair> externalPointers() {
         return externalAllocations;
     }
+
+    @Override
+    public long getPrimaryOffset() {
+        return getHostOffset();
+    }
 }

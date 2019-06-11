@@ -770,10 +770,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes
         if (dstPoint.getPointers().getHostPointer() == null) {
-            log.info("DevicePointer: " + dstPoint.getPointers().getDevicePointer());
-            log.info("HostPointer: " + dstPoint.getPointers().getHostPointer());
-            log.info("AllocStatus: " + dstPoint.getAllocationStatus());
-            throw new RuntimeException("pointer is null");
+            return null;
         }
         //dstPoint.tickHostWrite();
         //dstPoint.tickHostRead();
@@ -788,10 +785,15 @@ public class CudaZeroHandler implements MemoryHandler {
                 return p.asDoublePointer();
             case FLOAT:
                 return p.asFloatPointer();
+            case UINT32:
             case INT:
                 return p.asIntPointer();
+            case SHORT:
+            case UINT16:
+            case BFLOAT16:
             case HALF:
                 return p.asShortPointer();
+            case UINT64:
             case LONG:
                 return p.asLongPointer();
             default:

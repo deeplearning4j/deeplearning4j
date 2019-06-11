@@ -421,4 +421,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
     public int targetDevice() {
         return deviceId;
     }
+
+    @Override
+    public long getPrimaryOffset() {
+        return getDeviceOffset();
+    }
 }
