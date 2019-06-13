@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.fasttext;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Ignore;
@@ -19,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 
 @Slf4j
-public class FastTextTest {
+public class FastTextTest extends BaseDL4JTest {
 
     private File inputFile = Resources.asFile("models/fasttext/data/labeled_data.txt");
     private File modelFile = Resources.asFile("models/fasttext/supervised.model.bin");

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
@@ -44,7 +45,7 @@ import java.nio.file.StandardCopyOption;
  *
  * @author Max Pumperla
  */
-public class KerasLambdaTest {
+public class KerasLambdaTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

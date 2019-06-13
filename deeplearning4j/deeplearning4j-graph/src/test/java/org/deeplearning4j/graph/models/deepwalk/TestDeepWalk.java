@@ -17,6 +17,7 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import org.apache.commons.io.FilenameUtils;
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.GraphLoader;
@@ -42,7 +43,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class TestDeepWalk {
+public class TestDeepWalk extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -214,7 +215,7 @@ public class TestDeepWalk {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int nEpochs = 50;
+        int nEpochs = 5;
 
         //Set up network
         DeepWalk<String, String> deepWalk =

@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -29,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
-public class WordVectorsImplTest {
+public class WordVectorsImplTest extends BaseDL4JTest {
     private VocabCache vocabCache;
     private WeightLookupTable weightLookupTable;
     private WordVectorsImpl<SequenceElement> wordVectors;

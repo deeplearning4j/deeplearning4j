@@ -95,7 +95,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                 .updater(new Nesterovs(0.9)).dropOut(0.5)
                 .list()
-                .layer(new LocallyConnected1D.Builder().kernelSize(8).nIn(3)
+                .layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3)
                         .stride(1).nOut(16).dropOut(0.5)
                         .convolutionMode(ConvolutionMode.Strict)
                         .setInputSize(28)
@@ -104,19 +104,19 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
                         .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
-                .setInputType(InputType.recurrent(3,  28));
+                .setInputType(InputType.recurrent(3,  8));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
-        INDArray input = Nd4j.ones(10, 3, 28);
+        INDArray input = Nd4j.ones(10, 3, 8);
         INDArray output = network.output(input, false);;
         for (int i = 0; i < 100; i++) { // TODO: this falls flat for 1000 iterations on my machine
             output = network.output(input, false);
         }
 
-        assertArrayEquals(new long[] {(28 - 8 + 1) * 10, 10}, output.shape());
+        assertArrayEquals(new long[] {(8 - 4 + 1) * 10, 10}, output.shape());
         network.fit(input, output);
 
     }
@@ -159,8 +159,10 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                                     .addLayer("2", new LocallyConnected2D.Builder().kernelSize(2,2).nOut(5).build(), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out")
-                                    .setInputTypes(InputType.convolutional(28, 28, 1));
-                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+//                                    .setInputTypes(InputType.convolutional(28, 28, 1));
+//                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 28, 28)};
+                                    .setInputTypes(InputType.convolutional(8, 8, 1));
+                            in = new INDArray[]{Nd4j.rand(networkDtype, 2, 1, 8, 8)};
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;
                         default:

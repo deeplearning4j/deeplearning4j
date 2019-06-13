@@ -18,6 +18,7 @@ package org.deeplearning4j.models.word2vec;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -52,7 +53,7 @@ import static org.junit.Assert.assertEquals;
 
 
 @Slf4j
-public class Word2VecTestsSmall {
+public class Word2VecTestsSmall extends BaseDL4JTest {
     WordVectors word2vec;
 
     @Before

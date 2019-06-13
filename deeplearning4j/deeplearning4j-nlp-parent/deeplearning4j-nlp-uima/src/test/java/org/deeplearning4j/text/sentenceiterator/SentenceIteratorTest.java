@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +34,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 9/9/14.
  */
-public class SentenceIteratorTest {
+public class SentenceIteratorTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

@@ -20,6 +20,7 @@ package org.deeplearning4j.text.documentiterator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertTrue;
  */
 @Slf4j
 @Ignore
-public class FileDocumentIteratorTest {
+public class FileDocumentIteratorTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

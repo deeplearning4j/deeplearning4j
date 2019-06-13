@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * @author raver119@gmail.com
  */
-public class Word2VecDataSetIteratorTest {
+public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
 
     /**
      * Basically all we want from this test - being able to finish without exceptions.

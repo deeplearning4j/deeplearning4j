@@ -20,6 +20,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
@@ -76,7 +77,7 @@ import static org.junit.Assert.*;
  * Created by agibsonccc on 12/3/14.
  */
 @Slf4j
-public class ParagraphVectorsTest {
+public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

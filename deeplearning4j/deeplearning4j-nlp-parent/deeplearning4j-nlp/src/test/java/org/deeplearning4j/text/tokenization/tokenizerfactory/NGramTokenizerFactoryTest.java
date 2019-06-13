@@ -18,13 +18,14 @@ package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 @Slf4j
-public class NGramTokenizerFactoryTest {
+public class NGramTokenizerFactoryTest extends BaseDL4JTest {
 
     @Test
     public void testEmptyLines_1() throws Exception {

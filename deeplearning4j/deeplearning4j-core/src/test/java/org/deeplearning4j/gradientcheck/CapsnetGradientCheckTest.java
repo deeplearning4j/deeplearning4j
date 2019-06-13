@@ -39,6 +39,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
+import java.util.Random;
+
 public class CapsnetGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -70,6 +72,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                     for (int capsule : capsules) {
                         for (int capsuleDim : capsuleDims) {
                             for (int minibatchSize : minibatchSizes) {
+
                                 INDArray input = Nd4j.rand(minibatchSize, inputDepth * height * width).mul(10)
                                         .reshape(-1, inputDepth, height, width);
                                 INDArray labels = Nd4j.zeros(minibatchSize, capsule);
@@ -110,7 +113,7 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                 boolean gradOK = GradientCheckUtil
                                         .checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input,
-                                                labels);
+                                                labels, null, null, true, 100);
 
                                 assertTrue(msg, gradOK);
 

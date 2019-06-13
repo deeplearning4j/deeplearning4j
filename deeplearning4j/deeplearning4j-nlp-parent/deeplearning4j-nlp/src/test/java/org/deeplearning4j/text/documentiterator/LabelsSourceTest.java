@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by raver on 26.11.2015.
  */
-public class LabelsSourceTest {
+public class LabelsSourceTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

@@ -17,12 +17,14 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.AttentionVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -44,7 +46,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private static final boolean PRINT_RESULTS = false;
+    private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
@@ -53,19 +55,15 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Test
     public void testSelfAttentionLayer() {
         int nIn = 3;
-        int nOut = 5;
+        int nOut = 2;
         int tsLength = 4;
-        int layerSize = 8;
+        int layerSize = 4;
 
-        Random r = new Random(12345);
-        for (int mb : new int[]{1, 2, 3}) {
+        for (int mb : new int[]{1, 3}) {
             for (boolean inputMask : new boolean[]{false, true}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{mb, nIn, tsLength});
+                    INDArray labels = TestUtils.randomOneHot(mb, nOut);
                     String maskType = (inputMask ? "inputMask" : "none");
 
                     INDArray inMask = null;
@@ -94,7 +92,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .list()
                             .layer(new LSTM.Builder().nOut(layerSize).build())
                             .layer( projectInput ?
-                                            new SelfAttentionLayer.Builder().nOut(8).nHeads(2).projectInput(true).build()
+                                            new SelfAttentionLayer.Builder().nOut(4).nHeads(2).projectInput(true).build()
                                             : new SelfAttentionLayer.Builder().nHeads(1).projectInput(false).build()
                                     )
                             .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
@@ -107,7 +105,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -117,20 +115,16 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Test
     public void testLearnedSelfAttentionLayer() {
         int nIn = 3;
-        int nOut = 5;
+        int nOut = 2;
         int tsLength = 4;
-        int layerSize = 8;
-        int numQueries = 6;
+        int layerSize = 4;
+        int numQueries = 3;
 
-        Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{mb, nIn, tsLength});
+                    INDArray labels = TestUtils.randomOneHot(mb, nOut);
                     String maskType = (inputMask ? "inputMask" : "none");
 
                     INDArray inMask = null;
@@ -159,7 +153,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .list()
                             .layer(new LSTM.Builder().nOut(layerSize).build())
                             .layer( projectInput ?
-                                    new LearnedSelfAttentionLayer.Builder().nOut(8).nHeads(2).nQueries(numQueries).projectInput(true).build()
+                                    new LearnedSelfAttentionLayer.Builder().nOut(4).nHeads(2).nQueries(numQueries).projectInput(true).build()
                                     : new LearnedSelfAttentionLayer.Builder().nHeads(1).nQueries(numQueries).projectInput(false).build()
                             )
                             .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
@@ -172,7 +166,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -182,10 +176,10 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Test
     public void testLearnedSelfAttentionLayer_differentMiniBatchSizes() {
         int nIn = 3;
-        int nOut = 5;
+        int nOut = 2;
         int tsLength = 4;
-        int layerSize = 8;
-        int numQueries = 6;
+        int layerSize = 4;
+        int numQueries = 3;
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
@@ -199,7 +193,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     .list()
                     .layer(new LSTM.Builder().nOut(layerSize).build())
                     .layer( projectInput ?
-                            new LearnedSelfAttentionLayer.Builder().nOut(8).nHeads(2).nQueries(numQueries).projectInput(true).build()
+                            new LearnedSelfAttentionLayer.Builder().nOut(4).nHeads(2).nQueries(numQueries).projectInput(true).build()
                             : new LearnedSelfAttentionLayer.Builder().nHeads(1).nQueries(numQueries).projectInput(false).build()
                     )
                     .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
@@ -210,17 +204,14 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
-            for (int mb : new int[]{3, 2, 1}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
+            for (int mb : new int[]{3, 1}) {
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{mb, nIn, tsLength});
+                    INDArray labels = TestUtils.randomOneHot(mb, nOut);
                     String maskType = (inputMask ? "inputMask" : "none");
 
                     INDArray inMask = null;
                     if (inputMask) {
-                        inMask = Nd4j.ones(mb, tsLength);
+                        inMask = Nd4j.ones(DataType.INT, mb, tsLength);
                         for (int i = 0; i < mb; i++) {
                             int firstMaskedStep = tsLength - 1 - i;
                             if (firstMaskedStep == 0) {
@@ -236,7 +227,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     System.out.println("Starting test: " + name);
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
                     assertTrue(name, gradOK);
                 }
             }
@@ -282,20 +273,15 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
     @Test
     public void testRecurrentAttentionLayer() {
-        int nIn = 9;
-        int nOut = 5;
-        int tsLength = 4;
-        int layerSize = 8;
+        int nIn = 4;
+        int nOut = 2;
+        int tsLength = 3;
+        int layerSize = 3;
 
-
-        Random r = new Random(12345);
-        for (int mb : new int[]{3, 2, 1}) {
+        for (int mb : new int[]{3, 1}) {
             for (boolean inputMask : new boolean[]{true, false}) {
-                INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                INDArray labels = Nd4j.create(mb, nOut);
-                for (int i = 0; i < mb; i++) {
-                    labels.putScalar(i, r.nextInt(nOut), 1.0);
-                }
+                INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{mb, nIn, tsLength});
+                INDArray labels = TestUtils.randomOneHot(mb, nOut);
                 String maskType = (inputMask ? "inputMask" : "none");
 
                 INDArray inMask = null;
@@ -335,8 +321,7 @@ public class AttentionLayerTest extends BaseDL4JTest {
 
                 //System.out.println("Original");
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, false, -1, null
-                );
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100, null);
                 assertTrue(name, gradOK);
             }
         }
@@ -345,19 +330,16 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Test
     public void testAttentionVertex() {
         int nIn = 3;
-        int nOut = 5;
-        int tsLength = 4;
-        int layerSize = 8;
+        int nOut = 2;
+        int tsLength = 3;
+        int layerSize = 3;
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
-                    INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{mb, nIn, tsLength});
+                    INDArray labels = TestUtils.randomOneHot(mb, nOut);
                     String maskType = (inputMask ? "inputMask" : "none");
 
                     INDArray inMask = null;
@@ -385,13 +367,13 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .weightInit(WeightInit.XAVIER)
                             .graphBuilder()
                             .addInputs("input")
-                            .addLayer("lstmKeys", new LSTM.Builder().nOut(layerSize).build(), "input")
-                            .addLayer("lstmQueries", new LSTM.Builder().nOut(layerSize).build(), "input")
-                            .addLayer("lstmValues", new LSTM.Builder().nOut(layerSize).build(), "input")
+                            .addLayer("rnnKeys", new SimpleRnn.Builder().nOut(layerSize).build(), "input")
+                            .addLayer("rnnQueries", new SimpleRnn.Builder().nOut(layerSize).build(), "input")
+                            .addLayer("rnnValues", new SimpleRnn.Builder().nOut(layerSize).build(), "input")
                             .addVertex("attention",
                                     projectInput ?
-                                    new AttentionVertex.Builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  new AttentionVertex.Builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstmQueries", "lstmKeys", "lstmValues")
+                                    new AttentionVertex.Builder().nOut(4).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
+                                            :  new AttentionVertex.Builder().nOut(3).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "rnnQueries", "rnnKeys", "rnnValues")
                             .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
                             .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
                             .setOutputs("output")
@@ -412,19 +394,16 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Test
     public void testAttentionVertexSameInput() {
         int nIn = 3;
-        int nOut = 5;
+        int nOut = 2;
         int tsLength = 4;
-        int layerSize = 8;
+        int layerSize = 4;
 
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[]{false, true}) {
-            for (int mb : new int[]{3, 2, 1}) {
+            for (int mb : new int[]{3, 1}) {
                 for (boolean projectInput : new boolean[]{false, true}) {
                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
-                    INDArray labels = Nd4j.create(mb, nOut);
-                    for (int i = 0; i < mb; i++) {
-                        labels.putScalar(i, r.nextInt(nOut), 1.0);
-                    }
+                    INDArray labels = TestUtils.randomOneHot(mb, nOut);
                     String maskType = (inputMask ? "inputMask" : "none");
 
                     INDArray inMask = null;
@@ -452,11 +431,11 @@ public class AttentionLayerTest extends BaseDL4JTest {
                             .weightInit(WeightInit.XAVIER)
                             .graphBuilder()
                             .addInputs("input")
-                            .addLayer("lstm", new LSTM.Builder().nOut(layerSize).build(), "input")
+                            .addLayer("rnn", new SimpleRnn.Builder().activation(Activation.TANH).nOut(layerSize).build(), "input")
                             .addVertex("attention",
                                     projectInput ?
-                                            new AttentionVertex.Builder().nOut(8).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
-                                            :  new AttentionVertex.Builder().nOut(8).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "lstm", "lstm", "lstm")
+                                            new AttentionVertex.Builder().nOut(4).nHeads(2).projectInput(true).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build()
+                                            :  new AttentionVertex.Builder().nOut(4).nHeads(1).projectInput(false).nInQueries(layerSize).nInKeys(layerSize).nInValues(layerSize).build(), "rnn", "rnn", "rnn")
                             .addLayer("pooling", new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build(), "attention")
                             .addLayer("output", new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "pooling")
                             .setOutputs("output")
@@ -467,7 +446,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     net.init();
 
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
+                            new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
                     assertTrue(name, gradOK);
                 }
             }

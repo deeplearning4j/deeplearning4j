@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class StemmingPreprocessorTest {
+public class StemmingPreprocessorTest extends BaseDL4JTest {
 
     @Test
     public void testPreProcess() throws Exception {

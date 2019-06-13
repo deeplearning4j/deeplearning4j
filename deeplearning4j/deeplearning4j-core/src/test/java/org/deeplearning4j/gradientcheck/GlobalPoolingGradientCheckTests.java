@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -53,11 +54,11 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     @Test
-    public void testLSTMGlobalPoolingBasicMultiLayer() {
+    public void testRNNGlobalPoolingBasicMultiLayer() {
         //Basic test of global pooling w/ LSTM
         Nd4j.getRandom().setSeed(12345L);
 
-        int timeSeriesLength = 10;
+        int timeSeriesLength = 5;
         int nIn = 5;
         int layerSize = 4;
         int nOut = 2;
@@ -73,7 +74,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -84,20 +85,9 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                 mln.init();
 
                 Random r = new Random(12345L);
-                INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-                for (int i = 0; i < miniBatchSize; i++) {
-                    for (int j = 0; j < nIn; j++) {
-                        for (int k = 0; k < timeSeriesLength; k++) {
-                            input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                        }
-                    }
-                }
+                INDArray input = Nd4j.rand(DataType.DOUBLE, miniBatchSize, nIn, timeSeriesLength).subi(0.5);
 
-                INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
-                for (int i = 0; i < miniBatchSize; i++) {
-                    int idx = r.nextInt(nOut);
-                    labels.putScalar(i, idx, 1.0);
-                }
+                INDArray labels = TestUtils.randomOneHot(miniBatchSize, nOut).castTo(DataType.DOUBLE);
 
                 if (PRINT_RESULTS) {
                     System.out.println("testLSTMGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = "
@@ -175,12 +165,12 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testLSTMWithMasking() {
-        //Basic test of GravesLSTM layer
+        //Basic test of LSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
-        int timeSeriesLength = 10;
-        int nIn = 5;
-        int layerSize = 4;
+        int timeSeriesLength = 5;
+        int nIn = 4;
+        int layerSize = 3;
         int nOut = 2;
 
         int miniBatchSize = 3;
@@ -193,7 +183,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                             .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                            .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
                             .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -204,14 +194,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
             mln.init();
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength; k++) {
-                        input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(DataType.DOUBLE, miniBatchSize, nIn, timeSeriesLength).subi(0.5);
 
             INDArray featuresMask = Nd4j.create(miniBatchSize, timeSeriesLength);
             for (int i = 0; i < miniBatchSize; i++) {
@@ -221,12 +204,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                 }
             }
 
-            INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
-            for (int i = 0; i < miniBatchSize; i++) {
-                int idx = r.nextInt(nOut);
-                labels.putScalar(i, idx, 1.0);
-            }
-
+            INDArray labels = TestUtils.randomOneHot(miniBatchSize, nOut);
             mln.setLayerMaskArrays(featuresMask, null);
 
             if (PRINT_RESULTS) {

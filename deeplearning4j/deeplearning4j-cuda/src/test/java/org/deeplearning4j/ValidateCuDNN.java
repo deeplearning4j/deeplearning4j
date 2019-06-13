@@ -58,8 +58,8 @@ public class ValidateCuDNN extends BaseDL4JTest {
 
         int numClasses = 10;
         //imageHeight,imageWidth,channels
-        int imageHeight = 240;
-        int imageWidth = 240;
+        int imageHeight = 64;
+        int imageWidth = 64;
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
@@ -68,9 +68,9 @@ public class ValidateCuDNN extends BaseDL4JTest {
                 .activation(new ActivationELU())
                 .updater(new Nesterovs(1e-3, 0.9))
                 .list(
-                        new Convolution2D.Builder().nOut(96)
-                                .kernelSize(11, 11).biasInit(0.0)
-                                .stride(4, 4).build(),
+                        new Convolution2D.Builder().nOut(16)
+                                .kernelSize(4, 4).biasInit(0.0)
+                                .stride(2, 2).build(),
                         new ActivationLayer.Builder().activation(activation).build(),
                         new Pooling2D.Builder()
                                 .poolingType(SubsamplingLayer.PoolingType.MAX)
@@ -85,12 +85,12 @@ public class ValidateCuDNN extends BaseDL4JTest {
                                 .poolingType(SubsamplingLayer.PoolingType.MAX)
                                 .kernelSize(3, 3).stride(2, 2)
                                 .build(),
-                        new Convolution2D.Builder().nOut(384)
+                        new Convolution2D.Builder().nOut(16)
                                 .kernelSize(3, 3).padding(1, 1)
                                 .biasInit(0.0)
                                 .stride(1, 1).build(),
                         new ActivationLayer.Builder().activation(activation).build(),
-                        new Convolution2D.Builder().nOut(256)
+                        new Convolution2D.Builder().nOut(16)
                                 .kernelSize(3, 3).padding(1, 1)
                                 .stride(1, 1).build(),
                         new ActivationLayer.Builder().activation(activation).build(),
@@ -99,7 +99,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
                                 .kernelSize(3, 3).stride(2, 2)
                                 .build(),
                         new DenseLayer.Builder()
-                                .nOut(4096)
+                                .nOut(64)
                                 .biasInit(0.0)
                                 .build(),
                         new ActivationLayer.Builder().activation(activation).build(),
@@ -114,8 +114,8 @@ public class ValidateCuDNN extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(multiLayerConfiguration);
         net.init();
 
-        int[] fShape = new int[]{32, channels, imageHeight, imageWidth};
-        int[] lShape = new int[]{32, numClasses};
+        int[] fShape = new int[]{8, channels, imageHeight, imageWidth};
+        int[] lShape = new int[]{8, numClasses};
 
         List<Class<?>> classesToTest = new ArrayList<>();
         classesToTest.add(ConvolutionLayer.class);

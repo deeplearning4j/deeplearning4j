@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.lang3.time.StopWatch;
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-public class SPTreeTest {
+public class SPTreeTest extends BaseDL4JTest {
 
     @Before
     public void setUp() {

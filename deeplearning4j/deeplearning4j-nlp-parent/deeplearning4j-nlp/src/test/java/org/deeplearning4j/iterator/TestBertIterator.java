@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.junit.Test;
@@ -41,7 +42,7 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 
-public class TestBertIterator {
+public class TestBertIterator extends BaseDL4JTest {
 
     private File pathToVocab = Resources.asFile("other/vocab.txt");
     private static Charset c = StandardCharsets.UTF_8;

@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.vptree;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.joda.time.Duration;
 import org.junit.BeforeClass;
@@ -40,7 +41,7 @@ import static org.junit.Assert.*;
  * @author Anatoly Borisov
  */
 @Slf4j
-public class VpTreeNodeTest {
+public class VpTreeNodeTest extends BaseDL4JTest {
 
 
     private static class DistIndex implements Comparable<DistIndex> {

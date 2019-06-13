@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -334,7 +335,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     }
 
     @Test
-    public void testLSTMWithMerging() {
+    public void testRNNWithMerging() {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf =
@@ -345,23 +346,23 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .updater(new NoOp()).graphBuilder().addInputs("input")
                                         .setOutputs("out")
                                         .addLayer("lstm1",
-                                                        new GravesLSTM.Builder().nIn(3).nOut(4)
+                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
                                                                         .activation(Activation.TANH).build(),
                                                         "input")
                                         .addLayer("lstm2",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(4)
+                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
                                                                         .activation(Activation.TANH).build(),
                                                         "lstm1")
                                         .addLayer("dense1",
-                                                        new DenseLayer.Builder().nIn(4).nOut(4)
+                                                        new DenseLayer.Builder().nIn(3).nOut(3)
                                                                         .activation(Activation.SIGMOID).build(),
                                                         "lstm1")
                                         .addLayer("lstm3",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(4)
+                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
                                                                         .activation(Activation.TANH).build(),
                                                         "dense1")
                                         .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
-                                        .addLayer("out", new RnnOutputLayer.Builder().nIn(8).nOut(3)
+                                        .addLayer("out", new RnnOutputLayer.Builder().nIn(6).nOut(3)
                                                         .activation(Activation.SOFTMAX)
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                                         "merge")
@@ -373,13 +374,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input = Nd4j.rand(new int[] {3, 3, 5});
-        INDArray labels = Nd4j.zeros(3, 3, 5);
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 5; j++) {
-                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
-            }
-        }
+        INDArray input = Nd4j.rand(new int[] {2, 3, 4});
+        INDArray labels = TestUtils.randomOneHotTimeSeries(2, 3, 4);
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithMerging()");
@@ -401,13 +397,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(1234);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(1234)
                         .dataType(DataType.DOUBLE)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .dist(new NormalDistribution(0, 1))
+                        .weightInit(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
-                        .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation(Activation.TANH).build(),
+                        .addLayer("lstm1", new LSTM.Builder().nIn(3).nOut(6).activation(Activation.TANH).build(),
                                         "input")
-                        .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
-                        .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                        .addVertex("subset", new SubsetVertex(0, 2), "lstm1")
+                        .addLayer("out", new RnnOutputLayer.Builder().nIn(3).nOut(2).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "subset")
                         .build();
 
@@ -415,13 +410,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input = Nd4j.rand(new int[] {3, 3, 5});
-        INDArray labels = Nd4j.zeros(3, 3, 5);
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 5; j++) {
-                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
-            }
-        }
+        INDArray input = Nd4j.rand(new int[] {2, 3, 4});
+        INDArray labels = TestUtils.randomOneHotTimeSeries(2, 2, 4);
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithSubset()");
@@ -447,10 +437,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
-                        .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
+                        .addLayer("lstm1", new LSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
                                         "input")
                         .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
-                        .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                        .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(2).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lastTS")
                         .build();
 
@@ -458,11 +448,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input = Nd4j.rand(new int[] {3, 3, 5});
-        INDArray labels = Nd4j.zeros(3, 3); //Here: labels are 2d (due to LastTimeStepVertex)
-        for (int i = 0; i < 3; i++) {
-            labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
-        }
+        INDArray input = Nd4j.rand(new int[] {2, 3, 4});
+        INDArray labels = TestUtils.randomOneHot(2, 2); //Here: labels are 2d (due to LastTimeStepVertex)
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithLastTimeStepVertex()");
@@ -503,16 +490,16 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .updater(new NoOp()).graphBuilder()
                                         .addInputs("input1", "input2").setOutputs("out")
                                         .addLayer("lstm1",
-                                                        new GravesLSTM.Builder().nIn(3).nOut(4)
+                                                        new LSTM.Builder().nIn(3).nOut(3)
                                                                         .activation(Activation.TANH).build(),
                                                         "input1")
                                         .addLayer("lstm2",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(5)
+                                                        new LSTM.Builder().nIn(2).nOut(4)
                                                                         .activation(Activation.SOFTSIGN).build(),
                                                         "input2")
                                         .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
                                         .addVertex("duplicate", new DuplicateToTimeSeriesVertex("input2"), "lastTS")
-                                        .addLayer("out", new RnnOutputLayer.Builder().nIn(5 + 4).nOut(3)
+                                        .addLayer("out", new RnnOutputLayer.Builder().nIn(3+4).nOut(2)
                                                         .activation(Activation.SOFTMAX)
                                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                                         "lstm1", "duplicate")
@@ -522,14 +509,9 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input1 = Nd4j.rand(new int[] {3, 3, 5});
-        INDArray input2 = Nd4j.rand(new int[] {3, 4, 5});
-        INDArray labels = Nd4j.zeros(3, 3, 5);
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 5; j++) {
-                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
-            }
-        }
+        INDArray input1 = Nd4j.rand(new int[] {2, 3, 4});
+        INDArray input2 = Nd4j.rand(new int[] {2, 2, 4});
+        INDArray labels = TestUtils.randomOneHotTimeSeries(2, 2, 4);
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithDuplicateToTimeSeries()");
@@ -558,16 +540,16 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .updater(new NoOp()).graphBuilder()
                         .addInputs("input").setOutputs("out")
                         .addLayer("lstm_a",
-                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                new LSTM.Builder().nIn(2).nOut(3)
                                         .activation(Activation.TANH).build(),
                                 "input")
                         .addVertex("input_rev", new ReverseTimeSeriesVertex("input"), "input")
                         .addLayer("lstm_b",
-                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                new LSTM.Builder().nIn(2).nOut(3)
                                         .activation(Activation.TANH).build(),
                                 "input_rev")
                         .addVertex("lstm_b_rev", new ReverseTimeSeriesVertex("input"), "lstm_b")
-                        .addLayer("out", new RnnOutputLayer.Builder().nIn(4 + 4).nOut(3)
+                        .addLayer("out", new RnnOutputLayer.Builder().nIn(3 + 3).nOut(2)
                                         .activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
                                 "lstm_a", "lstm_b_rev")
@@ -577,13 +559,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input  = Nd4j.rand(new int[] {3, 3, 5});
-        INDArray labels = Nd4j.zeros(3, 3, 5);
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 5; j++) {
-                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
-            }
-        }
+        INDArray input  = Nd4j.rand(new int[] {2, 2, 4});
+        INDArray labels = TestUtils.randomOneHotTimeSeries(2, 2, 4);
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithReverseTimeSeriesVertex()");
@@ -1171,10 +1148,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2")
-                        .addLayer("d0", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
-                        .addLayer("d1", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
+                        .addLayer("d0", new SimpleRnn.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
+                        .addLayer("d1", new SimpleRnn.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
                         .addVertex("stack", new StackVertex(), "d0", "d1")
-                        .addLayer("d2", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
+                        .addLayer("d2", new SimpleRnn.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
                         .addVertex("u1", new UnstackVertex(0, 2), "d2").addVertex("u2", new UnstackVertex(1, 2), "d2")
                         .addLayer("p1", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u1")
                         .addLayer("p2", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u2")
@@ -1193,7 +1170,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         INDArray newParams = Nd4j.rand(new long[]{1, nParams});
         graph.setParams(newParams);
 
-        int[] mbSizes = new int[] {1, 3, 10};
+        int[] mbSizes = new int[] {1, 2, 3};
         for (int minibatch : mbSizes) {
 
             INDArray in1 = Nd4j.rand(new int[] {minibatch, layerSizes, 4});

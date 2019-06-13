@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessing.text.KerasTokenizer;
 import org.junit.Test;
@@ -29,7 +30,7 @@ import java.io.IOException;
  *
  * @author Max Pumperla
  */
-public class TimeSeriesGeneratorImportTest {
+public class TimeSeriesGeneratorImportTest extends BaseDL4JTest {
 
     @Test
     public void importTimeSeriesTest() throws IOException, InvalidKerasConfigurationException {

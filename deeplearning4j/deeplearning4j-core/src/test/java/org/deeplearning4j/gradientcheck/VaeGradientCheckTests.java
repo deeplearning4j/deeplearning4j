@@ -138,28 +138,23 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
     @Test
     public void testVaePretrain() {
         Nd4j.getRandom().setSeed(12345);
-        Activation[] activFns = {Activation.IDENTITY, Activation.TANH, Activation.IDENTITY, Activation.TANH};
-
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MCXENT, LossFunction.MSE, LossFunction.MSE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.SOFTMAX, Activation.TANH, Activation.TANH};
-        Activation[] pzxAfns = {Activation.IDENTITY, Activation.TANH, Activation.IDENTITY, Activation.TANH};
-        Activation[] pxzAfns = {Activation.TANH, Activation.IDENTITY, Activation.TANH, Activation.TANH};
+        Activation[] activFns = {Activation.IDENTITY, Activation.TANH, Activation.SOFTSIGN};
+        Activation[] pzxAfns = {Activation.IDENTITY, Activation.IDENTITY, Activation.TANH};
+        Activation[] pxzAfns = {Activation.TANH, Activation.TANH, Activation.IDENTITY};
 
         //use l2vals[i] with l1vals[i]
-        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
-        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
-        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
-        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
+        double[] l2vals = {0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.6, 0.0};
 
-        int[][] encoderLayerSizes = new int[][] {{5}, {5}, {5, 6}, {5, 6}};
-        int[][] decoderLayerSizes = new int[][] {{6}, {7, 8}, {6}, {7, 8}};
+        int[][] encoderLayerSizes = new int[][] {{5}, {3, 4}, {3, 4}};
+        int[][] decoderLayerSizes = new int[][] {{4}, {2}, {4, 3}};
 
-        int[] minibatches = new int[]{1,5,4,3};
+        int[] minibatches = new int[]{1,3,2,3};
 
         Nd4j.getRandom().setSeed(12345);
         for( int i=0; i<activFns.length; i++ ){
-            LossFunction lf = lossFunctions[i];
-            Activation outputActivation = outputActivations[i];
             double l2 = l2vals[i];
             double l1 = l1vals[i];
             int[] encoderSizes = encoderLayerSizes[i];
@@ -214,18 +209,18 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
     @Test
     public void testVaePretrainReconstructionDistributions() {
 
-        int inOutSize = 6;
+        int inOutSize = 3;
 
         ReconstructionDistribution[] reconstructionDistributions =
                 new ReconstructionDistribution[]{new GaussianReconstructionDistribution(Activation.IDENTITY),
                         new GaussianReconstructionDistribution(Activation.TANH),
                         new BernoulliReconstructionDistribution(Activation.SIGMOID),
                         new CompositeReconstructionDistribution.Builder()
-                                .addDistribution(2,
+                                .addDistribution(1,
                                         new GaussianReconstructionDistribution(
                                                 Activation.IDENTITY))
-                                .addDistribution(2, new BernoulliReconstructionDistribution())
-                                .addDistribution(2,
+                                .addDistribution(1, new BernoulliReconstructionDistribution())
+                                .addDistribution(1,
                                         new GaussianReconstructionDistribution(
                                                 Activation.TANH))
                                 .build(),
@@ -248,12 +243,12 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     break;
                 case 3: //Composite
                     data = Nd4j.create(minibatch, inOutSize);
-                    data.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2)).assign(Nd4j.rand(minibatch, 2));
+                    data.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 1)).assign(Nd4j.rand(minibatch, 1));
                     Nd4j.getExecutioner()
                             .exec(new BernoulliDistribution(
-                                            data.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), 0.5),
+                                            data.get(NDArrayIndex.all(), NDArrayIndex.interval(1, 2)), 0.5),
                                     Nd4j.getRandom());
-                    data.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 6)).assign(Nd4j.rand(minibatch, 2));
+                    data.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 3)).assign(Nd4j.rand(minibatch, 1));
                     break;
                 case 4:
                 case 5:
@@ -269,7 +264,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     .seed(12345L).dist(new NormalDistribution(0, 1))
                     .list().layer(0,
                             new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
-                                    .encoderLayerSizes(5).decoderLayerSizes(6)
+                                    .encoderLayerSizes(4).decoderLayerSizes(3)
                                     .pzxActivationFunction(Activation.TANH)
                                     .reconstructionDistribution(
                                             reconstructionDistributions[i])
@@ -304,17 +299,15 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
 
         int minibatch = 2;
         Nd4j.getRandom().setSeed(12345);
-        for (int numSamples : new int[]{1, 3}) {
-
-            //            for (int numSamples : new int[]{10}) {
-            INDArray features = Nd4j.rand(minibatch, 4);
+        for (int numSamples : new int[]{1, 2}) {
+            INDArray features = Nd4j.rand(DataType.DOUBLE, minibatch, 4);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
                     .dataType(DataType.DOUBLE)
                     .updater(new NoOp())
                     .seed(12345L).weightInit(WeightInit.XAVIER).list()
-                    .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(5, 6)
-                            .decoderLayerSizes(7, 8).pzxActivationFunction(Activation.TANH)
+                    .layer(0, new VariationalAutoencoder.Builder().nIn(4).nOut(3).encoderLayerSizes(2, 3)
+                            .decoderLayerSizes(4, 3).pzxActivationFunction(Activation.TANH)
                             .reconstructionDistribution(
                                     new GaussianReconstructionDistribution(Activation.TANH))
                             .numSamples(numSamples).activation(Activation.TANH)

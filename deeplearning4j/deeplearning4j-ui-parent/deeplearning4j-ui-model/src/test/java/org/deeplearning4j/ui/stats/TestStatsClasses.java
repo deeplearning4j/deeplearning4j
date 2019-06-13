@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.ui.stats;
 
+import org.deeplearning4j.ui.BaseDL4JTest;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
@@ -35,7 +36,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 01/10/2016.
  */
-public class TestStatsClasses {
+public class TestStatsClasses extends BaseDL4JTest {
 
     @Test
     public void testStatsInitializationReport() throws Exception {

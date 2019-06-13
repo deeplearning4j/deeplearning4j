@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Created by fartovii on 09.11.15.
  */
-public class StreamLineIteratorTest {
+public class StreamLineIteratorTest extends BaseDL4JTest {
 
     protected Logger logger = LoggerFactory.getLogger(StreamLineIteratorTest.class);
 

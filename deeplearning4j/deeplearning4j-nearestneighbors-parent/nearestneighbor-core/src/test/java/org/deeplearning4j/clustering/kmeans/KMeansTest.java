@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kmeans;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.cluster.*;
 import org.junit.Ignore;
@@ -33,7 +34,7 @@ import static org.junit.Assert.fail;
 /**
  * Created by agibsonccc on 7/2/17.
  */
-public class KMeansTest {
+public class KMeansTest extends BaseDL4JTest {
 
     @Test
     public void testKMeans() {

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.plot.BarnesHutTsne;
@@ -30,7 +31,7 @@ import org.junit.Test;
  * @author raver119@gmail.com
  */
 @Ignore
-public class Word2VecVisualizationTests {
+public class Word2VecVisualizationTests extends BaseDL4JTest {
 
     private static WordVectors vectors;
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.Subsampling1DLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasPooling1DTest {
+public class KerasPooling1DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "test_layer";
     private final int[] KERNEL_SIZE = new int[]{2};

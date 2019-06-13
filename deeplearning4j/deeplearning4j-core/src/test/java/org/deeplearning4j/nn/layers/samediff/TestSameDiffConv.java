@@ -93,8 +93,6 @@ public class TestSameDiffConv extends BaseDL4JTest {
         //Note: to avoid the exporential number of tests here, we'll randomly run every Nth test only.
         //With n=1, m=3 this is 1 out of every 3 tests (on average)
         Random r = new Random(12345);
-        int n = 1;
-        int m = 30;     //1 ot of every 30... 3888 possible combinations here
         for (int minibatch : new int[]{5, 1}) {
 
             Activation[] afns = new Activation[]{
@@ -117,11 +115,8 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                 for (int[] dilation : new int[][]{{1, 1}, {2, 2}, {1, 2}}) {
                                     for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
                                         for (Activation a : afns) {
-                                            int i = r.nextInt(m);
-                                            if (i >= n) {
-                                                //Example: n=2, m=3... skip on i=2, run test on i=0, i=1
-                                                continue;
-                                            }
+                                            if(r.nextInt(80) != 0)
+                                                continue;   //1 of 80 on average - of 3888 possible combinations here -> ~49 tests
 
                                             String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", nIn=" + nIn
                                                     + ", nOut=" + nOut + ", kernel=" + Arrays.toString(kernel) + ", stride="
@@ -306,7 +301,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
 
                         log.info("Starting: " + msg);
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null, true, 50); //Most of weights are in output layer
 
                         assertTrue(msg, gradOK);
 

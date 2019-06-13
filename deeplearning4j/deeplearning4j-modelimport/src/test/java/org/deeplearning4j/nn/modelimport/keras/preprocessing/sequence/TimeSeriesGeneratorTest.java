@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,7 +25,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import static org.junit.Assert.assertEquals;
 
-public class TimeSeriesGeneratorTest {
+public class TimeSeriesGeneratorTest extends BaseDL4JTest {
 
     @Test
     public void tsGeneratorTest() throws InvalidKerasConfigurationException {

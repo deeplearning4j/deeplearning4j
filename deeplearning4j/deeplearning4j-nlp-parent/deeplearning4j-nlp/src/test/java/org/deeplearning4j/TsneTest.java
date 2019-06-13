@@ -44,7 +44,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
-public class TsneTest {
+public class TsneTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

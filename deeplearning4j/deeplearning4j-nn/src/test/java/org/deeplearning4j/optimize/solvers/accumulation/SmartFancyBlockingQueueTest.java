@@ -19,6 +19,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.util.ThreadUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static org.junit.Assert.*;
 
 @Slf4j @Ignore("AB 2019/05/21 - Failing (stuck, causing timeouts) - Issue #7657")
-public class SmartFancyBlockingQueueTest {
+public class SmartFancyBlockingQueueTest extends BaseDL4JTest {
     @Test(timeout = 120000L)
     public void testSFBQ_1() throws Exception {
         val queue = new SmartFancyBlockingQueue(8, Nd4j.create(5, 5));

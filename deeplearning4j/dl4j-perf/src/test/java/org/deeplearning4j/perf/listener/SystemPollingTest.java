@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Ignore("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
-public class SystemPollingTest {
+public class SystemPollingTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();

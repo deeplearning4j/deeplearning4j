@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -85,7 +86,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         mask[3] = new boolean[] {false, false, true, false, true}; //time series classification w/ variable length TS
         mask[4] = new boolean[] {true, true, true, false, true}; //variable length TS
 
-        int nIn = 4;
+        int nIn = 3;
         int layerSize = 3;
 
         GradientCheckSimpleScenario[] scenarios = new GradientCheckSimpleScenario[] {
@@ -94,23 +95,14 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                         new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                                         Activation.TANH, 10, 3),
                         new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(4).build(),
-                                        Activation.IDENTITY, 12, 4),
-                        new GradientCheckSimpleScenario(LossFunctions.LossFunction.L2.getILossFunction(),
-                                        Activation.SOFTMAX, 2, 2)};
+                                        Activation.IDENTITY, 12, 4)};
 
         for (GradientCheckSimpleScenario s : scenarios) {
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(1, nIn, timeSeriesLength);
-            for (int m = 0; m < 1; m++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength; k++) {
-                        input.putScalar(new int[] {m, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(DataType.DOUBLE, 1, nIn, timeSeriesLength).subi(0.5);
 
-            INDArray labels = Nd4j.zeros(1, s.labelWidth, timeSeriesLength);
+            INDArray labels = Nd4j.zeros(DataType.DOUBLE, 1, s.labelWidth, timeSeriesLength);
             for (int m = 0; m < 1; m++) {
                 for (int j = 0; j < timeSeriesLength; j++) {
                     int idx = r.nextInt(s.labelWidth);
@@ -127,15 +119,14 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
-                                .dataType(DataType.DOUBLE)
-                                .list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                        .dist(new NormalDistribution(0, 1))
-                                                .updater(new NoOp()).build())
-                                .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
-                                        .dist(new NormalDistribution(0, 1))
-                                                .updater(new NoOp()).build())
-                                .build();
+                        .dataType(DataType.DOUBLE)
+                        .updater(new NoOp())
+                        .list()
+                        .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                                .weightInit(new NormalDistribution(0, 1)).build())
+                        .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
+                                .weightInit(new NormalDistribution(0, 1)).build())
+                        .build();
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
@@ -156,15 +147,14 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         int timeSeriesLength = 5;
         int nIn = 5;
-        int layerSize = 4;
+        int layerSize = 3;
         int nOut = 3;
 
-        int miniBatchSize = 3;
+        int miniBatchSize = 2;
 
-        INDArray[] masks = new INDArray[] {null,
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}, {1, 1, 1, 1, 1}}),
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}}),
-                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}, {0, 0, 1, 1, 1}})};
+        INDArray[] masks = new INDArray[] {
+                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}}),
+                        Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 1, 1, 1}})};
 
         int testNum = 0;
         for (INDArray mask : masks) {
@@ -201,7 +191,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask, true, 16);
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -295,9 +285,9 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         //For RNNs: per-output masking uses 3d masks (same shape as output/labels), as compared to the standard
         // 2d masks (used for per *example* masking)
 
-        int nIn = 4;
-        int layerSize = 4;
-        int nOut = 4;
+        int nIn = 3;
+        int layerSize = 3;
+        int nOut = 2;
 
         //1 example, TS length 3
         INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0}, new int[] {1, nOut, 3}, 'f');
@@ -358,7 +348,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
@@ -390,7 +380,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
-                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                .addLayer("0", new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")

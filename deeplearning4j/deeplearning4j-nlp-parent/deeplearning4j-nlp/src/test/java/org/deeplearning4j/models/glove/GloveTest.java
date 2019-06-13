@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.glove;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 12/3/14.
  */
-public class GloveTest {
+public class GloveTest extends BaseDL4JTest {
     private static final Logger log = LoggerFactory.getLogger(GloveTest.class);
     private Glove glove;
     private SentenceIterator iter;

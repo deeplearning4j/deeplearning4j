@@ -18,6 +18,7 @@ package org.deeplearning4j.models.sequencevectors.serialization;
 
 import lombok.val;
 import org.apache.commons.lang.StringUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
@@ -45,7 +46,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.*;
 
-public class WordVectorSerializerTest {
+public class WordVectorSerializerTest extends BaseDL4JTest {
     private AbstractCache<VocabWord> cache;
 
     @Rule

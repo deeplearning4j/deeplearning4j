@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.wordstore;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -28,8 +29,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 8/31/14.
  */
-public class InMemoryVocabStoreTests {
-    private static final Logger log = LoggerFactory.getLogger(InMemoryVocabStoreTests.class);
+public class InMemoryVocabStoreTests extends BaseDL4JTest {
 
     @Test
     public void testStorePut() {
@@ -40,7 +40,4 @@ public class InMemoryVocabStoreTests {
         assertEquals(1, cache.numWords());
         assertEquals("hello", cache.wordAtIndex(0));
     }
-
-
-
 }

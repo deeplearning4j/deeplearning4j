@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasBatchNormalizationTest {
+public class KerasBatchNormalizationTest extends BaseDL4JTest {
     public static final String PARAM_NAME_BETA = "beta";
     private final String LAYER_NAME = "batch_norm_layer";
 

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.glove.count;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fartovii on 23.12.15.
  */
-public class RoundCountTest {
+public class RoundCountTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

@@ -68,6 +68,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
             for (boolean inputMask : new boolean[]{false, true}) {
                 for (boolean simple : new boolean[]{false, true}) {
                     for(boolean hasLayerNorm: new boolean[]{true, false}) {
+                        if(!simple && hasLayerNorm)
+                            continue;
 
                         INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                         INDArray labels = Nd4j.create(mb, nOut, tsLength);
@@ -93,6 +95,11 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         }
 
                         for (Bidirectional.Mode m : modes) {
+                            //Skip 3 of 4 test cases: from 64 to 16, which still should be good coverage
+                            //Note RNG seed - deterministic run-to-run
+                            if(r.nextInt(4) != 0)
+                                continue;
+
                             String name = "mb=" + mb + ", maskType=" + maskType + ", mode=" + m + ", hasLayerNorm=" + hasLayerNorm + ", rnnType="
                                     + (simple ? "SimpleRnn" : "LSTM");
 
@@ -144,6 +151,9 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         for (boolean inputMask : new boolean[]{false, true}) {
                             for (boolean hasLayerNorm : new boolean[]{true, false}) {
                                 for (int l = 0; l < l1s.length; l++) {
+                                    //Only run 1 of 5 (on average - note RNG seed for deterministic testing) - 25 of 128 test cases (to minimize test time)
+                                    if(r.nextInt(5) != 0)
+                                        continue;
 
                                     INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
                                     INDArray labels = Nd4j.create(mb, nOut, tsLength);
@@ -217,6 +227,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
             for (boolean inputMask : new boolean[]{false, true}) {
                 for (boolean simple : new boolean[]{false, true}) {
                     for (boolean hasLayerNorm : new boolean[]{true, false}) {
+                        if(!simple && hasLayerNorm)
+                            continue;
 
 
                         INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
@@ -265,7 +277,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         net.init();
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 16);
                         assertTrue(name, gradOK);
                         TestUtils.testModelSerialization(net);
                     }

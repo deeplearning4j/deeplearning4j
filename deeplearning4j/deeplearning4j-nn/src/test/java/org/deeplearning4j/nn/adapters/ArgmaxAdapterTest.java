@@ -17,12 +17,13 @@
 package org.deeplearning4j.nn.adapters;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
-public class ArgmaxAdapterTest {
+public class ArgmaxAdapterTest extends BaseDL4JTest {
     @Test
     public void testSoftmax_2D_1() {
         val in = new double[][] {{1, 3, 2}, { 4, 5, 6}};

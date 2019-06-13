@@ -18,6 +18,7 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -39,7 +40,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class BertWordPieceTokenizerTests {
+public class BertWordPieceTokenizerTests extends BaseDL4JTest {
 
     private File pathToVocab =  Resources.asFile("other/vocab.txt");
     private Charset c = StandardCharsets.UTF_8;

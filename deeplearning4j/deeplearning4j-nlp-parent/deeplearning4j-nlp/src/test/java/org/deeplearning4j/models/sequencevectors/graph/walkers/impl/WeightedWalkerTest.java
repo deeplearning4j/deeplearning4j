@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.WalkDirection;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
-public class WeightedWalkerTest {
+public class WeightedWalkerTest extends BaseDL4JTest {
     private static Graph<VocabWord, Integer> basicGraph;
 
     @Before

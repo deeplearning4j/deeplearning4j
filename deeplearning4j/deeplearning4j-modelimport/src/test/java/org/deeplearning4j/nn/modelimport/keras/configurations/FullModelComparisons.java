@@ -24,6 +24,7 @@ import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -54,7 +55,7 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 
 @Ignore("AB - 2019/05/27 - NPE on CUDA only. Ignored to get all passing baseline on master; see issue 7657")
-public class FullModelComparisons {
+public class FullModelComparisons extends BaseDL4JTest {
 
     ClassLoader classLoader = FullModelComparisons.class.getClassLoader();
 

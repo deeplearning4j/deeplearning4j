@@ -867,9 +867,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int kD = 2;
 
         int mb = 3;
-        int imgH = 8;
-        int imgW = 8;
-        int imgD = 8;
+        int imgH = 5;
+        int imgW = 5;
+        int imgD = 5;
 
         SameDiff sd = SameDiff.create();
         INDArray inArr = Nd4j.rand(new long[]{mb, nIn, imgD, imgH, imgW});
@@ -891,7 +891,7 @@ public class LayerOpValidation extends BaseOpValidation {
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 7, 7, 7}, outShape);
+        assertArrayEquals(new long[]{mb, nIn, 4, 4, 4}, outShape);
 
         SDVariable loss = out.std(true);
         //Gradient check:
@@ -976,9 +976,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int kD = 2;
 
         int mb = 3;
-        int imgH = 8;
-        int imgW = 8;
-        int imgT = 8;
+        int imgH = 5;
+        int imgW = 5;
+        int imgT = 5;
 
         SameDiff sd = SameDiff.create();
         INDArray wArr = Nd4j.rand(new int[]{kD, kH, kW, nIn, nOut});
@@ -1005,7 +1005,7 @@ public class LayerOpValidation extends BaseOpValidation {
         //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
         //Expected output size, WITH same mode: out = in/stride
         val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 8, 8, 8}, outShape);
+        assertArrayEquals(new long[]{mb, nOut, 5, 5, 5}, outShape);
 
         SDVariable loss = out.std(true);
         //Gradient check:

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.glove;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
-public class AbstractCoOccurrencesTest {
+public class AbstractCoOccurrencesTest extends BaseDL4JTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractCoOccurrencesTest.class);
 

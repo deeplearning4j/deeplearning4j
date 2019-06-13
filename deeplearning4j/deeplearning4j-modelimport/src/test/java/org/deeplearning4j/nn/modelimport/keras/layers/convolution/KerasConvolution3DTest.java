@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
@@ -43,7 +44,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author Max Pumperla
  */
-public class KerasConvolution3DTest {
+public class KerasConvolution3DTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";
     private final String ACTIVATION_DL4J = "identity";

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.ui.BaseDL4JTest;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Created by Alex on 07/10/2016.
  */
-public class TestStatsListener {
+public class TestStatsListener extends BaseDL4JTest {
 
     @Test
     public void testListenerBasic() {
