@@ -19,6 +19,9 @@ package org.deeplearning4j.rl4j.policy;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.ILearningInitializer;
+import org.deeplearning4j.rl4j.learning.LearningInitializer;
+import org.deeplearning4j.rl4j.learning.HistoryProcessorLearningInitializer;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -51,7 +54,15 @@ public abstract class Policy<O extends Encodable, A> {
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         getNeuralNet().reset();
-        Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);
+
+        ILearningInitializer<O, A, AS> initializer;
+        if(hp == null) {
+            initializer = new LearningInitializer<O, A, AS>();
+        } else {
+            initializer = new HistoryProcessorLearningInitializer<O, A, AS>(hp);
+        }
+
+        Learning.InitMdp<O> initMdp = initializer.initMdp(mdp);
         O obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();

@@ -21,10 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.learning.HistoryProcessor;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.learning.*;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
@@ -32,6 +29,9 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.learning.ILearningInitializer;
+import org.deeplearning4j.rl4j.learning.LearningInitializer;
+import org.deeplearning4j.rl4j.learning.HistoryProcessorLearningInitializer;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -57,16 +57,24 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Getter
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
+    protected ILearningInitializer<O, A, AS> initializer = new LearningInitializer<O, A, AS>();
+
     public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
         this.threadNumber = threadNumber;
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
-        historyProcessor = new HistoryProcessor(conf);
+        setHistoryProcessor(new HistoryProcessor(conf));
     }
 
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
         this.historyProcessor = historyProcessor;
+
+        if(historyProcessor == null) {
+            initializer = new LearningInitializer<O, A, AS>();
+        } else {
+            initializer = new HistoryProcessorLearningInitializer<O, A, AS>(historyProcessor);
+        }
     }
 
     protected void postEpoch() {
@@ -92,7 +100,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         try {
             log.info("ThreadNum-" + threadNumber + " Started!");
             getCurrent().reset();
-            Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
+            Learning.InitMdp<O> initMdp = initializer.initMdp(getMdp());
             O obs = initMdp.getLastObs();
             double rewards = initMdp.getReward();
             int length = initMdp.getSteps();
@@ -114,7 +122,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
                     getCurrent().reset();
-                    initMdp = Learning.initMdp(getMdp(), historyProcessor);
+                    initMdp = initializer.initMdp(getMdp());
                     obs = initMdp.getLastObs();
                     rewards = initMdp.getReward();
                     length = initMdp.getSteps();
