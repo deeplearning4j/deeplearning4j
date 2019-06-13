@@ -17,20 +17,19 @@
 package org.deeplearning4j.rl4j.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Value;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
-import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 import java.io.*;
 import java.nio.file.*;
+
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -43,7 +42,7 @@ import java.util.zip.ZipOutputStream;
  * the folder for every training and handle every path and model savings
  */
 @Slf4j
-public class DataManager {
+public class DataManager implements IDataManager {
 
     final private String home = System.getProperty("user.home");
     final private ObjectMapper mapper = new ObjectMapper();
@@ -51,6 +50,9 @@ public class DataManager {
     @Getter
     private boolean saveData;
     private String currentDir;
+
+    @Setter
+    private IHistoryProcessor historyProcessor;
 
     public DataManager() throws IOException {
         create(dataRoot, false);
@@ -72,13 +74,13 @@ public class DataManager {
         }
     }
 
-    public static void save(String path, Learning learning) throws IOException {
+    private void save(String path, ILearning learning) throws IOException {
         try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
             save(os, learning);
         }
     }
 
-    public static void save(OutputStream os, Learning learning) throws IOException {
+    private void save(OutputStream os, ILearning learning) throws IOException {
 
         try (ZipOutputStream zipfile = new ZipOutputStream(os)) {
 
@@ -99,7 +101,7 @@ public class DataManager {
             writeEntry(inputStream, zipfile);
 
 
-            if (learning.getHistoryProcessor() != null) {
+            if (historyProcessor != null) {
                 ZipEntry hpconf = new ZipEntry("hpconf.bin");
                 zipfile.putNextEntry(hpconf);
 
@@ -200,6 +202,7 @@ public class DataManager {
         return f.getAbsolutePath();
     }
 
+    @Override
     public String getVideoDir() {
         return currentDir + "/" + Constants.VIDEO_DIR;
     }
@@ -216,6 +219,7 @@ public class DataManager {
         return currentDir + "/" + Constants.STATISTIC_FILENAME;
     }
 
+    @Override
     public void appendStat(StatEntry statEntry) throws IOException {
 
         if (!saveData)
@@ -231,6 +235,7 @@ public class DataManager {
         return mapper.writeValueAsString(object) + "\n";
     }
 
+    @Override
     public void writeInfo(ILearning iLearning) throws IOException {
 
         if (!saveData)
@@ -256,7 +261,8 @@ public class DataManager {
         return exists;
     }
 
-    public void save(Learning learning) throws IOException {
+    @Override
+    public void save(ILearning learning) throws IOException {
 
         if (!saveData)
             return;

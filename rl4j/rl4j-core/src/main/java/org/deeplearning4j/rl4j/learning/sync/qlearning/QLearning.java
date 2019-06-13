@@ -32,6 +32,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.org.deeplearning4j.rl4j.learning.sync.qlearning.QStatsMonitor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,10 +84,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     public abstract QLConfiguration getConfiguration();
 
-    protected abstract void preEpoch();
-
-    protected abstract void postEpoch();
-
     protected abstract QLStepReturn<O> trainStep(O obs);
 
     protected StatEntry trainEpoch() {
@@ -96,9 +93,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         double reward = initMdp.getReward();
         int step = initMdp.getSteps();
 
-        Double startQ = Double.NaN;
-        double meanQ = 0;
-        int numQ = 0;
+        QStatsMonitor qStats = new QStatsMonitor();
         List<Double> scores = new ArrayList<>();
         while (step < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
 
@@ -108,30 +103,22 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
             QLStepReturn<O> stepR = trainStep(obs);
 
-            if (!stepR.getMaxQ().isNaN()) {
-                if (startQ.isNaN())
-                    startQ = stepR.getMaxQ();
-                numQ++;
-                meanQ += stepR.getMaxQ();
-            }
+            qStats.add(stepR.getMaxQ());
 
-            if (stepR.getScore() != 0)
+            if (stepR.getScore() != 0) {
                 scores.add(stepR.getScore());
+            }
 
             reward += stepR.getStepReply().getReward();
             obs = stepR.getStepReply().getObservation();
             incrementStep();
-            step++;
+            ++step;
         }
 
-        meanQ /= (numQ + 0.001); //avoid div zero
-
-
         StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, step, scores,
-                        getEgPolicy().getEpsilon(), startQ, meanQ);
+                        getEgPolicy().getEpsilon(), qStats.getStartQ(), qStats.getMeanQ());
 
         return statEntry;
-
     }
 
     @AllArgsConstructor

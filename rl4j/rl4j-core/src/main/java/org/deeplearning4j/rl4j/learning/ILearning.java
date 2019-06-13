@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.learning;
 
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -37,6 +38,8 @@ public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> ex
     LConfiguration getConfiguration();
 
     MDP<O, A, AS> getMdp();
+
+    NeuralNet getNeuralNet();
 
 
     interface LConfiguration {

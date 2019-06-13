@@ -22,6 +22,10 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.rl4j.learning.async.AsyncTrainingListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
@@ -36,6 +40,11 @@ import org.nd4j.linalg.factory.Nd4j;
 public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
+    private List<AsyncTrainingListener> asyncTrainingListeners = new ArrayList<AsyncTrainingListener>();
+
+    public void addListener(AsyncTrainingListener listener) {
+        asyncTrainingListeners.add(listener);
+    }
 
     public AsyncLearning(AsyncConfiguration conf) {
         super(conf);
@@ -78,18 +87,26 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             log.info("AsyncLearning training starting.");
             launchThreads();
 
-            //this is simply for stat purposes
-            getDataManager().writeInfo(this);
-            synchronized (this) {
-                while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                    getPolicy().play(getMdp(), getHistoryProcessor());
-                    getDataManager().writeInfo(this);
-                    wait(20000);
+            if(asyncTrainingListeners.size() != 0) {
+                //this is simply for stat purposes
+                signalProgress();
+                synchronized (this) {
+                    while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {
+                        getPolicy().play(getMdp(), getHistoryProcessor());
+                        signalProgress();
+                        wait(20000);
+                    }
                 }
             }
         } catch (Exception e) {
             log.error("Training failed.", e);
             e.printStackTrace();
+        }
+    }
+
+    private void signalProgress() {
+        for (AsyncTrainingListener listener : asyncTrainingListeners) {
+            listener.onTrainingProgress(this);
         }
     }
 

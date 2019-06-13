@@ -21,8 +21,11 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.learning.sync.SyncLearningEpochListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
@@ -35,10 +38,14 @@ import org.deeplearning4j.rl4j.util.DataManager;
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
-    private int lastSave = -Constants.MODEL_SAVE_FREQ;
+    private final List<SyncLearningEpochListener> syncLearningEpochListeners = new ArrayList<SyncLearningEpochListener>();
 
     public SyncLearning(LConfiguration conf) {
         super(conf);
+    }
+
+    public void addEpochListener(SyncLearningEpochListener listener) {
+        syncLearningEpochListeners.add(listener);
     }
 
     public void train() {
@@ -46,23 +53,17 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
         try {
             log.info("training starting.");
 
-            getDataManager().writeInfo(this);
-
+            signalTrainingStarted();
 
             while (getStepCounter() < getConfiguration().getMaxStep()) {
+                signalBeforeEpoch();
                 preEpoch();
+
                 DataManager.StatEntry statEntry = trainEpoch();
                 postEpoch();
-
                 incrementEpoch();
 
-                if (getStepCounter() - lastSave >= Constants.MODEL_SAVE_FREQ) {
-                    getDataManager().save(this);
-                    lastSave = getStepCounter();
-                }
-
-                getDataManager().appendStat(statEntry);
-                getDataManager().writeInfo(this);
+                signalAfterEpoch(statEntry);
 
                 log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
             }
@@ -70,10 +71,25 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
             log.error("Training failed.", e);
             e.printStackTrace();
         }
-
-
     }
 
+    private void signalTrainingStarted() {
+        for (SyncLearningEpochListener listener : syncLearningEpochListeners) {
+            listener.onTrainingStarted(this);
+        }
+    }
+
+    private void signalBeforeEpoch() {
+        for (SyncLearningEpochListener listener : syncLearningEpochListeners) {
+            listener.onBeforeEpoch(this, getEpochCounter(), getStepCounter());
+        }
+    }
+
+    private void signalAfterEpoch(DataManager.StatEntry statEntry) {
+        for (SyncLearningEpochListener listener : syncLearningEpochListeners) {
+            listener.onAfterEpoch(this, statEntry, getEpochCounter(), getStepCounter());
+        }
+    }
 
     protected abstract void preEpoch();
 

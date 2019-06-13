@@ -21,13 +21,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.ILearningInitializer;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -91,16 +88,14 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return nshape;
     }
 
-    protected abstract DataManager getDataManager();
-
     public abstract NN getNeuralNet();
 
-    public int incrementStep() {
-        return stepCounter++;
+    public void incrementStep() {
+        ++stepCounter;
     }
 
-    public int incrementEpoch() {
-        return epochCounter++;
+    public void incrementEpoch(){
+        ++epochCounter;
     }
 
     public void setHistoryProcessor(HistoryProcessor.Configuration conf) {

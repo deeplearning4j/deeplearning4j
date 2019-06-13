@@ -68,13 +68,16 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private int lastAction;
     private INDArray history[] = null;
     private double accuReward = 0;
-    private int lastMonitor = -Constants.MONITOR_FREQ;
 
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                     DataManager dataManager, int epsilonNbStep) {
+        // FIXME This is really bad ---
         super(conf);
         this.configuration = conf;
+        // ---
+
+
         this.mdp = mdp;
         this.dataManager = dataManager;
         currentDQN = dqn;
@@ -97,14 +100,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         history = null;
         lastAction = 0;
         accuReward = 0;
-
-        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null
-                        && getDataManager().isSaveData()) {
-            lastMonitor = getStepCounter();
-            int[] shape = getMdp().getObservationSpace().getShape();
-            getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + getEpochCounter() + "-"
-                            + getStepCounter() + ".mp4", shape);
-        }
     }
 
     /**
