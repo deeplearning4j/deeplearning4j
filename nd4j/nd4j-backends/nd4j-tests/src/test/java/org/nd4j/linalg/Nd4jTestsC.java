@@ -24,6 +24,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.imports.TFGraphs.NodeReader;
@@ -117,6 +118,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     DataType initialType;
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
         this.initialType = Nd4j.dataType();
@@ -142,7 +146,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testArangeNegative() {
-      INDArray arr = Nd4j.arange(-2,2);
+      INDArray arr = Nd4j.arange(-2,2).castTo(DataType.DOUBLE);
       INDArray assertion = Nd4j.create(new double[]{-2, -1,  0,  1});
       assertEquals(assertion,arr);
     }
@@ -216,9 +220,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.rand(1, 20);
 
-        String temp = System.getProperty("java.io.tmpdir");
+        File dir = testDir.newFolder();
 
-        String outPath = FilenameUtils.concat(temp, "dl4jtestserialization.bin");
+        String outPath = FilenameUtils.concat(dir.getAbsolutePath(), "dl4jtestserialization.bin");
 
         try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(outPath)))) {
             Nd4j.write(arr, dos);
@@ -516,11 +520,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testBroadCasting() {
-        INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
+        INDArray first = Nd4j.arange(0, 3).reshape(3, 1).castTo(DataType.DOUBLE);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][] {{0, 0, 0, 0}, {1, 1, 1, 1}, {2, 2, 2, 2}});
         assertEquals(testRet, ret);
-        INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
+        INDArray r = Nd4j.arange(0, 4).reshape(1, 4).castTo(DataType.DOUBLE);
         INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][] {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}});
         assertEquals(testR2, r2);
@@ -5552,7 +5556,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
         }
 
-        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix, 1));
+        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix, false, 1))[0];
 
         for (int e = 0; e < res.length(); e++) {
             assertEquals(3.407605, res.getDouble(e), 1e-5);
@@ -5564,7 +5568,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testLogExpSum2() {
         INDArray row = Nd4j.create(new double[]{1, 2, 3});
 
-        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).getDouble(0);
+        double res = Nd4j.getExecutioner().exec(new LogSumExp(row))[0].getDouble(0);
 
         assertEquals(3.407605, res, 1e-5);
     }
@@ -7660,10 +7664,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testType1() throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.rand(DataType.DOUBLE, new int[]{100, 100});
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir,"test.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir,"test.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7700,10 +7705,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testType2() throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT16);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test1.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test1.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test1.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test1.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7716,10 +7722,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT32);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test2.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test2.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test2.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test2.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7732,10 +7739,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT64);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test3.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test3.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test3.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test3.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();

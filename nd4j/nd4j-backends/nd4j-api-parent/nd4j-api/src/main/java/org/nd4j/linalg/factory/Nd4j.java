@@ -1819,7 +1819,8 @@ public class Nd4j {
         INDArray indices = Nd4j.create(ndarray.shape());
         INDArray[] ret = new INDArray[2];
 
-        for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+        long nV = ndarray.vectorsAlongDimension(dimension);
+        for (int i = 0; i < nV; i++) {
             INDArray vec = ndarray.vectorAlongDimension(i, dimension);
             INDArray indexVector = indices.vectorAlongDimension(i, dimension);
             final Double[] data = new Double[(int) vec.length()];
@@ -2867,12 +2868,12 @@ public class Nd4j {
      */
     public static INDArray diag(INDArray x, int k) {
         INDArray ret;
-        if(x.isMatrix()) {
-            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
-            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
-        } else {
+        if(x.isVectorOrScalar() || x.isRowVector() || x.isColumnVector()) {
             ret = Nd4j.create(new long[]{x.length(), x.length()});
             Nd4j.getExecutioner().execAndReturn(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        } else {
+            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
+            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
         }
         return ret;
     }

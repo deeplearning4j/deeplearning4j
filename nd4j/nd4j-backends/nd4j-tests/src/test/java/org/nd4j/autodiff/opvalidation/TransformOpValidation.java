@@ -1916,4 +1916,19 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(outCC, outFC);
         assertEquals(outCC, outFF);
     }
+
+    @Test
+    public void testLogSumExp(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray inputArr = Nd4j.rand(DataType.FLOAT, 1, 4);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var(inputArr);
+        SDVariable lse = sd.math().logSumExp(in);
+        INDArray out = lse.eval();
+
+        INDArray exp = Transforms.exp(inputArr, true);
+        INDArray sum = exp.sum();
+        INDArray log = Transforms.log(sum);
+        assertEquals(log, out);
+    }
 }

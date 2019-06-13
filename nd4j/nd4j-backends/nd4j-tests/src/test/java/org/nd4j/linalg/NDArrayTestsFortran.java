@@ -695,7 +695,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testDim1() {
         INDArray sum = Nd4j.linspace(1, 2, 2, DataType.DOUBLE).reshape(2, 1);
         INDArray same = sum.dup();
-        assertEquals(same.sum(1), sum);
+        assertEquals(same.sum(1), sum.reshape(2));
     }
 
 
@@ -1035,8 +1035,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5);
-        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5).castTo(DataType.DOUBLE);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][] {{1, 0}, {0, 1}});
         assertArrayEquals(new long[] {5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][] {{440., 1232.}, {1232., 3752.}, {2024., 6272.}, {2816., 8792.},

@@ -158,8 +158,8 @@ public class GradCheckUtil {
         int totalCount = 0;
         double maxError = 0.0;
         for(SDVariable s : sd.variables()){
-            if (fnOutputs.contains(s.getVarName())) {
-                //This is not an input to the graph
+            if (fnOutputs.contains(s.getVarName()) || !s.dataType().isFPType()) {
+                //This is not an input to the graph, or is not a floating point input (so can't be gradient checked)
                 continue;
             }
 

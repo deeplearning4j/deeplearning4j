@@ -2319,4 +2319,109 @@ public class ShapeOpValidation extends BaseOpValidation {
         op.setOutputArgument(0, Nd4j.empty(DataType.FLOAT));
         Nd4j.exec(op);
     }
+
+    @Test
+    public void testPermuteShapeDynamicAxis(){
+
+        DynamicCustomOp op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4),
+                        Nd4j.createFromArray(1, 0))
+                .build();
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+
+        op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4))
+                .addIntegerArguments(1, 0)
+                .build();
+        l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+
+
+        op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4, 5),
+                        Nd4j.createFromArray(1, 2, 0))
+                .build();
+        l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 5, 3}, l.get(0).getShape());
+    }
+
+    @Test
+    public void testGather2(){
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
+        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
+
+        SDVariable gathered = sd.gather(input, indices, 1);
+        SDVariable loss = gathered.std(true);
+
+        sd.exec(null, gathered.getVarName());
+        sd.setLossVariables(gathered.getVarName());
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradCheckEpsilon(1e-3)
+                .gradCheckMaxRelativeError(1e-4));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testPermute3(){
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
+        INDArray permute = Nd4j.createFromArray(1,0);
+
+        System.out.println(in);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.var(in);
+        SDVariable v2 = sd.constant(permute);
+
+        SDVariable out = v.permute(v2);
+
+        INDArray exp = in.transpose();
+        INDArray outArr = out.eval();
+        assertEquals(exp, outArr);
+    }
+
+    @Test
+    public void testPermute4(){
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
+        INDArray permute = Nd4j.createFromArray(1,0);
+
+        INDArray exp = in.transpose();
+
+        for( boolean iargs : new boolean[]{true, false}) {
+
+
+            DynamicCustomOp.DynamicCustomOpsBuilder b = DynamicCustomOp.builder("permute")
+                    .addInputs(in)
+                    .addOutputs(Nd4j.create(DataType.FLOAT, 2, 3));
+
+            if(iargs){
+                b.addIntegerArguments(1, 0);
+            } else {
+                b.addInputs(permute);
+            }
+
+            DynamicCustomOp op = b.build();
+            Nd4j.exec(op);
+
+            System.out.println(in);
+            System.out.println(op.outputArguments()[0]);
+
+            assertEquals(exp, op.getOutputArgument(0));
+        }
+    }
+
+    @Test
+    public void testInvertPermutation(){
+        DynamicCustomOp op = DynamicCustomOp.builder("invert_permutation")
+                .addInputs(Nd4j.createFromArray(1, 0))
+                .build();
+    }
 }

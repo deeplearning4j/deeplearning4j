@@ -65,6 +65,10 @@ public enum DataType {
             case INT: return 9;
             case LONG: return 10;
             case UBYTE: return 11;
+            case UINT16: return 12;
+            case UINT32: return 13;
+            case UINT64: return 14;
+            case BFLOAT16: return 17;
             case UTF8: return 50;
             default: throw new UnsupportedOperationException("Non-covered data type: [" + this + "]");
         }

@@ -71,6 +71,11 @@ public class Range extends DynamicCustomOp {
         this.dataType = dataType;
     }
 
+    public Range(SameDiff sd, SDVariable from, SDVariable to, SDVariable step, DataType dataType){
+        super(null, sd, new SDVariable[]{from, to, step});
+        this.dataType = dataType;
+    }
+
 
     @Override
     public int opNum() {

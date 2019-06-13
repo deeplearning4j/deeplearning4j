@@ -2743,6 +2743,48 @@ public class SameDiffTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testPlaceholderToConstant() {
+        Nd4j.getRandom().setSeed(12345);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, 1, 3);
+        SDVariable in2 = sd.placeHolder("in2", DataType.FLOAT, 3, 4);
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 4));
+        SDVariable mmul = in.mmul(in2);
+        SDVariable add = mmul.add(b);
+        SDVariable tanh = sd.math().tanh(add);
+        SDVariable loss = sd.variance(tanh, true);
+
+        INDArray inArr = Nd4j.rand(DataType.FLOAT, 1, 3);
+        in.setArray(inArr);
+        INDArray inArr2 = Nd4j.rand(DataType.FLOAT, 3,4);
+
+        TrainingConfig c = TrainingConfig.builder()
+                .updater(new Adam(0.1))
+                .weightDecay(0.01, true)
+                .dataSetFeatureMapping("in", "in2")
+                .skipBuilderValidation(true)
+                .build();
+        sd.setTrainingConfig(c);
+
+
+        sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(new INDArray[]{inArr, inArr2}, null)), 1);
+
+        INDArray out = tanh.eval();
+
+        in.convertToConstant();
+
+        INDArray out2 = tanh.eval();
+
+        assertEquals(out, out2);
+        assertEquals(VariableType.CONSTANT, in.getVariableType());
+        assertEquals(inArr, in.getArr());
+
+        //Sanity check on fitting:
+        sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(new INDArray[]{inArr2}, null)), 1);
+    }
+
+    @Test
     public void testConvertToVariable() {
         Nd4j.getRandom().setSeed(12345);
 

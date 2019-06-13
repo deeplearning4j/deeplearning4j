@@ -2575,12 +2575,37 @@ public class SameDiff extends SDBaseOps {
             //Remove updater state for now constant variables
             for (SDVariable v : variables) {
                 GradientUpdater gu = updaterMap.remove(v.getVarName());
-                Map<String,INDArray> m = gu.getState();
+                Map<String,INDArray> m = gu == null ? null : gu.getState();
                 if(m != null){
                     for(INDArray arr : m.values()){
                         if(arr.closeable())
                             arr.close();
                     }
+                }
+
+                //Also check dataset feature/label mapping -  remove any placeholders here...
+                if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(v.getVarName())){
+                    List<String> newFM = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());    //New list in case of immutable list
+                    newFM.remove(v.getVarName());
+                    trainingConfig.setDataSetFeatureMapping(newFM);
+                }
+
+                if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(v.getVarName())){
+                    List<String> newLM = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
+                    newLM.remove(v.getVarName());
+                    trainingConfig.setDataSetLabelMapping(newLM);
+                }
+
+                if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(v.getVarName())){
+                    List<String> newFMM = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
+                    newFMM.remove(v.getVarName());
+                    trainingConfig.setDataSetFeatureMaskMapping(newFMM);
+                }
+
+                if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(v.getVarName())){
+                    List<String> newLMM = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
+                    newLMM.remove(v.getVarName());
+                    trainingConfig.setDataSetLabelMaskMapping(newLMM);
                 }
             }
         }
