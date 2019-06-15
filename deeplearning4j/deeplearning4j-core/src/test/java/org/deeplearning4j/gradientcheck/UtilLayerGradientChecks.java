@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -60,9 +61,9 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
     @Test
     public void testMaskLayer() {
         Nd4j.getRandom().setSeed(12345);
-        int tsLength = 5;
+        int tsLength = 3;
 
-        for(int minibatch : new int[]{1,8}) {
+        for(int minibatch : new int[]{1,3}) {
             for (int inputRank : new int[]{2, 3, 4}) {
                 for (boolean inputMask : new boolean[]{false, true}) {
                     String maskType = (inputMask ? "inputMask" : "none");
@@ -74,7 +75,7 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                                 if(minibatch == 1){
                                     inMask = Nd4j.ones(1,1);
                                 } else {
-                                    inMask = Nd4j.create(minibatch, 1);
+                                    inMask = Nd4j.create(DataType.DOUBLE, minibatch, 1);
                                     Nd4j.getExecutioner().exec(new BernoulliDistribution(inMask, 0.5));
                                     int count = inMask.sumNumber().intValue();
                                     assertTrue(count >= 0 && count <= minibatch);   //Sanity check on RNG seed
@@ -83,16 +84,16 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                             case 4:
                                 //Per-example mask (broadcast along all channels/x/y)
                                 if(minibatch == 1){
-                                    inMask = Nd4j.ones(1,1, 1, 1);
+                                    inMask = Nd4j.ones(DataType.DOUBLE, 1,1, 1, 1);
                                 } else {
-                                    inMask = Nd4j.create(minibatch, 1, 1, 1);
+                                    inMask = Nd4j.create(DataType.DOUBLE, minibatch, 1, 1, 1);
                                     Nd4j.getExecutioner().exec(new BernoulliDistribution(inMask, 0.5));
                                     int count = inMask.sumNumber().intValue();
                                     assertTrue(count >= 0 && count <= minibatch);   //Sanity check on RNG seed
                                 }
                                 break;
                             case 3:
-                                inMask = Nd4j.ones(minibatch, tsLength);
+                                inMask = Nd4j.ones(DataType.DOUBLE, minibatch, tsLength);
                                 for( int i=0; i<minibatch; i++ ){
                                     for( int j=i+1; j<tsLength; j++ ){
                                         inMask.putScalar(i,j,0.0);
@@ -108,11 +109,11 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     int[] labelShape;
                     switch (inputRank){
                         case 2:
-                            inShape = new int[]{minibatch, 5};
+                            inShape = new int[]{minibatch, 3};
                             labelShape = inShape;
                             break;
                         case 3:
-                            inShape = new int[]{minibatch, 5, tsLength};
+                            inShape = new int[]{minibatch, 3, tsLength};
                             labelShape = inShape;
                             break;
                         case 4:
@@ -134,18 +135,18 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     InputType it;
                     switch (inputRank){
                         case 2:
-                            l1 = new DenseLayer.Builder().nOut(5).build();
-                            l2 = new DenseLayer.Builder().nOut(5).build();
-                            l3 = new OutputLayer.Builder().nOut(5).lossFunction(LossFunctions.LossFunction.MSE)
+                            l1 = new DenseLayer.Builder().nOut(3).build();
+                            l2 = new DenseLayer.Builder().nOut(3).build();
+                            l3 = new OutputLayer.Builder().nOut(3).lossFunction(LossFunctions.LossFunction.MSE)
                                     .activation(Activation.TANH).build();
-                            it = InputType.feedForward(5);
+                            it = InputType.feedForward(3);
                             break;
                         case 3:
-                            l1 = new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
-                            l2 = new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
-                            l3 = new RnnOutputLayer.Builder().nIn(5).nOut(5).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
+                            l1 = new SimpleRnn.Builder().nIn(3).nOut(3).activation(Activation.TANH).build();
+                            l2 = new SimpleRnn.Builder().nIn(3).nOut(3).activation(Activation.TANH).build();
+                            l3 = new RnnOutputLayer.Builder().nIn(3).nOut(3).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                                     .activation(Activation.IDENTITY).build();
-                            it = InputType.recurrent(5);
+                            it = InputType.recurrent(3);
                             break;
                         case 4:
                             l1 = new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Truncate)

@@ -17,6 +17,7 @@
 package org.deeplearning4j.graph.data;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;
@@ -32,7 +33,7 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-public class TestGraphLoadingWeighted {
+public class TestGraphLoadingWeighted extends BaseDL4JTest {
 
     @Test(timeout = 10000L)
     public void testWeightedDirected() throws IOException {

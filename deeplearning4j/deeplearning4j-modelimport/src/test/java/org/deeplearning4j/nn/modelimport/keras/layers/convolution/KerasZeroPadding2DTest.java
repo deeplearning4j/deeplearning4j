@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasZeroPadding2DTest {
+public class KerasZeroPadding2DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "zero_padding_2D_layer";
     private final int[] ZERO_PADDING = new int[]{2, 3};

@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.vptree;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class VPTreeSerializationTests {
+public class VPTreeSerializationTests extends BaseDL4JTest {
 
     @Test
     public void testSerialization_1() throws Exception {

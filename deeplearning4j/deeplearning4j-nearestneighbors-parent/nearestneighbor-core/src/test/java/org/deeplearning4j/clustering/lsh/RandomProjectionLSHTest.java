@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.lsh;
 
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class RandomProjectionLSHTest {
+public class RandomProjectionLSHTest extends BaseDL4JTest {
 
     int hashLength = 31;
     int numTables = 2;

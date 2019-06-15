@@ -18,6 +18,7 @@ package org.deeplearning4j.bagofwords.vectorizer;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -48,7 +49,7 @@ import static org.junit.Assume.assumeNotNull;
  * @author Adam Gibson
  */
 @Slf4j
-public class TfidfVectorizerTest {
+public class TfidfVectorizerTest extends BaseDL4JTest {
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.randomprojection;
 
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +32,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class RPTreeTest {
+public class RPTreeTest extends BaseDL4JTest {
 
     @Before
     public void setUp() {

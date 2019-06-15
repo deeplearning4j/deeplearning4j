@@ -24,7 +24,7 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
 @Ignore("AB 2019/05/24 - Failing on CI - \"Could not initialize class oshi.jna.platform.linux.Libc\" - Issue #7657")
-public class TestHardWareMetric {
+public class TestHardWareMetric extends BaseDL4JTest {
 
     @Test
     public void testHardwareMetric() {

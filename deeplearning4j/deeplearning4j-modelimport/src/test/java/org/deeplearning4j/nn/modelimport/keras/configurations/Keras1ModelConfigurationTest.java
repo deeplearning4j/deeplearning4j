@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import java.io.InputStream;
  */
 
 @Slf4j
-public class Keras1ModelConfigurationTest {
+public class Keras1ModelConfigurationTest extends BaseDL4JTest {
 
     private ClassLoader classLoader = getClass().getClassLoader();
 

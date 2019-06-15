@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,7 +29,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
-public class PosUimaTokenizerFactoryTest {
+public class PosUimaTokenizerFactoryTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

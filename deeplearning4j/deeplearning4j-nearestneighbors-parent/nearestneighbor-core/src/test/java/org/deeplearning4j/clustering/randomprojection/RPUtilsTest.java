@@ -16,13 +16,14 @@
 
 package org.deeplearning4j.clustering.randomprojection;
 
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-public class RPUtilsTest {
+public class RPUtilsTest extends BaseDL4JTest {
 
     @Test
     public void testDistanceComputeBatch() {

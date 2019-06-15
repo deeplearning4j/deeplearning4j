@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class AsyncLabelAwareIteratorTest {
+public class AsyncLabelAwareIteratorTest extends BaseDL4JTest {
     @Test
     public void nextDocument() throws Exception {
         SentenceIterator sentence = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));

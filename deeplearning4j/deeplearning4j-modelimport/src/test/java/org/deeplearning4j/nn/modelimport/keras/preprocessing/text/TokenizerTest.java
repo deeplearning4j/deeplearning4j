@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Max Pumperla
  */
-public class TokenizerTest {
+public class TokenizerTest extends BaseDL4JTest {
 
     @Test
     public void tokenizerBasics() {

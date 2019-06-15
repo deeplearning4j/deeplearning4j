@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Max Pumperla
  */
-public class TokenizerImportTest {
+public class TokenizerImportTest extends BaseDL4JTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
 

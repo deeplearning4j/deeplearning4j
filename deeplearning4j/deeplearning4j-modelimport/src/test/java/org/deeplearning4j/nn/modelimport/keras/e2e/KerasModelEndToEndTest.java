@@ -32,10 +32,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
-import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
-import org.deeplearning4j.nn.modelimport.keras.KerasModel;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
-import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.*;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -78,7 +75,7 @@ import static org.junit.Assert.assertTrue;
  * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
-public class KerasModelEndToEndTest {
+public class KerasModelEndToEndTest extends BaseDL4JTest {
     private static final String GROUP_ATTR_INPUTS = "inputs";
     private static final String GROUP_ATTR_OUTPUTS = "outputs";
     private static final String GROUP_PREDICTIONS = "predictions";

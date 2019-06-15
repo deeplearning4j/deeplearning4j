@@ -38,7 +38,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Created by agibsonccc on 12/17/16.
  */
 @Slf4j
-public class ParameterServerParallelWrapperTest {
+public class ParameterServerParallelWrapperTest extends BaseDL4JTest {
 
     @Test
     public void testWrapper() throws Exception {

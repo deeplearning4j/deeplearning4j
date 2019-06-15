@@ -19,6 +19,7 @@ package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -33,7 +34,7 @@ import static org.junit.Assert.*;
  * Created by fartovii on 10.12.15.
  */
 @Slf4j
-public class AbstractCacheTest {
+public class AbstractCacheTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 4/27/17.
  */
-public class NearestNeighborTest {
+public class NearestNeighborTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

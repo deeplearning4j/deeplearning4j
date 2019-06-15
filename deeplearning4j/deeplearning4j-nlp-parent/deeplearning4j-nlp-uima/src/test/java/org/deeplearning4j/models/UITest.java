@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
  * Created by Alex on 10/01/2017.
  */
 @Ignore
-public class UITest {
+public class UITest extends BaseDL4JTest {
 
     @Test
     public void testPosting() throws Exception {

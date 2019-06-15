@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
 import org.deeplearning4j.models.sequencevectors.graph.enums.SpreadSpectrum;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author raver119@gmail.com
  */
-public class PopularityWalkerTest {
+public class PopularityWalkerTest extends BaseDL4JTest {
 
     private static Graph<VocabWord, Double> graph;
 

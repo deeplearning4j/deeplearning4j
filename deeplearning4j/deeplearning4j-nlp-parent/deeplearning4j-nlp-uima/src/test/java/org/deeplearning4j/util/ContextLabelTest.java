@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.movingwindow.ContextLabelRetriever;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Basic test case for the context label test
  */
-public class ContextLabelTest {
+public class ContextLabelTest extends BaseDL4JTest {
     private static final Logger log = LoggerFactory.getLogger(ContextLabelTest.class);
     private TokenizerFactory tokenizerFactory;
 

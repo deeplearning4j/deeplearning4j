@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
@@ -47,7 +48,7 @@ import java.nio.file.StandardCopyOption;
  * @author Max Pumperla
  */
 @Slf4j
-public class KerasYolo9000Test {
+public class KerasYolo9000Test extends BaseDL4JTest {
 
     private static final String TEMP_MODEL_FILENAME = "tempModel";
     private static final String H5_EXTENSION = ".h5";

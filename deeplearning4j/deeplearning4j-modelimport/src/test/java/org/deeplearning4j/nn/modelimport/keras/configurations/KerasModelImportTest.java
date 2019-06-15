@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -38,10 +39,7 @@ import static org.junit.Assert.assertNotNull;
  * Test import of Keras models.
  */
 @Slf4j
-public class KerasModelImportTest {
-
-    ClassLoader classLoader = KerasModelImportTest.class.getClassLoader();
-
+public class KerasModelImportTest extends BaseDL4JTest {
 
     @Test
     public void testH5WithoutTensorflowScope() throws Exception {

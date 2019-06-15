@@ -350,7 +350,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         //Note: 888,880 total test cases here - randomly run a fraction of the tests to minimize runtime
         // whilst still maintaining good coverage
         Random r = new Random(12345);
-        double fractionRun = 0.2;
+        double fractionRun = 0.01;
 
         long totalTestCaseCount = 0;
         for( int rank=1; rank<=5; rank++ ){

@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
@@ -38,6 +39,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
+@Ignore("AB - ignored due to excessive runtime. Keep for manual debugging when required")
 public class CapsNetMNISTTest extends BaseDL4JTest {
 
     @Override

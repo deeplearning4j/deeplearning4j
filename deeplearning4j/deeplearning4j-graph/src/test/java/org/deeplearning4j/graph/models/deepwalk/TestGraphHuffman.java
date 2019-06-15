@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.graph.models.deepwalk;
 
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -24,7 +25,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class TestGraphHuffman {
+public class TestGraphHuffman extends BaseDL4JTest {
 
     @Test(timeout = 10000L)
     public void testGraphHuffman() {

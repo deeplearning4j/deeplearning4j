@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fartovii on 21.11.15.
  */
-public class VectorsConfigurationTest {
+public class VectorsConfigurationTest extends BaseDL4JTest {
 
     protected static final Logger log = LoggerFactory.getLogger(VectorsConfigurationTest.class);
 

@@ -76,7 +76,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
 
             MultiLayerConfiguration.Builder builder =
                     new NeuralNetConfiguration.Builder().updater(new NoOp())
@@ -117,14 +117,14 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 1;
         int hw = 4;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                     .dataType(DataType.DOUBLE)
                     .updater(new NoOp()).seed(12345L)
@@ -158,20 +158,14 @@ public class BNGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testGradientBNWithCNNandSubsamplingcCnfigurableProfiler() {
-
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                .notOptimalArguments(true)
-                .notOptimalTAD(true)
-                .checkForINF(true)
-                .checkForNAN(true)
-                .checkElapsedTime(true)
-                .stackTrace(true)
-                .checkWorkspaces(true)
-                .build());
-
+    public void testGradientBNWithCNNandSubsampling() {
+        //Parameterized test, testing combinations of:
+        // (a) activation function
+        // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
+        // (c) Loss function (with specified output activations)
+        // (d) l1 and l2 values
         Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+        boolean[] characteristic = {true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
                 {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
@@ -181,24 +175,24 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
 
         Nd4j.getRandom().setSeed(12345);
-        int minibatch = 10;
+        int minibatch = 4;
         int depth = 2;
         int hw = 5;
-        int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw}).muli(5).subi(2.5);
-        INDArray labels = Nd4j.zeros(minibatch, nOut);
-        Random r = new Random(12345);
-        for (int i = 0; i < minibatch; i++) {
-            labels.putScalar(i, r.nextInt(nOut), 1.0);
-        }
+        int nOut = 2;
+        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw}).muli(5).subi(2.5);
+        INDArray labels = TestUtils.randomOneHot(minibatch, nOut);
 
         DataSet ds = new DataSet(input, labels);
-
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        Random rng = new Random(12345);
+        for (boolean useLogStd : new boolean[]{true, false}) {
             for (Activation afn : activFns) {
                 for (boolean doLearningFirst : characteristic) {
                     for (int i = 0; i < lossFunctions.length; i++) {
                         for (int j = 0; j < l2vals.length; j++) {
+                            //Skip 2 of every 3 tests: from 24 cases to 8, still with decent coverage
+                            if (rng.nextInt(3) != 0)
+                                continue;
+
                             LossFunctions.LossFunction lf = lossFunctions[i];
                             Activation outputActivation = outputActivations[i];
 
@@ -260,7 +254,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
                             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
                             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 25, excludeParams); //Most params are in output layer, only these should be skipped with this threshold
 
                             assertTrue(gradOK);
                             TestUtils.testModelSerialization(mln);
@@ -269,117 +263,6 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                 }
             }
         }
-        OpProfiler.getInstance().printOutDashboard();
-    }
-
-    @Test
-    public void testGradientBNWithCNNandSubsampling() {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
-        //Parameterized test, testing combinations of:
-        // (a) activation function
-        // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
-        // (c) Loss function (with specified output activations)
-        // (d) l1 and l2 values
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
-
-        LossFunctions.LossFunction[] lossFunctions =
-                        {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
-
-        double[] l2vals = {0.0, 0.1, 0.1};
-        double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
-
-        Nd4j.getRandom().setSeed(12345);
-        int minibatch = 10;
-        int depth = 2;
-        int hw = 5;
-        int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw}).muli(5).subi(2.5);
-        INDArray labels = Nd4j.zeros(minibatch, nOut);
-        Random r = new Random(12345);
-        for (int i = 0; i < minibatch; i++) {
-            labels.putScalar(i, r.nextInt(nOut), 1.0);
-        }
-
-        DataSet ds = new DataSet(input, labels);
-
-        for(boolean useLogStd : new boolean[]{true, false}) {
-            for (Activation afn : activFns) {
-                for (boolean doLearningFirst : characteristic) {
-                    for (int i = 0; i < lossFunctions.length; i++) {
-                        for (int j = 0; j < l2vals.length; j++) {
-                            LossFunctions.LossFunction lf = lossFunctions[i];
-                            Activation outputActivation = outputActivations[i];
-
-                            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(12345)
-                                    .dataType(DataType.DOUBLE)
-                                    .l2(l2vals[j])
-                                    .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                    .updater(new NoOp())
-                                    .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
-                                    .layer(0, new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
-                                            .activation(afn).build())
-                                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build())
-                                    .layer(2, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                            .kernelSize(2, 2).stride(1, 1).build())
-                                    .layer(3, new BatchNormalization())
-                                    .layer(4, new ActivationLayer.Builder().activation(afn).build())
-                                    .layer(5, new OutputLayer.Builder(lf).activation(outputActivation).nOut(nOut)
-                                            .build())
-                                    .setInputType(InputType.convolutional(hw, hw, depth));
-
-                            MultiLayerConfiguration conf = builder.build();
-
-                            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                            mln.init();
-                            String name = new Object() {
-                            }.getClass().getEnclosingMethod().getName();
-
-                            System.out.println("Num params: " + mln.numParams());
-
-                            if (doLearningFirst) {
-                                //Run a number of iterations of learning
-                                mln.setInput(ds.getFeatures());
-                                mln.setLabels(ds.getLabels());
-                                mln.computeGradientAndScore();
-                                double scoreBefore = mln.score();
-                                for (int k = 0; k < 20; k++)
-                                    mln.fit(ds);
-                                mln.computeGradientAndScore();
-                                double scoreAfter = mln.score();
-                                //Can't test in 'characteristic mode of operation' if not learning
-                                String msg = name
-                                        + " - score did not (sufficiently) decrease during learning - activationFn="
-                                        + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                        + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
-                                        + ", scoreAfter=" + scoreAfter + ")";
-                                assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
-                            }
-
-                            if (PRINT_RESULTS) {
-                                System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
-                                for (int k = 0; k < mln.getnLayers(); k++)
-                                    System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
-                            }
-
-                            //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
-                            //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
-                            //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
-                            Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
-                            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
-
-                            assertTrue(gradOK);
-                            TestUtils.testModelSerialization(mln);
-                        }
-                    }
-                }
-            }
-        }
-        OpProfiler.getInstance().printOutDashboard();
     }
 
 
@@ -390,21 +273,21 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
         // (d) l1 and l2 values
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+        Activation[] activFns = {Activation.TANH, Activation.IDENTITY};
+        boolean[] characteristic = {true}; //If true: run some backprop steps first
 
         LossFunctions.LossFunction[] lossFunctions =
-                        {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
+                {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
         Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
-        double[] l2vals = {0.0, 0.1, 0.1};
-        double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
+        double[] l2vals = {0.0, 0.1};
+        double[] l1vals = {0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
 
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;
         int nIn = 5;
         int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, nIn});
+        INDArray input = Nd4j.rand(new int[]{minibatch, nIn});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
@@ -413,7 +296,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         DataSet ds = new DataSet(input, labels);
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
             for (Activation afn : activFns) {
                 for (boolean doLearningFirst : characteristic) {
                     for (int i = 0; i < lossFunctions.length; i++) {
@@ -498,7 +381,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
                     .dataType(DataType.DOUBLE)
                     .seed(12345L)
@@ -537,14 +420,14 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 1;
         int hw = 4;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
                     .dataType(DataType.DOUBLE)
                     .seed(12345L)
@@ -588,7 +471,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         int minibatchSize = 3;
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new NoOp())
                     .dataType(DataType.DOUBLE)
@@ -630,22 +513,21 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
         // (d) l1 and l2 values
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.IDENTITY};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+        Activation[] activFns = {Activation.TANH, Activation.IDENTITY};
+        boolean doLearningFirst = true;
 
-        LossFunctions.LossFunction[] lossFunctions =
-                        {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
+        LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD};
+        Activation[] outputActivations = {Activation.SOFTMAX}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
-        double[] l2vals = {0.0, 0.1, 0.1};
-        double[] l1vals = {0.0, 0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
+        double[] l2vals = {0.0, 0.1};
+        double[] l1vals = {0.0, 0.2}; //i.e., use l2vals[j] with l1vals[j]
 
         Nd4j.getRandom().setSeed(12345);
         int minibatch = 10;
         int depth = 2;
         int hw = 5;
         int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
@@ -654,75 +536,73 @@ public class BNGradientCheckTest extends BaseDL4JTest {
 
         DataSet ds = new DataSet(input, labels);
 
-        for(boolean useLogStd : new boolean[]{true, false}) {
+        for (boolean useLogStd : new boolean[]{true, false}) {
             for (Activation afn : activFns) {
-                for (boolean doLearningFirst : characteristic) {
-                    for (int i = 0; i < lossFunctions.length; i++) {
-                        for (int j = 0; j < l2vals.length; j++) {
-                            LossFunctions.LossFunction lf = lossFunctions[i];
-                            Activation outputActivation = outputActivations[i];
+                for (int i = 0; i < lossFunctions.length; i++) {
+                    for (int j = 0; j < l2vals.length; j++) {
+                        LossFunctions.LossFunction lf = lossFunctions[i];
+                        Activation outputActivation = outputActivations[i];
 
-                            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                    .dataType(DataType.DOUBLE)
-                                    .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                                    .updater(new NoOp())
-                                    .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()
-                                    .addInputs("in")
-                                    .addLayer("0", new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
-                                            .activation(afn).build(), "in")
-                                    .addLayer("1", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "0")
-                                    .addLayer("2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                            .kernelSize(2, 2).stride(1, 1).build(), "1")
-                                    .addLayer("3", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "2")
-                                    .addLayer("4", new ActivationLayer.Builder().activation(afn).build(), "3")
-                                    .addLayer("5", new OutputLayer.Builder(lf).activation(outputActivation)
-                                            .nOut(nOut).build(), "4")
-                                    .setOutputs("5").setInputTypes(InputType.convolutional(hw, hw, depth))
-                                    .build();
+                        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                                .dataType(DataType.DOUBLE)
+                                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                                .updater(new NoOp())
+                                .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
+                                        .activation(afn).build(), "in")
+                                .addLayer("1", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "0")
+                                .addLayer("2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        .kernelSize(2, 2).stride(1, 1).build(), "1")
+                                .addLayer("3", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "2")
+                                .addLayer("4", new ActivationLayer.Builder().activation(afn).build(), "3")
+                                .addLayer("5", new OutputLayer.Builder(lf).activation(outputActivation)
+                                        .nOut(nOut).build(), "4")
+                                .setOutputs("5").setInputTypes(InputType.convolutional(hw, hw, depth))
+                                .build();
 
-                            ComputationGraph net = new ComputationGraph(conf);
-                            net.init();
-                            String name = new Object() {
-                            }.getClass().getEnclosingMethod().getName();
+                        ComputationGraph net = new ComputationGraph(conf);
+                        net.init();
+                        String name = new Object() {
+                        }.getClass().getEnclosingMethod().getName();
 
-                            if (doLearningFirst) {
-                                //Run a number of iterations of learning
-                                net.setInput(0, ds.getFeatures());
-                                net.setLabels(ds.getLabels());
-                                net.computeGradientAndScore();
-                                double scoreBefore = net.score();
-                                for (int k = 0; k < 20; k++)
-                                    net.fit(ds);
-                                net.computeGradientAndScore();
-                                double scoreAfter = net.score();
-                                //Can't test in 'characteristic mode of operation' if not learning
-                                String msg = name
-                                        + " - score did not (sufficiently) decrease during learning - activationFn="
-                                        + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                        + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
-                                        + ", scoreAfter=" + scoreAfter + ")";
-                                assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
-                            }
-
-                            if (PRINT_RESULTS) {
-                                System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
-                                for (int k = 0; k < net.getNumLayers(); k++)
-                                    System.out.println("Layer " + k + " # params: " + net.getLayer(k).numParams());
-                            }
-
-                            //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
-                            //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
-                            //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
-                            Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
-                            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                    new INDArray[]{input}, new INDArray[]{labels}, null, null, excludeParams);
-
-                            assertTrue(gradOK);
-                            TestUtils.testModelSerialization(net);
+                        if (doLearningFirst) {
+                            //Run a number of iterations of learning
+                            net.setInput(0, ds.getFeatures());
+                            net.setLabels(ds.getLabels());
+                            net.computeGradientAndScore();
+                            double scoreBefore = net.score();
+                            for (int k = 0; k < 20; k++)
+                                net.fit(ds);
+                            net.computeGradientAndScore();
+                            double scoreAfter = net.score();
+                            //Can't test in 'characteristic mode of operation' if not learning
+                            String msg = name
+                                    + " - score did not (sufficiently) decrease during learning - activationFn="
+                                    + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                                    + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
+                                    + ", scoreAfter=" + scoreAfter + ")";
+                            assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                         }
+
+                        if (PRINT_RESULTS) {
+                            System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
+                                    + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                    + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+                            for (int k = 0; k < net.getNumLayers(); k++)
+                                System.out.println("Layer " + k + " # params: " + net.getLayer(k).numParams());
+                        }
+
+                        //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
+                        //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
+                        //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
+                        Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
+                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
+                                new INDArray[]{input}, new INDArray[]{labels}, null, null, excludeParams);
+
+                        assertTrue(gradOK);
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }

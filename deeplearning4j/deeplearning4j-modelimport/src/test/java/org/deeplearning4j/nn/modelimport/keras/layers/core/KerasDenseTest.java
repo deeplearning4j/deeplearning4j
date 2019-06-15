@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author Max Pumperla
  */
-public class KerasDenseTest {
+public class KerasDenseTest extends BaseDL4JTest {
 
     private Integer keras1 = 1;
     private Integer keras2 = 2;

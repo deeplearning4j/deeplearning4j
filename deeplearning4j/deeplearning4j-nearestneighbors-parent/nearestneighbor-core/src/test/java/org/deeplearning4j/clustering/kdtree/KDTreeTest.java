@@ -18,6 +18,7 @@ package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
 import lombok.val;
+import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 1/1/15.
  */
-public class KDTreeTest {
+public class KDTreeTest extends BaseDL4JTest {
 
     private KDTree kdTree;
 

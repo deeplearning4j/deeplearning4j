@@ -72,9 +72,6 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     @Test
     public void testYoloOutputLayer() {
         int depthIn = 2;
-        int[] minibatchSizes = {1, 3};
-        int[] widths = new int[]{4, 7};
-        int[] heights = new int[]{4, 5};
         int c = 3;
         int b = 3;
 
@@ -83,52 +80,51 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(1234567);
 
+        int[] minibatchSizes = {1, 3};
+        int[] widths = new int[]{4, 7};
+        int[] heights = new int[]{4, 5};
         double[] l1 = new double[]{0.0, 0.3};
         double[] l2 = new double[]{0.0, 0.4};
 
-        for( int wh = 0; wh<widths.length; wh++ ) {
+        for( int i = 0; i<widths.length; i++ ) {
 
-            int w = widths[wh];
-            int h = heights[wh];
+            int w = widths[i];
+            int h = heights[i];
+            int mb = minibatchSizes[i];
 
             Nd4j.getRandom().setSeed(12345);
             INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h})).addi(0.1);
 
-            for (int mb : minibatchSizes) {
-                for (int i = 0; i < l1.length; i++) {
+            Nd4j.getRandom().setSeed(12345);
 
-                    Nd4j.getRandom().setSeed(12345);
+            INDArray input = Nd4j.rand(new int[]{mb, depthIn, h, w});
+            INDArray labels = yoloLabels(mb, c, h, w);
 
-                    INDArray input = Nd4j.rand(new int[]{mb, depthIn, h, w});
-                    INDArray labels = yoloLabels(mb, c, h, w);
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
+                    .updater(new NoOp())
+                    .activation(a)
+                    .l1(l1[i]).l2(l2[i])
+                    .convolutionMode(ConvolutionMode.Same)
+                    .list()
+                    .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                            .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
+                    .layer(new Yolo2OutputLayer.Builder()
+                            .boundingBoxPriors(bbPrior)
+                            .build())
+                    .build();
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                            .dataType(DataType.DOUBLE)
-                            .updater(new NoOp())
-                            .activation(a)
-                            .l1(l1[i]).l2(l2[i])
-                            .convolutionMode(ConvolutionMode.Same)
-                            .list()
-                            .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
-                                    .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
-                            .layer(new Yolo2OutputLayer.Builder()
-                                    .boundingBoxPriors(bbPrior)
-                                    .build())
-                            .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
 
-                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                    net.init();
+            String msg = "testYoloOutputLayer() - minibatch = " + mb + ", w=" + w + ", h=" + h + ", l1=" + l1[i] + ", l2=" + l2[i];
+            System.out.println(msg);
 
-                    String msg = "testYoloOutputLayer() - minibatch = " + mb + ", w=" + w + ", h=" + h + ", l1=" + l1[i] + ", l2=" + l2[i];
-                    System.out.println(msg);
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 100);
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                    assertTrue(msg, gradOK);
-                    TestUtils.testModelSerialization(net);
-                }
-            }
+            assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -233,7 +229,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         INDArray l = ds.getLabels();
 
         boolean ok = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null, true, 64);
 
         assertTrue(ok);
         TestUtils.testModelSerialization(net);

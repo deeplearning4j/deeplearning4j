@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -31,7 +32,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class KerasInitilizationTest {
+public class KerasInitilizationTest extends BaseDL4JTest {
 
     private double minValue = -0.2;
     private double maxValue = 0.2;

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.transformers.impl;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class GraphTransformerTest {
+public class GraphTransformerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;
 

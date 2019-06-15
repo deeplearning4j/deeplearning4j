@@ -18,6 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertTrue;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class EncodedGradientsAccumulatorTest {
+public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
 
     /**
      * This test ensures, that memory amount assigned to buffer is enough for any number of updates

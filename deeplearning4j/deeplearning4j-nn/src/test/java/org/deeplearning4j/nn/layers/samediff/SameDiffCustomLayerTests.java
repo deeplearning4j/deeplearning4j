@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -46,7 +47,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Map;
 
 @Slf4j
-public class SameDiffCustomLayerTests {
+public class SameDiffCustomLayerTests extends BaseDL4JTest {
     private DataType initialType;
 
     @Rule

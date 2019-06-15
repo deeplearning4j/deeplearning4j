@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.documentiterator;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -30,7 +31,7 @@ import static org.junit.Assert.*;
 /**
  * Created by raver119 on 03.01.16.
  */
-public class FileLabelAwareIteratorTest {
+public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

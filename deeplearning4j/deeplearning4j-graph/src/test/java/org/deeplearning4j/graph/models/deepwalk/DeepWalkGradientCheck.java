@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.graph.models.deepwalk;
 
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.graph.Graph;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
@@ -35,7 +36,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-public class DeepWalkGradientCheck {
+public class DeepWalkGradientCheck extends BaseDL4JTest {
 
     public static final double epsilon = 1e-8;
     public static final double MAX_REL_ERROR = 1e-3;

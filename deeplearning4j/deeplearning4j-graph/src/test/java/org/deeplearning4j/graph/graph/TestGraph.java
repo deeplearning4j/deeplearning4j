@@ -17,6 +17,7 @@
 package org.deeplearning4j.graph.graph;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.graph.BaseDL4JTest;
 import org.deeplearning4j.graph.api.*;
 import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
@@ -34,7 +35,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
 
-public class TestGraph {
+public class TestGraph extends BaseDL4JTest {
 
     @Test(timeout = 10000L)
     public void testSimpleGraph() {
