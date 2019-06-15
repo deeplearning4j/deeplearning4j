@@ -24,6 +24,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.imports.TFGraphs.NodeReader;
@@ -117,6 +118,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     DataType initialType;
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
         this.initialType = Nd4j.dataType();
@@ -142,7 +146,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testArangeNegative() {
-      INDArray arr = Nd4j.arange(-2,2);
+      INDArray arr = Nd4j.arange(-2,2).castTo(DataType.DOUBLE);
       INDArray assertion = Nd4j.create(new double[]{-2, -1,  0,  1});
       assertEquals(assertion,arr);
     }
@@ -216,9 +220,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.rand(1, 20);
 
-        String temp = System.getProperty("java.io.tmpdir");
+        File dir = testDir.newFolder();
 
-        String outPath = FilenameUtils.concat(temp, "dl4jtestserialization.bin");
+        String outPath = FilenameUtils.concat(dir.getAbsolutePath(), "dl4jtestserialization.bin");
 
         try (DataOutputStream dos = new DataOutputStream(Files.newOutputStream(Paths.get(outPath)))) {
             Nd4j.write(arr, dos);
@@ -516,11 +520,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testBroadCasting() {
-        INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
+        INDArray first = Nd4j.arange(0, 3).reshape(3, 1).castTo(DataType.DOUBLE);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][] {{0, 0, 0, 0}, {1, 1, 1, 1}, {2, 2, 2, 2}});
         assertEquals(testRet, ret);
-        INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
+        INDArray r = Nd4j.arange(0, 4).reshape(1, 4).castTo(DataType.DOUBLE);
         INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][] {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}});
         assertEquals(testR2, r2);
@@ -5552,7 +5556,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
         }
 
-        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix, 1));
+        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix, false, 1))[0];
 
         for (int e = 0; e < res.length(); e++) {
             assertEquals(3.407605, res.getDouble(e), 1e-5);
@@ -5564,7 +5568,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testLogExpSum2() {
         INDArray row = Nd4j.create(new double[]{1, 2, 3});
 
-        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).getDouble(0);
+        double res = Nd4j.getExecutioner().exec(new LogSumExp(row))[0].getDouble(0);
 
         assertEquals(3.407605, res, 1e-5);
     }
@@ -7660,10 +7664,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testType1() throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.rand(DataType.DOUBLE, new int[]{100, 100});
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir,"test.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir,"test.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7700,10 +7705,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testType2() throws IOException {
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT16);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test1.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test1.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test1.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test1.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7716,10 +7722,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT32);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test2.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test2.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test2.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test2.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7732,10 +7739,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < 10; ++i) {
             INDArray in1 = Nd4j.ones(DataType.UINT64);
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("test3.bin"));
+            File dir = testDir.newFolder();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir, "test3.bin")));
             oos.writeObject(in1);
 
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("test3.bin"));
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir, "test3.bin")));
             INDArray in2 = null;
             try {
                 in2 = (INDArray) ois.readObject();
@@ -7745,7 +7753,64 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(in1, in2);
         }
+    }
 
+
+    @Test
+    public void testToXMatrix(){
+
+        List<long[]> shapes = Arrays.asList(new long[]{3, 4}, new long[]{3, 1}, new long[]{1,3});
+        for(long[] shape : shapes){
+            long length = ArrayUtil.prodLong(shape);
+            INDArray orig = Nd4j.arange(length).castTo(DataType.DOUBLE).reshape(shape);
+            for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT,
+                    DataType.LONG, DataType.SHORT, DataType.UBYTE, DataType.UINT16, DataType.UINT32, DataType.UINT64, DataType.BFLOAT16}) {
+                INDArray arr = orig.castTo(dt);
+
+                float[][] fArr = arr.toFloatMatrix();
+                double[][] dArr = arr.toDoubleMatrix();
+                int[][] iArr = arr.toIntMatrix();
+                long[][] lArr = arr.toLongMatrix();
+
+                INDArray f = Nd4j.createFromArray(fArr).castTo(dt);
+                INDArray d = Nd4j.createFromArray(dArr).castTo(dt);
+                INDArray i = Nd4j.createFromArray(iArr).castTo(dt);
+                INDArray l = Nd4j.createFromArray(lArr).castTo(dt);
+
+                assertEquals(arr, f);
+                assertEquals(arr, d);
+                assertEquals(arr, i);
+                assertEquals(arr, l);
+            }
+        }
+    }
+
+    @Test
+    public void testToXVector(){
+
+        List<long[]> shapes = Arrays.asList(new long[]{3}, new long[]{3, 1}, new long[]{1,3});
+        for(long[] shape : shapes){
+            INDArray orig = Nd4j.arange(3).castTo(DataType.DOUBLE).reshape(shape);
+            for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT,
+                    DataType.LONG, DataType.SHORT, DataType.UBYTE, DataType.UINT16, DataType.UINT32, DataType.UINT64, DataType.BFLOAT16}) {
+                INDArray arr = orig.castTo(dt);
+
+                float[] fArr = arr.toFloatVector();
+                double[] dArr = arr.toDoubleVector();
+                int[] iArr = arr.toIntVector();
+                long[] lArr = arr.toLongVector();
+
+                INDArray f = Nd4j.createFromArray(fArr).castTo(dt).reshape(shape);
+                INDArray d = Nd4j.createFromArray(dArr).castTo(dt).reshape(shape);
+                INDArray i = Nd4j.createFromArray(iArr).castTo(dt).reshape(shape);
+                INDArray l = Nd4j.createFromArray(lArr).castTo(dt).reshape(shape);
+
+                assertEquals(arr, f);
+                assertEquals(arr, d);
+                assertEquals(arr, i);
+                assertEquals(arr, l);
+            }
+        }
     }
 
 
@@ -7759,6 +7824,25 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray twoD = Nd4j.create(2,3);
         INDArray sum2 = twoD.sum(0);
         assertArrayEquals(new long[]{3}, sum2.shape());
+    }
+
+    @Test
+    public void testMedianEdgeCase(){
+        INDArray rowVec = Nd4j.rand(DataType.FLOAT, 1, 10);
+        INDArray median = rowVec.median(0);
+        assertEquals(rowVec.reshape(10), median);
+
+        INDArray colVec = Nd4j.rand(DataType.FLOAT, 10, 1);
+        median = colVec.median(1);
+        assertEquals(colVec.reshape(10), median);
+
+        //Non-edge cases:
+        rowVec.median(1);
+        colVec.median(0);
+
+        //full array case:
+        rowVec.median();
+        colVec.median();
     }
 
     ///////////////////////////////////////////////////////

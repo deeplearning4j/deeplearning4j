@@ -22,19 +22,15 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -79,21 +75,8 @@ public class Fill extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(nodeDef.getInputCount() == 2) {
-            val targetNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(1));
-            val mapper = TFGraphMapper.getInstance();
-            val secondInputAsScalar = mapper.getNDArrayFromTensor("value",targetNode,graph);
-            //must be scalar
-            if(secondInputAsScalar.length() == 1) {
-                addTArgument(secondInputAsScalar.getDouble(0));
-            }
-            else {
-                throw new ND4JIllegalStateException("Second input to node " + nodeDef + " should be scalar!");
-            }
-
-            org.tensorflow.framework.DataType dt = attributesForNode.get("T").getType();
-            this.outputDataType = DataTypeAdapter.dtypeConv(dt);
-        }
+        org.tensorflow.framework.DataType dt = attributesForNode.get("T").getType();
+        this.outputDataType = DataTypeAdapter.dtypeConv(dt);
     }
 
     @Override
@@ -117,50 +100,6 @@ public class Fill extends DynamicCustomOp {
         if(descriptor.getNumTArgs() >= 0 && numTArguments() < 1)
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
 
-    }
-
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-
-
-        INDArray shape;
-        DataType dt = outputDataType;
-        if(sameDiff != null ) {
-
-            int numArgs = args().length;
-            if (numArgs < 1)
-                return Collections.emptyList();
-
-            SDVariable[] args = args();
-            shape = !inputArguments.isEmpty() ? inputArguments.get(0) : args()[0].getArr();
-            if(args.length > 1){
-                dt = arg(1).getArr().dataType();
-            } else if(inputArguments.size() > 1){
-                dt = inputArguments.get(1).dataType();
-            }
-        } else {
-            if(numInputArguments() == 0) {
-                shape = null;
-            } else {
-                shape = inputArguments.get(0);
-                if(inputArguments.size() > 1){
-                    dt = inputArguments.get(1).dataType();
-                }
-            }
-        }
-        if(shape == null)
-            return Collections.emptyList();
-        else {
-            //TODO properly allow customizing datatype
-            if(shape.isEmpty() || (shape.length() > 0 && shape.minNumber().intValue() == 0)){
-                //Empty shape: Edge case, mainly for TF import
-                //Also 'shape with zero' are empty arrays in TF
-                return Collections.singletonList(LongShapeDescriptor.empty(dt));
-            } else {
-                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), dt));
-            }
-        }
     }
 
     @Override

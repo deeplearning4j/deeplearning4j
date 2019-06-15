@@ -243,8 +243,20 @@ public class Shape {
         return Ints.toArray(dims);
     }
 
+    public static boolean containsZeros(long[] shapeOnly) {
+        for (val v:shapeOnly)
+            if (v == 0)
+                return true;
+
+        return false;
+    }
 
     public static long[] broadcastOutputShape(long[] left,long[] right) {
+        if (containsZeros(left))
+            return left;
+        else if (containsZeros(right))
+            return right;
+
         assertBroadcastable(left, right);
         if(Arrays.equals(left,right))
             return left;
@@ -3201,7 +3213,16 @@ public class Shape {
     }
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, empty);
+        boolean isEmpty = empty;
+        if (!empty)
+            for (val v:shape) {
+                if (v == 0) {
+                    isEmpty = true;
+                    break;
+                }
+            }
+
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty);
     }
 
 

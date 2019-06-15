@@ -158,10 +158,10 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test4) {
 
     NDArray labels('c', {1,4}, {-0.1, 0.3, 2, -1.4});
     NDArray predictions('c', {1,4}, nd4j::DataType::DOUBLE);
-    NDArray weights('c', {0}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {}, {0.}, nd4j::DataType::DOUBLE);
 
     NDArray dLdpExp('c', {1,4}, {0.05, -0.15, -1.,  0.7});
-    NDArray dLdwExp('c', {0}, {1.3});
+    NDArray dLdwExp('c', {}, {1.3});
     NDArray dLdlExp('c', {1,4}, {0.2,  0.1, -0. , -0.1});
 
     predictions.linspace(-0.4, 0.2);
@@ -369,10 +369,10 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
 TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
     NDArray logits('c', {3,4}, nd4j::DataType::DOUBLE);
-    NDArray weights('c', {0}, {1.});
+    NDArray weights('c', {}, {1.});
     NDArray labels('c', {3,4}, {0,1,1,0,1,0,1,0,1,0,1,0});
 
-    NDArray output('c', {0}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {}, {0.}, nd4j::DataType::DOUBLE);
 
     logits.linspace(1.);
     weights.assign(1.);
@@ -594,7 +594,7 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
 TEST_F(DeclarableOpsTests12, reverse_test15) {
 
     NDArray x('c', {5}, {1,2,3,4,5}, nd4j::DataType::DOUBLE);
-    NDArray axis('c', {0}, {0}, nd4j::DataType::INT32);
+    NDArray axis('c', {}, {0}, nd4j::DataType::INT32);
     NDArray z('c', {5}, nd4j::DataType::DOUBLE);
     NDArray exp('c', {5}, {5,4,3,2,1}, nd4j::DataType::DOUBLE);
 

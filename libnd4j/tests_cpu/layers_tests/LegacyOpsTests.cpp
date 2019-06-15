@@ -668,3 +668,47 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
     delete row;
     delete erow;
 }
+
+TEST_F(LegacyOpsTests, test_legacy_reduce_empty_1) {
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3});
+    auto z = NDArrayFactory::create<float>('c', {2, 3});
+    auto e = NDArrayFactory::create<float>('c', {2, 3});
+
+    int dim = 1;
+
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Sum, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, test_legacy_reduce_empty_2) {
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3});
+    auto z = NDArrayFactory::create<float>('c', {2, 3});
+    auto e = NDArrayFactory::create<float>('c', {2, 3});
+    e.assign(std::numeric_limits<float>::infinity());
+
+    int dim = 1;
+
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, test_legacy_reduce_empty_3) {
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3});
+    auto z = NDArrayFactory::create<float>('c', {2, 3});
+    auto e = NDArrayFactory::create<float>('c', {2, 3});
+    e.assign(-std::numeric_limits<float>::infinity());
+
+    int dim = 1;
+
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, test_legacy_transform_float_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 4});
+
+    NativeOpExecutioner::execTransformFloat(LaunchContext::defaultContext(), transform::FloatOps::RSqrt, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, nullptr, nullptr);
+}

@@ -30,6 +30,12 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
+
+            if(input->isEmpty()){
+                output->p<double>(0, std::numeric_limits<double>::quiet_NaN());
+                return Status::OK();
+            }
+
             int numZeros = 0;
 //            for (int e = 0; e < input->lengthOf(); e++)
 //                if ((*input)(e) == T(0))

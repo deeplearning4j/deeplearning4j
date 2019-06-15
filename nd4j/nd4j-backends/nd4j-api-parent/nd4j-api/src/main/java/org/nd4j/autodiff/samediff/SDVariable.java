@@ -1700,6 +1700,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
+     * Get the rank of this variable as a dynamic SDVariable
+     * @return Rank SDVariable
+     */
+    public SDVariable rank(){
+        return sameDiff.rank(this);
+    }
+
+    /**
      * Reshape the current variable to the specified (dynamic) shape. The output variable will have the same values as the
      * input, but with the specified shape.<br>
      * Note that prod(shape) must match length(input) == prod(input.shape)
@@ -1744,6 +1752,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable permute(int... dimensions){
         return sameDiff.permute(this, dimensions);
+    }
+
+    public SDVariable permute(SDVariable dimensions){
+        return sameDiff.permute(null, this, dimensions);
     }
 
     /**

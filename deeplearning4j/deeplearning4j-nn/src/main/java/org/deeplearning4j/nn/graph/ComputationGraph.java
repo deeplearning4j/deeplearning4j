@@ -453,6 +453,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         DataType netDtype = getConfiguration().getDataType();
         if(parameters != null && parameters.dataType() != netDtype){
+            Preconditions.checkState(parameters.rank() == 2 && parameters.size(0) == 1, "Invalid parameters array: should be rank 2 with shape [1,numParams]. Got %ndShape", parameters);
             if(cloneParametersArray){
                 try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     parameters = parameters.castTo(netDtype);

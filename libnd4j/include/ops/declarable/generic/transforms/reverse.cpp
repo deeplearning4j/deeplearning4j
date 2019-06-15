@@ -33,6 +33,11 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
+        if(output->isEmpty()){
+            //No-op
+            return Status::OK();
+        }
+
         std::vector<int> axis;
 
         if (block.width() > 1)

@@ -614,7 +614,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
     private String stats(boolean suppressWarnings, boolean includeConfusion, boolean logConfusionSizeWarning){
-        String actual, predicted;
+        if(numRowCounter == 0){
+            return "Evaluation: No data available (no evaluation has been performed)";
+        }
+
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
         ConfusionMatrix<Integer> confusion = confusion();
@@ -820,6 +823,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the precision for the label
      */
     public double precision(Integer classLabel, double edgeCase) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get precision: no evaluation has been performed");
         double tpCount = truePositives.getCount(classLabel);
         double fpCount = falsePositives.getCount(classLabel);
         return EvaluationUtils.precision((long) tpCount, (long) fpCount, edgeCase);
@@ -851,9 +855,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average precision
      */
     public double precision(EvaluationAveraging averaging) {
-        if(getNumRowCounter() == 0){
-            return 0.0; //No data
-        }
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get precision: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroPrecision = 0.0;
@@ -966,6 +968,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Recall rate as a double
      */
     public double recall(int classLabel, double edgeCase) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get recall: no evaluation has been performed");
         double tpCount = truePositives.getCount(classLabel);
         double fnCount = falseNegatives.getCount(classLabel);
 
@@ -998,9 +1001,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average recall
      */
     public double recall(EvaluationAveraging averaging) {
-        if(getNumRowCounter() == 0.0){
-            return 0.0; //No data
-        }
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get recall: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroRecall = 0.0;
@@ -1046,6 +1047,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return fpr as a double
      */
     public double falsePositiveRate(int classLabel, double edgeCase) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get false positive rate: no evaluation has been performed");
         double fpCount = falsePositives.getCount(classLabel);
         double tnCount = trueNegatives.getCount(classLabel);
 
@@ -1078,6 +1080,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average false positive rate
      */
     public double falsePositiveRate(EvaluationAveraging averaging) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get false positive rate: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroFPR = 0.0;
@@ -1117,6 +1120,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return fnr as a double
      */
     public double falseNegativeRate(Integer classLabel, double edgeCase) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get false negative rate: no evaluation has been performed");
         double fnCount = falseNegatives.getCount(classLabel);
         double tpCount = truePositives.getCount(classLabel);
 
@@ -1149,6 +1153,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average false negative rate
      */
     public double falseNegativeRate(EvaluationAveraging averaging) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get false negative rate: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroFNR = 0.0;
@@ -1223,6 +1228,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return F_beta
      */
     public double fBeta(double beta, int classLabel, double defaultValue) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get fBeta score: no evaluation has been performed");
         double precision = precision(classLabel, -1);
         double recall = recall(classLabel, -1);
         if (precision == -1 || recall == -1) {
@@ -1271,9 +1277,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method to use
      */
     public double fBeta(double beta, EvaluationAveraging averaging) {
-        if(getNumRowCounter() == 0.0){
-            return Double.NaN;  //No data
-        }
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get fBeta score: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
 
         if (nClasses == 2) {
@@ -1315,6 +1319,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return The G-measure for the specified output
      */
     public double gMeasure(int output) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get gMeasure: no evaluation has been performed");
         double precision = precision(output);
         double recall = recall(output);
         return EvaluationUtils.gMeasure(precision, recall);
@@ -1327,6 +1332,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average G measure
      */
     public double gMeasure(EvaluationAveraging averaging) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get gMeasure: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroGMeasure = 0.0;
@@ -1359,9 +1365,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the accuracy of the guesses so far
      */
     public double accuracy() {
-        if (getNumRowCounter() == 0) {
-            return 0.0; //No records
-        }
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get accuracy: no evaluation has been performed");
         //Accuracy: sum the counts on the diagonal of the confusion matrix, divide by total
         int nClasses = confusion().getClasses().size();
         int countCorrect = 0;
@@ -1391,6 +1395,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param classIdx Class index to calculate Matthews correlation coefficient for
      */
     public double matthewsCorrelation(int classIdx) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get Matthews correlation: no evaluation has been performed");
         return EvaluationUtils.matthewsCorrelation((long) truePositives.getCount(classIdx),
                         (long) falsePositives.getCount(classIdx), (long) falseNegatives.getCount(classIdx),
                         (long) trueNegatives.getCount(classIdx));
@@ -1405,6 +1410,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average
      */
     public double matthewsCorrelation(EvaluationAveraging averaging) {
+        Preconditions.checkState(numRowCounter > 0,  "Cannot get Matthews correlation: no evaluation has been performed");
         int nClasses = confusion().getClasses().size();
         if (averaging == EvaluationAveraging.Macro) {
             double macroMatthewsCorrelation = 0.0;

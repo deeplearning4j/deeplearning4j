@@ -284,6 +284,55 @@ TEST_F(ParityOpsTests, TestUnstack9) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, TestUnstack10) {
+
+    auto input = NDArrayFactory::create<float>('c', {3, 0, 2});
+    auto exp = NDArrayFactory::create<float>('c', {0,2});
+
+    nd4j::ops::unstack op;
+
+    auto result = op.execute({&input}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(result->at(0)));
+    ASSERT_TRUE(exp.isSameShape(result->at(1)));
+    ASSERT_TRUE(exp.isSameShape(result->at(2)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, TestUnstack11) {
+
+    auto input = NDArrayFactory::create<float>('c', {3, 0, 2});
+    auto exp = NDArrayFactory::create<float>('c', {3,0});
+
+    nd4j::ops::unstack op;
+
+    auto result = op.execute({&input}, {}, {2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(result->at(0)));
+    ASSERT_TRUE(exp.isSameShape(result->at(1)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, TestUnstack12) {
+
+    auto input = NDArrayFactory::create<float>('c', {3, 0, 2});
+
+    nd4j::ops::unstack op;
+
+    auto result = op.execute({&input}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(result->size() == 0);
+
+    delete result;
+}
 
 TEST_F(ParityOpsTests, ExpandDimsTest1) {
     auto input = NDArrayFactory::create<float>('c', {5, 5});
@@ -765,7 +814,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
     auto matrix = NDArrayFactory::create<float>('c', {10, 3}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f,25.f,26.f,27.f,28.f,29.f,30.f});
-    NDArray idc('c', {0}, {5}, nd4j::DataType::INT64);
+    NDArray idc('c', {}, {5}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {3}, {10.f, 20.f, 30.f});
     auto exp = NDArrayFactory::create<float>('c', {10, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f,11.f,12.f, 13.f,14.f,15.f, 26.f,37.f,48.f, 19.f,20.f,21.f, 22.f,23.f,24.f, 25.f,26.f,27.f, 28.f,29.f,30.f});
 

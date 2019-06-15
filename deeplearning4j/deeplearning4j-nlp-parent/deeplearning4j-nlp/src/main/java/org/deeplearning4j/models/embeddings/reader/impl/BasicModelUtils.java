@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
@@ -207,7 +208,6 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
-
         Collection<String> tempRes = wordsNearest(mean, top + positive.size() + negative.size());
         List<String> realResults = new ArrayList<>();
 
@@ -232,6 +232,22 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         return wordsNearestSum(vec, n);
     }
 
+    protected INDArray adjustRank(INDArray words) {
+        if (lookupTable instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
+
+            INDArray syn0 = l.getSyn0();
+            if (!words.dataType().equals(syn0.dataType())) {
+                return words.castTo(syn0.dataType());
+            }
+            if (words.rank() == 0 || words.rank() > 2) {
+                throw new IllegalStateException("Invalid rank for wordsNearest method");
+            } else if (words.rank() == 1) {
+                return words.reshape(1, -1);
+            }
+        }
+        return words;
+    }
     /**
      * Words nearest based on positive and negative words
      * * @param top the top n words
@@ -239,6 +255,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
      */
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
+        words = adjustRank(words);
+
         if (lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
 

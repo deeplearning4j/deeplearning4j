@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.apache.commons.lang.ArrayUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -355,6 +356,11 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
 
     @Override
     public boolean jsonSerializable() {
+        return false;
+    }
+
+    @Override
+    public boolean outOfVocabularySupported() {
         return false;
     }
 }

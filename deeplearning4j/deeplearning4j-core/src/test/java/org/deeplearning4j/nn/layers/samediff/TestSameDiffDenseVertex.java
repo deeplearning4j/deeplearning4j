@@ -166,6 +166,12 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     outSD = loaded.outputSingle(in);
                     outStd = netStandard.outputSingle(in);
                     assertEquals(outStd, outSD);
+
+                    //Sanity check on different minibatch sizes:
+                    INDArray newIn = Nd4j.vstack(in, in);
+                    INDArray outMbsd = netSD.output(newIn)[0];
+                    INDArray outMb = netStandard.output(newIn)[0];
+                    assertEquals(outMb, outMbsd);
                 }
             }
         }

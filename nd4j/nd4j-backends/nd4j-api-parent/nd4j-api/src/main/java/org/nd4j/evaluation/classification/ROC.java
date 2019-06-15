@@ -18,6 +18,7 @@ package org.nd4j.evaluation.classification;
 
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
@@ -76,6 +77,12 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class ROC extends BaseEvaluation<ROC> {
+    /**
+     * AUROC: Area under ROC curve<br>
+     * AUPRC: Area under Precision-Recall Curve
+     */
+    public enum Metric {AUROC, AUPRC}
+
     private static final int DEFAULT_EXACT_ALLOC_BLOCK_SIZE = 2048;
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
     private int thresholdSteps;
@@ -189,9 +196,7 @@ public class ROC extends BaseEvaluation<ROC> {
             return auc;
         }
 
-        if (exampleCount == 0) {
-            return Double.NaN;
-        }
+        Preconditions.checkState(exampleCount > 0, "Unable to calculate AUC: no evaluation has been performed (no examples)");
 
         this.auc = getRocCurve().calculateAUC();
         return auc;
@@ -206,6 +211,8 @@ public class ROC extends BaseEvaluation<ROC> {
         if (rocCurve != null) {
             return rocCurve;
         }
+
+        Preconditions.checkState(exampleCount > 0, "Unable to get ROC curve: no evaluation has been performed (no examples)");
 
         if (isExact) {
             //Sort ascending. As we decrease threshold, more are predicted positive.
@@ -354,9 +361,7 @@ public class ROC extends BaseEvaluation<ROC> {
             return auprc;
         }
 
-        if (exampleCount == 0) {
-            return Double.NaN;
-        }
+        Preconditions.checkState(exampleCount > 0, "Unable to calculate AUPRC: no evaluation has been performed (no examples)");
 
         auprc = getPrecisionRecallCurve().calculateAUPRC();
         return auprc;
@@ -375,6 +380,8 @@ public class ROC extends BaseEvaluation<ROC> {
         if (prCurve != null) {
             return prCurve;
         }
+
+        Preconditions.checkState(exampleCount > 0, "Unable to get PR curve: no evaluation has been performed (no examples)");
 
         double[] thresholdOut;
         double[] precisionOut;
@@ -779,6 +786,10 @@ public class ROC extends BaseEvaluation<ROC> {
 
     @Override
     public String stats() {
+        if(this.exampleCount == 0){
+            return "ROC: No data available (no data has been performed)";
+        }
+
         StringBuilder sb = new StringBuilder();
         sb.append("AUC (Area under ROC Curve):                ").append(calculateAUC()).append("\n");
         sb.append("AUPRC (Area under Precision/Recall Curve): ").append(calculateAUCPR());
@@ -788,5 +799,16 @@ public class ROC extends BaseEvaluation<ROC> {
                     .append(" steps); accuracy may reduced compared to exact mode]");
         }
         return sb.toString();
+    }
+
+    public double scoreForMetric(Metric metric){
+        switch (metric){
+            case AUROC:
+                return calculateAUC();
+            case AUPRC:
+                return calculateAUCPR();
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 }

@@ -47,8 +47,8 @@ namespace functions {
                                               Nd4jLong *xShapeInfo,
                                               void *extraParams,
                                               void *z,
-                                              Nd4jLong *resultShapeInfoBuffer) {
-            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer), SUMMARY_STATS_OPS);
+                                              Nd4jLong *zShapeInfo) {
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Y>
@@ -58,10 +58,10 @@ namespace functions {
                 Nd4jLong *xShapeInfo,
                 void *extraParams,
                 void *z,
-                Nd4jLong *resultShapeInfoBuffer,
+                Nd4jLong *zShapeInfo,
                 int *dimension,
                 int dimensionLength) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Z>
@@ -71,7 +71,7 @@ namespace functions {
                                               Nd4jLong *xShapeInfo,
                                               void *vextraParams,
                                               void *vz,
-                                              Nd4jLong *resultShapeInfoBuffer) {
+                                              Nd4jLong *zShapeInfo) {
             auto z = reinterpret_cast<Z*>(vz);
             z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
         }
@@ -86,12 +86,12 @@ namespace functions {
             SummaryStatsData<X> startingIndex;
             startingIndex.initialize();
             auto length = shape::length(xShapeInfo);
-            
+
             uint xShapeInfoCast[MAX_RANK];
             const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
-            
+
             for (Nd4jLong i = 0; i < length; i++) {
-                                        
+
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCast);
 
                 SummaryStatsData<X> curr;
@@ -99,7 +99,7 @@ namespace functions {
                 startingIndex = update(startingIndex, curr, extraParams);
             }
 
-            return OpType::getValue(biasCorrected, startingIndex);            
+            return OpType::getValue(biasCorrected, startingIndex);
         }
 
         template <typename X, typename Z>
@@ -108,20 +108,31 @@ namespace functions {
                 void *vx,
                 Nd4jLong *xShapeInfo,
                 void *vextraParams,
-                void *vresult,
-                Nd4jLong *resultShapeInfoBuffer,
+                void *vz,
+                Nd4jLong *zShapeInfo,
                 int *dimension,
                 int dimensionLength) {
-            auto x = reinterpret_cast<X *>(vx);
-            auto z = reinterpret_cast<Z *>(vresult);
-            auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-            if (shape::isScalar(resultShapeInfoBuffer)) {
-                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<Z *>(vz);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+            int resultLength = shape::length(zShapeInfo);
+
+            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+               if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                    return;
+                SummaryStatsData<X> comp;
+                comp.initWithValue(x[0]);
+                PRAGMA_OMP_PARALLEL_FOR_IF(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+                for (uint i = 0; i < resultLength; i++)
+                    z[i] = OpType::getValue(biasCorrected, comp);
                 return;
             }
 
-
+            if (shape::isScalar(zShapeInfo)) {
+                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                return;
+            }
 
             //no-op
             if (dimensionLength < 1)
@@ -129,7 +140,6 @@ namespace functions {
 
             auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-            int resultLength = shape::length(resultShapeInfoBuffer);
             //pre squeezed: this is for keeping the pointer to the original
             //shape information for tad offset
             //the squeezed information doesn't render the right strides for
@@ -149,7 +159,7 @@ namespace functions {
 
             PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < resultLength; r++) {
-                        
+
                 auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
                 auto tx = x + tadOffsetForBlock;
                 SummaryStatsData<X> comp;

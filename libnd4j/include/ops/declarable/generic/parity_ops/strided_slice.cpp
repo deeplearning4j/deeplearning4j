@@ -410,10 +410,13 @@ namespace nd4j {
 //                z->assign(x->e<float>(indices[0]));
 //            }
 //            else {
-            auto sub = (*x)(indices, true, true);
-            z->assign(sub);
-//            }
-
+            if (indices.size()) {
+                auto sub = (*x)(indices, true, true);
+                z->assign(sub);
+            }
+            else if (!z->isEmpty()){
+                z->assign(x->e(0));
+            }
             return Status::OK();
         }
         DECLARE_SYN(stridedslice, strided_slice);
@@ -496,28 +499,19 @@ namespace nd4j {
             bool is_simple_slice;
             bool is_dim0;
 
-            // FIXME: remove this, once we bring in 1D NDArrays 
-            //vectorize(input_shape);
-            bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-            bool nonEmpty = shape.size() > 0;
-            if (nonEmpty)
-            for (auto x: shape) {
-                if (x == 0) {
-                    nonEmpty = false;
-                    break;
-                }
-            }
-            if (nonEmpty && inputLen > 1) {
-                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
-            }
-            else {
-                if (shape::rank(inShape) == 0 || begin >= end) {
-                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape));
+            std::vector<Nd4jLong> indices;
+            bool result = _preprocess_strided_slice(&indices, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
+            if (indices.size()) {
+                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
+                                                                               shape);
+                if (inputLen > 1) {
+                    newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
+                                                                                   shape);
                 } else {
                     newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
-
                 }
-            }
+            } else
+                newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape));
 
             return SHAPELIST(newShape);
         }

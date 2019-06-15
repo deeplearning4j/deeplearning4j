@@ -1594,6 +1594,14 @@ public abstract class SDBaseOps {
     }
 
     /**
+     * As per {@link #permute(String, SDVariable, int...)} but with SDVariable permute dimension
+     */
+    public SDVariable permute(String name, SDVariable x, SDVariable dimensions){
+        SDVariable result = f().permute(x, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Product array reduction operation, optionally along specified dimensions
      *
      * @param x          Input variable
@@ -1664,6 +1672,14 @@ public abstract class SDBaseOps {
      * @return 1D SDVariable with the specified values
      */
     public SDVariable range(String name, double from, double to, double step, DataType dataType) {
+        SDVariable ret = f().range(from, to, step, dataType);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * As per {@link #range(String, double, double, double, DataType)} but with SDVariable arguments
+     */
+    public SDVariable range(String name, SDVariable from, SDVariable to, SDVariable step, DataType dataType) {
         SDVariable ret = f().range(from, to, step, dataType);
         return updateVariableNameAndReference(ret, name);
     }

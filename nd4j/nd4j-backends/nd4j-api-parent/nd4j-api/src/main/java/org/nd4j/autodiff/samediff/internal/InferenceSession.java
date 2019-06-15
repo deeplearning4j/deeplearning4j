@@ -109,7 +109,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
             for(Listener l : listeners){
-                l.opExecution(sameDiff, at, sdOp, out);
+                l.opExecution(sameDiff, at, training, sdOp, out);
             }
         }
         return out;
@@ -663,16 +663,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/deeplearning4j/deeplearning4j/issues/6872
                 //As a workaround, we'll use the output variable datatype instead.
                 DataType dt = sameDiff.getVariable(outNames[i]).dataType();
-                if(dt != reqShape.dataType()){
+                DataType currDT = reqShape.dataType();
+                if(dt != currDT){
                     reqShape = reqShape.asDataType(dt);
-                }
-
-                //Validate shape
-                long[] shape = reqShape.getShape();
-                if(shape != null){
-                    for(long s : shape){
-                        Preconditions.checkState(s > 0, "Invalid shape for op %s: shape has invalid values <= 0: shape=%s", customOp.opName(), shape);
-                    }
                 }
 
                 if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
@@ -689,6 +682,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Op op = (Op) df;
 
             boolean axisArg = false;
+            boolean emptyReduce = false;
             if(op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3 && df.argNames().length == 2){
                 //2nd input should be treated as integer axis arg...
                 SDVariable axisArgVar = df.arg(1);
@@ -701,14 +695,18 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     int rank = args[0].rank();
                     axis = Shape.normalizeAxis(rank, axis);
                     df.setDimensions(axis);
+                    ((BaseReduceOp)op).setEmptyReduce(false);
                 } else {
                     df.setDimensions(null);
+                    emptyReduce = true;
+                    //Note: edge case: [x,y].sum(empty) = [x,y] for TF import compatibility.
+                    //Note also that empty is not the same as int[0] as in INDArray.sum(new int[0])
+                    ((BaseReduceOp)op).setEmptyReduce(true);
                 }
                 axisArg = true;
             } else if(op instanceof ScalarOp && df.argNames().length == 2){
                 //Scalar ops: 2nd input should be treated as scalar...
                 SDVariable scalarVar = df.arg(1);
-                String n = scalarVar.getVarName();
                 INDArray scalar = getArray(scalarVar, opInputs, allIterInputs);
                 Preconditions.checkState(scalar != null, "Could not get scalar argument for op %s: %s", df.getOwnName(), df.getClass());
                 Preconditions.checkState(scalar.isScalar(), "Scalar argument for op %s (%s) is not a scalar: has shape %ndShape", df.getOwnName(), df.getClass(), scalar );
@@ -724,21 +722,29 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
             //Check output shape; allocate a new Z if required
             //For example, if minibatch size has changed since last op execution
-            List<LongShapeDescriptor> outputShape = ((BaseOp)op).calculateOutputShape();
-            Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-            INDArray z = op.z();
-            if(z == null || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop){
-                if(log.isTraceEnabled()){
-                    log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                            op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
+            if(emptyReduce){
+                INDArray z = op.z();
+                if (z == null || !op.x().equalShapes(z) || isLoop) {
+                    //Note: edge case: [x,y].sum(empty) = [x,y] for TF import compatibility.
+                    op.setZ(op.x().ulike());
                 }
+            } else {
+                List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape();
+                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                INDArray z = op.z();
+                if (z == null || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
+                                op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
+                    }
 
-                LongShapeDescriptor lsd = outputShape.get(0);
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    z = Nd4j.create(lsd, false);
+                    LongShapeDescriptor lsd = outputShape.get(0);
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        //TODO Proper workspace support will be added to SameDiff later
+                        z = Nd4j.create(lsd, false);
+                    }
+                    op.setZ(z);
                 }
-                op.setZ(z);
             }
             df.resolvePropertiesFromSameDiffBeforeExecution();
         }

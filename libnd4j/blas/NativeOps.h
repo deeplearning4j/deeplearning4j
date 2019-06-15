@@ -1334,18 +1334,7 @@ public:
  * @param npyArray
  * @return
  */
-    Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
-        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-        unsigned int shapeSize = arr.shape.size();
-        auto shape = new unsigned int[shapeSize];
-        for(unsigned int i = 0; i < shapeSize; i++) {
-            shape[i] = arr.shape[i];
-        }
-
-        auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
-        delete[] shape;
-        return reinterpret_cast<Nd4jPointer>(shapeBuffer);
-    }
+    Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray);
 
 
 /**

@@ -1303,3 +1303,21 @@ TEST_F(NDArrayTest2, all_tads_1) {
 
     delete arrays;
 }
+
+TEST_F(NDArrayTest2, test_trueBroadcast_empty_1) {
+    auto x = NDArrayFactory::create<float>('c', {0, 2});
+    auto y = NDArrayFactory::create<float>('c', {1, 2});
+
+    auto z = x + y;
+
+    ASSERT_EQ(x, z);
+}
+
+TEST_F(NDArrayTest2, test_trueBroadcast_empty_2) {
+    auto x = NDArrayFactory::create<float>('c', {0, 2});
+    auto y = NDArrayFactory::create<float>('c', {1, 2});
+
+    auto z = y + x;
+
+    ASSERT_EQ(x, z);
+}

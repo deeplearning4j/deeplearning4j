@@ -2873,7 +2873,7 @@ namespace simdOps {
         const static functions::ReduceType reduceType = functions::ReduceType::MAX;
 
 		op_def static X startingValue(const X *input) {
-			return -nd4j::DataTypeUtils::max<X>();
+			return -nd4j::DataTypeUtils::infOrMax<X>();
 		}
 
 		op_def static X merge(X old, X opOutput, X *extraParams) {
@@ -3051,7 +3051,7 @@ namespace simdOps {
         const static functions::ReduceType reduceType = functions::ReduceType::MIN;
 
         op_def static X startingValue(const X *input) {
-            return nd4j::DataTypeUtils::max<X>();
+            return nd4j::DataTypeUtils::infOrMax<X>();
         }
 
         op_def static X merge(X old, X opOutput, X *extraParams) {
@@ -3831,7 +3831,7 @@ namespace simdOps {
         }
 
         static _CUDA_HD inline X startingValue(const X *input) {
-            return -nd4j::DataTypeUtils::max<X>();
+            return -nd4j::DataTypeUtils::infOrMax<X>();
         }
 
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
@@ -3890,7 +3890,7 @@ namespace simdOps {
         }
 
         static _CUDA_HD inline X startingValue(const X *input) {
-            return -nd4j::DataTypeUtils::max<X>();
+            return -nd4j::DataTypeUtils::infOrMax<X>();
         }
 
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
@@ -3958,7 +3958,7 @@ namespace simdOps {
 		}
 
         static _CUDA_HD inline X startingValue(const X *input) {
-			return -nd4j::DataTypeUtils::max<X>();
+			return -nd4j::DataTypeUtils::infOrMax<X>();
 		}
 
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
@@ -3984,7 +3984,7 @@ namespace simdOps {
 		}
 
 		static _CUDA_HD inline X startingValue(const X *input) {
-			return nd4j::DataTypeUtils::max<X>();
+			return nd4j::DataTypeUtils::infOrMax<X>();
 		}
 
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
@@ -4040,7 +4040,7 @@ namespace simdOps {
 		}
 
         static _CUDA_HD inline X startingValue(const X *input) {
-			return nd4j::DataTypeUtils::max<X>();
+			return nd4j::DataTypeUtils::infOrMax<X>();
 		}
 
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {

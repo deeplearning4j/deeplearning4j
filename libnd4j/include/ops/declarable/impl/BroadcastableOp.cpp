@@ -53,9 +53,16 @@ namespace nd4j {
                 dtype = nd4j::DataType::BOOL;
 
             if(shape::isEmpty(x) || shape::isEmpty(y)) {
-                //Edge case: broadcasting with empty array gives empty array output (behaviour to match TF for import cases)
-                auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype);
-				shapeList->push_back(empty);
+                // this is edge case, [3, 4] + [] = []
+                if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
+                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+                    return shapeList;
+                }
+
+
+                Nd4jLong *newshape = nullptr;
+                ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {
                     shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));

@@ -38,26 +38,31 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     std::vector<int> arrsToDelete;
     int index = 0;
     bool allOfSameType = true;
-
+    auto theFirstRank = block.width() > 0?INPUT_VARIABLE(0)->rankOf():0;
+    auto theFirstDatatype = block.width() > 0?INPUT_VARIABLE(0)->dataType():block.dataType();
     for(int i = 0; i < block.width(); ++i) {
-        
-        if(!INPUT_VARIABLE(i)->isEmpty()) {
-            
-            allOfSameType &= (INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType());
-            if(INPUT_VARIABLE(i)->rankOf() == 0) {
-                // FIXME, use this instead:  block.dataType()
-                auto vec = new NDArray('c', {1}, INPUT_VARIABLE(0)->dataType(), block.launchContext());
-                vec->assign(INPUT_VARIABLE(i));
+        auto input = INPUT_VARIABLE(i);
+        auto currentRank = input->rankOf();
+
+// TODO: follow two lines are accordingly with current tf.concat spec. Commented for compatibility with legacy
+//        REQUIRE_TRUE(currentRank > 0, 0, "Rank of input variable %i must be greater 0, but is %lld instead.", i, currentRank);
+//        REQUIRE_TRUE(theFirstRank == currentRank, 0, "Number of dimensions in concat should be equals, but for %i input variable %lld != %lld appears.", i, currentRank, theFirstRank);
+        if(!input->isEmpty()) {
+
+            allOfSameType &= (theFirstDatatype == input->dataType());
+            if(input->rankOf() == 0) {
+                auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
+                vec->assign(input);
                 nonEmptyArrs.push_back(vec);
                 arrsToDelete.push_back(index);
             }
             else{
-                nonEmptyArrs.push_back(INPUT_VARIABLE(i));
+                nonEmptyArrs.push_back(input);
             }
             ++index;
         }
     }
-    
+
     const int numOfArrs = nonEmptyArrs.size();
 
     if(numOfArrs == 0){
@@ -73,21 +78,21 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
     REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
-    for(int i = 1; i < numOfArrs; ++i)        
+    for(int i = 1; i < numOfArrs; ++i)
         REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
-    for(int i = 1; i < numOfArrs; ++i) {        
+    for(int i = 1; i < numOfArrs; ++i) {
         for(int dim = 0; dim < rank; ++dim)
-            if(dim != axis)                
+            if(dim != axis)
                 REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
 
     auto output = OUTPUT_VARIABLE(0);
 
-    if(numOfArrs == 1) 
+    if(numOfArrs == 1)
         output->assign(nonEmptyArrs[0]);
-    else 
+    else
         helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
     // delete dynamically allocated vectors with length=1
@@ -110,36 +115,27 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 DECLARE_SHAPE_FN(concat) {
 
     REQUIRE_TRUE(block.width() > 0, 0, "CONCAT op: No input arrays were provided");
-    
+
     // first of all take into account possible presence of empty arrays
-    // also if scalar is present -> use the shape of vector with length=1 instead 
-    std::vector<Nd4jLong*> nonEmptyArrShapes;
+    // also if scalar is present -> use the shape of vector with length=1 instead
+    std::vector<Nd4jLong*> arrShapes;
     std::vector<int> shapesToDelete;
     int index = 0;
     for(int i = 0; i < block.width(); ++i) {
-        
-        if(!INPUT_VARIABLE(i)->isEmpty()) {
-            
-            if(inputShape->at(i)[0] == 0) {
-                // FIXME, use this instead: block.dataType()
-                nonEmptyArrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
-            }
-            else{
-                nonEmptyArrShapes.push_back(inputShape->at(i));
-            }
-            ++index;
+
+        if(inputShape->at(i)[0] == 0) {
+            // FIXME, use this instead: block.dataType()
+            arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
         }
+        else{
+            arrShapes.push_back(inputShape->at(i));
+        }
+        ++index;
     }
 
-    const int numOfArrs = nonEmptyArrShapes.size();    
+    const int numOfArrs = arrShapes.size();
 
-    if(numOfArrs == 0){
-        //All inputs are empty arrays -> return empty, mainly for TF import compatibility
-        auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
-        return SHAPELIST(empty);
-    }
-    
-    const int rank = nonEmptyArrShapes[0][0];     //  look up to first non-empty array
+    const int rank = arrShapes[0][0];
 
     int axis = INT_ARG(0);
     if(axis < 0)
@@ -148,34 +144,34 @@ DECLARE_SHAPE_FN(concat) {
     // ******** input validation ******** //
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
-    for(int i = 1; i < numOfArrs; ++i)        
-        REQUIRE_TRUE(nonEmptyArrShapes[i][0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
+    for(int i = 1; i < numOfArrs; ++i)
+        REQUIRE_TRUE(arrShapes[i][0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
-    for(int i = 1; i < numOfArrs; ++i) {        
+    for(int i = 1; i < numOfArrs; ++i) {
         for(int dim = 0; dim < rank; ++dim)
-            if(dim != axis)                
-                REQUIRE_TRUE(nonEmptyArrShapes[i][dim+1] == nonEmptyArrShapes[0][dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+            if(dim != axis)
+                REQUIRE_TRUE(arrShapes[i][dim+1] == arrShapes[0][dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
-    
+
 
     Nd4jLong* outShapeInfo(nullptr);
-    COPY_SHAPE(nonEmptyArrShapes[0], outShapeInfo);
-    
+    COPY_SHAPE(arrShapes[0], outShapeInfo);
+
     // case when we have only one input array
-    if(numOfArrs == 1) {    
-        ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));        
+    if(numOfArrs == 1) {
+        ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
         return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
     for(int i = 1; i < numOfArrs; ++i)
-        outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
+        outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
 
-    ShapeUtils::updateStridesAndType(outShapeInfo, nonEmptyArrShapes[0], shape::order(nonEmptyArrShapes[0]));
+    ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
 
     // delete dynamically allocated vectors shapes with length=1
     for(int index : shapesToDelete)
-        RELEASE(nonEmptyArrShapes[index], block.getWorkspace());
+        RELEASE(arrShapes[index], block.getWorkspace());
 
     auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
     RELEASE(outShapeInfo, block.getWorkspace());
@@ -277,7 +273,7 @@ DECLARE_SHAPE_FN(concat) {
         // DECLARE_SYN(ParallelConcat, concat);
         // DECLARE_SYN(concat_v2, concat);
         // DECLARE_SYN(concatv2, concat);
-        
+
         // DECLARE_SHAPE_FN(concat) {
         //     auto inp = inputShape->at(0);
         //     int _dimension = INT_ARG(0);
@@ -338,7 +334,7 @@ DECLARE_SHAPE_FN(concat) {
         //         }
         //     }
 
-            
+
         //     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(first->shapeInfo()), Nd4jLong);
 
         //     if (_dimension < 0)
@@ -382,11 +378,11 @@ DECLARE_SHAPE_FN(concat) {
                 auto epsilonChunk = OUTPUT_VARIABLE(e);
                 std::vector<Nd4jLong> indices(2 * epsilonNext->rankOf());
 
-                int width = originalChunk->sizeAt(axis);            
+                int width = originalChunk->sizeAt(axis);
 
                 for (int e = 0; e < epsilonNext->rankOf(); e++) {
                     if (e == axis)
-                        indices[2*e + 1] = (indices[2*e] = startPos) + width;                    
+                        indices[2*e + 1] = (indices[2*e] = startPos) + width;
                     else
                         indices[2*e + 1] = indices[2*e] = 0;
                 }
@@ -394,7 +390,7 @@ DECLARE_SHAPE_FN(concat) {
                 auto subarray = (*epsilonNext)(indices, true);
                 epsilonChunk->assign(subarray);
 
-                startPos += width;                
+                startPos += width;
             }
 
             return ND4J_STATUS_OK;

@@ -32,7 +32,7 @@ import java.util.Arrays;
 @Ignore
 public class TestSameDiffUI {
 
-//    @Ignore
+    @Ignore
     @Test
     public void testSameDiff() throws Exception {
 

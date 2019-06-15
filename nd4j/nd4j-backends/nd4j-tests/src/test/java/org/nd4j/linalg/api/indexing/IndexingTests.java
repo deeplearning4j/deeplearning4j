@@ -162,7 +162,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testSlicing() {
-        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
+        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4).castTo(DataType.DOUBLE);
         INDArray slice1Assert = Nd4j.create(new double[] {2, 6, 10, 14});
         INDArray slice1Test = arange.slice(1);
         assertEquals(slice1Assert, slice1Test);

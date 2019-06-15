@@ -32,6 +32,11 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->dataType() == output->dataType(), 0, "CumSum: input and output data types must be equal");
 
+            if(input->isEmpty()){
+                //No-op
+                return Status::OK();
+            }
+
             const bool exclusive = INT_ARG(0) == 1;
             const bool reverse = INT_ARG(1) == 1;
 

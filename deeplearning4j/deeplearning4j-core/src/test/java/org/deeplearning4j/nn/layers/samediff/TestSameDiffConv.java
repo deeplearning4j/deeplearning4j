@@ -213,6 +213,12 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                             INDArray outLoaded = netLoaded.output(in);
 
                                             assertEquals(msg, outExp, outLoaded);
+
+                                            //Sanity check on different minibatch sizes:
+                                            INDArray newIn = Nd4j.vstack(in, in);
+                                            INDArray outMbsd = net.output(newIn);
+                                            INDArray outMb = net2.output(newIn);
+                                            assertEquals(outMb, outMbsd);
                                         }
                                     }
                                 }
@@ -306,6 +312,10 @@ public class TestSameDiffConv extends BaseDL4JTest {
                         assertTrue(msg, gradOK);
 
                         TestUtils.testModelSerialization(net);
+
+                        //Sanity check on different minibatch sizes:
+                        INDArray newIn = Nd4j.vstack(f, f);
+                        net.output(newIn);
                     }
                 }
             }

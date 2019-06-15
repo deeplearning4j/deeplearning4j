@@ -41,7 +41,7 @@ void IndexReduce<X>::exec(const int opNum,
                         void *x,  Nd4jLong *xShapeInfo,
                         void *extraParams,
                         Nd4jLong *z, Nd4jLong *zShapeInfo,
-                        int *dimension, int dimensionLength, 
+                        int *dimension, int dimensionLength,
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
 DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
@@ -51,7 +51,7 @@ DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dime
 template <typename X>
 template<typename OpType>
 Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
-        
+
     auto x = reinterpret_cast<X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -116,12 +116,22 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto x = reinterpret_cast<X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
+    const Nd4jLong zLen = shape::length(zShapeInfo);
+
+    if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+        if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+            return;
+        const auto indexValue = OpType::startingIndexValue(x);
+        PRAGMA_OMP_PARALLEL_FOR_IF(zLen > nd4j::Environment::getInstance()->elementwiseThreshold())
+        for (uint i = 0; i < zLen; i++)
+            z[i] = indexValue.index;;
+        return;
+    }
+
     if(shape::isScalar(zShapeInfo)) {
         z[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
         return;
     }
-
-    const Nd4jLong zLen = shape::length(zShapeInfo);
 
     auto tadOnlyShapeInfo = tadShapeInfo;
     Nd4jLong *tadOffsets = tadOffset;

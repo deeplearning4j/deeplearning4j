@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -61,6 +62,9 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     public static final int DEFAULT_PRECISION = 4;
     public static final double DEFAULT_EDGE_VALUE = 0.0;
+
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
 
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
     //use INDArrays to store the counts
@@ -119,6 +123,29 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
     }
 
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
+
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
+    }
+
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
@@ -126,61 +153,47 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
-        if (labelsMask == null || labelsMask.rank() == 2) {
-            super.evalTimeSeries(labels, predictions, labelsMask);
-            return;
-        } else if (labelsMask.rank() != 3) {
-            throw new IllegalArgumentException("Labels must: must be rank 2 or 3. Got: " + labelsMask.rank());
+        if(recordMetaData != null){
+            throw new UnsupportedOperationException("Evaluation with record metadata not yet implemented for EvaluationBinary");
         }
-
-        //Per output time series masking
-        INDArray l2d = EvaluationUtils.reshapeTimeSeriesTo2d(labels);
-        INDArray p2d = EvaluationUtils.reshapeTimeSeriesTo2d(predictions);
-        INDArray m2d = EvaluationUtils.reshapeTimeSeriesTo2d(labelsMask);
-
-        eval(l2d, p2d, m2d);
+        eval(labels, networkPredictions, maskArray);
     }
 
     @Override
-    public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
+    public void eval(INDArray labelsArr, INDArray predictionsArr, INDArray maskArr) {
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
-        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(networkPredictions, Conditions.isNan())).getFinalResult().longValue();
+        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictionsArr, Conditions.isNan())).getFinalResult().longValue();
         org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
                 " %s NaNs present in predictions INDArray", count);
 
-        if (countTruePositive != null && countTruePositive.length != labels.size(1)) {
+        if (countTruePositive != null && countTruePositive.length != labelsArr.size(axis)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "
-                            + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
+                            + "size " + countTruePositive.length + ", got labels array with size " + labelsArr.size(axis) + " for axis " + axis);
         }
 
-        if (labels.rank() == 3) {
-            evalTimeSeries(labels, networkPredictions, maskArray);
-            return;
-        }
+        Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labelsArr, predictionsArr, maskArr, axis);
+        INDArray labels = p.getFirst();
+        INDArray predictions = p.getSecond();
+        INDArray maskArray = p.getThird();
 
-        if(labels.dataType() != networkPredictions.dataType())
-            labels = labels.castTo(networkPredictions.dataType());
+        if(labels.dataType() != predictions.dataType())
+            labels = labels.castTo(predictions.dataType());
 
-        if(decisionThreshold != null && decisionThreshold.dataType() != networkPredictions.dataType())
-            decisionThreshold = decisionThreshold.castTo(networkPredictions.dataType());
+        if(decisionThreshold != null && decisionThreshold.dataType() != predictions.dataType())
+            decisionThreshold = decisionThreshold.castTo(predictions.dataType());
 
         //First: binarize the network prediction probabilities, threshold 0.5 unless otherwise specified
         //This gives us 3 binary arrays: labels, predictions, masks
         INDArray classPredictions;
         if (decisionThreshold != null) {
-            classPredictions = Nd4j.createUninitialized(DataType.BOOL, networkPredictions.shape());
+            classPredictions = Nd4j.createUninitialized(DataType.BOOL, predictions.shape());
             Nd4j.getExecutioner()
-                            .exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
+                            .exec(new BroadcastGreaterThan(predictions, decisionThreshold, classPredictions, 1));
         } else {
-            classPredictions = networkPredictions.gt(0.5);
+            classPredictions = predictions.gt(0.5);
         }
-        classPredictions = classPredictions.castTo(networkPredictions.dataType());
+        classPredictions = classPredictions.castTo(predictions.dataType());
 
         INDArray notLabels = labels.rsub(1.0);  //If labels are 0 or 1, then rsub(1) swaps
         INDArray notClassPredictions = classPredictions.rsub(1.0);
@@ -218,7 +231,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         addInPlace(countFalseNegative, fnCount);
 
         if (rocBinary != null) {
-            rocBinary.eval(labels, networkPredictions, maskArray);
+            rocBinary.eval(labels, predictions, maskArray);
         }
     }
 

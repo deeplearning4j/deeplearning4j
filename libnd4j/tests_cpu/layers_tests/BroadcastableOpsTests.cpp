@@ -580,6 +580,152 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
     ASSERT_TRUE(z.equalsTo(zExp));
 }
 
+TEST_F(BroadcastableOpsTests, broadcast_empty_2) {
+
+    NDArray y('c', {1,4}, {1,2,3,4});
+    NDArray x = NDArrayFactory::create<double>('c', {0, 4});
+    NDArray e = NDArrayFactory::create<double>('c', {0, 4});;
+
+    nd4j::ops::multiply op;
+    auto status = op.execute({&x, &y}, {&x}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(e.isSameShape(x));
+    ASSERT_TRUE(e.equalsTo(x));
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_empty_3) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {1, 0, 2});
+    NDArray y('c', {}, {0.1}, nd4j::DataType::FLOAT32);
+    NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});;
+
+    nd4j::ops::maximum op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_empty_4) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {1, 0, 1});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 0, 2});
+    NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});;
+
+    nd4j::ops::maximum op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_empty_5) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {1, 0, 1});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 0, 2});
+    NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});;
+
+    nd4j::ops::realdiv op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_empty_6) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {1, 0, 1});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {2, 2});
+    NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});;
+
+    nd4j::ops::realdiv op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_empty_7) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {1, 0, 2, 1});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 2, 0});
+    NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2, 0});;
+
+    nd4j::ops::realdiv op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
+
+TEST_F(BroadcastableOpsTests, broadcast_bool_empty_1) {
+
+    NDArray y('c', {3,4}, {0,0,0,0,  1,2,3,4,  1,2,3,4});
+    NDArray x(nd4j::DataType::DOUBLE, y.getContext(), false);
+    NDArray z(nd4j::DataType::BOOL, y.getContext(), false);
+    NDArray zExp(nd4j::DataType::BOOL, y.getContext(), false);
+
+    nd4j::ops::greater op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(z.isSameShape(zExp));
+    ASSERT_TRUE(z.equalsTo(zExp));
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_bool_empty_2) {
+
+    NDArray y('c', {1,4}, {1,2,3,4});
+    NDArray x = NDArrayFactory::create<double>('c', {0, 4});
+    NDArray e = NDArrayFactory::create<bool>('c', {0, 4});;
+
+
+    nd4j::ops::greater op;
+    auto result  = op.execute({&x, &y}, {}, {}, {});
+
+    auto z = result->at(0);
+
+    z->printShapeInfo("z");
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(*z));
+
+    delete result;
+}
+
 TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
 
     NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);

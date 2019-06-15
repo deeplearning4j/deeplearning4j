@@ -36,7 +36,7 @@ std::string NDArray::e(const Nd4jLong i) const;
 template <typename T>
 NDArray* NDArray::asT() const{
 
-    auto result = new NDArray(ordering(), isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), DataTypeUtils::fromT<T>());
+    auto result = isScalar() ? new NDArray('c', {}, {0.}, DataTypeUtils::fromT<T>(), this->getContext()) : new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
     auto l = this->lengthOf();
 
     prepareSpecialUse({result}, {this});
@@ -67,17 +67,18 @@ NDArray::NDArray(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
-    if (shape.empty())
-        throw std::runtime_error("NDArray constructor: input shape is empty !");
-
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
     _context = context;
-    _isAttached = getContext()->getWorkspace() != nullptr;
+    _isAttached = _context->getWorkspace() != nullptr;
     _offset = 0;
 
-    setShapeInfo(ShapeDescriptor(dtype, order, shape));
+    if (shape.empty())
+        setShapeInfo(ShapeDescriptor::emptyDescriptor(dtype));
+    else
+        setShapeInfo(ShapeDescriptor(dtype, order, shape));
+
     _buffer = std::make_shared<DataBuffer>(lengthOf() * DataTypeUtils::sizeOf(dtype), dtype, getContext()->getWorkspace());
     _buffer->setToZeroBuffers();
 }
@@ -85,16 +86,20 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::LaunchContext * context) {
 
-    if (shape.empty())
-        throw std::runtime_error("NDArray constructor: input shape is empty !");
-
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
     _context = context;
     _offset  = 0;
 
-    setShapeInfo(ShapeDescriptor(dtype, order, shape));
+    if (shape.size() == 0) {
+        if (data.size() == 0)
+            setShapeInfo(ShapeDescriptor::emptyDescriptor(dtype));
+        else
+            setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
+    } else {
+        setShapeInfo(ShapeDescriptor(dtype, order, shape));
+    }
 
     if (lengthOf() != data.size()) {
         nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), lengthOf());
@@ -2441,6 +2446,9 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* othe
     if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
         throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
+    if (isEmpty() || other->isEmpty())
+        return;
+
     NDArray::prepareSpecialUse({target}, {this, other});
 
     if (isScalar()) {
@@ -2513,6 +2521,9 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
     if(target == nullptr || other == nullptr)
         throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
 
+    if (isEmpty() || other->isEmpty())
+        return;
+
     NDArray::prepareSpecialUse({target}, {this, other});
 
     if (isScalar()) {
@@ -2583,6 +2594,13 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) const {
+    if (isEmpty() || other.isEmpty()) {
+        if (isEmpty())
+            return NDArray(*this);
+        else
+            return NDArray(other);
+    }
+
     Nd4jLong* newShapeInfo = nullptr;
     if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of new array = max->rankOf)()
         throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
@@ -2812,6 +2830,19 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))
         return true;
 
+    const bool isOutShapeEmpty = std::find(cshape.begin(), cshape.end(), 0) != cshape.end();
+
+    if(isEmpty() && !isOutShapeEmpty)
+        throw std::invalid_argument("NDArray::reshapei: can't reshape empty array to non-empty !");
+    if(!isEmpty() && isOutShapeEmpty)
+        throw std::invalid_argument("NDArray::reshapei: can't reshape non-empty array to empty !");
+    if(isEmpty() && isOutShapeEmpty) {
+        Nd4jLong* shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
+        setShapeInfo(shapeInfoNew);
+        RELEASE(shapeInfoNew, getContext()->getWorkspace());
+        return true;
+    }
+
     std::vector<Nd4jLong> shape(cshape);
     int rank = shape.size();
 
@@ -2823,7 +2854,7 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     for (int i = 0; i < (int) shape.size(); i++) {
         if (shape[i] < 0) {
             if (numberNegativesOnes >= 1)
-                throw std::runtime_error("Only one dimension can be negative at once");
+                throw std::runtime_error("NDArray::reshapei: only one dimension can be negative at once");
 
             numberNegativesOnes++;
 
@@ -3664,7 +3695,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
     if(rankOf() == copy.size() || copy.empty()) {
         NativeOpExecutioner::execReduceSameScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
     }
-    else {
+    else { //if (!isEmpty()) {
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
         NativeOpExecutioner::execReduceSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
@@ -4198,6 +4229,9 @@ NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& d
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUnitiesInShape, const bool isStrided)  const {
 
+    if(isEmpty())
+        throw std::invalid_argument("NDArray::operator(sub-arrays): array is empty !");
+
     const int rank = rankOf();
     Nd4jLong *newShapeInfo = ShapeBuilders::copyShapeInfo(getShapeInfo(), true, getContext()->getWorkspace());
 
@@ -4259,6 +4293,9 @@ NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& di
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd4jLong* &subArrShapeInfo, Nd4jLong* &subArrOffsets, bool keepUnitiesInShape) const {
+
+    if(isEmpty())
+        throw std::invalid_argument("NDArray::getSubArrShapeAndOffsets: array is empty !");
 
     const int rank = rankOf();
     const int subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();

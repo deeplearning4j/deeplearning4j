@@ -454,7 +454,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
 
         if (ews() != 1) {
             for (uint i = 0; i < _length; i++)
-                cudaMemcpyAsync(pHost + i * sizeof(T), getSpecialBuffer() + getOffset(i) * sizeof(T), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
+                cudaMemcpyAsync(reinterpret_cast<T*>(pHost) + i, specialBufferWithOffset(i), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
         }
         else
             cudaMemcpyAsync(pHost, getSpecialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
@@ -474,6 +474,12 @@ template void NDArray::printCurrentBuffer<int>(const bool host,const char* msg, 
 template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
 template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
 
+
+#if defined(__CUDACC__) && !defined(BUILD_TESTS)
+
+#include <cpu/NDArrayLambda.hpp>
+
+#endif
 
 } // end namespace nd4j
 #endif

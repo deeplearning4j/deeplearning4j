@@ -48,6 +48,20 @@ namespace functions {
             const auto xEws = shape::elementWiseStride(xShapeInfo);
             const int rank = shape::rank(xShapeInfo);
 
+            if (shape::isEmpty(xShapeInfo)) {
+                z[0] = OpType::startingValue(x);
+                return;
+            }
+
+            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                    return;
+                const auto startingVal = OpType::startingValue(x);
+                PRAGMA_OMP_PARALLEL_FOR_IF(length > nd4j::Environment::getInstance()->elementwiseThreshold())
+                for (uint i = 0; i < length; i++)
+                    z[i] = startingVal;
+                return;
+            }
 
             if (xEws >= 1) {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
@@ -71,7 +85,7 @@ namespace functions {
                 for (int e = 0; e < maxThreads; e++)
                     start = OpType::update(start, intermediate[e], extraParams);
 
-                z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+                z[0] = OpType::postProcess(start, length, extraParams);
             }
         }
 
@@ -171,6 +185,16 @@ namespace functions {
 
                 auto zLength = shape::length(zShapeInfo);
 
+                if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+                    if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                        return;
+                    const auto startingVal = OpType::startingValue(x);
+                    PRAGMA_OMP_PARALLEL_FOR_IF(zLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+                    for (uint i = 0; i < zLength; i++)
+                        z[i] = startingVal;
+                    return;
+                }
+
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset
                 //the squeezed information doesn't render the right strides for
@@ -231,9 +255,9 @@ namespace functions {
                 if (xEws == 1) {
 
                     PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                    {                
+                    {
                         auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
+                        auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
                         auto xi = x + threadOffset;
                         auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
@@ -242,15 +266,15 @@ namespace functions {
                             local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
 
                         PRAGMA_OMP_CRITICAL
-                        startingVal = OpType::update(startingVal, local, extraParams);        
+                        startingVal = OpType::update(startingVal, local, extraParams);
                     }
                 }
                 else {
 
                     PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                    {                
+                    {
                         auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();                    
+                        auto threadNum = omp_get_thread_num();
                         auto threadOffset = info.getThreadOffset(threadNum);
                         auto xi = x + xEws*threadOffset;
                         auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
@@ -259,8 +283,8 @@ namespace functions {
                             local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
 
                         PRAGMA_OMP_CRITICAL
-                        startingVal = OpType::update(startingVal, local, extraParams);        
-                    }                    
+                        startingVal = OpType::update(startingVal, local, extraParams);
+                    }
                 }
                 return OpType::postProcess(startingVal, length, extraParams);
             }

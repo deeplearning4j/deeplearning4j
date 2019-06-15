@@ -14,13 +14,16 @@ import org.nd4j.graph.UIGraphStructure;
 import org.nd4j.graph.UIStaticInfoRecord;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -54,7 +57,15 @@ public class UIListenerTest {
                 .weightDecay(1e-3, true)
                 .build());
 
-        sd.fit(iter, 30);
+        sd.fit(iter, 20);
+
+        //Test inference after training with UI Listener still around
+        Map<String, INDArray> m = new HashMap<>();
+        iter.reset();
+        m.put("in", iter.next().getFeatures());
+        INDArray out = sd.execSingle(m, "softmax");
+        assertNotNull(out);
+        assertArrayEquals(new long[]{150, 3}, out.shape());
     }
 
     @Test

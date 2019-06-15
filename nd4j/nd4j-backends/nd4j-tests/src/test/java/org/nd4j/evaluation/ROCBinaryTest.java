@@ -24,10 +24,16 @@ import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -204,6 +210,203 @@ public class ROCBinaryTest extends BaseNd4jTest {
                 PrecisionRecallCurve p = rbMasked.getPrecisionRecallCurve(i);
 
                 assertEquals(pExp, p);
+            }
+        }
+    }
+
+
+
+    @Test
+    public void testROCBinary3d() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        ROCBinary e3d = new ROCBinary();
+        ROCBinary e2d = new ROCBinary();
+
+        e3d.eval(label, prediction);
+        e2d.eval(l2d, p2d);
+
+        for (ROCBinary.Metric m : ROCBinary.Metric.values()) {
+            for( int i=0; i<5; i++ ) {
+                double d1 = e3d.scoreForMetric(m, i);
+                double d2 = e2d.scoreForMetric(m, i);
+                assertEquals(m.toString(), d2, d1, 1e-6);
+            }
+        }
+    }
+
+    @Test
+    public void testROCBinary4d() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+        NdIndexIterator iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        ROCBinary e4d = new ROCBinary();
+        ROCBinary e2d = new ROCBinary();
+
+        e4d.eval(label, prediction);
+        e2d.eval(l2d, p2d);
+
+        for (ROCBinary.Metric m : ROCBinary.Metric.values()) {
+            for( int i=0; i<3; i++ ) {
+                double d1 = e4d.scoreForMetric(m, i);
+                double d2 = e2d.scoreForMetric(m, i);
+                assertEquals(m.toString(), d2, d1, 1e-6);
+            }
+        }
+    }
+
+    @Test
+    public void testROCBinary3dMasking() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+
+        //Check "DL4J-style" 2d per timestep masking [minibatch, seqLength] mask shape
+        INDArray mask2d = Nd4j.randomBernoulli(0.5, 2, 10);
+        rowsP.clear();
+        rowsL.clear();
+        NdIndexIterator iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            if(mask2d.getDouble(idx[0], idx[1]) != 0.0) {
+                INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+                rowsP.add(prediction.get(idxs));
+                rowsL.add(label.get(idxs));
+            }
+        }
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        ROCBinary e3d_m2d = new ROCBinary();
+        ROCBinary e2d_m2d = new ROCBinary();
+        e3d_m2d.eval(label, prediction, mask2d);
+        e2d_m2d.eval(l2d, p2d);
+
+
+
+        //Check per-output masking:
+        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        rowsP.clear();
+        rowsL.clear();
+        List<INDArray> rowsM = new ArrayList<>();
+        iter = new NdIndexIterator(2, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+            rowsM.add(perOutMask.get(idxs));
+        }
+        p2d = Nd4j.vstack(rowsP);
+        l2d = Nd4j.vstack(rowsL);
+        INDArray m2d = Nd4j.vstack(rowsM);
+
+        ROCBinary e4d_m2 = new ROCBinary();
+        ROCBinary e2d_m2 = new ROCBinary();
+        e4d_m2.eval(label, prediction, perOutMask);
+        e2d_m2.eval(l2d, p2d, m2d);
+        for(ROCBinary.Metric m : ROCBinary.Metric.values()){
+            for(int i=0; i<3; i++ ) {
+                double d1 = e4d_m2.scoreForMetric(m, i);
+                double d2 = e2d_m2.scoreForMetric(m, i);
+                assertEquals(m.toString(), d2, d1, 1e-6);
+            }
+        }
+    }
+
+    @Test
+    public void testROCBinary4dMasking() {
+        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+
+        List<INDArray> rowsP = new ArrayList<>();
+        List<INDArray> rowsL = new ArrayList<>();
+
+        //Check per-example masking:
+        INDArray mask1dPerEx = Nd4j.createFromArray(1, 0);
+
+        NdIndexIterator iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            if(mask1dPerEx.getDouble(idx[0]) != 0.0) {
+                INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+                rowsP.add(prediction.get(idxs));
+                rowsL.add(label.get(idxs));
+            }
+        }
+
+        INDArray p2d = Nd4j.vstack(rowsP);
+        INDArray l2d = Nd4j.vstack(rowsL);
+
+        ROCBinary e4d_m1 = new ROCBinary();
+        ROCBinary e2d_m1 = new ROCBinary();
+        e4d_m1.eval(label, prediction, mask1dPerEx);
+        e2d_m1.eval(l2d, p2d);
+        for(ROCBinary.Metric m : ROCBinary.Metric.values()){
+            for( int i=0; i<3; i++ ) {
+                double d1 = e4d_m1.scoreForMetric(m, i);
+                double d2 = e2d_m1.scoreForMetric(m, i);
+                assertEquals(m.toString(), d2, d1, 1e-6);
+            }
+        }
+
+        //Check per-output masking:
+        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        rowsP.clear();
+        rowsL.clear();
+        List<INDArray> rowsM = new ArrayList<>();
+        iter = new NdIndexIterator(2, 10, 10);
+        while (iter.hasNext()) {
+            long[] idx = iter.next();
+            INDArrayIndex[] idxs = new INDArrayIndex[]{NDArrayIndex.point(idx[0]), NDArrayIndex.all(), NDArrayIndex.point(idx[1]), NDArrayIndex.point(idx[2])};
+            rowsP.add(prediction.get(idxs));
+            rowsL.add(label.get(idxs));
+            rowsM.add(perOutMask.get(idxs));
+        }
+        p2d = Nd4j.vstack(rowsP);
+        l2d = Nd4j.vstack(rowsL);
+        INDArray m2d = Nd4j.vstack(rowsM);
+
+        ROCBinary e3d_m2 = new ROCBinary();
+        ROCBinary e2d_m2 = new ROCBinary();
+        e3d_m2.eval(label, prediction, perOutMask);
+        e2d_m2.eval(l2d, p2d, m2d);
+        for(ROCBinary.Metric m : ROCBinary.Metric.values()){
+            for( int i=0; i<3; i++) {
+                double d1 = e3d_m2.scoreForMetric(m, i);
+                double d2 = e2d_m2.scoreForMetric(m, i);
+                assertEquals(m.toString(), d2, d1, 1e-6);
             }
         }
     }

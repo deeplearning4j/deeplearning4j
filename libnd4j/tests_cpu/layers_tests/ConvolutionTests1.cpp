@@ -2021,7 +2021,8 @@ TEST_F(ConvolutionTests1, vol2col_test1) {
     // PointersManager manager(columnsExpected.getContext());
     // manager.printDevContentOnHost<float>(columnsExpected.getSpecialBuffer(), columnsExpected.lengthOf());
 
-    nd4j::ops::ConvolutionUtils::vol2col(*LaunchContext::defaultContext(), volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    graph::Context context(1);
+    nd4j::ops::ConvolutionUtils::vol2col(context, volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     ASSERT_TRUE(columns.equalsTo(columnsExpected));
 }
@@ -2052,7 +2053,8 @@ TEST_F(ConvolutionTests1, vol2col_test2) {
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,
             -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.});
 
-    nd4j::ops::ConvolutionUtils::vol2col(*LaunchContext::defaultContext(), volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    graph::Context context(1);
+    nd4j::ops::ConvolutionUtils::vol2col(context, volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     ASSERT_TRUE(columns.equalsTo(columnsExpected));
 }

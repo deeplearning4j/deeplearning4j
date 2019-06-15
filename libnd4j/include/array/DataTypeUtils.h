@@ -53,6 +53,15 @@ namespace nd4j {
         template <typename T>
         FORCEINLINE static _CUDA_HD T max();
 
+        /**
+         * returns inf for float/double and max for everything else
+         */
+        template <typename T>
+        FORCEINLINE static _CUDA_HD T infOrMax();
+
+        template <typename T>
+        FORCEINLINE static _CUDA_HD T nanOrZero();
+
         // returns the difference between 1.0 and the next representable value of the given floating-point type 
         template <typename T>
         FORCEINLINE static T eps();
@@ -288,6 +297,36 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {
 template <>
 FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::max<bfloat16>() {
     return bfloat16::max();
+}
+
+template <>
+FORCEINLINE _CUDA_HD float DataTypeUtils::infOrMax<float>() {
+    return std::numeric_limits<float>::infinity();
+}
+
+template <>
+FORCEINLINE _CUDA_HD double DataTypeUtils::infOrMax<double>() {
+    return std::numeric_limits<double>::infinity();
+}
+
+template <typename T>
+FORCEINLINE _CUDA_HD T DataTypeUtils::infOrMax() {
+    return DataTypeUtils::max<T>();
+}
+
+template <>
+FORCEINLINE _CUDA_HD float DataTypeUtils::nanOrZero<float>() {
+    return std::numeric_limits<float>::quiet_NaN();
+}
+
+template <>
+FORCEINLINE _CUDA_HD double DataTypeUtils::nanOrZero<double>() {
+    return std::numeric_limits<double>::quiet_NaN();
+}
+
+template <typename T>
+FORCEINLINE _CUDA_HD T DataTypeUtils::nanOrZero() {
+    return static_cast<T>(0);
 }
 
 FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {

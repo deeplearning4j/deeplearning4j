@@ -172,4 +172,10 @@ public interface WordVectors extends Serializable, EmbeddingInitializer {
      */
     void setModelUtils(ModelUtils utils);
 
+   /**
+     * Does implementation vectorize words absent in vocabulary
+     * @return boolean
+     */
+    boolean outOfVocabularySupported();
+
 }

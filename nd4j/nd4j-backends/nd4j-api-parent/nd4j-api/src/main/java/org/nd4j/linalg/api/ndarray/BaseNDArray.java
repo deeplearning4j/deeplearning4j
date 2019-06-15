@@ -995,6 +995,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
+        Preconditions.checkArgument(!this.isEmpty(), "tensorAlongDimension(...) can't be used on empty tensors");
+
         if (dimension.length >= rank()  || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return this;
         for (int i = 0; i < dimension.length; i++)
@@ -2170,13 +2172,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     /**
      * Returns true if this ndarray is 2d
-     * or 3d with a singleton element
      *
      * @return true if the element is a matrix, false otherwise
      */
     public boolean isMatrix() {
-        int rank = rank();
-        return (rank == 2 && (size(0) != 1 && size(1) != 1));
+        return rank() == 2;
     }
 
     protected INDArray newShape(long[] newShape, char ordering) {
@@ -4669,7 +4669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray min(int... dimension) {
-        validateNumericalArray("max", false);
+        validateNumericalArray("min", false);
         return Nd4j.getExecutioner().exec(new Min(this, dimension));
     }
 
@@ -4687,7 +4687,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sum(int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
     }
 
@@ -4699,7 +4699,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
@@ -4739,7 +4739,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sum(@NonNull INDArray result, int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, result, dimension));
     }
 
@@ -5219,7 +5219,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         if (this.isEmpty() && n.isEmpty())
-            return true;
+            return Shape.shapeEquals(this.shape(), n.shape());
 
         if (this.dataType() != n.dataType())
             return false;
@@ -6384,6 +6384,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray median(int... dimension) {
         validateNumericalArray("median", false);
+        //Check edge case: size 1 element. No dimension == full array
+        if(dimension.length == 0){
+            return Nd4j.scalar(dataType(), medianNumber().doubleValue());
+        }
+        long shapeProd = 1;
+        for (int d : dimension) {
+            shapeProd *= size(d);
+        }
+        if (shapeProd == 1) {
+            long[] newShape = ArrayUtil.removeIndex(shape(), dimension);
+            return dup('c').reshape('c', newShape);
+        }
         return percentile(50, dimension);
     }
 

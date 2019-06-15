@@ -135,16 +135,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length the length of the view
      */
     public BaseDataBuffer(Pointer pointer, Indexer indexer, long length) {
-        if (length < 1)
-            throw new IllegalArgumentException("Length must be >= 1");
+        if (length < 0)
+            throw new IllegalArgumentException("Length must be >= 0");
+
         initTypeAndSize();
         this.length = length;
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         this.underlyingLength = length;
         this.wrappedDataBuffer = this;
 
-        this.pointer = pointer;
-        setIndexer(indexer);
+        if (length > 0) {
+            this.pointer = pointer;
+            setIndexer(indexer);
+        }
     }
 
 

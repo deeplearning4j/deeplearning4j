@@ -29,6 +29,7 @@ import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -36,6 +37,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -171,7 +173,7 @@ public class TFGraphTestAllHelper {
                 if(maxRelErrorOverride == null) {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
-                    assertArrayEquals("Shapes for node \"" + outputNode + "\" are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
+                    assertArrayEquals("Shapes for node \"" + outputNode + "\" are not equal: TF: " + Arrays.toString(sTf) + " vs SD: " + Arrays.toString(sNd4j), sTf, sNd4j);
 
                     // TODO: once we add more dtypes files - this should be removed
                     if (tfPred.dataType() != nd4jPred.dataType())
@@ -179,14 +181,37 @@ public class TFGraphTestAllHelper {
 
                     boolean eq = tfPred.equals(nd4jPred);
                     if(!eq){
-                        NDArrayStrings s = new NDArrayStrings();
-                        String s1 = s.format(tfPred, false);
-                        String s2 = s.format(nd4jPred, false);
-                        System.out.print("TF: ");
-                        System.out.println(s1);
-                        System.out.print("SD: ");
-                        System.out.println(s2);
+                        //Check for both NaN, both inf
+                        if(tfPred.dataType().isFPType() && tfPred.equalShapes(nd4jPred) && tfPred.isNaN().castTo(DataType.INT).sumNumber().intValue() == tfPred.length()
+                                && nd4jPred.isNaN().castTo(DataType.INT).sumNumber().intValue() == nd4jPred.length()){
+                            //All NaNs in both arrays
+                            eq = true;
+                        } else if(tfPred.dataType().isFPType() && tfPred.equalShapes(nd4jPred) && tfPred.isInfinite().castTo(DataType.INT).sumNumber().intValue() == tfPred.length()
+                                && nd4jPred.isInfinite().castTo(DataType.INT).sumNumber().intValue() == nd4jPred.length()){
+                            //All infinite in both arrays. But need to check that it's all positive vs. negative infinite in both cases...
+                            NdIndexIterator iter = new NdIndexIterator(tfPred.shape());
+                            eq = true;
+                            while(iter.hasNext()){
+                                long[] next = iter.next();
+                                //Already know they are both infinite, only question is whether they are both positive and negative
+                                double d1 = tfPred.getDouble(next);
+                                double d2 = nd4jPred.getDouble(next);
+                                if((d1 > 0) != (d2 > 0)){
+                                    eq = false;
+                                    break;
+                                }
+                            }
+                        }
 
+                        if(!eq) {
+                            NDArrayStrings s = new NDArrayStrings();
+                            String s1 = s.format(tfPred, false);
+                            String s2 = s.format(nd4jPred, false);
+                            System.out.print("TF: ");
+                            System.out.println(s1);
+                            System.out.print("SD: ");
+                            System.out.println(s2);
+                        }
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
@@ -335,10 +360,19 @@ public class TFGraphTestAllHelper {
 //        = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
         //System.out.println(graph.summary());
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
+            List<String> outputs = graph.outputs();
+            if(outputs.isEmpty()){
+                //Edge case: no ops
+                List<SDVariable> vars = graph.variables();
+                outputs = new ArrayList<>();
+                for(SDVariable v : vars) {
+                    outputs.add(v.getVarName());
+                }
+            }
             if (!inputs.isEmpty()) {
-                graph.exec(inputs, graph.outputs()); //This is expected to be just one result
+                graph.exec(inputs, outputs); //This is expected to be just one result
             } else {
-                graph.exec(Collections.emptyMap(), graph.outputs()); //there are graphs with no placeholders like g_00
+                graph.exec(Collections.emptyMap(), outputs); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
@@ -609,8 +643,13 @@ public class TFGraphTestAllHelper {
                     }
 
                     if (content.isEmpty()) {
-                        if (varShape.length == 1 && varShape[0] == 0) {
-                            varValue = Nd4j.empty(type);
+                        //Should be zeros in shape
+                        boolean foundZero = false;
+                        for( int s : varShape){
+                            foundZero |= (s == 0);
+                        }
+                        if(foundZero){
+                            varValue = Nd4j.create(type, ArrayUtil.toLongArray(varShape));
                         } else {
                             throw new IllegalStateException("Empty data but non-empty shape: " + resources.get(i).getSecond());
                         }

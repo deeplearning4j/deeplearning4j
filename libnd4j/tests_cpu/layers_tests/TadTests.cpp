@@ -302,6 +302,7 @@ TEST_F(TadTests, calcOffsets_1) {
         ASSERT_TRUE(offsets[e] == expOffsetsF[e]);
 }
 
+
 /////////////////////////////////////////////////////////////////
 TEST_F(TadTests, outerArrayIndexes_1) {
 

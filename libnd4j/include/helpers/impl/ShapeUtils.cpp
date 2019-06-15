@@ -108,27 +108,81 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
     return evalShapeForTensorDot(a->getShapeInfo(), b->getShapeInfo(), axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
 }
 
-Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
-    return evalReduceShapeInfo(order, dimensions, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
+
+//////////////////////////////////////////////////////////////////////////
+// evaluate output shape for reduce operation when input shape is empty
+Nd4jLong* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimsToExclude, const Nd4jLong *shapeInfo, const nd4j::DataType dataType, const bool keepDims, nd4j::memory::Workspace* workspace) {
+
+    if (dimsToExclude.size() == 0) {   // return copy of input shape
+        Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
+        ShapeDescriptor descriptor(outShapeInfo, dataType);
+        RELEASE(outShapeInfo, workspace);
+        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    }
+
+    const int rank = shape::rank(shapeInfo);
+    Nd4jLong* outShapeInfo = nullptr;
+
+    if (dimsToExclude.size() == rank) {  // return scalar or shape filled with unities
+
+        if(!keepDims)
+            outShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+        else
+            outShapeInfo = ShapeBuilders::createShapeInfo(dataType, order, std::vector<Nd4jLong>(rank, 1), workspace);
+    }
+    else {
+
+        shape::checkDimensions(rank, dimsToExclude);
+
+        std::vector<Nd4jLong> outShape;
+
+        if(keepDims) {
+            outShape.assign(shapeInfo + 1, shapeInfo + 1 + rank);
+            for(const auto& dim : dimsToExclude)
+                outShape[dim] = 1;
+        }
+        else {
+            for (uint i = 0, j = 0; i < rank; ++i) {
+                if(j < dimsToExclude.size() && i == dimsToExclude[j])
+                    ++j;
+                else
+                    outShape.emplace_back(shapeInfo[i + 1]);
+            }
+        }
+
+        outShapeInfo = ShapeBuilders::createShapeInfo(dataType, order, outShape, workspace);
+    }
+
+    ShapeDescriptor descriptor(outShapeInfo, dataType);
+    RELEASE(outShapeInfo, workspace);
+    return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
 }
 
-Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
-    return evalReduceShapeInfo(order, dimensions, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims, supportOldShapes, workspace);
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude, const NDArray& arr, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+    return evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
+}
+
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude, const Nd4jLong* shapeInfo, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+    return evalReduceShapeInfo(order, dimsToExclude, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims, supportOldShapes, workspace);
 }
 
 //////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
-    return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), dataType, keepDims, supportOldShapes, workspace);
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude, const NDArray& arr, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+    return evalReduceShapeInfo(order, dimsToExclude, arr.getShapeInfo(), dataType, keepDims, supportOldShapes, workspace);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
-Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude, const Nd4jLong *shapeInfo, const nd4j::DataType dataType, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
+
+    if(ArrayOptions::arrayType(shapeInfo) == ArrayType::EMPTY)
+        return ShapeUtils::evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
+
     Nd4jLong* newShapeInfo = nullptr;
 
     int rank = shape::rank(const_cast<Nd4jLong*>(shapeInfo));
 
-    if (dimensions.size() == 0) {                                               // return scalar or array with len=1 in this case
+    if (dimsToExclude.size() == 0) {                                               // return scalar or array with len=1 in this case
 
         if(keepDims && rank > 1) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
@@ -157,16 +211,16 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         }
     }
 
-    shape::checkDimensions(rank, dimensions);
+    shape::checkDimensions(rank, dimsToExclude);
 
-    int dimSize = dimensions.size();
+    int dimSize = dimsToExclude.size();
 
     if(keepDims) {
 
         ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
         newShapeInfo[0] = rank;
         for(int i = 0; i < rank; ++i)
-            if (std::binary_search(dimensions.begin(), dimensions.end(), i))                       // dimensions is already sorted after shape::checkDimensions() has been applied
+            if (std::binary_search(dimsToExclude.begin(), dimsToExclude.end(), i))                       // dimsToExclude is already sorted after shape::checkDimensions() has been applied
                 newShapeInfo[i+1] = 1;
             else
                 newShapeInfo[i+1] = shapeInfo[i+1];
@@ -178,7 +232,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     }
 
 	int newRank = rank - dimSize;
-	if (newRank==0 || (dimSize==1 && dimensions[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
+	if (newRank==0 || (dimSize==1 && dimsToExclude[0]==INT_MAX)) { 			// check whether given dimension is meant for the whole dimension
 
         if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
@@ -199,7 +253,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
     newShapeInfo[0] = newRank;                      // set rank
     int j=1;
     for(int i = 0; i < rank; ++i)
-        if (!std::binary_search(dimensions.begin(), dimensions.end(), i))                       // dimensions is already sorted after shape::checkDimensions() has been applied
+        if (!std::binary_search(dimsToExclude.begin(), dimsToExclude.end(), i))                       // dimsToExclude is already sorted after shape::checkDimensions() has been applied
             newShapeInfo[j++] = shapeInfo[i+1];
 
 	//ensure whether vector has proper shape for old shape type
@@ -208,7 +262,7 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
         RELEASE(newShapeInfo, workspace);
         ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);		// set newRank = 2
         newShapeInfo[0] = 2;
-        if (dimensions[0] == 0) {
+        if (dimsToExclude[0] == 0) {
             newShapeInfo[1] = 1;
             newShapeInfo[2] = oldValue;
         }
@@ -422,7 +476,22 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
             tmpShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
 
+    // nullify zero axis
+    for (int e = 0; e < maxRank; e++)
+        if (maxShapeInfo[e+1] == 0)
+            tmpShapeInfo[e+1] = 0;
+
+    int delta = maxRank - minRank;
+    for (int e = minRank - 1; e >= 0; e--)
+        if (minShapeInfo[e + 1] == 0)
+            tmpShapeInfo[e + 1 + delta] = 0;
+
     ShapeUtils::updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
+
+    if (shape::isEmpty(max) || shape::isEmpty(min)) {
+        ArrayOptions::setPropertyBit(tmpShapeInfo, ARRAY_EMPTY);
+        memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(Nd4jLong));
+    }
 
     ShapeDescriptor descriptor(tmpShapeInfo);
     RELEASE(tmpShapeInfo, workspace);
@@ -805,7 +874,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForMatmul(const Nd4jLong* xShapeInfo,
             nd4j_printf("ShapeUtils::evalShapeForMatmul method: since input arrays are vectors they must have the same length, but got x length = %i, y length = %i !", xShapeInfo[1], yShapeInfo[1]);
             throw std::invalid_argument("");
         }
-        return std::vector<Nd4jLong>({0});
+        return std::vector<Nd4jLong>({});
     }
 
 

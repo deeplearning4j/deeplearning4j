@@ -34,26 +34,26 @@ namespace nd4j {
 
             bool replace = false;
 
-            auto arguments = block.getIArguments();
-            if (block.width() == 2 && arguments->size() == 0) {
-                auto axis = INPUT_VARIABLE(1);
-                for (int e = 0; e < axis->lengthOf(); e++) {
-                    int ax = axis->e<int>(e);
+            auto origArgs = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+            std::vector<int> arguments({});
+            if(origArgs.size() > 0){
+                for (int e = 0; e < origArgs.size(); e++) {
+                    int ax = origArgs[e];
                     if (ax < 0)
                         ax += x->rankOf();
 
-                    arguments->emplace_back(ax);
+                    arguments.emplace_back(ax);
                 }
 
                 replace = true;
-            } else if (arguments->size() == 0) {
+            } else {
                 for (int e = x->rankOf() - 1; e >= 0; e--)
-                    arguments->emplace_back(e);
+                    arguments.emplace_back(e);
             }
 
             // 0D edge case
             if (x->rankOf() == 0) {
-                REQUIRE_TRUE(arguments->size() == 1, 0, "Permute: only one axis is allowed for scalar");
+                REQUIRE_TRUE(arguments.size() == 1, 0, "Permute: only one axis is allowed for scalar");
                 auto output = OUTPUT_VARIABLE(0);
                 if (!block.isInplace())
                     output->assign(x);
@@ -62,25 +62,17 @@ namespace nd4j {
             }
 
             if(block.isInplace()) {		// in-place
-                x->permutei(*arguments);
+                x->permutei(arguments);
                 STORE_RESULT(x);
-            } else {	
-                if (!replace) {			// not-in-place        
-                    auto output = OUTPUT_VARIABLE(0);
-                    // nd4j_printv("permute shape", *arguments);
-                    auto result = x->permute(*arguments);
-                    output->assign(result);
-                    STORE_RESULT(output);
-                    delete result;
-                } else {
-                    auto output = OUTPUT_VARIABLE(0); //->dup();
-                    output->assign(x);
-                    output->permutei(*arguments);
-                    
-                    //OVERWRITE_RESULT(output);
-                }           
+            } else {
+                auto output = OUTPUT_VARIABLE(0);
+                auto result = x->permute(arguments);
+                output->assign(result);
+                STORE_RESULT(output);
+                delete result;
             }
-        return Status::OK();
+
+            return Status::OK();
         }
 
         DECLARE_TYPES(permute) {
@@ -92,20 +84,21 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(permute) {
             auto shapeList = SHAPELIST();
-            auto arguments = block.getIArguments();
+            auto arguments = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+
             if (shape::rank(inputShape->at(0)) == 0) {
                 shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
-            } else if (inputShape->size() == 1 && !arguments->empty()) {
-                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace()));
-            } else if (inputShape->size() == 2) {
-                // dead end
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0))));
+            } else if (inputShape->size() == 1 && !arguments.empty()) {
+                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments.data(), arguments.size(), *INPUT_VARIABLE(0), block.workspace()));
             } else {
-                int rank = shape::rank(inputShape->at(0));
-                for (int e = rank - 1; e >= 0; e--)
-                    arguments->emplace_back(e);
+                if(arguments.size() == 0){
+                    //Reverse dimensions
+                    int rank = shape::rank(inputShape->at(0));
+                    for (int e = rank - 1; e >= 0; e--)
+                        arguments.emplace_back(e);
+                }
 
-                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace()));
+                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments.data(), arguments.size(), *INPUT_VARIABLE(0), block.workspace()));
             }
     
             return shapeList;

@@ -49,6 +49,12 @@ import java.util.List;
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
+    /**
+     * AUROC: Area under ROC curve<br>
+     * AUPRC: Area under Precision-Recall Curve
+     */
+    public enum Metric {AUROC, AUPRC}
+
     @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
 
@@ -391,5 +397,17 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     public static ROCBinary fromJson(String json){
         return fromJson(json, ROCBinary.class);
+    }
+
+    public double scoreForMetric(Metric metric, int idx){
+        assertIndex(idx);
+        switch (metric){
+            case AUROC:
+                return calculateAUC(idx);
+            case AUPRC:
+                return calculateAUCPR(idx);
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 }

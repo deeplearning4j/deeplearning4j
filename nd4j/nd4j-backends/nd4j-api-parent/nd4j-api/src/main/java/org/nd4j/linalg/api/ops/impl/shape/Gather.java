@@ -150,32 +150,33 @@ public class Gather extends DynamicCustomOp {
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
-        int ndim = arg(0).getShape().length;
-        int a = jaxis;
-        if(a < 0){
-            a += ndim;
+        SDVariable[] inputs = args();
+        SDVariable axis;
+        SDVariable rank = inputs[0].rank();
+        if(inputs.length == 2){
+            axis = sameDiff.constant(jaxis);
+            if(jaxis < 0)
+                axis = axis.add(rank);
+        } else {
+            axis = inputs[2];
         }
 
-        if(a == 0){
-            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
-        } else {
-            int[] permDims = new int[ndim];
-            permDims[0] = a;
-            for(int i=0; i<a; i++){
-                permDims[i+1] = i;
-            }
-            for(int i=a+1; i<ndim; i++){
-                permDims[i] = i;
-            }
-            inputGrad = sameDiff.permute(inputGrad, permDims);
-            SDVariable i_v_transposed = sameDiff.permute(i_v.get(0), permDims);
-            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v_transposed);
-            int[] reverseDims = new int[ndim];
-            for(int i=0; i<ndim; i++){
-                reverseDims[permDims[i]] = i;
-            }
-            inputGrad = sameDiff.permute(inputGrad, reverseDims);
-        }
+        //Use scatter add plus permute
+        SDVariable dimsExAxis = sameDiff.range(null, sameDiff.constant(0), rank, sameDiff.constant(1), DataType.INT);
+        SDVariable axisRank1 = axis.reshape(1);
+        dimsExAxis = sameDiff.math().listDiff(dimsExAxis, axisRank1)[0];  //Don't need indices
+        SDVariable permuteDims = sameDiff.concat(0, axisRank1, dimsExAxis);
+        SDVariable invertDims = sameDiff.invertPermutation(permuteDims);
+
+
+        //Permute gradients so original axis is at position 0... then scatter add, and reverse
+        SDVariable gradAtOut = i_v.get(0);
+        SDVariable permuteGrad = gradAtOut.permute(permuteDims);
+        SDVariable inputGradPermute = inputGrad.permute(permuteDims);
+        inputGrad = sameDiff.scatterAdd(inputGradPermute, arg(1), permuteGrad);
+
+        //Now, invert the permutation so axis is back where it was
+        inputGrad = inputGrad.permute(invertDims);
 
         return Arrays.asList(inputGrad, indicesGrad);
     }

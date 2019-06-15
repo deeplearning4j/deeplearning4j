@@ -1996,24 +1996,21 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testGatherEmpty(){
         /*
         tf.reset_default_graph()
-        # Hack to create empty array
-        input = tf.constant([False], dtype=tf.bool)
-        empty = tf.where(condition=input)
-        emptyInt = tf.cast(empty, tf.int32)
+        emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
         ingather = tf.reshape(tf.range(start=0,limit=100,delta=1,dtype=tf.float32), [25,4])
         gather = tf.gather(params=ingather, indices=emptyInt)
         sess = tf.Session()
         out = sess.run([gather])
         print(out[0].shape);
         print(out[0]);
-        >> (0, 1, 4)
+        >> (0, 4)
         >> []
          */
 
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
+//        Nd4j.getExecutioner().enableVerboseMode(true);
+//        Nd4j.getExecutioner().enableDebugMode(true);
 
-        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        INDArray emptyInt = Nd4j.create(DataType.INT, 0);
         INDArray inGather = Nd4j.linspace(1,100,100,DataType.FLOAT).reshape(25,4);
 
         DynamicCustomOp op = DynamicCustomOp.builder("gather")
@@ -2022,9 +2019,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         long[] shape = l.get(0).getShape();
+        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
         boolean isEmpty = l.get(0).isEmpty();
         assertTrue(isEmpty);
-        assertArrayEquals(new long[0], shape);
     }
 
     @Test
@@ -2071,11 +2068,9 @@ public class ShapeOpValidation extends BaseOpValidation {
         cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
 
         tf.reset_default_graph()
-        # Hack to create empty array
         input = tf.constant([False], dtype=tf.bool)
-        empty = tf.where(condition=input)
-        emptyFloat = tf.cast(empty, tf.float32)
-        var11 = tf.reshape(tf.constant([1], dtype=tf.float32), shape=[1,1])
+        emptyFloat = tf.constant([], shape=[0,1], dtype=tf.float32)
+        var11 = tf.constant([1], dtype=tf.float32, shape=[1,1])
 
         concat = tf.concat(values=[emptyFloat, emptyFloat, var11, emptyFloat], axis=0)
 
@@ -2085,18 +2080,32 @@ public class ShapeOpValidation extends BaseOpValidation {
         print(out[0]);
          */
 
-        INDArray empty = Nd4j.empty(DataType.FLOAT);
+        INDArray one1 = Nd4j.create(DataType.FLOAT, 1, 1);
+        INDArray empty01 = Nd4j.create(DataType.FLOAT, 0, 1);
 
         DynamicCustomOp op = DynamicCustomOp.builder("concat")
-                .addInputs(empty, empty, empty)
+                .addInputs(empty01, empty01, empty01)
                 .addIntegerArguments(0) //axis = 0
                 .build();
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertEquals(1, l.size());
         assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{0, 1}, l.get(0).getShape());
 
-        op.addOutputArgument(empty);
+        op.addOutputArgument(Nd4j.create(DataType.FLOAT, 0, 1));
+        Nd4j.exec(op);
+
+
+        op = DynamicCustomOp.builder("concat")
+                .addInputs(empty01, empty01, one1, empty01)
+                .addIntegerArguments(0) //axis = 0
+                .build();
+        l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertFalse(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{1, 1}, l.get(0).getShape());
+        op.addOutputArgument(Nd4j.create(DataType.FLOAT, 1, 1));
         Nd4j.exec(op);
     }
 
@@ -2104,21 +2113,21 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testEmptyGather(){
         /*
         tf.reset_default_graph()
-        # Hack to create empty array
-        input = tf.constant([False], dtype=tf.bool)
-        empty = tf.where(condition=input)
-        emptyFloat = tf.cast(empty, tf.float32)
-        emptyInt = tf.cast(empty, tf.int32)
+        inputFloat = tf.constant([], shape=[0,2,3], dtype=tf.float32)
+        emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
 
-        gather = tf.gather(params=emptyFloat, indices=emptyInt)
+        gather = tf.gather(params=inputFloat, indices=emptyInt)
 
         sess = tf.Session()
         out = sess.run([gather])
         print(out[0].shape)
         print(out[0]);
+
+        > (0, 2, 3)
+        > []
          */
-        INDArray emptyFloat = Nd4j.empty(DataType.FLOAT);
-        INDArray emptyInt = Nd4j.empty(DataType.INT);
+        INDArray emptyFloat = Nd4j.create(DataType.FLOAT, 0, 2, 3);
+        INDArray emptyInt = Nd4j.create(DataType.INT, 0);
         DynamicCustomOp op = DynamicCustomOp.builder("gather")
                 .addInputs(emptyFloat, emptyInt)
                 .build();
@@ -2126,6 +2135,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertEquals(1, l.size());
         assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{0,2,3}, l.get(0).getShape());
 
         INDArray out = Nd4j.empty(DataType.FLOAT);
         op.addOutputArgument(out);
@@ -2259,7 +2269,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertTrue(l.get(0).isEmpty());
 
-        INDArray out = Nd4j.empty(DataType.INT);
+        INDArray out = Nd4j.create(DataType.INT, 0);
         op.setOutputArgument(0, out);
 
         Nd4j.exec(op);
@@ -2278,7 +2288,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertTrue(l.get(0).isEmpty());
 
-        INDArray out = Nd4j.empty(DataType.INT);
+        INDArray out = Nd4j.create(DataType.INT, 0);
         op.setOutputArgument(0, out);
 
         Nd4j.exec(op);
@@ -2295,11 +2305,11 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .build();
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
-        System.out.println(Arrays.toString(l.get(0).getShape()));
         assertEquals(1, l.size());
+        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
         assertTrue(l.get(0).isEmpty());
 
-        op.setOutputArgument(0, Nd4j.empty(DataType.FLOAT));
+        op.setOutputArgument(0, Nd4j.create(DataType.FLOAT, 0, 4));
         Nd4j.exec(op);
     }
 
@@ -2312,11 +2322,116 @@ public class ShapeOpValidation extends BaseOpValidation {
         DynamicCustomOp op = new Fill(shape, value, null);
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
-        System.out.println(Arrays.toString(l.get(0).getShape()));
         assertEquals(1, l.size());
         assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
 
-        op.setOutputArgument(0, Nd4j.empty(DataType.FLOAT));
+        op.setOutputArgument(0, Nd4j.create(DataType.FLOAT, 0, 4));
         Nd4j.exec(op);
+    }
+
+    @Test
+    public void testPermuteShapeDynamicAxis(){
+
+        DynamicCustomOp op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4),
+                        Nd4j.createFromArray(1, 0))
+                .build();
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+
+        op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4))
+                .addIntegerArguments(1, 0)
+                .build();
+        l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+
+
+        op = DynamicCustomOp.builder("permute")
+                .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4, 5),
+                        Nd4j.createFromArray(1, 2, 0))
+                .build();
+        l = op.calculateOutputShape();
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+        assertArrayEquals(new long[]{4, 5, 3}, l.get(0).getShape());
+    }
+
+    @Test
+    public void testGather2(){
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.FLOAT).reshape(2,3));
+        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
+
+        SDVariable gathered = sd.gather(input, indices, 1);
+        SDVariable loss = gathered.std(true);
+
+        sd.exec(null, gathered.getVarName());
+        sd.setLossVariables(gathered.getVarName());
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradCheckEpsilon(1e-3)
+                .gradCheckMaxRelativeError(1e-4));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testPermute3(){
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
+        INDArray permute = Nd4j.createFromArray(1,0);
+
+        System.out.println(in);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.var(in);
+        SDVariable v2 = sd.constant(permute);
+
+        SDVariable out = v.permute(v2);
+
+        INDArray exp = in.transpose();
+        INDArray outArr = out.eval();
+        assertEquals(exp, outArr);
+    }
+
+    @Test
+    public void testPermute4(){
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
+        INDArray permute = Nd4j.createFromArray(1,0);
+
+        INDArray exp = in.transpose();
+
+        for( boolean iargs : new boolean[]{true, false}) {
+
+
+            DynamicCustomOp.DynamicCustomOpsBuilder b = DynamicCustomOp.builder("permute")
+                    .addInputs(in)
+                    .addOutputs(Nd4j.create(DataType.FLOAT, 2, 3));
+
+            if(iargs){
+                b.addIntegerArguments(1, 0);
+            } else {
+                b.addInputs(permute);
+            }
+
+            DynamicCustomOp op = b.build();
+            Nd4j.exec(op);
+
+            System.out.println(in);
+            System.out.println(op.outputArguments()[0]);
+
+            assertEquals(exp, op.getOutputArgument(0));
+        }
+    }
+
+    @Test
+    public void testInvertPermutation(){
+        DynamicCustomOp op = DynamicCustomOp.builder("invert_permutation")
+                .addInputs(Nd4j.createFromArray(1, 0))
+                .build();
     }
 }

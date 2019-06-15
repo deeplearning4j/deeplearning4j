@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -69,6 +70,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
 
+    @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
+    protected int axis = 1;
     private boolean initialized;
     private List<String> columnNames;
     private long precision;
@@ -151,6 +154,29 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
     }
 
+    /**
+     * Set the axis for evaluation - this is the dimension along which the probability (and label classes) are present.<br>
+     * For DL4J, this can be left as the default setting (axis = 1).<br>
+     * Axis should be set as follows:<br>
+     * For 2D (OutputLayer), shape [minibatch, numClasses] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NCW format, shape [minibatch, numClasses, sequenceLength] - axis = 1<br>
+     * For 3D, RNNs/CNN1D (DL4J RnnOutputLayer), NWC format, shape [minibatch, sequenceLength, numClasses] - axis = 2<br>
+     * For 4D, CNN2D (DL4J CnnLossLayer), NCHW format, shape [minibatch, channels, height, width] - axis = 1<br>
+     * For 4D, CNN2D, NHWC format, shape [minibatch, height, width, channels] - axis = 3<br>
+     *
+     * @param axis Axis to use for evaluation
+     */
+    public void setAxis(int axis){
+        this.axis = axis;
+    }
+
+    /**
+     * Get the axis - see {@link #setAxis(int)} for details
+     */
+    public int getAxis(){
+        return axis;
+    }
+
     @Override
     public void reset() {
         initialized = false;
@@ -194,20 +220,11 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     @Override
-    public void eval(INDArray labels, INDArray predictions, INDArray maskArray) {
-        if (labels.rank() == 3) {
-            //Time series data
-            evalTimeSeries(labels, predictions, maskArray);
-            return;
-        }
-
-        if (maskArray != null && !Arrays.equals(maskArray.shape(), labels.shape())) {
-            //Time series (per time step) masks are handled in evalTimeSeries by extracting the relevant steps
-            // and flattening to 2d
-            throw new RuntimeException("Per output masking detected, but mask array and labels have different shapes: "
-                            + Arrays.toString(maskArray.shape()) + " vs. labels shape "
-                            + Arrays.toString(labels.shape()));
-        }
+    public void eval(INDArray labelsArr, INDArray predictionsArr, INDArray maskArr) {
+        Triple<INDArray,INDArray, INDArray> p = BaseEvaluation.reshapeAndExtractNotMasked(labelsArr, predictionsArr, maskArr, axis);
+        INDArray labels = p.getFirst();
+        INDArray predictions = p.getSecond();
+        INDArray maskArray = p.getThird();
 
         if(labels.dataType() != predictions.dataType())
             labels = labels.castTo(predictions.dataType());

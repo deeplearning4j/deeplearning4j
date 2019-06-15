@@ -72,6 +72,11 @@ namespace nd4j {
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
 
+
+            for (auto d:dims) {
+                REQUIRE_TRUE(inputShape->at(0)[d+1] != 0, 0, "ArgMax: you can't reduce along axis with 0 in shape");
+            }
+
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
                 return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));

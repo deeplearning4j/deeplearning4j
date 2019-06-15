@@ -211,6 +211,51 @@ public class NumpyFormatTests extends BaseNd4jTest {
         assertEquals(exp, arr);
     }
 
+
+    @Test
+    public void testNpy() throws Exception {
+        for(boolean empty : new boolean[]{false, true}) {
+            val dir = testDir.newFolder();
+            if(!empty) {
+                new ClassPathResource("numpy_arrays/npy/3,4/").copyDirectory(dir);
+            } else {
+                new ClassPathResource("numpy_arrays/npy/0,3_empty/").copyDirectory(dir);
+            }
+
+            File[] files = dir.listFiles();
+            int cnt = 0;
+
+            for (File f : files) {
+                if (!f.getPath().endsWith(".npy")) {
+                    log.warn("Skipping: {}", f);
+                    continue;
+                }
+
+                String path = f.getAbsolutePath();
+                int lastDot = path.lastIndexOf('.');
+                int lastUnderscore = path.lastIndexOf('_');
+                String dtype = path.substring(lastUnderscore + 1, lastDot);
+                System.out.println(path + " : " + dtype);
+
+                DataType dt = DataType.fromNumpy(dtype);
+                //System.out.println(dt);
+
+                INDArray exp;
+                if(empty){
+                    exp = Nd4j.create(dt, 0, 3);
+                } else {
+                    exp = Nd4j.arange(12).castTo(dt).reshape(3, 4);
+                }
+                INDArray act = Nd4j.createFromNpyFile(f);
+
+                assertEquals("Failed with file [" + f.getName() + "]", exp, act);
+                cnt++;
+            }
+
+            assertTrue(cnt > 0);
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

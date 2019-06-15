@@ -1531,6 +1531,21 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * List diff operation computes the difference between two 1d arrays, and also returns the indices - i.e., the positions
+     * where the output appears in the input X.<br>
+     * For inputs X and Y, listDiff returns everything in X but not in Y.<br>
+     * For example, if {@code X=[1,10,3,7,6]} and {@code Y=[10, 6]), then:
+     * output 0 (difference) = {@code [1,3,7]}<br>
+     * output 1 (indices) = {@code [0, 2, 3]}<br>
+     * @param x Input 1 - input values
+     * @param y Input 2 - values to remove
+     * @return 2 outputs - difference, and indices
+     */
+    public SDVariable[] listDiff(SDVariable x, SDVariable y){
+        return f().listdiff(x, y);
+    }
+
+    /**
      * Element-wise logarithm function (base e - natural logarithm): out = log(x)
      *
      * @param x Input variable
@@ -1648,8 +1663,12 @@ public class SDMath extends SDOps {
      * @return Output variable
      */
     public SDVariable logSumExp(String name, SDVariable input, int... dimensions) {
+        return logSumExp(name, input, false, dimensions);
+    }
+
+    public SDVariable logSumExp(String name, SDVariable input, boolean keepDims, int... dimensions) {
         validateNumerical("logSumExp reduction", input);
-        SDVariable ret = f().logSumExp(input, dimensions);
+        SDVariable ret = f().logSumExp(input, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 

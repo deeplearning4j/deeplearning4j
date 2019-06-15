@@ -71,6 +71,11 @@ public class Range extends DynamicCustomOp {
         this.dataType = dataType;
     }
 
+    public Range(SameDiff sd, SDVariable from, SDVariable to, SDVariable step, DataType dataType){
+        super(null, sd, new SDVariable[]{from, to, step});
+        this.dataType = dataType;
+    }
+
 
     @Override
     public int opNum() {
@@ -100,25 +105,6 @@ public class Range extends DynamicCustomOp {
         if(attributesForNode.containsKey("Tidx")){
             dataType = TFGraphMapper.convertType(attributesForNode.get("Tidx").getType());
         }
-    }
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        val iArgs = iArgs();
-        val tArgs = tArgs();
-        val inputArgs = inputArguments();
-        int cnt = 0;
-
-        if(sameDiff != null && args().length > 1) {
-            if (inputArgs.length > 0)
-                return Nd4j.getExecutioner().calculateOutputShape(this);
-        } else if (iArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        } else if (tArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        }
-
-       return Collections.emptyList();
     }
 
     @Override

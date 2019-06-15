@@ -18,9 +18,10 @@ package org.nd4j.linalg.api.ops.impl.reduce.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
-import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,35 +31,45 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogSumExp extends BaseReduceFloatOp {
-    public LogSumExp(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
+public class LogSumExp extends DynamicCustomOp {
 
-    public LogSumExp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    protected boolean keepDims;
+
+    public LogSumExp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v);
+        if(dimensions != null) {
+            addIArgument(dimensions);
+        }
+        addTArgument(keepDims ? 1.0 : 0.0);
+        this.keepDims = keepDims;
     }
 
     public LogSumExp() {}
 
     public LogSumExp(INDArray x, int... dimensions) {
-        super(x, dimensions);
+        this(x, false, dimensions);
     }
 
-    public LogSumExp(INDArray x, INDArray z, int... dimensions) {
-        super(x, z, dimensions);
+    public LogSumExp(INDArray x, boolean keepDim, int... dimensions) {
+        this(x, null, keepDim, dimensions);
     }
 
-    @Override
-    public int opNum() {
-        return 11;
+    public LogSumExp(INDArray x, INDArray z, boolean keepDim, int... dimensions) {
+        super(null, x,z, Collections.singletonList(keepDim ? 1.0 : 0.0), dimensions);
     }
 
     @Override
     public String opName() {
-        return "logexpsum";
+        return "reduce_logsumexp";
     }
 
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
+    }
 
 
     @Override

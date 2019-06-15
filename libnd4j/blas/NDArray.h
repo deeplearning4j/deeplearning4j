@@ -1598,9 +1598,6 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     int NDArray::rankOf() const {
-        if (isEmpty())
-            return 0;
-
         return shape::rank(_shapeInfo);
     }
 

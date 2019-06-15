@@ -96,6 +96,10 @@ public class LongShapeDescriptor {
 
     }
 
+    public int rank(){
+        return shape == null ? 0 : shape.length;
+    }
+
     public DataType dataType() {
         return ArrayOptionsHelper.dataType(extras);
     }

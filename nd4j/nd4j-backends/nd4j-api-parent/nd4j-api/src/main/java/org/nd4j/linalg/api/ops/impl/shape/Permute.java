@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -54,6 +55,10 @@ public class Permute extends Transpose {
         addIArgument(permuteDims);
     }
 
+    public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims){
+        super(sd, input, permuteDims);
+    }
+
     public Permute() {
     }
 
@@ -64,8 +69,15 @@ public class Permute extends Transpose {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().permute(i_v.get(0), reverseDims);
-        return Arrays.asList(ret);
+        SDVariable ret;
+        if(args().length == 1) {
+            //Static dimensions
+            ret = f().permute(i_v.get(0), reverseDims);
+        } else {
+            //Dynamic dimensions
+            ret = f().permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
+        }
+        return Collections.singletonList(ret);
     }
 
     @Override

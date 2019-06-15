@@ -103,6 +103,7 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
         checkTree();
+        words = adjustRank(words);
 
         List<DataPoint> add = new ArrayList<>();
         List<Double> distances = new ArrayList<>();

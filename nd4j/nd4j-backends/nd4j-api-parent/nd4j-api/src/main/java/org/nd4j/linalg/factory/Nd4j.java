@@ -606,7 +606,7 @@ public class Nd4j {
     }
 
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
-        if(descriptor.isEmpty()){
+        if(descriptor.isEmpty() && descriptor.rank() == 0){
             return Nd4j.empty(descriptor.dataType());
         }
         if (initialize)
@@ -1819,7 +1819,8 @@ public class Nd4j {
         INDArray indices = Nd4j.create(ndarray.shape());
         INDArray[] ret = new INDArray[2];
 
-        for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
+        long nV = ndarray.vectorsAlongDimension(dimension);
+        for (int i = 0; i < nV; i++) {
             INDArray vec = ndarray.vectorAlongDimension(i, dimension);
             INDArray indexVector = indices.vectorAlongDimension(i, dimension);
             final Double[] data = new Double[(int) vec.length()];
@@ -2867,12 +2868,12 @@ public class Nd4j {
      */
     public static INDArray diag(INDArray x, int k) {
         INDArray ret;
-        if(x.isMatrix()) {
-            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
-            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
-        } else {
+        if(x.isVectorOrScalar() || x.isRowVector() || x.isColumnVector()) {
             ret = Nd4j.create(new long[]{x.length(), x.length()});
             Nd4j.getExecutioner().execAndReturn(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        } else {
+            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
+            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
         }
         return ret;
     }
@@ -3646,9 +3647,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
-        if (columns < 1)
-            throw new ND4JIllegalStateException("Number of columns should be positive for new INDArray");
-
         INDArray ret = INSTANCE.create(new long[] {columns}, Nd4j.getStrides(new long[] {columns}, order), 0, order);
         return ret;
     }
@@ -4664,8 +4662,6 @@ public class Nd4j {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 0.0);
 
-        checkShapeValues(shape);
-
         INDArray ret = INSTANCE.create(shape, ordering);
         return ret;
     }
@@ -4715,9 +4711,9 @@ public class Nd4j {
      */
     public static void checkShapeValues(long[] shape) {
         for (long e: shape) {
-            if (e < 1)
+            if (e < 0)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
-                        + " contains dimension size values < 1 (all dimensions must be 1 or more)");
+                        + " contains dimension size values < 0 (all dimensions must be 0 or more)");
         }
     }
 
@@ -4729,7 +4725,7 @@ public class Nd4j {
         for (int e: shape) {
             if (e < 1)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
-                        + " contains dimension size values < 1 (all dimensions must be 1 or more)");
+                        + " contains dimension size values < 0 (all dimensions must be 0 or more)");
         }
     }
 
@@ -4883,9 +4879,6 @@ public class Nd4j {
     }
 
     public static INDArray createUninitialized(long length) {
-        if (length < 1)
-            throw new IllegalStateException("INDArray length should be positive value");
-
         long[] shape = new long[] {length};
 
         INDArray ret = INSTANCE.createUninitialized(shape, order());
@@ -4899,9 +4892,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray createUninitializedDetached(int length) {
-        if (length < 1)
-            throw new IllegalStateException("INDArray length should be positive value");
-
         long[] shape = new long[] {length};
 
         INDArray ret = INSTANCE.createUninitializedDetached(shape, order());
@@ -5205,9 +5195,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray valueArrayOf(long rows, long columns, double value) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
-
         INDArray ret = INSTANCE.valueArrayOf(rows, columns, value);
         return ret;
     }
@@ -5618,8 +5605,6 @@ public class Nd4j {
     public static INDArray ones(@NonNull int... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 1.0);
-        checkShapeValues(shape);
-
         INDArray ret = INSTANCE.ones(shape);
         return ret;
     }

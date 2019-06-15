@@ -90,6 +90,12 @@ public class TestSameDiffOutput extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(confSD.clone());
         net.init();
         net.fit(ds);
+
+        //Sanity check on different minibatch sizes:
+        INDArray newIn = Nd4j.vstack(in, in);
+        INDArray outMbsd = netSD.output(newIn);
+        INDArray outMb = netStd.output(newIn);
+        assertEquals(outMb, outMbsd);
     }
 
 
@@ -164,6 +170,12 @@ public class TestSameDiffOutput extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(confSD.clone());
             net.init();
             net.fit(ds);
+
+            //Sanity check on different minibatch sizes:
+            INDArray newIn = Nd4j.vstack(in, in);
+            INDArray outMbsd = netSD.output(newIn);
+            INDArray outMb = netStd.output(newIn);
+            assertEquals(outMb, outMbsd);
         }
     }
 

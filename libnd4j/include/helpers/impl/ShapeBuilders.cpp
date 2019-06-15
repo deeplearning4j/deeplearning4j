@@ -54,11 +54,6 @@ namespace nd4j {
 
     ////////////////////////////////////////////////////////////////////////////////
     Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace) {
-
-        if (rank)
-            if(shapeOnly[0] == 0) // scalar case
-                rank = 0;
-
         Nd4jLong* shapeInfo = nullptr;
 
         if(rank == 0) {    // scalar case
@@ -67,10 +62,23 @@ namespace nd4j {
         else {
             ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
             shapeInfo[0] = rank;
-            for(int i = 0; i < rank; ++i)
+            bool isEmpty = false;
+            for(int i = 0; i < rank; ++i) {
                 shapeInfo[i + 1] = shapeOnly[i];
 
-            shape::updateStrides(shapeInfo, order);
+                if (shapeOnly[i] == 0)
+                    isEmpty = true;
+            }
+
+            if (!isEmpty) {
+                shape::updateStrides(shapeInfo, order);
+            }
+            else {
+                shapeInfo[shape::shapeInfoLength(rank) - 1] = order;
+                memset(shape::stride(shapeInfo), 0, rank * sizeof(Nd4jLong));
+                ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+            }
+
             nd4j::ArrayOptions::setDataType(shapeInfo, dataType);
         }
 
@@ -78,9 +86,16 @@ namespace nd4j {
     }
 
     Nd4jLong* ShapeBuilders::emptyShapeInfo(const nd4j::DataType dataType, memory::Workspace* workspace) {
-        auto shape = createScalarShapeInfo(dataType, workspace);
-        ArrayOptions::setPropertyBit(shape, ARRAY_EMPTY);
-        return shape;
+        auto shapeInfo = createScalarShapeInfo(dataType, workspace);
+        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        return shapeInfo;
+    }
+
+    Nd4jLong* ShapeBuilders::emptyShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape, memory::Workspace* workspace) {
+        auto shapeInfo = createShapeInfo(dataType, order, shape, workspace);
+        memset(shape::stride(shapeInfo), 0, shape.size() * sizeof(Nd4jLong));
+        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        return shapeInfo;
     }
 
 ////////////////////////////////////////////////////////////////////////////////

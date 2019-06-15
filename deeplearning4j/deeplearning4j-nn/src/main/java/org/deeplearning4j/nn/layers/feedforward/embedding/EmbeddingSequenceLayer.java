@@ -178,8 +178,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
                         ", mask shape: " + Arrays.toString(maskArray.shape()));
             }
             //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]
-            Broadcast.mul(ret, maskArray, ret, 0, 2);
-//            ret.muliColumnVector(maskArray);
+            Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 2);
         }
         return ret;
     }
