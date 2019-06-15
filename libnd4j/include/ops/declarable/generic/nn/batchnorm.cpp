@@ -216,7 +216,7 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
         }
 
         std::vector<Nd4jLong> shape({2, mean->lengthOf()});
-        NDArray weights = NDArrayFactory::create<float>('c', shape, block.getWorkspace());
+        NDArray weights = NDArrayFactory::create<float>('c', shape, block.launchContext());
         weights({0, 1, 0, 0}).assign(1.0f);
         weights({1, 2, 0, 0}).assign(0.0f);
 

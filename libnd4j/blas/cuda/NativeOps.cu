@@ -3105,3 +3105,29 @@ nd4j::ConstantDataBuffer* NativeOps::constantBuffer(nd4j::DataType dtype, double
 nd4j::ConstantDataBuffer* NativeOps::constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor) {
     return nd4j::ConstantHelper::getInstance()->constantBuffer(*descriptor, dtype);
 }
+
+Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
+    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+    unsigned int shapeSize = arr.shape.size();
+    std::vector<Nd4jLong> shape(shapeSize);
+    bool _empty = false;
+    for(unsigned int i = 0; i < shapeSize; i++) {
+        shape[i] = arr.shape[i];
+
+        if (arr.shape[i] == 0)
+            _empty = true;
+    }
+
+    auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
+
+    Nd4jLong *shapeBuffer;
+    if (_empty) {
+        if (shapeSize > 0)
+            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+        else
+            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype);
+    } else {
+        shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+    }
+    return reinterpret_cast<Nd4jPointer>(shapeBuffer);
+}

@@ -108,25 +108,6 @@ public class Range extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        val iArgs = iArgs();
-        val tArgs = tArgs();
-        val inputArgs = inputArguments();
-        int cnt = 0;
-
-        if(sameDiff != null && args().length > 1) {
-            if (inputArgs.length > 0)
-                return Nd4j.getExecutioner().calculateOutputShape(this);
-        } else if (iArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        } else if (tArgs.length > 0) {
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-        }
-
-       return Collections.emptyList();
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.emptyList();
     }

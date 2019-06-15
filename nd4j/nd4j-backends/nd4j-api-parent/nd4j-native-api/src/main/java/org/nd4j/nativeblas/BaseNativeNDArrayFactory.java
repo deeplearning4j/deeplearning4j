@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -138,34 +139,140 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.limit(dataBufferElementSize * Shape.length(shapeBuffer));
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
+        val jvmShapeInfo = shapeBuffer.asLong();
+        log.info("JVM shapeInfo: {}", jvmShapeInfo);
+        val dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
 
-        if(dataBufferElementSize == (Float.SIZE / 8)) {
-            FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+        switch (dtype) {
+            case UBYTE: {
+                val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        UByteIndexer.create(dPointer));
+            }
+            break;
+            case BYTE: {
+                val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-            data = Nd4j.createBuffer(dPointer,
-                    DataType.FLOAT,
-                    Shape.length(shapeBuffer),
-                    FloatIndexer.create(dPointer));
-        }
-        else if(dataBufferElementSize == (Double.SIZE / 8)) {
-            DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
-            Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        ByteIndexer.create(dPointer));
+            }
+            break;
+            case UINT64:
+            case LONG: {
+                val dPointer = new LongPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
 
-            data = Nd4j.createBuffer(dPointer,
-                    DataType.DOUBLE,
-                    Shape.length(shapeBuffer),
-                    DoubleIndexer.create(dPointer));
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        LongIndexer.create(dPointer));
+            }
+            break;
+            case UINT32:
+            case INT: {
+                val dPointer = new IntPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        IntIndexer.create(dPointer));
+            }
+            break;
+            case UINT16: {
+                val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        UShortIndexer.create(dPointer));
+            }
+            break;
+            case SHORT: {
+                val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        ShortIndexer.create(dPointer));
+            }
+            break;
+            case BFLOAT16:
+            case HALF: {
+                val dPointer = new ShortPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        HalfIndexer.create(dPointer));
+            }
+            break;
+            case FLOAT: {
+                val dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        FloatIndexer.create(dPointer));
+            }
+            break;
+            case DOUBLE: {
+                val dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        DoubleIndexer.create(dPointer));
+            }
+            break;
         }
 
         INDArray ret = Nd4j.create(data,

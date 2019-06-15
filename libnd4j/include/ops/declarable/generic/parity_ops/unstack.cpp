@@ -37,6 +37,9 @@ namespace nd4j {
             REQUIRE_TRUE(dim < input->rankOf(), 0, "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
             REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value, but got %i !", dim);
 
+            if(input->isEmpty())
+                return Status::OK();
+
             std::vector<int> dims;
             for (int e = 0; e < input->rankOf(); e++)
                 if (e != dim)
@@ -65,7 +68,7 @@ namespace nd4j {
             return Status::OK();
         }
         DECLARE_SYN(unpack, unstack);
-        
+
         DECLARE_SHAPE_FN(unstack) {
             auto inShape = inputShape->at(0);
 
@@ -75,6 +78,21 @@ namespace nd4j {
 
             REQUIRE_TRUE(dim < inShape[0], 0, "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShape[0], dim);
             REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
+
+            if(ArrayOptions::arrayType(inShape) == ArrayType::EMPTY) {
+                if(shape::shapeOf(inShape)[dim] == 0)
+                    return SHAPELIST();
+                const Nd4jLong numTads = shape::shapeOf(inShape)[dim];
+                std::vector<Nd4jLong> outShape;
+                for(uint i = 0; i < shape::rank(inShape); ++i)
+                    if(i != dim)
+                        outShape.push_back(shape::shapeOf(inShape)[i]);
+
+                auto result = SHAPELIST();
+                for(uint i = 0; i < numTads; ++i)
+                    result->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), outShape));
+                return result;
+            }
 
             std::vector<int> dims;
             for (int e = 0; e < shape::rank(inShape); e++)

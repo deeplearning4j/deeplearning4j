@@ -995,6 +995,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
+        Preconditions.checkArgument(!this.isEmpty(), "tensorAlongDimension(...) can't be used on empty tensors");
+
         if (dimension.length >= rank()  || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
             return this;
         for (int i = 0; i < dimension.length; i++)
@@ -4667,7 +4669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray min(int... dimension) {
-        validateNumericalArray("max", false);
+        validateNumericalArray("min", false);
         return Nd4j.getExecutioner().exec(new Min(this, dimension));
     }
 
@@ -4685,7 +4687,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sum(int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
     }
 
@@ -4697,7 +4699,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
@@ -4737,7 +4739,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sum(@NonNull INDArray result, int... dimension) {
-        validateNumericalArray("sum", false);
+        validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, result, dimension));
     }
 
@@ -5217,7 +5219,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         if (this.isEmpty() && n.isEmpty())
-            return true;
+            return Shape.shapeEquals(this.shape(), n.shape());
 
         if (this.dataType() != n.dataType())
             return false;

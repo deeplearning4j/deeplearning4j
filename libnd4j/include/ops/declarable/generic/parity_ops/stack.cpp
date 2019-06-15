@@ -33,6 +33,10 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 	int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 	if(dim < 0)
  		dim += input->rankOf() + 1;
+
+	// no-op in case of empty output array
+	if (output->isEmpty())
+	    return Status::OK();
 	
 	// input validation
 	// check whether shapes of all input array are the same				
@@ -47,16 +51,6 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 		inArrs[i] = INPUT_VARIABLE(i);
 	
 	helpers::stack(block.launchContext(), inArrs, output, dim);
-	
-	// remove unity from output shape if input arrays are vectors 
-	// if(input->isVector())	{
-	// 	std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());		
-	// 	outShape.erase(find(outShape.begin(), outShape.end(), 1));
-	// 	output->reshapei(output->ordering(), outShape);
-	// 	if(dim != 0 && (int)block.width() == 1)			// such is implemented by tensorFlow
-	// 		output->permutei({1, 0});
-	// 	output->getShapeInfo()[output->rankOf()*2 + 2] = 1;		
-	// }
   	
   	return Status::OK();
 }
@@ -81,9 +75,23 @@ DECLARE_SHAPE_FN(stack) {
 		dim += rank + 1;
 
 	 REQUIRE_TRUE(dim <= inShapeInfo[0], 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", inShapeInfo[0], dim);
-	
+
+	 // empty input arrays require some special handling
+	 if (shape::isEmpty(inShapeInfo)) {
+	     switch (rank) {
+             case 0: {
+                 // we're going to return rank 1 here
+                 if (block.width() == 1) {
+                     return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, ArrayOptions::dataType(inShapeInfo)));
+                 } else {
+                     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c', {(Nd4jLong) block.width(), 0}));
+                 }
+             }
+	     }
+	 }
+
 	if(rank == 0) {
-  		return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
+	    return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
 	}
 	
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
@@ -91,13 +99,9 @@ DECLARE_SHAPE_FN(stack) {
 	
 	// insert (int) block.width() at dim position of input shape to get output shape	
 	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
-  	return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
 }
 
-// 1) 1х4 + 1х4 = 2х1х4 (along dim=0) = 2x4 
-// 2) 1х4 + 1х4 = 1х2х4 (along dim=1) = 2x4 
-// 3) 4х1 + 4х1 = 2х4x1 (along dim=0) = 2x4 
-// 4) 4х1 + 4х1 = 4х2x1 (along dim=1) = 4x2 
 
 }
 }

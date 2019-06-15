@@ -54,6 +54,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Setter @Getter
     protected boolean keepDims = false;
     protected boolean isComplex = false;
+    @Setter @Getter
+    protected boolean isEmptyReduce = false;
 
 
     public BaseReduceOp(SameDiff sameDiff,

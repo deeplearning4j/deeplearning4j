@@ -171,6 +171,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
+        if (op.x().isEmpty()) {
+            for (val d:dimension) {
+                Preconditions.checkArgument(op.x().shape()[d] != 0, "IndexReduce can't be issued along axis with 0 in shape");
+            }
+        }
+
         boolean keepDims = op.isKeepDims();
         long[] retShape = Shape.reductionShape(op.x(), dimension, true, keepDims);
 
@@ -236,6 +242,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(ReduceOp op) {
         Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
         op.validateDataTypes();
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return op.z();
+            } else {
+                op.setZ(op.x().dup());
+                return op.z();
+            }
+        }
+
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         //validateDataType(Nd4j.dataType(), op);
@@ -245,6 +266,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         boolean keepDims = op.isKeepDims();
         long[] retShape = Shape.reductionShape(op.x(), dimension, true, keepDims);
+
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -264,7 +286,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (op.y() != null) {
 
                     //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
-                    if(op.x().lengthLong() == op.y().lengthLong()) {
+                    if(op.x().length() == op.y().length()) {
                         //Pairwise
                         if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
                             throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
@@ -289,8 +311,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else {
             // compare length
             long shapeProduct = (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape));
-            if (!op.isComplexAccumulation() && op.z().lengthLong() != shapeProduct)
-                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+            if (!op.isComplexAccumulation() && op.z().length() != shapeProduct) {
+                if(!(op.x().isEmpty() && op.isKeepDims())){
+                    //Empty reductions are special case: [1,0].sum(0,1,keep=true) -> shape [1,1]
+                    throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+                }
+            }
             else if (op.isComplexAccumulation()) {
                 long xT = op.x().tensorsAlongDimension(dimension);
                 long yT = op.y().tensorsAlongDimension(dimension);
@@ -309,16 +335,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
          * The first item is the shape information. The second one is the offsets.
          */
-        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = op.x().isEmpty() ? Pair.<DataBuffer, DataBuffer>makePair(op.x().data(), null): tadManager.getTADOnlyShapeInfo(op.x(), dimension);
         Pair<DataBuffer, DataBuffer> yTadBuffers = null;
         /**
          * Note that we use addresses in libnd4j.
          * We use reinterpret cast in c to take the long
          * we pass to JNI. This manages overhead.
          */
-        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
+        Pointer hostTadShapeInfo = op.x().isEmpty() ? op.x().shapeInfoDataBuffer().addressPointer() : tadBuffers.getFirst().addressPointer();
 
-        DataBuffer offsets = tadBuffers.getSecond();
+        DataBuffer offsets = op.x().isEmpty() ? null : tadBuffers.getSecond();
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
         // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route

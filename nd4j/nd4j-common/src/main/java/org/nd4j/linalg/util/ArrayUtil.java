@@ -3484,4 +3484,34 @@ public class ArrayUtil {
 
         return target;
     }
+
+    /**
+     * Is this shape an empty shape?
+     * Shape is considered to be an empty shape if it contains any zeros.
+     * Note: a length 0 shape is NOT considered empty (it's rank 0 scalar)
+     * @param shape Shape to check
+     * @return True if shape contains zeros
+     */
+    public static boolean isEmptyShape(long[] shape){
+        for( long l : shape){
+            if(l == 0)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Is this shape an empty shape?
+     * Shape is considered to be an empty shape if it contains any zeros.
+     * Note: a length 0 shape is NOT considered empty (it's rank 0 scalar)
+     * @param shape Shape to check
+     * @return True if shape contains zeros
+     */
+    public static boolean isEmptyShape(int[] shape){
+        for( int i : shape){
+            if(i == 0)
+                return true;
+        }
+        return false;
+    }
 }

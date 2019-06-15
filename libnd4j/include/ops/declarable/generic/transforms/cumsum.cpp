@@ -36,6 +36,11 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
     REQUIRE_TRUE(input->dataType() == output->dataType(), 0, "CumSum: input and output data types must be equal");
 
+    if(input->isEmpty()){
+        //No-op
+        return Status::OK();
+    }
+
     if (block.getIArguments()->size() == 2 && block.width() == 1) {
         // all at once case
         nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);

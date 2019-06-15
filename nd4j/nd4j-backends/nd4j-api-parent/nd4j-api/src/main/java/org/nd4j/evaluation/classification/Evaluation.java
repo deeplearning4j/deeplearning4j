@@ -615,7 +615,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     private String stats(boolean suppressWarnings, boolean includeConfusion, boolean logConfusionSizeWarning){
         if(numRowCounter == 0){
-            return "Evaluation: No data available (no data has been performed)";
+            return "Evaluation: No data available (no evaluation has been performed)";
         }
 
         StringBuilder builder = new StringBuilder().append("\n");

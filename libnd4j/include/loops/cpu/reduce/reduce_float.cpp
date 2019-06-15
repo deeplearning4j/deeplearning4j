@@ -45,7 +45,26 @@ namespace functions {
 
             const Nd4jLong length = shape::length(xShapeInfo);
             auto xEws = shape::elementWiseStride(xShapeInfo);
-            
+
+            if (shape::isEmpty(xShapeInfo)) {
+                if (std::is_same<OpType, simdOps::Mean<X,Z>>::value) {
+                    z[0] = nd4j::DataTypeUtils::nanOrZero<Z>();
+                } else {
+                    z[0] = OpType::startingValue(x);
+                }
+                return;
+            }
+
+             if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                    return;
+                const auto startingVal = OpType::startingValue(x);
+                PRAGMA_OMP_PARALLEL_FOR_IF(length > nd4j::Environment::getInstance()->elementwiseThreshold())
+                for (uint i = 0; i < length; i++)
+                    z[i] = startingVal;
+                return;
+            }
+
             if (xEws > 0) {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
             }
@@ -69,7 +88,7 @@ namespace functions {
                     start = OpType::update(start, intermediate[e], extraParams);
 
                 z[0] = OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
-            }            
+            }
         }
 
 
@@ -164,6 +183,16 @@ namespace functions {
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 auto resultLength = shape::length(zShapeInfo);
+
+                if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+                    if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                        return;
+                    const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? nd4j::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(x));
+                    PRAGMA_OMP_PARALLEL_FOR_IF(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+                    for (uint i = 0; i < resultLength; i++)
+                        z[i] = startingVal;
+                    return;
+                }
 
                 //pre squeezed: this is for keeping the pointer to the original
                 //shape information for tad offset

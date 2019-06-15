@@ -1302,8 +1302,8 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test6) {
 TEST_F(DeclarableOpsTests10, broadcast_to_test7) {
 
     auto input = NDArrayFactory::create<double>(10.f);
-    auto shape = NDArrayFactory::create<double>(0.f);
-    auto exp = NDArrayFactory::create<double>(10.f);
+    auto shape = NDArrayFactory::create<Nd4jLong>(1);
+    auto exp = NDArrayFactory::create<double>('c', {1}, {10.});
 
     nd4j::ops::broadcast_to op;
     auto results = op.execute({&input, &shape}, {}, {}, {});
@@ -2261,8 +2261,8 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.251953f, 0.0f, 0.0f}, nd4j::DataType::FLOAT32);
-    NDArray min('c', {0},  {-63.65f}, nd4j::DataType::FLOAT32);
-    NDArray max('c', {0},  {0.1f}, nd4j::DataType::FLOAT32);
+    NDArray min('c', {},  {-63.65f}, nd4j::DataType::FLOAT32);
+    NDArray max('c', {},  {0.1f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::fake_quant_with_min_max_vars op;
     auto results = op.execute({&x, &min, &max}, {}, {});

@@ -59,7 +59,8 @@ TEST_F(EmptyTests, Test_Create_Empty_2) {
 }
 
 TEST_F(EmptyTests, Test_Concat_1) {
-    auto empty = NDArrayFactory::empty_<float>();
+//    auto empty = NDArrayFactory::empty_<float>();
+    auto empty = new NDArray('c',  {0}, nd4j::DataType::FLOAT32);//NDArrayFactory::create_<float>('c', {(Nd4jLong)0}};
     auto vector = NDArrayFactory::create_<float>('c', {1}, {1.0f});
 
     ASSERT_TRUE(empty->isEmpty());
@@ -82,9 +83,9 @@ TEST_F(EmptyTests, Test_Concat_1) {
 
 
 TEST_F(EmptyTests, Test_Concat_2) {
-    auto empty = NDArrayFactory::empty_<float>();
-    auto scalar1 =  NDArrayFactory::create_<float>(1.0f);
-    auto scalar2  = NDArrayFactory::create_<float>(2.0f);
+    auto empty = new NDArray('c',  {0}, nd4j::DataType::FLOAT32); //NDArrayFactory::empty_<float>();
+    auto scalar1 =  NDArrayFactory::create_<float>('c', {1}, {1.0f});
+    auto scalar2  = NDArrayFactory::create_<float>('c', {1}, {2.0f});
     auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
 
     ASSERT_TRUE(empty->isEmpty());
@@ -139,6 +140,23 @@ TEST_F(EmptyTests, Test_Reshape_2) {
     delete result;
 }
 
+TEST_F(EmptyTests, Test_Reshape_3) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 0, 2});
+    auto y = NDArrayFactory::create<int>('c', {2}, {10, 0});
+    auto e = NDArrayFactory::create<float>('c', {10, 0});
+
+    nd4j::ops::reshape op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
 TEST_F(EmptyTests, Test_dup_1) {
     auto empty = NDArrayFactory::empty<int>();
     auto dup = empty.dup();
@@ -147,4 +165,48 @@ TEST_F(EmptyTests, Test_dup_1) {
     ASSERT_EQ(empty, *dup);
 
     delete dup;
+}
+
+TEST_F(EmptyTests, test_shaped_empty_1) {
+    auto empty = NDArrayFactory::create<float>('c', {2, 0, 3});
+    std::vector<Nd4jLong> shape = {2, 0, 3};
+
+    ASSERT_EQ(nd4j::DataType::FLOAT32, empty.dataType());
+    ASSERT_EQ(0, empty.lengthOf());
+    ASSERT_TRUE(empty.isEmpty());
+    ASSERT_EQ(shape, empty.getShapeAsVector());
+    ASSERT_EQ(3, empty.rankOf());
+}
+
+TEST_F(EmptyTests, test_shaped_empty_2) {
+    auto empty = NDArrayFactory::create<float>('c', {0, 3});
+    std::vector<Nd4jLong> shape = {0, 3};
+
+    ASSERT_EQ(nd4j::DataType::FLOAT32, empty.dataType());
+    ASSERT_EQ(0, empty.lengthOf());
+    ASSERT_TRUE(empty.isEmpty());
+    ASSERT_EQ(shape, empty.getShapeAsVector());
+    ASSERT_EQ(2, empty.rankOf());
+}
+
+TEST_F(EmptyTests, test_shaped_empty_3) {
+    auto empty = NDArrayFactory::create<float>('c', {0});
+    std::vector<Nd4jLong> shape = {0};
+
+    ASSERT_EQ(nd4j::DataType::FLOAT32, empty.dataType());
+    ASSERT_EQ(0, empty.lengthOf());
+    ASSERT_TRUE(empty.isEmpty());
+    ASSERT_EQ(shape, empty.getShapeAsVector());
+    ASSERT_EQ(1, empty.rankOf());
+}
+
+TEST_F(EmptyTests, test_shaped_empty_4) {
+    auto shape = ConstantShapeHelper::getInstance()->vectorShapeInfo(0, nd4j::DataType::FLOAT32);
+    shape::printShapeInfoLinear("shape", shape);
+    NDArray array(shape, true, nd4j::LaunchContext::defaultContext());
+    std::vector<Nd4jLong> shapeOf({0});
+
+    ASSERT_TRUE(array.isEmpty());
+    ASSERT_EQ(1, array.rankOf());
+    ASSERT_EQ(shapeOf, array.getShapeAsVector());
 }

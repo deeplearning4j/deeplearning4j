@@ -88,7 +88,7 @@ DECLARE_TYPES(reduce_max) {
         ->setSameMode(true);
 }
 
-#endif 
+#endif
 #if NOT_EXCLUDED(OP_reduce_max_bp)
 
 //////////////////////////////////////////////////////////////////////////

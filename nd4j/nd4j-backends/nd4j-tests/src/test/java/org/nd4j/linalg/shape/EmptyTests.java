@@ -149,6 +149,146 @@ public class EmptyTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testEmptyWithShape_1() {
+        val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+
+        assertNotNull(array);
+        assertEquals(DataType.FLOAT, array.dataType());
+        assertEquals(0, array.length());
+        assertTrue(array.isEmpty());
+        assertArrayEquals(new long[]{2, 0, 3}, array.shape());
+        assertArrayEquals(new long[]{0, 0, 0}, array.stride());
+    }
+
+    @Test
+    public void testEmptyWithShape_2(){
+        val array = Nd4j.create(DataType.FLOAT, 0);
+
+        assertNotNull(array);
+        assertEquals(DataType.FLOAT, array.dataType());
+        assertEquals(0, array.length());
+        assertTrue(array.isEmpty());
+        assertArrayEquals(new long[]{0}, array.shape());
+        assertArrayEquals(new long[]{0}, array.stride());
+        assertEquals(1, array.rank());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEmptyWithShape_3() {
+        val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        array.tensorAlongDimension(0, 2);
+    }
+
+    @Test
+    public void testEmptyWithShape_4(){
+        val array = Nd4j.create(DataType.FLOAT, 0, 3);
+
+        assertNotNull(array);
+        assertEquals(DataType.FLOAT, array.dataType());
+        assertEquals(0, array.length());
+        assertTrue(array.isEmpty());
+        assertArrayEquals(new long[]{0, 3}, array.shape());
+        assertArrayEquals(new long[]{0, 0}, array.stride());
+        assertEquals(2, array.rank());
+        assertEquals(0, array.rows());
+        assertEquals(3, array.columns());
+        assertEquals(0, array.size(0));
+        assertEquals(3, array.size(1));
+        assertEquals(0, array.stride(0));
+        assertEquals(0, array.stride(1));
+    }
+
+    @Test
+    public void testEmptyReduction_1() {
+        val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        val e = Nd4j.create(DataType.FLOAT, 2, 1, 3).assign(0);
+
+        val reduced = x.sum(true, 1);
+
+        assertArrayEquals(e.shape(), reduced.shape());
+        assertEquals(e, reduced);
+    }
+
+    @Test
+    public void testEmptyReduction_2() {
+        val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        val e = Nd4j.create(DataType.FLOAT, 2, 3).assign(0);
+
+        val reduced = x.sum(false, 1);
+
+        assertArrayEquals(e.shape(), reduced.shape());
+        assertEquals(e, reduced);
+    }
+
+
+    @Test
+    public void testEmptyReduction_3() {
+        val x = Nd4j.create(DataType.FLOAT, 2, 0);
+        val e = Nd4j.create(DataType.FLOAT, 0);
+
+        val reduced = x.argMax(0);
+
+        assertArrayEquals(e.shape(), reduced.shape());
+        assertEquals(e, reduced);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEmptyReduction_4() {
+        val x = Nd4j.create(DataType.FLOAT, 2, 0);
+        val e = Nd4j.create(DataType.FLOAT, 0);
+
+        val reduced = x.argMax(1);
+
+        assertArrayEquals(e.shape(), reduced.shape());
+        assertEquals(e, reduced);
+    }
+
+    @Test
+    public void testEmptyCreateMethods(){
+        DataType dt = DataType.FLOAT;
+        assertArrayEquals(new long[]{0}, Nd4j.create(0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.create(0,0).shape());
+        assertArrayEquals(new long[]{0,0,0}, Nd4j.create(0,0,0).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.create(0L).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.create(dt, 0L).shape());
+
+        assertArrayEquals(new long[]{0}, Nd4j.zeros(0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.zeros(0,0).shape());
+        assertArrayEquals(new long[]{0,0,0}, Nd4j.zeros(0,0,0).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.zeros(0L).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.zeros(dt, 0L).shape());
+
+        assertArrayEquals(new long[]{0}, Nd4j.ones(0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.ones(0,0).shape());
+        assertArrayEquals(new long[]{0,0,0}, Nd4j.ones(0,0,0).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.ones(0L).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.ones(dt, 0L).shape());
+
+        assertArrayEquals(new long[]{0}, Nd4j.valueArrayOf(0, 1.0).shape());
+        assertArrayEquals(new long[]{0}, Nd4j.valueArrayOf(0,1.0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.valueArrayOf(0,0,1.0).shape());
+        assertArrayEquals(new long[]{1,0}, Nd4j.valueArrayOf(new long[]{1,0}, 1.0).shape());
+        assertArrayEquals(new long[]{1,0}, Nd4j.valueArrayOf(new long[]{1,0}, 1.0f).shape());
+        assertArrayEquals(new long[]{1,0}, Nd4j.valueArrayOf(new long[]{1,0}, 1L).shape());
+        assertArrayEquals(new long[]{1,0}, Nd4j.valueArrayOf(new long[]{1,0}, 1).shape());
+
+        assertArrayEquals(new long[]{0}, Nd4j.createUninitialized(0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.createUninitialized(0,0).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.createUninitialized(dt, 0,0).shape());
+
+        assertArrayEquals(new long[]{0,0}, Nd4j.zerosLike(Nd4j.ones(0,0)).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.onesLike(Nd4j.ones(0,0)).shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.ones(0,0).like().shape());
+        assertArrayEquals(new long[]{0,0}, Nd4j.ones(0,0).ulike().shape());
+    }
+
+    @Test
+    public void testEqualShapesEmpty(){
+        assertTrue(Nd4j.create(0).equalShapes(Nd4j.create(0)));
+        assertFalse(Nd4j.create(0).equalShapes(Nd4j.create(1, 0)));
+    }
+
     @Override
     public char ordering() {
         return 'c';

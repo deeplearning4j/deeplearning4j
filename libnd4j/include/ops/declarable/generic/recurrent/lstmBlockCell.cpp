@@ -115,16 +115,10 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
 
     ShapeUtils::updateStridesAndType(s, xt, 'c');
 
-    Nd4jLong *s1, *s2, *s3, *s4, *s5, *s6;
-    COPY_SHAPE(s, s1);
-    COPY_SHAPE(s, s2);
-    COPY_SHAPE(s, s3);
-    COPY_SHAPE(s, s4);
-    COPY_SHAPE(s, s5);
-    COPY_SHAPE(s, s6);
+    Nd4jLong *s1 = CONSTANT(s);
 
     //7 outputs, all same shape: z, i, f, o, h, c, y
-    return SHAPELIST(s, s1, s2, s3, s4, s5, s6);
+    return SHAPELIST(s1, s1, s1, s1, s1, s1, s1);
 }
 
 }

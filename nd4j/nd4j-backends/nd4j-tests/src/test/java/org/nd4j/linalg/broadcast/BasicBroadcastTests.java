@@ -25,6 +25,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -152,6 +153,35 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         val z = x.eq(y);
 
         assertEquals(e, z);
+    }
+
+    @Test
+    public void emptyBroadcastTest_1() {
+        val x = Nd4j.create(DataType.FLOAT, 1, 2);
+        val y = Nd4j.create(DataType.FLOAT, 0, 2);
+
+        val z = x.add(y);
+        assertEquals(y, z);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void emptyBroadcastTest_2() {
+        val x = Nd4j.create(DataType.FLOAT, 1, 2);
+        val y = Nd4j.create(DataType.FLOAT, 0, 2);
+
+        val z = x.addi(y);
+        assertEquals(y, z);
+    }
+
+    @Test
+    public void emptyBroadcastTest_3() {
+        val x = Nd4j.create(DataType.FLOAT, 1, 0, 1);
+        val y = Nd4j.create(DataType.FLOAT, 1, 0, 2);
+
+        val op = new RealDivOp(new INDArray[]{x, y}, new INDArray[]{});
+        val z = Nd4j.exec(op)[0];
+
+        assertEquals(y, z);
     }
 
     @Override

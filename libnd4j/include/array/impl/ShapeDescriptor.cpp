@@ -55,8 +55,13 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor& other) const {
 }
 
 Nd4jLong* ShapeDescriptor::toShapeInfo() const {
-    if (_empty)
-        return ShapeBuilders::emptyShapeInfo(_dataType);
+    if (_empty) {
+        if (_rank == 0)
+            return ShapeBuilders::emptyShapeInfo(_dataType);
+        else {
+            return ShapeBuilders::emptyShapeInfo(_dataType, _order, _shape);
+        }
+    }
 
 
     switch (_rank) {
@@ -133,21 +138,28 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd
 
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape): _dataType(type), _order(order), _shape(shape) {
-    _rank = ((shape.size() == 1 && shape[0] == 0)? 0: shape.size());
+    _rank = shape.size();
     _ews = 1;
 
     if (_rank > 0) {
         _strides.resize(_rank);
-        if (order == 'c')
-            shape::calcStrides(_shape.data(), shape.size(), _strides.data());
-        else
-            shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
 
         for (auto v:_shape) {
             if (v == 0) {
                 _empty = true;
                 break;
             }
+        }
+
+        // no point calculating strides for empty arrays
+        if (!_empty) {
+            if (order == 'c')
+                shape::calcStrides(_shape.data(), shape.size(), _strides.data());
+            else
+                shape::calcStridesFortran(_shape.data(), shape.size(), _strides.data());
+        } else {
+            // all strides set to 0
+            memset(_strides.data(), 0, sizeof(Nd4jLong) * shape.size());
         }
     }
 }
@@ -191,8 +203,11 @@ ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, bool inheritDtype) {
 
     _empty = shape::isEmpty(shapeInfo);
 
-    for (int e = 0; e < _rank; e++)
+    for (int e = 0; e < _rank; e++) {
         _shape.emplace_back(shapeInfo[e + 1]);
+        if (shapeInfo[e + 1] == 0)
+            _empty = true;
+    }
 
     for (int e = 0; e < _rank; e++)
         _strides.emplace_back(shapeInfo[e + 1 + _rank]);
@@ -304,7 +319,14 @@ ShapeDescriptor ShapeDescriptor::vectorDescriptor(const Nd4jLong length, const D
     ShapeDescriptor descriptor;
     descriptor._dataType = type;
     descriptor._shape.emplace_back(length);
-    descriptor._strides.emplace_back(1);
+
+    if (length > 0)
+        descriptor._strides.emplace_back(1);
+    else {
+        descriptor._strides.emplace_back(0);
+        descriptor._empty = true;
+    }
+
     descriptor._order = 'c';
     descriptor._ews = 1;
     descriptor._rank = 1;

@@ -227,15 +227,15 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
     std::vector<Nd4jLong> shape = {bS, 4*numUnits};
-    auto m = NDArrayFactory::create_('c', shape, xt->dataType(), nullptr);
-    MmulHelper::mmul(&concatOut, W, m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
-    *m += (*b);  //addiRowVector
+    auto m = NDArrayFactory::create('c', shape, xt->dataType());
+    MmulHelper::mmul(&concatOut, W, &m, 1.0f, 0.0f, 'c'); //mmul: [bs, (nIn+numUnits)]* [(inSize+numUnits), 4*numUnits] = [bs, 4*numUnits] - C result array
+    m += (*b);  //addiRowVector
 
     //Note: weights are ordered [inputGate, blockInput, forgetGate, outputGate] to match TF (TF code comments state [i,f,z/ci,o] but behaviour is [i,z,f,o])
-    auto zi = (*m)({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
-    auto zz = (*m)({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
-    auto zf = (*m)({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
-    auto zo = (*m)({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
+    auto zi = (m)({0,0, 0,            numUnits});      	// z for input modulation gate, [bS, numUnits]
+    auto zz = (m)({0,0, numUnits, 2*numUnits});      	    // z for block input, [bS, numUnits]
+    auto zf = (m)({0,0, 2*numUnits, 3*numUnits});      	// z for forget gate, [bS, numUnits]
+    auto zo = (m)({0,0, 3*numUnits, 4*numUnits});      	// z for output gate, [bS, numUnits]
 
     if(peephole) {                                              // add peephole connections: z  +  ct_1*Wc
         zi += (*cLast) * (*Wci);       // add peephole connections to input gate

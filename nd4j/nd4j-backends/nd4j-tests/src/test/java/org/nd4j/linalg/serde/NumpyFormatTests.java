@@ -214,10 +214,9 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
     @Test
     public void testNpy() throws Exception {
-
         for(boolean empty : new boolean[]{false, true}) {
             val dir = testDir.newFolder();
-            if(empty) {
+            if(!empty) {
                 new ClassPathResource("numpy_arrays/npy/3,4/").copyDirectory(dir);
             } else {
                 new ClassPathResource("numpy_arrays/npy/0,3_empty/").copyDirectory(dir);
@@ -243,7 +242,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
                 INDArray exp;
                 if(empty){
-                    exp = Nd4j.empty(dt);
+                    exp = Nd4j.create(dt, 0, 3);
                 } else {
                     exp = Nd4j.arange(12).castTo(dt).reshape(3, 4);
                 }

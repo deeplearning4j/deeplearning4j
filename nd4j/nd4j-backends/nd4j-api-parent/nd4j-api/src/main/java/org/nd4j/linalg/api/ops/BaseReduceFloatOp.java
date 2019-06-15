@@ -114,7 +114,7 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
+        long[] reducedShape = x.rank() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         DataType retType = arg().dataType();
         if(!retType.isFPType())
             retType = Nd4j.defaultFloatingPointType();

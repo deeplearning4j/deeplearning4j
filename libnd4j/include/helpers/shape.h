@@ -1992,7 +1992,7 @@ template <typename T>
             len = shape::length(shapeInfo);
 
         //check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute
-        if(len < 2)
+        if(len == 1)
             return;
 
         const int rank = shape::rank(shapeInfo);
@@ -3961,7 +3961,7 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
             newDim = newShape[newStart];
             oldDim = oldShape[oldStart];
 
-            while (newDim != oldDim)
+            while (newDim != oldDim && newDim > 0 && oldDim > 0)
                 if (newDim < oldDim) newDim *= newShape[newStop++];
                 else                 oldDim *= oldShape[oldStop++];
 

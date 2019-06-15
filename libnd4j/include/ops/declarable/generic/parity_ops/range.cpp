@@ -151,8 +151,10 @@ DECLARE_SHAPE_FN(range) {
                 delta = INPUT_VARIABLE(2)->e<double>(0);
             }
 
-            if (limit == start)
-                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
+            if (limit == start){
+                //Return [0] to match TF
+                return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, dtype));
+            }
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -177,8 +179,10 @@ DECLARE_SHAPE_FN(range) {
 
             //nd4j_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
 
-            if (limit == start)
-                return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(dtype));
+            if (limit == start){
+                //Return [0] to match TF
+                return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, dtype));
+            }
 
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -203,8 +207,10 @@ DECLARE_SHAPE_FN(range) {
             delta = INT_ARG(2);
         }
 
-        if (limit == start)
-            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT32));
+        if (limit == start){
+            //Return [0] to match TF
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, nd4j::DataType::INT32));
+        }
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
@@ -233,9 +239,10 @@ DECLARE_SHAPE_FN(range) {
             delta = T_ARG(2);
         }
 
-        //REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
-        if (limit == start)
-            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(Environment::getInstance()->defaultFloatDataType()));
+        if (limit == start){
+            //Return [0] to match TF
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, Environment::getInstance()->defaultFloatDataType()));
+        }
 
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");

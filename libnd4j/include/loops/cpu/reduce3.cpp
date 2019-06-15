@@ -37,7 +37,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
                                     void *vextraParams,
                                     void *vy, Nd4jLong *yShapeInfo,
                                     void *vz, Nd4jLong *zShapeInfo) {
-    
+
     auto x = reinterpret_cast<X *>(vx);
     auto y = reinterpret_cast<X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
@@ -47,11 +47,21 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto xEws = shape::elementWiseStride(xShapeInfo);
     auto yEws = shape::elementWiseStride(yShapeInfo);
 
+    if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY || nd4j::ArrayOptions::arrayType(yShapeInfo) == nd4j::ArrayType::EMPTY) {
+        if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+            return;
+        const auto startingVal = OpType::startingValue(x);
+        PRAGMA_OMP_PARALLEL_FOR_IF(length > nd4j::Environment::getInstance()->elementwiseThreshold())
+        for (uint i = 0; i < length; i++)
+            z[i] = startingVal;
+        return;
+    }
+
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
     // it's possible case for EqualsWithEps op
-    if (extraParams != nullptr) 
+    if (extraParams != nullptr)
         extraParamsVals[2] = extraParams[0];
-    
+
     uint xShapeInfoCast[MAX_RANK];
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
@@ -117,7 +127,7 @@ void Reduce3<X,Y>::execScalar(const int opNum,
                                         void *extraParamsVals,
                                         void *vy, Nd4jLong *yShapeInfo,
                                         void *vz, Nd4jLong *zShapeInfo) {
-                
+
     DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo), REDUCE3_OPS);
 }
 
@@ -176,8 +186,8 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
                             void *vextraParams,
                             void *vy, Nd4jLong *yShapeInfo,
                             void *vz, Nd4jLong *zShapeInfo,
-                            int *dimension, int dimensionLength, 
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, 
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
                             Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
 
     auto x = reinterpret_cast<X *>(vx);
