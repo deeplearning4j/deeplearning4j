@@ -2690,6 +2690,70 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    public void convertDataTypes(@NonNull Map<String,DataType> dataTypeMap){
+        if(dataTypeMap.isEmpty())
+            return;
+
+        //First: check these are all either constants, variables or placeholders.
+        for(Map.Entry<String,DataType> e : dataTypeMap.entrySet()){
+            String s = e.getKey();
+            Preconditions.checkState(variables.containsKey(s), "Cannot change datatype of variable \"%s\": No variable with this name exists", s);
+            SDVariable v = variables.get(s).getVariable();
+            Preconditions.checkState(v.getVariableType() != VariableType.ARRAY, "Cannot change datatype of ARRAY type variable \"%s\": " +
+                    "datatype of ARRAY type variables is determined by the datatypes of their inputs plus corresponding ");
+            if(v.getVariableType() != VariableType.PLACEHOLDER){
+                //Can't convert constant or variable between numerical and non-numerical type (not possible to cast)
+                Preconditions.checkState(v.dataType().isNumerical() == e.getValue().isNumerical(), "Cannot convert variables between numerical " +
+                        "and non-numerical types: attempting to convert variable \"%s\" from %s to %s", e.getKey(), v.dataType(), e.getValue());
+            }
+        }
+
+        boolean anyChanged = false;
+        for(Map.Entry<String,DataType> e : dataTypeMap.entrySet()){
+            String s = e.getKey();
+            DataType d = e.getValue();
+            SDVariable v = variables.get(s).getVariable();
+            if(v.dataType() == d)
+                continue;   //No-op
+
+            v.setDataType(d);
+
+            switch (v.getVariableType()){
+                case VARIABLE:
+                    DeviceLocalNDArray dl = variablesArrays.remove(e.getKey());
+                    INDArray arr = dl.get();
+                    INDArray newArr = arr.castTo(d);
+                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr));
+                    break;
+                case CONSTANT:
+                    DeviceLocalNDArray dl2 = constantArrays.remove(e.getKey());
+                    INDArray arr2 = dl2.get();
+                    INDArray newArr2 = arr2.castTo(d);
+                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2));
+                    break;
+                case PLACEHOLDER:
+                    Map<String,INDArray> m = placeholdersPerThread.get(Thread.currentThread().getId());
+                    if(m != null && m.containsKey(e.getKey())){
+                        m.put(e.getKey(), m.get(e.getKey()).castTo(d));
+                    }
+                    break;
+                case ARRAY:
+                default:
+                    throw new IllegalStateException("Cannot convert array type variable");  //Should never happen
+            }
+
+
+            anyChanged = true;
+        }
+
+        if(anyChanged){
+            sessions.clear();
+
+            //Recalculate datatypes of outputs, and dynamically update them
+            calculateOutputDataTypes(true);
+        }
+    }
+
     /**
      * Rename the specified variable to the new name.
      *
@@ -5283,9 +5347,13 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(){
+    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
+        return calculateOutputDataTypes(false);
+    }
+
+    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate){
         List<String> allVars = new ArrayList<>(variables.keySet());
-        DataTypesSession session = new DataTypesSession(this);
+        DataTypesSession session = new DataTypesSession(this, dynamicUpdate);
         Map<String,org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
         for(Variable v : variables.values()){
             if(v.getVariable().isPlaceHolder()){

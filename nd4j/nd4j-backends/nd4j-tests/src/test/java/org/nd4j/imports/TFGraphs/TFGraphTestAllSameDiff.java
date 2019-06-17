@@ -122,7 +122,10 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "unsorted_segment/unsorted_segment_mean_rank2",
 
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
-            "g_11"
+            "g_11",
+
+            "emptyArrayTests/.*",
+            "rnn/lstmblockcell/.*"
 
     };
 
