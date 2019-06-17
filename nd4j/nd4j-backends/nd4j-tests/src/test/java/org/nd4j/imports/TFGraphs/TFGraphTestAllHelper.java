@@ -437,13 +437,29 @@ public class TFGraphTestAllHelper {
         } else {
             varName = varName + ".0";
         }
-        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw", true, localTestDir);
+        String name = varName.replaceAll("/", "____") + ".prediction_inbw";
+        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, name, true, localTestDir);
+
+        boolean importNameWorkaround = false;
+        if(nodeSepOutput.isEmpty()){
+            //Edge case: intermediates were generated with help of import_graph_def method, which by default adds "import/" to names
+            // for some reason. https://www.tensorflow.org/api_docs/python/tf/graph_util/import_graph_def
+            //So many of earlier intermediate nodes test data were generated with filenames like "import___X..." instead of "X..."
+            name = "import____" + name;
+            nodeSepOutput = readVars(modelName, base_dir, name, true, localTestDir);
+            importNameWorkaround = true;
+        }
+
         //required check for pattern matching as there are scopes and "*" above is a greedy match
-        Set<String> removeList = confirmPatternMatch(nodeSepOutput.keySet(), varName);
+        Set<String> removeList = confirmPatternMatch(nodeSepOutput.keySet(), importNameWorkaround ? "import/" + varName : varName);
         for (String toRemove : removeList) {
             nodeSepOutput.remove(toRemove);
         }
-        return nodeSepOutput.get(varName); //this *should* return a list of the indarrays for each node
+        if(importNameWorkaround){
+            return nodeSepOutput.get("import/" + varName); //this *should* return a list of the indarrays for each node
+        } else {
+            return nodeSepOutput.get(varName); //this *should* return a list of the indarrays for each node
+        }
     }
 
     public static Set<String> confirmPatternMatch(Set<String> setOfNames, String varName) {
