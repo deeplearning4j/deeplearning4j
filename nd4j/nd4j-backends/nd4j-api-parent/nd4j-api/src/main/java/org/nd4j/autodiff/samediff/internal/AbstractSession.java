@@ -167,7 +167,7 @@ public abstract class AbstractSession<T, O> {
 
         //Step 1a: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
-        if(placeholderValues != null && !placeholderValues.keySet().containsAll(phNames)){
+        if(placeholderValues == null || !placeholderValues.keySet().containsAll(phNames)){
             /* We only have a subset of all placeholders
             Validate that we have all *required* placeholder values. Some might not be needed to calculate the requested outputs
             A placeholder is required if:
@@ -192,7 +192,7 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                if(required && !placeholderValues.containsKey(s)){
+                if(required && (placeholderValues == null || !placeholderValues.containsKey(s))){
                     throw new IllegalStateException("An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
                             " but a placeholder value was not provided");
                 }

@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.StopGradient;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
@@ -1610,5 +1611,24 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
         INDArray c = Nd4j.tensorMmul(a, b, new int[][]{new int[]{0}, new int[]{1}});
         assertArrayEquals(new long[]{2,2}, c.shape());
+    }
+
+    @Test
+    public void testStopGradient(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.DOUBLE, 3, 4));
+        SDVariable v = new StopGradient(sd, w).outputVariable();
+        SDVariable loss = v.std(true);
+
+        sd.execBackwards(null);
+
+        INDArray vArr = v.getGradient().getArr();
+        INDArray wArr = w.getGradient().getArr();
+
+        System.out.println(vArr);
+        System.out.println(wArr);
+
+        assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), wArr);
     }
 }

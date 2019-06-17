@@ -27,6 +27,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Field;
@@ -40,12 +41,14 @@ import java.util.*;
 @Slf4j
 public class GradCheckUtil {
 
-    private static final boolean DEFAULT_PRINT = true;
-    private static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
-    private static final boolean DEFAULT_DEBUG_MODE = false;
-    private static final double DEFAULT_EPS = 1e-5;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
+    public enum Subset {EVERY_N, RANDOM}
+
+    public static final boolean DEFAULT_PRINT = true;
+    public static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
+    public static final boolean DEFAULT_DEBUG_MODE = false;
+    public static final double DEFAULT_EPS = 1e-5;
+    public static final double DEFAULT_MAX_REL_ERROR = 1e-5;
+    public static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
     public static boolean checkGradients(TestCase t){
         return checkGradients(t.sameDiff(), t.placeholderValues(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
@@ -73,7 +76,14 @@ public class GradCheckUtil {
     }
 
     public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask){
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask) {
+        return checkGradients(sd, placeholderValues, eps, maxRelError, minAbsError, print, exitOnFirstFailure, skipValidation, debugMode,
+                skipVariables, gradCheckMask, -1, null);
+    }
+
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables, Map<String,INDArray> gradCheckMask,
+                                         int maxPerParam, Subset subset){
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -157,6 +167,7 @@ public class GradCheckUtil {
         int totalNFailures = 0;
         int totalCount = 0;
         double maxError = 0.0;
+        Random r = new Random(12345);
         for(SDVariable s : sd.variables()){
             if (fnOutputs.contains(s.getVarName()) || !s.dataType().isFPType()) {
                 //This is not an input to the graph, or is not a floating point input (so can't be gradient checked)
@@ -168,6 +179,10 @@ public class GradCheckUtil {
                 continue;
             }
 
+            if(s.dataType() != DataType.DOUBLE){
+                log.warn("DataType for variable {} is not double (is: {}) may cause precision issues in gradient checks", s.getVarName(), s.dataType());
+            }
+
             String name = s.getVarName();
             INDArray a = s.getArr();
             long n = a.length();
@@ -175,7 +190,39 @@ public class GradCheckUtil {
                 log.info("Starting test for variable \"{}\" with {} values", s.getVarName(), n);
             }
 
-            NdIndexIterator iter = new NdIndexIterator('c',a.shape());
+            Iterator<long[]> iter;
+            if(maxPerParam > 0 && subset != null && maxPerParam < a.length()){
+                //Subset case
+                long[] shape = a.shape();
+                List<long[]> l = new ArrayList<>();
+                if(subset == Subset.RANDOM){
+                    Set<Integer> set = new HashSet<>();
+                    while(set.size() < maxPerParam){
+                        int next = r.nextInt((int)a.length());
+                        set.add(next);
+                    }
+                    List<Integer> sorted = new ArrayList<>(set);
+                    Collections.sort(sorted);
+
+                    for(Integer i : sorted){
+                        long[] pos = Shape.ind2subC(shape, i);
+                        l.add(pos);
+                    }
+                } else {
+                    //Every N
+                    long everyN = n / maxPerParam;
+                    long curr = 0;
+                    while(curr < n){
+                        long[] pos = Shape.ind2subC(shape, curr);
+                        l.add(pos);
+                        curr += everyN;
+                    }
+                }
+                iter = l.iterator();
+            } else {
+                //Standard case: do all parameters
+                iter = new NdIndexIterator('c',a.shape());
+            }
 
             INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.getVarName()));
 
@@ -216,6 +263,10 @@ public class GradCheckUtil {
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
                 INDArray aGrad = grad.get(s.getVarName());
+                if(aGrad == null){
+                    log.warn("No gradient array for variable \"{}\" was found, skipping variable...", s.getVarName());
+                    continue;
+                }
                 double analyticGrad = aGrad.getDouble(idx);
 
                 if (Double.isInfinite(numericalGrad) || Double.isNaN(numericalGrad)) {

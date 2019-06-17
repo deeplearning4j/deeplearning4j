@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
@@ -25,6 +26,13 @@ import java.util.List;
 
 
 public class StopGradient extends BaseDynamicTransformOp {
+
+    public StopGradient(){ }
+
+    public StopGradient(SameDiff sd, SDVariable in){
+        super(sd, new SDVariable[]{in}, false);
+    }
+
     @Override
     public String opName() {
         return "stop_gradient";
