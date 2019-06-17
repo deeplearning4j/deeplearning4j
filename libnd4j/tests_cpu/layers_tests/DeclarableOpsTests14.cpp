@@ -359,7 +359,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
     auto out = res2->at(0);
     out->printShapeInfo("ReduceMean empty shape with keep dims");
     out->printIndexedBuffer("ReduceMean scalar");
-    ASSERT_EQ(out->e<float>(0), 0.f);
+    ASSERT_TRUE(isnan(out->e<float>(0)));
     delete res2;
 }
 
@@ -375,6 +375,27 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_1) {
 
     nd4j::ops::strided_slice op;
     auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
+    auto matrix = NDArrayFactory::create<double>('c', {1, 2, 0, 4});
+    auto b = NDArrayFactory::create<int>('c', {3}, {0, 0, 0});
+    auto e = NDArrayFactory::create<int>('c', {3}, {2,0,2});
+    auto s = NDArrayFactory::create<int>('c', {3}, {1,1,1});
+
+    auto exp = NDArrayFactory::create<double>('c', {0,0,4});
+
+    matrix.linspace(1);
+
+    nd4j::ops::strided_slice op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
