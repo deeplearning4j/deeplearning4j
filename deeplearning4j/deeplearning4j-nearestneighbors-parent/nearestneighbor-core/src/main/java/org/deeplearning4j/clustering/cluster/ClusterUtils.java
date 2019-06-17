@@ -79,8 +79,8 @@ public class ClusterUtils {
         int nClusters = clusterSet.getClusterCount();
         for (int i = 0; i < nClusters; i++) {
             final Cluster cluster = clusterSet.getClusters().get(i);
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+            //    public void run() {
                     try {
                         final ClusterInfo clusterInfo = clusterSetInfo.getClusterInfo(cluster.getId());
                         refreshClusterCenter(cluster, clusterInfo);
@@ -88,10 +88,10 @@ public class ClusterUtils {
                     } catch (Throwable t) {
                         log.warn("Error refreshing cluster centers", t);
                     }
-                }
-            });
+            //    }
+            //});
         }
-        MultiThreadUtils.parallelTasks(tasks, executorService);
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
     }
 
     public static void refreshClusterCenter(Cluster cluster, ClusterInfo clusterInfo) {
@@ -146,28 +146,29 @@ public class ClusterUtils {
         List<Runnable> tasks = new ArrayList<>();
         for (int i = 0; i < pointsCount; i++) {
             final int i2 = i;
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+            //    public void run() {
                     try {
                         Point point = points.get(i2);
                         double dist = clusterSet.isInverse() ? newCluster.getDistanceToCenter(point)
                                 : Math.pow(newCluster.getDistanceToCenter(point), 2);
-                        dxs.putScalar(i2, clusterSet.isInverse() ? dist : dist);
+                        dxs.putScalar(i2, /*clusterSet.isInverse() ? dist :*/ dist);
                     } catch (Throwable t) {
                         log.warn("Error computing squared distance from nearest cluster", t);
                     }
-                }
-            });
+            //    }
+            //});
 
         }
 
-        MultiThreadUtils.parallelTasks(tasks, executorService);
-
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
         for (int i = 0; i < pointsCount; i++) {
             double previousMinDistance = previousDxs.getDouble(i);
             if (clusterSet.isInverse()) {
-                if (dxs.getDouble(i) < previousMinDistance)
+                if (dxs.getDouble(i) < previousMinDistance) {
+
                     dxs.putScalar(i, previousMinDistance);
+                }
             } else if (dxs.getDouble(i) > previousMinDistance)
                 dxs.putScalar(i, previousMinDistance);
         }
@@ -175,6 +176,23 @@ public class ClusterUtils {
         return dxs;
     }
 
+    public static INDArray computeWeightedProbaDistancesFromNearestCluster(final ClusterSet clusterSet,
+                                                                    final List<Point> points, INDArray previousDxs) {
+        final int pointsCount = points.size();
+        final INDArray dxs = Nd4j.create(pointsCount);
+        final Cluster newCluster = clusterSet.getClusters().get(clusterSet.getClusters().size() - 1);
+
+        Double sum = new Double(0);
+        for (int i = 0; i < pointsCount; i++) {
+
+                Point point = points.get(i);
+                double dist = Math.pow(newCluster.getDistanceToCenter(point), 2);
+                sum += dist;
+                dxs.putScalar(i, sum);
+        }
+
+        return dxs;
+    }
     /**
      *
      * @param clusterSet
@@ -194,27 +212,27 @@ public class ClusterUtils {
         List<Runnable> tasks = new ArrayList<>();
         for (int i = 0; i < clusterCount; i++) {
             final Cluster cluster = clusterSet.getClusters().get(i);
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+            //    public void run() {
                     try {
                         info.getClustersInfos().put(cluster.getId(),
                                 computeClusterInfos(cluster, clusterSet.getDistanceFunction()));
                     } catch (Throwable t) {
                         log.warn("Error computing cluster set info", t);
                     }
-                }
-            });
+                //}
+            //});
         }
 
 
-        MultiThreadUtils.parallelTasks(tasks, executorService);
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
 
-        tasks = new ArrayList<>();
+        //tasks = new ArrayList<>();
         for (int i = 0; i < clusterCount; i++) {
             final int clusterIdx = i;
             final Cluster fromCluster = clusterSet.getClusters().get(i);
-            tasks.add(new Runnable() {
-                public void run() {
+            //tasks.add(new Runnable() {
+                //public void run() {
                     try {
                         for (int k = clusterIdx + 1, l = clusterSet.getClusterCount(); k < l; k++) {
                             Cluster toCluster = clusterSet.getClusters().get(k);
@@ -230,12 +248,12 @@ public class ClusterUtils {
                     } catch (Throwable t) {
                         log.warn("Error computing distances", t);
                     }
-                }
-            });
+            //    }
+            //});
 
         }
 
-        MultiThreadUtils.parallelTasks(tasks, executorService);
+        //MultiThreadUtils.parallelTasks(tasks, executorService);
 
         return info;
     }
