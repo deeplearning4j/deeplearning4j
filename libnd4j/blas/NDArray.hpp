@@ -1240,17 +1240,10 @@ BUILD_SINGLE_TEMPLATE(template void* NDArray::templatedPointerShift, (const Nd4j
 
 //////////////////////////////////////////////////////////////////////////
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
-NDArray* NDArray::transpose() const {
-    auto newArr = new NDArray(getBuffer(), getSpecialBuffer(), getShapeInfo(), getContext(), false, false);
-    newArr->transposei();
-
-    return newArr;
-}
-
-////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transp() const {
-    NDArray newArr(getBuffer(), getShapeInfo(), getContext(), false);
+NDArray NDArray::transpose() const {
+    NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
     newArr.transposei();
+
     return newArr;
 }
 
@@ -1360,10 +1353,10 @@ Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
 
-    auto newArr = new NDArray(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext());
-    newArr->reshapei(order, shape);
+    NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
+    newArr.reshapei(order, shape);
 
     return newArr;
 }
@@ -1420,43 +1413,43 @@ bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const int* dimensions, const int rank) const {
+NDArray NDArray::permute(const int* dimensions, const int rank) const {
 
     // evaluate shapeInfo for output (permuted) array ret
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-    auto ret = new NDArray(_buffer, ShapeDescriptor(shapeInfoPermuted), getContext(), getBufferOffset());
-	ret->_isView = true;
+    NDArray ret(getDataBuffer(), ShapeDescriptor(shapeInfoPermuted), getContext(), getBufferOffset());
+	ret._isView = true;
     return ret;
 }
 
 /////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
+NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
     int tempDims[MAX_RANK];
     shape::convertT<Nd4jLong, int>(const_cast<Nd4jLong *>(dimensions), tempDims, rank);
     return permute(tempDims, rank);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::vector<int>& dimensions) const {
+NDArray NDArray::permute(const std::vector<int>& dimensions) const {
     auto data = dimensions.data();
     auto size = dimensions.size();
     return permute(data, size);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
     return permute(dimensions.data(), dimensions.size());
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::initializer_list<int>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<int>& dimensions) const {
     std::vector<int> vec(dimensions);
     return permute(vec);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
     std::vector<Nd4jLong> vec(dimensions);
     return permute(vec);
 }
@@ -1528,10 +1521,9 @@ bool NDArray::isUnitary() {
         throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
 
     auto tr = this->transpose();
-    auto trMul = MmulHelper::mmul(this, tr, nullptr, 1.f, 0.f);
+    auto trMul = MmulHelper::mmul(this, &tr, nullptr, 1.f, 0.f);
 
     bool result = trMul->isIdentityMatrix();
-    delete tr;
     delete trMul;
 
     return result;
@@ -2896,7 +2888,7 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     Nd4jLong *shapeInfoNew;
     ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-    bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+    bool canReshape = shape::reshapeC(rankOf(), shapeInfo(), shape.size(), shape.data(), shapeInfoNew);
 
     // we can do this only if there was no permute applied, or there are no weird strides
     if (canReshape) {

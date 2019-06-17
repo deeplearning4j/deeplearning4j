@@ -250,6 +250,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
         template <typename T>
         static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
+            // initial zeroing of volume content
+            volume.nullify();
+
             const int bS = volume.sizeAt(0);
             const int iC = volume.sizeAt(1);
             const int iD = volume.sizeAt(2);
@@ -277,9 +280,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
 
             T* volBuff = volume.bufferAsT<T>();
             T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
-
-            // initial zeroing of volume content
-            memset(volBuff, 0, volume.lengthOf() * sizeof(T));
 
             T* col, *vol;
             int volDep, volRow, volCol;
@@ -621,19 +621,19 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             nd4j_debug("MKL-DNN is not used for conv2d!\n", 0);
 
             std::vector<int> permutForOutput;
-            if(!isNCHW)
-                input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
-            else
-                // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+
+            if(isNCHW)
                 permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+            else
+                input = new NDArray(input->permute({0, 3, 1, 2}));                         // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
 
             NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-            NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}
+            NDArray colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}
             NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getContext());
 
             //----- calculation of output -----//
             auto ctx = block.launchContext();
-            helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+            helpers::im2col(*ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
             MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
             //----- assign outTemp to output  -----//
@@ -651,7 +651,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(!isNCHW)
                 delete input;
 
-            delete colP;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -835,12 +834,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<int> gradOaxesForDot;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
                 gradOaxesForDot  = {0, 1, 2};                                           // bS, oH, oW
-            }
-            else
+                input = new NDArray(input->permute({0, 3, 1, 2}));                      // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+                gradI = new NDArray(gradI->permute({0, 3, 1, 2}));                      // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+            } else {
                 gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
+            }
 
             NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
@@ -855,7 +854,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(gradB) {
                 NDArray* gradBR = gradB;
                 if(gradB->rankOf() == 2)
-                    gradBR = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, gradOaxesForDot);                          // sum over bS, oH, oW
                 if(gradBR != gradB)
                     delete gradBR;
@@ -902,9 +901,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<Nd4jLong> outReShape;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
                 outReShape = {bS, oH, oW, iC, mC};                                              // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
                 modifOutput = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
+                input = new NDArray(input->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
             }
             else {
                 outReShape = {bS, iC, mC, oH, oW};                                              // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
@@ -915,18 +914,16 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
             NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-            NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
+            NDArray outputReshaped = output->reshape(output->ordering(), outReShape);
 
             helpers::im2col(*output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-            MmulHelper::tensorDot(&columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
+            MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
             if(bias)
                 output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
 
             if(!isNCHW)
                 delete input;
-
-            delete outputReshaped;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -962,11 +959,11 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<Nd4jLong> gradOreShape;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-                gradI = gradI->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
                 gradOreShape = {bS, oH, oW, iC, mC};                                            // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
                 modifGradO1 = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
                 modifGradO2 = {{3,0,1,2},{iC, mC, bS*oH*oW}};                                   // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
+                input = new NDArray(input->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+                gradI = new NDArray(gradI->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
             }
             else {
                 gradOreShape = {bS, iC, mC, oH, oW};                                            // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
@@ -977,22 +974,22 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(isSameMode)                       // SAME
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-            NDArray  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-            NDArray* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+            NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+            NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
             // ----- calculation of gradW and gradB ----- //
 
             helpers::im2col(*input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-            nd4j::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+            nd4j::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
             // ----- calculation of gradB ----- //
             if(gradB) {
                 NDArray* gradBR = gradB;
                 if(gradB->rankOf() == 2)
-                    gradBR = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
                 if(gradBR != gradB)
-                    delete gradBR;
+                    delete gradB;
             }
 
             //----- calculation of gradI -----//
@@ -1003,8 +1000,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 delete input;
                 delete gradI;
             }
-
-            delete gradOreshaped;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1729,24 +1724,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradI [bS, iC, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oH, oW]
 
+            // initial zeroing of gradI
+            gradI.nullify();
+
             T* in = const_cast<NDArray&>(input).bufferAsT<T>();
             T* gO = const_cast<NDArray&>(gradO).bufferAsT<T>();
             T* gI = gradI.bufferAsT<T>();
-
-            // initial zeroing of gradI
-            const Nd4jLong gradIEWS = gradI.ews();
-            const Nd4jLong gradILen = gradI.lengthOf();
-            if(gradIEWS == 1)
-                memset(gI, 0, gradILen * sizeof(T));
-            else if (gradIEWS > 1) {
-                for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
-                    gI[i] = static_cast<T>(0.f);
-            }
-            else {
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (Nd4jLong i = 0; i < gradILen; i++)
-                    gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);
-            }
 
             const int kHEff = kH + (kH-1)*(dH-1);
             const int kWEff = kW + (kW-1)*(dW-1);
@@ -2018,26 +2001,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oD, oH, oW]
 
+            // initial zeroing of gradI
+            gradI.nullify();
+
             T* in = const_cast<NDArray&>(input).bufferAsT<T>();
             T* gO = const_cast<NDArray&>(gradO).bufferAsT<T>();
             T* gI = gradI.bufferAsT<T>();
-
-            // initial zeroing of gradI
-            const Nd4jLong gradIEWS = gradI.ews();
-            const Nd4jLong gradILen = gradI.lengthOf();
-            if(gradIEWS == 1) {
-                memset(gI, 0, gradILen * sizeof(T));
-            }
-            else if (gradIEWS > 1) {
-                PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
-                    gI[i] = static_cast<T>(0.f);
-            }
-            else {
-                PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong i = 0; i < gradILen; i++)
-                    gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);
-            }
 
             const int kDEff = kD + (kD-1)*(dD-1);
             const int kHEff = kH + (kH-1)*(dH-1);

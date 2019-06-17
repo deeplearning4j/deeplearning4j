@@ -52,11 +52,11 @@ namespace nd4j {
             int oY = 0;
             int oX = 0;
 
-            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 1-NHWC, 0-NCHW    
+            int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 1-NHWC, 0-NCHW
 
-            if (!isNCHW) {
-                input  = input->permute({0, 3, 1, 2});                  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                output = output->permute({0, 3, 1, 2});                 // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+            if(!isNCHW) {
+                input  = new NDArray(input->permute({0, 3, 1, 2}));                  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+                output = new NDArray(output->permute({0, 3, 1, 2}));                 // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
             }
 
             const auto inY = static_cast<int>(input->sizeAt(2));
@@ -70,7 +70,7 @@ namespace nd4j {
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
             ConvolutionUtils::pooling2d(block, *input, *output, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::PNORM_POOL, extraParam0);
 
-            if (!isNCHW) {
+            if(!isNCHW) {
                 delete input;
                 delete output;
             }
@@ -175,40 +175,40 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     REQUIRE_TRUE(expectedGradIShape == ShapeUtils::shapeAsString(gradI), 0, "PNORMPOOL2D_BP op: wrong shape of input's gradients array (epsilon), expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
     if(!isNCHW) {
-        input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
-        gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
-        gradO = gradO->permute({0, 3, 1, 2});                                   // [bS, oH, oW, iC] -> [bS, iC, oH, oW]                        
+        input = new NDArray(input->permute({0, 3, 1, 2}));          // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        gradI = new NDArray(gradI->permute({0, 3, 1, 2}));          // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        gradO = new NDArray(gradO->permute({0, 3, 1, 2}));          // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
     }
-    
-    // if(isSameMode)                       // SAME        
+
+    // if(isSameMode)                       // SAME
     //     ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
+    // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());
     // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
-    // NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1}); 
+    // NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1});
     // NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW});
-    // NDArray<T> pNorm(columns2d->getShapeInfo(), block.getWorkspace());    
+    // NDArray<T> pNorm(columns2d->getShapeInfo(), block.getWorkspace());
 
     // input->template applyTransform<simdOps::Im2col<T>>(columns, std::vector<T>({(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, (T)0.f, (T)0.f}).data());
-    
+
     // columns2d->template applyTransform<simdOps::Abs<T>>(&pNorm);
     // pNorm.template applyTransform<simdOps::Pow<T>>(&pNorm, std::vector<T>({(T)pnorm}).data());
 
-    // NDArray<T>* denomVec = pNorm.sum({1});    
-    // denomVec->template applyTransform<simdOps::Pow<T>>(std::vector<T>({(T)1. - (T)1. / pnorm}).data());    
-    // denomVec->template applyScalar<simdOps::Max<T>>(eps); // in case of 0    
+    // NDArray<T>* denomVec = pNorm.sum({1});
+    // denomVec->template applyTransform<simdOps::Pow<T>>(std::vector<T>({(T)1. - (T)1. / pnorm}).data());
+    // denomVec->template applyScalar<simdOps::Max<T>>(eps); // in case of 0
     // denomVec->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(gradOVector, denomVec, nullptr);
 
     // if(pnorm != 2) {
     //     T extraParams[] = {(T)1. - (T)2. / pnorm};
     //     pNorm.template applyTransform<simdOps::Pow<T>>(std::vector<T>({(T)1. - (T)2. / pnorm}).data());
     //     *columns2d *= pNorm;
-    // }    
-    
+    // }
+
     // columns2d->muliColumnVector(denomVec);
-    
+
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
-        
+
     ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
 
     if(!isNCHW) {
@@ -216,16 +216,12 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
         delete gradI;
         delete gradO;
     }
-    // delete columns;
-    // delete columns2d;
-    // delete gradOVector;
-    // delete denomVec;
-    
+
     return Status::OK();
 }
 
 DECLARE_SHAPE_FN(pnormpool2d_bp) {
-                
+
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "PNORMPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "PNORMPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
 

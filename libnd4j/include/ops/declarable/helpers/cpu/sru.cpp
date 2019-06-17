@@ -86,7 +86,7 @@ void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray*
     // h   cell outputs [bS x inSize x time]
     // c   cell states  [bS x inSize x time]
 
-    w = w->transpose();                             // [3*inSize x inSize] -> [inSize x 3*inSize]
+    auto wT = w->transpose();                             // [3*inSize x inSize] -> [inSize x 3*inSize]
 
     const int time  = x->sizeAt(2);
 
@@ -99,11 +99,9 @@ void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray*
         auto ht = (*h)({0,0, 0,0, t,t+1});
         auto ct = (*c)({0,0, 0,0, t,t+1});
 
-        helpers::sruCell(context, &xt, &ct_1, w, b,  &ht, &ct);
+        helpers::sruCell(context, &xt, &ct_1, &wT, b,  &ht, &ct);
         ct_1.assign(ct);
     }
-
-    delete w;
 }
 
 //////////////////////////////////////////////////////////////////////////

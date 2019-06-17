@@ -346,12 +346,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 
@@ -367,12 +365,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 
@@ -388,12 +384,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 TEST_F(ParityOpsTests, ExpandDimsTest4) {
@@ -408,12 +402,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 

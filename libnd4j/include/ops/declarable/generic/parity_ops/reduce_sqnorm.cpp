@@ -124,13 +124,9 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
-            gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-        }
-
-        gradI->assign(2. * (*input) * *gradO);
-
-        if(!keepDims)
-            delete gradO;
+            gradI->assign(2. * (*input) *gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims)));  // for example could be something like [a,b] -> [1,a,1,b]
+        } else
+            gradI->assign(2. * (*input) * *gradO);
     }
     return Status::OK();
 }

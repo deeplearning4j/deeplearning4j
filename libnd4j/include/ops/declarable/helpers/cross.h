@@ -54,13 +54,13 @@ namespace helpers {
     }
 
     void FORCEINLINE _crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
-        auto _a = a->reshape(a->ordering(), {-1, 3});
-        auto _b = b->reshape(b->ordering(), {-1, 3});
-        auto _o = o->reshape(o->ordering(), {-1, 3});
+        auto a_ = a->reshape(a->ordering(), {-1, 3});
+        auto b_ = b->reshape(b->ordering(), {-1, 3});
+        auto o_ = o->reshape(o->ordering(), {-1, 3});
 
-        auto tadsA = _a->allTensorsAlongDimension({1});
-        auto tadsB = _b->allTensorsAlongDimension({1});
-        auto tadsO = _o->allTensorsAlongDimension({1});
+        auto tadsA = a_.allTensorsAlongDimension({1});
+        auto tadsB = b_.allTensorsAlongDimension({1});
+        auto tadsO = o_.allTensorsAlongDimension({1});
 
         int tads = tadsA->size();
 
@@ -76,9 +76,6 @@ namespace helpers {
         delete tadsA;
         delete tadsB;
         delete tadsO;
-        delete _a;
-        delete _b;
-        delete _o;
     }
 
     void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);

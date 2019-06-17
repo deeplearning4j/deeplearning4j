@@ -917,7 +917,6 @@ void SVD<T>::evalData(const NDArray& matrix) {
     auto temp1 = biDiag._HHbidiag.transpose();
     auto temp2 = _m({0,_diagSize, 0,0}, true);
     temp2.assign(temp1);
-    delete temp1;
 
     auto temp3 = _m({_m.sizeAt(0)-1,_m.sizeAt(0), 0,0}, true);
     temp3.assign(0.);

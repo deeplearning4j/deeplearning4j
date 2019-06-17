@@ -69,10 +69,10 @@ namespace nd4j {
         }
 
         void executeOnce() override {
-            auto xT = (_tA ? _x->transpose() : _x);
-            auto yT = (_tB ? _y->transpose() : _y);
+            auto xT = (_tA ? _x->transpose() : *_x);
+            auto yT = (_tB ? _y->transpose() : *_y);
 
-            MmulHelper::mmul(xT, yT, _z, _alpha, _beta);
+            MmulHelper::mmul(&xT, &yT, _z, _alpha, _beta);
         }
 
         std::string axis() override {

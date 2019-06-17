@@ -448,13 +448,12 @@ TEST_F(NDArrayTest, TestTranspose1) {
 
     for (int e = 0; e < arrayC->rankOf(); e++) {
         ASSERT_EQ(shape::shapeOf(expC)[e], arrayC->sizeAt(e));
-        ASSERT_EQ(shape::shapeOf(expT)[e], arrayT->sizeAt(e));
+        ASSERT_EQ(shape::shapeOf(expT)[e], arrayT.sizeAt(e));
     }
 
     delete arrayC;
     delete[] expC;
     delete[] expT;
-    delete arrayT;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1215,9 +1214,7 @@ TEST_F(NDArrayTest, Permute1) {
     NDArray arr2(shape2,true);
 
 	auto result = arr1.permute(perm);
-	ASSERT_TRUE(result->isSameShapeStrict(&arr2));
-
-	delete result;
+	ASSERT_TRUE(result.isSameShapeStrict(&arr2));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1405,10 +1402,10 @@ TEST_F(NDArrayTest, TestReshapeNegative1) {
 TEST_F(NDArrayTest, TestReshapeNegative2) {
     std::unique_ptr<NDArray> array(NDArrayFactory::create_<float>('c', {2, 3, 4, 64}));
 
-    std::unique_ptr<NDArray> reshaped(array->reshape('c', {-1, 64}));
+    auto reshaped = array->reshape('c', {-1, 64});
 
-    ASSERT_EQ(24, reshaped->sizeAt(0));
-    ASSERT_EQ(64, reshaped->sizeAt(1));
+    ASSERT_EQ(24, reshaped.sizeAt(0));
+    ASSERT_EQ(64, reshaped.sizeAt(1));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1871,15 +1868,13 @@ TEST_F(NDArrayTest, TestTranspose_12) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 4});
     auto y = x.transpose();
 
-    ASSERT_EQ(4, y->sizeAt(0));
-    ASSERT_EQ(3, y->sizeAt(1));
-    ASSERT_EQ(2, y->sizeAt(2));
+    ASSERT_EQ(4, y.sizeAt(0));
+    ASSERT_EQ(3, y.sizeAt(1));
+    ASSERT_EQ(2, y.sizeAt(2));
 
     ASSERT_EQ(2, x.sizeAt(0));
     ASSERT_EQ(3, x.sizeAt(1));
     ASSERT_EQ(4, x.sizeAt(2));
-
-    delete y;
 }
 
 //////////////////////////////////////////////////////////////////////

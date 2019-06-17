@@ -69,7 +69,6 @@ namespace nd4j {
                 auto result = x->permute(arguments);
                 output->assign(result);
                 STORE_RESULT(output);
-                delete result;
             }
 
             return Status::OK();
