@@ -32,12 +32,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Infer datatypes for all variables
+ * Infer datatypes for all variables.
+ * Optionally update the datatypes of variables as we go
  */
 public class DataTypesSession extends AbstractSession<DataType, DataTypesSession.DataTypeCalc> {
 
     protected boolean dynamicUpdate;
 
+    /**
+     * @param sameDiff      SameDiff instance
+     * @param dynamicUpdate If true: Dynamically update the datatypes as we go
+     */
     public DataTypesSession(SameDiff sameDiff, boolean dynamicUpdate) {
         super(sameDiff);
         this.dynamicUpdate = dynamicUpdate;

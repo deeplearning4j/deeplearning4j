@@ -2690,6 +2690,19 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    /**
+     * Convert the datatypes of the specified constants, placeholders and variables.<br>
+     * After conversion, the downstream datatypes are changed.
+     * For example, {@code z(float) = x(float)+y(float)}, changing both x and y to double results in {@code z(double) = x(double)+y(double)}
+     * without doing anything to change z's datatype directly (z datatype is inferred from x + y + add op).<br>
+     * ARRAY type SDVariables cannot be converted directly, as their datatypes are determined by the function +
+     * input datatypes.<b>
+     * Note that this method should be used with caution: incorrect datatype modifications may leave your network
+     * in an incorrect state. For example, {@code op(x(float),y(float)) -> op(x(double),y(float))} may not be
+     * supported by all ops.
+     *
+     * @param dataTypeMap Map of SDVariables to change the datatype for. Key = SDVariable name, Value = new datatype
+     */
     public void convertDataTypes(@NonNull Map<String,DataType> dataTypeMap){
         if(dataTypeMap.isEmpty())
             return;
