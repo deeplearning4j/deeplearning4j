@@ -4265,7 +4265,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     Layer currentLayer = ((LayerVertex) currentVertex).getLayer();
                     classNameArr = currentLayer.getClass().getName().split("\\.");
                     className = classNameArr[classNameArr.length - 1];
-                    paramCount = String.valueOf(currentLayer.numParams());
+                    paramCount = String.format("%,d", currentLayer.numParams());
                     //layer with params
                     if (currentLayer.numParams() > 0) {
                         paramShape = "";
@@ -4372,9 +4372,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         ret.append(StringUtils.repeat("-", totalLength))
-                .append(String.format("\n%30s %d", "Total Parameters: ", params().length()))
-                .append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams))
-                .append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams))
+                .append(String.format("\n%30s %,d", "Total Parameters: ", params().length()))
+                .append(String.format("\n%30s %,d", "Trainable Parameters: ", params().length() - frozenParams))
+                .append(String.format("\n%30s %,d", "Frozen Parameters: ", frozenParams))
                 .append("\n")
                 .append(StringUtils.repeat("=", totalLength))
                 .append("\n");
