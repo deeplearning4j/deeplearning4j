@@ -17,12 +17,13 @@ ND4J is a scientific computing library for the JVM. It is meant to be used in pr
 * Multiplatform functionality including GPUs.
 
 ## Prerequisites
-<!--- // Java, Maven. Coding skills and hello world example. -->
+<!--- // Java, Maven, git. Coding skills and hello world example. -->
 To follow the examples in this quick start you will need to know some Java. You will also need to install the following software on your computer:
 <!--- from the dl4j quickstart, pointing to the dl4j quiclstart for details. -->
 * [Java (developer version)](./deeplearning4j-quickstart#Java) 1.7 or later (Only 64-Bit versions supported)
 * [Apache Maven](./deeplearning4j-quickstart#Maven) (automated build and dependency manager)
-
+<!--- git allows us to start with a cleaner project than mvn create. -->
+* [Git](./deeplearning4j-quickstart#Git)(distributed version control system)
 
 
 ## Basics
