@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
@@ -72,5 +73,7 @@ public interface TrainingConfig {
      * @return The gradient normalization threshold
      */
     double getGradientNormalizationThreshold();
+
+    void setDataType(DataType dataType);
 
 }

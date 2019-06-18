@@ -96,7 +96,7 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
             if (!map.containsKey(inputNum)) {
                 //Lazily define extra input variable as required
-                SDVariable var = sameDiff.var("var_" + inputNum, 1); //TODO is this shape safe?
+                SDVariable var = sameDiff.var("var_" + inputNum, dataType, -1); //TODO is this shape safe?
                 map.put(inputNum, var);
             }
 

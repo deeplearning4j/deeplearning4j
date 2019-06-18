@@ -146,4 +146,9 @@ public class LayerVertex extends GraphVertex {
         //TODO preprocessor memory
         return layerConf.getLayer().getMemoryReport(it);
     }
+
+    @Override
+    public void setDataType(DataType dataType){
+        layerConf.getLayer().setDataType(dataType);
+    }
 }

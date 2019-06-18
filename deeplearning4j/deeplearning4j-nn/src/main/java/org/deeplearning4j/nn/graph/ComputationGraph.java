@@ -512,6 +512,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(; i<topologicalOrder.length; i++ ){
             String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
+            n.setDataType(netDtype);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
         }

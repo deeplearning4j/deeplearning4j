@@ -138,12 +138,12 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
+            INDArray castInput = input.castTo(dataType);
             if(castInput.isAttached())
                 castInput = castInput.dup();
             sameDiff.associateArrayWithVariable(castInput, sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired()) {
-                INDArray castLabels = labels.castTo(Nd4j.defaultFloatingPointType());
+                INDArray castLabels = labels.castTo(dataType);
                 if(castLabels.isAttached())
                     castLabels = castLabels.dup();
                 sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
@@ -154,7 +154,16 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
+            if(!sameDiff.functionExists("grad"))
+                sameDiff.createGradFunction();
+
+            List<String> gradVarNames = new ArrayList<>();
+            for(String s : paramTable.keySet()){
+                gradVarNames.add(sameDiff.getVariable(s).getGradient().getVarName());
+            }
+            gradVarNames.add(sameDiff.grad(INPUT_KEY).getVarName());
+
+            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap(), gradVarNames);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -263,7 +272,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
                 val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, ps);
+                SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }
             SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, labelVar, params);
