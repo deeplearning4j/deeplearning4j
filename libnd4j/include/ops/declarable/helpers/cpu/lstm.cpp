@@ -21,7 +21,7 @@
 // implementation of operation for LSTM cell with peep hole connections:
 // http://www.bioinf.jku.at/publications/older/2604.pdf
 // S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation, 9(8):1735-1780, 1997.
-// and 
+// and
 // https://research.google.com/pubs/archive/43905.pdf
 // Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
 
@@ -59,7 +59,7 @@ static FORCEINLINE void tanhInplace(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray* timeSubset(const NDArray* arr, const int t, const int dataFormat){
+static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat){
     if(dataFormat == 0){
         //TNS: shape [timeLength, numExamples, inOutSize]
         auto x = (*arr)({t,t+1, 0,0, 0,0});
@@ -249,16 +249,16 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
     PRAGMA_OMP_PARALLEL
     #pragma omp single
-        {
-            #pragma omp task
-            zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
+    {
+        #pragma omp task
+        zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
 
-            #pragma omp task
-            zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
+        #pragma omp task
+        zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
 
-            #pragma omp task
-            zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
-        }
+        #pragma omp task
+        zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
+    }
 
 
     if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1 &&
@@ -271,9 +271,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
         auto temp = (*f) * (*cLast);
         *c += temp;                              //c = (i * z) + (zf * (*cLast))
         c->applyTransform(transform::Tanh, h);  //h = tanh(c)
-
     }
-
 
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue > 0.0) {
@@ -297,7 +295,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 //////////////////////////////////////////////////////////////////////////
 void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                   NDArray* h, NDArray* c, const std::vector<double>& params) {
-    
+
     // x  input [time x bS x inSize]
     // h0 initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
     // c0 initial cell state  (at time step = 0) [bS x numUnits],
@@ -307,7 +305,7 @@ void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray
     // Wc diagonal weights for peephole connections [3*numUnits]
     // Wp projection weights [numUnits x numProj]
     // b  biases, [4*numUnits]
-    
+
     // h cell outputs [time x bS x numProj], that is per each time step
     // c cell states  [time x bS x numUnits] that is per each time step
 
@@ -342,11 +340,12 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
     const std::vector<Nd4jLong> inSliceShape({mb,inSize});
     const std::vector<Nd4jLong> outSliceShape({mb,outSize});
 
-    NDArray* c_t1 = const_cast<NDArray*>(c0);
-    NDArray* y_t1 = const_cast<NDArray*>(y0);
+    auto c_t1 = const_cast<NDArray*>(c0);
+    auto y_t1 = const_cast<NDArray*>(y0);
 
     // loop through time steps
-    for (int t = 0; t <seqLen; ++t) {
+    for (int t = 0; t < seqLen; ++t) {
+
         auto xt = timeSubset(xSeq, t, dataFormat);
 
         auto it = timeSubset(iSeq, t, dataFormat);
@@ -357,10 +356,17 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
         auto ht = timeSubset(hSeq, t, dataFormat);
         auto yt = timeSubset(ySeq, t, dataFormat);
 
-        helpers::lstmBlockCell(xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, it, ct, ft, ot, zt, ht, yt, params);
+        helpers::lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
 
-        c_t1 = ct;
-        y_t1 = yt;
+        if(t != 0) {
+            delete c_t1;
+            delete y_t1;
+        }
+
+        if(t < seqLen - 1) {
+            c_t1 = new NDArray(std::move(ct));
+            y_t1 = new NDArray(std::move(yt));
+        }
     }
 
 }

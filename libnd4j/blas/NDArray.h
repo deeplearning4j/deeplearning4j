@@ -429,16 +429,16 @@ namespace nd4j {
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
-		NDArray* permute(const std::initializer_list<int>& dimensions) const;
-        NDArray* permute(const std::vector<int>& dimensions) const;
-        NDArray* permute(const int* dimensions, const int rank) const;
+		NDArray permute(const std::initializer_list<int>& dimensions) const;
+        NDArray permute(const std::vector<int>& dimensions) const;
+        NDArray permute(const int* dimensions, const int rank) const;
 
         void permute(const int* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<int>& dimensions, NDArray& target) const;
 
-        NDArray* permute(const std::initializer_list<Nd4jLong>& dimensions) const;
-        NDArray* permute(const std::vector<Nd4jLong>& dimensions) const;
-        NDArray* permute(const Nd4jLong* dimensions, const int rank) const;
+        NDArray permute(const std::initializer_list<Nd4jLong>& dimensions) const;
+        NDArray permute(const std::vector<Nd4jLong>& dimensions) const;
+        NDArray permute(const Nd4jLong* dimensions, const int rank) const;
 
         void permute(const Nd4jLong* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const;
@@ -790,8 +790,7 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
-        NDArray* transpose() const;
-        NDArray  transp() const;
+        NDArray transpose() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected
@@ -915,7 +914,7 @@ namespace nd4j {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		NDArray* reshape(const char order, const std::vector<Nd4jLong>& shape) const;
+		NDArray reshape(const char order, const std::vector<Nd4jLong>& shape) const;
 
         /**
         *  calculate strides and set given order

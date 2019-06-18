@@ -33,7 +33,7 @@ namespace nd4j {
 namespace ops  {
 
 CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
-            
+
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, oC, iC] always
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
     if(!isNCHW)
-        output  = output->permute({0, 3, 1, 2});                                // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+        output = new NDArray(output->permute({0, 3, 1, 2}));       // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
@@ -77,14 +77,14 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
     LaunchContext* ctx = block.launchContext();
     helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
-           
+
     //----- add biases if required -----//
     if(bias)
         output->applyBroadcast(broadcast::Add, {1}, bias);
 
-    if(!isNCHW)
+     if(!isNCHW)
         delete output;
-    
+
     return Status::OK();
 }
     DECLARE_TYPES(deconv2d) {
@@ -135,7 +135,7 @@ DECLARE_SHAPE_FN(deconv2d) {
 
     int oH, oW;                                         // output height, width
     ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-    
+
     Nd4jLong outputShape[4];
 
     outputShape[0] = bS;
@@ -211,8 +211,9 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
     // -----prepare permutation arrays and axes for dot product ----- //
     std::vector<int> inputAxesForDot;
+
     if(!isNCHW) {
-        gradO = gradO->permute({0, 3, 1, 2});                                   // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+        gradO = new NDArray(gradO->permute({0, 3, 1, 2}));                      // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
         inputAxesForDot = {0, 1, 2};                                            // bS, iH, iW
     }
     else
@@ -228,7 +229,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     // ----- calculation of gradB ----- //
     if(gradB) {
         if(gradB->rankOf() == 2)
-            gradB = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+            gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
         gradO->reduceAlongDimension(reduce::Sum, gradB, {0, 2, 3});                                // sum over bS, oH, oW
         if(gradB != OUTPUT_VARIABLE(2))
             delete gradB;
@@ -237,7 +238,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     if(!isNCHW)
         delete gradO;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 DECLARE_SHAPE_FN(deconv2d_bp) {

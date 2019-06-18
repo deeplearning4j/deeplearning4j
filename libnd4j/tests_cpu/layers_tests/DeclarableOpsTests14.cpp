@@ -63,8 +63,8 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
     x.printIndexedBuffer("x indxd");
 
     auto r = x.reshape('c', {3, 2});
-    r->printIndexedBuffer("r pre-s");
-    r->streamline('f');    
+    r.printIndexedBuffer("r pre-s");
+    r.streamline('f');
 
     nd4j::ops::reshape op;
     auto result = op.execute({&x}, {}, {3, 2}, {});
@@ -72,7 +72,6 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
 
     auto z = result->at(0);
 
-    delete r;
     delete result;
 }
 
@@ -357,9 +356,9 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
     auto res2 = sumOp.execute({&e}, {1.}, {1});
     ASSERT_EQ(res2->status(), Status::OK());
     auto out = res2->at(0);
-    out->printShapeInfo("ReduceMean empty shape with keep dims");
-    out->printIndexedBuffer("ReduceMean scalar");
-    ASSERT_TRUE(isnan(out->e<float>(0)));
+    // out->printShapeInfo("ReduceMean empty shape with keep dims");
+    // out->printIndexedBuffer("ReduceMean scalar");
+    ASSERT_TRUE(std::isnan(out->e<float>(0)));
     delete res2;
 }
 

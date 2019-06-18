@@ -75,7 +75,6 @@ namespace nd4j {
             } else {
                 auto tmp = input->reshape(input->ordering(), shape);
                 output->assign(tmp);
-                delete tmp;
             }
 
             return Status::OK();

@@ -32,13 +32,20 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Infer datatypes for all variables
+ * Infer datatypes for all variables.
+ * Optionally update the datatypes of variables as we go
  */
 public class DataTypesSession extends AbstractSession<DataType, DataTypesSession.DataTypeCalc> {
 
+    protected boolean dynamicUpdate;
 
-    public DataTypesSession(SameDiff sameDiff) {
+    /**
+     * @param sameDiff      SameDiff instance
+     * @param dynamicUpdate If true: Dynamically update the datatypes as we go
+     */
+    public DataTypesSession(SameDiff sameDiff, boolean dynamicUpdate) {
         super(sameDiff);
+        this.dynamicUpdate = dynamicUpdate;
     }
 
     @Override
@@ -75,6 +82,18 @@ public class DataTypesSession extends AbstractSession<DataType, DataTypesSession
     public DataType[] getOutputs(DataTypeCalc op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
         List<DataType> outTypes = op.getFn().calculateOutputDataTypes(op.getInputTypes());
+
+        if(dynamicUpdate) {
+            SDVariable[] fnOutputs = op.getFn().outputVariables();
+            for( int i=0; i<fnOutputs.length; i++ ){
+                SDVariable v = fnOutputs[i];
+                DataType d = outTypes.get(i);
+                if(v.dataType() != d){
+                    v.setDataType(d);
+                }
+            }
+        }
+
         return outTypes.toArray(new DataType[outTypes.size()]);
     }
 

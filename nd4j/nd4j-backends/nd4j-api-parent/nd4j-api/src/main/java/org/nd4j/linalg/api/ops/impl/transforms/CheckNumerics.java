@@ -14,42 +14,42 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.controlflow.compat;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
 
-
-public class StopGradient extends BaseDynamicTransformOp {
-
-    public StopGradient(){ }
-
-    public StopGradient(SameDiff sd, SDVariable in){
-        super(sd, new SDVariable[]{in}, false);
-    }
-
+/**
+ * CheckNumerics op wrapper
+ * @author raver119@gmail.com
+ */
+public class CheckNumerics extends DynamicCustomOp {
     @Override
     public String opName() {
-        return "stop_gradient";
+        return "check_numerics";
     }
 
     @Override
     public String tensorflowName() {
-        return "StopGradient";
+        return "CheckNumerics";
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> input){
-        return input;
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Collections.singletonList(f().zerosLike(arg()));
+    public int numOutputArguments(){
+        return 1;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

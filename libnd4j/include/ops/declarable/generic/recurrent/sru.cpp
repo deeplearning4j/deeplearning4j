@@ -282,7 +282,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     // gradX 
     auto weightsT = w->transpose();                                            // [K x 3K]
-    MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]    
+    MmulHelper::mmul(&weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]
     gradX->applyPairwiseTransform(pairwise::Add, gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
         gradX->applyBroadcast(broadcast::Multiply, {0,1}, mask, gradX, nullptr);  // apply mask
@@ -297,7 +297,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     delete gct;   delete gradU; delete gradHX;
     delete temp1; delete temp2; delete temp3; delete gradCt; delete wi;
-    delete gradTanh; delete ftMinus; delete rtMinus; delete weightsT; delete gradBias;
+    delete gradTanh; delete ftMinus; delete rtMinus; delete gradBias;
     
     return Status::OK();
 }

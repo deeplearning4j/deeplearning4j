@@ -471,7 +471,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         }
 
         System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
-        assertTrue(totalTestCaseCount > 100000);
+        assertTrue(String.valueOf(totalTestCaseCount), totalTestCaseCount > 5000);
     }
 
     private static long[] getShape(INDArray in, INDArrayIndex[] idxs){

@@ -311,16 +311,14 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
     x.linspace(1.f);
 
     auto e = x.permute({1, 0});
-    e->streamline('c');
+    e.streamline('c');
 
     nd4j::ops::transpose op;
     auto result = op.execute({&x, &y}, {&z}, {}, {}, {});
 
     ASSERT_EQ(Status::OK(), result);
-    ASSERT_TRUE(e->isSameShape(z));
-    ASSERT_TRUE(e->equalsTo(z));
-
-    delete e;
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_2) {
@@ -335,10 +333,9 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(exp->isSameShape(z));
-    ASSERT_TRUE(exp->equalsTo(z));
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
-    delete exp;
     delete result;
 }
 
@@ -354,8 +351,6 @@ TEST_F(ShapeTests, Tests_Transpose_119_3) {
     auto result = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 
-    ASSERT_TRUE(exp->isSameShape(z));
-    ASSERT_TRUE(exp->equalsTo(z));
-
-    delete exp;
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 }

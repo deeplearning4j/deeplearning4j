@@ -28,33 +28,27 @@
 
 namespace nd4j {
 
-    nd4j::NDArray *
-    AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::LaunchContext * context) {
+    nd4j::NDArray AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
         auto projectedSize = projectionMatrix->sizeAt(1);
 
         auto inputPerm = input->permute({1, 0, 2});
-        auto inputPrep = inputPerm->reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
-        NDArray* projected = new NDArray('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);
+        NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);
         nd4j::ops::matmul mmul;
-        mmul.execute({projectionPrep, inputPrep}, {projected},  {}, {}, {});
+        mmul.execute({&projectionPrep, &inputPrep}, {&projected},  {}, {}, {});
 
-        projected->reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
-        projected->permutei({2, 0, 1, 3});
-
-        delete inputPerm;
-        delete inputPrep;
-        delete projectionPrep;
+        projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
+        projected.permutei({2, 0, 1, 3});
 
         return projected;
     }
 
-    void
-    AttentionHelper::multiHeadProjectBp(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix,
+    void AttentionHelper::multiHeadProjectBp(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix,
                                         const nd4j::NDArray *eps, nd4j::NDArray *dLdInput,
                                         nd4j::NDArray *dLdProjectionMatrix, nd4j::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
@@ -63,16 +57,16 @@ namespace nd4j {
         auto projectedSize = projectionMatrix->sizeAt(1);
 
         auto epsPerm = eps->permute({1, 2, 0, 3});
-        auto epsReshaped = epsPerm->reshape('c', {numHeads * projectedSize, miniBatchSize * seqLength});
+        auto epsReshaped = epsPerm.reshape('c', {numHeads * projectedSize, miniBatchSize * seqLength});
 
         auto inputPerm = input->permute({1, 0, 2});
-        auto inputPrep = inputPerm->reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
+        auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
         nd4j::ops::matmul_bp mmulBp;
-        NDArray dLdProjectionPrep(projectionPrep->shapeInfo(), false, context);
-        NDArray dLdInputPrep(inputPrep->shapeInfo(), false, context);
-        mmulBp.execute({projectionPrep, inputPrep, epsReshaped}, {&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});
+        NDArray dLdProjectionPrep(projectionPrep.shapeInfo(), false, context);
+        NDArray dLdInputPrep(inputPrep.shapeInfo(), false, context);
+        mmulBp.execute({&projectionPrep, &inputPrep, &epsReshaped}, {&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});
 
         dLdProjectionPrep.reshapei({numHeads, projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
         dLdProjectionMatrix->assign(dLdProjectionPrep);
@@ -80,12 +74,6 @@ namespace nd4j {
         dLdInputPrep.reshapei({input->sizeAt(1), miniBatchSize, seqLength});
         dLdInputPrep.permutei({1, 0, 2});
         dLdInput->assign(dLdInputPrep);
-
-        delete inputPerm;
-        delete inputPrep;
-        delete epsPerm;
-        delete epsReshaped;
-        delete projectionPrep;
     }
 }
 

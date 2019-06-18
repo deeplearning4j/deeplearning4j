@@ -3311,4 +3311,100 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray out2 = m.get("softmax");
         assertEquals(out, out2);
     }
+
+
+    @Test
+    public void testConvertDTypes1(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.var("x", Nd4j.rand(DataType.FLOAT, 3, 4));
+        SDVariable y = sd.var("y", Nd4j.rand(DataType.FLOAT, 4, 2));
+        SDVariable z = x.mmul("z", y);
+        SDVariable tanh = sd.math().tanh("tanh", z);
+        SDVariable stdev = tanh.std("stdev", true);
+
+        assertEquals(DataType.FLOAT, x.dataType());
+        assertEquals(DataType.FLOAT, y.dataType());
+        assertEquals(DataType.FLOAT, z.dataType());
+        assertEquals(DataType.FLOAT, tanh.dataType());
+        assertEquals(DataType.FLOAT, stdev.dataType());
+
+        Map<String,INDArray> out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.FLOAT, x.getArr().dataType());
+        assertEquals(DataType.FLOAT, y.getArr().dataType());
+
+        Map<String,DataType> toConvert = new HashMap<>();
+        toConvert.put("x", DataType.DOUBLE);
+        toConvert.put("y", DataType.DOUBLE);
+        sd.convertDataTypes(toConvert);
+
+        assertEquals(DataType.DOUBLE, x.dataType());
+        assertEquals(DataType.DOUBLE, y.dataType());
+        assertEquals(DataType.DOUBLE, z.dataType());
+        assertEquals(DataType.DOUBLE, tanh.dataType());
+        assertEquals(DataType.DOUBLE, stdev.dataType());
+
+        out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.DOUBLE, x.getArr().dataType());
+        assertEquals(DataType.DOUBLE, y.getArr().dataType());
+    }
+
+    @Test
+    public void testConvertDTypes2(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 3, 4);
+        SDVariable y = sd.var("y", Nd4j.rand(DataType.FLOAT, 1, 4));
+        SDVariable xD = x.castTo("xD", DataType.DOUBLE);
+        SDVariable yD = y.castTo("yD", DataType.DOUBLE);
+        SDVariable add = xD.add("a", yD);
+        SDVariable relu = sd.nn().relu("r", add, 1);
+
+        assertEquals(DataType.FLOAT, x.dataType());
+        assertEquals(DataType.FLOAT, y.dataType());
+        assertEquals(DataType.DOUBLE, xD.dataType());
+        assertEquals(DataType.DOUBLE, yD.dataType());
+        assertEquals(DataType.DOUBLE, add.dataType());
+        assertEquals(DataType.DOUBLE, relu.dataType());
+
+        Map<String,INDArray> ph = Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4));
+
+        Map<String,INDArray> out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            if(e.getKey().equals("x") || e.getKey().equals("y")){
+                assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+            } else {
+                assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+            }
+        }
+
+        assertEquals(DataType.FLOAT, y.getArr().dataType());
+
+        Map<String,DataType> toConvert = new HashMap<>();
+        toConvert.put("x", DataType.DOUBLE);
+        toConvert.put("y", DataType.DOUBLE);
+        sd.convertDataTypes(toConvert);
+
+        assertEquals(DataType.DOUBLE, x.dataType());
+        assertEquals(DataType.DOUBLE, y.dataType());
+        assertEquals(DataType.DOUBLE, xD.dataType());
+        assertEquals(DataType.DOUBLE, yD.dataType());
+        assertEquals(DataType.DOUBLE, add.dataType());
+        assertEquals(DataType.DOUBLE, relu.dataType());
+
+        out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.DOUBLE, y.getArr().dataType());
+    }
 }

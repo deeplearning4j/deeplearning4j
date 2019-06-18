@@ -87,8 +87,8 @@ namespace nd4j {
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
                     STORE_RESULT(*ret);
-                    delete xr;
-                    return ND4J_STATUS_OK;
+
+                    return Status::OK();
                 }
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
@@ -143,7 +143,6 @@ namespace nd4j {
                     } else {
                         auto xr = x->reshape(order, shapeNew);
                         ret->assign(xr);
-                        delete xr;
                     }
 
                     return Status::OK();

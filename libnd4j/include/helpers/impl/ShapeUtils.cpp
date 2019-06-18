@@ -473,18 +473,8 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
     // FIXME: get rid of memcpy here
     memcpy(tmpShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
     for (int i = 0; i < minRank; ++i)
-        if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
+        if((maxShapeInfo[maxRank-i] != 0 && maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i]) || minShapeInfo[minRank-i] == 0)
             tmpShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
-
-    // nullify zero axis
-    for (int e = 0; e < maxRank; e++)
-        if (maxShapeInfo[e+1] == 0)
-            tmpShapeInfo[e+1] = 0;
-
-    int delta = maxRank - minRank;
-    for (int e = minRank - 1; e >= 0; e--)
-        if (minShapeInfo[e + 1] == 0)
-            tmpShapeInfo[e + 1 + delta] = 0;
 
     ShapeUtils::updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
 

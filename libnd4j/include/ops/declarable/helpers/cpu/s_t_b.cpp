@@ -69,24 +69,21 @@ namespace helpers {
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<1, false>(context, in, out, block_shape, paddings);
+                _prepare<1, false>(context, &in, &out, block_shape, paddings);
                 break;
             case 2:
-                _prepare<2, false>(context, in, out, block_shape, paddings);
+                _prepare<2, false>(context, &in, &out, block_shape, paddings);
                 break;
             case 3:
-                _prepare<3, false>(context, in, out, block_shape, paddings);
+                _prepare<3, false>(context, &in, &out, block_shape, paddings);
                 break;
             case 4:
-                _prepare<4, false>(context, in, out, block_shape, paddings);
+                _prepare<4, false>(context, &in, &out, block_shape, paddings);
                 break;
             default: {
                 return Status::THROW("SpaceToBatch: Wrong number of internal_block_dims");
             }
         }
-
-        delete in;
-        delete out;
 
         return Status::OK();
     }
@@ -96,24 +93,21 @@ namespace helpers {
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<1, true>(context, in, out, block_shape, crops);
+                _prepare<1, true>(context, &in, &out, block_shape, crops);
                 break;
             case 2:
-                _prepare<2, true>(context, in, out, block_shape, crops);
+                _prepare<2, true>(context, &in, &out, block_shape, crops);
                 break;
             case 3:
-                _prepare<3, true>(context, in, out, block_shape, crops);
+                _prepare<3, true>(context, &in, &out, block_shape, crops);
                 break;
             case 4:
-                _prepare<4, true>(context, in, out, block_shape, crops);
+                _prepare<4, true>(context, &in, &out, block_shape, crops);
                 break;
             default: {
                 return Status::THROW("BatchToSpace: Wrong number of internal_block_dims");
             }
         }
-
-        delete in;
-        delete out;
 
         return Status::OK();
     }

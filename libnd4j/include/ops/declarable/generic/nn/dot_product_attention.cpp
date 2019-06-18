@@ -74,7 +74,7 @@ namespace ops  {
         }
 
         if(mask != nullptr){
-            NDArray* reshapedMask;
+            NDArray reshapedMask;
             if(weights->rankOf() == 4){
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
             }else{
@@ -87,8 +87,7 @@ namespace ops  {
             // before going through the softmax, we effectively push all masked positions to zero after softmax.
             //
             // we are using 1e9 to mean effectively infinity
-            *weights += (*reshapedMask - 1) * 1e9;
-            delete reshapedMask;
+            *weights += (reshapedMask - 1) * 1e9;
         }
 
         nd4j::ops::softmax softmax;
@@ -175,14 +174,13 @@ namespace ops  {
             preSoftmax /= factor;
 
         if(mask != nullptr){
-            NDArray* reshapedMask;
+            NDArray reshapedMask;
             if(preSoftmax.rankOf() == 4){
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
             }else{
                 reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
             }
-            preSoftmax += (*reshapedMask - 1) * 1e9;
-            delete reshapedMask;
+            preSoftmax += (reshapedMask - 1) * 1e9;
         }
 
         NDArray weights('c', weightShape, values->dataType(), block.launchContext());
