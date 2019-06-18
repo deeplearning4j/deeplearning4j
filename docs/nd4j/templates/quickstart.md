@@ -5,14 +5,25 @@ description: ND4J Key features and brief samples.
 category: ND4J
 weight: 1
 ---
+<!--- Comments are standard html. Tripple dash based on stackoverflow: https://stackoverflow.com/questions/4823468/comments-in-markdown -->
 
-// Borrowing the layout of the Numpy quickstart to get started.
+<!--- Borrowing the layout of the Numpy quickstart to get started. -->
 
 ## Introduction
-// What is ND4J and why is it important.
+<!--- What is ND4J and why is it important. From the nd4j repo readme.  -->
+ND4J is a scientific computing library for the JVM. It is meant to be used in production environments rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements. The main features are:
+* A versatile n-dimensional array object.
+* Linear algebra and signal processing functions.
+* Multiplatform functionality including GPUs.
 
 ## Prerequisites
-// Java, Maven (maybe git).
+<!--- // Java, Maven. Coding skills and hello world example. -->
+To follow the examples in this quick start you will need to know some Java. You will also need to install the following software on your computer:
+<!--- from the dl4j quickstart, pointing to the dl4j quiclstart for details. -->
+* [Java (developer version)](./deeplearning4j-quickstart#Java) 1.7 or later (Only 64-Bit versions supported)
+* [Apache Maven](./deeplearning4j-quickstart#Maven) (automated build and dependency manager)
+
+
 
 ## Basics
 // We will put some into this page. Start with refering to existing doc.
