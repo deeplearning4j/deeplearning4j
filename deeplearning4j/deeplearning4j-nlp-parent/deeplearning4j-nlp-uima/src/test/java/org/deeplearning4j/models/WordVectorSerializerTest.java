@@ -23,6 +23,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -847,6 +849,36 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             } catch (Exception e) {
                 fail("Failure for input file " + file.getAbsolutePath() + " " + e.getMessage());
             }
+        }
+    }
+
+    @Test
+    public void testBackwardsCompatibleWord2Vec() {
+        File model_v3 = Resources.asFile("deeplearning4j-nlp/model_beta3.zip");
+        File model_v4 = Resources.asFile("deeplearning4j-nlp/model_beta4.zip");
+        Word2Vec word2Vec1 = WordVectorSerializer.readWord2VecModel(model_v3, true);
+        Word2Vec word2Vec2 = WordVectorSerializer.readWord2VecModel(model_v4, true);
+        try {
+            assertEquals(word2Vec1.toJson(), word2Vec2.toJson());
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testBackwardsCompatibleSequenceVectors() {
+        File model_v3 = Resources.asFile("deeplearning4j-nlp/seqv_beta3.csv");
+        File model_v4 = Resources.asFile("deeplearning4j-nlp/seqv_beta4.csv");
+        try {
+            SequenceVectors vectors1 = WordVectorSerializer.readSequenceVectors(new VocabWordFactory(), model_v3);
+            SequenceVectors vectors2 = WordVectorSerializer.readSequenceVectors(new VocabWordFactory(), model_v4);
+
+            assertEquals(vectors1.vocab().numWords(), vectors2.vocab().numWords());
+            for (int i = 0; i < vectors1.vocab().numWords(); ++i) {
+                assertEquals(vectors1.vocab().words().toArray()[i], vectors2.vocab().words().toArray()[i]);
+            }
+        } catch (Exception e) {
+            fail(e.getMessage());
         }
     }
 
