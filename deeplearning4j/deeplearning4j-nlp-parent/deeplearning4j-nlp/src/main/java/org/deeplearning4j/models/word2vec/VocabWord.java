@@ -27,6 +27,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.io.Serializable;
 
 
+
 /**
  * Intermediate layers of the neural network
  *
