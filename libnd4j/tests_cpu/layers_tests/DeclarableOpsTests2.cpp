@@ -335,18 +335,6 @@ TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests2, Eye_check_119_1) {
-
-    nd4j::ops::eye op;
-    auto result = op.execute({},{},{3, 2});
-
-    auto z = result->at(0);
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    delete result;
-}
-
-
 TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     auto A = NDArrayFactory::create<float>('c', {3, 3});
     auto B = NDArrayFactory::create<float>('c', {3, 1});

@@ -237,6 +237,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
 
             if (threadIdx.x == 0) {
                 z[0] = OpType::postProcess(sPartials[0], len, extraParams);
+                printf("ReduceScalarSame: %f\n", (float) z[0]);
             }
         }
     }
@@ -246,6 +247,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
             auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
             tc[16384] = 0;
             z[0] = OpType::postProcess(sPartials[0], len, extraParams);
+            printf("ReduceScalarSame: %f\n", (float) z[0]);
         }
     }
 }

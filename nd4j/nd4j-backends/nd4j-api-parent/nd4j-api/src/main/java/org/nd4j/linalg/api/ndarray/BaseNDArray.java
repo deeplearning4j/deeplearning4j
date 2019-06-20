@@ -3990,7 +3990,33 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsubi(INDArray other, INDArray result) {
         validateNumericalArray("rsubi", false);
-        return other.subi(this, result);
+        if (other.isScalar()) {
+            return this.addi(other.getDouble(0), result);
+        }
+
+        if (isScalar()) {
+            return other.rsubi(getDouble(0), result);
+        }
+
+        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
+            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
+            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
+
+            Nd4j.exec(new RSubOp(new INDArray[]{this, other}, new INDArray[]{result}));
+
+            return result;
+        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
+            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
+            result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
+            Nd4j.getExecutioner().exec(new BroadcastRSubOp(this,other,result,broadcastDimensions));
+            return result;
+        } else {
+
+            LinAlgExceptions.assertSameShape(this, other, result);
+
+            Nd4j.getExecutioner().exec(new OldRSubOp(this, other, result));
+            return result;
+        }
     }
 
     /**

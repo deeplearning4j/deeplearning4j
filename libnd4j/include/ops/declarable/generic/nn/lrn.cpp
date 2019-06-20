@@ -70,7 +70,7 @@ namespace nd4j {
             float beta  = T_ARG(2);            
             int depth   = INT_ARG(0);
 
-            helpers::lrnBP(*input, *gradO, *gradI, depth, bias, alpha, beta);
+            helpers::lrnBP(block, *input, *gradO, *gradI, depth, bias, alpha, beta);
 
             return Status::OK();
         }

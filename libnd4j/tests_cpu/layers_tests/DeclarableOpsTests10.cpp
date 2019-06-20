@@ -149,30 +149,6 @@ TEST_F(DeclarableOpsTests10, Test_Size_at_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, InTopK_SGO_Test_1) {
-
-    auto input = NDArrayFactory::create<double>('c', {4, 5});
-    auto idx = NDArrayFactory::create<Nd4jLong>('c', {4});
-
-    auto exp = NDArrayFactory::create<bool>({0, 0, 0, 1});
-
-    int exclusive, reverse;
-    input.linspace(1);
-    idx.linspace(1);
-    ////////////////////////////////////////
-
-    nd4j::ops::in_top_k op;
-
-    auto res = op.execute({&input, &idx}, {}, {1}, {}, false, nd4j::DataType::BOOL);
-
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    //res->at(0)->printIndexedBuffer("IN_TOP_K output");
-    ASSERT_TRUE(res->at(0)->equalsTo(&exp));
-    delete res;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
     auto in = NDArrayFactory::create<double>({1., 2., 3., 4., 5.});
@@ -222,8 +198,8 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_1) {
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     auto  resA = res->at(0);
 
-    ASSERT_TRUE(exp.equalsTo(resA));
     ASSERT_TRUE(exp.isSameShape(resA));
+    ASSERT_TRUE(exp.equalsTo(resA));
 //    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
     delete res;
 }
@@ -1984,9 +1960,9 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-    result->printIndexedBuffer("Resized to 10x10");
-    expected.printIndexedBuffer("Expected of 10x10");
-    result->printShapeInfo("Resized to 10x10 shape");
+//    result->printIndexedBuffer("Resized to 10x10");
+//    expected.printIndexedBuffer("Expected of 10x10");
+//    result->printShapeInfo("Resized to 10x10 shape");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2165,12 +2141,12 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
 
     NDArray images = NDArrayFactory::create<double>('c', {1,2,2,1}, {1,2,3,4});
-    NDArray boxes = NDArrayFactory::create<double>('c', {1,4}, {0,0,1,1});
-    NDArray boxI = NDArrayFactory::create<double>('c', {1}, {0.f});
-    NDArray cropSize = NDArrayFactory::create<double>({1.f, 1.f});
+    NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
+    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected = NDArrayFactory::create<double>('c', {1,1,1,1}, {2.5f});
+    NDArray expected = NDArrayFactory::create<float>('c', {1,1,1,1}, {2.5f});
 
     nd4j::ops::crop_and_resize op;
     auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {});
@@ -2190,8 +2166,8 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
 
     NDArray images    = NDArrayFactory::create<float>('c', {1,2,2,1}, {1,2,3,4});
     NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
-    NDArray boxI = NDArrayFactory::create<float>('c', {1}, {0.f});
-    NDArray cropSize = NDArrayFactory::create<float>({1.f, 1.f});
+    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
     NDArray expected = NDArrayFactory::create<float>('c', {1,1,1,1}, {4.f});
@@ -2213,12 +2189,12 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
 
     NDArray images   ('c', {1,2,2,1}, {1,2,3,4});
-    NDArray boxes('c', {1,4}, {0,0,1,1});
-    NDArray boxI('c', {1}, {0}, nd4j::DataType::DOUBLE);
-    NDArray cropSize = NDArrayFactory::create<float>({3.f, 3.f});
+    NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
+    NDArray boxI('c', {1}, {0}, nd4j::DataType::INT64);
+    NDArray cropSize = NDArrayFactory::create<Nd4jLong>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected('c', {1,3,3,1}, {1, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f});
+    NDArray expected('c', {1,3,3,1}, {1, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::crop_and_resize op;
     auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {0});
@@ -2235,13 +2211,13 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
 
-    NDArray images('c', {1,2,2,1}, {1,2,3,4});
-    NDArray boxes('c', {1,4}, {0,0,1,1});
-    NDArray boxI('c', {1}, {0}, nd4j::DataType::DOUBLE);
-    NDArray cropSize = NDArrayFactory::create<float>({3.f, 3.f});
+    NDArray images('c', {1,2,2,1}, {1, 2, 3, 4});
+    NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
+    NDArray boxI('c', {1}, {0}, nd4j::DataType::INT32);
+    NDArray cropSize = NDArrayFactory::create<int>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected('c', {1,3,3,1}, {1, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f});
+    NDArray expected('c', {1,3,3,1}, {1, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::crop_and_resize op;
     auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
@@ -2322,6 +2298,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);
+    // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));

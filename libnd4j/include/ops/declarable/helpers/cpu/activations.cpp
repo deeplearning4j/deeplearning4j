@@ -138,7 +138,7 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
     BUILD_SINGLE_SELECTOR(xType, softMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
 }
 
-
+///////////////////////////////////////////////////////////////////
     template <typename T>
     void logSoftMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
         auto inBuff  = reinterpret_cast<T *>(input);

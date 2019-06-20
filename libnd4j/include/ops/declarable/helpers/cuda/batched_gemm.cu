@@ -67,9 +67,9 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
 
         if(pC[i]->ordering() != 'f') {
             auto temp = pA[i];
-            pA[i] = pB[i]->permute({1,0});
-            pB[i] = temp ->permute({1,0});
-            pC[i] = pC[i]->permute({1,0});
+            pA[i] = new NDArray(pB[i]->permute({1,0}));
+            pB[i] = new NDArray(temp ->permute({1,0}));
+            pC[i] = new NDArray(pC[i]->permute({1,0}));
             toDelete.push_back(pA[i]);
             toDelete.push_back(pB[i]);
             toDelete.push_back(pC[i]);
@@ -121,24 +121,39 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
 
     auto status = cublasSetStream_v2(*handle, *stream);
 
-
     if (status != CUBLAS_STATUS_SUCCESS)
         throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
     // choose appropriate cuda gemm api depending on data types
-    if(ABC && aType == DataType::DOUBLE)
-        status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, (double*)alphas->getSpecialBuffer(), (double**)aBuffers, lda, (double**)bBuffers, ldb, (double*)betas->getSpecialBuffer(), (double**)cBuffers, ldc, bS);
-    else if(ABC && aType == DataType::FLOAT32)
-        status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, (float*)alphas->getSpecialBuffer(), (float**)aBuffers, lda, (float**)bBuffers, ldb, (float*)betas->getSpecialBuffer(), (float**)cBuffers, ldc, bS);
-    else if(ABC && aType == DataType::HALF)
-        status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, (__half*)alphas->getSpecialBuffer(), (__half**)aBuffers, lda, (__half**)bBuffers, ldb, (__half*)betas->getSpecialBuffer(), (__half**)cBuffers, ldc, bS);
-    else if(AB && aType == DataType::INT8 && cType == DataType::FLOAT32)
-        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, alphas->getSpecialBuffer(), aBuffers, CUDA_R_8I, lda, bBuffers, CUDA_R_8I, ldb, betas->getSpecialBuffer(), cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-    else if(AB && aType == DataType::HALF && cType == DataType::FLOAT32)
-        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, alphas->getSpecialBuffer(), aBuffers, CUDA_R_16F, lda, bBuffers, CUDA_R_16F, ldb, betas->getSpecialBuffer(), cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+    if(ABC && aType == DataType::DOUBLE) {
+        double alpha = alphas->e<double>(0);
+        double beta  = betas->e<double>(0);
+        status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const double**)aBuffers, lda, (const double**)bBuffers, ldb, &beta, (double**)cBuffers, ldc, bS);
+    }
+    else if(ABC && aType == DataType::FLOAT32) {
+        float alpha = alphas->e<float>(0);
+        float beta  = betas->e<float>(0);
+        status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda, (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
+    }
+    else if(ABC && aType == DataType::HALF) {
+        __half alpha = alphas->e<float>(0);
+        __half beta  = betas->e<float>(0);
+        status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda, (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
+    }
+    else if(AB && aType == DataType::INT8 && cType == DataType::FLOAT32) {
+        float alpha = alphas->e<float>(0);
+        float beta  = betas->e<float>(0);
+        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_8I, lda, bBuffers, CUDA_R_8I, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+    }
+    else if(AB && aType == DataType::HALF && cType == DataType::FLOAT32) {
+        float alpha = alphas->e<float>(0);
+        float beta  = betas->e<float>(0);
+        status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers, CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+    }
     else
+        throw std::runtime_error("batched gemm cuda: this mode is not implemented yet !");
 
     if (status != CUBLAS_STATUS_SUCCESS)
         throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
@@ -158,3 +173,4 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
 }
 }
 }
+

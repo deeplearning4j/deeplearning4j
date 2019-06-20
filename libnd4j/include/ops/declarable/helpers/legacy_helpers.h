@@ -63,6 +63,7 @@ namespace helpers {
     void hardSigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output);
     void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output);
+    void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }

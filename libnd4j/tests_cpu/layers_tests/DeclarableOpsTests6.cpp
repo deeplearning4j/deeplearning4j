@@ -53,7 +53,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
     auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
     ASSERT_EQ(Status::OK(), result->status());
 
-    auto z = result->at(0);    
+    auto z = result->at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -74,7 +74,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_2) {
     auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
     ASSERT_EQ(Status::OK(), result->status());
 
-    auto z = result->at(0);    
+    auto z = result->at(0);
 
     ASSERT_EQ(exp, *z);
 
@@ -350,8 +350,57 @@ TEST_F(DeclarableOpsTests6, Test_Order_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, cumSum_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 3.f, 6.f, 10.f});
 
-TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_1) {
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    // z->printIndexedBuffer("CumSum1");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, cumSum_2) {
+    auto x= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp= NDArrayFactory::create<float>('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    // z->printIndexedBuffer("CumSum1");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, cumSum_3) {
+    auto x= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, cumSum_4) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {12., 15., 18., 11., 13., 15., 7., 8., 9.});
 
@@ -360,13 +409,14 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
 
-TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_2) {
+TEST_F(DeclarableOpsTests6, cumSum_5) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {6.f, 5.f, 3.f, 15.f, 11.f, 6.f, 24.f, 17.f, 9.f,});
 
@@ -381,7 +431,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Inclusive_Reverse_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_1) {
+TEST_F(DeclarableOpsTests6, cumSum_6) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {11.f, 13.f, 15.f, 7.f, 8.f, 9.f, 0.f, 0.f, 0.f});
 
@@ -396,7 +446,7 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2) {
+TEST_F(DeclarableOpsTests6, cumSum_7) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {5.f, 3.f, 0.f, 11.f, 6.f, 0.f, 17.f, 9.f, 0.f});
 
@@ -411,13 +461,325 @@ TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests6, Test_CumSum_Exclusive_Reverse_2_1) {
+TEST_F(DeclarableOpsTests6, cumSum_8) {
     auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {5.f, 3.f, 0.f, 11.f, 6.f, 0.f, 17.f, 9.f, 0.f});
 
     nd4j::ops::cumsum op;
     auto result = op.execute({&x, &axis}, {}, {1, 1}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_9) {
+
+    auto inputC = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
+    auto axis = NDArrayFactory::create<Nd4jLong>(1);
+
+    auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,  3.,  6., 10., 15., 6., 13., 21., 30., 40., 11., 23., 36., 50., 65.});
+    auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {0., 1., 3.,  6., 10., 0.,  6., 13., 21., 30., 0., 11., 23., 36., 50.});
+
+    auto expFT = NDArrayFactory::create<double>('c', {3, 5}, {15, 14, 12, 9, 5,40, 34, 27, 19, 10,65, 54, 42, 29, 15});    //+++
+    auto expTT = NDArrayFactory::create<double>('c', {3, 5}, {14, 12, 9, 5, 0,34, 27, 19, 10, 0,54, 42, 29, 15, 0});
+
+    int exclusive, reverse;
+
+    //************************************//
+    exclusive = 0; reverse = 0;
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
+    ASSERT_TRUE(expFF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 0;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 0; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expFT.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTT.equalsTo(z));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_10) {
+    auto x = NDArrayFactory::create<double>('c', {4, 16, 16, 1});
+    auto y = NDArrayFactory::create<int>(-3);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x, &y}, {}, {1, 1}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_11) {
+
+    NDArray x('c', {3, 3, 3}, nd4j::DataType::DOUBLE);
+    auto exp = NDArrayFactory::create<double>('c', {3,3,3}, {12., 15., 18.,11., 13., 15.,7.,  8.,  9., 39., 42., 45.,29., 31., 33.,16., 17., 18., 66., 69., 72.,47., 49., 51.,25., 26., 27.});
+
+    x.linspace(1);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 1, 1}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_12) {
+
+    NDArray x('c', {3, 3, 3}, nd4j::DataType::DOUBLE);
+    auto exp = NDArrayFactory::create<double>('c', {3,3,3}, {1.,  2.,  3.,5.,  7.,  9.,12., 15., 18., 10., 11., 12.,23., 25., 27.,39., 42., 45., 19., 20., 21.,41., 43., 45., 66., 69., 72.});
+
+    x.linspace(1);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 1}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_13) {
+
+    NDArray x('c', {3, 3, 3}, nd4j::DataType::DOUBLE);
+    auto exp = NDArrayFactory::create<double>('c', {3,3,3}, {11., 13., 15.,7.,  8.,  9.,0.,  0.,  0., 29., 31., 33.,16., 17., 18.,0.,  0.,  0., 47., 49., 51.,25., 26., 27.,0.,  0.,  0.});
+
+    x.linspace(1);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {1, 1, 1}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_14) {
+
+    NDArray x('c', {3, 3, 3}, nd4j::DataType::DOUBLE);
+    auto exp = NDArrayFactory::create<double>('c', {3,3,3}, {29., 31., 33.,35., 37., 39.,41., 43., 45., 19., 20., 21.,22., 23., 24.,25., 26., 27.,  0.,  0.,  0.,0.,  0.,  0.,0.,  0.,  0.});
+
+    x.linspace(1);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {1, 1, 0}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_15) {
+
+    NDArray x('c', {3, 3, 3}, nd4j::DataType::DOUBLE);
+    auto exp = NDArrayFactory::create<double>('c', {3,3,3}, {6.,  5.,  3.,15., 11.,  6.,24., 17.,  9., 33., 23., 12.,42., 29., 15.,51., 35., 18., 60., 41., 21.,69., 47., 24.,78., 53., 27.});
+
+    x.linspace(1);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 1, 2}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_16) {
+
+    NDArray x('f', {3, 4}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printShapeInfo();
+    // x.printShapeInfo();
+
+    ASSERT_TRUE(z->ews() == 1);
+    ASSERT_TRUE(x.ews() == 1);
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_17) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1);
+    x1.linspace(1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(0, 1.);
+    exp1.p<float>(0, 1.);
+
+    for (int i = 1; i < 1500; ++i) {
+        const auto prev = exp0.e<float>(i-1);
+        exp0.p<float>(i, prev + i + 1);
+        exp1.p<float>(i, prev + i + 1);
+    }
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_18) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1);
+    x1.linspace(1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(0, 0.);
+    exp1.p<float>(0, 0.);
+
+    for (int i = 1; i < 1500; ++i) {
+        const auto prev = exp0.e<float>(i-1);
+        exp0.p<float>(i, prev + i);
+        exp1.p<float>(i, prev + i);
+    }
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {1, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_19) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1);
+    x1.linspace(1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(1499, 1500.);
+    exp1.p<float>(1499, 1500.);
+
+    for (int i = 1498; i >= 0; --i) {
+        const auto prev = exp0.e<float>(i + 1);
+        exp0.p<float>(i, prev + i + 1);
+        exp1.p<float>(i, prev + i + 1);
+    }
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {0, 1, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // exp0.printBuffer();
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, cumSum_20) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1);
+    x1.linspace(1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(1499, 0.);
+    exp1.p<float>(1499, 0.);
+
+    for (int i = 1498; i >= 0; --i) {
+        const auto prev = exp0.e<float>(i + 1);
+        exp0.p<float>(i, prev + i + 2);
+        exp1.p<float>(i, prev + i + 2);
+    }
+
+    nd4j::ops::cumsum op;
+    auto result = op.execute({&x}, {}, {1, 1, 1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -489,7 +851,7 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
 
     auto ress = op.execute({&x}, {}, {1,1,1,1,1,1,1,1,1});
 
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     ASSERT_TRUE(expI.isSameShape(ress->at(0)));
     ASSERT_TRUE(expI.isSameShape(ress->at(1)));
@@ -498,7 +860,7 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
     //x.printIndexedBuffer("Input is");
     //ress->at(0)->printIndexedBuffer("Result is ");
     ASSERT_TRUE(expI.equalsTo(ress->at(1)));
-    
+
     delete ress;
 }
 
@@ -674,7 +1036,7 @@ TEST_F(DeclarableOpsTests6, BinCount_5) {
 
     auto res = op.execute({&x, &weights, &minV, &maxV}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    res->at(0)->printBuffer("BC out");
+    // res->at(0)->printBuffer("BC out");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
@@ -799,7 +1161,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_5) {
     auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    res->at(0)->printIndexedBuffer("Output SGO 5");
+    // res->at(0)->printIndexedBuffer("Output SGO 5");
 //    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
@@ -820,7 +1182,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_6) {
     auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    res->at(0)->printIndexedBuffer("Output SGO 6");
+    // res->at(0)->printIndexedBuffer("Output SGO 6");
 //    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
@@ -842,7 +1204,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_7) {
     auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    res->at(0)->printIndexedBuffer("Output SGO 7");
+    // res->at(0)->printIndexedBuffer("Output SGO 7");
 //    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
@@ -1034,9 +1396,9 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
-    z->printShapeInfo("Output shape");
+    // z->printIndexedBuffer("Output ");
+    // exp.printIndexedBuffer("Expected ");
+    // z->printShapeInfo("Output shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1158,7 +1520,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
                       0,    0,   0.5, -2.0,  0.25,
                       0,    0,     0,  1.0,  -0.5,
                       0,    0,     0,    0,  0.25,
-    
+
                     1.0,  0.0,  0.0,  0.0, 0.,
                    -2.0,  1.0,   0.,   0., 0.,
                   -26.0, -2.0,    1,    0, 0.,
@@ -1203,9 +1565,9 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_2) {
     auto exp = NDArrayFactory::create<double>('c', {2, 5, 5}, {
      1.0,  -2.0,  -26.0,  54.0, -27.0,
      0.0,   1.0,  -2.0,    1.0,   0.0,
-     0.0,   0.0,   1.0,   -2.0,   1.0, 
-     0.0,   0.0,   0.0,    1.0,  -2.0, 
-     0.0,   0.0,   0.0,    0.0,   1.0, 
+     0.0,   0.0,   1.0,   -2.0,   1.0,
+     0.0,   0.0,   0.0,    1.0,  -2.0,
+     0.0,   0.0,   0.0,    0.0,   1.0,
 
      0.25,  0.0,    0.0,   0.0,   0.0,
     -0.50,  0.5,    0.0,   0.0,   0.0,
@@ -1277,9 +1639,9 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
     auto exp = NDArrayFactory::create<double>('c', {5, 5}, {
      1.0,  -2.0,  -26.0,  54.0, -27.0,
      0.0,   1.0,  -2.0,    1.0,   0.0,
-     0.0,   0.0,   1.0,   -2.0,   1.0, 
-     0.0,   0.0,   0.0,    1.0,  -2.0, 
-     0.0,   0.0,   0.0,    0.0,   1.0 
+     0.0,   0.0,   1.0,   -2.0,   1.0,
+     0.0,   0.0,   0.0,    1.0,  -2.0,
+     0.0,   0.0,   0.0,    0.0,   1.0
     });
 
     nd4j::ops::matrix_inverse op;
@@ -1306,9 +1668,9 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
 
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, {
-                        21.4,  30.45, 52.3, 
-                        23.8,  31.05, 56.5, 
-                        26.2,  31.65, 60.7}); 
+                        21.4,  30.45, 52.3,
+                        23.8,  31.05, 56.5,
+                        26.2,  31.65, 60.7});
 
     nd4j::ops::relu_layer op;
     auto result = op.execute({&x, &w, &b}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
@@ -1362,7 +1724,7 @@ TEST_F(DeclarableOpsTests6, static_rnn_test1) {
     auto expH      = NDArrayFactory::create<double>('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484, 0.9312333 , 0.9312333 , 0.9312333 , 0.9312333 ,
                                                           0.93751527, 0.93751527, 0.93751527, 0.93751527,0.97136768, 0.97136768, 0.97136768, 0.97136768,0., 0., 0., 0.        ,
                                                           0.97732812, 0.97732812, 0.97732812, 0.97732812,0., 0., 0., 0.        ,0., 0., 0., 0.,0., 0., 0., 0.});
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97732812, 0.97732812, 0.97732812, 0.97732812, 0.93751527, 0.93751527, 0.93751527, 0.93751527});
 
     nd4j::ops::static_rnn op;
@@ -1446,9 +1808,9 @@ TEST_F(DeclarableOpsTests6, static_rnn_test3) {
     b  = 0.25;
 
     auto expH      = NDArrayFactory::create<double>('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0., 0., 0., 0., 0.9312333, 0.9312333, 0.9312333, 0.9312333,
-                                                          0., 0., 0., 0.           , 0.97136768, 0.97136768, 0.97136768, 0.97136768,0., 0., 0., 0. , 
+                                                          0., 0., 0., 0.           , 0.97136768, 0.97136768, 0.97136768, 0.97136768,0., 0., 0., 0. ,
                                                           0.97732812, 0.97732812, 0.97732812, 0.97732812,0., 0., 0., 0., 0., 0., 0., 0.,0., 0., 0., 0.});
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97732812, 0.97732812, 0.97732812, 0.97732812, 0.2       , 0.2       , 0.2       , 0.2});
 
     nd4j::ops::static_rnn op;
@@ -1488,9 +1850,9 @@ TEST_F(DeclarableOpsTests6, static_rnn_test4) {
     b  = 0.25;
 
     auto expH      = NDArrayFactory::create<double>('c', {time, bS, numUnits}, {0.47615493, 0.47615493, 0.47615493, 0.47615493,0.49676344, 0.49676344, 0.49676344, 0.49676344, 0.87018664, 0.87018664, 0.87018664, 0.87018664,
-                                                          0.88400882, 0.88400882, 0.88400882, 0.88400882, 0.96529784, 0.96529784, 0.96529784, 0.96529784,0., 0., 0., 0.        , 
+                                                          0.88400882, 0.88400882, 0.88400882, 0.88400882, 0.96529784, 0.96529784, 0.96529784, 0.96529784,0., 0., 0., 0.        ,
                                                           0.97688859, 0.97688859, 0.97688859, 0.97688859,0., 0., 0., 0., 0., 0., 0., 0.,0., 0., 0., 0.});
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97688859, 0.97688859, 0.97688859, 0.97688859, 0.88400882, 0.88400882, 0.88400882, 0.88400882});
 
     nd4j::ops::static_rnn op;
@@ -1553,10 +1915,10 @@ TEST_F(DeclarableOpsTests6, static_rnn_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, static_bidir_rnn_test1) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -1570,7 +1932,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test1) {
     auto maxTimeStep = NDArrayFactory::create<double>('c', {bS}, {time-1, time-3, time-4, 0});
 
     x.linspace(0.01, 0.01);
-    h0FW = 0.2;    
+    h0FW = 0.2;
     h0BW = 0.25;
     WxFW = 0.3;
     WhFW = 0.4;
@@ -1582,7 +1944,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test1) {
                                                                        0.9052501, 0.9052501, 0.9052501, 0.9181592, 0.9181592, 0.9181592,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,
                                                                        0.9555734, 0.9555734, 0.9555734, 0.8026439, 0.8026439, 0.8026439,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,
                                                                        0., 0., 0., 0., 0., 0.,       0., 0., 0., 0., 0., 0.,       0., 0., 0., 0., 0., 0.,       0., 0., 0., 0., 0., 0.});
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.9555734 , 0.9555734 , 0.9555734 , 0.77843476, 0.77843476, 0.77843476, 0.51241561, 0.51241561, 0.51241561, 0.2, 0.2, 0.2});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.86708881, 0.86708881, 0.86708881, 0.78347842, 0.78347842, 0.78347842, 0.55529176, 0.55529176, 0.55529176, 0.25, 0.25, 0.25});
 
@@ -1607,10 +1969,10 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, static_bidir_rnn_test2) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -1627,15 +1989,15 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test2) {
     bFW  = 0.1;
 
     auto expH      = NDArrayFactory::create<double>('c', {time, bS, numUnitsFW+numUnitsBW}, {0.22602835, 0.22602835, 0.22602835, 0.86518273, 0.86518273,0.86518273,0.27105303, 0.27105303, 0.27105303, 0.66617761, 0.66617761,0.66617761,
-                                                                       0.31492203, 0.31492203, 0.31492203, 0.31492203, 0.31492203,0.31492203,0.        , 0.        , 0.        , 0.        , 0.        ,0.        , 
+                                                                       0.31492203, 0.31492203, 0.31492203, 0.31492203, 0.31492203,0.31492203,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
                                                                        0.60005558, 0.60005558, 0.60005558, 0.9029975 , 0.9029975 ,0.9029975 ,0.66138054, 0.66138054, 0.66138054, 0.43819931, 0.43819931,0.43819931,
-                                                                       0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,0.        , 0.        , 0.        , 0.        , 0.        ,0.        , 
+                                                                       0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
                                                                        0.87023975, 0.87023975, 0.87023975, 0.88852032, 0.88852032,0.88852032,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
                                                                        0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
                                                                        0.95177305, 0.95177305, 0.95177305, 0.66737775, 0.66737775,0.66737775,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
-                                                                       0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,0.        , 0.        , 0.        , 0.        , 0.        ,0.        , 
+                                                                       0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,0.        , 0.        , 0.        , 0.        , 0.        ,0.        ,
                                                                        0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.});
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.95177305, 0.95177305, 0.95177305, 0.66138054, 0.66138054, 0.66138054, 0.31492203, 0.31492203, 0.31492203, 0.        , 0.        , 0.});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.86518273, 0.86518273, 0.86518273, 0.66617761, 0.66617761, 0.66617761, 0.31492203, 0.31492203, 0.31492203, 0.        , 0.        , 0.});
 
@@ -1661,10 +2023,10 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, static_bidir_rnn_test3) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -1688,7 +2050,7 @@ TEST_F(DeclarableOpsTests6, static_bidir_rnn_test3) {
                                                                        0.94579176,0.96416067, 0.96416067, 0.96416067, 0.95267886, 0.95267886,0.95267886,0.96851506, 0.96851506, 0.96851506, 0.95857985, 0.95857985,
                                                                        0.95857985, 0.97269956, 0.97269956, 0.97269956, 0.76075293, 0.76075293,0.76075293,0.97557464, 0.97557464, 0.97557464, 0.78024637, 0.78024637,
                                                                        0.78024637,0.97806922, 0.97806922, 0.97806922, 0.79833344, 0.79833344,0.79833344,0.98026195, 0.98026195, 0.98026195, 0.81508646, 0.81508646,0.81508646});
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.97269956, 0.97269956, 0.97269956, 0.97557464, 0.97557464, 0.97557464, 0.97806922, 0.97806922, 0.97806922, 0.98026195, 0.98026195, 0.98026195});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.86841012, 0.86841012, 0.86841012, 0.88207531, 0.88207531, 0.88207531, 0.8941667 , 0.8941667 , 0.8941667 , 0.90489713, 0.90489713, 0.90489713});
 
@@ -1735,7 +2097,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test1) {
     auto expH      = NDArrayFactory::create<double>('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484,0.9312333 , 0.9312333 , 0.9312333 , 0.9312333 ,
                                                           0.93751527, 0.93751527, 0.93751527, 0.93751527,0.97136768, 0.97136768, 0.97136768, 0.97136768,0.        , 0.        , 0.        , 0.        ,
                                                           0.97732812, 0.97732812, 0.97732812, 0.97732812,0.    , 0.  , 0.  , 0. ,0.   , 0.  , 0.   , 0.  ,0.      , 0.        , 0.        , 0.        });
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97732812, 0.97732812, 0.97732812, 0.97732812, 0.93751527, 0.93751527, 0.93751527, 0.93751527});
 
     nd4j::ops::dynamic_rnn op;
@@ -1778,9 +2140,9 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test2) {
 
     auto expH      = NDArrayFactory::create<double>('c', {bS, time, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.92755601, 0.92755601, 0.92755601, 0.92755601,0.96778334, 0.96778334, 0.96778334,
                                                           0.96778334,0.97309129, 0.97309129, 0.97309129, 0.97309129,0.        , 0.        , 0.        , 0.        ,
-                                                          0.75001965, 0.75001965, 0.75001965, 0.75001965,0.95449491, 0.95449491, 0.95449491, 0.95449491,0.97732828, 0.97732828, 0.97732828, 
+                                                          0.75001965, 0.75001965, 0.75001965, 0.75001965,0.95449491, 0.95449491, 0.95449491, 0.95449491,0.97732828, 0.97732828, 0.97732828,
                                                           0.97732828,0.98000655, 0.98000655, 0.98000655, 0.98000655,0.98120782, 0.98120782, 0.98120782, 0.98120782});
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97309129, 0.97309129, 0.97309129, 0.97309129, 0.98120782, 0.98120782, 0.98120782, 0.98120782});
 
     nd4j::ops::dynamic_rnn op;
@@ -1820,7 +2182,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test3) {
     b  = 0.25;
 
     auto expH      = NDArrayFactory::create<double>('c', {bS, time, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.92755601, 0.92755601, 0.92755601, 0.92755601,0.96778334, 0.96778334, 0.96778334, 0.96778334,0.97309129,
-                                                          0.97309129, 0.97309129, 0.97309129,0.97491207, 0.97491207, 0.97491207, 0.97491207,0.75001965, 0.75001965, 0.75001965, 0.75001965,0.95449491, 0.95449491, 
+                                                          0.97309129, 0.97309129, 0.97309129,0.97491207, 0.97491207, 0.97491207, 0.97491207,0.75001965, 0.75001965, 0.75001965, 0.75001965,0.95449491, 0.95449491,
                                                           0.95449491, 0.95449491,0.97732828, 0.97732828, 0.97732828, 0.97732828,0.98000655, 0.98000655, 0.98000655, 0.98000655,0.98120782, 0.98120782, 0.98120782, 0.98120782});
 
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97491207, 0.97491207, 0.97491207, 0.97491207, 0.98120782, 0.98120782, 0.98120782, 0.98120782});
@@ -1855,7 +2217,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test4) {
     auto b  = NDArrayFactory::create<double>('c', {2*numUnits});
     auto maxTimeStep = NDArrayFactory::create<double>('c', {bS}, {time-1, time-4});
 
-    x.linspace(0.01, 0.01);    
+    x.linspace(0.01, 0.01);
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1863,7 +2225,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test4) {
     auto expH      = NDArrayFactory::create<double>('c', {bS, time, numUnits}, {0.47615493, 0.47615493, 0.47615493, 0.47615493,0.86347567, 0.86347567, 0.86347567, 0.86347567,0.96059545, 0.96059545,
                                                           0.96059545, 0.96059545,0.9724738 , 0.9724738 , 0.9724738 , 0.9724738 ,0.        , 0.        , 0.        , 0.        ,
                                                           0.57368608, 0.57368608, 0.57368608, 0.57368608,0. , 0. , 0  , 0. ,0., 0. , 0, 0.,0., 0., 0. , 0. ,0. , 0. , 0., 0. });
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.9724738 , 0.9724738 , 0.9724738 , 0.9724738 ,0.57368608, 0.57368608, 0.57368608, 0.57368608});
 
     nd4j::ops::dynamic_rnn op;
@@ -1895,7 +2257,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test5) {
     auto Wh = NDArrayFactory::create<double>('c', {numUnits, numUnits});
     auto b  = NDArrayFactory::create<double>('c', {2*numUnits});
 
-    x.linspace(0.01, 0.01);    
+    x.linspace(0.01, 0.01);
     Wx = 0.3;
     Wh = 0.4;
     b  = 0.25;
@@ -1904,7 +2266,7 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test5) {
                                                           0.9724738 , 0.9724738 , 0.9724738 , 0.9724738 ,0.97486307, 0.97486307, 0.97486307, 0.97486307,0.57368608, 0.57368608, 0.57368608, 0.57368608,
                                                           0.92135149, 0.92135149, 0.92135149, 0.92135149,0.97482354, 0.97482354, 0.97482354, 0.97482354,0.97984727, 0.97984727, 0.97984727, 0.97984727,
                                                           0.98119833, 0.98119833, 0.98119833, 0.98119833});
-    
+
     auto expHFinal = NDArrayFactory::create<double>('c', {bS, numUnits},       {0.97486307, 0.97486307, 0.97486307, 0.97486307,0.98119833, 0.98119833, 0.98119833, 0.98119833});
 
     nd4j::ops::dynamic_rnn op;
@@ -1925,10 +2287,10 @@ TEST_F(DeclarableOpsTests6, dynamic_rnn_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -1942,7 +2304,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
     auto maxTimeStep = NDArrayFactory::create<int>('c', {bS}, {time-1, time-3, time-4, 0});
 
     x.linspace(0.01, 0.01);
-    h0FW = 0.2;    
+    h0FW = 0.2;
     h0BW = 0.25;
     WxFW = 0.3;
     WhFW = 0.4;
@@ -1953,13 +2315,13 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
                                                           0.9052501 , 0.9052501 , 0.9052501 ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.9555734 , 0.9555734 , 0.9555734 ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHBW  = NDArrayFactory::create<double>('c', {time, bS, numUnitsBW}, {0.86708881, 0.86708881, 0.86708881,0.78347842, 0.78347842, 0.78347842,0.55529176, 0.55529176, 0.55529176,0.        , 0.        , 0.        ,
                                                           0.90935605, 0.90935605, 0.90935605,0.64692945, 0.64692945, 0.64692945,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.9181592 , 0.9181592 , 0.9181592 ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.8026439 , 0.8026439 , 0.8026439 ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.9555734 , 0.9555734 , 0.9555734 , 0.77843476, 0.77843476, 0.77843476, 0.51241561, 0.51241561, 0.51241561, 0.2       , 0.2       , 0.2});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.86708881, 0.86708881, 0.86708881, 0.78347842, 0.78347842, 0.78347842, 0.55529176, 0.55529176, 0.55529176, 0.25      , 0.25      , 0.25});
 
@@ -1987,10 +2349,10 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test2) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -2004,7 +2366,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test2) {
     auto maxTimeStep = NDArrayFactory::create<int>('c', {bS}, {time-1, time-3, time-4, 0});
 
     x.linspace(0.01, 0.01);
-    h0FW = 0.2;    
+    h0FW = 0.2;
     h0BW = 0.25;
     WxFW = 0.3;
     WhFW = 0.4;
@@ -2014,12 +2376,12 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test2) {
                                                           0.61067683, 0.61067683, 0.61067683,0.84851124, 0.84851124, 0.84851124,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.73978305, 0.73978305, 0.73978305,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHBW  = NDArrayFactory::create<double>('c', {bS, time, numUnitsBW}, {0.84345207, 0.84345207, 0.84345207,0.83584708, 0.83584708, 0.83584708,0.77435951, 0.77435951, 0.77435951,0.58760492, 0.58760492, 0.58760492,0.        , 0.        , 0.        ,
                                                           0.85615841, 0.85615841, 0.85615841,0.67397984, 0.67397984, 0.67397984,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.76576202, 0.76576202, 0.76576202,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.87294706, 0.87294706, 0.87294706,0.84851124, 0.84851124, 0.84851124,0.73978305, 0.73978305, 0.73978305,0.2       , 0.2       , 0.2});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.84345207, 0.84345207, 0.84345207, 0.85615841, 0.85615841, 0.85615841, 0.76576202, 0.76576202, 0.76576202, 0.25      , 0.25      , 0.25});
 
@@ -2047,10 +2409,10 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test3) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -2070,12 +2432,12 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test3) {
                                                           0.43819931, 0.43819931, 0.43819931,0.7793996 , 0.7793996 , 0.7793996 ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.61067683, 0.61067683, 0.61067683,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHBW  = NDArrayFactory::create<double>('c', {bS, time, numUnitsBW}, {0.82273707, 0.82273707, 0.82273707,0.77935851, 0.77935851, 0.77935851,0.6381121 , 0.6381121 , 0.6381121 ,0.35748551, 0.35748551, 0.35748551,0.        , 0.        , 0.        ,
                                                           0.77843476, 0.77843476, 0.77843476,0.47615493, 0.47615493, 0.47615493,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.61067683, 0.61067683, 0.61067683,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,
                                                           0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        ,0.        , 0.        , 0.        });
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.84784327, 0.84784327, 0.84784327, 0.7793996 , 0.7793996 , 0.7793996 , 0.61067683, 0.61067683, 0.61067683, 0.        , 0.        , 0.});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.82273707, 0.82273707, 0.82273707, 0.77843476, 0.77843476, 0.77843476, 0.61067683, 0.61067683, 0.61067683, 0.        , 0.        , 0.});
 
@@ -2103,10 +2465,10 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test4) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -2119,7 +2481,7 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test4) {
     auto h0BW = NDArrayFactory::create<double>('c', {bS, numUnitsBW});
 
     x.linspace(0.01, 0.01);
-    h0FW = 0.2;    
+    h0FW = 0.2;
     h0BW = 0.25;
     WxFW = 0.3;
     WhFW = 0.4;
@@ -2129,12 +2491,12 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test4) {
                                                           0.61067683, 0.61067683, 0.61067683,0.84851124, 0.84851124, 0.84851124,0.91925737, 0.91925737, 0.91925737,0.93751395, 0.93751395, 0.93751395,0.94544483, 0.94544483, 0.94544483,
                                                           0.73978305, 0.73978305, 0.73978305,0.92827068, 0.92827068, 0.92827068,0.95791111, 0.95791111, 0.95791111,0.96427356, 0.96427356, 0.96427356,0.96797541, 0.96797541, 0.96797541,
                                                           0.83057887, 0.83057887, 0.83057887,0.96365083, 0.96365083, 0.96365083,0.97585698, 0.97585698, 0.97585698,0.97866981, 0.97866981, 0.97866981,0.9807326 , 0.9807326 , 0.9807326 });
-    
+
     auto expHBW  = NDArrayFactory::create<double>('c', {bS, time, numUnitsBW}, {0.85301722, 0.85301722, 0.85301722,0.86427295, 0.86427295, 0.86427295,0.8599919 , 0.8599919 , 0.8599919 ,0.80609463, 0.80609463, 0.80609463,0.61814662, 0.61814662, 0.61814662,
                                                           0.91888753, 0.91888753, 0.91888753,0.92652672, 0.92652672, 0.92652672,0.92939674, 0.92939674, 0.92939674,0.90661931, 0.90661931, 0.90661931,0.74516764, 0.74516764, 0.74516764,
                                                           0.95254269, 0.95254269, 0.95254269,0.95710717, 0.95710717, 0.95710717,0.96021584, 0.96021584, 0.96021584,0.95222547, 0.95222547, 0.95222547,0.83426363, 0.83426363, 0.83426363,
                                                           0.97154357, 0.97154357, 0.97154357,0.97424915, 0.97424915, 0.97424915,0.97644817, 0.97644817, 0.97644817,0.97410547, 0.97410547, 0.97410547,0.89409962, 0.89409962, 0.89409962});
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.89948899, 0.89948899, 0.89948899, 0.94544483, 0.94544483, 0.94544483, 0.96797541, 0.96797541, 0.96797541, 0.9807326 , 0.9807326 , 0.9807326 });
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.85301722, 0.85301722, 0.85301722, 0.91888753, 0.91888753, 0.91888753, 0.95254269, 0.95254269, 0.95254269, 0.97154357, 0.97154357, 0.97154357});
 
@@ -2161,10 +2523,10 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test4) {
 }
 
 TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
-    
+
     const int bS         = 4;
-    const int inSize     = 4;    
-    const int numUnitsFW = 3;    
+    const int inSize     = 4;
+    const int numUnitsFW = 3;
     const int numUnitsBW = 3;
     const int time       = 5;
 
@@ -2182,12 +2544,12 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
                                                           0.43819931, 0.43819931, 0.43819931,0.7793996 , 0.7793996 , 0.7793996 ,0.9053792 , 0.9053792 , 0.9053792 ,0.93546593, 0.93546593, 0.93546593,0.94518339, 0.94518339, 0.94518339,
                                                           0.61067683, 0.61067683, 0.61067683,0.90347408, 0.90347408, 0.90347408,0.95538786, 0.95538786, 0.95538786,0.96406045, 0.96406045, 0.96406045,0.96795929, 0.96795929, 0.96795929,
                                                           0.73978305, 0.73978305, 0.73978305,0.95499984, 0.95499984, 0.95499984,0.97535671, 0.97535671, 0.97535671,0.97864446, 0.97864446, 0.97864446,0.98073144, 0.98073144, 0.98073144});
-    
+
     auto expHBW  = NDArrayFactory::create<double>('c', {bS, time, numUnitsBW}, {0.84882345, 0.84882345, 0.84882345,0.85160683, 0.85160683, 0.85160683,0.81997657, 0.81997657, 0.81997657,0.69228829, 0.69228829, 0.69228829,0.39861399, 0.39861399, 0.39861399,
                                                           0.91865453, 0.91865453, 0.91865453,0.92528094, 0.92528094, 0.92528094,0.92212167, 0.92212167, 0.92212167,0.86418213, 0.86418213, 0.86418213,0.57969286, 0.57969286, 0.57969286,
                                                           0.95252666, 0.95252666, 0.95252666,0.95696305, 0.95696305, 0.95696305,0.95878749, 0.95878749, 0.95878749,0.93722463, 0.93722463, 0.93722463,0.71727031, 0.71727031, 0.71727031,
                                                           0.97154234, 0.97154234, 0.97154234,0.97423089, 0.97423089, 0.97423089,0.976149  , 0.976149  , 0.976149  ,0.96878298, 0.96878298, 0.96878298,0.81508646, 0.81508646, 0.81508646});
-    
+
     auto expHFWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsFW},  {0.89357928, 0.89357928, 0.89357928, 0.94518339, 0.94518339, 0.94518339, 0.96795929, 0.96795929, 0.96795929, 0.98073144, 0.98073144, 0.98073144});
     auto expHBWfinal = NDArrayFactory::create<double>('c', {bS, numUnitsBW},  {0.84882345, 0.84882345, 0.84882345, 0.91865453, 0.91865453, 0.91865453, 0.95252666, 0.95252666, 0.95252666, 0.97154234, 0.97154234, 0.97154234});
 
@@ -2255,12 +2617,12 @@ TEST_F(DeclarableOpsTests6, Test_Diag_119_3) {
 
 
 TEST_F(DeclarableOpsTests6, maxPool2D_float_test1) {
-    
+
     NDArray input('c', {1,1,4,5}, nd4j::DataType::FLOAT32);
     NDArray z('c', {1,1,4,5}, nd4j::DataType::FLOAT32);
 
     input.linspace(1.);
-    
+
     nd4j::ops::maxpool2d op;
     auto results = op.execute({&input}, {}, {2,2,  1,1,  1,1,  2,2,  1,0,0});
 
@@ -2270,7 +2632,7 @@ TEST_F(DeclarableOpsTests6, maxPool2D_float_test1) {
 }
 
 TEST_F(DeclarableOpsTests6, concat_test14) {
-    
+
     NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
     NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
 
@@ -2284,16 +2646,16 @@ TEST_F(DeclarableOpsTests6, concat_test14) {
     auto z = result->at(0);
     // z->printShapeInfo();
     // z->printIndexedBuffer();
-    
+
     Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
     ASSERT_TRUE(2 == numOfTads);
-    
+
     for (int e = 0; e < numOfTads; ++e) {
         NDArray tad  = (*z)(e, {0});
         auto mean = tad.meanNumber().e<double>(0);
         ASSERT_NEAR((e+1)*1., mean, 1e-5);
     }
-    
+
     delete result;
 }
 

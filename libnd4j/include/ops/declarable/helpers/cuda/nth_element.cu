@@ -59,7 +59,7 @@ namespace helpers {
 
             if (input->isVector()) {
                 NativeOps ops;
-                ops.sort(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
+                ops.sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
 
                 cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n, sizeof(T), cudaMemcpyDeviceToDevice);
             }
@@ -68,13 +68,13 @@ namespace helpers {
 
                 auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
 
-                //PointersManager manager(context, "helpers::nth_element");
+                PointersManager manager(context, "helpers::nth_element");
                 auto pTadShape = packX.specialShapeInfo();
                 auto pTadOffsets = packX.specialOffsets();
-                //auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
+                auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
 
                 NativeOps ops;
-                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
+                ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pLastDimData, lastDims.size(), pTadShape, pTadOffsets, reverse);
                 auto stream = context->getCudaStream();
                 fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pTadShape, pTadOffsets, n);
                 //manager.synchronize();

@@ -84,7 +84,21 @@ namespace helpers {
     }
 
     Nd4jStatus uniqueFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+        input->syncToHost();
+        values->syncToHost();
+        indices->syncToHost();
+
+        if (counts != nullptr)
+            counts->syncToHost();
+
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueFunctor_,(input, values, indices, counts), LIBND4J_TYPES);
+
+        input->syncToDevice();
+        values->syncToDevice();
+        indices->syncToDevice();
+
+        if (counts != nullptr)
+            counts->syncToDevice();
     }
 
     BUILD_SINGLE_TEMPLATE(template Nd4jStatus uniqueFunctor_, (NDArray* input, NDArray* values, NDArray* indices, NDArray* counts), LIBND4J_TYPES);

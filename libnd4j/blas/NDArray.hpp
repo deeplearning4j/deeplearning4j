@@ -4187,7 +4187,7 @@ ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions)
 
 
     auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, const_cast<int*>(dimensions.data()), dimensions.size());
-    auto numTads = lengthOf() / shape::length(pack.primaryShapeInfo());
+    auto numTads = pack.numberOfTads();
 
     for (int idx = 0; idx < numTads; idx++ ) {
         auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());

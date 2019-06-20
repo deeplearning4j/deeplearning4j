@@ -139,7 +139,7 @@ void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* h
 
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray* timeSubset(const NDArray* arr, const int t, const int dataFormat){
+static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat){
     if(dataFormat == 0){
         //TNS: shape [timeLength, numExamples, inOutSize]
         auto x = (*arr)({t,t+1, 0,0, 0,0});
@@ -276,11 +276,12 @@ void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray
         const std::vector<Nd4jLong> inSliceShape({mb,inSize});
         const std::vector<Nd4jLong> outSliceShape({mb,outSize});
 
-        NDArray* c_t1 = const_cast<NDArray*>(c0);
-        NDArray* y_t1 = const_cast<NDArray*>(y0);
+        auto c_t1 = const_cast<NDArray*>(c0);
+        auto y_t1 = const_cast<NDArray*>(y0);
 
         // loop through time steps
-        for (int t = 0; t <seqLen; ++t) {
+        for (int t = 0; t < seqLen; ++t) {
+
             auto xt = timeSubset(xSeq, t, dataFormat);
 
             auto it = timeSubset(iSeq, t, dataFormat);
@@ -291,12 +292,20 @@ void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray
             auto ht = timeSubset(hSeq, t, dataFormat);
             auto yt = timeSubset(ySeq, t, dataFormat);
 
-            nd4j::ops::helpers::lstmBlockCell(xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, it, ct, ft, ot, zt, ht, yt, params);
+            helpers::lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
 
-            c_t1 = ct;
-            y_t1 = yt;
+            if(t != 0) {
+                delete c_t1;
+                delete y_t1;
+            }
+
+            if(t < seqLen - 1) {
+                c_t1 = new NDArray(std::move(ct));
+                y_t1 = new NDArray(std::move(yt));
+            }
         }
     }
+
 }
 }
 }

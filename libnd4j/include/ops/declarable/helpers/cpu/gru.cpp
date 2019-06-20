@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018, Alex Black
 //
 
-// implementation of gated Recurrent Unit cell 
+// implementation of gated Recurrent Unit cell
 // (cf. http://arxiv.org/abs/1406.1078).
 // Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
 // "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
@@ -33,24 +33,6 @@ namespace nd4j 	  {
 namespace ops 	  {
 namespace helpers {
 
-
-//////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
-}
-
-static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
-}
-
-//////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray tanh(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
-}
-
-static FORCEINLINE void tanhInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
-}
 
 //////////////////////////////////////////////////////////////////////////
 void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,

@@ -192,8 +192,8 @@ void NDArray::setIdentity() {
     if (isS())
         throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
 
-    if (rankOf() != 2)
-        throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " + toStringValue(rankOf()) + " was given.");
+    // if (rankOf() != 2)
+    //     throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " + toStringValue(rankOf()) + " was given.");
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -234,7 +234,8 @@ void NDArray::synchronize(const char* msg) const {
 void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
-        a->syncToDevice();
+        if(a != nullptr)
+            a->syncToDevice();
 
     for (const auto& a : writeList) {
         a->getDataBuffer()->allocateSpecial();
@@ -247,7 +248,8 @@ void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& wri
 void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
-        p->tickReadDevice();
+        if(p != nullptr)
+            p->tickReadDevice();
 
     for (const auto& p : writeList)
         p->tickWriteDevice();
@@ -257,6 +259,7 @@ void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& wr
 void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
+        if(a != nullptr)
             a->syncToHost();
 
     for (const auto& a : writeList) {
@@ -270,7 +273,8 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
 void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
-        p->tickReadHost();
+        if(p != nullptr)
+            p->tickReadHost();
 
     for (const auto& p : writeList)
         p->tickWriteHost();
@@ -427,9 +431,26 @@ void NDArray::repeat(int dimension, NDArray& target) const {
     NDArray::registerSpecialUse({&target}, {this});
 }
 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {\
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
 
     if(_length == 0)
             { printf("NDArray::printActualBuffer: array length is zero !\n"); return; }

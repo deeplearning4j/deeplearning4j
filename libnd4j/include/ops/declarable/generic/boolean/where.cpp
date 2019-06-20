@@ -31,7 +31,7 @@ namespace nd4j {
             auto condition = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
             if (z->isEmpty())
-                return ND4J_STATUS_OK;
+                return Status::OK();
 
             if (block.width() == 3) {
                 auto x = INPUT_VARIABLE(1);
@@ -44,12 +44,10 @@ namespace nd4j {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
                     for (int e = 0; e < condition->lengthOf(); e++) {
                         if (y->isR()) {
-                            auto r = !condition->e<bool>(e) ? y->e<double>(e)
-                                                                           : x->e<double>(e);
+                            auto r = !condition->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
                             z->p(e, r);
                         } else {
-                            auto r = !condition->e<bool>(e) ? y->e<Nd4jLong>(e)
-                                                                           : x->e<Nd4jLong>(e);
+                            auto r = !condition->e<bool>(e) ? y->e<Nd4jLong>(e) : x->e<Nd4jLong>(e);
                             z->p(e, r);
                         }
                     }
@@ -86,7 +84,7 @@ namespace nd4j {
 
                 helpers::_where(block.launchContext(), *condition, *output, block.workspace());
             }
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(Where) {

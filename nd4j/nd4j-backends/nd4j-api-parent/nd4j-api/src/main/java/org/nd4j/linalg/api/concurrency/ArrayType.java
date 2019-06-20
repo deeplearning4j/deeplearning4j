@@ -14,23 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
-#ifndef __TOP_K_HELPERS__
-#define __TOP_K_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+package org.nd4j.linalg.api.concurrency;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
+/**
+ * This enum describes possible types of DistributedINDArray
+ * @author raver119@gmail.com
+ */
+public enum ArrayType {
+    /**
+     * This means DistributedINDArray will be equal on all ends, and will never be modified after replication/instantiation
+     */
+    CONSTANT,
 
-    int topKFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort);
+    /**
+     * This means VariadicINDArray will have exactly the same data type and shape on different, thus entries can have synchronized values
+     */
+    SYNCABLE,
 
-    int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k);
-
+    /**
+     * This means DistributedINDArray might (or might not) have different shapes on different entries
+     */
+    VARIADIC,
 }
-}
-}
-#endif

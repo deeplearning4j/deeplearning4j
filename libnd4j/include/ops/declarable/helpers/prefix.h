@@ -29,12 +29,12 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template <typename T>
-            void _prefix(nd4j::LaunchContext * context, nd4j::scalar::Ops op, void* x, Nd4jLong *xShapeInfo, void* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
+            // template <typename T>
+            // void prefix(nd4j::LaunchContext * context, nd4j::scalar::Ops op, void* x, Nd4jLong *xShapeInfo, void* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
 
-            void _prefix(nd4j::LaunchContext * context, nd4j::scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse);
+            void prefix(nd4j::LaunchContext* context, nd4j::scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse);
 
-            void _prefix(nd4j::LaunchContext * context, nd4j::scalar::Ops op, NDArray* x, NDArray* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            void prefix(nd4j::LaunchContext* context, nd4j::scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse);
         }
     }
 }

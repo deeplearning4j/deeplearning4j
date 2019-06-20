@@ -4979,14 +4979,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 ////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////////////////////////////////////////
 
-
-////////////////////////////////////////////////////////////////////////
-
-
-
-// #if defined(__CUDACC__) && defined(BUILD_TESTS)
+// #if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 // #include "cuda/NDArrayLambda.hpp"
 // #endif
@@ -8020,27 +8014,6 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
     @Namespace("shape") public static native void calcSubArrShapeAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
 
-    /**
-    * insert dimension at shape[axis] position
-    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, dimension = 10 result is -> shape = {2,10,4,5}
-    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 3, dimension = 10 result is -> shape = {2,4,5,10}
-    * so be careful and provide shape buffer with enough (at least rank+1) length
-    * axis should be within [0, rank] range
-    */
-    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
-    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
-    @Namespace("shape") public static native void insertDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis, @Cast("const Nd4jLong") long dimension);
-
-    /**
-    * erase dimension at shape[axis] position
-    * 1) for example: for given rank = 3, shape = {2,4,5}, axis = 1, result is -> shape = {2,5}
-    * 2) for example: for given rank = 3, shape = {2,4,5}, axis = 2, result is -> shape = {2,4}
-    * axis should be within [0, rank-1] range
-    */
-    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong") long axis);
-    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong") long axis);
-    @Namespace("shape") public static native void eraseDimension(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("const Nd4jLong") long axis);
-
 
 
 
@@ -8869,9 +8842,6 @@ public static final int PREALLOC_SIZE = 33554432;
 
 //////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
 
 
 

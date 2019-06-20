@@ -120,7 +120,7 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(where_np) {

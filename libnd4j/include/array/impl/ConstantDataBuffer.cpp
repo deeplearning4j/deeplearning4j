@@ -28,19 +28,19 @@ namespace nd4j {
         _sizeOf = sizeOf;
     }
 
-    Nd4jPointer ConstantDataBuffer::primary() {
+    Nd4jPointer ConstantDataBuffer::primary() const {
         return _primaryBuffer;
     }
 
-    Nd4jPointer ConstantDataBuffer::special() {
+    Nd4jPointer ConstantDataBuffer::special() const {
         return _specialBuffer;
     }
 
-    Nd4jLong ConstantDataBuffer::sizeOf() {
+    Nd4jLong ConstantDataBuffer::sizeOf() const {
         return _sizeOf;
     }
 
-    Nd4jLong ConstantDataBuffer::length() {
+    Nd4jLong ConstantDataBuffer::length() const {
         return _length;
     }
 

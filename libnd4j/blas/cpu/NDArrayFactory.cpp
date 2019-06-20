@@ -391,6 +391,7 @@ template NDArray NDArrayFactory::create(const std::vector<bfloat16> &values, nd4
 template NDArray NDArrayFactory::create(const std::vector<Nd4jLong> &values, nd4j::LaunchContext * context);
 template NDArray NDArrayFactory::create(const std::vector<int> &values, nd4j::LaunchContext * context);
 template NDArray NDArrayFactory::create(const std::vector<int16_t> &values, nd4j::LaunchContext * context);
+template NDArray NDArrayFactory::create(const std::vector<uint16_t> &values, nd4j::LaunchContext * context);
 template NDArray NDArrayFactory::create(const std::vector<int8_t> &values, nd4j::LaunchContext * context);
 template NDArray NDArrayFactory::create(const std::vector<uint8_t> &values, nd4j::LaunchContext * context);
 template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::LaunchContext * context);

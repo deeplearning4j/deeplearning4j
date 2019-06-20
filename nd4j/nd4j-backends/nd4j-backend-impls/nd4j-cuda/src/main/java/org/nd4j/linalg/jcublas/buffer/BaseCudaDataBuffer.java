@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -74,7 +76,7 @@ import java.util.Collection;
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
 
     @Getter
-    protected transient AllocationPoint allocationPoint;
+    protected transient volatile AllocationPoint allocationPoint;
 
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -239,17 +241,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         initPointers(length, Nd4j.sizeOfDataType(dtype), initialize);
     }
 
-    protected void initPointers(long length, int elementSize, boolean initialize) {
-        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
-        this.length = length;
-        //allocationPoint.attachBuffer(this);
-        this.elementSize =  (byte) elementSize;
-        this.trackingPoint = allocationPoint.getObjectId();
-        this.offset = 0;
-        this.originalOffset = 0;
+    protected void lazyAllocateHostPointer() {
+        if (allocationPoint.getPointers().getHostPointer() == null)
+            initHostPointerAndIndexer();
+    }
 
-        Nd4j.getDeallocatorService().pickObject(this);
+    protected void initHostPointerAndIndexer() {
+        if (allocationPoint.getPointers().getHostPointer() == null) {
+            val location = allocationPoint.getAllocationStatus();
+            if (parentWorkspace == null) {
+                val ptr = AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.HOST, this.allocationPoint, this.allocationPoint.getShape(), false);
+                this.allocationPoint.getPointers().setHostPointer(ptr.getHostPointer());
+            } else {
+                val ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
+                this.allocationPoint.getPointers().setHostPointer(ptr);
+            }
+            this.allocationPoint.setAllocationStatus(location);
+            this.allocationPoint.tickDeviceWrite();
+        }
 
         switch (dataType()) {
             case DOUBLE:
@@ -303,6 +312,25 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
     }
 
+    protected void initPointers(long length, int elementSize, boolean initialize) {
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
+        this.length = length;
+        //allocationPoint.attachBuffer(this);
+        this.elementSize =  (byte) elementSize;
+        this.trackingPoint = allocationPoint.getObjectId();
+        this.offset = 0;
+        this.originalOffset = 0;
+
+        Nd4j.getDeallocatorService().pickObject(this);
+
+        // if only host
+        if (allocationPoint.getPointers().getHostPointer() == null)
+            return;
+
+        initHostPointerAndIndexer();
+    }
+
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
         initTypeAndSize();
         initPointers(length, elementSize, initialize);
@@ -324,91 +352,63 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         Nd4j.getDeallocatorService().pickObject(this);
 
+        workspaceGenerationId = workspace.getGenerationId();
+        this.attached = true;
+        this.parentWorkspace = workspace;
+
+        if (allocationPoint.getHostPointer() == null)
+            return;
+
         switch (dataType()) {
             case DOUBLE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
                 indexer = DoubleIndexer.create((DoublePointer) pointer);
                 break;
             case FLOAT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
             case INT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
                 break;
             case BFLOAT16:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = Bfloat16Indexer.create((ShortPointer) pointer);
                 break;
             case HALF:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
             case UINT64:
             case LONG:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
                 break;
             case BOOL:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBooleanPointer();
                 indexer = BooleanIndexer.create((BooleanPointer) pointer);
                 break;
             case UINT16:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = UShortIndexer.create((ShortPointer) pointer);
                 break;
             case SHORT:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                 indexer = ShortIndexer.create((ShortPointer) pointer);
                 break;
             case BYTE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
             case UBYTE:
-                this.attached = true;
-                this.parentWorkspace = workspace;
-
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
                 indexer = UByteIndexer.create((BytePointer) pointer);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown data type: " + dataType());
         }
-
-        workspaceGenerationId = workspace.getGenerationId();
     }
 
     @Override
@@ -450,6 +450,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.trackingPoint = underlyingBuffer.getTrackingPoint();
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
+
+        // in case of view creation, we initialize underlying buffer regardless of anything
+        ((BaseCudaDataBuffer) underlyingBuffer).lazyAllocateHostPointer();;
 
         switch (underlyingBuffer.dataType()) {
             case DOUBLE:
@@ -1008,6 +1011,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.synchronizeHostData(buf);
         super.copyAtStride(buf, n, stride, yStride, offset, yOffset);
@@ -1068,6 +1072,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, float element) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);
@@ -1075,6 +1080,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, boolean element) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);
@@ -1082,6 +1088,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, double element) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);
@@ -1089,6 +1096,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, int element) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);
@@ -1096,6 +1104,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, long element) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
         super.put(i, element);
@@ -1202,17 +1211,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void write(DataOutputStream out) throws IOException {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         super.write(out);
     }
 
     @Override
     public void write(OutputStream dos) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         super.write(dos);
     }
 
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         stream.defaultWriteObject();
         write(stream);
@@ -1220,29 +1232,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
         doReadObject(stream);
-        // TODO: to be implemented
-        /*
-        copied = new HashMap<>();
-        pointersToContexts = HashBasedTable.create();
-        ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
-        freed = new AtomicBoolean(false);
-        */
     }
 
     @Override
     public String toString() {
+        lazyAllocateHostPointer();
         AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.toString();
-        /*StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (int i = 0; i < length(); i++) {
-            sb.append(getDouble(i));
-            if (i < length() - 1)
-                sb.append(",");
-        }
-        sb.append("]");
-        return sb.toString();
-*/
     }
 
     @Override
@@ -1410,75 +1406,86 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public byte[] asBytes() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asBytes();
     }
 
     @Override
     public double[] asDouble() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asDouble();
     }
 
     @Override
     public float[] asFloat() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asFloat();
     }
 
     @Override
     public int[] asInt() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asInt();
     }
 
     @Override
     public ByteBuffer asNio() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asNio();
     }
 
     @Override
     public DoubleBuffer asNioDouble() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asNioDouble();
     }
 
     @Override
     public FloatBuffer asNioFloat() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asNioFloat();
     }
 
     @Override
     public IntBuffer asNioInt() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.asNioInt();
     }
 
     @Override
     public DataBuffer dup() {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         DataBuffer buffer = create(this.length);
-        allocator.memcpyBlocking(buffer, new CudaPointer(allocator.getHostPointer(this).address()),
-                        this.length * elementSize, 0);
+        allocator.memcpyBlocking(buffer, new CudaPointer(allocator.getHostPointer(this).address()), this.length * elementSize, 0);
         return buffer;
     }
 
     @Override
     public Number getNumber(long i) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.getNumber(i);
     }
 
     @Override
     public double getDouble(long i) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.getDouble(i);
     }
 
     @Override
     public long getLong(long i) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.getLong(i);
     }
@@ -1486,12 +1493,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public float getFloat(long i) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.getFloat(i);
     }
 
     @Override
     public int getInt(long ix) {
+        lazyAllocateHostPointer();
         allocator.synchronizeHostData(this);
         return super.getInt(ix);
     }
@@ -1518,13 +1527,41 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                     break;
+                case BFLOAT16:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = Bfloat16Indexer.create((ShortPointer) pointer);
+                    break;
                 case HALF:
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
+                case LONG:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
+                    break;
+                case UINT64:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
+                    break;
                 case INT:
                     this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                case UINT32:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                case SHORT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = ShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case UINT16:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = UShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case BYTE:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
+                    indexer = ByteIndexer.create((BytePointer) pointer);
                     break;
                 default:
                     throw new UnsupportedOperationException();
@@ -1550,6 +1587,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             allocationPoint.tickDeviceWrite();
             // we're keeping pointer reference for JVM
             pointer.address();
+
 
             // we need to update length with new value now
             //this.length = length;

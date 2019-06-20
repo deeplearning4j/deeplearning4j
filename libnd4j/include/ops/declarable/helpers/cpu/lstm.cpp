@@ -368,7 +368,6 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
             y_t1 = new NDArray(std::move(yt));
         }
     }
-
 }
 
 }

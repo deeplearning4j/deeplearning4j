@@ -36,6 +36,25 @@ namespace helpers {
 	void gruCellBP(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
                   const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
 
+
+//////////////////////////////////////////////////////////////////////////
+FORCEINLINE NDArray sigmoid(const NDArray& arr) {
+    return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
+}
+
+FORCEINLINE void sigmoidInplace(const NDArray& arr) {
+    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
+}
+
+//////////////////////////////////////////////////////////////////////////
+FORCEINLINE NDArray tanh(const NDArray& arr) {
+    return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
+}
+
+FORCEINLINE void tanhInplace(const NDArray& arr) {
+    (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
+}
+
 }
 }
 }

@@ -372,8 +372,8 @@ namespace nd4j {
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
-        FORCEINLINE void* specialBuffer();
-        FORCEINLINE void* getSpecialBuffer() const;
+        void* specialBuffer();
+        void* getSpecialBuffer() const;
 
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
@@ -687,7 +687,7 @@ namespace nd4j {
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 
-#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
+#if defined(__CUDABLAS__) //&& defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -2093,28 +2093,11 @@ Nd4jLong* NDArray::shapeInfo() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBuffer() {
-
-    if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
-}
-
-////////////////////////////////////////////////////////////////////////
 Nd4jLong* NDArray::specialShapeInfo() {
     if (_shapeInfoD == nullptr)
         return _shapeInfo;
     // FIXME: this should be fixed once CUDA backend added
     return _shapeInfoD;
-}
-
-////////////////////////////////////////////////////////////////////////
-void* NDArray::getSpecialBuffer() const {
-      if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2136,7 +2119,7 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 }
 
 
-#if defined(__CUDACC__) && defined(BUILD_TESTS)
+#if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif

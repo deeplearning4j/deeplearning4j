@@ -27,27 +27,32 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace *workspace) {
         Nd4jLong length = 0;
+        std::vector<NDArray> reshaped(inputList.size());
+        int pos = 0;
+        Nd4jLong axis = 0;
+        Context cContext(1);
         for (auto array: inputList) {
-            length += array->lengthOf();
-        }
-        NDArray arrayFull('c', {length}, nd4j::DataType::INT32);
-        arrayFull = 0;
-        int val = -1;
-        Nd4jLong border = 0;
-        for (auto& array: inputList) {
             if (array->dataType() != nd4j::DataType::INT32)
                 throw std::runtime_error("multiUnique: this op support INT32 data type only.");
 
-            for (Nd4jLong pos = 0; pos < array->lengthOf(); pos++)
-                arrayFull.p(border + pos, array->e(pos));
-            // memcpy(reinterpret_cast<int*>(arrayFull.buffer() + border), reinterpret_cast<int const*>(array->getBuffer()), array->lengthOf() * array->sizeOf());
-            val--;
-            border += array->lengthOf();
+            reshaped[pos] = array->reshape(array->ordering(), {-1});
+            cContext.setInputArray(pos, &reshaped[pos]);
+
+            length += array->lengthOf();
+            pos++;
         }
+        NDArray arrayFull('c', {length}, nd4j::DataType::INT32);
+        cContext.setOutputArray(0, &arrayFull);
+        cContext.setIArguments(&axis, 1);
+
+        nd4j::ops::concat opConcat;
+        auto cResult = opConcat.execute(&cContext);
+        if (Status::OK() != cResult)
+            throw std::runtime_error("multiUnique: cannot execute concat op properly.");
 
         nd4j::ops::unique opUnique;
         auto uResult = opUnique.execute({&arrayFull}, {}, {}, {});
-        if (ND4J_STATUS_OK != uResult->status())
+        if (Status::OK() != uResult->status())
             throw std::runtime_error("multiUnique: cannot execute unique op properly.");
 
         auto uniqueVals = uResult->at(0);

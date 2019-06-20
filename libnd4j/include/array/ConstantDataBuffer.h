@@ -38,11 +38,11 @@ namespace nd4j {
         ConstantDataBuffer() = default;
         ~ConstantDataBuffer() = default;
 
-        Nd4jLong sizeOf();
-        Nd4jLong length();
+        Nd4jLong sizeOf() const;
+        Nd4jLong length() const;
 
-        Nd4jPointer primary();
-        Nd4jPointer special();
+        Nd4jPointer primary() const;
+        Nd4jPointer special() const;
 
         ConstantDataBuffer& operator=(const ConstantDataBuffer& other) = default;
         ConstantDataBuffer& operator=(ConstantDataBuffer&& other) noexcept = default;

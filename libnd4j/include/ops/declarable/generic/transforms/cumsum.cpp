@@ -43,8 +43,8 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
     if (block.getIArguments()->size() == 2 && block.width() == 1) {
         // all at once case
-        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
-    } 
+        nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
+    }
     else {
         std::vector<int> dims(block.numI() - 2);
 
@@ -52,7 +52,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
             for (int e = 0; e < block.numI() - 2; e++)
                 dims[e] = INT_ARG(e + 2);
-        } 
+        }
         else {
             auto ax = INPUT_VARIABLE(1);
             dims = ax->template asVectorT<int>();
@@ -61,10 +61,10 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
         for (int e = 0; e < dims.size(); e++)
             if (dims[e] < 0)
                 dims[e] += input->rankOf();
-        
-        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
+
+        nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
     }
-    
+
     return Status::OK();
 }
     DECLARE_TYPES(cumsum) {
@@ -98,30 +98,30 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
     }
     if (!exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
         else
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
 
     }
     else if (!exclusive && reverse){
         if (dims.size())
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
         else
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
     }
     else if (exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
         else
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
     }
     else {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
         else
-            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
+            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
     }
-        
+
     return Status::OK();
 }
     DECLARE_TYPES(cumsum_bp) {
