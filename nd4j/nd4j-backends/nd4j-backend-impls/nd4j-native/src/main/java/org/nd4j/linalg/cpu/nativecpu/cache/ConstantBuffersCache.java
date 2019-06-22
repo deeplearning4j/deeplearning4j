@@ -57,7 +57,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -77,7 +77,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
@@ -97,7 +97,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;

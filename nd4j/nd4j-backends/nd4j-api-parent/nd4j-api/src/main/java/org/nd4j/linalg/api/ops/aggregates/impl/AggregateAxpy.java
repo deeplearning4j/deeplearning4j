@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author raver119
  */
+@Deprecated
 public class AggregateAxpy extends BaseAggregate {
     private int vectorLength;
 

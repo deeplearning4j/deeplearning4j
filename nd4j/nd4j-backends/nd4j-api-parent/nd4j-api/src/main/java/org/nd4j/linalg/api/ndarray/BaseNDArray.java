@@ -518,7 +518,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             this.data = internalCreateBuffer(data, offset);
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, data.length * Nd4j.sizeOfDataType(DataType.FLOAT), MemcpyDirection.HOST_TO_HOST);
 
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
@@ -662,7 +662,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -671,7 +671,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -680,7 +680,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -689,7 +689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -698,7 +698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -707,7 +707,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -3293,7 +3293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, 'f');
         if (result.isScalar())
-            return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
+            return Nd4j.scalar(this.dataType(), Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
         return mmuli(other, result);
     }
 
