@@ -44,3 +44,8 @@ main tree or given feedback for changes that would be required.
 We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html).
 
 All code in this repository is released under the Apache Software Foundation License, 2.0, and by contributing to this repository, you agree to release that contribution under that same license. 
+
+
+## Eclipse Contributor Agreement and Commit Signing
+
+Please see the following page for details: [https://deeplearning4j.org/eclipse-contributors](https://deeplearning4j.org/eclipse-contributors)

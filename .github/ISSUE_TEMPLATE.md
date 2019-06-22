@@ -9,9 +9,16 @@ Please describe our issue, along with:
 Please indicate relevant versions, including, if relevant:
 
 * Deeplearning4j version
-* platform information (OS, etc)
+* Platform information (OS, etc)
 * CUDA version, if used
 * NVIDIA driver version, if in use
+
+#### Additional Information
+
+Where applicable, please also provide:
+
+* Full log or exception stack trace (ideally in a Gist: gist.github.com)
+* pom.xml file or similar (also in a Gist)
 
 #### Contributing
 
