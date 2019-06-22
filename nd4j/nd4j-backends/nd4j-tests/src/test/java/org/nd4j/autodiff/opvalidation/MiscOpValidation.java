@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
+import org.nd4j.linalg.api.ops.impl.transforms.CheckNumerics;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
@@ -50,8 +52,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 
 @Slf4j
@@ -1630,5 +1631,61 @@ public class MiscOpValidation extends BaseOpValidation {
         System.out.println(wArr);
 
         assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), wArr);
+    }
+
+    @Test
+    public void testCheckNumerics(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/eclipse/deeplearning4j/issues/7927
+
+        SameDiff sd = SameDiff.create();
+        SDVariable ph = sd.placeHolder("in", DataType.DOUBLE, 3, 4);
+        SDVariable msg = sd.constant("message", Nd4j.scalar("My error message!"));
+        SDVariable checkNumerics = new CheckNumerics(sd, ph, msg).outputVariable();
+        SDVariable loss = checkNumerics.std("loss",true);
+
+        INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4);
+        INDArray expLoss = in.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput(checkNumerics.getVarName(), in)
+                .placeholderValue("in", in)
+                .expectedOutput("loss", expLoss));
+        Preconditions.checkState(err == null, err);
+
+
+        //Also check that it actually does what it's supposed to:
+        sd.execAll(Collections.singletonMap("in", in));
+
+        in.putScalar(0, Double.NaN);
+        try {
+            sd.execAll(Collections.singletonMap("in", in));
+            fail("Expected exception");
+        } catch (Throwable t){
+            //OK
+        }
+
+        in.putScalar(0, Double.POSITIVE_INFINITY);
+        try {
+            sd.execAll(Collections.singletonMap("in", in));
+            fail("Expected exception");
+        } catch (Throwable t){
+            //OK
+        }
+
+        in.putScalar(0, 0.0);
+        sd.execAll(Collections.singletonMap("in", in));
+    }
+
+    @Test
+    public void testCheckNumerics2() {
+        INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4);
+        INDArray msg = Nd4j.scalar("My error message!");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("check_numerics")
+                .addInputs(in, msg)
+                .addOutputs(in.like())
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
     }
 }

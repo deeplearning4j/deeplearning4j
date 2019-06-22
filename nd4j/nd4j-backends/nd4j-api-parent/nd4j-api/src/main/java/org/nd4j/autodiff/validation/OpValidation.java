@@ -150,6 +150,9 @@ public class OpValidation {
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
             try {
+                if(testCase.placeholderValues() != null){
+                    sd.resolveVariablesWith(testCase.placeholderValues());
+                }
                 sd.exec(null, sd.outputs());
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
@@ -316,8 +319,8 @@ public class OpValidation {
             } else {
                 if(!orig.equals(deser)){
                     //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
-                    long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue();
-                    if(count > 0 && orig.equalShapes(deser)){
+                    long count = orig.dataType().isNumerical() ? Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue() : -1;
+                    if(orig.dataType().isNumerical() && count > 0 && orig.equalShapes(deser)){
                         long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
                         if(count != count2){
                             err = "INDArray equality failed";
