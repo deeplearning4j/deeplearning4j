@@ -224,7 +224,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        this.thread.shutdown();
+
+        if (thread != null)
+            this.thread.shutdown();
+
         buffer.clear();
 
 
@@ -263,7 +266,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        this.thread.shutdown();
+
+        if (thread !=null)
+            this.thread.shutdown();
+
         buffer.clear();
     }
 
@@ -318,19 +324,24 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw throwable;
 
         try {
-            if (hasDepleted.get())
+            if (hasDepleted.get()) {
+                System.gc();
                 return false;
+            }
 
             if (nextElement != null && nextElement != terminator) {
                 return true;
-            } else if (nextElement == terminator)
+            } else if (nextElement == terminator) {
+                System.gc();
                 return false;
+            }
 
 
             nextElement = buffer.take();
 
             if (nextElement == terminator) {
                 hasDepleted.set(true);
+                System.gc();
                 return false;
             }
 
@@ -402,6 +413,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             this.setDaemon(true);
             this.setName("ADSI prefetch thread");
+            log.info("Pew-pew");
         }
 
         @Override

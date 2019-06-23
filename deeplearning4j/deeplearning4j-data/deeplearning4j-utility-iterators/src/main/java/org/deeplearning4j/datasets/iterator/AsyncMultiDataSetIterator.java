@@ -202,7 +202,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        thread.shutdown();
+
+        if (thread != null)
+            thread.shutdown();
+
         buffer.clear();
 
         backedIterator.reset();
@@ -243,7 +246,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        thread.shutdown();
+
+        if (thread != null)
+            thread.shutdown();
+
         buffer.clear();
     }
 
@@ -261,19 +267,27 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             throw throwable;
 
         try {
-            if (hasDepleted.get())
+            if (hasDepleted.get()) {
+                thread = null;
+                System.gc();
                 return false;
+            }
 
             if (nextElement != null && nextElement != terminator) {
                 return true;
-            } else if (nextElement == terminator)
+            } else if (nextElement == terminator) {
+                thread = null;
+                System.gc();
                 return false;
+            }
 
 
             nextElement = buffer.take();
 
             if (nextElement == terminator) {
                 hasDepleted.set(true);
+                thread = null;
+                System.gc();
                 return false;
             }
 
