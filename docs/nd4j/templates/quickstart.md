@@ -77,7 +77,92 @@ DataType dt = x.dataType();
 <!--- staying away from itemsize and data buffer. The numpy quickstart has these. -->
 
 ### Array Creation
+To create INDArrays you use the static factory methods of the [Nd4j](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html) class.
+
+<!--- We have good docs on creating INDArrays already.  -->
+<!--- https://deeplearning4j.org/docs/latest/nd4j-overview#creating -->
+The `Nd4j.create` functiion is overloaded to make it easy to create INDArrays from regular Java arrays. The example below uses Java `double` arrays. Similar create methods are overloaded for `float`, `int` and `long`.
+
+```java
+double arr_2d[][]={{1.0,2.0,3.0},{4.0,5.0,6.0},{7.0,8.0,9.0}};
+INDArray x_2d = Nd4j.create(arr_2d);
+
+double arr_1d[]={1.0,2.0,3.0};
+INDArray  x_1d = Nd4j.create(arr_1d);
+```
+
+There are overloaded `create` functions for INDArrays up to 4 dimensions. To create INDArrays with any shape use the `create` functions that take a shape as one of their arguments.
+
+```java
+double[] flat = ArrayUtil.flattenDoubleArray(myDoubleArray);
+int[] shape = ...;	//Array shape here
+INDArray myArr = Nd4j.create(flat,shape,'c');
+```
+
+Nd4j can create arrays initialized with zeros and ones using the functions `zeros` and `ones`.
+The default datatype of the INDarray created is `float`. Some overloads allow you to set the datatype.
+
+```java
+INDArray  x = Nd4j.zeros(5);
+//[         0,         0,         0,         0,         0], FLOAT
+
+int [] shape = {5};
+x = Nd4j.zeros(shape, DataType.DOUBLE);
+//[         0,         0,         0,         0,         0], DOUBLE
+```
+
+Use the `arange` functions to create an array of evenly spaces values:
+
+```java
+INDArray  x = Nd4j.arange(5);
+// [         0,    1.0000,    2.0000,    3.0000,    4.0000]
+
+INDArray  x = Nd4j.arange(2, 7);
+// [    2.0000,    3.0000,    4.0000,    5.0000,    6.0000]
+```
+
+The `linspace` function allows you to specify the number of points generated:
+```java
+INDArray  x = Nd4j.linspace(1, 10, 5);
+// [    1.0000,    3.2500,    5.5000,    7.7500,   10.0000]
+
+// Evaluate a function over many points.
+import static org.nd4j.linalg.ops.transforms.Transforms.sin;
+INDArray  x = Nd4j.linspace(0.0, Math.PI, 100, DataType.DOUBLE);
+INDArray  y = sin(x);  
+```
+
 ### Printing Arrays
+The INDArray supports Java's `toString()` method. The output is similar to printing NumPy arrays:
+```java
+INDArray  x = Nd4j.arange(6);  //1d array
+System.out.println(x);
+// [         0,    1.0000,    2.0000,    3.0000,    4.0000,    5.0000]
+
+int [] shape = {4,3};
+x = Nd4j.arange(12).reshape(shape);   //2d array
+System.out.println(x);
+/*
+[[         0,    1.0000,    2.0000], 
+ [    3.0000,    4.0000,    5.0000], 
+ [    6.0000,    7.0000,    8.0000], 
+ [    9.0000,   10.0000,   11.0000]]
+*/
+
+int [] shape2 = {2,3,4};
+x = Nd4j.arange(24).reshape(shape2);  //3d array
+System.out.println(x);
+/*
+[[[         0,    1.0000,    2.0000,    3.0000], 
+  [    4.0000,    5.0000,    6.0000,    7.0000], 
+  [    8.0000,    9.0000,   10.0000,   11.0000]], 
+
+ [[   12.0000,   13.0000,   14.0000,   15.0000], 
+  [   16.0000,   17.0000,   18.0000,   19.0000], 
+  [   20.0000,   21.0000,   22.0000,   23.0000]]]
+*/
+```
+
 ### Basic Operations
 ### Universal Functions
 ### Indexing, Slicing and Iterating
