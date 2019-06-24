@@ -1,4 +1,4 @@
-package java.org.deeplearning4j.rl4j.learning.sync.qlearning;
+package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import lombok.Getter;
 

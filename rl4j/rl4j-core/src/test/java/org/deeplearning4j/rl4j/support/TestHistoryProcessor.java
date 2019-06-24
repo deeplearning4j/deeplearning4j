@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.support;
 import lombok.Getter;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class TestHistoryProcessor implements IHistoryProcessor {
 
@@ -29,7 +30,10 @@ public class TestHistoryProcessor implements IHistoryProcessor {
 
     @Override
     public INDArray[] getHistory() {
-        return new INDArray[0];
+        return new INDArray[] {
+            Nd4j.zeros(new int[] { 2, 2 }),
+            Nd4j.zeros(new int[] { 2, 2 }),
+        };
     }
 
     @Override

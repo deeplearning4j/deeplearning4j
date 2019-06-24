@@ -26,12 +26,12 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.deeplearning4j.rl4j.learning.ILearningInitializer;
 import org.deeplearning4j.rl4j.learning.LearningInitializer;
-import org.deeplearning4j.rl4j.learning.HistoryProcessorLearningInitializer;
+
+import org.deeplearning4j.rl4j.observation.Observation;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -44,7 +44,7 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessorLearningInitializer;
  *
  */
 @Slf4j
-public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class AsyncThread<O extends Observation, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Thread implements StepCountable {
 
     private int threadNumber;
@@ -69,12 +69,6 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
         this.historyProcessor = historyProcessor;
-
-        if(historyProcessor == null) {
-            initializer = new LearningInitializer<O, A, AS>();
-        } else {
-            initializer = new HistoryProcessorLearningInitializer<O, A, AS>(historyProcessor);
-        }
     }
 
     protected void postEpoch() {
@@ -100,7 +94,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         try {
             log.info("ThreadNum-" + threadNumber + " Started!");
             getCurrent().reset();
-            Learning.InitMdp<O> initMdp = initializer.initMdp(getMdp());
+            Learning.InitMdp<O> initMdp = initializer.initMdp(getMdp(), null); // FIXME
             O obs = initMdp.getLastObs();
             double rewards = initMdp.getReward();
             int length = initMdp.getSteps();
@@ -122,7 +116,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
                     getCurrent().reset();
-                    initMdp = initializer.initMdp(getMdp());
+                    initMdp = initializer.initMdp(getMdp(), null); // FIXME
                     obs = initMdp.getLastObs();
                     rewards = initMdp.getReward();
                     length = initMdp.getSteps();

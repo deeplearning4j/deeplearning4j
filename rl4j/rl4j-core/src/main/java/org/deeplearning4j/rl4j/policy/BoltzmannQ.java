@@ -18,7 +18,7 @@ package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Random;
@@ -32,7 +32,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
  * exponential Q-values as evaluated by the dqn model.
  */
 @AllArgsConstructor
-public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
+public class BoltzmannQ<O extends Observation> extends Policy<O, Integer> {
 
     final private IDQN dqn;
     final private Random rd = new Random(123);

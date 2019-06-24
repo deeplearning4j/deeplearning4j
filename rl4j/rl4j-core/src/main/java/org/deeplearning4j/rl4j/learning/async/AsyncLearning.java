@@ -20,9 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.rl4j.learning.async.AsyncTrainingListener;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,7 @@ import java.util.List;
  *
  */
 @Slf4j
-public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class AsyncLearning<O extends Observation, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
     private List<AsyncTrainingListener> asyncTrainingListeners = new ArrayList<AsyncTrainingListener>();

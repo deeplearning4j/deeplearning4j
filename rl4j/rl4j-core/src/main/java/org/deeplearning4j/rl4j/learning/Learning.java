@@ -21,12 +21,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.rl4j.observation.Observation;
+
 
 import java.util.Random;
 
@@ -40,7 +40,7 @@ import java.util.Random;
  *
  */
 @Slf4j
-public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class Learning<O extends Observation, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
     @Getter
     final private Random random;
@@ -48,6 +48,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     private int stepCounter = 0;
     @Getter @Setter
     private int epochCounter = 0;
+
     @Getter @Setter
     private IHistoryProcessor historyProcessor = null;
 
@@ -59,15 +60,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
     public static Integer getMaxAction(INDArray vector) {
         return Nd4j.argMax(vector, Integer.MAX_VALUE).getInt(0);
-    }
-
-    public static <O extends Encodable, A, AS extends ActionSpace<A>> INDArray getInput(MDP<O, A, AS> mdp, O obs) {
-        INDArray arr = Nd4j.create(obs.toArray());
-        int[] shape = mdp.getObservationSpace().getShape();
-        if (shape.length == 1)
-            return arr.reshape(new long[] {1, arr.length()});
-        else
-            return arr.reshape(shape);
     }
 
     public static int[] makeShape(int size, int[] shape) {
@@ -104,21 +96,11 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
         this.historyProcessor = historyProcessor;
-
-        if(historyProcessor == null) {
-            initializer = new LearningInitializer<O, A, AS>();
-        } else {
-            initializer = new HistoryProcessorLearningInitializer<O, A, AS>(historyProcessor);
-        }
-    }
-
-    public INDArray getInput(O obs) {
-        return getInput(getMdp(), obs);
     }
 
     public InitMdp<O> initMdp() {
         getNeuralNet().reset();
-        return initializer.initMdp(getMdp());
+        return initializer.initMdp(getMdp(), null); // FIXME
     }
 
     @AllArgsConstructor

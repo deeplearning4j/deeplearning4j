@@ -1,4 +1,4 @@
-package java.org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
+package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;

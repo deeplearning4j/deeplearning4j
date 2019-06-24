@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -28,8 +29,6 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +47,7 @@ import java.util.ArrayList;
  * http://arxiv.org/abs/1312.5602
  *
  */
-public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O, Integer, DiscreteSpace> {
+public abstract class QLearningDiscrete<O extends Observation> extends QLearning<O, Integer, DiscreteSpace> {
 
     @Getter
     final private QLConfiguration configuration;
@@ -110,7 +109,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     protected QLStepReturn<O> trainStep(O obs) {
 
         Integer action;
-        INDArray input = getInput(obs);
+        INDArray input = obs.toNDArray();
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
 
@@ -161,7 +160,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         //if it's not a skipped frame, you can do a step of training
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
-            INDArray ninput = getInput(stepReply.getObservation());
+            INDArray ninput = stepReply.getObservation().toNDArray();
             if (isHistoryProcessor)
                 getHistoryProcessor().add(ninput);
 

@@ -27,11 +27,11 @@ import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.Random;
 import java.util.Stack;
@@ -41,7 +41,7 @@ import java.util.Stack;
  *
  * Local thread as described in the https://arxiv.org/abs/1602.01783 paper.
  */
-public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IActorCritic> {
+public class A3CThreadDiscrete<O extends Observation> extends AsyncThreadDiscrete<O, IActorCritic> {
 
     @Getter
     final protected A3CDiscrete.A3CConfiguration conf;

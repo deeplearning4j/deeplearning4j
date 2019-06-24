@@ -28,11 +28,10 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.util.DataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.org.deeplearning4j.rl4j.learning.sync.qlearning.QStatsMonitor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +42,7 @@ import java.util.List;
  * hopefully one day for the  Continuous domain.
  */
 @Slf4j
-public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
+public abstract class QLearning<O extends Observation, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN> {
 
     @Getter

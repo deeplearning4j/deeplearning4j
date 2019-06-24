@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Random;
@@ -39,7 +39,7 @@ import java.util.Random;
  */
 @AllArgsConstructor
 @Slf4j
-public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extends Policy<O, A> {
+public class EpsGreedy<O extends Observation, A, AS extends ActionSpace<A>> extends Policy<O, A> {
 
     final private Policy<O, A> policy;
     final private MDP<O, A, AS> mdp;

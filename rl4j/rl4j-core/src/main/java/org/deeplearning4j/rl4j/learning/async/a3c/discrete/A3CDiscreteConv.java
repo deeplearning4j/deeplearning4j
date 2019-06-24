@@ -23,8 +23,8 @@ import org.deeplearning4j.rl4j.network.ac.ActorCriticFactoryCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticFactoryCompGraphStdConv;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
@@ -39,7 +39,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * reduction task
  *
  **/
-public class A3CDiscreteConv<O extends Encodable> extends A3CDiscrete<O> {
+public class A3CDiscreteConv<O extends Observation> extends A3CDiscrete<O> {
 
     final private HistoryProcessor.Configuration hpconf;
 

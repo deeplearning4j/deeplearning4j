@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactory;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdConv;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
@@ -30,7 +30,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * Specialized constructors for the Conv (pixels input) case
  * Specialized conf + provide additional type safety
  */
-public class QLearningDiscreteConv<O extends Encodable> extends QLearningDiscrete<O> {
+public class QLearningDiscreteConv<O extends Observation> extends QLearningDiscrete<O> {
 
 
 

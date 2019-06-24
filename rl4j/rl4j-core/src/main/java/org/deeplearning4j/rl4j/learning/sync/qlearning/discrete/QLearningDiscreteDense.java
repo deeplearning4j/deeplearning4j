@@ -22,13 +22,13 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactory;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.util.DataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/6/16.
  */
-public class QLearningDiscreteDense<O extends Encodable> extends QLearningDiscrete<O> {
+public class QLearningDiscreteDense<O extends Observation> extends QLearningDiscrete<O> {
 
 
 

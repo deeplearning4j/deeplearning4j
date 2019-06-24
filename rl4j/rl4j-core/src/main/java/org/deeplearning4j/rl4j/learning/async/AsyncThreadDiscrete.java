@@ -25,10 +25,10 @@ import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.Stack;
 
@@ -38,7 +38,7 @@ import java.util.Stack;
  * Async Learning specialized for the Discrete Domain
  *
  */
-public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet>
+public abstract class AsyncThreadDiscrete<O extends Observation, NN extends NeuralNet>
                 extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
     @Getter
@@ -79,7 +79,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         int i = 0;
         while (!getMdp().isDone() && i < nstep * skipFrame) {
 
-            INDArray input = Learning.getInput(getMdp(), obs);
+            INDArray input = obs.toNDArray();
             INDArray hstack = null;
 
             if (hp != null) {
@@ -117,7 +117,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         }
 
         //a bit of a trick usable because of how the stack is treated to init R
-        INDArray input = Learning.getInput(getMdp(), obs);
+        INDArray input = obs.toNDArray();
         INDArray hstack = processHistory(input);
 
         if (hp != null) {

@@ -28,10 +28,10 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.Random;
 import java.util.Stack;
@@ -39,7 +39,7 @@ import java.util.Stack;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  */
-public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IDQN> {
+public class AsyncNStepQLearningThreadDiscrete<O extends Observation> extends AsyncThreadDiscrete<O, IDQN> {
 
     @Getter
     final protected AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf;

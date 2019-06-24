@@ -19,8 +19,8 @@ package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.*;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
@@ -31,7 +31,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * the model is too small to have enough benefit by sharing layers
  *
  */
-public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
+public class A3CDiscreteDense<O extends Observation> extends A3CDiscrete<O> {
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, A3CConfiguration conf,
                     DataManager dataManager) {

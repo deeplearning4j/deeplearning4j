@@ -23,7 +23,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
@@ -36,7 +36,7 @@ import java.util.Random;
  * the softmax output of the actor critic, but objects constructed
  * with a {@link Random} argument of null return the max only.
  */
-public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
+public class ACPolicy<O extends Observation> extends Policy<O, Integer> {
 
     final private IActorCritic IActorCritic;
     Random rd;
@@ -55,17 +55,17 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         this.rd = rd;
     }
 
-    public static <O extends Encodable> ACPolicy<O> load(String path) throws IOException {
+    public static <O extends Observation> ACPolicy<O> load(String path) throws IOException {
         return new ACPolicy<O>(ActorCriticCompGraph.load(path));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String path, Random rd) throws IOException {
+    public static <O extends Observation> ACPolicy<O> load(String path, Random rd) throws IOException {
         return new ACPolicy<O>(ActorCriticCompGraph.load(path), rd);
     }
 
-    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy) throws IOException {
+    public static <O extends Observation> ACPolicy<O> load(String pathValue, String pathPolicy) throws IOException {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rd) throws IOException {
+    public static <O extends Observation> ACPolicy<O> load(String pathValue, String pathPolicy, Random rd) throws IOException {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);
     }
 

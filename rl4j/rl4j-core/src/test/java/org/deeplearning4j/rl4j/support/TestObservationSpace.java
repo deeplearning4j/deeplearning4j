@@ -1,9 +1,10 @@
 package org.deeplearning4j.rl4j.support;
 
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public class TestObservationSpace implements ObservationSpace<TestObservation> {
+public class TestObservationSpace implements ObservationSpace<Observation> {
     @Override
     public String getName() {
         return null;

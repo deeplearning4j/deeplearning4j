@@ -21,13 +21,14 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.ILearningInitializer;
 import org.deeplearning4j.rl4j.learning.LearningInitializer;
-import org.deeplearning4j.rl4j.learning.HistoryProcessorLearningInitializer;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.observation.VoidObservation;
+import org.deeplearning4j.rl4j.observation.transforms.ObservationTransform;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -38,63 +39,54 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<O extends Encodable, A> {
+public abstract class Policy<O extends Observation, A> {
 
     public abstract NeuralNet getNeuralNet();
 
     public abstract A nextAction(INDArray input);
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
-        return play(mdp, (IHistoryProcessor)null);
+        return play(mdp, null, null);
     }
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
-        return play(mdp, new HistoryProcessor(conf));
+        return play(mdp, new HistoryProcessor(conf), null);
     }
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+        return play(mdp, hp, null);
+    }
+
+    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp, ObservationTransform transform) {
         getNeuralNet().reset();
 
-        ILearningInitializer<O, A, AS> initializer;
-        if(hp == null) {
-            initializer = new LearningInitializer<O, A, AS>();
-        } else {
-            initializer = new HistoryProcessorLearningInitializer<O, A, AS>(hp);
-        }
+        ILearningInitializer<O, A, AS> initializer = new LearningInitializer<O, A, AS>();
 
-        Learning.InitMdp<O> initMdp = initializer.initMdp(mdp);
-        O obs = initMdp.getLastObs();
+        Learning.InitMdp<O> initMdp = initializer.initMdp(mdp, transform);
+
+        Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
 
         A lastAction = mdp.getActionSpace().noOp();
         A action;
-        int step = initMdp.getSteps();
-        INDArray[] history = null;
+        INDArray history = null;
 
         while (!mdp.isDone()) {
 
-            INDArray input = Learning.getInput(mdp, obs);
             boolean isHistoryProcessor = hp != null;
 
-            if (isHistoryProcessor)
-                hp.record(input);
-
-            int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-
-
-            if (step % skipFrame != 0) {
+            if(obs instanceof VoidObservation) {
                 action = lastAction;
             } else {
 
                 if (history == null) {
                     if (isHistoryProcessor) {
-                        hp.add(input);
-                        history = hp.getHistory();
+                        history = Transition.concat(hp.getHistory());
                     } else
-                        history = new INDArray[] {input};
+                        history = obs.toNDArray();
                 }
-                INDArray hstack = Transition.concat(history);
+                INDArray hstack = history;
                 if (isHistoryProcessor) {
                     hstack.muli(1.0 / hp.getScale());
                 }
@@ -110,14 +102,12 @@ public abstract class Policy<O extends Encodable, A> {
             lastAction = action;
 
             StepReply<O> stepReply = mdp.step(action);
+            obs = transform.getObservation(stepReply.getObservation());
             reward += stepReply.getReward();
 
-            if (isHistoryProcessor)
-                hp.add(Learning.getInput(mdp, stepReply.getObservation()));
-
-            history = isHistoryProcessor ? hp.getHistory()
-                            : new INDArray[] {Learning.getInput(mdp, stepReply.getObservation())};
-            step++;
+            history = isHistoryProcessor
+                    ? Transition.concat(hp.getHistory())
+                    : obs.toNDArray();
         }
 
 

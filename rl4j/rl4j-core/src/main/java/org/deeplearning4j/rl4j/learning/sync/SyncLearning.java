@@ -20,9 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.util.DataManager;
-import org.deeplearning4j.rl4j.learning.sync.SyncLearningEpochListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,7 @@ import java.util.List;
  *
  */
 @Slf4j
-public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class SyncLearning<O extends Observation, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
     private final List<SyncLearningEpochListener> syncLearningEpochListeners = new ArrayList<SyncLearningEpochListener>();

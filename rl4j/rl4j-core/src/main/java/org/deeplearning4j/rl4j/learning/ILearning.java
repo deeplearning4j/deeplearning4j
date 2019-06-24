@@ -20,14 +20,14 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
  *
  * A common interface that any training method should implement
  */
-public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> extends StepCountable {
+public interface ILearning<O extends Observation, A, AS extends ActionSpace<A>> extends StepCountable {
 
     Policy<O, A> getPolicy();
 
@@ -40,7 +40,6 @@ public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> ex
     MDP<O, A, AS> getMdp();
 
     NeuralNet getNeuralNet();
-
 
     interface LConfiguration {
 
