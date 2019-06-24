@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * http://www.matthewzeiler.com/pubs/googleTR2012/googleTR2012.pdf
+ * https://www.matthewzeiler.com/mattzeiler/adadelta.pdf
  * https://arxiv.org/pdf/1212.5701v1.pdf
  * <p>
  * Ada delta updater. More robust adagrad that keeps track of a moving window
