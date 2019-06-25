@@ -77,11 +77,11 @@ DataType dt = x.dataType();
 <!--- staying away from itemsize and data buffer. The numpy quickstart has these. -->
 
 ### Array Creation
-To create INDArrays you use the static factory methods of the [Nd4j](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html) class.
+To create INDArrays you use the static factory methods of the [Nd4j](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html ) class.
 
 <!--- We have good docs on creating INDArrays already.  -->
 <!--- https://deeplearning4j.org/docs/latest/nd4j-overview#creating -->
-The `Nd4j.create` functiion is overloaded to make it easy to create INDArrays from regular Java arrays. The example below uses Java `double` arrays. Similar create methods are overloaded for `float`, `int` and `long`.
+The `Nd4j.create` function is overloaded to make it easy to create INDArrays from regular Java arrays. The example below uses Java `double` arrays. Similar create methods are overloaded for `float`, `int` and `long`.
 
 ```java
 double arr_2d[][]={{1.0,2.0,3.0},{4.0,5.0,6.0},{7.0,8.0,9.0}};
@@ -164,7 +164,130 @@ System.out.println(x);
 ```
 
 ### Basic Operations
-### Universal Functions
+You will have to use INDArray methods to perform operations on your arrays. There are  in-place and copy overloads and scalar and element wise overloaded versions. The in-place operators return a reference to the array so you can conveniently chain operations together.
+
+```java
+//Copy
+arr_new = arr.add(scalar);    // return a new array with scalar added to each element of arr.
+arr_new = arr.add(other_arr); // return a new array with element wise addition of arr and other_arr.
+
+//in place.
+arr_new = arr.addi(scalar); //Heads up: arr_new points to the same array as arr.
+arr_new = arr.addi(other_arr);
+```
+
+addition: arr.add(...), arr.addi(...)
+substraction: arr.sub(...), arr.subi(...)
+multiplication: arr.mul(...), arr.muli(...)
+division: arr.div(...), arr.divi(...)
+
+When you perform the basic operations you must make sure the underlying data types are the same.
+```java
+int [] shape = {5};
+INDArray  x = Nd4j.zeros(shape, DataType.DOUBLE);
+INDArray  x2 = Nd4j.zeros(shape, DataType.INT);
+INDArray  x3 = x.add(x2);
+// java.lang.IllegalArgumentException: Op.X and Op.Y must have the same data type, but got INT vs DOUBLE
+```
+<!--- Moving matrix operations after Transforms. In Nd4j the dot product is a transform. -->
+
+The IndArray has methods implementing operations such as `sum`, `min`, `max`.
+```java
+int [] shape = {2,3};
+INDArray  x = Nd4j.rand(shape);
+System.out.println(x);
+
+System.out.println(x.sum());
+System.out.println(x.min());
+System.out.println(x.max());
+/*
+[[    0.8621,    0.9224,    0.8407], 
+ [    0.1504,    0.5489,    0.9584]]
+4.2830
+0.1504
+0.9584
+*/
+```
+
+Provide a dimension argument to apply the operation across the specified dimension:
+
+```java
+int [] shape = {3,4};
+INDArray x = Nd4j.arange(12).reshape(shape);
+System.out.println(x);
+/*
+[[         0,    1.0000,    2.0000,    3.0000], 
+ [    4.0000,    5.0000,    6.0000,    7.0000], 
+ [    8.0000,    9.0000,   10.0000,   11.0000]]
+*/        
+
+System.out.println(x.sum(0)); // Sum of each column.
+//[   12.0000,   15.0000,   18.0000,   21.0000]
+
+System.out.println(x.min(1)); // Min of each row
+//[         0,    4.0000,    8.0000]
+
+System.out.println(x.cumsum(1)); // cumulative sum across each row,
+/*
+[[         0,    1.0000,    3.0000,    6.0000], 
+ [    4.0000,    9.0000,   15.0000,   22.0000], 
+ [    8.0000,   17.0000,   27.0000,   38.0000]]
+*/
+
+```
+
+<!--- The numpy quickstart calls them Universal Functions. -->
+### Transform operation
+Nd4j provides familiar mathematical functions such as sin, cos, and exp. These are called transform operations. The result is returned as an INDArray.
+
+```java
+INDArray x = Nd4j.arange(3);
+System.out.println(x);
+// [         0,    1.0000,    2.0000]
+System.out.println(exp(x));
+// [    1.0000,    2.7183,    7.3891]
+System.out.println(sqrt(x));
+// [         0,    1.0000,    1.4142]
+```
+
+You can check out a complete list of transform operations in the [Javadoc](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ops/impl/transforms/package-summary.html )
+
+
+### Matrix multiplication
+We have already seen the element wise multiplcation in the basic operations. The other Matrix operations have their own methods:
+
+```java
+int[] shape = {3, 4};
+INDArray x = Nd4j.arange(12).reshape(shape);
+int[] shape2 = {4, 3};
+INDArray y = Nd4j.arange(12).reshape(shape2);
+
+System.out.println(x);
+/*
+[[         0,    1.0000,    2.0000,    3.0000], 
+ [    4.0000,    5.0000,    6.0000,    7.0000], 
+ [    8.0000,    9.0000,   10.0000,   11.0000]]
+*/
+
+System.out.println(y);
+/*
+[[         0,    1.0000,    2.0000], 
+ [    3.0000,    4.0000,    5.0000], 
+ [    6.0000,    7.0000,    8.0000], 
+ [    9.0000,   10.0000,   11.0000]]
+*/
+
+System.out.println(x.mmul(y));  // matrix product.
+/*
+[[   42.0000,   48.0000,   54.0000], 
+ [  114.0000,  136.0000,  158.0000], 
+ [  186.0000,  224.0000,  262.0000]]
+*/
+
+System.out.println(dot(x, y));  // dot product.
+//506.0000
+```
+
 ### Indexing, Slicing and Iterating
 
 ## Shape Manipulation
