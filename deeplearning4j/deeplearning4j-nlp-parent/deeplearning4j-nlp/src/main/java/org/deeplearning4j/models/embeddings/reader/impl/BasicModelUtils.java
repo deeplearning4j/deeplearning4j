@@ -207,7 +207,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             words.putRow(row++, lookupTable.vector(s).mul(-1));
         }
 
-        INDArray mean = words.isMatrix() ? words.mean(0) : words;
+        INDArray mean = words.isMatrix() ? words.mean(0).reshape(1, words.size(1)) : words;
         Collection<String> tempRes = wordsNearest(mean, top + positive.size() + negative.size());
         List<String> realResults = new ArrayList<>();
 

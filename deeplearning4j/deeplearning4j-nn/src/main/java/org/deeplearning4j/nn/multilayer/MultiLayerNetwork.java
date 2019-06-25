@@ -3554,7 +3554,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             String out = "-";
             String[] classNameArr = currentLayer.getClass().getName().split("\\.");
             String className = classNameArr[classNameArr.length - 1];
-            String paramCount = String.valueOf(currentLayer.numParams());
+            String paramCount = String.format("%,d", currentLayer.numParams());
             String inShape = "";
             String outShape = "";
             InputPreProcessor preProcessor;
@@ -3641,9 +3641,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         ret.append(StringUtils.repeat("-", totalLength));
-        ret.append(String.format("\n%30s %d", "Total Parameters: ", params().length()));
-        ret.append(String.format("\n%30s %d", "Trainable Parameters: ", params().length() - frozenParams));
-        ret.append(String.format("\n%30s %d", "Frozen Parameters: ", frozenParams));
+        ret.append(String.format("\n%30s %,d", "Total Parameters: ", params().length()));
+        ret.append(String.format("\n%30s %,d", "Trainable Parameters: ", params().length() - frozenParams));
+        ret.append(String.format("\n%30s %,d", "Frozen Parameters: ", frozenParams));
         ret.append("\n");
         ret.append(StringUtils.repeat("=", totalLength));
         ret.append("\n");
