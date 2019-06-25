@@ -65,9 +65,11 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //2019/05/15 - Strided slice: "Can't assign new value to the array: this shape [3]; other shape: [3, 3]"
-            //2019/05/17 - https://github.com/deeplearning4j/deeplearning4j/issues/7751
-            "faster_rcnn_resnet101_coco_2018_01_28"
+            //2019/06/24 - size op dtypes / libnd4j size op issue: https://github.com/eclipse/deeplearning4j/issues/7938
+            "faster_rcnn_resnet101_coco_2018_01_28",
+
+            //2019/06/24 - JVM crash on linux-x86_64-cpu-avx2 and -avx512 CI machines only - runs fine elsewhere
+            "deeplabv3_pascal_train_aug_2018_01_04"
     };
 
     public static final String[] IGNORE_REGEXES_LIBND4J_EXEC_ONLY = {
