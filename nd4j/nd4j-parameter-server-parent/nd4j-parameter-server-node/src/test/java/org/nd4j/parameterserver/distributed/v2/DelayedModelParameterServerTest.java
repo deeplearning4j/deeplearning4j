@@ -110,7 +110,7 @@ public class DelayedModelParameterServerTest {
         }
     }
 
-    @Test
+    @Test(timeout = 180000L)
     public void testUpdatesPropagation_1() throws Exception {
         val conf = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
         val array = Nd4j.ones(10, 10);
@@ -168,7 +168,7 @@ public class DelayedModelParameterServerTest {
         }
     }
 
-    @Test
+    @Test(timeout = 180000L)
     public void testModelAndUpdaterParamsUpdate_1() throws Exception {
         val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
         val connector = new DummyTransport.Connector();
@@ -301,7 +301,7 @@ public class DelayedModelParameterServerTest {
         assertTrue(gotGradients.get());
     }
 
-    @Test
+    @Test(timeout = 180000L)
     public void testMeshConsistency_1() throws Exception {
         Nd4j.create(1);
         final int numMessages = 500;
@@ -381,7 +381,7 @@ public class DelayedModelParameterServerTest {
     }
 
 
-    @Test
+    @Test(timeout = 180000L)
     public void testMeshConsistency_2() throws Exception {
         Nd4j.create(1);
         final int numMessages = 100;

@@ -295,21 +295,22 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
     @Test
     public void FastText_Correct_WhenDeserialized() throws IOException {
 
-         FastText fastText =
+        FastText fastText =
                 FastText.builder().cbow(true).build();
 
-         WordVectorSerializer.writeWordVectors(fastText, new File("some.data"));
+        File dir = testDir.newFolder();
+        WordVectorSerializer.writeWordVectors(fastText, new File(dir, "some.data"));
 
-         FastText deser = null;
+        FastText deser = null;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            deser = WordVectorSerializer.readWordVectors(new File("some.data"));
+            deser = WordVectorSerializer.readWordVectors(new File(dir, "some.data"));
         } catch (Exception e) {
             e.printStackTrace();
             fail();
         }
 
-         assertNotNull(deser);
+        assertNotNull(deser);
         assertEquals(fastText.isCbow(), deser.isCbow());
         assertEquals(fastText.isModelLoaded(), deser.isModelLoaded());
         assertEquals(fastText.isAnalogies(), deser.isAnalogies());
