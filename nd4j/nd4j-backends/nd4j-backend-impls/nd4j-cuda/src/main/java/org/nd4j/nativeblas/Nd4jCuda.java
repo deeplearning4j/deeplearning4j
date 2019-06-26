@@ -3828,12 +3828,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
-        public native NDArray permute(@StdVector IntPointer dimensions);
-        public native NDArray permute(@StdVector IntBuffer dimensions);
-        public native NDArray permute(@StdVector int[] dimensions);
-        public native NDArray permute(@Const IntPointer dimensions, int rank);
-        public native NDArray permute(@Const IntBuffer dimensions, int rank);
-        public native NDArray permute(@Const int[] dimensions, int rank);
+        public native @ByVal NDArray permute(@StdVector IntPointer dimensions);
+        public native @ByVal NDArray permute(@StdVector IntBuffer dimensions);
+        public native @ByVal NDArray permute(@StdVector int[] dimensions);
+        public native @ByVal NDArray permute(@Const IntPointer dimensions, int rank);
+        public native @ByVal NDArray permute(@Const IntBuffer dimensions, int rank);
+        public native @ByVal NDArray permute(@Const int[] dimensions, int rank);
 
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef NDArray target);
         public native void permute(@Const IntBuffer dimensions, int rank, @ByRef NDArray target);
@@ -3841,12 +3841,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void permute(@StdVector IntPointer dimensions, @ByRef NDArray target);
         public native void permute(@StdVector IntBuffer dimensions, @ByRef NDArray target);
         public native void permute(@StdVector int[] dimensions, @ByRef NDArray target);
-        public native NDArray permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions);
-        public native NDArray permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions);
-        public native NDArray permute(@Cast("Nd4jLong*") @StdVector long[] dimensions);
-        public native NDArray permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
-        public native NDArray permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
-        public native NDArray permute(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+        public native @ByVal NDArray permute(@Cast("Nd4jLong*") @StdVector LongPointer dimensions);
+        public native @ByVal NDArray permute(@Cast("Nd4jLong*") @StdVector LongBuffer dimensions);
+        public native @ByVal NDArray permute(@Cast("Nd4jLong*") @StdVector long[] dimensions);
+        public native @ByVal NDArray permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
+        public native @ByVal NDArray permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
+        public native @ByVal NDArray permute(@Cast("const Nd4jLong*") long[] dimensions, int rank);
 
         public native void permute(@Cast("const Nd4jLong*") LongPointer dimensions, int rank, @ByRef NDArray target);
         public native void permute(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank, @ByRef NDArray target);
@@ -3940,8 +3940,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
-        public native NDArray transpose();
-        public native @ByVal NDArray transp();
+        public native @ByVal NDArray transpose();
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected
@@ -4066,9 +4065,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
-		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
-		public native NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
+		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
+		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
+		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
 
         /**
         *  calculate strides and set given order
