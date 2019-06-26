@@ -2468,29 +2468,28 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> gradMap = new HashMap<>();
         gradMap.put("out", externalGrad);
         ExternalErrorsFunction fn = sd.f().externalErrors(out);
-        //new ExternalErrorsFunction(sd, Collections.singletonList(out), gradMap);
 
-        fn.updateVariable("out", externalGrad);
         sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = new HashMap<>();
+        m.put("out-grad", externalGrad);
+        sd.execBackwards(m);
 
-        INDArray gradOut = out.getGradient().getArr();
         INDArray gradVar = var.getGradient().getArr();
 
-        assertEquals(externalGrad, gradOut);
         assertEquals(externalGrad.mul(0.5), gradVar);
 
         //Now, update and execute again:
         externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4).muli(10);
-        fn.updateVariable("out", externalGrad);
 
-        sd.execBackwards(Collections.emptyMap());
+        m.put("out-grad", externalGrad);
+        sd.execBackwards(m);
 
-        gradOut = out.getGradient().getArr();
         gradVar = var.getGradient().getArr();
 
-        assertEquals(externalGrad, gradOut);
         assertEquals(externalGrad.mul(0.5), gradVar);
+
+
+        //Test model serialization:
     }
 
     @Test
@@ -2621,21 +2620,22 @@ public class SameDiffTests extends BaseNd4jTest {
         b.setArray(bA);
 
         INDArray grad = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(3, 4);
-        fn.updateVariable("tanh", grad);
+        Map<String,INDArray> phMap = new HashMap<>();
+        phMap.put(fn.getGradPlaceholderName(), grad);
 
         log.info("--------------- sd.execAndEndResult() ---------------");
         sd.execAndEndResult();
         log.info("--------------- sd.execBackwards() #1 ---------------");
-        sd.execBackwards(Collections.emptyMap());
+        sd.execBackwards(phMap);
 
         log.info("--------------- sd.execBackwards() #2 ---------------");
         System.out.println(sd.getFunction("grad").summary());
 
         in.setArray(Nd4j.linspace(1, 10, 10).reshape(2, 5));
         grad = Nd4j.linspace(1, 8, 8).reshape(2, 4);
-        fn.updateVariable("tanh", grad);
+        phMap.put(fn.getGradPlaceholderName(), grad);
 
-        sd.execBackwards(Collections.emptyMap());
+        sd.execBackwards(phMap);
         INDArray inGrad = in.getGradient().getArr();
         assertArrayEquals(new long[]{2, 5}, inGrad.shape());
     }
@@ -3406,5 +3406,47 @@ public class SameDiffTests extends BaseNd4jTest {
         }
 
         assertEquals(DataType.DOUBLE, y.getArr().dataType());
+    }
+
+
+    @Test
+    public void testGradFnRequiredVars(){
+        //User can explicitly request that gradients for specific vars are available when differentiating (creating grad function),
+        // even if they normally wouldn't be needed or calculated
+
+        for(boolean reqPhVar : new boolean[]{false, true}){
+//        for(boolean reqPhVar : new boolean[]{true}){
+
+            SameDiff sd = SameDiff.create();
+            SDVariable ph = sd.placeHolder("in", DataType.FLOAT, -1, 5);
+            SDVariable add = ph.add(1.0);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 5, 4));
+            SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 4));
+
+            SDVariable mmul = add.mmul(w).add(b);
+
+            SDVariable loss = mmul.std(true);
+
+            INDArray in = Nd4j.rand(DataType.FLOAT, 1, 5);
+
+            if(reqPhVar){
+                sd.createGradFunction("in");
+                assertNotNull(ph.gradient());
+                assertNotNull(w.gradient());
+                assertNotNull(b.gradient());
+
+                sd.execBackwards(Collections.singletonMap("in", in));
+                assertNotNull(ph.gradient().getArr());
+                assertNotNull(w.gradient().getArr());
+            } else {
+                sd.createGradFunction();
+                assertNull(ph.gradient());
+                assertNotNull(w.gradient());
+                assertNotNull(b.gradient());
+            }
+        }
+
+
+
     }
 }

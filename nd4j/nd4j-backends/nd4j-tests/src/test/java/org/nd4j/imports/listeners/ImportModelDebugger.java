@@ -1,9 +1,7 @@
-package org.nd4j.imports.listener;
+package org.nd4j.imports.listeners;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.TensorFlowImportTest;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

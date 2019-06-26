@@ -182,7 +182,11 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
     @Override
     public int[] getDimension() {
         if (dimension == null) {
-            dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
+            if(x != null && y != null){
+                dimension = Shape.getBroadcastDimensions(x.shape(), y.shape());
+            } else {
+                dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
+            }
         }
         return dimension;
     }

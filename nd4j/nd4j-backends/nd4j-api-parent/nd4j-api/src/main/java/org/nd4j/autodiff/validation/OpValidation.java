@@ -21,10 +21,12 @@ import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
@@ -144,6 +146,23 @@ public class OpValidation {
         if(testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BEFORE_EXEC || testCase.testFlatBufferSerialization() == TestCase.TestSerialization.BOTH){
             serializedBeforeExec = testCase.sameDiff().asFlatBuffers(true);
             Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
+        }
+
+        SameDiff sameDiff = testCase.sameDiff();
+        List<Listener> listeners = sameDiff.getListeners();
+        if(listeners.isEmpty()){
+            sameDiff.addListeners(new NonInplaceValidationListener());
+        } else {
+            boolean found = false;
+            for(Listener l : listeners){
+                if(l instanceof NonInplaceValidationListener){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                sameDiff.addListeners(new NonInplaceValidationListener());
+            }
         }
 
         //Check forward pass:

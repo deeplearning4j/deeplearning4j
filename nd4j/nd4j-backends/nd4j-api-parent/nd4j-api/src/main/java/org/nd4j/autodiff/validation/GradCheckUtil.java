@@ -20,11 +20,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -139,7 +141,35 @@ public class GradCheckUtil {
             }
         }
 
+        //Add non-inplace validation listener, to check that non-inplace ops don't modify their inputs
+        List<Listener> listenersBefore = new ArrayList<>(sd.getListeners());
+        int listenerIdx = -1;
+        if(listenersBefore.isEmpty()){
+            sd.addListeners(new NonInplaceValidationListener());
+            listenerIdx = 0;
+        } else {
+            boolean found = false;
+            int i=0;
+            for(Listener l : listenersBefore){
+                if(l instanceof NonInplaceValidationListener){
+                    found = true;
+                    listenerIdx = i;
+                    break;
+                }
+                i++;
+            }
+            if(!found){
+                sd.addListeners(new NonInplaceValidationListener());
+                listenerIdx = i;
+            }
+        }
+
+
         sd.execBackwards(placeholderValues, new ArrayList<>(gradVarNames));
+
+        //Remove listener, to reduce overhead
+        sd.getListeners().remove(listenerIdx);
+
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {

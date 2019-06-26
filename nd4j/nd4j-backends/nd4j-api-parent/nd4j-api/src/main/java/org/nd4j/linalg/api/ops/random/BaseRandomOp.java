@@ -87,4 +87,9 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
         return Collections.singletonList(DataType.FLOAT);
     }
+
+    @Override
+    public boolean isInPlace(){
+        return x == null || x == z || x.data().pointer().address() == z.data().pointer().address();
+    }
 }

@@ -31,7 +31,7 @@ public class TaskCreatorProvider {
             }
             return c.newInstance();
         } catch (Exception e){
-            throw new RuntimeException("Could not create new instance of task creator class: " + c, e);
+            throw new RuntimeException("Could not create new instance of task creator class: " + c + " - missing no-arg constructor?", e);
         }
     }
 

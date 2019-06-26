@@ -627,6 +627,7 @@ public abstract class DifferentialFunction {
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
+
                 sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
                 sameDiff.setForwardVariableForVarName(gradVar.getVarName(),var);

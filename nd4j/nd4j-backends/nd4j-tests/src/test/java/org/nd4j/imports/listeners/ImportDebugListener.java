@@ -1,4 +1,4 @@
-package org.nd4j.imports.listener;
+package org.nd4j.imports.listeners;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -6,10 +6,8 @@ import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.BiFunction;
 
 import java.io.File;
 
