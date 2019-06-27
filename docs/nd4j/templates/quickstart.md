@@ -284,11 +284,43 @@ System.out.println(x.mmul(y));  // matrix product.
  [  186.0000,  224.0000,  262.0000]]
 */
 
-System.out.println(dot(x, y));  // dot product.
+// dot product.
+INDArray x = Nd4j.arange(12);
+INDArray y = Nd4j.arange(12);
+System.out.println(dot(x, y));  
 //506.0000
 ```
 
 ### Indexing, Slicing and Iterating
+Indexing, Slicing and Iterating is harder in Java than in Python. 
+To retreive individual values from an INDArray you can use the `getDouble`, `getFloat` or `getInt` methods. INDArrays cannot be indexed like Java arrays. You can get a Java array from an INDArray using `.data().asDouble()`. 
+
+```java
+
+INDArray x = Nd4j.arange(12);
+// [         0,    1.0000,    2.0000,    3.0000,    4.0000,    5.0000,    6.0000,    7.0000,    8.0000,    9.0000,   10.0000,   11.0000]
+
+float f = x.getFloat(3);  // Single element access. Other methods: getDouble, getInt, ...
+// 3.0
+
+float []  fArr = x.data().asFloat(); //Convert to Java array.
+// [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0]
+
+INDArray x2 = x.get(NDArrayIndex.interval(2, 6));
+// [    2.0000,    3.0000,    4.0000,    5.0000]
+
+// On a copy of x: From start to position 6, exclusive, set every 2nd element to -1.0
+INDArray y = x.dup();
+y.get(NDArrayIndex.interval(0, 2, 6)).assign(-1.0);
+//[   -1.0000,    1.0000,   -1.0000,    3.0000,   -1.0000,    5.0000,    6.0000,    7.0000,    8.0000,    9.0000,   10.0000,   11.0000]
+
+// reversed copy of y.
+INDArray y2 = Nd4j.reverse(y.dup());
+//[   11.0000,   10.0000,    9.0000,    8.0000,    7.0000,    6.0000,    5.0000,   -1.0000,    3.0000,   -1.0000,    1.0000,   -1.0000]
+
+```
+
+For multidimensional arrays you should use `INDArray.get(NDArrayIndex...)`. See detailed documentation [here] (https://deeplearning4j.org/docs/latest/nd4j-overview#getset )
 
 ## Shape Manipulation
 ### Changing the shape of an array
