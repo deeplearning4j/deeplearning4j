@@ -2736,6 +2736,60 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
     return reinterpret_cast<Nd4jPointer>(shapeBuffer);
 }
 
+void NativeOps::sortByKey(Nd4jPointer *extraPointers,
+                          void *x, Nd4jLong *xShapeInfo,
+                          void *dx, Nd4jLong *dxShapeInfo,
+                          void *y, Nd4jLong *yShapeInfo,
+                          void *dy, Nd4jLong *dyShapeInfo,
+                          bool descending) {
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByKey(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+void NativeOps::sortByValue(Nd4jPointer *extraPointers,
+                            void *x, Nd4jLong *xShapeInfo,
+                            void *dx, Nd4jLong *dxShapeInfo,
+                            void *y, Nd4jLong *yShapeInfo,
+                            void *dy, Nd4jLong *dyShapeInfo,
+                            bool descending) {
+
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByValue(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+void NativeOps::sortTadByKey(Nd4jPointer *extraPointers,
+                  void *x, Nd4jLong *xShapeInfo,
+                  void *dx, Nd4jLong *dxShapeInfo,
+                  void *y, Nd4jLong *yShapeInfo,
+                  void *dy, Nd4jLong *dyShapeInfo,
+                  int *dimension,
+                  int dimensionLength,
+                  bool descending) {
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByKey(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+void NativeOps::sortTadByValue(Nd4jPointer *extraPointers,
+                    void *x, Nd4jLong *xShapeInfo,
+                    void *dx, Nd4jLong *dxShapeInfo,
+                    void *y, Nd4jLong *yShapeInfo,
+                    void *dy, Nd4jLong *dyShapeInfo,
+                    int *dimension,
+                    int dimensionLength,
+                    bool descending) {
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByValue(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric, (void *, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);

@@ -124,7 +124,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
     else {
 
         auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexAbsoluteMax, dimensions);
-        helpers::scatterSimple(6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
+        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
         *gradI *= input->transform(nd4j::transform::Sign);
         delete indicesArr;
     }

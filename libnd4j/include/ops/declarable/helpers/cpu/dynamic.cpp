@@ -30,7 +30,6 @@ namespace nd4j {
                 if (sourceDimsLen) {
                     std::vector<int> sourceDims(sourceDimsLen);
 
-                    PRAGMA_OMP_PARALLEL_FOR_IF(sourceDims.size() > Environment::getInstance()->tadThreshold())
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
@@ -38,14 +37,13 @@ namespace nd4j {
 
                     unsigned int outSize = outputList.size();
 
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
+                    //PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
                     for (unsigned int i = 0; i < outSize; i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
 
                         int r = outputs[i].first->rankOf();
 
-                        PRAGMA_OMP_SIMD
                         for (int k = 1; k < r; k++)
                             outDims[k - 1] = k;
 
@@ -54,7 +52,7 @@ namespace nd4j {
 
                         outputs[i].second = 0;
 
-                        PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
+                        //PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices).e<Nd4jLong>(e) == i)
                                 listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));

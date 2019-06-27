@@ -41,50 +41,6 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
-}
-
-static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
-}
-
-//////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray tanh(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
-}
-
-static FORCEINLINE void tanhInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
-}
-
-//////////////////////////////////////////////////////////////////////////
-static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat){
-    if(dataFormat == 0){
-        //TNS: shape [timeLength, numExamples, inOutSize]
-        auto x = (*arr)({t,t+1, 0,0, 0,0});
-        const std::vector<Nd4jLong> newShape({arr->sizeAt(1),arr->sizeAt(2)});
-        return x.reshape(arr->ordering(), newShape);
-    } else if(dataFormat == 1){
-        //NST: shape [numExamples, inOutSize, timeLength]
-        auto x = (*arr)({0,0, 0,0, t,t+1});
-        const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(1)});
-        return x.reshape(arr->ordering(), newShape);
-    } else {
-        //NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
-        auto x = (*arr)({0,0, t,t+1, 0,0});
-        const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(2)});
-        return x.reshape(arr->ordering(), newShape);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void clipping(NDArray* arr, T limit) {
-    arr->applyScalar(scalar::LstmClip, limit);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
@@ -292,83 +248,6 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 
 
 
-//////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
-                  NDArray* h, NDArray* c, const std::vector<double>& params) {
-
-    // x  input [time x bS x inSize]
-    // h0 initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
-    // c0 initial cell state  (at time step = 0) [bS x numUnits],
-
-    // Wx input-to-hidden  weights, [inSize  x 4*numUnits]
-    // Wh hidden-to-hidden weights, [numProj x 4*numUnits]
-    // Wc diagonal weights for peephole connections [3*numUnits]
-    // Wp projection weights [numUnits x numProj]
-    // b  biases, [4*numUnits]
-
-    // h cell outputs [time x bS x numProj], that is per each time step
-    // c cell states  [time x bS x numUnits] that is per each time step
-
-    const int time  = x->sizeAt(0);
-
-    NDArray currentH(*h0);
-    NDArray currentC(*c0);
-
-    // loop through time steps
-    for (int t = 0; t < time; ++t) {
-        auto xt = (*x)({t,t+1, 0,0, 0,0});
-        auto ht = (*h)({t,t+1, 0,0, 0,0});
-        auto ct = (*c)({t,t+1, 0,0, 0,0});
-
-        helpers::lstmCell(context, &xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
-        currentH.assign(ht);
-        currentC.assign(ct);
-    }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
-                       const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-                       const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
-                       const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat){
-
-    const int seqLen = xSeq->sizeAt(0);
-    const int mb = xSeq->sizeAt(1);
-    const int inSize = xSeq->sizeAt(2);
-    const int outSize = iSeq->sizeAt(2);
-
-    const std::vector<Nd4jLong> inSliceShape({mb,inSize});
-    const std::vector<Nd4jLong> outSliceShape({mb,outSize});
-
-    auto c_t1 = const_cast<NDArray*>(c0);
-    auto y_t1 = const_cast<NDArray*>(y0);
-
-    // loop through time steps
-    for (int t = 0; t < seqLen; ++t) {
-
-        auto xt = timeSubset(xSeq, t, dataFormat);
-
-        auto it = timeSubset(iSeq, t, dataFormat);
-        auto ct = timeSubset(cSeq, t, dataFormat);
-        auto ft = timeSubset(fSeq, t, dataFormat);
-        auto ot = timeSubset(oSeq, t, dataFormat);
-        auto zt = timeSubset(zSeq, t, dataFormat);
-        auto ht = timeSubset(hSeq, t, dataFormat);
-        auto yt = timeSubset(ySeq, t, dataFormat);
-
-        helpers::lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
-
-        if(t != 0) {
-            delete c_t1;
-            delete y_t1;
-        }
-
-        if(t < seqLen - 1) {
-            c_t1 = new NDArray(std::move(ct));
-            y_t1 = new NDArray(std::move(yt));
-        }
-    }
-}
 
 }
 }

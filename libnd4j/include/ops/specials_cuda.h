@@ -35,8 +35,32 @@ template<typename T>
 __host__ void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending);
 
 ////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+__host__ void bitonicSortStepGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending);
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+__host__ void bitonicArbitraryStepGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int window, int length,  int reverse, bool descending);
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+__host__ void bitonicSortStepGenericValue(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending);
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+__host__ void bitonicArbitraryStepGenericValue(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int window, int length,  int reverse, bool descending);
+
+
+
+////////////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo,  int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
+
+template <typename X, typename Y>
+__host__ void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo,  void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
+
+template <typename X, typename Y>
+__host__ void oesTadGenericValue(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo,  void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending);
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -73,24 +97,6 @@ __host__ void printCudaHost(void* pointer, const int len, cudaStream_t& stream) 
     printf("\n");
 
     free(ptr);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index, Nd4jLong length) {
-    
-    int xEWS = shape::elementWiseStride(xShapeInfo);
-    char order = shape::order(xShapeInfo);
-
-    if (xEWS == 1 && order == 'c') {
-        return index;
-    }
-    else if (xEWS > 1 && order == 'c') {
-        return index * xEWS;
-    } 
-    else {                
-        return shape::getIndexOffset(index, xShapeInfo, length);
-    }
 }
 
 

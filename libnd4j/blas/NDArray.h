@@ -508,7 +508,7 @@ namespace nd4j {
         /**
         *  returns new copy of this array, optionally in different order
         */
-        NDArray *dup(const char newOrder = 'a');
+        NDArray *dup(const char newOrder = 'a') const;
 
         /**
         *  returns sum of all elements of array

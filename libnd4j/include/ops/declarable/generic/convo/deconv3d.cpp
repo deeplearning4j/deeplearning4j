@@ -39,20 +39,20 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
     REQUIRE_TRUE(input->rankOf()   == 5, 0, "CUSTOM DECONV3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == 5, 0, "CUSTOM DECONV3D OP: rank of weights array must be equal to 5, but got %i instead !", weights->rankOf());
 
-    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) depth
-    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));// filter(kernel) height
-    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));// filter(kernel) width
-    int sD = INT_ARG(3);                                                        // strides depth
-    int sH = INT_ARG(4);                                                        // strides height
-    int sW = INT_ARG(5);                                                        // strides width
-    int pD = INT_ARG(6);                                                        // paddings depth
-    int pH = INT_ARG(7);                                                        // paddings height
-    int pW = INT_ARG(8);                                                        // paddings width
-    int dD = INT_ARG(9);                                                        // dilations depth
-    int dH = INT_ARG(10);                                                       // dilations height
-    int dW = INT_ARG(11);                                                       // dilations width
-    int isSameMode = INT_ARG(12);                                               // 0-SAME,  1-VALID
-    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));    // filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));    // filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));    // filter(kernel) width
+    int sD = INT_ARG(3);                                                            // strides depth
+    int sH = INT_ARG(4);                                                            // strides height
+    int sW = INT_ARG(5);                                                            // strides width
+    int pD = INT_ARG(6);                                                            // paddings depth
+    int pH = INT_ARG(7);                                                            // paddings height
+    int pW = INT_ARG(8);                                                            // paddings width
+    int dD = INT_ARG(9);                                                            // dilations depth
+    int dH = INT_ARG(10);                                                           // dilations height
+    int dW = INT_ARG(11);                                                           // dilations width
+    int isSameMode = INT_ARG(12);                                                   // 0-SAME,  1-VALID
+    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;           // INT_ARG(13): 1-NDHWC, 0-NCDHW
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes

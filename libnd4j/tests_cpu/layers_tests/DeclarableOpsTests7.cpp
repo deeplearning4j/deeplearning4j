@@ -399,9 +399,9 @@ TEST_F(DeclarableOpsTests7, TestRandomCrop_2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119) {
-    auto indices0 = NDArrayFactory::create<double>('c', {2}, {1.0f, 10.f});
-    auto indices1 = NDArrayFactory::create<double>('c', {2, 3}, {0.f, 7.f, 9.f, 5.f, 8.f, 3.f});
-    auto indices2 = NDArrayFactory::create<double>('c', {3, 1}, {6.f, 4.f, 2.f});
+    auto indices0 = NDArrayFactory::create<int>('c', {2}, {1, 10});
+    auto indices1 = NDArrayFactory::create<int>('c', {2, 3}, {0, 7, 9, 5, 8, 3});
+    auto indices2 = NDArrayFactory::create<int>('c', {3, 1}, {6, 4, 2});
     auto data0 = NDArrayFactory::create<double>('c', {2,5,4}, {1.f, 2.f, 3.f, 4.f,5.f, 6.f, 7.f, 8.f,9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f,
                                         25.f, 26.f, 27.f, 28.f,29.f, 30.f, 31.f, 32.f,33.f, 34.f, 35.f, 36.f,37.f, 38.f, 39.f, 40.f});
 
@@ -437,9 +437,9 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
-    auto indices0 = NDArrayFactory::create<double>('c', {2}, {1.0f, 10.f});
-    auto indices1 = NDArrayFactory::create<double>('c', {2, 3}, {0.f, 7.f, 9.f, 5.f, 8.f, 3.f});
-    auto indices2 = NDArrayFactory::create<double>('c', {3, 1}, {6.f, 4.f, 2.f});
+    auto indices0 = NDArrayFactory::create<int>('c', {2}, {1, 10});
+    auto indices1 = NDArrayFactory::create<int>('c', {2, 3}, {0, 7, 9, 5, 8, 3});
+    auto indices2 = NDArrayFactory::create<int>('c', {3, 1}, {6, 4, 2});
     auto data0 = NDArrayFactory::create<double>('c', {2,5,4}, {1.f, 2.f, 3.f, 4.f,5.f, 6.f, 7.f, 8.f,9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f,
                                         25.f, 26.f, 27.f, 28.f,29.f, 30.f, 31.f, 32.f,33.f, 34.f, 35.f, 36.f,37.f, 38.f, 39.f, 40.f});
 
@@ -487,24 +487,189 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119_1) {
-    auto indices0 = NDArrayFactory::create<double>('c', {2}, {1.0f, 10.f});
-    auto indices1 = NDArrayFactory::create<double>('c', {2, 3}, {0,7,9, 5,8,3});
-    auto indices2 = NDArrayFactory::create<double>('c', {3, 1}, {6, 4, 2});
+    auto indices0 = NDArrayFactory::create<int>('c', {2}, {1, 10});
+    auto indices1 = NDArrayFactory::create<int>('c', {2, 3}, {0, 7, 9, 5, 8, 3});
+    auto indices2 = NDArrayFactory::create<int>('c', {3, 1}, {6, 4, 2});
 
     auto data0 = NDArrayFactory::create<double>('c', {2,5,4});
     auto data1 = NDArrayFactory::create<double>('c', {2,3,5,4});
     auto data2 = NDArrayFactory::create<double>('c', {3,1,5,4});
 
+    auto exp = NDArrayFactory::create<double>('c', {11, 5, 4}, {
+     21, 22, 23, 24,
+     25, 26, 27, 28,
+     29, 30, 31, 32,
+     33, 34, 35, 36,
+     37, 38, 39, 40,
+
+       1,   2,   3,   4,
+       5,   6,   7,   8,
+       9,  10,  11,  12,
+      13,  14,  15,  16,
+      17,  18,  19,  20,
+
+     181, 182, 183, 184,
+     185, 186, 187, 188,
+     189, 190, 191, 192,
+     193, 194, 195, 196,
+     197, 198, 199, 200,
+
+    121, 122, 123, 124,
+    125, 126, 127, 128,
+    129, 130, 131, 132,
+    133, 134, 135, 136,
+    137, 138, 139, 140,
+
+    161, 162, 163, 164,
+    165, 166, 167, 168,
+    169, 170, 171, 172,
+    173, 174, 175, 176,
+    177, 178, 179, 180,
+
+    81,  82,  83,  84,
+    85,  86,  87,  88,
+    89,  90,  91,  92,
+    93,  94,  95,  96,
+    97,  98,  99, 100,
+
+     141, 142, 143, 144,
+     145, 146, 147, 148,
+     149, 150, 151, 152,
+     153, 154, 155, 156,
+     157, 158, 159, 160,
+
+      41,  42,  43,  44,
+      45,  46,  47,  48,
+      49,  50,  51,  52,
+      53,  54,  55,  56,
+      57,  58,  59,  60,
+
+     101, 102, 103, 104,
+     105, 106, 107, 108,
+     109, 110, 111, 112,
+     113, 114, 115, 116,
+     117, 118, 119, 120,
+
+    61,  62,  63,  64,
+    65,  66,  67,  68,
+    69,  70,  71,  72,
+    73,  74,  75,  76,
+    77,  78,  79,  80,
+
+      21,  22,  23,  24,
+      25,  26,  27,  28,
+      29,  30,  31,  32,
+      33,  34,  35,  36,
+      37,  38,  39,  40,
+    });
+    data0.linspace(1);
+    data1.linspace(21);
+    data2.linspace(141);
     nd4j::ops::dynamic_stitch op;
     auto result = op.execute({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
-
+    auto z = result->at(0);
+    z->printIndexedBuffer("Stitch");
+    z->printShapeInfo("Stitch Shape");
+    ASSERT_TRUE(z->isSameShape(exp));
+    ASSERT_TRUE(z->equalsTo(exp));
+    
     delete result;
 }
 
+TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119_2) {
+    auto indices0 = NDArrayFactory::create<int>('c', {2}, {1, 10});
+    auto indices1 = NDArrayFactory::create<int>('c', {2, 3}, {0, 7, 9, 5, 8, 3});
+    auto indices2 = NDArrayFactory::create<int>('c', {3, 1}, {6, 4, 2});
+
+    auto data0 = NDArrayFactory::create<double>('c', {2,5,4});
+    auto data1 = NDArrayFactory::create<double>('c', {2,3,5,4});
+    auto data2 = NDArrayFactory::create<double>('c', {3,1,5,4});
+
+    auto exp = NDArrayFactory::create<double>('c', {11, 5, 4}, {
+            41,  42,  43,  44,
+            45,  46,  47,  48,
+            49,  50,  51,  52,
+            53,  54,  55,  56,
+            57,  58,  59,  60,
+
+            1,   2,   3,   4,
+            5,   6,   7,   8,
+            9,  10,  11,  12,
+            13,  14,  15,  16,
+            17,  18,  19,  20,
+
+            201, 202, 203, 204,
+            205, 206, 207, 208,
+            209, 210, 211, 212,
+            213, 214, 215, 216,
+            217, 218, 219, 220,
+
+            141, 142, 143, 144,
+            145, 146, 147, 148,
+            149, 150, 151, 152,
+            153, 154, 155, 156,
+            157, 158, 159, 160,
+
+            181,  182,  183,  184,
+            185,  186,  187,  188,
+            189,  190,  191,  192,
+            193,  194,  195,  196,
+            197,  198,  199,  200,
+
+            101, 102, 103, 104,
+            105, 106, 107, 108,
+            109, 110, 111, 112,
+            113, 114, 115, 116,
+            117, 118, 119, 120,
+
+            161,  162,  163,  164,
+            165,  166,  167,  168,
+            169,  170,  171,  172,
+            173,  174,  175,  176,
+            177,  178,  179,  180,
+
+            61,  62,  63,  64,
+            65,  66,  67,  68,
+            69,  70,  71,  72,
+            73,  74,  75,  76,
+            77,  78,  79,  80,
+
+            121,  122,  123,  124,
+            125,  126,  127,  128,
+            129,  130,  131,  132,
+            133,  134,  135,  136,
+            137,  138,  139,  140,
+
+            81, 82, 83,  84,
+            85, 86, 87,  88,
+            89, 90, 91,  92,
+            93, 94, 95,  96,
+            97, 98, 99, 100,
+
+            21,  22,  23,  24,
+            25,  26,  27,  28,
+            29,  30,  31,  32,
+            33,  34,  35,  36,
+            37,  38,  39,  40,
+    });
+    data0.linspace(1);
+    data1.linspace(41);
+    data2.linspace(161);
+    nd4j::ops::dynamic_stitch op;
+    auto result = op.execute({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
+    z->printIndexedBuffer("Stitch");
+    z->printShapeInfo("Stitch Shape");
+    ASSERT_TRUE(z->isSameShape(exp));
+    ASSERT_TRUE(z->equalsTo(exp));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119) {
     auto x = NDArrayFactory::create<double>('c', {5, 4, 11});
@@ -530,7 +695,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119) {
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 4, 2}, {10, 20,11, 21,12, 22,13, 23,14, 24,15, 25,16, 26,17, 27,18, 28,19, 29,20, 30,21, 31});
 
-    auto y = NDArrayFactory::create<double>('c', {3, 4}, {0,0,0,0, 2,2,2,2, 2,1,1,1});
+    auto y = NDArrayFactory::create<int>('c', {3, 4}, {0,0,0,0, 2,2,2,2, 2,1,1,1});
     auto e = NDArrayFactory::create<double>('c', {4, 2}, {10, 20, 11, 21, 12, 22, 13, 23});
 
 //    x.assign(1.f);
@@ -549,6 +714,49 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_1) {
 //    result->at(2)->printIndexedBuffer("Output3");
 //    result->at(3)->printIndexedBuffer("Output4");
     ASSERT_TRUE(e.isSameShape(z));
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_2) {
+    auto x = NDArrayFactory::create<double>('c', {5, 4, 11});
+    auto y = NDArrayFactory::create<int>('c', {5, 4}, {0,1,2,3, 1,0,2,3, 2,3,1,0, 2,1,0,3, 0,1,2,3});
+    auto e1 = NDArrayFactory::create<double>('c', {5, 11}, {1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,
+                                                            56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,
+                                                            122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
+                                                            155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,
+                                                            177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187});
+    auto e2 = NDArrayFactory::create<double>('c', {5, 11}, {  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,
+                                                              45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,
+                                                             111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
+                                                             144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154,
+                                                             188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198});
+    auto e3 = NDArrayFactory::create<double>('c', {5, 11}, {23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,
+                                                            67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
+                                                            89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99,
+                                                           133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
+                                                           199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209});
+    auto e4 = NDArrayFactory::create<double>('c', {5, 11}, { 34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,
+                                                             78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,
+                                                            100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+                                                            166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
+                                                            210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220}) ;
+    std::vector<NDArray*> e({&e1, &e2, &e3, &e4});
+    x.linspace(1.f);
+    //.assign(1.f);
+    nd4j::ops::dynamic_partition op;
+    auto result = op.execute({&x, &y}, {}, {4});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(4, result->size());
+    for (size_t i = 0; i < result->size(); i++) {
+        auto z = result->at(i);
+//    z->printShapeInfo("Output shape info");
+//     z->printIndexedBuffer("Output1");
+//    result->at(1)->printIndexedBuffer("Output2");
+//    result->at(2)->printIndexedBuffer("Output3");
+//    result->at(3)->printIndexedBuffer("Output4");
+        ASSERT_TRUE(e[i]->isSameShape(z));
+        ASSERT_TRUE(e[i]->equalsTo(z));
+    }
 
     delete result;
 }
@@ -3102,336 +3310,6 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {
 //    delete result;
 }
 
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test1) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
-                                                     0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.9, 1. ,0. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.3, 1.4,0. , 1.5, 1.6,
-                                                     0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.7, 1.8,0. , 1.9, 2. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.1, 2.2,0. , 2.3, 2.4});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test2) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
-    int oH=4,oW=4;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0. ,  0. ,  0. , 0.1,  0.2,  0.7, 0.5,  0.6,  1.5, 2.2,  2.4,  5.4, 0. ,  0. ,  0. , 1.7,  1.8,  3.9, 2.1,  2.2,  4.7, 5.4,  5.6, 11.8,
-                                                     0. ,  0. ,  0. , 3.3,  3.4,  7.1, 3.7,  3.8,  7.9, 8.6,  8.8, 18.2, 0. ,  0. ,  0. , 4.9,  5. , 10.3, 5.3,  5.4, 11.1,11.8, 12. , 24.6,
-                                                     0. ,  0. ,  0. , 6.5,  6.6, 13.5, 6.9,  7. , 14.3,15. , 15.2, 31. , 0. ,  0. ,  0. , 8.1,  8.2, 16.7, 8.5,  8.6, 17.5,18.2, 18.4, 37.4});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test3) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
-    int oH=4,oW=3;
-    int paddingMode = 1;             // 1-SAME,  0-VALID
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0. , 0. , 0. , 1. , 1.1, 1.2, 2.9, 3.1, 3.3,
-                                                     0. , 0. , 0. , 4.7, 4.9, 5.1,11.2,11.6,12. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 3.7, 3.8, 3.9, 8.3, 8.5, 8.7,
-                                                     0. , 0. , 0. , 4.6, 4.7, 4.8,10.1,10.3,10.5, 0. , 0. , 0. ,11.9,12.1,12.3,25.6,26. ,26.4});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, maxpool2d_bp_test4) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
-    int oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0.1, 0.2, 0.3,0.4, 0.5, 0.6,
-                                                     0. , 0. , 0. ,0.7, 0.8, 0.9,1. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,
-                                                     0. , 0. , 0. ,1.3, 1.4, 1.5,1.6, 1.7, 1.8,0. , 0. , 0. ,1.9, 2. , 2.1,2.2, 2.3, 2.4});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, maxpool2d_bp_test5) {
-
-    int bS=2, iH=56,iW=56,  iC=3,  kH=2,kW=2,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;
-    int       oH=28,oW=28;
-    int paddingMode = 1;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<float16>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<float16>('c', {bS, iC, oH, oW});
-
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    // auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    // ASSERT_TRUE(expected.isSameShape(output));
-    // ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, pnormpool2d_bp_test1) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int oH=2,oW=2;
-    int pnorm = 3;
-    double eps = 0.;
-
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {9.661570e-04,9.671602e-03,1.306569e-02,3.679184e-02,1.297220e-01,1.040181e-01,1.126750e-01,3.320884e-01,2.340406e-01,1.333333e-01,3.352886e-01,2.070211e-01,
-                                                     8.991618e-02,2.160601e-01,1.283173e-01,2.744226e-01,6.364498e-01,3.662123e-01,3.869788e-01,8.808994e-01,4.984556e-01,2.613189e-01,5.818475e-01,3.225517e-01,
-                                                     2.065654e-01,4.553546e-01,2.501175e-01,5.190718e-01,1.131343e+00,6.148388e-01,6.362602e-01,1.377521e+00,7.439550e-01,3.833026e-01,8.227519e-01,4.407146e-01,
-                                                     3.261206e-01,6.969233e-01,3.717564e-01,7.627507e-01,1.620991e+00,8.600952e-01,8.814538e-01,1.866888e+00,9.873542e-01,5.046682e-01,1.064004e+00,5.602558e-01,
-                                                     4.464697e-01,9.389536e-01,4.932274e-01,1.005908e+00,2.108550e+00,1.104095e+00,1.125322e+00,2.354009e+00,1.230180e+00,6.258913e-01,1.305581e+00,6.804127e-01,
-                                                     5.671396e-01,1.181128e+00,6.145977e-01,1.248783e+00,2.595083e+00,1.347494e+00,1.368600e+00,2.840157e+00,1.472778e+00,7.470673e-01,1.547362e+00,8.008900e-01});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::pnormpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    expected.printBuffer("Expected");
-    output->printBuffer("Outputed");
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, pnormpool2d_bp_test2) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int oH=2,oW=2;
-    int pnorm = 2;
-    double eps = 0.;
-
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.007931,0.042891,0.040544,0.09369 ,0.276841,0.191675,0.163957,0.442946,0.287512,0.154919,0.373153,0.221172,
-                                                     0.15901 ,0.365232,0.207846,0.428282,0.959455,0.534076,0.508585,1.128771,0.623089,0.319794,0.698063,0.379547,
-                                                     0.321068,0.692438,0.372316,0.757521,1.620323,0.864566,0.838684,1.787943,0.951023,0.483194,1.023434,0.541058,
-                                                     0.483937,1.019414,0.536145,1.085348,2.276996,1.192917,1.166749,2.443606,1.278126,0.646499,1.349361,0.703463,
-                                                     0.647021,1.346249,0.699745,1.412654,2.932174,1.520512,1.494153,3.098146,1.604985,0.809791,1.675544,0.866229,
-                                                     0.810192,1.673009,0.863237,1.739711,3.58665 ,1.847753,1.82126 ,3.752188,1.931741,0.973081,2.001861,1.029173});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::pnormpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test1) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.016667,0.05    ,0.033333,0.066667,0.166667,0.1     ,0.066667,0.166667,0.1     ,0.05    ,0.116667,0.066667,
-                                                     0.083333,0.183333,0.1     ,0.2     ,0.433333,0.233333,0.2     ,0.433333,0.233333,0.116667,0.25    ,0.133333,
-                                                     0.15    ,0.316667,0.166667,0.333333,0.7     ,0.366667,0.333333,0.7     ,0.366667,0.183333,0.383333,0.2     ,
-                                                     0.216667,0.45    ,0.233333,0.466667,0.966667,0.5     ,0.466667,0.966667,0.5     ,0.25    ,0.516667,0.266667,
-                                                     0.283333,0.583333,0.3     ,0.6     ,1.233333,0.633333,0.6     ,1.233333,0.633333,0.316667,0.65    ,0.333333,
-                                                     0.35    ,0.716667,0.366667,0.733333,1.5     ,0.766667,0.733333,1.5     ,0.766667,0.383333,0.783333,0.4     });
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::avgpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test2) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
-    int oH=4,oW=4;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oH, oW});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW}, {0.233333,0.3     ,0.366667,0.55    ,0.65    ,0.75    ,0.95    ,1.05    ,1.15    ,0.766667,0.833333,0.9     ,
-                                                     1.3     ,1.366667,1.433333,2.15    ,2.25    ,2.35    ,2.55    ,2.65    ,2.75    ,1.833333,1.9     ,1.966667,
-                                                     2.366667,2.433333,2.5     ,3.75    ,3.85    ,3.95    ,4.15    ,4.25    ,4.35    ,2.9     ,2.966667,3.033333,
-                                                     3.433333,3.5     ,3.566667,5.35    ,5.45    ,5.55    ,5.75    ,5.85    ,5.95    ,3.966667,4.033333,4.1     ,
-                                                     4.5     ,4.566667,4.633333,6.95    ,7.05    ,7.15    ,7.35    ,7.45    ,7.55    ,5.033333,5.1     ,5.166667,
-                                                     5.566667,5.633333,5.7     ,8.549999,8.65    ,8.75    ,8.95    ,9.05    ,9.150001,6.1     ,6.166667,6.233334});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::avgpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-////////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test3) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
-    int oH=4,oW=3;
-    int paddingMode = 1;             // 1-SAME,  0-VALID
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0.19167, 0.23333, 0.275, 0.50833, 0.59167, 0.675, 1.2  , 1.325, 1.45 ,0.50833,0.56667, 0.625, 1.19167,1.30833, 1.425, 2.4  ,2.575, 2.75 ,
-                                                     1.18333, 1.24167, 1.3  , 2.54167, 2.65833, 2.775, 4.425, 4.6  , 4.775,1.01667,1.05833, 1.1  , 2.15833,2.24167, 2.325, 3.675,3.8  , 3.925,
-                                                     1.69167, 1.73333, 1.775, 3.50833, 3.59167, 3.675, 5.7  , 5.825, 5.95 ,2.60833,2.66667, 2.725, 5.39167,5.50833, 5.625, 8.7  ,8.875, 9.05 ,
-                                                     3.28333, 3.34167, 3.4  , 6.74167, 6.85833, 6.975,10.725,10.9  ,11.075,2.51667,2.55833, 2.6  , 5.15833,5.24167, 5.325, 8.175,8.3  , 8.425});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::avgpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests7, avgpool2d_bp_test4) {
-
-    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
-    int oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME,  0-VALID
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, iC});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC}, {0.01667,0.03333,0.05,0.08333,0.11667,0.15,0.06667,0.08333,0.1,0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,
-                                                     0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,0.11667,0.13333,0.15,0.28333,0.31667,0.35,0.16667,0.18333,0.2,
-                                                     0.21667,0.23333,0.25,0.48333,0.51667,0.55,0.26667,0.28333,0.3,0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,
-                                                     0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,0.31667,0.33333,0.35,0.68333,0.71667,0.75,0.36667,0.38333,0.4});
-    input.linspace(1.);
-    gradO.linspace(0.1, 0.1);
-
-    nd4j::ops::avgpool2d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
-
-    for (int i = 0; i < output->lengthOf(); ++i)
-    {
-        printf("%f %f \n", ((NDArray*)&expected)->e<TypeParam>(i), ((NDArray*)output)->e<TypeParam>(i));
-    }
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, percentile_test1) {
 
@@ -5716,7 +5594,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
     nd4j::ops::reduce_max_bp op;
     auto result = op.execute({&x, &eps}, {}, {0, 1});
     auto output = result->at(0);
-    // output->printIndexedBuffer("Result is");
+    exp.printIndexedBuffer("E");
+    output->printIndexedBuffer("O");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));

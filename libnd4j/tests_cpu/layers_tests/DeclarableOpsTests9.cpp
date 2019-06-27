@@ -2619,7 +2619,7 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
 TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create<double>('c', {2, 3}, {0., 1., 2., 1., 0., 2. });
+    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
     auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});

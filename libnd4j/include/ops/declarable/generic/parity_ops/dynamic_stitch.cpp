@@ -61,7 +61,7 @@ namespace ops {
         auto firstShape = inputShape->at(0);
         for(int i = 0; i < numOfData; i++) {
             auto input = INPUT_VARIABLE(i);
-
+            REQUIRE_TRUE(input->isZ(), 0, "dynamic_stitch: Indices should be integer, but %d type given.", (int)input->dataType() );
             // FIXME: we have reduce::Max, cinsider using it instead
             auto maxV = input->reduceNumber(reduce::Max);
             if (maxV.e<Nd4jLong>(0) > maxValue) maxValue = maxV.e<Nd4jLong>(0);

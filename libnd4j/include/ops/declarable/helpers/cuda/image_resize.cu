@@ -410,8 +410,10 @@ namespace helpers {
         I const* cropSizes = reinterpret_cast<I const*>(cropSize->getSpecialBuffer());
         Z* outBuf = reinterpret_cast<Z*>(crops->specialBuffer());
 
+        NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
         cropAndResizeKernel<T,Z,I><<<batchSize, math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth), 512, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
                 cropSizes, cropSize->getSpecialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
+        NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
     }
 
     void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {

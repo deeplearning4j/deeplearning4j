@@ -238,9 +238,11 @@ void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& wri
             a->syncToDevice();
 
     for (const auto& a : writeList) {
-        a->getDataBuffer()->allocateSpecial();
-        if (synchronizeWritables)
-            a->syncToDevice();
+        if (a != nullptr) {
+            a->getDataBuffer()->allocateSpecial();
+            if (synchronizeWritables)
+                a->syncToDevice();
+        }
     }
 }
 
@@ -252,7 +254,8 @@ void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& wr
             p->tickReadDevice();
 
     for (const auto& p : writeList)
-        p->tickWriteDevice();
+        if (p != nullptr)
+            p->tickWriteDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -263,9 +266,11 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
             a->syncToHost();
 
     for (const auto& a : writeList) {
-        a->getDataBuffer()->allocatePrimary();
-        if (synchronizeWritables)
-            a->syncToHost();
+        if (a != nullptr) {
+            a->getDataBuffer()->allocatePrimary();
+            if (synchronizeWritables)
+                a->syncToHost();
+        }
     }
 }
 
@@ -277,7 +282,8 @@ void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& wr
             p->tickReadHost();
 
     for (const auto& p : writeList)
-        p->tickWriteHost();
+        if (p != nullptr)
+            p->tickWriteHost();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -498,7 +504,7 @@ template void NDArray::printCurrentBuffer<double>(const bool host, const char* m
 
 #if defined(__CUDACC__) && !defined(BUILD_TESTS)
 
-#include <cpu/NDArrayLambda.hpp>
+//#include <cpu/NDArrayLambda.hpp>
 
 #endif
 

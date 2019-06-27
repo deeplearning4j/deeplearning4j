@@ -1578,6 +1578,20 @@ public:
             void *dx, Nd4jLong *dxShapeInfo,
             bool descending);
 
+    void sortByKey(Nd4jPointer *extraPointers,
+                   void *x, Nd4jLong *xShapeInfo,
+                   void *dx, Nd4jLong *dxShapeInfo,
+                   void *y, Nd4jLong *yShapeInfo,
+                   void *dy, Nd4jLong *dyShapeInfo,
+                   bool descending);
+
+    void sortByValue(Nd4jPointer *extraPointers,
+                     void *x, Nd4jLong *xShapeInfo,
+                     void *dx, Nd4jLong *dxShapeInfo,
+                     void *y, Nd4jLong *yShapeInfo,
+                     void *dy, Nd4jLong *dyShapeInfo,
+                     bool descending);
+
     void sortTad(Nd4jPointer *extraPointers,
             void *x, Nd4jLong *xShapeInfo,
             void *dx, Nd4jLong *dxShapeInfo,
@@ -1586,6 +1600,24 @@ public:
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets,
             bool descending);
+
+    void sortTadByKey(Nd4jPointer *extraPointers,
+                 void *x, Nd4jLong *xShapeInfo,
+                 void *dx, Nd4jLong *dxShapeInfo,
+                 void *y, Nd4jLong *yShapeInfo,
+                 void *dy, Nd4jLong *dyShapeInfo,
+                 int *dimension,
+                 int dimensionLength,
+                 bool descending);
+
+    void sortTadByValue(Nd4jPointer *extraPointers,
+                 void *x, Nd4jLong *xShapeInfo,
+                 void *dx, Nd4jLong *dxShapeInfo,
+                 void *y, Nd4jLong *yShapeInfo,
+                 void *dy, Nd4jLong *dyShapeInfo,
+                 int *dimension,
+                 int dimensionLength,
+                 bool descending);
 
 
     // special sort impl for sorting out COO indices and values

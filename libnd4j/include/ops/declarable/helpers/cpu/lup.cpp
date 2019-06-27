@@ -58,7 +58,7 @@ namespace helpers {
 
         PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 1; i < n; i++)
-            invertedMatrix->p(i, i - 1,  -inputMatrix->e<T>(i, i - 1));
+            invertedMatrix->t<T>(i, i - 1) = -inputMatrix->t<T>(i, i - 1);
 
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 2; i < n; i++) {
@@ -89,7 +89,7 @@ namespace helpers {
 
         PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n - 1; i++)
-            invertedMatrix->p(i, i + 1, invertedMatrix->e<T>(i, i+1) - (inputMatrix->e<T>(i, i + 1) * invertedMatrix->e<T>(i + 1, i + 1) / inputMatrix->e<T>(i, i)));
+            invertedMatrix->t<T>(i, i + 1) = invertedMatrix->t<T>(i, i+1) - (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) / inputMatrix->t<T>(i, i));
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = n - 2; i > - 1; i--) {

@@ -943,11 +943,11 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {12});
+    NDArray input = NDArrayFactory::create<float>('c', {12}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
     NDArray n = NDArrayFactory::create<float>(4.f);
     NDArray exp = NDArrayFactory::create<float>(5.f);
 
-    input.linspace(1.f);
+    //input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {});
@@ -965,11 +965,11 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {3,4});
+    NDArray input = NDArrayFactory::create<float>('c', {3, 4}, {10, 11, 9, 12, 8, 7, 6, 5, 1, 3, 2, 4});
     NDArray n = NDArrayFactory::create<int>(3);
-    NDArray exp = NDArrayFactory::create<float>({4.f, 8.f, 12.f});
+    NDArray exp = NDArrayFactory::create<float>({12.f, 8.f, 4.f});
 
-    input.linspace(1.f);
+//    input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {});
@@ -989,11 +989,11 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {3,4});
+    NDArray input = NDArrayFactory::create<float>('c', {3,4}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
     NDArray n = NDArrayFactory::create<int>(3);
-    NDArray exp = NDArrayFactory::create<float>({1.f, 5.f, 9.f});
+    NDArray exp = NDArrayFactory::create<float>({1.f, 5.f, 2.f});
 
-    input.linspace(1.f);
+    //input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {1}); // with reverse = true
@@ -1012,11 +1012,11 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3});
+    NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
     NDArray n = NDArrayFactory::create<int>(2);
-    NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {3.f, 6.f, 9.f, 12.f});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {10.f, 11.f, 12.f, 4.f});
 
-    input.linspace(1.f);
+    //input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {});
@@ -1054,11 +1054,11 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_04) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3});
+    NDArray input = NDArrayFactory::create<float>('c', {2, 2, 3}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
     NDArray n = NDArrayFactory::create<int>(2);
-    NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {1.f, 4.f, 7.f, 10.f});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,2}, {1.f, 7.f, 5.f, 2.f});
 
-    input.linspace(1.f);
+//    input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {1});
@@ -1076,14 +1076,34 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_6) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {12});
+    NDArray input = NDArrayFactory::create<float>('c', {12}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
     NDArray n = NDArrayFactory::create<int>(0);
     NDArray exp = NDArrayFactory::create(1.f);//NDArrayFactory::create<float>('c', {2,2}, {1.f, 4.f, 7.f, 10.f});
 
-    input.linspace(1.f);
+//    input.linspace(1.f);
 
     nd4j::ops::nth_element op;
     auto results = op.execute({&input, &n}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* output = results->at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, NTH_Element_Test_06) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {12}, {10, 1, 9, 8, 11, 7, 6, 5, 12, 3, 2, 4});
+    NDArray n = NDArrayFactory::create<int>(4);
+    NDArray exp = NDArrayFactory::create(8.f);//NDArrayFactory::create<float>('c', {2,2}, {1.f, 4.f, 7.f, 10.f});
+
+//    input.linspace(1.f);
+
+    nd4j::ops::nth_element op;
+    auto results = op.execute({&input, &n}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1358,241 +1378,6 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test10) {
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_test1) {
-
-    int bS=2, iD=4,iH=4,iW=4,  iC=2,oC=3,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=3,oH=3,oW=3;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto exp = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0.3 , 0.75, 1.5 , 2.4 , 1.5 , 2.4 , 1.2 , 1.65, 2.4 , 3.3 , 6.6 , 8.4 , 6.6 , 8.4 , 4.2 , 5.1 , 2.4 , 3.3 , 6.6 , 8.4 , 6.6 , 8.4 , 4.2 , 5.1 , 2.1 , 2.55, 5.1 , 6.  , 5.1 , 6.  , 3.  , 3.45,
-                                                    4.2 , 5.1 ,10.2 ,12.  ,10.2 ,12.  , 6.  , 6.9 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 , 7.8 , 8.7 ,17.4 ,19.2 ,17.4 ,19.2 , 9.6 ,10.5 ,
-                                                    4.2 , 5.1 ,10.2 ,12.  ,10.2 ,12.  , 6.  , 6.9 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 , 7.8 , 8.7 ,17.4 ,19.2 ,17.4 ,19.2 , 9.6 ,10.5 ,
-                                                    3.9 , 4.35, 8.7 , 9.6 , 8.7 , 9.6 , 4.8 , 5.25, 9.6 ,10.5 ,21.  ,22.8 ,21.  ,22.8 ,11.4 ,12.3 , 9.6 ,10.5 ,21.  ,22.8 ,21.  ,22.8 ,11.4 ,12.3 , 5.7 , 6.15,12.3 ,13.2 ,12.3 ,13.2 , 6.6 , 7.05,
-                                                    0.3 , 0.75, 1.5 , 2.4 , 1.5 , 2.4 , 1.2 , 1.65, 2.4 , 3.3 , 6.6 , 8.4 , 6.6 , 8.4 , 4.2 , 5.1 , 2.4 , 3.3 , 6.6 , 8.4 , 6.6 , 8.4 , 4.2 , 5.1 , 2.1 , 2.55, 5.1 , 6.  , 5.1 , 6.  , 3.  , 3.45,
-                                                    4.2 , 5.1 ,10.2 ,12.  ,10.2 ,12.  , 6.  , 6.9 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 , 7.8 , 8.7 ,17.4 ,19.2 ,17.4 ,19.2 , 9.6 ,10.5 ,
-                                                    4.2 , 5.1 ,10.2 ,12.  ,10.2 ,12.  , 6.  , 6.9 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 ,12.  ,13.8 ,27.6 ,31.2 ,27.6 ,31.2 ,15.6 ,17.4 , 7.8 , 8.7 ,17.4 ,19.2 ,17.4 ,19.2 , 9.6 ,10.5 ,
-                                                    3.9 , 4.35, 8.7 , 9.6 , 8.7 , 9.6 , 4.8 , 5.25, 9.6 ,10.5 ,21.  ,22.8 ,21.  ,22.8 ,11.4 ,12.3 , 9.6 ,10.5 ,21.  ,22.8 ,21.  ,22.8 ,11.4 ,12.3 , 5.7 , 6.15,12.3 ,13.2 ,12.3 ,13.2 , 6.6 , 7.05});
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-
-    nd4j::ops::deconv3d op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_test2) {
-
-    int bS=2, iD=4,iH=4,iW=4,  iC=2,oC=3,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=4,oH=4,oW=4;
-    int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto exp = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0.3 ,  0.75, 1.5 ,  2.4 , 1.5 ,  2.4 , 1.5 ,  2.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,
-                                                    0.3 ,  0.75, 1.5 ,  2.4 , 1.5 ,  2.4 , 1.5 ,  2.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 , 2.4 ,  3.3 , 6.6 ,  8.4 , 6.6 ,  8.4 , 6.6 ,  8.4 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,
-                                                    4.2 ,  5.1 ,10.2 , 12.  ,10.2 , 12.  ,10.2 , 12.  ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 ,12.  , 13.8 ,27.6 , 31.2 ,27.6 , 31.2 ,27.6 , 31.2 });
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-
-    nd4j::ops::deconv3d op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_test3) {
-
-    int bS=2, iD=4,iH=4,iW=4,  iC=2,oC=3,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=3,oH=3,oW=3;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto exp = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {2.55,  5.25,  5.25,  2.7, 5.4 , 11.1 , 11.1 ,  5.7, 5.4 , 11.1 , 11.1 ,  5.7, 2.85,  5.85,  5.85,  3. , 5.7 , 11.7 , 11.7 ,  6. ,12.  , 24.6 , 24.6 , 12.6,12.  , 24.6 , 24.6 , 12.6, 6.3 , 12.9 , 12.9 ,  6.6,
-                                                    5.7 , 11.7 , 11.7 ,  6. ,12.  , 24.6 , 24.6 , 12.6,12.  , 24.6 , 24.6 , 12.6, 6.3 , 12.9 , 12.9 ,  6.6, 3.15,  6.45,  6.45,  3.3, 6.6 , 13.5 , 13.5 ,  6.9, 6.6 , 13.5 , 13.5 ,  6.9, 3.45,  7.05,  7.05,  3.6,
-                                                    3.75,  7.65,  7.65,  3.9, 7.8 , 15.9 , 15.9 ,  8.1, 7.8 , 15.9 , 15.9 ,  8.1, 4.05,  8.25,  8.25,  4.2, 8.1 , 16.5 , 16.5 ,  8.4,16.8 , 34.2 , 34.2 , 17.4,16.8 , 34.2 , 34.2 , 17.4, 8.7 , 17.7 , 17.7 ,  9. ,
-                                                    8.1 , 16.5 , 16.5 ,  8.4,16.8 , 34.2 , 34.2 , 17.4,16.8 , 34.2 , 34.2 , 17.4, 8.7 , 17.7 , 17.7 ,  9. , 4.35,  8.85,  8.85,  4.5, 9.  , 18.3 , 18.3 ,  9.3, 9.  , 18.3 , 18.3 ,  9.3, 4.65,  9.45,  9.45,  4.8,
-                                                    2.55,  5.25,  5.25,  2.7, 5.4 , 11.1 , 11.1 ,  5.7, 5.4 , 11.1 , 11.1 ,  5.7, 2.85,  5.85,  5.85,  3. , 5.7 , 11.7 , 11.7 ,  6. ,12.  , 24.6 , 24.6 , 12.6,12.  , 24.6 , 24.6 , 12.6, 6.3 , 12.9 , 12.9 ,  6.6,
-                                                    5.7 , 11.7 , 11.7 ,  6. ,12.  , 24.6 , 24.6 , 12.6,12.  , 24.6 , 24.6 , 12.6, 6.3 , 12.9 , 12.9 ,  6.6, 3.15,  6.45,  6.45,  3.3, 6.6 , 13.5 , 13.5 ,  6.9, 6.6 , 13.5 , 13.5 ,  6.9, 3.45,  7.05,  7.05,  3.6,
-                                                    3.75,  7.65,  7.65,  3.9, 7.8 , 15.9 , 15.9 ,  8.1, 7.8 , 15.9 , 15.9 ,  8.1, 4.05,  8.25,  8.25,  4.2, 8.1 , 16.5 , 16.5 ,  8.4,16.8 , 34.2 , 34.2 , 17.4,16.8 , 34.2 , 34.2 , 17.4, 8.7 , 17.7 , 17.7 ,  9. ,
-                                                    8.1 , 16.5 , 16.5 ,  8.4,16.8 , 34.2 , 34.2 , 17.4,16.8 , 34.2 , 34.2 , 17.4, 8.7 , 17.7 , 17.7 ,  9. , 4.35,  8.85,  8.85,  4.5, 9.  , 18.3 , 18.3 ,  9.3, 9.  , 18.3 , 18.3 ,  9.3, 4.65,  9.45,  9.45,  4.8});
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    weights.permutei({2, 3, 4, 1, 0});
-
-    nd4j::ops::deconv3d op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_test4) {
-
-    int bS=2, iD=2,iH=2,iW=2,  iC=2,oC=3,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1,  dD=1,dH=1,dW=1;
-    int       oD=3,oH=3,oW=3;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto exp = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {24.6, 24.6,24.6, 24.6,24.6, 24.6,24.6, 24.6,34.2, 34.2,34.2, 34.2,34.2, 34.2,34.2, 34.2,24.6, 24.6,24.6, 24.6,
-                                                    24.6, 24.6,24.6, 24.6,34.2, 34.2,34.2, 34.2,34.2, 34.2,34.2, 34.2});
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    weights.permutei({2, 3, 4, 1, 0});
-
-    nd4j::ops::deconv3d op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_bp_test1) {
-
-    int bS=1, iD=3,iH=3,iW=3,  iC=1,oC=2,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=2,oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto bias     = NDArrayFactory::create<double>('c', {iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    gradO.linspace(0.5);
-
-    const OpArgsHolder argsHolderFF({&input, &weights, &bias},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_bp_test2) {
-
-    int bS=1, iD=2,iH=2,iW=2,  iC=1,oC=2,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    gradO.linspace(0.5);
-
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_bp_test3) {
-
-    int bS=1, iD=3,iH=3,iW=3,  iC=1,oC=2,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int       oD=2,oH=2,oW=2;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    gradO.linspace(0.5);
-    weights.permutei({2, 3, 4, 1, 0});
-
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, deconv3d_bp_test4) {
-
-    int bS=1, iD=2,iH=2,iW=2,  iC=1,oC=2,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1,  dD=1,dH=1,dW=1;
-    int       oD=3,oH=3,oW=3;
-    int paddingMode = 0;             // 1-SAME, 0-VALID;
-    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
-
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-
-    input = 0.5;
-    weights.linspace(0.1, 0.1);
-    gradO.linspace(0.5);
-    weights.permutei({2, 3, 4, 1, 0});
-
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2099,16 +1884,17 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_3) {
 TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
 
     NDArray boxes    = NDArrayFactory::create<float>('c', {3,4});
-    NDArray scales = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
-    NDArray expected = NDArrayFactory::create<float>('c', {3}, {2.,1.,0.});
+    NDArray scores = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+    NDArray expected = NDArrayFactory::create<int>('c', {3}, {2, 1, 0});
     boxes.linspace(1.f);
 
     nd4j::ops::non_max_suppression op;
-    auto results = op.execute({&boxes, &scales}, {}, {5});
+    auto results = op.execute({&boxes, &scores}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
+    result->printIndexedBuffer("OOOOUUUUTTT");
 
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -2121,8 +1907,8 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 
     NDArray boxes    = NDArrayFactory::create<float>('c', {6,4}, {0, 0, 1, 1, 0, 0.1f, 1, 1.1f, 0, -0.1f, 1.f, 0.9f,
                                          0, 10, 1, 11, 0, 10.1f, 1.f, 11.1f, 0, 100, 1, 101});
-    NDArray scales = NDArrayFactory::create<float>('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected = NDArrayFactory::create<float>('c', {3}, {3.,0.,5.});
+    NDArray scales = NDArrayFactory::create<float>('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f}); //3, 0, 1, 2, 4, 5
+    NDArray expected = NDArrayFactory::create<int>('c', {3}, {3,0,5});
 
     nd4j::ops::non_max_suppression op;
     auto results = op.execute({&boxes, &scales}, {0.5}, {3});
@@ -2130,7 +1916,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-
+    result->printBuffer("NonMaxSuppression OUtput2");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 

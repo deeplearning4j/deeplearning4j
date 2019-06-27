@@ -109,9 +109,26 @@ namespace ops {
         }
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
+        NDArray originalIndices(*indices); //->ordering(), indices->shapeInfo(), indices->dataType());
+        originalIndices.linspace(0);
+        ops::dynamic_partition op;
+        auto res = op.execute({&originalIndices, indices}, {}, {numPartition});
+        REQUIRE_OK(res->status());
+        ops::dynamic_stitch stichOp;
+        std::vector<NDArray*> partitions(numPartition * 2);
+        for (size_t i = 0; i < res->size(); i++) {
+            partitions[i] = res->at(i);
+            partitions[i + numPartition] = gradOutList[i];
+        }
 
-        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
+        auto result = stichOp.execute(partitions, {}, {numPartition}, {}, false);
+        REQUIRE_OK(result->status());
+        outputList[1]->assign(indices);
+        outputList[0]->assign(result->at(0));
 
+//        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
+        delete res;
+        delete result;
         return ND4J_STATUS_OK;
     }
 

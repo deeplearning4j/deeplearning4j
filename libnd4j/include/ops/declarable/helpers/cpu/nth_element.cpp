@@ -28,8 +28,8 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output, bool reverse) {
-        Nd4jLong n = nVal->e<Nd4jLong>(0);
+    void nthElementFunctor_(NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+
         NDArray sortedVals(*input);
         if (input->isVector()) {
             //std::vector<float> data(input->lengthOf());
@@ -51,7 +51,6 @@ namespace helpers {
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
 
             std::unique_ptr<ResultSet> rows(sortedVals.allTensorsAlongDimension(lastDims));
-
             Nd4jLong oL = output->lengthOf();
 
             PRAGMA_OMP_PARALLEL_FOR
@@ -62,11 +61,11 @@ namespace helpers {
         }
     }
 
-    void nthElementFunctor(nd4j::LaunchContext  *launchContext, NDArray* input, NDArray* n, NDArray* output, bool reverse) {
+    void nthElementFunctor(nd4j::LaunchContext  *launchContext, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output, bool reverse), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, Nd4jLong n, NDArray* output, bool reverse), LIBND4J_TYPES);
     
 }
 }

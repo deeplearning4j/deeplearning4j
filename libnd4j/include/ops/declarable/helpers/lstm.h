@@ -27,14 +27,62 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
+    //////////////////////////////////////////////////////////////////////////
+    static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
+        return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
+    }
+
+    static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
+        (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    static FORCEINLINE NDArray tanh(const NDArray& arr) {
+        return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
+    }
+
+    static FORCEINLINE void tanhInplace(const NDArray& arr) {
+        (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat){
+        if(dataFormat == 0){
+            //TNS: shape [timeLength, numExamples, inOutSize]
+            auto x = (*arr)({t,t+1, 0,0, 0,0});
+            const std::vector<Nd4jLong> newShape({arr->sizeAt(1),arr->sizeAt(2)});
+            return x.reshape(arr->ordering(), newShape);
+        } else if(dataFormat == 1){
+            //NST: shape [numExamples, inOutSize, timeLength]
+            auto x = (*arr)({0,0, 0,0, t,t+1});
+            const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(1)});
+            return x.reshape(arr->ordering(), newShape);
+        } else {
+            //NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout
+            auto x = (*arr)({0,0, t,t+1, 0,0});
+            const std::vector<Nd4jLong> newShape({arr->sizeAt(0),arr->sizeAt(2)});
+            return x.reshape(arr->ordering(), newShape);
+        }
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static FORCEINLINE void clipping(NDArray* arr, T limit) {
+        arr->applyScalar(scalar::LstmClip, limit);
+    }
+
 
 	void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                   NDArray* ht, NDArray* ct, const std::vector<double>& params);
 
 	void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                       NDArray* h, NDArray* c, const std::vector<double>& params);
-	
-    
+
+    void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast,
+                       const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+                       NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y, const std::vector<double>& params);
+
+
 
 }
 }

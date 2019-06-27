@@ -1119,6 +1119,12 @@ inline __device__ uint8_t nd4j_atomicAdd<uint8_t>(uint8_t* address, uint8_t val)
 }
 
 template <>
+inline __device__ bool nd4j_atomicAdd<bool>(bool* address, bool val)  {
+    *address += (val);
+    return *address;
+}
+
+template <>
 inline __device__ double nd4j_atomicSub<double>(double* address, double val)  {
 	unsigned long long int* address_as_ull =
 			(unsigned long long int *) address;
@@ -1317,27 +1323,29 @@ inline __device__ uint64_t nd4j_atomicMul<uint64_t>(uint64_t* address, uint64_t 
     return (uint64_t)old;
 }
 
-template <>
-inline __device__ unsigned long long nd4j_atomicMul<unsigned long long>(unsigned long long* address, unsigned long long val) {
-	unsigned long long int* res_address = address;
-	unsigned long long int old = *res_address, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(res_address, assumed, val * assumed);
-	} while (assumed != old);
-    return old;
-}
+//template <>
+//inline __device__ unsigned long long nd4j_atomicMul<unsigned long long>(unsigned long long* address, unsigned long long val) {
+//	unsigned long long int* res_address = address;
+//	unsigned long long int old = *res_address, assumed;
+//	do {
+//		assumed = old;
+//		old = atomicCAS(res_address, assumed, val * assumed);
+//	} while (assumed != old);
+//    return old;
+//}
 
+#if !defined(_WIN32) && !defined(_WIN64)
 template <>
-inline __device__ long long nd4j_atomicMul<long long>(long long* address, long long val) {
+inline __device__ Nd4jLong nd4j_atomicMul<Nd4jLong>(Nd4jLong* address, Nd4jLong val) {
 	unsigned long long int* res_address = (unsigned long long*)address;
 	unsigned long long int old = *res_address, assumed;
 	do {
 		assumed = old;
 		old = atomicCAS(res_address, assumed, val * assumed);
 	} while (assumed != old);
-    return (long long)old;
+    return (Nd4jLong)old;
 }
+#endif
 
 template <>
 inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {

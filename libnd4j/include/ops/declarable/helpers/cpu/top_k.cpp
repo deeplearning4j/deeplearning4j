@@ -29,10 +29,7 @@ namespace helpers {
     template <typename T>
     static int topKFunctor_(const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
         Nd4jLong width = input->sizeAt(-1);
-//        Nd4jLong lastDim = input->rankOf() - 1;
-//      FIX ME: lastDim should be Nd4Long not int only?
         int lastDim = input->rankOf() - 1;
-//        std::unique_ptr<ResultSet> lastDimList(input->allTensorsAlongDimension({lastDim}));
 // ----------------------------------------------------------------------------------------------- //
 // this assumption is right:
 //        if (values->lengthOf() != k * lastDimList->size()) {
