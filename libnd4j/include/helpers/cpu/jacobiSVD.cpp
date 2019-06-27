@@ -157,8 +157,7 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
 
         if(_calcU) {
             auto temp2 = rotation.transpose();
-            mulRotationOnRight(p, q, _u, *temp2);
-            delete temp2;
+            mulRotationOnRight(p, q, _u, temp2);
         }
     }
 
@@ -251,9 +250,7 @@ void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDA
     m.p<T>(1, 1, _z);
 
     auto temp = right.transpose();
-    left.assign(mmul(rotation, *temp));
-    delete temp;
-
+    left.assign(mmul(rotation, temp));
 }
 
 
@@ -289,7 +286,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
     else if(_rows < _cols) {
 
         auto matrixT = matrix.transpose();
-        HHcolPivQR qr(*matrixT / scale);
+        HHcolPivQR qr(matrixT / scale);
         _m.assign(qr._qr({0,_rows, 0,_rows}));
         _m.fillAsTriangular<T>(0., 0, 0, 'l');
         _m.transposei();
@@ -305,8 +302,6 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
         if(_calcU)
             _u.assign(qr._permut);
-
-        delete matrixT;
     }
     else {
 
@@ -352,8 +347,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
                         if(_calcU) {
                             auto temp = rotLeft.transpose();
-                            mulRotationOnRight(p, q, _u, *temp);
-                            delete temp;
+                            mulRotationOnRight(p, q, _u, temp);
                         }
 
                         mulRotationOnRight(p, q, _m, rotRight);

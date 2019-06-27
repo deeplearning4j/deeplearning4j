@@ -202,7 +202,8 @@ public abstract class BaseNd4jTest {
 
     @Before
     public void before() throws Exception {
-        log.info("Running " + getClass().getName() + " on backend " + backend.getClass().getName());
+        //
+        log.info("Running {}.{} on {}", getClass().getName(), testName.getMethodName(), backend.getClass().getSimpleName());
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);

@@ -39,9 +39,9 @@ NDArray* NDArray::asT() const{
     auto result = isScalar() ? new NDArray('c', {}, {0.}, DataTypeUtils::fromT<T>(), this->getContext()) : new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
     auto l = this->lengthOf();
 
-    prepareSpecialUse({result}, {this});
+    NDArray::prepareSpecialUse({result}, {this});
     NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result->getBuffer(), result->getShapeInfo(), result->getSpecialBuffer(), result->getSpecialShapeInfo(), nullptr, nullptr, nullptr);
-    registerSpecialUse({result}, {this});
+    NDArray::registerSpecialUse({result}, {this});
 
     return result;
 }
@@ -583,117 +583,130 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCop
 void NDArray::assign(const double value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const float value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const float16 value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const bfloat16& value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const Nd4jLong value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const int value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp._shapeInfoD, nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const int16_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp._shapeInfoD, nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const uint8_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const uint16_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const uint32_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const uint64_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const int8_t value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::assign(const bool value) {
     // just fire scalar
     auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-    prepareSpecialUse({this}, {&temp});
+
+    NDArray::prepareSpecialUse({this}, {&temp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse({this}, {&temp});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -716,9 +729,9 @@ NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
 
     NDArray res(DataTypeUtils::pickFloatingType(dataType()), getContext());
 
-    prepareSpecialUse({&res}, {this});
+    NDArray::prepareSpecialUse({&res}, {this});
     NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, buffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo(), biasCorrected);
-    registerSpecialUse({&res}, {this});
+    NDArray::registerSpecialUse({&res}, {this});
 
     return res;
 }
@@ -918,9 +931,9 @@ NDArray NDArray::reduceNumber(nd4j::reduce::FloatOps op, void *extraParams) cons
     auto shape = ConstantShapeHelper::getInstance()->scalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()));
     NDArray result(shape, true, this->getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execReduceFloatScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -932,9 +945,9 @@ NDArray NDArray::reduceNumber(nd4j::reduce::SameOps op, void *extraParams) const
 
     NDArray result(dataType(), getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execReduceSameScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -947,9 +960,9 @@ NDArray NDArray::reduceNumber(nd4j::reduce::BoolOps op, void *extraParams) const
     auto shape = ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::BOOL);
     NDArray result(shape, true, this->getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execReduceBoolScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -962,9 +975,9 @@ NDArray NDArray::reduceNumber(nd4j::reduce::LongOps op, void *extraParams) const
     auto shape = ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64);
     NDArray result(shape, true, this->getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execReduceLongScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -976,9 +989,9 @@ void NDArray::reduceNumber(nd4j::reduce::FloatOps op, NDArray& target, void *ext
     if(!target.isScalar() || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
         throw std::invalid_argument("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
-    prepareSpecialUse({&target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
     NativeOpExecutioner::execReduceFloatScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
-    registerSpecialUse({&target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -989,9 +1002,9 @@ void NDArray::reduceNumber(nd4j::reduce::SameOps op, NDArray& target, void *extr
     if(!target.isScalar() || target.dataType() != dataType())
         throw std::invalid_argument("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
-    prepareSpecialUse({&target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
     NativeOpExecutioner::execReduceSameScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, target.getBuffer(), target.getShapeInfo(), target.specialBuffer(), target.getSpecialShapeInfo());
-    registerSpecialUse({&target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1002,9 +1015,9 @@ void NDArray::reduceNumber(nd4j::reduce::BoolOps op, NDArray& target, void *extr
     if(!target.isScalar() || target.dataType() != DataType::BOOL)
         throw std::invalid_argument("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
 
-    prepareSpecialUse({&target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
     NativeOpExecutioner::execReduceBoolScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, target.getBuffer(), target.getShapeInfo(), target.specialBuffer(), target.getSpecialShapeInfo());
-    registerSpecialUse({&target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1015,9 +1028,9 @@ void NDArray::reduceNumber(nd4j::reduce::LongOps op, NDArray& target, void *extr
     if(!target.isScalar() || target.dataType() != DataType::INT64)
         throw std::invalid_argument("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
-    prepareSpecialUse({&target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
     NativeOpExecutioner::execReduceLongScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams, target.getBuffer(), target.getShapeInfo(), target.specialBuffer(), target.getSpecialShapeInfo());
-    registerSpecialUse({&target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1027,9 +1040,9 @@ NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, ExtraArguments *ex
 
     auto res = NDArrayFactory::create<Nd4jLong>(0);
 
-    NDArray::prepareSpecialUse({&res}, {this});
+    NDArray::NDArray::prepareSpecialUse({&res}, {this});
     NativeOpExecutioner::execIndexReduceScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
-    NDArray::registerSpecialUse({&res}, {this});
+    NDArray::NDArray::registerSpecialUse({&res}, {this});
 
     return res;
 }
@@ -1240,17 +1253,10 @@ BUILD_SINGLE_TEMPLATE(template void* NDArray::templatedPointerShift, (const Nd4j
 
 //////////////////////////////////////////////////////////////////////////
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
-NDArray* NDArray::transpose() const {
-    auto newArr = new NDArray(getBuffer(), getSpecialBuffer(), getShapeInfo(), getContext(), false, false);
-    newArr->transposei();
-
-    return newArr;
-}
-
-////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transp() const {
-    NDArray newArr(getBuffer(), getShapeInfo(), getContext(), false);
+NDArray NDArray::transpose() const {
+    NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
     newArr.transposei();
+
     return newArr;
 }
 
@@ -1360,10 +1366,10 @@ Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray* NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
 
-    auto newArr = new NDArray(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext());
-    newArr->reshapei(order, shape);
+    NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
+    newArr.reshapei(order, shape);
 
     return newArr;
 }
@@ -1420,43 +1426,43 @@ bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const int* dimensions, const int rank) const {
+NDArray NDArray::permute(const int* dimensions, const int rank) const {
 
     // evaluate shapeInfo for output (permuted) array ret
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-    auto ret = new NDArray(_buffer, ShapeDescriptor(shapeInfoPermuted), getContext(), getBufferOffset());
-	ret->_isView = true;
+    NDArray ret(getDataBuffer(), ShapeDescriptor(shapeInfoPermuted), getContext(), getBufferOffset());
+	ret._isView = true;
     return ret;
 }
 
 /////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
+NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
     int tempDims[MAX_RANK];
     shape::convertT<Nd4jLong, int>(const_cast<Nd4jLong *>(dimensions), tempDims, rank);
     return permute(tempDims, rank);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::vector<int>& dimensions) const {
+NDArray NDArray::permute(const std::vector<int>& dimensions) const {
     auto data = dimensions.data();
     auto size = dimensions.size();
     return permute(data, size);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
     return permute(dimensions.data(), dimensions.size());
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::initializer_list<int>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<int>& dimensions) const {
     std::vector<int> vec(dimensions);
     return permute(vec);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
     std::vector<Nd4jLong> vec(dimensions);
     return permute(vec);
 }
@@ -1528,10 +1534,9 @@ bool NDArray::isUnitary() {
         throw std::runtime_error("isUnitary method: matrix must be square and have rank = 2 !");
 
     auto tr = this->transpose();
-    auto trMul = MmulHelper::mmul(this, tr, nullptr, 1.f, 0.f);
+    auto trMul = MmulHelper::mmul(this, &tr, nullptr, 1.f, 0.f);
 
     bool result = trMul->isIdentityMatrix();
-    delete tr;
     delete trMul;
 
     return result;
@@ -1777,11 +1782,11 @@ NDArray NDArray::operator*(const T& scalar) const {
 
     auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(dataType(), DataTypeUtils::fromT<T>()), false, getContext());
+
     NDArray::prepareSpecialUse({&result}, {this, &tmp});
-
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-
     NDArray::registerSpecialUse({&result}, {this, &tmp});
+
     return result;
 }
 template NDArray NDArray::operator*(const double&   scalar) const;
@@ -1811,6 +1816,7 @@ NDArray NDArray::operator/(const T& scalar) const {
     NDArray::prepareSpecialUse({&result}, {this, &tmp});
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
     NDArray::registerSpecialUse({&result}, {this, &tmp});
+
     return result;
 }
 template NDArray NDArray::operator/(const double&   scalar) const;
@@ -2050,14 +2056,14 @@ void NDArray::operator+=(const NDArray& other) {
         throw nd4j::datatype_exception::build("NDArray operator+=: Cannot add different types", this->dataType(), other.dataType());
 
     if (!this->isScalar() && other.isScalar()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Add, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Add, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else{
         Nd4jLong *bShape = nullptr;
@@ -2084,14 +2090,14 @@ void NDArray::operator-=(const NDArray& other) {
         throw nd4j::datatype_exception::build("NDArray operator-=: Cannot subtract different types", this->dataType(), other.dataType());
 
     if (!this->isScalar() && other.isScalar()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Subtract, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Subtract, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else{
         Nd4jLong *bShape = nullptr;
@@ -2117,14 +2123,14 @@ void NDArray::operator*=(const NDArray& other) {
         throw nd4j::datatype_exception::build("NDArray operator*=: Cannot multiply different types", this->dataType(), other.dataType());
 
     if (!this->isScalar() && other.isScalar()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Multiply, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Multiply, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else{
         Nd4jLong *bShape = nullptr;
@@ -2154,14 +2160,14 @@ void NDArray::operator/=(const NDArray& other) {
     }
 
     if (!this->isScalar() && other.isScalar()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Divide, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        prepareSpecialUse({this}, {this, &other});
+        NDArray::prepareSpecialUse({this}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Divide, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({this}, {this, &other});
+        NDArray::registerSpecialUse({this}, {this, &other});
     }
     else{
         Nd4jLong *bShape = nullptr;
@@ -2264,9 +2270,9 @@ NDArray NDArray::operator-(const NDArray& other) const {
     if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, getContext());
 
-        prepareSpecialUse({&result}, {this, &other});
+        NDArray::prepareSpecialUse({&result}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({&result}, {this, &other});
+        NDArray::registerSpecialUse({&result}, {this, &other});
 
         return result;
     }
@@ -2285,9 +2291,9 @@ NDArray NDArray::operator*(const NDArray& other) const {
     if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, this->getContext());
 
-        prepareSpecialUse({&result}, {this, &other});
+        NDArray::prepareSpecialUse({&result}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({&result}, {this, &other});
+        NDArray::registerSpecialUse({&result}, {this, &other});
 
         return result;
     }
@@ -2308,9 +2314,9 @@ NDArray NDArray::operator/(const NDArray& other) const {
     if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, getContext());
 
-        prepareSpecialUse({&result}, {this, &other});
+        NDArray::prepareSpecialUse({&result}, {this, &other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), getSpecialShapeInfo(), nullptr);
-        registerSpecialUse({&result}, {this, &other});
+        NDArray::registerSpecialUse({&result}, {this, &other});
 
         return result;
     }
@@ -2326,9 +2332,9 @@ NDArray NDArray::operator-() const {
 
     NDArray result(getShapeInfo(), false, getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformSame(getContext(), nd4j::transform::Neg, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), nullptr, nullptr, nullptr);
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -2631,7 +2637,7 @@ void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& di
     if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
         NDArray::prepareSpecialUse({result}, {this, other});
         NativeOpExecutioner::execPairwiseTransform(getContext(), fromBroadcastToPairwise(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
-        registerSpecialUse({result}, {this, other});
+        NDArray::registerSpecialUse({result}, {this, other});
         return;
     }
 
@@ -2688,7 +2694,7 @@ void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>
     if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
         NDArray::prepareSpecialUse({result}, {this, other});
         NativeOpExecutioner::execPairwiseBoolTransform(getContext(), fromBroadcastToPairwiseBool(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
-        registerSpecialUse({result}, {this, other});
+        NDArray::registerSpecialUse({result}, {this, other});
         return;
     }
 
@@ -2896,7 +2902,7 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     Nd4jLong *shapeInfoNew;
     ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-    bool canReshape = shape::reshapeC(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), shapeInfoNew);
+    bool canReshape = shape::reshapeC(rankOf(), shapeInfo(), shape.size(), shape.data(), shapeInfoNew);
 
     // we can do this only if there was no permute applied, or there are no weird strides
     if (canReshape) {
@@ -2948,11 +2954,9 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* othe
     if (target->dataType() != this->dataType() && target->dataType() != other->dataType())
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
 
-    prepareSpecialUse({target}, {this, other});
-
+    NDArray::prepareSpecialUse({target}, {this, other});
     NativeOpExecutioner::execPairwiseTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-
-    registerSpecialUse({target}, {this, other});
+    NDArray::registerSpecialUse({target}, {this, other});
 
     if (extraParams != nullptr)
         synchronize("NDArray::applyPairwiseTransform");
@@ -2969,9 +2973,9 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
     if (dataType() != other->dataType())
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
-    prepareSpecialUse({target}, {this, other});
+    NDArray::prepareSpecialUse({target}, {this, other});
     NativeOpExecutioner::execPairwiseBoolTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-    registerSpecialUse({target}, {this, other});
+    NDArray::registerSpecialUse({target}, {this, other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3070,22 +3074,23 @@ void NDArray::assign(const NDArray& other) {
     if (other.isScalar()) {
 
         if(this->isScalar()) {
-            preparePrimaryUse({this}, {&other});
+            NDArray::preparePrimaryUse({this}, {&other});
             BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.getBuffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
-            registerPrimaryUse({this}, {&other});
+            NDArray::registerPrimaryUse({this}, {&other});
+            this->syncToDevice();
         }
         else {
             if (dataType() != other.dataType()) {
                 auto tmp = other.cast(dataType());
-                prepareSpecialUse({this}, {tmp});
+                NDArray::prepareSpecialUse({this}, {tmp});
                 NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), tmp->getBuffer(), tmp->getShapeInfo(), tmp->getSpecialBuffer(), tmp->getSpecialShapeInfo(), nullptr);
-                registerSpecialUse({this}, {});
+                NDArray::registerSpecialUse({this}, {});
                 delete tmp;
             }
             else {
-                prepareSpecialUse({this}, {&other});
+                NDArray::prepareSpecialUse({this}, {&other});
                 NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr);
-                registerSpecialUse({this}, {&other});
+                NDArray::registerSpecialUse({this}, {&other});
             }
         }
     }
@@ -3101,16 +3106,16 @@ void NDArray::assign(const NDArray& other) {
         if (ordering() == other.ordering() && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
             copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
         else {
-            prepareSpecialUse({this}, {&other});
+            NDArray::prepareSpecialUse({this}, {&other});
             NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr);
-            registerSpecialUse({this}, {&other});
+            NDArray::registerSpecialUse({this}, {&other});
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
-NDArray* NDArray::dup(const char newOrder) {
+NDArray* NDArray::dup(const char newOrder) const {
 
     if (isEmpty())
         return NDArrayFactory::empty_(dataType(), getContext());
@@ -3170,7 +3175,7 @@ std::string NDArray::e(const Nd4jLong i) const {
     if (!isS())
         throw std::runtime_error("Can't get std::string out of non-string array");
 
-    preparePrimaryUse({}, {this});
+    NDArray::preparePrimaryUse({}, {this});
 
     // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
     auto offset = getOffset(i);
@@ -3208,8 +3213,8 @@ T NDArray::e(const Nd4jLong i) const {
 
     const auto rp = getOffset(i);
 
-    preparePrimaryUse({}, {this});
-    registerPrimaryUse({}, {this});
+    NDArray::preparePrimaryUse({}, {this});
+    NDArray::registerPrimaryUse({}, {this});
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(getBuffer(), rp), LIBND4J_TYPES);
 
 }
@@ -3226,8 +3231,8 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
     const Nd4jLong coords[2] = {i, j};
     const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
-    preparePrimaryUse({}, {this});
-    registerPrimaryUse({}, {this});
+    NDArray::preparePrimaryUse({}, {this});
+    NDArray::registerPrimaryUse({}, {this});
 
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(getBuffer(), xOffset), LIBND4J_TYPES);
 
@@ -3246,8 +3251,8 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
     const Nd4jLong coords[3] = {i, j, k};
     const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
-    preparePrimaryUse({}, {this});
-    registerPrimaryUse({}, {this});
+    NDArray::preparePrimaryUse({}, {this});
+    NDArray::registerPrimaryUse({}, {this});
 
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(getBuffer(), xOffset), LIBND4J_TYPES);
 
@@ -3266,8 +3271,8 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLon
     const Nd4jLong coords[4] = {i, j, k, l};
     const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
-    preparePrimaryUse({}, {this});
-    registerPrimaryUse({}, {this});
+    NDArray::preparePrimaryUse({}, {this});
+    NDArray::registerPrimaryUse({}, {this});
 
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(getBuffer(), xOffset), LIBND4J_TYPES);
 
@@ -3300,9 +3305,9 @@ void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, Extr
     if (!target->isR())
         throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
-    prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
     NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3314,9 +3319,9 @@ void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraA
     if (target == nullptr)
         target = this;
 
-    prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
     NativeOpExecutioner::execTransformAny(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3331,9 +3336,9 @@ void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, Extra
     if (target->dataType() != dataType())
         throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
 
-    prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
     NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3347,9 +3352,9 @@ void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, Ext
     if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
         throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
-    registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
     NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    prepareSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3363,9 +3368,9 @@ void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, Extra
     if (!target->isB())
         throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
-    prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({target}, {this});
     NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3375,9 +3380,9 @@ NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) cons
 
     NDArray result(ordering(), getShapeAsVector(), DataTypeUtils::pickFloatingType(dataType()), getContext());
 
-    registerSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), extraParams, nullptr, nullptr);
-    prepareSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -3389,9 +3394,9 @@ NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const
 
     NDArray result(getShapeInfo(), false, getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), extraParams, nullptr, nullptr);
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -3403,9 +3408,9 @@ NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) con
 
     NDArray result(getShapeInfo(), false, getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformStrict(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), extraParams, nullptr, nullptr);
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -3417,9 +3422,9 @@ NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const
 
     NDArray result(ordering(), getShapeAsVector(), nd4j::DataType::BOOL, getContext());
 
-    prepareSpecialUse({&result}, {this});
+    NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), extraParams, nullptr, nullptr);
-    registerSpecialUse({&result}, {this});
+    NDArray::registerSpecialUse({&result}, {this});
 
     return result;
 }
@@ -3435,9 +3440,9 @@ void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArra
     if(target->dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar->getShapeInfo()) && !(target->dataType() == dataType() || target->dataType() == scalar->dataType()))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
-    prepareSpecialUse({target}, {this, scalar});
+    NDArray::prepareSpecialUse({target}, {this, scalar});
     NativeOpExecutioner::execScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), scalar->getBuffer(), scalar->getShapeInfo(), scalar->getSpecialBuffer(), scalar->getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
-    registerSpecialUse({target}, {this, scalar});
+    NDArray::registerSpecialUse({target}, {this, scalar});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3471,10 +3476,9 @@ void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, ND
         throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
     }
 
-    prepareSpecialUse({target}, {this, scalar});
+    NDArray::prepareSpecialUse({target}, {this, scalar});
     NativeOpExecutioner::execScalarBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), scalar->getBuffer(), scalar->getShapeInfo(), scalar->getSpecialBuffer(), scalar->getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
-
-    registerSpecialUse({target}, {this, scalar});
+    NDArray::registerSpecialUse({target}, {this, scalar});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3557,7 +3561,7 @@ NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, cons
 
     NDArray::prepareSpecialUse({result}, {this, other});
     NativeOpExecutioner::execReduce3Scalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-    registerSpecialUse({result}, {this, other});
+    NDArray::registerSpecialUse({result}, {this, other});
 
     return result;
 }
@@ -3635,9 +3639,9 @@ NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, c
 
     auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
 
-    prepareSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({result}, {this, other});
     NativeOpExecutioner::execReduce3All(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
-    registerSpecialUse({result}, {this, other});
+    NDArray::registerSpecialUse({result}, {this, other});
 
     return result;
 }
@@ -3780,9 +3784,9 @@ void NDArray::p(const Nd4jLong i, const T value) {
     auto rp = getOffset(i);
     const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
 
-    preparePrimaryUse({this}, {}, true);
+    NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), templatedSet<, T>(this->getBuffer(), rp, pV), LIBND4J_TYPES);
-    registerPrimaryUse({this}, {});
+    NDArray::registerPrimaryUse({this}, {});
 }
 
 template void NDArray::p(const Nd4jLong i, const double value);
@@ -3811,9 +3815,9 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
     Nd4jLong coords[2] = {i, j};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
-    preparePrimaryUse({this}, {}, true);
+    NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
-    registerPrimaryUse({this}, {});
+    NDArray::registerPrimaryUse({this}, {});
 }
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const double value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float value);
@@ -3837,13 +3841,13 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T va
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
         throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
 
-    preparePrimaryUse({this}, {}, true);
+    NDArray::preparePrimaryUse({this}, {}, true);
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
     Nd4jLong coords[3] = {i, j, k};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
-    registerPrimaryUse({this}, {});
+    NDArray::registerPrimaryUse({this}, {});
 }
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
@@ -3870,9 +3874,9 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4j
     Nd4jLong coords[4] = {i, j, k, l};
     auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
 
-    preparePrimaryUse({this}, {}, true);
+    NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
-    registerPrimaryUse({this}, {});
+    NDArray::registerPrimaryUse({this}, {});
 }
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
 template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
@@ -3896,10 +3900,10 @@ void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
     if (i >= _length)
         throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
 
-    preparePrimaryUse({this}, {&scalar}, true);
+    NDArray::preparePrimaryUse({this}, {&scalar}, true);
     auto rp = getOffset(i);
     BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (getBuffer(), rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
-    registerPrimaryUse({this}, {&scalar});
+    NDArray::registerPrimaryUse({this}, {&scalar});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4195,7 +4199,7 @@ ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions)
 
 
     auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, const_cast<int*>(dimensions.data()), dimensions.size());
-    auto numTads = lengthOf() / shape::length(pack.primaryShapeInfo());
+    auto numTads = pack.numberOfTads();
 
     for (int idx = 0; idx < numTads; idx++ ) {
         auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());

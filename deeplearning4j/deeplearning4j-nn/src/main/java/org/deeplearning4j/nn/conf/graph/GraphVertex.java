@@ -93,4 +93,9 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      */
     public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
+
+    public void setDataType(DataType dataType) {
+        //No-op for most layers
+    }
+
 }

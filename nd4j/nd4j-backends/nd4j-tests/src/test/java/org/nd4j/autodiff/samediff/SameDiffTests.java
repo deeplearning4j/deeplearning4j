@@ -2468,29 +2468,28 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> gradMap = new HashMap<>();
         gradMap.put("out", externalGrad);
         ExternalErrorsFunction fn = sd.f().externalErrors(out);
-        //new ExternalErrorsFunction(sd, Collections.singletonList(out), gradMap);
 
-        fn.updateVariable("out", externalGrad);
         sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = new HashMap<>();
+        m.put("out-grad", externalGrad);
+        sd.execBackwards(m);
 
-        INDArray gradOut = out.getGradient().getArr();
         INDArray gradVar = var.getGradient().getArr();
 
-        assertEquals(externalGrad, gradOut);
         assertEquals(externalGrad.mul(0.5), gradVar);
 
         //Now, update and execute again:
         externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4).muli(10);
-        fn.updateVariable("out", externalGrad);
 
-        sd.execBackwards(Collections.emptyMap());
+        m.put("out-grad", externalGrad);
+        sd.execBackwards(m);
 
-        gradOut = out.getGradient().getArr();
         gradVar = var.getGradient().getArr();
 
-        assertEquals(externalGrad, gradOut);
         assertEquals(externalGrad.mul(0.5), gradVar);
+
+
+        //Test model serialization:
     }
 
     @Test
@@ -2621,21 +2620,22 @@ public class SameDiffTests extends BaseNd4jTest {
         b.setArray(bA);
 
         INDArray grad = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(3, 4);
-        fn.updateVariable("tanh", grad);
+        Map<String,INDArray> phMap = new HashMap<>();
+        phMap.put(fn.getGradPlaceholderName(), grad);
 
         log.info("--------------- sd.execAndEndResult() ---------------");
         sd.execAndEndResult();
         log.info("--------------- sd.execBackwards() #1 ---------------");
-        sd.execBackwards(Collections.emptyMap());
+        sd.execBackwards(phMap);
 
         log.info("--------------- sd.execBackwards() #2 ---------------");
         System.out.println(sd.getFunction("grad").summary());
 
         in.setArray(Nd4j.linspace(1, 10, 10).reshape(2, 5));
         grad = Nd4j.linspace(1, 8, 8).reshape(2, 4);
-        fn.updateVariable("tanh", grad);
+        phMap.put(fn.getGradPlaceholderName(), grad);
 
-        sd.execBackwards(Collections.emptyMap());
+        sd.execBackwards(phMap);
         INDArray inGrad = in.getGradient().getArr();
         assertArrayEquals(new long[]{2, 5}, inGrad.shape());
     }
@@ -3310,5 +3310,143 @@ public class SameDiffTests extends BaseNd4jTest {
         assertTrue(m.containsKey("softmax"));
         INDArray out2 = m.get("softmax");
         assertEquals(out, out2);
+    }
+
+
+    @Test
+    public void testConvertDTypes1(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.var("x", Nd4j.rand(DataType.FLOAT, 3, 4));
+        SDVariable y = sd.var("y", Nd4j.rand(DataType.FLOAT, 4, 2));
+        SDVariable z = x.mmul("z", y);
+        SDVariable tanh = sd.math().tanh("tanh", z);
+        SDVariable stdev = tanh.std("stdev", true);
+
+        assertEquals(DataType.FLOAT, x.dataType());
+        assertEquals(DataType.FLOAT, y.dataType());
+        assertEquals(DataType.FLOAT, z.dataType());
+        assertEquals(DataType.FLOAT, tanh.dataType());
+        assertEquals(DataType.FLOAT, stdev.dataType());
+
+        Map<String,INDArray> out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.FLOAT, x.getArr().dataType());
+        assertEquals(DataType.FLOAT, y.getArr().dataType());
+
+        Map<String,DataType> toConvert = new HashMap<>();
+        toConvert.put("x", DataType.DOUBLE);
+        toConvert.put("y", DataType.DOUBLE);
+        sd.convertDataTypes(toConvert);
+
+        assertEquals(DataType.DOUBLE, x.dataType());
+        assertEquals(DataType.DOUBLE, y.dataType());
+        assertEquals(DataType.DOUBLE, z.dataType());
+        assertEquals(DataType.DOUBLE, tanh.dataType());
+        assertEquals(DataType.DOUBLE, stdev.dataType());
+
+        out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.DOUBLE, x.getArr().dataType());
+        assertEquals(DataType.DOUBLE, y.getArr().dataType());
+    }
+
+    @Test
+    public void testConvertDTypes2(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 3, 4);
+        SDVariable y = sd.var("y", Nd4j.rand(DataType.FLOAT, 1, 4));
+        SDVariable xD = x.castTo("xD", DataType.DOUBLE);
+        SDVariable yD = y.castTo("yD", DataType.DOUBLE);
+        SDVariable add = xD.add("a", yD);
+        SDVariable relu = sd.nn().relu("r", add, 1);
+
+        assertEquals(DataType.FLOAT, x.dataType());
+        assertEquals(DataType.FLOAT, y.dataType());
+        assertEquals(DataType.DOUBLE, xD.dataType());
+        assertEquals(DataType.DOUBLE, yD.dataType());
+        assertEquals(DataType.DOUBLE, add.dataType());
+        assertEquals(DataType.DOUBLE, relu.dataType());
+
+        Map<String,INDArray> ph = Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4));
+
+        Map<String,INDArray> out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            if(e.getKey().equals("x") || e.getKey().equals("y")){
+                assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
+            } else {
+                assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+            }
+        }
+
+        assertEquals(DataType.FLOAT, y.getArr().dataType());
+
+        Map<String,DataType> toConvert = new HashMap<>();
+        toConvert.put("x", DataType.DOUBLE);
+        toConvert.put("y", DataType.DOUBLE);
+        sd.convertDataTypes(toConvert);
+
+        assertEquals(DataType.DOUBLE, x.dataType());
+        assertEquals(DataType.DOUBLE, y.dataType());
+        assertEquals(DataType.DOUBLE, xD.dataType());
+        assertEquals(DataType.DOUBLE, yD.dataType());
+        assertEquals(DataType.DOUBLE, add.dataType());
+        assertEquals(DataType.DOUBLE, relu.dataType());
+
+        out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        for(Map.Entry<String,INDArray> e : out.entrySet()){
+            assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
+        }
+
+        assertEquals(DataType.DOUBLE, y.getArr().dataType());
+    }
+
+
+    @Test
+    public void testGradFnRequiredVars(){
+        //User can explicitly request that gradients for specific vars are available when differentiating (creating grad function),
+        // even if they normally wouldn't be needed or calculated
+
+        for(boolean reqPhVar : new boolean[]{false, true}){
+//        for(boolean reqPhVar : new boolean[]{true}){
+
+            SameDiff sd = SameDiff.create();
+            SDVariable ph = sd.placeHolder("in", DataType.FLOAT, -1, 5);
+            SDVariable add = ph.add(1.0);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 5, 4));
+            SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 4));
+
+            SDVariable mmul = add.mmul(w).add(b);
+
+            SDVariable loss = mmul.std(true);
+
+            INDArray in = Nd4j.rand(DataType.FLOAT, 1, 5);
+
+            if(reqPhVar){
+                sd.createGradFunction("in");
+                assertNotNull(ph.gradient());
+                assertNotNull(w.gradient());
+                assertNotNull(b.gradient());
+
+                sd.execBackwards(Collections.singletonMap("in", in));
+                assertNotNull(ph.gradient().getArr());
+                assertNotNull(w.gradient().getArr());
+            } else {
+                sd.createGradFunction();
+                assertNull(ph.gradient());
+                assertNotNull(w.gradient());
+                assertNotNull(b.gradient());
+            }
+        }
+
+
+
     }
 }

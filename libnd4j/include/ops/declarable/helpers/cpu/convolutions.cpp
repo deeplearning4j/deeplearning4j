@@ -182,8 +182,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
 
             if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-                    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
-                for (int b = 0; b < bS; b++) {
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
+                for (int b = 0; b < bS; ++b) {
                     for (int c = 0; c < iC; ++c) {
                         for (int kDep = 0; kDep < kD; ++kDep) {
                             for (int kRow = 0; kRow < kH; ++kRow) {
@@ -197,12 +197,13 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                                                 volCol = (-pW + kCol * dW) + colW*sW;
 
                                                 col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
 
                                                 if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
                                                     *col = static_cast<T>(0.);
-                                                else
+                                                else {
+                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     *col = *vol;
+                                                }
                                             }
                                         }
                                     }
@@ -214,7 +215,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
 
             else
 
-                    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
                 for (int b = 0; b < bS; b++) {
                     for (int colD = 0; colD < oD; ++colD) {
                         for (int colH = 0; colH < oH; ++colH) {
@@ -229,12 +230,13 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                                                 volCol = (-pW + kCol * dW) + colW*sW;
 
                                                 col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
 
                                                 if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
                                                     *col = static_cast<T>(0.);
-                                                else
+                                                else {
+                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     *col = *vol;
+                                                }
                                             }
                                         }
                                     }
@@ -249,6 +251,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
 // [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
         template <typename T>
         static void col2vol_(const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+
+            // initial zeroing of volume content
+            volume.nullify();
 
             const int bS = volume.sizeAt(0);
             const int iC = volume.sizeAt(1);
@@ -278,15 +283,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
             T* volBuff = volume.bufferAsT<T>();
             T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
-            // initial zeroing of volume content
-            memset(volBuff, 0, volume.lengthOf() * sizeof(T));
-
             T* col, *vol;
             int volDep, volRow, volCol;
 
             if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
 
-                    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
                 for (int b = 0; b < bS; b++) {
                     for (int c = 0; c < iC; ++c) {
                         for (int kDep = 0; kDep < kD; ++kDep) {
@@ -296,15 +298,15 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                                         for (int colH = 0; colH < oH; ++colH) {
                                             for (int colW = 0; colW < oW; ++colW) {
 
-                                                volDep = (-pD + kDep * dD) + colD*sD;
-                                                volRow = (-pH + kRow * dH) + colH*sH;
-                                                volCol = (-pW + kCol * dW) + colW*sW;
+                                                volDep = -pD + kDep * dD + colD * sD;
+                                                volRow = -pH + kRow * dH + colH * sH;
+                                                volCol = -pW + kCol * dW + colW * sW;
 
-                                                col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-
-                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW))
+                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                    col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
+                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     *vol += *col;
+                                                }
                                             }
                                         }
                                     }
@@ -316,7 +318,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
 
             else
 
-                    PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
+                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
                 for (int b = 0; b < bS; b++) {
                     for (int colD = 0; colD < oD; ++colD) {
                         for (int colH = 0; colH < oH; ++colH) {
@@ -330,11 +332,11 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                                                 volRow = (-pH + kRow * dH) + colH*sH;
                                                 volCol = (-pW + kCol * dW) + colW*sW;
 
-                                                col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-
-                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW))
+                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                    col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
+                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     *vol += *col;
+                                                }
                                             }
                                         }
                                     }
@@ -621,19 +623,19 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             nd4j_debug("MKL-DNN is not used for conv2d!\n", 0);
 
             std::vector<int> permutForOutput;
-            if(!isNCHW)
-                input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
-            else
-                // permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
+
+            if(isNCHW)
                 permutForOutput = {0, 3, 1, 2};                                             // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+            else
+                input = new NDArray(input->permute({0, 3, 1, 2}));                         // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
 
             NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-            NDArray* colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}
+            NDArray colP = col.permute({0, 5, 3, 4, 1, 2});            // {bS, iC, kH, kW, oH, oW}
             NDArray mmulResult('f', {bS*oH*oW, oC}, output->dataType(), output->getContext());
 
             //----- calculation of output -----//
             auto ctx = block.launchContext();
-            helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+            helpers::im2col(*ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
             MmulHelper::tensorDot(&col, weights, &mmulResult, {3,4,5}, {0,1,2}, {}); // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
             //----- assign outTemp to output  -----//
@@ -651,7 +653,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(!isNCHW)
                 delete input;
 
-            delete colP;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -835,12 +836,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<int> gradOaxesForDot;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
                 gradOaxesForDot  = {0, 1, 2};                                           // bS, oH, oW
-            }
-            else
+                input = new NDArray(input->permute({0, 3, 1, 2}));                      // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+                gradI = new NDArray(gradI->permute({0, 3, 1, 2}));                      // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+            } else {
                 gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
+            }
 
             NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
@@ -855,7 +856,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(gradB) {
                 NDArray* gradBR = gradB;
                 if(gradB->rankOf() == 2)
-                    gradBR = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, gradOaxesForDot);                          // sum over bS, oH, oW
                 if(gradBR != gradB)
                     delete gradBR;
@@ -902,9 +903,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<Nd4jLong> outReShape;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
                 outReShape = {bS, oH, oW, iC, mC};                                              // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
                 modifOutput = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
+                input = new NDArray(input->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
             }
             else {
                 outReShape = {bS, iC, mC, oH, oW};                                              // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
@@ -915,18 +916,16 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
             NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-            NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
+            NDArray outputReshaped = output->reshape(output->ordering(), outReShape);
 
             helpers::im2col(*output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-            MmulHelper::tensorDot(&columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
+            MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
             if(bias)
                 output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
 
             if(!isNCHW)
                 delete input;
-
-            delete outputReshaped;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -962,11 +961,11 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             std::vector<Nd4jLong> gradOreShape;
 
             if(!isNCHW) {
-                input = input->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-                gradI = gradI->permute({0, 3, 1, 2});                                           // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
                 gradOreShape = {bS, oH, oW, iC, mC};                                            // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
                 modifGradO1 = {{3,0,1,2,4},{iC, bS*oH*oW, mC}};                                 // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
                 modifGradO2 = {{3,0,1,2},{iC, mC, bS*oH*oW}};                                   // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
+                input = new NDArray(input->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+                gradI = new NDArray(gradI->permute({0, 3, 1, 2}));                             // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
             }
             else {
                 gradOreShape = {bS, iC, mC, oH, oW};                                            // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
@@ -977,22 +976,22 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(isSameMode)                       // SAME
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-            NDArray  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-            NDArray* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+            NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+            NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
             // ----- calculation of gradW and gradB ----- //
 
             helpers::im2col(*input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-            nd4j::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+            nd4j::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
             // ----- calculation of gradB ----- //
             if(gradB) {
                 NDArray* gradBR = gradB;
                 if(gradB->rankOf() == 2)
-                    gradBR = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
                 if(gradBR != gradB)
-                    delete gradBR;
+                    delete gradB;
             }
 
             //----- calculation of gradI -----//
@@ -1003,8 +1002,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 delete input;
                 delete gradI;
             }
-
-            delete gradOreshaped;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1053,31 +1050,39 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
             // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
 
-            std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
-            std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
-            const int dimIH = isNCHW ? 2 : 1;
-            const int j0 = 2*dimIH;
-            const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
-            const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
-            // const int size1 = factorH * factorW;
+            const T* x = input.bufferAsT<T>();
+                  T* z = output.bufferAsT<T>();
 
-            int iT = input.sizeAt(dimIH);
-            int iH = input.sizeAt(dimIH + 1);
+            const uint dimIH = isNCHW ? 2 : 1;
+            const uint dimIC = isNCHW ? 1 : 3;
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-            for(int ih = 0; ih < iT; ++ih) {
-                for(int iw = 0; iw < iH; ++iw) {
-                    indIn[j0] = ih; indIn[j1] = ih+1;
-                    indIn[j2] = iw; indIn[j3] = iw+1;
+            const uint bS = input.sizeAt(0);
+            const uint iC = input.sizeAt(dimIC);
+            const uint oH = output.sizeAt(dimIH);
+            const uint oW = output.sizeAt(dimIH + 1);
 
-                    for(int fh = 0; fh < factorH; ++fh) {
-                        for(int fw = 0; fw < factorW; ++fw) {
+            const Nd4jLong xStride0 = input.stridesOf()[0];
+            const Nd4jLong xStride1 = input.stridesOf()[dimIC];
+            const Nd4jLong xStride2 = input.stridesOf()[dimIH];
+            const Nd4jLong xStride3 = input.stridesOf()[dimIH + 1];
 
-                            indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1;
-                            indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;
-                            auto i = input(indIn);
-                            auto o = output(indOut);
-                            o.assign(i);
+            const Nd4jLong zStride0 = output.stridesOf()[0];
+            const Nd4jLong zStride1 = output.stridesOf()[dimIC];
+            const Nd4jLong zStride2 = output.stridesOf()[dimIH];
+            const Nd4jLong zStride3 = output.stridesOf()[dimIH + 1];
+
+            uint xCoord2, xCoord3;
+            // loop through output array
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4) private(xCoord2, xCoord3))
+            for(uint b = 0; b < bS; ++b) {
+                for(uint c = 0; c < iC; ++c) {
+                    for(uint h = 0; h < oH ; ++h) {
+                        for(uint w = 0; w < oW ; ++w) {
+
+                            xCoord2 = h / factorH;
+                            xCoord3 = w / factorW;
+
+                            z[b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3] = x[b*xStride0 + c*xStride1 + xCoord2*xStride2 + xCoord3*xStride3];
                         }
                     }
                 }
@@ -1089,36 +1094,45 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
         static void upsampling3d_(const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
             // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
             // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-            std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
-            std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
-            const int dimID = isNCDHW ? 2 : 1;
-            const int j0 = 2*dimID;
-            const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
-            const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
-            // const int size1 = factorD * factorH * factorW;
 
-            int l0 = input.sizeAt(dimID);
-            int l1 = input.sizeAt(dimID + 1);
-            int l2 = input.sizeAt(dimID + 2);
+            const T* x = input.bufferAsT<T>();
+                  T* z = output.bufferAsT<T>();
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-            for(int id = 0; id < l0; ++id) {
-                for(int ih = 0; ih < l1; ++ih) {
-                    for(int iw = 0; iw < l2; ++iw) {
-                        indIn[j0] = id; indIn[j1] = id+1;
-                        indIn[j2] = ih; indIn[j3] = ih+1;
-                        indIn[j4] = iw; indIn[j5] = iw+1;
+            const uint dimID = isNCDHW ? 2 : 1;
+            const uint dimIC = isNCDHW ? 1 : 4;
 
-                        for(int fd = 0; fd < factorD; ++fd) {
-                            for(int fh = 0; fh < factorH; ++fh) {
-                                for(int fw = 0; fw < factorW; ++fw) {
-                                    indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1;
-                                    indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1;
-                                    indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;
-                                    auto i = input(indIn);
-                                    auto o = output(indOut);
-                                    o.assign(i);
-                                }
+            const uint bS = input.sizeAt(0);
+            const uint iC = input.sizeAt(dimIC);
+            const uint oD = output.sizeAt(dimID);
+            const uint oH = output.sizeAt(dimID + 1);
+            const uint oW = output.sizeAt(dimID + 2);
+
+            const Nd4jLong xStride0 = input.stridesOf()[0];
+            const Nd4jLong xStride1 = input.stridesOf()[dimIC];
+            const Nd4jLong xStride2 = input.stridesOf()[dimID];
+            const Nd4jLong xStride3 = input.stridesOf()[dimID + 1];
+            const Nd4jLong xStride4 = input.stridesOf()[dimID + 2];
+
+            const Nd4jLong zStride0 = output.stridesOf()[0];
+            const Nd4jLong zStride1 = output.stridesOf()[dimIC];
+            const Nd4jLong zStride2 = output.stridesOf()[dimID];
+            const Nd4jLong zStride3 = output.stridesOf()[dimID + 1];
+            const Nd4jLong zStride4 = output.stridesOf()[dimID + 2];
+
+            uint xCoord2, xCoord3, xCoord4;
+            // loop through output array
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5) private(xCoord2, xCoord3, xCoord4))
+            for(uint b = 0; b < bS; ++b) {
+                for(uint c = 0; c < iC; ++c) {
+                    for(uint d = 0; d < oD ; ++d) {
+                        for(uint h = 0; h < oH ; ++h) {
+                            for(uint w = 0; w < oW ; ++w) {
+
+                                xCoord2 = d / factorD;
+                                xCoord3 = h / factorH;
+                                xCoord4 = w / factorW;
+
+                                z[b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4] = x[b*xStride0 + c*xStride1 + xCoord2*xStride2 + xCoord3*xStride3 + xCoord4*xStride4];
                             }
                         }
                     }
@@ -1131,35 +1145,45 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
         static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
             // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
             // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
-            std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0};
-            std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0};
-            const int dimIH = isNCHW ? 2 : 1;
-            const int factorH = gradO.sizeAt(dimIH)   / gradI.sizeAt(dimIH);
-            const int factorW = gradO.sizeAt(dimIH+1) / gradI.sizeAt(dimIH+1);
-            const int j0 = 2*dimIH;
-            const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
-            const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
 
-            int l0 = gradI.sizeAt(dimIH);
-            int l1 = gradI.sizeAt(dimIH + 1);
+            gradI.nullify();
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(2) firstprivate(indIn, indOut))
-            for(int ih = 0; ih < l0; ++ih) {
-                for(int iw = 0; iw < l1; ++iw) {
-                    indIn[j0] = ih; indIn[j1] = ih+1;
-                    indIn[j2] = iw; indIn[j3] = iw+1;
-                    NDArray subGradI = gradI(indIn);
+            const T* x = gradO.bufferAsT<T>();
+                  T* z = gradI.bufferAsT<T>();
 
-                    for(int fh = 0; fh < factorH; ++fh) {
-                        for(int fw = 0; fw < factorW; ++fw) {
-                            indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1;
-                            indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;
-                            auto o = gradO(indOut);
-                            if(!fh && !fw) {
-                                subGradI.assign(o);
-                            }
-                            else
-                                subGradI += o;
+            const uint dimIH = isNCHW ? 2 : 1;
+            const uint dimIC = isNCHW ? 1 : 3;
+
+            const uint bS = gradI.sizeAt(0);
+            const uint iC = gradI.sizeAt(dimIC);
+            const uint iH = gradI.sizeAt(dimIH);
+            const uint iW = gradI.sizeAt(dimIH + 1);
+
+            const uint factorH = gradO.sizeAt(dimIH)     / iH;
+            const uint factorW = gradO.sizeAt(dimIH + 1) / iW;
+
+            const Nd4jLong xStride0 = gradO.stridesOf()[0];
+            const Nd4jLong xStride1 = gradO.stridesOf()[dimIC];
+            const Nd4jLong xStride2 = gradO.stridesOf()[dimIH];
+            const Nd4jLong xStride3 = gradO.stridesOf()[dimIH + 1];
+
+            const Nd4jLong zStride0 = gradI.stridesOf()[0];
+            const Nd4jLong zStride1 = gradI.stridesOf()[dimIC];
+            const Nd4jLong zStride2 = gradI.stridesOf()[dimIH];
+            const Nd4jLong zStride3 = gradI.stridesOf()[dimIH + 1];
+
+            // loop through output array
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
+            for(uint b = 0; b < bS; ++b) {
+                for(uint c = 0; c < iC; ++c) {
+                    for(uint h = 0; h < iH; ++h) {
+                        for(uint w = 0; w < iW; ++w) {
+
+                            const auto zOffset = b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3;
+
+                            for(uint xh = h; xh < h + factorH; ++xh)
+                                for(uint xw = w; xw < w + factorW; ++xw)
+                                    z[zOffset] += x[b*xStride0 + c*xStride1 + xh*xStride2 + xw*xStride3];
                         }
                     }
                 }
@@ -1169,50 +1193,60 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
         static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
+
             // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
             // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-            std::vector<Nd4jLong> indIn  = {0,0,  0,0,  0,0,  0,0,  0,0};
-            std::vector<Nd4jLong> indOut = {0,0,  0,0,  0,0,  0,0,  0,0};
-            const int dimID = isNCDHW ? 2 : 1;
-            const int factorD = gradO.sizeAt(dimID)   / gradI.sizeAt(dimID);
-            const int factorH = gradO.sizeAt(dimID+1) / gradI.sizeAt(dimID+1);
-            const int factorW = gradO.sizeAt(dimID+2) / gradI.sizeAt(dimID+2);
-            const int j0 = 2*dimID;
-            const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
-            const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
 
-            int l0 = gradI.sizeAt(dimID);
-            int l1 = gradI.sizeAt(dimID + 1);
-            int l2 = gradI.sizeAt(dimID + 2);
+            gradI.nullify();
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(3) firstprivate(indOut, indIn))
-            for(int id = 0; id < l0; ++id) {
-                for(int ih = 0; ih < l1; ++ih) {
-                    for(int iw = 0; iw < l2; ++iw) {
-                        indIn[j0] = id; indIn[j1] = id+1;
-                        indIn[j2] = ih; indIn[j3] = ih+1;
-                        indIn[j4] = iw; indIn[j5] = iw+1;
-                        NDArray subGradI = gradI(indIn);
+            const T* x = gradO.bufferAsT<T>();
+                  T* z = gradI.bufferAsT<T>();
 
-                        for(int fd = 0; fd < factorD; ++fd) {
-                            for(int fh = 0; fh < factorH; ++fh) {
-                                for(int fw = 0; fw < factorW; ++fw) {
-                                    indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1;
-                                    indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1;
-                                    indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;
-                                    auto o = gradO(indOut);
-                                    if(!fd && !fh && !fw)
-                                        subGradI.assign(o);
-                                    else
-                                        subGradI += o;
-                                }
+            const uint dimID = isNCDHW ? 2 : 1;
+            const uint dimIC = isNCDHW ? 1 : 4;
+
+            const uint bS = gradI.sizeAt(0);
+            const uint iC = gradI.sizeAt(dimIC);
+            const uint iD = gradI.sizeAt(dimID);
+            const uint iH = gradI.sizeAt(dimID + 1);
+            const uint iW = gradI.sizeAt(dimID + 2);
+
+            const uint factorD = gradO.sizeAt(dimID)     / iD;
+            const uint factorH = gradO.sizeAt(dimID + 1) / iH;
+            const uint factorW = gradO.sizeAt(dimID + 2) / iW;
+
+            const Nd4jLong xStride0 = gradO.stridesOf()[0];
+            const Nd4jLong xStride1 = gradO.stridesOf()[dimIC];
+            const Nd4jLong xStride2 = gradO.stridesOf()[dimID];
+            const Nd4jLong xStride3 = gradO.stridesOf()[dimID + 1];
+            const Nd4jLong xStride4 = gradO.stridesOf()[dimID + 2];
+
+            const Nd4jLong zStride0 = gradI.stridesOf()[0];
+            const Nd4jLong zStride1 = gradI.stridesOf()[dimIC];
+            const Nd4jLong zStride2 = gradI.stridesOf()[dimID];
+            const Nd4jLong zStride3 = gradI.stridesOf()[dimID + 1];
+            const Nd4jLong zStride4 = gradI.stridesOf()[dimID + 2];
+
+            // loop through output array
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
+            for(uint b = 0; b < bS; ++b) {
+                for(uint c = 0; c < iC; ++c) {
+                    for(uint d = 0; d < iD; ++d) {
+                        for(uint h = 0; h < iH; ++h) {
+                            for(uint w = 0; w < iW; ++w) {
+
+                                const auto zOffset = b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4;
+
+                                for(uint xd = d; xd < d + factorD; ++xd)
+                                    for(uint xh = h; xh < h + factorH; ++xh)
+                                        for(uint xw = w; xw < w + factorW; ++xw)
+                                            z[zOffset] += x[b*xStride0 + c*xStride1 + xd*xStride2 + xh*xStride3 + xw*xStride4];
                             }
                         }
                     }
                 }
             }
         }
-
 
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
@@ -1544,9 +1578,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const Nd4jLong iStep3   = dH*iStride3;
             const Nd4jLong iStep4   = dW*iStride4;
             const int kProd         = kD*kH*kW;
-            const T iStep2Inv = 1./iStep2;
-            const T iStep3Inv = 1./iStep3;
-            const T iStep4Inv = 1./iStep4;
 
             Nd4jLong dstart, hstart, wstart, dend, hend, wend;
             T sum, *pIn;
@@ -1649,9 +1680,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
                                                 sum += pIn[kd + kh + kw];
 
-                                    if ((int) extraParam0 == 0)         //Exclude padding
-                                        sum /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3))) * static_cast<double>(nd4j::math::nd4j_ceil<double,double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4)));   //Accounts for dilation
-                                    else if ((int) extraParam0 == 1)    //Include padding
+                                    if (extraParam0 == 0)         //Exclude padding
+                                        sum /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                    else if (extraParam0 == 1)    //Include padding
                                         sum /= kProd;
 
                                     out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
@@ -1729,24 +1760,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradI [bS, iC, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oH, oW]
 
+            // initial zeroing of gradI
+            gradI.nullify();
+
             T* in = const_cast<NDArray&>(input).bufferAsT<T>();
             T* gO = const_cast<NDArray&>(gradO).bufferAsT<T>();
             T* gI = gradI.bufferAsT<T>();
-
-            // initial zeroing of gradI
-            const Nd4jLong gradIEWS = gradI.ews();
-            const Nd4jLong gradILen = gradI.lengthOf();
-            if(gradIEWS == 1)
-                memset(gI, 0, gradILen * sizeof(T));
-            else if (gradIEWS > 1) {
-                for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
-                    gI[i] = static_cast<T>(0.f);
-            }
-            else {
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (Nd4jLong i = 0; i < gradILen; i++)
-                    gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);
-            }
 
             const int kHEff = kH + (kH-1)*(dH-1);
             const int kWEff = kW + (kW-1)*(dW-1);
@@ -1857,8 +1876,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const Nd4jLong iStep2   = dH*iStride2;
             const Nd4jLong iStep3   = dW*iStride3;
             const int      kProd    = kH*kW;
-            const T iStep2Inv = 1./iStep2;
-            const T iStep3Inv = 1./iStep3;
 
             Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -2018,26 +2035,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oD, oH, oW]
 
+            // initial zeroing of gradI
+            gradI.nullify();
+
             T* in = const_cast<NDArray&>(input).bufferAsT<T>();
             T* gO = const_cast<NDArray&>(gradO).bufferAsT<T>();
             T* gI = gradI.bufferAsT<T>();
-
-            // initial zeroing of gradI
-            const Nd4jLong gradIEWS = gradI.ews();
-            const Nd4jLong gradILen = gradI.lengthOf();
-            if(gradIEWS == 1) {
-                memset(gI, 0, gradILen * sizeof(T));
-            }
-            else if (gradIEWS > 1) {
-                PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
-                    gI[i] = static_cast<T>(0.f);
-            }
-            else {
-                PRAGMA_OMP_PARALLEL_FOR
-                for (Nd4jLong i = 0; i < gradILen; i++)
-                    gI[shape::getIndexOffset(i, gradI.getShapeInfo(), gradILen)] = static_cast<T>(0.f);
-            }
 
             const int kDEff = kD + (kD-1)*(dD-1);
             const int kHEff = kH + (kH-1)*(dH-1);
@@ -2157,9 +2160,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const Nd4jLong iStep3   = dH*iStride3;
             const Nd4jLong iStep4   = dW*iStride4;
             const int      kProd    = kD*kH*kW;
-            const T iStep2Inv = 1./iStep2;
-            const T iStep3Inv = 1./iStep3;
-            const T iStep4Inv = 1./iStep4;
 
             Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -2266,9 +2266,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
-                                    if ((int) extraParam0 == 0)         //Exclude padding
-                                        valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3))) * static_cast<double>(nd4j::math::nd4j_ceil<double,double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4)));   //Accounts for dilation
-                                    else if ((int) extraParam0 == 1)    //Include padding
+                                    if (extraParam0 == 0)         //Exclude padding
+                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                    else if (extraParam0 == 1)    //Include padding
                                         valO /= kProd;
 
                                     for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
@@ -2333,7 +2333,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
                                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
                                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - 1.f);
+                                                pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
                                 }
                             }
                         }

@@ -54,12 +54,12 @@ void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0,
     // c   current cell state  [bS x inSize], that is at current time step t
 
     const int inSize = x->sizeAt(1);           // inSize - number of features
-            
+
     auto z = mmul(*x, *w);               //  [bS x 3*inSize]
 
     // forget gate = sigmoid(x*Wf + bf)
     auto f = sigmoid(z({0,0, inSize,   2*inSize}) + (*b)({0, inSize}));
-    
+
     // reset gate = sigmoid(x*Wr + br)
     auto r = sigmoid(z({0,0, 2*inSize, 3*inSize}) + (*b)({inSize, 2*inSize}));
 
@@ -70,21 +70,21 @@ void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0,
 
     // current cell output = r◦activation(c) + (1 - r)◦x
     h->assign( r * activation(*c) + (1.f - r) * (*x) );
-    // *h = r * (activation<T>(c) - *x) + *x;        
+    // *h = r * (activation<T>(c) - *x) + *x;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
-    
+
     // x   input [bS x inSize x time]
     // c0  initial cell state  (at time step = 0) [bS x inSize],
     // w   weights, [3*inSize x inSize]
     // b   biases,  [2*inSize]
-    
+
     // h   cell outputs [bS x inSize x time]
     // c   cell states  [bS x inSize x time]
 
-    w = w->transpose();                             // [3*inSize x inSize] -> [inSize x 3*inSize] 
+    auto wT = w->transpose();                             // [3*inSize x inSize] -> [inSize x 3*inSize]
 
     const int time  = x->sizeAt(2);
 
@@ -97,11 +97,9 @@ void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray*
         auto ht = (*h)({0,0, 0,0, t,t+1});
         auto ct = (*c)({0,0, 0,0, t,t+1});
 
-        helpers::sruCell(context, &xt, &ct_1, w, b,  &ht, &ct);
+        helpers::sruCell(context, &xt, &ct_1, &wT, b,  &ht, &ct);
         ct_1.assign(ct);
-    }    
-
-    delete w;
+    }
 }
 
 

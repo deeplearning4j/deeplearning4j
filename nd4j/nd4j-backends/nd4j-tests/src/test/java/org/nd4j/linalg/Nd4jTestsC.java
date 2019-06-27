@@ -7845,6 +7845,12 @@ public class Nd4jTestsC extends BaseNd4jTest {
         colVec.median();
     }
 
+    @Test
+    public void mmulToScalar() {
+        final INDArray arr1 = Nd4j.create(new float[] {1,2,3}).reshape(1,3);
+        final INDArray arr2 = arr1.reshape(3,1);
+        assertEquals("Incorrect type!", DataType.FLOAT, arr1.mmul(arr2).dataType());
+    }
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

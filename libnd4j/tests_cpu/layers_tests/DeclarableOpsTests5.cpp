@@ -163,18 +163,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests5, Test_CumSum_Axis_1) {
-    auto x = NDArrayFactory::create<double>('c', {4, 16, 16, 1});
-    auto y = NDArrayFactory::create<int>(-3);
-
-    nd4j::ops::cumsum op;
-    auto result = op.execute({&x, &y}, {}, {1, 1}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 1, 3});
     auto eps = NDArrayFactory::create<double>('c', {2, 4, 3});
@@ -491,7 +479,7 @@ TEST_F(DeclarableOpsTests5, eye_test3) {
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3, 4, 2});
     auto output = results->at(0);
-     output->printIndexedBuffer("Output eye");
+     // output->printIndexedBuffer("Output eye");
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -514,6 +502,18 @@ TEST_F(DeclarableOpsTests5, eye_test4) {
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, eye_test5) {
+
+    nd4j::ops::eye op;
+    auto result = op.execute({},{},{3, 2});
+
+    auto z = result->at(0);
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1022,10 +1022,12 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
                      }
     );
 
-    auto expV = NDArrayFactory::create<double>('c', {2, 3, 2}, {14.0f, 11.0f, 9.0f,
-                                         7.0f, 21.0f, 15.0f,
-                                         9.0f, 7.0f, 14.0f,
-                                         13.0f, 16.0f, 13.5f
+    auto expV = NDArrayFactory::create<double>('c', {2, 3, 2}, {14.0f, 11.0f,
+                                                                9.0f, 7.0f,
+                                                                21.0f, 15.0f,
+                                         9.0f, 7.0f,
+                                         14.0f, 13.0f,
+                                         16.0f, 13.5f
                         }
     );
 
@@ -1049,6 +1051,56 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
 //    v->printIndexedBuffer("v");
 //    expV.printIndexedBuffer("expV");
 //    i->printIndexedBuffer("i");
+//    expI.printIndexedBuffer("expI");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {11.0,  3.0, 14.0, 5.0,
+                                                             6.0,  9.0, 3.5, 7.0,
+                                                             21.0, 3.0, 14.0, 15.0,
+                                                             6.0, 9.0, 3.5, 7.0,
+                                                             11.0, 13.0, 14.0, 5.0,
+                                                             16.0, 9.0, 13.5, 7.0
+                                            }
+    );
+
+    auto expV = NDArrayFactory::create<double>('c', {2, 3, 2}, {11.0f, 14.0f,
+                                                                9.0f, 7.0f,
+                                                                21.0f, 15.0f,
+                                                                9.0f, 7.0f,
+                                                                13.0f, 14.0f,
+                                                                16.0f, 13.5f
+                                               }
+    );
+
+    auto expI = NDArrayFactory::create<Nd4jLong>('c', {2, 3, 2 }, {0, 2, 1, 3, 0, 3, 1,  3, 1, 2, 0, 2});
+
+    nd4j::ops::top_k op;
+    auto result = op.execute({&x}, {}, {2}, {false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+
+//    v->printShapeInfo("shape v");
+//    expV.printShapeInfo("shape expV");
+
+//    i->printShapeInfo("shape I");
+//    expI.printShapeInfo("shape expI");
+
+    v->printIndexedBuffer("v");
+//    expV.printIndexedBuffer("expV");
+    i->printIndexedBuffer("i");
 //    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
@@ -1136,101 +1188,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
     delete result;
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.0, 11.0, 3.0, 14.0, 5.0, 6.0});
-    auto y = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 1});
-    auto expV = NDArrayFactory::create<bool>('c', {2}, {true, false});
-
-    nd4j::ops::in_top_k op;
-    auto result = op.execute({&x, &y}, {}, {2});
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    ASSERT_EQ(1, result->size());
-
-    auto v = result->at(0);
-
-     v->printShapeInfo("InTopK: shape v");
-     expV.printShapeInfo("InTopK: shape expV");
-
-     v->printIndexedBuffer("v");
-     expV.printIndexedBuffer("expV");
-
-    ASSERT_TRUE(expV.isSameShape(v));
-    ASSERT_TRUE(expV.equalsTo(v));
-
-    delete result;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, Test_InTopK_2) {
-    auto x = NDArrayFactory::create<double>('c', {6, 4}, {11.0, 3.0, 14.0, 5.0,
-                                   6.0, 9.0, 3.5, 7.0,
-                                   21.0, 3.0, 14.0, 15.0,
-                                   6.0, 9.0, 3.5, 7.0,
-                                   11.0, 13.0, 14.0, 5.0,
-                                   16.0, 9.0, 13.5, 7.0}
-    );
-
-    auto y = NDArrayFactory::create<Nd4jLong>('c', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<bool>('c', {6}, {true, false, true, false, false, true});
-
-    nd4j::ops::in_top_k op;
-    auto result = op.execute({&x, &y}, {}, {2});
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    ASSERT_EQ(1, result->size());
-
-    auto v = result->at(0);
-
-    // v->printShapeInfo("InTopK: shape v");
-    // expV.printShapeInfo("InTopK: shape expV");
-
-    // v->printIndexedBuffer("v");
-    // expV.printIndexedBuffer("expV");
-
-    ASSERT_TRUE(expV.isSameShape(v));
-    ASSERT_TRUE(expV.equalsTo(v));
-
-    delete result;
-
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
-    auto x = NDArrayFactory::create<double>('f', {6, 4}, {11.0, 3.0, 14.0, 5.0,
-                                   6.0, 9.0, 3.5, 7.0,
-                                   21.0, 3.0, 14.0, 15.0,
-                                   6.0, 9.0, 3.5, 7.0,
-                                   11.0, 13.0, 14.0, 5.0,
-                                   16.0, 9.0, 13.5, 7.0}
-    );
-
-    auto y = NDArrayFactory::create<Nd4jLong>('f', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<bool>('f', {6}, {1, 0, 0, 0, 0, 0 });
-
-    nd4j::ops::in_top_k op;
-    auto result = op.execute({&x, &y}, {}, {2});
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    ASSERT_EQ(1, result->size());
-
-    auto v = result->at(0);
-
-    // v->printShapeInfo("InTopK: shape v");
-    // expV.printShapeInfo("InTopK: shape expV");
-
-    v->printBuffer("V");
-    // expV.printIndexedBuffer("expV");
-
-    ASSERT_TRUE(expV.isSameShape(v));
-    ASSERT_TRUE(expV.equalsTo(v));
-
-    delete result;
-}
-
 ///////////////////////////////////////////////////////////
-
 TEST_F(DeclarableOpsTests5, Test_Moments_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {11.0, 3.0, 14.0, 5.0,
                                    6.0, 9.0, 3.5, 7.0,
@@ -1726,9 +1684,9 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
                                       13, 23, 14, 24, 15, 25, 16, 26, 17, 27,
                                       18, 28, 19, 29, 20, 30, 21, 31});
 
-    auto y = NDArrayFactory::create<double>('c', {3, 4, 2}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
-                      2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f,
-                      1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f
+    auto y = NDArrayFactory::create<int>('c', {3, 4, 2}, {0, 0, 0, 0, 0, 0,
+                      2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                      1, 1, 1, 1, 1, 1, 1, 1
                     }
     );
 /*    auto y = NDArrayFactory::create<double>('c', {3, 4}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
@@ -1764,7 +1722,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
 TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
-    auto y = NDArrayFactory::create<double>('c', {2, 4}, {1, 2, 1, 2, 1, 2, 3, 0});
+    auto y = NDArrayFactory::create<int>('c', {2, 4}, {1, 2, 1, 2, 1, 2, 3, 0});
 
     std::vector<NDArray> exp( {NDArrayFactory::create<double>('c', {1}, {-2.2}),
                                NDArrayFactory::create<double>('c', {3}, {0.1, 5.2, -1.}),
@@ -1796,7 +1754,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
 TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
-    auto y = NDArrayFactory::create<double>('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
 
     std::vector<NDArray> exp( {NDArrayFactory::create<double>({0.1f, 5.2f, -1.f, -2.2f}),
                                NDArrayFactory::create<double>('c', {1}, {-1.f}),
@@ -1834,8 +1792,8 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
 
-    auto x1 = NDArrayFactory::create<double>({1., 3., 5., 0.});
-    auto x2 = NDArrayFactory::create<double>({2., 4.});
+    auto x1 = NDArrayFactory::create<int>({1, 3, 5, 0});
+    auto x2 = NDArrayFactory::create<int>({2, 4});
     auto y2 = NDArrayFactory::create<double>({-1., -1.});
     auto y1 = NDArrayFactory::create<double>({0.1f, 5.2f, 4.3f, 7.4f});
 
@@ -1851,8 +1809,8 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
 
     // output->printShapeInfo("Output shape> ");
     // exp.printShapeInfo("Expected shape> ");
-    // output->printIndexedBuffer("Output data> ");
-    // exp.printIndexedBuffer("Expected res>");
+     output->printIndexedBuffer("O data");
+     exp.printIndexedBuffer("E data");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -1863,8 +1821,8 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_2) {
 
-    auto x1 = NDArrayFactory::create<double>({1.f, 3.f});
-    auto x2 = NDArrayFactory::create<double>({5.f, 0.f, 2.f, 4.f});
+    auto x1 = NDArrayFactory::create<int>({1, 3});
+    auto x2 = NDArrayFactory::create<int>({5, 0, 2, 4});
     auto y1 = NDArrayFactory::create<double>({-1.f, -1.f});
     auto y2 = NDArrayFactory::create<double>({0.1f, 5.2f, 4.3f, 7.4f});
 

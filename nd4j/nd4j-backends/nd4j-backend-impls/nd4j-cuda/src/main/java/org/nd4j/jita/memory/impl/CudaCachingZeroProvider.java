@@ -169,6 +169,10 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             super.free(point);
         } else {
+            // if this point has no allocated chunk - step over it
+            if (point.getHostPointer() == null)
+                return;
+
             AllocationShape shape = point.getShape();
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
 

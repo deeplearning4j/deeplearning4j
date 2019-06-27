@@ -281,4 +281,9 @@ public class DummyWorkspace implements MemoryWorkspace {
     public int targetDevice() {
         return 0;
     }
+
+    @Override
+    public long getPrimaryOffset() {
+        return 0;
+    }
 }

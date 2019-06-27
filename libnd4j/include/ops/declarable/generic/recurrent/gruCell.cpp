@@ -14,8 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// 
-// @aurhot Yurii Shyrma
+//
+// @author Yurii Shyrma (iuriish@yahoo.com)
 // @author Alex Black
 //
 

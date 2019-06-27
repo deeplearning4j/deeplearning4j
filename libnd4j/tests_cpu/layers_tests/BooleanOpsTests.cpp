@@ -99,7 +99,26 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_3) {
     nd4j::ops::is_strictly_increasing op;
 
     ASSERT_FALSE(op.evaluate({&x}));
+}
 
+TEST_F(BooleanOpsTests, Is_strictly_increasing_5) {
+    auto x = NDArrayFactory::create<double>('c', {64, 512});
+    x.linspace(1.0);
+
+    nd4j::ops::is_strictly_increasing op;
+
+    ASSERT_TRUE(op.evaluate({&x}));
+}
+
+TEST_F(BooleanOpsTests, Is_strictly_increasing_6) {
+    auto x = NDArrayFactory::create<double>('c', {64, 512});
+    x.linspace(1.0);
+
+    x.p(18, 1000323.f);
+
+    nd4j::ops::is_strictly_increasing op;
+
+    ASSERT_FALSE(op.evaluate({&x}));
 }
 
 TEST_F(BooleanOpsTests, Is_numeric_tensor_1) {

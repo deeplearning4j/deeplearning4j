@@ -122,8 +122,14 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "unsorted_segment/unsorted_segment_mean_rank2",
 
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
-            "g_11"
+            "g_11",
 
+            //2019/06/21 - Not yet implemented: https://github.com/eclipse/deeplearning4j/issues/7913
+            "fake_quant/min_max_args_per_channel/.*",
+
+            //2019/06/22 - Known issue: https://github.com/eclipse/deeplearning4j/issues/7935
+            "fake_quant/min_max_vars/.*",
+            "fake_quant/min_max_args/.*"
     };
 
     @BeforeClass

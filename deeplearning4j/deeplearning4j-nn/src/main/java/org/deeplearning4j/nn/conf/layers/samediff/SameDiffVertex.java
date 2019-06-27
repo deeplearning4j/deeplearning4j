@@ -62,6 +62,7 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     protected IUpdater biasUpdater;
     protected GradientNormalization gradientNormalization;
     protected double gradientNormalizationThreshold = Double.NaN;
+    protected DataType dataType;
 
     /**
      * Define the vertex
@@ -233,5 +234,10 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     @Override
     public double getGradientNormalizationThreshold() {
         return gradientNormalizationThreshold;
+    }
+
+    @Override
+    public void setDataType(DataType dataType) {
+        this.dataType = dataType;
     }
 }

@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -49,7 +50,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        }
     }
 
     public BaseScalarOp(INDArray x, Number num) {
@@ -57,7 +60,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            this.scalarValue = Nd4j.scalar(x.dataType(), num);
+        }
 
     }
     public BaseScalarOp(INDArray x, INDArray z, Number set) {
@@ -65,7 +70,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        this.scalarValue= Nd4j.scalar(x.dataType(), set);
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            this.scalarValue = Nd4j.scalar(x.dataType(), set);
+        }
     }
 
 
@@ -114,12 +121,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public List<LongShapeDescriptor> calculateOutputShape() {
         val ret = new ArrayList<LongShapeDescriptor>(1);
 
-        long[] s = arg().getShape();
-
-        if (s == null) {
-            if(x == null)
-                return Collections.emptyList();
+        long[] s;
+        if(x != null){
             s = x.shape();
+        } else {
+            s = arg().getShape();
         }
 
         val aT = arg().dataType();

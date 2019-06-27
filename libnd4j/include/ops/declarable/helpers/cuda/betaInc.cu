@@ -18,46 +18,164 @@
 // Created by Yurii Shyrma on 11.12.2017
 //
 
-#include<cmath> 
+#include<cmath>
 #include <DataTypeUtils.h>
 #include<ops/declarable/helpers/betaInc.h>
-#include <NDArrayFactory.h>
+#include <PointersManager.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-const int maxIter = 10000;				// max number of loop iterations in function for continued fractions 
-const int maxValue = 3000;				// if a and b are both > maxValue, then apply Gauss-Legendre quadrature.
-
-
-// 18 values of abscissas and weights for 36-point Gauss-Legendre integration,
-// take a note - weights and abscissas are symmetric around the midpoint of the range of integration: 36/2 = 18
-const double abscissas[18] = {0.0021695375159141994,
-0.011413521097787704,0.027972308950302116,0.051727015600492421,
-0.082502225484340941, 0.12007019910960293,0.16415283300752470,
-0.21442376986779355, 0.27051082840644336, 0.33199876341447887,
-0.39843234186401943, 0.46931971407375483, 0.54413605556657973,
-0.62232745288031077, 0.70331500465597174, 0.78649910768313447,
-0.87126389619061517, 0.95698180152629142};
-const double weights[18] = {0.0055657196642445571,
-0.012915947284065419,0.020181515297735382,0.027298621498568734,
-0.034213810770299537,0.040875750923643261,0.047235083490265582,
-0.053244713977759692,0.058860144245324798,0.064039797355015485,
-0.068745323835736408,0.072941885005653087,0.076598410645870640,
-0.079687828912071670,0.082187266704339706,0.084078218979661945,
-0.085346685739338721,0.085983275670394821};
-
-
-
 
 ///////////////////////////////////////////////////////////////////
+// modified Lentz’s algorithm for continued fractions,
+// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions,”
+template <typename T>
+__device__ T continuedFractionCuda(const T a, const T b, const T x) {
+
+	extern __shared__ unsigned char shmem[];
+	T* coeffs = reinterpret_cast<T*>(shmem);
+
+	const T min = DataTypeUtils::min<T>() / DataTypeUtils::eps<T>();
+    const T aPlusb = a + b;
+    T val, delta, aPlus2i;
+
+    // first iteration
+    T c = 1;
+    T d = static_cast<T>(1) - aPlusb * x / (a + static_cast<T>(1));
+    if(math::nd4j_abs<T>(d) < min)
+		d = min;
+	d = static_cast<T>(1) / d;
+    T f = d;
+
+    for(uint i = 1; i <= maxIter; i += 2) {
+
+    	aPlus2i = a + static_cast<T>(2*i);
+
+		/***** even part *****/
+		// d
+		d = static_cast<T>(1) + coeffs[i - 1] * d;
+		if(math::nd4j_abs<T>(d) < min)
+			d = min;
+		d = static_cast<T>(1) / d;
+		// c
+		c = static_cast<T>(1) + coeffs[i - 1] / c;
+		if(math::nd4j_abs<T>(c) < min)
+			c = min;
+		// f
+		f *= c * d;
+
+
+		/***** odd part *****/
+		// d
+		d = static_cast<T>(1) + coeffs[i] * d;
+		if(math::nd4j_abs<T>(d) < min)
+			d = min;
+		d = static_cast<T>(1) / d;
+		// c
+		c = static_cast<T>(1) + coeffs[i] / c;
+		if(math::nd4j_abs<T>(c) < min)
+			c = min;
+		// f
+		delta = c * d;
+		f *= delta;
+
+		// condition to stop loop
+		if(math::nd4j_abs<T>(delta - static_cast<T>(1)) <= DataTypeUtils::eps<T>())
+			return f;
+    }
+
+    return 1.f / 0.f;	// no convergence, more iterations is required
+}
+
+///////////////////////////////////////////////////////////////////
+// evaluates incomplete beta function for positive a and b, and x between 0 and 1.
+template <typename T>
+__device__ T betaIncCoreCuda(T a, T b, T x) {
+
+	const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
+    const T front = math::nd4j_exp<T,T>(math::nd4j_log<T, T>(x) * a + math::nd4j_log<T, T>(1 - x) * b - gammaPart) / a;
+
+	if (x <= (a + static_cast<T>(1)) / (a + b + static_cast<T>(2)))
+		return front * continuedFractionCuda(a, b, x);
+	else  // symmetry relation
+		return static_cast<T>(1) - front * continuedFractionCuda(b, a, static_cast<T>(1) - x);
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void betaIncForArrayCuda(const void* va, const Nd4jLong* aShapeInfo,
+									const void* vb, const Nd4jLong* bShapeInfo,
+									const void* vx, const Nd4jLong* xShapeInfo,
+										  void* vz, const Nd4jLong* zShapeInfo) {
+
+    extern __shared__ unsigned char shmem[];
+    T* sharedMem = reinterpret_cast<T*>(shmem);
+
+    const Nd4jLong j = blockIdx.x;			// one block per each element
+
+    Nd4jLong len = shape::length(xShapeInfo);
+
+    const T  a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo, len));
+    const T  b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo, len));
+    const T  x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo, len));
+    	  T& z = *(reinterpret_cast<T*>(vz) 	 	 + shape::getIndexOffset(j, zShapeInfo, len));
+
+    // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
+   	if(a == b && x == static_cast<T>(0.5)) {
+		z = static_cast<T>(0.5);
+		return;
+   	}
+
+	if (x == static_cast<T>(0) || x == static_cast<T>(1)) {
+		z = x;
+		return;
+	}
+
+   	if(threadIdx.x % 2 == 0) { 	/***** even part *****/
+		const int m = threadIdx.x + 1;
+		sharedMem[threadIdx.x] = m * (b - m) * x / ((a + 2 * m - static_cast<T>(1)) * (a + 2 * m));
+	}
+	else {						/***** odd part *****/
+		const int m = threadIdx.x;
+		sharedMem[threadIdx.x] = -(a + m) * (a + b + m) * x / ((a + 2 * m + static_cast<T>(1)) * (a + 2 * m));
+	}
+
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+		z = betaIncCoreCuda(a, b, x);
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                		const void* va, const Nd4jLong* aShapeInfo,
+										const void* vb, const Nd4jLong* bShapeInfo,
+										const void* vx, const Nd4jLong* xShapeInfo,
+									  		  void* vz, const Nd4jLong* zShapeInfo) {
+
+    betaIncForArrayCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(va, aShapeInfo, vb, bShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
+}
+
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-NDArray betaInc(nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x) {
-	auto xType = a.dataType();
-	//BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
-	return a;
+void betaInc(nd4j::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+
+    const int threadsPerBlock = maxIter;
+    const int blocksPerGrid = output.lengthOf();
+    const int sharedMem = output.sizeOfT() * threadsPerBlock  + 128;
+
+    const auto xType = x.dataType();
+
+    PointersManager manager(context, "betaInc");
+
+    NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
+	BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), a.getSpecialBuffer(), a.getSpecialShapeInfo(), b.getSpecialBuffer(), b.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), FLOAT_TYPES);
+	NDArray::registerSpecialUse({&output}, {&a, &b, &x});
+
+    manager.synchronize();
 }
 
 

@@ -372,8 +372,8 @@ namespace nd4j {
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
-        FORCEINLINE void* specialBuffer();
-        FORCEINLINE void* getSpecialBuffer() const;
+        void* specialBuffer();
+        void* getSpecialBuffer() const;
 
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
@@ -429,16 +429,16 @@ namespace nd4j {
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
-		NDArray* permute(const std::initializer_list<int>& dimensions) const;
-        NDArray* permute(const std::vector<int>& dimensions) const;
-        NDArray* permute(const int* dimensions, const int rank) const;
+		NDArray permute(const std::initializer_list<int>& dimensions) const;
+        NDArray permute(const std::vector<int>& dimensions) const;
+        NDArray permute(const int* dimensions, const int rank) const;
 
         void permute(const int* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<int>& dimensions, NDArray& target) const;
 
-        NDArray* permute(const std::initializer_list<Nd4jLong>& dimensions) const;
-        NDArray* permute(const std::vector<Nd4jLong>& dimensions) const;
-        NDArray* permute(const Nd4jLong* dimensions, const int rank) const;
+        NDArray permute(const std::initializer_list<Nd4jLong>& dimensions) const;
+        NDArray permute(const std::vector<Nd4jLong>& dimensions) const;
+        NDArray permute(const Nd4jLong* dimensions, const int rank) const;
 
         void permute(const Nd4jLong* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const;
@@ -508,7 +508,7 @@ namespace nd4j {
         /**
         *  returns new copy of this array, optionally in different order
         */
-        NDArray *dup(const char newOrder = 'a');
+        NDArray *dup(const char newOrder = 'a') const;
 
         /**
         *  returns sum of all elements of array
@@ -687,7 +687,7 @@ namespace nd4j {
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 
-#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
+#if defined(__CUDABLAS__) //&& defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -790,8 +790,7 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
-        NDArray* transpose() const;
-        NDArray  transp() const;
+        NDArray transpose() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected
@@ -915,7 +914,7 @@ namespace nd4j {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		NDArray* reshape(const char order, const std::vector<Nd4jLong>& shape) const;
+		NDArray reshape(const char order, const std::vector<Nd4jLong>& shape) const;
 
         /**
         *  calculate strides and set given order
@@ -2094,28 +2093,11 @@ Nd4jLong* NDArray::shapeInfo() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBuffer() {
-
-    if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
-}
-
-////////////////////////////////////////////////////////////////////////
 Nd4jLong* NDArray::specialShapeInfo() {
     if (_shapeInfoD == nullptr)
         return _shapeInfo;
     // FIXME: this should be fixed once CUDA backend added
     return _shapeInfoD;
-}
-
-////////////////////////////////////////////////////////////////////////
-void* NDArray::getSpecialBuffer() const {
-      if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2137,7 +2119,7 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 }
 
 
-#if defined(__CUDACC__) && defined(BUILD_TESTS)
+#if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif

@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018, Alex Black
 //
 
-// implementation of gated Recurrent Unit cell 
+// implementation of gated Recurrent Unit cell
 // (cf. http://arxiv.org/abs/1406.1078).
 // Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
 // "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
@@ -33,24 +33,6 @@ namespace nd4j 	  {
 namespace ops 	  {
 namespace helpers {
 
-
-//////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
-}
-
-static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
-}
-
-//////////////////////////////////////////////////////////////////////////
-static FORCEINLINE NDArray tanh(const NDArray& arr) {
-    return (const_cast<NDArray&>(arr)).transform(transform::Tanh);
-}
-
-static FORCEINLINE void tanhInplace(const NDArray& arr) {
-    (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
-}
 
 //////////////////////////////////////////////////////////////////////////
 void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
@@ -184,14 +166,14 @@ auto Wxn  = (*Wx)({0,0, 2*nU,3*nU});
 auto Whr  = (*Wh)({0,0, 0,   nU});
 auto Whu  = (*Wh)({0,0, nU,  2*nU});
 auto Whn  = (*Wh)({0,0, 2*nU,3*nU});
-auto WxrT = Wxr.transp();
-auto WxuT = Wxu.transp();
-auto WxnT = Wxn.transp();
-auto WhrT = Whr.transp();
-auto WhuT = Whu.transp();
-auto WhnT = Whn.transp();
-auto xT   = x->transp();
-auto h0T  = h0->transp();
+auto WxrT = Wxr.transpose();
+auto WxuT = Wxu.transpose();
+auto WxnT = Wxn.transpose();
+auto WhrT = Whr.transpose();
+auto WhuT = Whu.transpose();
+auto WhnT = Whn.transpose();
+auto xT   = x->transpose();
+auto h0T  = h0->transpose();
 
 auto dLdWxr = (*dLdWx)({0,0, 0,     nU});
 auto dLdWxu = (*dLdWx)({0,0, nU,  2*nU});
@@ -227,7 +209,7 @@ dLdWxu.assign( mmul(xT, dSigdu * dLdu) );                                       
 dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                              //  [nU,nU]
 
 dLdWxn.assign( mmul(xT, dActdn * dLdn) );                                                               //  [iS,nU]
-dLdWhn.assign( mmul((r*(*h0)).transp(), dActdn * dLdn) );                                               //  [nU,nU]
+dLdWhn.assign( mmul((r*(*h0)).transpose(), dActdn * dLdn) );                                               //  [nU,nU]
 
 dLdbr.assign( (dSigdr * dLdr).reduceAlongDims(reduce::Sum, {0}));                          // [nU]
 dLdbu.assign( (dSigdu * dLdu).reduceAlongDims(reduce::Sum, {0}));                          // [nU]

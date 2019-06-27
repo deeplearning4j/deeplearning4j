@@ -71,7 +71,7 @@ namespace ops {
         int pad_top = 0, pad_left = 0;
         int out_rows = 0, out_cols = 0;
 
-        helpers::_dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
 
         REQUIRE_TRUE(out_rows > 0 && out_cols > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", out_rows, out_cols);
@@ -112,7 +112,7 @@ namespace ops {
                 newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
-                
+
             int e = 1;
             for (int cnt = 0;cnt < 4; cnt++)
                 rates[cnt] = INT_ARG(e++);
@@ -126,7 +126,7 @@ namespace ops {
         int pad_top = 0, pad_left = 0;
         int out_rows = 0, out_cols = 0;
 
-        helpers::_dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
         std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
         newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());

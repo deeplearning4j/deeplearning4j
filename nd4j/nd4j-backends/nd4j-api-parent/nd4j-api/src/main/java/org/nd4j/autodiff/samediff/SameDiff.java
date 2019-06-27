@@ -110,6 +110,7 @@ import java.util.zip.ZipOutputStream;
 @Builder
 @Slf4j
 public class SameDiff extends SDBaseOps {
+    protected static final String GRAD_FN_KEY = "grad";
 
     //Fields for graph structure and execution
     @Getter     //TODO use package private instead of public getters?
@@ -297,8 +298,7 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Update the opName for the variable
-     * with the given vertex id
+     * Update the opName for the variable with the given vertex id
      *
      * @param varName  the vertex id to update
      * @param withName thew new opName
@@ -410,12 +410,18 @@ public class SameDiff extends SDBaseOps {
     /**
      * Returns this samediff instance's {@link DifferentialFunctionFactory}
      *
-     * @return
+     * @return DifferentialFunctionFactory
      */
     public DifferentialFunctionFactory f() {
         return functionFactory;
     }
 
+    /**
+     * Set the current {@link Listener} instances.
+     * Note that
+     *
+     * @param listeners Listeners
+     */
     public void setListeners(Listener... listeners){
         this.listeners.clear();
         addListeners(listeners);
@@ -432,6 +438,10 @@ public class SameDiff extends SDBaseOps {
 
     public void addListeners(Collection<? extends Listener> listeners){
         this.listeners.addAll(listeners);
+    }
+
+    public List<Listener> getListeners(){
+        return listeners;
     }
 
     /**
@@ -1342,6 +1352,45 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Clear the placeholder arrays from the SameDiff instance
+     *
+     * @param allThreads  If true: clear the placeholders for all threads. False: clear only for current thread
+     */
+    public void clearPlaceholders(boolean allThreads){
+        if(allThreads){
+            this.placeholdersPerThread.clear();
+        } else {
+            long tid = Thread.currentThread().getId();
+            this.placeholdersPerThread.remove(tid);
+        }
+        for(SameDiff sd : this.sameDiffFunctionInstances.values()){
+            sd.clearPlaceholders(allThreads);
+        }
+    }
+
+    /**
+     * Clear the input arrays to each op.
+     * This is usually not required, under normal SameDiff use
+     */
+    public void clearOpInputs(){
+        for(SameDiffOp op : ops.values()){
+            if(op.getOp() instanceof Op){
+                Op o = ((Op) op.getOp());
+                o.setX(null);
+                if(o.y() != null) {
+                    o.setY(null);
+                }
+            } else if(op.getOp() instanceof DynamicCustomOp ){
+                DynamicCustomOp o = (DynamicCustomOp)op.getOp();
+                o.setInputArguments((INDArray[])null);
+            }
+        }
+        for(SameDiff sd : this.sameDiffFunctionInstances.values()){
+            sd.clearOpInputs();
+        }
+    }
+
+    /**
      * Get an array of differential functions that have been defined for this SameDiff instance
      * @return Array of differential functions
      */
@@ -1782,7 +1831,7 @@ public class SameDiff extends SDBaseOps {
 
 
                     //Collect the losses...
-                    SameDiff gradFn = sameDiffFunctionInstances.get("grad");
+                    SameDiff gradFn = sameDiffFunctionInstances.get(GRAD_FN_KEY);
                     int count=0;
                     for(String s : lossVariables){
                         INDArray arr = gradFn.getArrForVarName(s);
@@ -2552,7 +2601,7 @@ public class SameDiff extends SDBaseOps {
         sessions.clear();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove("grad");
+        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
 
         for(SDVariable variable : variables ) {
             String n = variable.getVarName();
@@ -2650,7 +2699,7 @@ public class SameDiff extends SDBaseOps {
         sessions.clear();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove("grad");
+        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
 
         for(SDVariable variable : constants) {
             String n = variable.getVarName();
@@ -2687,6 +2736,83 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Convert the datatypes of the specified constants, placeholders and variables.<br>
+     * After conversion, the downstream datatypes are changed.
+     * For example, {@code z(float) = x(float)+y(float)}, changing both x and y to double results in {@code z(double) = x(double)+y(double)}
+     * without doing anything to change z's datatype directly (z datatype is inferred from x + y + add op).<br>
+     * ARRAY type SDVariables cannot be converted directly, as their datatypes are determined by the function +
+     * input datatypes.<b>
+     * Note that this method should be used with caution: incorrect datatype modifications may leave your network
+     * in an incorrect state. For example, {@code op(x(float),y(float)) -> op(x(double),y(float))} may not be
+     * supported by all ops.
+     *
+     * @param dataTypeMap Map of SDVariables to change the datatype for. Key = SDVariable name, Value = new datatype
+     */
+    public void convertDataTypes(@NonNull Map<String,DataType> dataTypeMap){
+        if(dataTypeMap.isEmpty())
+            return;
+
+        //First: check these are all either constants, variables or placeholders.
+        for(Map.Entry<String,DataType> e : dataTypeMap.entrySet()){
+            String s = e.getKey();
+            Preconditions.checkState(variables.containsKey(s), "Cannot change datatype of variable \"%s\": No variable with this name exists", s);
+            SDVariable v = variables.get(s).getVariable();
+            Preconditions.checkState(v.getVariableType() != VariableType.ARRAY, "Cannot change datatype of ARRAY type variable \"%s\": " +
+                    "datatype of ARRAY type variables is determined by the datatypes of their inputs plus corresponding ");
+            if(v.getVariableType() != VariableType.PLACEHOLDER){
+                //Can't convert constant or variable between numerical and non-numerical type (not possible to cast)
+                Preconditions.checkState(v.dataType().isNumerical() == e.getValue().isNumerical(), "Cannot convert variables between numerical " +
+                        "and non-numerical types: attempting to convert variable \"%s\" from %s to %s", e.getKey(), v.dataType(), e.getValue());
+            }
+        }
+
+        boolean anyChanged = false;
+        for(Map.Entry<String,DataType> e : dataTypeMap.entrySet()){
+            String s = e.getKey();
+            DataType d = e.getValue();
+            SDVariable v = variables.get(s).getVariable();
+            if(v.dataType() == d)
+                continue;   //No-op
+
+            v.setDataType(d);
+
+            switch (v.getVariableType()){
+                case VARIABLE:
+                    DeviceLocalNDArray dl = variablesArrays.remove(e.getKey());
+                    INDArray arr = dl.get();
+                    INDArray newArr = arr.castTo(d);
+                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr));
+                    break;
+                case CONSTANT:
+                    DeviceLocalNDArray dl2 = constantArrays.remove(e.getKey());
+                    INDArray arr2 = dl2.get();
+                    INDArray newArr2 = arr2.castTo(d);
+                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2));
+                    break;
+                case PLACEHOLDER:
+                    Map<String,INDArray> m = placeholdersPerThread.get(Thread.currentThread().getId());
+                    if(m != null && m.containsKey(e.getKey())){
+                        m.put(e.getKey(), m.get(e.getKey()).castTo(d));
+                    }
+                    break;
+                case ARRAY:
+                default:
+                    throw new IllegalStateException("Cannot convert array type variable");  //Should never happen
+            }
+
+
+            anyChanged = true;
+        }
+
+        if(anyChanged){
+            sessions.clear();
+
+            //Recalculate datatypes of outputs, and dynamically update them
+            calculateOutputDataTypes(true);
         }
     }
 
@@ -2877,8 +3003,8 @@ public class SameDiff extends SDBaseOps {
         //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
         if (variables.containsKey(varName) && variables.get(varName).getGradient() != null) {
             return variables.get(varName).getGradient();
-        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").variables.containsKey(varName)){
-            return sameDiffFunctionInstances.get("grad").variables.get(varName).getGradient();
+        } else if(sameDiffFunctionInstances.containsKey(GRAD_FN_KEY) && sameDiffFunctionInstances.get(GRAD_FN_KEY).variables.containsKey(varName)){
+            return sameDiffFunctionInstances.get(GRAD_FN_KEY).variables.get(varName).getGradient();
         }
         return null;
     }
@@ -2936,13 +3062,13 @@ public class SameDiff extends SDBaseOps {
      * @return The gradient variable for the specified variable
      */
     public SDVariable grad(String varName) {
-        if (!sameDiffFunctionInstances.containsKey("grad")) {
+        if (!sameDiffFunctionInstances.containsKey(GRAD_FN_KEY)) {
             throw new IllegalStateException("Unable to obtain gradient. Please run execBackwards() first.");
         }
 
-        SameDiff grad = getFunction("grad");
+        SameDiff grad = getFunction(GRAD_FN_KEY);
         SDVariable var = grad.getVariable(varName);
-        return getFunction("grad").getGradForVariable(var.getVarName());
+        return getFunction(GRAD_FN_KEY).getGradForVariable(var.getVarName());
     }
 
 
@@ -3421,7 +3547,7 @@ public class SameDiff extends SDBaseOps {
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
     public void execBackwards(Map<String,INDArray> placeholders) {
-        if (getFunction("grad") == null) {
+        if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
         }
 
@@ -3467,7 +3593,7 @@ public class SameDiff extends SDBaseOps {
      * @param variableGradNamesList Names of the gradient variables to calculate
      */
     public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
-        if (getFunction("grad") == null) {
+        if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
         }
 
@@ -3479,7 +3605,7 @@ public class SameDiff extends SDBaseOps {
             return;
         }
 
-        SameDiff sd = sameDiffFunctionInstances.get("grad");
+        SameDiff sd = sameDiffFunctionInstances.get(GRAD_FN_KEY);
         sd.listeners = listeners;
 
         At at = new At(0, 0, 0, Thread.currentThread().getId());
@@ -3493,14 +3619,38 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Returns true if the gradient function has been created - i.e., {@link #createGradFunction()} or {@link #createGradFunction(String...)}
+     * has been called at all
+     * @return True if gradient (backprop) function exists
+     */
+    public boolean hasGradientFunction(){
+        return sameDiffFunctionInstances.containsKey(GRAD_FN_KEY);
+    }
+
+    /**
      * Create the gradient function (for calculating gradients via {@link #execBackwards(Map)}) if it is not already defined.
      * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
      * <br><br>
      * If the gradient function already exists, this method is a no-op.<br>
      * After this method returns, the SameDiff function instance for the gradient can be accessed using {@link #getFunction(String)}
-     * with name "grad" as the argument.
+     * with name "grad" as the argument.<br>
+     * Note that the gradient array (after execBackwards has been called) can be accessed via {@code SDVariable.gradient().getArr()}
      */
     public void createGradFunction() {
+        createGradFunction((String[])null);
+    }
+
+    /**
+     * As per {@link #createGradFunction()}, but this method allows a set of variables requiring gradients to be specified.
+     * By default, only parameter gradients will be calculated; placeholder gradients may not be defined (unless they happen
+     * to be calculated in the same op as calculating a parameter gradient.
+     * This method allows you to override this behaviour by passing the name of the placeholder you want the gradients for.
+     * The specified gradient variables still need to be floating point variables.
+     *
+     * @param variablesRequiringGradients May be null. If non-null: the gradients for the variables with these names will
+     *                                    be calculated and available after backprop has been done
+     */
+    public void createGradFunction(final String... variablesRequiringGradients) {
         if(lossVariables.isEmpty()){
             if(trainingConfig != null && trainingConfig.getLossVariables() != null && !trainingConfig.getLossVariables().isEmpty()){
                 lossVariables.addAll(trainingConfig.getLossVariables());
@@ -3526,6 +3676,16 @@ public class SameDiff extends SDBaseOps {
             log.trace("Defining function \"grad\"");
         }
 
+        if(variablesRequiringGradients != null && variablesRequiringGradients.length > 0){
+            //Check that they are FP variables...
+            for(String s : variablesRequiringGradients){
+                Preconditions.checkArgument(variables.containsKey(s), "Cannot ensure gradient exists for variable: no variable with name \"%s\" exists", s);
+                DataType dt = variables.get(s).getVariable().dataType();
+                Preconditions.checkState(dt.isFPType(), "Cannot ensure gradient exists for variable \"%s\": variable is not a floating point SDVariable." +
+                        " Only floating point SDVariables have gradients defined - variable has type %s", s, dt);
+            }
+        }
+
 
         /*
         Defining gradient function:
@@ -3549,6 +3709,7 @@ public class SameDiff extends SDBaseOps {
         Consider following graph: X(fp) -> cast(int) -> cast(fp) -> lots of FP ops -> loss
         unless we need them for other variables, there's zero point calculating the activation gradients for the "cast(fp) -> lots of FP ops" part of the graph, as the gradient from that branch won't go anywhere.
         How to determine minimal subset? Start with FP graph from step 1... then keep pruning leaves until the only remaining leaves are those FP variables that we need gradients for.
+        Note that the user can also specify variables that they need gradients for (like placeholders) that normally wouldn't get gradients.
 
         Step 3: Differentiate ops in minimal subgraph
         The only major issue here is with multiple output ops, where only one of the outputs lead to the loss.
@@ -3561,7 +3722,7 @@ public class SameDiff extends SDBaseOps {
 
 
         final SameDiff outer = this;
-        defineFunction("grad", new SameDiffFunctionDefinition() {
+        defineFunction(GRAD_FN_KEY, new SameDiffFunctionDefinition() {
 
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
@@ -3685,7 +3846,9 @@ public class SameDiff extends SDBaseOps {
                             leafFPVars.add(s);
                         }
                     }
-                    if(v.getVariable().getVariableType() == VariableType.CONSTANT || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+                    VariableType vt = v.getVariable().getVariableType();
+                    boolean isUserRequested = variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s);
+                    if((vt == VariableType.CONSTANT || vt == VariableType.PLACEHOLDER) && !isUserRequested ){
                         leafFPVars.add(s);
                     }
                 }
@@ -3707,7 +3870,8 @@ public class SameDiff extends SDBaseOps {
                             List<String> inputsToOp = op.getInputsToOp();
                             boolean anyPresent = false;
                             for(String s : inputsToOp){
-                                if(minimalSubgraphVars.contains(s)){
+                                if(minimalSubgraphVars.contains(s) || (variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s))){
+                                    //Note second condition: means user explicitly specified that they want gradients for that input variable... hence we need to diff this op
                                     anyPresent = true;
                                     break;
                                 }
@@ -3909,7 +4073,7 @@ public class SameDiff extends SDBaseOps {
                 }
 
 
-                return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
+                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
         });
 
@@ -4500,7 +4664,7 @@ public class SameDiff extends SDBaseOps {
 
         // we're dumping scopes now
         for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
-            if(scope.getKey().equalsIgnoreCase("grad")){
+            if(scope.getKey().equalsIgnoreCase(GRAD_FN_KEY)){
                 //Skip the gradient function for export
                 continue;
             }
@@ -5283,9 +5447,13 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(){
+    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
+        return calculateOutputDataTypes(false);
+    }
+
+    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate){
         List<String> allVars = new ArrayList<>(variables.keySet());
-        DataTypesSession session = new DataTypesSession(this);
+        DataTypesSession session = new DataTypesSession(this, dynamicUpdate);
         Map<String,org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
         for(Variable v : variables.values()){
             if(v.getVariable().isPlaceHolder()){

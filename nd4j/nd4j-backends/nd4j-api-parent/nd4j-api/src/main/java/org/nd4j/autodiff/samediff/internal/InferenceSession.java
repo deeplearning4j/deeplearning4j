@@ -72,6 +72,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
+            Preconditions.checkState(sameDiff.hasVariable(e.getKey()), "Invalid placeholder passed for execution: " +
+                    "No variable/placeholder with name %s exists", e.getKey());
             INDArray arr = e.getValue();
             //First: check workspaces
             if(arr.isAttached()){
@@ -105,6 +107,13 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     @Override
     public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
+        if(listeners != null && listeners.size() > 0){
+            SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+            for(Listener l : listeners){
+                l.preOpExecution(sameDiff, at, training, sdOp);
+            }
+        }
+
         INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
@@ -601,7 +610,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 if(v.isConstant()) {
                     args[i] = v.getArr();
                 } else if(v.isPlaceHolder()) {
-                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s");
+                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s", s);
                     args[i] = placeholderValues.get(s);
                 } else if(constEnterInputs != null && constEnterInputs.contains(s)){
                     //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy

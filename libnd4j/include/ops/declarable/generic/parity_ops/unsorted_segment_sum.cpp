@@ -43,7 +43,8 @@ namespace nd4j {
         DECLARE_TYPES(unsorted_segment_sum) {
             getOpDescriptor()
                     ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
-                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setSameMode(false);
         }
 

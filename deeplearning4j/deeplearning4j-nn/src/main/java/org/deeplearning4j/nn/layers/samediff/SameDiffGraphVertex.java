@@ -39,9 +39,7 @@ import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Implementation of a SameDiff graph vertex.
@@ -96,12 +94,11 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if(sameDiff == null){
-            doInit();
-        }
-
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-//            sameDiff.clearExecutionCache();
+            if(sameDiff == null){
+                doInit();
+            }
+
             config.validateInput(inputs);
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
@@ -121,6 +118,10 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             }
             Map<String,INDArray> out = sameDiff.exec(null, outputKey);
             INDArray result = out.get(outputKey);
+
+            //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+            sameDiff.clearPlaceholders(true);
+            sameDiff.clearOpInputs();
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
@@ -131,27 +132,42 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         INDArray[] dLdIns;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-//            sameDiff.clearExecutionCache();
+            if(sameDiff == null){
+                doInit();
+            }
+
+            if(!sameDiff.hasGradientFunction()) {
+                //Create when scoped out, to ensure any arrays are not in WS
+                List<String> inputs = config.getVertexParams().getInputs();
+                String[] inArr = inputs.toArray(new String[inputs.size()]);
+                sameDiff.createGradFunction(inArr);
+            }
             config.validateInput(inputs);
-            //Set inputs
-            for(int i=0; i<inputs.length; i++ ){
-                String name = config.getVertexParams().getInputs().get(i);
-                final String maskName = name + "_mask";
-                sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
-                if(maskArrays != null && maskArrays[i] != null) {
-                    sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
-                }else{
-                    sameDiff.associateArrayWithVariable(createMask(dataType, inputs[i].shape()), maskName);
+            Map<String,INDArray> phMap = new HashMap<>();
+            List<String> inputs = config.getVertexParams().getInputs();
+            int i=0;
+            for(String s : inputs){
+                phMap.put(s, this.inputs[i++]);
+            }
+            if(maskArrays != null){
+                for( int j=0; j<maskArrays.length; j++ ){
+                    String name = inputs.get(j);
+                    final String maskName = name + "_mask";
+                    if(maskArrays[j] != null) {
+                        sameDiff.associateArrayWithVariable(maskArrays[j].dup(), maskName);
+                    }
                 }
             }
-            fn.updateVariable(outputVar.getVarName(), epsilon.dup());
+            String epsName = fn.getGradPlaceholderName();
+            phMap.put(epsName, epsilon);
+
 
             for(String s : paramTable.keySet() ){
                 //TODO this should only be necessary, in theory, once!
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(null);
+            sameDiff.execBackwards(phMap);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -159,10 +175,10 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 g.gradientForVariable().put(s, dl4jGrad);
             }
 
-            dLdIns = new INDArray[inputs.length];
-            for(int i=0; i<inputs.length; i++ ){
-                String name = config.getVertexParams().getInputs().get(i);
-                dLdIns[i] = sameDiff.grad(name).getArr();
+            dLdIns = new INDArray[inputs.size()];
+            for(int j=0; j<inputs.size(); j++ ){
+                String name = inputs.get(j);
+                dLdIns[j] = sameDiff.grad(name).getArr();
             }
         }
 
@@ -171,6 +187,9 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             dLdIns[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[i]);
         }
 
+        //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+        sameDiff.clearPlaceholders(true);
+        sameDiff.clearOpInputs();
         return new Pair<>(g, dLdIns);
     }
 

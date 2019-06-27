@@ -79,7 +79,7 @@ public class DataSetIteratorFactoryProvider implements DataProvider {
                             (Class<? extends DataSetIteratorFactory>) Class.forName(value);
             return clazz.newInstance();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Could not create DataSetIteratorFactory instance - missing no-arg constructor?", e);
         }
     }
 }

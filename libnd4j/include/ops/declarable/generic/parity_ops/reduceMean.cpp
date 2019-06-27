@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
 
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
-    
+
     input->reduceAlongDimension(reduce::Mean, output, dimensions, keepDims);
 
     return Status::OK();
@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(reduce_mean) {
         keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(dimensions.size() <= in[0], 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
-    
+
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
@@ -107,23 +107,21 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
 
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
-    
+
     if(gradO->lengthOf() == 1) {
         gradI->assign(gradO->e(0) / input->lengthOf());
     }
     else {
-        
-        (*gradI).assign((gradO->lengthOf() + 0.) / input->lengthOf());
+
+        gradI->assign((gradO->lengthOf() + 0.) / input->lengthOf());
 
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
-            gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            *gradI *= gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
         }
+        else
+            *gradI *= *gradO;
 
-        *gradI *= *gradO;
-
-        if(!keepDims)
-            delete gradO;
     }
 
     return Status::OK();
@@ -139,10 +137,10 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
         helpers::adjustAxis(rank, axesVector, dimensions);
     }
     REQUIRE_TRUE(dimensions.size() <= rank, 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
-    
+
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -rank || item < rank, 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , rank, rank, item);
-    
+
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 

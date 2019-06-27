@@ -1610,6 +1610,13 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_nth_element)
         DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
         #endif
+
+        /**
+         * This op checks for Inf/NaN values within input array, and throws exception if there's at least one
+         */
+        #if NOT_EXCLUDED(OP_check_numerics)
+        DECLARE_CUSTOM_OP(check_numerics, 2, 1, true, 0, 0);
+        #endif
 /**
          * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
          * 

@@ -1654,6 +1654,92 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, cumprod_1) {
+
+    auto inputC = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
+    auto axis = NDArrayFactory::create<Nd4jLong>(1);
+
+    auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
+    auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
+
+    auto expFT = NDArrayFactory::create<double>('c', {3, 5}, {120, 120, 60, 20, 5,30240, 5040, 720, 90, 10,360360, 32760, 2730, 210, 15});    //+++
+    auto expTT = NDArrayFactory::create<double>('c', {3, 5}, {120, 60, 20, 5, 1,5040, 720, 90, 10, 1,32760, 2730, 210, 15, 1});
+
+    int exclusive, reverse;
+
+    //************************************//
+    exclusive = 0; reverse = 0;
+
+    nd4j::ops::cumprod op;
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
+    ASSERT_TRUE(expFF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 0;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 0; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expFT.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTT.equalsTo(z));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, cumprod_2) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1, 0.1);
+    x1.linspace(1, 0.1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(0, 1.);
+    exp1.p<float>(0, 1.);
+
+    for (int i = 1; i < 1500; ++i) {
+        const auto prev = exp0.e<float>(i-1);
+        exp0.p<float>(i, prev * x0.e<float>(i));
+        exp1.p<float>(i, prev * x1.e<float>(i));
+    }
+
+    nd4j::ops::cumprod op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, cumprod_bp_check_1) {
 
@@ -2533,7 +2619,7 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
 TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create<double>('c', {2, 3}, {0., 1., 2., 1., 0., 2. });
+    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
     auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});

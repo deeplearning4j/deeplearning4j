@@ -14,21 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author sgazeos@gmail.com
-//
+package org.nd4j.linalg.api.concurrency;
 
-#include <ops/declarable/helpers/multiUnique.h>
-#include <ops/declarable/CustomOperations.h>
+import lombok.NonNull;
 
-namespace nd4j {
-namespace ops {
-namespace helpers {
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace *workspace) {
-        return false;
+/**
+ * @author raver119@gmail.com
+ */
+public abstract class BasicDistributedINDArray implements DistributedINDArray {
+    private final ArrayType arrayType;
+
+    public BasicDistributedINDArray(@NonNull ArrayType arrayType) {
+        this.arrayType = arrayType;
     }
 
-}
-}
+    @Override
+    public ArrayType getINDArrayType() {
+        return arrayType;
+    }
 }

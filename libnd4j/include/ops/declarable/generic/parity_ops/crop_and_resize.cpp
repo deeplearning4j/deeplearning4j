@@ -56,7 +56,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(crop_and_resize) {
-            auto in = inputShape->at(0);
+            auto in = inputShape->at(1);
 
             Nd4jLong outputShape[4];
 
@@ -77,8 +77,13 @@ namespace nd4j {
         }
         DECLARE_TYPES(crop_and_resize) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {FLOAT32}) // as TF
+                    ->setAllowedInputTypes(2, {ALL_INTS})
+                    ->setAllowedInputTypes(3, {ALL_INTS})
+                    ->setAllowedOutputTypes({FLOAT32}); // as TF
+//                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

@@ -27,32 +27,32 @@
 
 namespace nd4j {
 namespace ops  {
-  
+
 CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
-            
+
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, oC, iC] always
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
-    
+
     auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
 
     REQUIRE_TRUE(input->rankOf()   == 5, 0, "CUSTOM DECONV3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == 5, 0, "CUSTOM DECONV3D OP: rank of weights array must be equal to 5, but got %i instead !", weights->rankOf());
 
-    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) depth
-    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));// filter(kernel) height
-    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));// filter(kernel) width
-    int sD = INT_ARG(3);                                                        // strides depth
-    int sH = INT_ARG(4);                                                        // strides height
-    int sW = INT_ARG(5);                                                        // strides width
-    int pD = INT_ARG(6);                                                        // paddings depth
-    int pH = INT_ARG(7);                                                        // paddings height
-    int pW = INT_ARG(8);                                                        // paddings width
-    int dD = INT_ARG(9);                                                        // dilations depth
-    int dH = INT_ARG(10);                                                       // dilations height
-    int dW = INT_ARG(11);                                                       // dilations width
-    int isSameMode = INT_ARG(12);                                               // 0-SAME,  1-VALID
-    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
+    int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));    // filter(kernel) depth
+    int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));    // filter(kernel) height
+    int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));    // filter(kernel) width
+    int sD = INT_ARG(3);                                                            // strides depth
+    int sH = INT_ARG(4);                                                            // strides height
+    int sW = INT_ARG(5);                                                            // strides width
+    int pD = INT_ARG(6);                                                            // paddings depth
+    int pH = INT_ARG(7);                                                            // paddings height
+    int pW = INT_ARG(8);                                                            // paddings width
+    int dD = INT_ARG(9);                                                            // dilations depth
+    int dH = INT_ARG(10);                                                           // dilations height
+    int dW = INT_ARG(11);                                                           // dilations width
+    int isSameMode = INT_ARG(12);                                                   // 0-SAME,  1-VALID
+    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;           // INT_ARG(13): 1-NDHWC, 0-NCDHW
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV3D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
     if(!isNCDHW)
-        output  = output->permute({0, 4, 1, 2, 3});                             // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW] 
+        output = new NDArray(output->permute({0, 4, 1, 2, 3}));                 // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
     // NCDHW: [iC, oC, kD, kH, kW] x [bS, iC, iD, iH, iW] = [oC, kD, kH, kW, bS, iD, iH, iW]
     nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 4, 1, 0, 5, 6, 7});   // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
     ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH, dW);                         // [bS, oC, kD, kH, kW, iD, iH, iW] is de-convoluted to [bS, oC, oD, oH, oW]
-           
+
     //----- add biases if required -----//
     if(bias)
         output->applyBroadcast(broadcast::Add,{1}, bias);
 
     if(!isNCDHW)
         delete output;
-    
+
     return Status::OK();
 
 }
@@ -123,17 +123,17 @@ DECLARE_SHAPE_FN(deconv3d) {
 
     int indIOioC, indIiD, indWoC(3);
     if(!isNCDHW) {
-        indIOioC = 4; indIiD = 1; 
+        indIOioC = 4; indIiD = 1;
     }
-    else {        
+    else {
         indIOioC = 1; indIiD = 2;
-    }    
+    }
 
     const int bS = inputShapeInfo[1];                           // batch size
     const int iD = inputShapeInfo[indIiD+1];                    // input depth
     const int iH = inputShapeInfo[indIiD+2];                    // input height
     const int iW = inputShapeInfo[indIiD+3];                    // input width
-    const int iC = inputShapeInfo[indIOioC+1];                  // input channels        
+    const int iC = inputShapeInfo[indIOioC+1];                  // input channels
     const int oC = weightsShapeInfo[indWoC+1];                  // output channels
 
     std::string expectedWeightsShape = ShapeUtils::shapeAsString({kD, kH, kW, oC, iC});
@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(deconv3d) {
 
     int oD, oH, oW;                                         // output depth, height, width
     ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
-    
+
     Nd4jLong* outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
 
@@ -161,7 +161,7 @@ DECLARE_SHAPE_FN(deconv3d) {
         outputShapeInfo[4] = oW;
         outputShapeInfo[5] = oC;
     }
-    
+
     ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(CONSTANT(outputShapeInfo));
@@ -225,8 +225,9 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
 
     // -----prepare permutation arrays and axes for dot product ----- //
     std::vector<int> inputAxesForDot;
+
     if(!isNCDHW) {
-        gradO = gradO->permute({0, 4, 1, 2, 3});                                // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+        gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}));                   // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
         inputAxesForDot = {0, 1, 2, 3};                                         // bS, iD, iH, iW
     }
     else
@@ -240,7 +241,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     // ----- calculation of gradB ----- //
     if(gradB) {
         if(gradB->rankOf() == 2)
-            gradB = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+            gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
         gradO->reduceAlongDimension(reduce::Sum, gradB, {0, 2, 3, 4});                                // sum over bS, oD, oH, oW
         if(gradB != OUTPUT_VARIABLE(2))
             delete gradB;
@@ -260,7 +261,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
                 ->setAllowedInputTypes(3, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
-    
+
 DECLARE_SHAPE_FN(deconv3d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
@@ -292,15 +293,15 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
     if(!isNCDHW) {
         indIOioC = 4; indIiD = 1;
     }
-    else {        
+    else {
         indIOioC = 1; indIiD = 2;
-    }    
+    }
 
     const int bS = inputShapeInfo[1];                           // batch size
     const int iD = inputShapeInfo[indIiD+1];                    // input depth
     const int iH = inputShapeInfo[indIiD+2];                    // input height
     const int iW = inputShapeInfo[indIiD+3];                    // input width
-    const int iC = inputShapeInfo[indIOioC+1];                  // input channels        
+    const int iC = inputShapeInfo[indIOioC+1];                  // input channels
     const int oC = weightsShapeInfo[indWoC+1];                  // output channels
 
     int trueoD, trueoH, trueoW;          // true output depth, height, width
@@ -312,7 +313,7 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
     REQUIRE_TRUE(expectedWeightsShape == ShapeUtils::shapeAsString(weightsShapeInfo), 0, "CUSTOM DECONV3D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM DECONV3D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
-    
+
     auto gradIShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo,   gradOShapeInfo, false, block.getWorkspace());
     auto gradWShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 

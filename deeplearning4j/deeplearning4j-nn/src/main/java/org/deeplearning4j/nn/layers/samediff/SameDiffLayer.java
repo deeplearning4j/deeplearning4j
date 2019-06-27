@@ -35,6 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -78,25 +79,32 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        if(sameDiff == null){
-            doInit();
-        }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            if(sameDiff == null){
+                doInit();
+            }
+
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             bl.validateInput(input);
-            sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+
+            Map<String,INDArray> phMap = new HashMap<>();
+            phMap.put(INPUT_KEY, input);
             if(maskArray != null){
-                sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
-            }else{
-                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
+                phMap.put(MASK_KEY, maskArray);
             }
+
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            Map<String,INDArray> out = sameDiff.exec(null, outputKey);
+            Map<String,INDArray> out = sameDiff.exec(phMap, outputKey);
             INDArray result = out.get(outputKey);
+
+            //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+            sameDiff.clearPlaceholders(true);
+            sameDiff.clearOpInputs();
+
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
@@ -110,24 +118,36 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-//            sameDiff.clearExecutionCache();
+            if(sameDiff == null){
+                doInit();
+            }
+            if(!sameDiff.hasGradientFunction()) {
+                //Create when scoped out, to ensure any arrays are not in WS
+                sameDiff.createGradFunction(INPUT_KEY);
+            }
+
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             bl.validateInput(input);
-
-            sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            if(maskArray != null){
-                sameDiff.associateArrayWithVariable(maskArray, sameDiff.getVariable(MASK_KEY));
-            }else{
-                sameDiff.associateArrayWithVariable(SameDiffGraphVertex.createMask(dataType, input.shape()), sameDiff.getVariable(MASK_KEY));
-            }
-            fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
                 //TODO this should only be necessary, in theory, once!
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
+            Map<String,INDArray> phMap = new HashMap<>();
+            phMap.put(INPUT_KEY, input);
+            phMap.put(fn.getGradPlaceholderName(), epsilon);
+            if(maskArray != null){
+                phMap.put(MASK_KEY, maskArray);
+            }
+
+            List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);
+            requiredGrads.add(sameDiff.grad(INPUT_KEY).getVarName());
+            for(String s : paramTable.keySet()){
+                requiredGrads.add(sameDiff.grad(s).getVarName());
+            }
+
+            sameDiff.execBackwards(phMap, requiredGrads);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -138,6 +158,11 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             dLdIn = sameDiff.grad(INPUT_KEY).getArr();
         }
 
+        //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+        sameDiff.clearPlaceholders(true);
+        sameDiff.clearOpInputs();
+
+        System.out.println(dLdIn);
         return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
     }
 
@@ -225,8 +250,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff = SameDiff.create();
             Map<String, INDArray> p = paramTable();
 
-            val inputShape = input.shape().clone();
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
+            long[] inputShape = input.shape().clone();
+            inputShape[0] = -1;
+            SDVariable inputVar = sameDiff.placeHolder(INPUT_KEY, dataType, inputShape);
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
@@ -235,7 +261,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 params.put(s, v);
             }
 
-            SDVariable mask = sameDiff.constant(MASK_KEY, SameDiffGraphVertex.createMask(dataType, inputShape));
+            long[] maskShape = ArrayUtil.nTimes((long)inputShape.length, -1);
+            SDVariable mask = sameDiff.placeHolder(MASK_KEY, dataType, maskShape);
 
             SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");

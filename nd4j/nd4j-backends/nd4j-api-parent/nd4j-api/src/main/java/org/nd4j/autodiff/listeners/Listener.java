@@ -50,6 +50,15 @@ public interface Listener {
     void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss);
 
     /**
+     * Called just before each operation is executed (native code called, etc) - after all inputs etc have been set
+     *
+     * @param sd      The SameDiff instance
+     * @param at      Current iteration/epoch etc
+     * @param op      Operation that has just been executed
+     */
+    void preOpExecution(SameDiff sd, At at, boolean training, SameDiffOp op);
+
+    /**
      * Called at the end of each operation execution
      *
      * @param sd      The SameDiff instance

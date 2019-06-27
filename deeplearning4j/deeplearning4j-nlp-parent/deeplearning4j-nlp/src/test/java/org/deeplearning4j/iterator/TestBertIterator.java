@@ -224,6 +224,7 @@ public class TestBertIterator extends BaseDL4JTest {
 
     @Test(timeout = 20000L)
     public void testMinibatchPadding() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);

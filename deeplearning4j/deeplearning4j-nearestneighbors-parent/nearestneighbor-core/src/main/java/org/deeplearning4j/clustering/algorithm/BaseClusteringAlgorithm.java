@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.ClusterUtils;
@@ -62,12 +63,13 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
     private ClusterSet clusterSet;
     private List<Point> initialPoints;
     private transient ExecutorService exec;
+    private boolean useKmeansPlusPlus;
 
 
-
-    protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
+    protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy, boolean useKmeansPlusPlus) {
         this.clusteringStrategy = clusteringStrategy;
         this.exec = MultiThreadUtils.newExecutorService();
+        this.useKmeansPlusPlus = useKmeansPlusPlus;
     }
 
     /**
@@ -75,8 +77,8 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
      * @param clusteringStrategy
      * @return
      */
-    public static BaseClusteringAlgorithm setup(ClusteringStrategy clusteringStrategy) {
-        return new BaseClusteringAlgorithm(clusteringStrategy);
+    public static BaseClusteringAlgorithm setup(ClusteringStrategy clusteringStrategy, boolean useKmeansPlusPlus) {
+        return new BaseClusteringAlgorithm(clusteringStrategy, useKmeansPlusPlus);
     }
 
     /**
@@ -86,7 +88,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
      */
     public ClusterSet applyTo(List<Point> points) {
         resetState(points);
-        initClusters();
+        initClusters(useKmeansPlusPlus);
         iterations();
         return clusterSet;
     }
@@ -130,7 +132,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
      * Initialize the
      * cluster centers at random
      */
-    protected void initClusters() {
+    protected void initClusters(boolean kMeansPlusPlus) {
         log.info("Generating initial clusters");
         List<Point> points = new ArrayList<>(initialPoints);
 
@@ -152,7 +154,10 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         //Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
         while (clusterSet.getClusterCount() < initialClusterCount && !points.isEmpty()) {
             dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
-            double r = random.nextFloat() * dxs.maxNumber().doubleValue();
+            double summed = Nd4j.sum(dxs).getDouble(0);
+            double r = kMeansPlusPlus ? random.nextDouble() * summed:
+                                        random.nextFloat() * dxs.maxNumber().doubleValue();
+
             for (int i = 0; i < dxs.length(); i++) {
                 double distance = dxs.getDouble(i);
                 Preconditions.checkState(distance >= 0, "Encountered negative distance: distance function is not valid? Distance " +
@@ -169,6 +174,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         iterationHistory.getIterationsInfos().put(currentIteration,
                         new IterationInfo(currentIteration, initialClusterSetInfo));
     }
+
 
     protected void applyClusteringStrategy() {
         if (!isStrategyApplicableNow())

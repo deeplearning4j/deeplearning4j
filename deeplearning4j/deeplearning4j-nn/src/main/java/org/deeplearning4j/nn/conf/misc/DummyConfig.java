@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.misc;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -62,5 +63,10 @@ public class DummyConfig implements TrainingConfig {
     @Override
     public double getGradientNormalizationThreshold() {
         return 1.0;
+    }
+
+    @Override
+    public void setDataType(DataType dataType) {
+
     }
 }

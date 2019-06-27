@@ -84,12 +84,15 @@ public class CudaDirectProvider implements MemoryProvider {
                 val hostPointer = new CudaPointer(pointer);
 
                 val devicePointerInfo = new PointersPair();
-                devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
+                if (point.getPointers().getDevicePointer() == null) {
+                    point.setAllocationStatus(AllocationStatus.HOST);
+                    devicePointerInfo.setDevicePointer(new CudaPointer(hostPointer, reqMem));
+                } else
+                    devicePointerInfo.setDevicePointer(point.getDevicePointer());
+
                 devicePointerInfo.setHostPointer(new CudaPointer(hostPointer, reqMem));
 
                 point.setPointers(devicePointerInfo);
-
-                point.setAllocationStatus(AllocationStatus.HOST);
 
                 MemoryTracker.getInstance().incrementAllocatedHostAmount(reqMem);
 

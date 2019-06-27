@@ -86,7 +86,26 @@ namespace helpers {
     }
 
     nd4j::NDArray* processCondition(nd4j::LaunchContext * context, int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar) {
+        arg->syncToHost();
+
+        if (comp != nullptr)
+            comp->syncToHost();
+
+        output->syncToHost();
+        numResult->syncToHost();
+        compScalar.syncToHost();
+
         BUILD_SINGLE_SELECTOR(arg->dataType(), return processCondition_, (mode, arg, comp, output, numResult, compScalar), FLOAT_TYPES);
+
+        arg->syncToDevice();
+
+        if (comp != nullptr)
+            comp->syncToDevice();
+
+        output->syncToDevice();
+        numResult->syncToDevice();
+        compScalar.syncToDevice();
+
     }
     BUILD_SINGLE_TEMPLATE(template NDArray* processCondition_, (int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar), FLOAT_TYPES);
 
@@ -115,7 +134,7 @@ namespace helpers {
     }
 
     void chooseFunctorScalar(nd4j::LaunchContext * context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
-        NDArray scalarA = NDArrayFactory::create(scalar);
+        auto scalarA = NDArrayFactory::create(scalar);
         processCondition(context, mode, arg, nullptr,result, numResults, scalarA);
     }
 

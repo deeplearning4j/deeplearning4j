@@ -152,7 +152,7 @@ public class HardwareMetric implements Serializable {
         return builder.logicalProcessorCount(processor.getLogicalProcessorCount())
                 .physicalProcessorCount(processor.getPhysicalProcessorCount())
                 .name(name)
-                .averagedCpuLoad((long) processor.getSystemCpuLoad() * 100)
+                .averagedCpuLoad((long)(processor.getSystemCpuLoad() * 100))
                 .ioWaitTime(iowait).gpuMetrics(gpuMetric)
                 .hostName(networkParams.getHostName()).diskInfo(diskInfoMap)
                 .currentMemoryUse(globalMemory.getTotal() - globalMemory.getAvailable())

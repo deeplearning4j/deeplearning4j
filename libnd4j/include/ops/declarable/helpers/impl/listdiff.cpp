@@ -31,8 +31,8 @@ namespace helpers {
         for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
             auto v = values->e<double>(e);
             ExtraArguments extras({v, 0.0, 10.0});
-            NDArray idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
-            Nd4jLong index = idx.e<Nd4jLong>(0);
+            auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
+            auto index = idx.e<Nd4jLong>(0);
             if (index < 0)
                 saved++;
         }
@@ -41,6 +41,9 @@ namespace helpers {
 
     Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
+
+        values->syncToHost();
+        keep->syncToHost();
 
         BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), LIBND4J_TYPES);
     }
@@ -88,19 +91,43 @@ namespace helpers {
                 z1->p(e, indices[e]);
             }
         }
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
+        values->syncToHost();
+
+        if (keep != nullptr)
+            keep->syncToHost();
+
+        if (output1 != nullptr)
+            output1->syncToHost();
+
+        if (output2 != nullptr)
+            output2->syncToHost();
+
+        int result = 0;
+
         if (DataTypeUtils::isR(xType)) {
-            BUILD_SINGLE_SELECTOR(xType, return listDiffFunctor_, (values, keep, output1, output2), FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), FLOAT_TYPES);
         } else if (DataTypeUtils::isZ(xType)) {
-            BUILD_SINGLE_SELECTOR(xType, return listDiffFunctor_, (values, keep, output1, output2), INTEGER_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), INTEGER_TYPES);
         } else {
             throw std::runtime_error("ListDiff: Only integer and floating point data types are supported");
         }
+
+        if (keep != nullptr)
+            keep->syncToDevice();
+
+        if (output1 != nullptr)
+            output1->syncToDevice();
+
+        if (output2 != nullptr)
+            output2->syncToDevice();
+
+        return result;
     }
 
     BUILD_SINGLE_TEMPLATE(template int listDiffFunctor_, (NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);, FLOAT_TYPES);

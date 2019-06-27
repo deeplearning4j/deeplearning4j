@@ -1500,16 +1500,16 @@ namespace simdOps {
 		}
 
 		op_def static Z merge(X old, X opOutput, X *extraParams) {
-			return opOutput + old;
+            return opOutput == static_cast<X>(0) && old == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(1);
 		}
 
 
 		op_def static Z update(X old, X opOutput, X *extraParams) {
-			return opOutput + old;
+            return opOutput == static_cast<X>(0) && old == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(1);
 		}
 
 		op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
-			return reduction;
+            return reduction != static_cast<X>(0);
 		}
 	};
 
@@ -1529,20 +1529,19 @@ namespace simdOps {
 		}
 
         op_def static X startingValue(const X *input) {
-            return static_cast<X>(0);
+            return static_cast<X>(1);
         }
 
         op_def static Z merge(X old, X opOutput, X *extraParams) {
-            return opOutput + old;
+            return opOutput == static_cast<X>(0) || old == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(1);
         }
 
-
         op_def static Z update(X old, X opOutput, X *extraParams) {
-            return opOutput + old;
+            return opOutput == static_cast<X>(0) || old == static_cast<X>(0) ? static_cast<Z>(0) : static_cast<Z>(1);
         }
 
         op_def static Z postProcess(X reduction, Nd4jLong n, X *extraParams) {
-            return reduction;
+            return reduction != static_cast<X>(0);
         }
 	};
 

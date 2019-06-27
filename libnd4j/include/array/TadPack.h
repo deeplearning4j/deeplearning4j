@@ -35,21 +35,21 @@ namespace nd4j {
         TadPack() = default;
         ~TadPack() = default;
 
-        Nd4jLong* primaryShapeInfo();
-        Nd4jLong* primaryOffsets();
+        Nd4jLong* primaryShapeInfo() const;
+        Nd4jLong* primaryOffsets() const;
 
-        Nd4jLong* specialShapeInfo();
-        Nd4jLong* specialOffsets();
+        Nd4jLong* specialShapeInfo() const;
+        Nd4jLong* specialOffsets() const;
 
-        Nd4jLong numberOfTads();
-        int shapeInfoLength();
+        Nd4jLong numberOfTads() const;
+        int shapeInfoLength() const;
 
         /**
          * These methods return either primary or special pointers depending on platform binaries were compiled for
          * @return
          */
-        Nd4jLong *platformShapeInfo();
-        Nd4jLong *platformOffsets();
+        Nd4jLong *platformShapeInfo() const;
+        Nd4jLong *platformOffsets() const;
     };
 }
 

@@ -89,6 +89,15 @@ public enum DataType {
     }
 
     /**
+     * Return true if the value is numerical.<br>
+     * Equivalent to {@code this != UTF8 && this != COMPRESSED && this != UNKNOWN}<br>
+     * Note: Boolean values are considered numerical (0/1)<br>
+     */
+    public boolean isNumerical(){
+        return this != UTF8 && this != COMPRESSED && this != UNKNOWN;
+    }
+
+    /**
      * @return True if the datatype is a numerical type and is signed (supports negative values)
      */
     public boolean isSigned(){

@@ -20,6 +20,7 @@
 #include <NDArray.h>
 #include <array/NDArrayList.h>
 #include <MmulHelper.h>
+#include <PointersManager.h>
 
 
 using namespace nd4j;
@@ -322,59 +323,6 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
-    auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1.f, 3.f, 6.f, 10.f});
-
-    nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {0, 0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-    z->printIndexedBuffer("CumSum1");
-    z->printShapeInfo("CumSum1 shape");
-    exp.printShapeInfo("expected CumSum1");
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
-    auto x= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
-    auto exp= NDArrayFactory::create<float>('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
-
-    nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {0, 0, 1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-    z->printIndexedBuffer("CumSum2");
-    z->printShapeInfo("CumSum2 shape");
-    exp.printShapeInfo("expected CumSum2");
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests3, Test_CumSum_3) {
-    auto x= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
-    auto exp= NDArrayFactory::create<float>('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
-
-    nd4j::ops::cumsum op;
-    auto result = op.execute({&x}, {}, {0, 0, 0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
     auto x= NDArrayFactory::create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
     auto y= NDArrayFactory::create<float>('c', {3}, {1, 3, 5});
@@ -410,7 +358,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);        
+    auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -2721,7 +2669,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     delete results;
 }
-  
 
 
 
@@ -2730,5 +2677,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
 
 
- 
- 
+
+
+

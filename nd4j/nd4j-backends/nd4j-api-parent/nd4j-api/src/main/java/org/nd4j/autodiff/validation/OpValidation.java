@@ -21,10 +21,12 @@ import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
@@ -146,10 +148,30 @@ public class OpValidation {
             Preconditions.checkNotNull(serializedBeforeExec, "Serialization failed? Null output");
         }
 
+        SameDiff sameDiff = testCase.sameDiff();
+        List<Listener> listeners = sameDiff.getListeners();
+        if(listeners.isEmpty()){
+            sameDiff.addListeners(new NonInplaceValidationListener());
+        } else {
+            boolean found = false;
+            for(Listener l : listeners){
+                if(l instanceof NonInplaceValidationListener){
+                    found = true;
+                    break;
+                }
+            }
+            if(!found){
+                sameDiff.addListeners(new NonInplaceValidationListener());
+            }
+        }
+
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
             try {
+                if(testCase.placeholderValues() != null){
+                    sd.resolveVariablesWith(testCase.placeholderValues());
+                }
                 sd.exec(null, sd.outputs());
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
@@ -316,8 +338,8 @@ public class OpValidation {
             } else {
                 if(!orig.equals(deser)){
                     //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
-                    long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue();
-                    if(count > 0 && orig.equalShapes(deser)){
+                    long count = orig.dataType().isNumerical() ? Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue() : -1;
+                    if(orig.dataType().isNumerical() && count > 0 && orig.equalShapes(deser)){
                         long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
                         if(count != count2){
                             err = "INDArray equality failed";

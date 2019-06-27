@@ -660,6 +660,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+                conf.getLayer().setDataType(netDtype);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
                 paramLength += nParamsPerLayer[i];
             }

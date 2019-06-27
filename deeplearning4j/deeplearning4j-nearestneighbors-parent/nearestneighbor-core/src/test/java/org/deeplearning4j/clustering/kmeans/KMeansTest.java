@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.clustering.kmeans;
 
+import lombok.val;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;
@@ -28,22 +29,25 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 7/2/17.
  */
 public class KMeansTest extends BaseDL4JTest {
 
+    private boolean[] useKMeansPlusPlus = {true, false};
+
     @Test
     public void testKMeans() {
         Nd4j.getRandom().setSeed(7);
-        KMeansClustering kMeansClustering = KMeansClustering.setup(5, 5, Distance.EUCLIDEAN);
-        List<Point> points = Point.toPoints(Nd4j.randn(5, 5));
-        ClusterSet clusterSet = kMeansClustering.applyTo(points);
-        PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
-        System.out.println(pointClassification);
+        for (boolean mode : useKMeansPlusPlus) {
+            KMeansClustering kMeansClustering = KMeansClustering.setup(5, 5, Distance.EUCLIDEAN, mode);
+            List<Point> points = Point.toPoints(Nd4j.randn(5, 5));
+            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+            PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
+            System.out.println(pointClassification);
+        }
     }
 
     @Test
@@ -51,20 +55,22 @@ public class KMeansTest extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(7);
         int numClusters = 5;
-        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
-        List<Point> points = Point.toPoints(Nd4j.rand(5, 300));
-        ClusterSet clusterSet = kMeansClustering.applyTo(points);
-        PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
+        for (boolean mode : useKMeansPlusPlus) {
+            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, mode);
+            List<Point> points = Point.toPoints(Nd4j.rand(5, 300));
+            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+            PointClassification pointClassification = clusterSet.classifyPoint(points.get(0));
 
 
-        KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN);
-        ClusterSet clusterSetEuclidean = kMeansClusteringEuclidean.applyTo(points);
-        PointClassification pointClassificationEuclidean = clusterSetEuclidean.classifyPoint(points.get(0));
-        System.out.println("Cosine " + pointClassification);
-        System.out.println("Euclidean " + pointClassificationEuclidean);
+            KMeansClustering kMeansClusteringEuclidean = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN, mode);
+            ClusterSet clusterSetEuclidean = kMeansClusteringEuclidean.applyTo(points);
+            PointClassification pointClassificationEuclidean = clusterSetEuclidean.classifyPoint(points.get(0));
+            System.out.println("Cosine " + pointClassification);
+            System.out.println("Euclidean " + pointClassificationEuclidean);
 
-        assertEquals(pointClassification.getCluster().getPoints().get(0),
-                        pointClassificationEuclidean.getCluster().getPoints().get(0));
+            assertEquals(pointClassification.getCluster().getPoints().get(0),
+                    pointClassificationEuclidean.getCluster().getPoints().get(0));
+        }
     }
 
     @Ignore
@@ -73,22 +79,24 @@ public class KMeansTest extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);
         int numClusters = 20;
-        StopWatch watch = new StopWatch();
-        watch.start();
-        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, true);
-        List<Point> points = Point.toPoints(Nd4j.linspace(0, 5000*300, 5000*300).reshape(5000,300 ));
+        for (boolean mode : useKMeansPlusPlus) {
+            StopWatch watch = new StopWatch();
+            watch.start();
+            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.COSINE_DISTANCE, mode);
+            List<Point> points = Point.toPoints(Nd4j.linspace(0, 5000 * 300, 5000 * 300).reshape(5000, 300));
 
-        ClusterSet clusterSet = kMeansClustering.applyTo(points);
-        watch.stop();
-        System.out.println("Elapsed for clustering : " + watch);
+            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+            watch.stop();
+            System.out.println("Elapsed for clustering : " + watch);
 
-        watch.reset();
-        watch.start();
-        for (Point p : points) {
-            PointClassification pointClassification = clusterSet.classifyPoint(p);
+            watch.reset();
+            watch.start();
+            for (Point p : points) {
+                PointClassification pointClassification = clusterSet.classifyPoint(p);
+            }
+            watch.stop();
+            System.out.println("Elapsed for search: " + watch);
         }
-        watch.stop();
-        System.out.println("Elapsed for search: " + watch);
     }
 
     @Test
@@ -97,41 +105,43 @@ public class KMeansTest extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
         Nd4j.getRandom().setSeed(7);
         int numClusters = 20;
-        StopWatch watch = new StopWatch();
-        watch.start();
-        KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, Distance.COSINE_DISTANCE, false);
+        for (boolean mode : useKMeansPlusPlus) {
+            StopWatch watch = new StopWatch();
+            watch.start();
+            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, Distance.COSINE_DISTANCE, false, mode);
 
-        List<Point> points = Point.toPoints(Nd4j.linspace(0, 10000*300, 10000*300).reshape(10000,300 ));
+            List<Point> points = Point.toPoints(Nd4j.linspace(0, 10000 * 300, 10000 * 300).reshape(10000, 300));
 
-        ClusterSet clusterSet = kMeansClustering.applyTo(points);
-        watch.stop();
-        System.out.println("Elapsed for clustering : " + watch);
+            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+            watch.stop();
+            System.out.println("Elapsed for clustering : " + watch);
 
-        watch.reset();
-        watch.start();
-        for (Point p : points) {
-            PointClassification pointClassification = clusterSet.classifyPoint(p);
+            watch.reset();
+            watch.start();
+            for (Point p : points) {
+                PointClassification pointClassification = clusterSet.classifyPoint(p);
+            }
+            watch.stop();
+            System.out.println("Elapsed for search: " + watch);
+
+            watch.reset();
+            watch.start();
+            kMeansClustering = KMeansClustering.setup(numClusters, 0.05, Distance.COSINE_DISTANCE, false, mode);
+
+            points = Point.toPoints(Nd4j.linspace(0, 10000 * 300, 10000 * 300).reshape(10000, 300));
+
+            clusterSet = kMeansClustering.applyTo(points);
+            watch.stop();
+            System.out.println("Elapsed for clustering : " + watch);
+
+            watch.reset();
+            watch.start();
+            for (Point p : points) {
+                PointClassification pointClassification = clusterSet.classifyPoint(p);
+            }
+            watch.stop();
+            System.out.println("Elapsed for search: " + watch);
         }
-        watch.stop();
-        System.out.println("Elapsed for search: " + watch);
-
-        watch.reset();
-        watch.start();
-        kMeansClustering = KMeansClustering.setup(numClusters, 0.05, Distance.COSINE_DISTANCE, false);
-
-        points = Point.toPoints(Nd4j.linspace(0, 10000*300, 10000*300).reshape(10000,300 ));
-
-        clusterSet = kMeansClustering.applyTo(points);
-        watch.stop();
-        System.out.println("Elapsed for clustering : " + watch);
-
-        watch.reset();
-        watch.start();
-        for (Point p : points) {
-            PointClassification pointClassification = clusterSet.classifyPoint(p);
-        }
-        watch.stop();
-        System.out.println("Elapsed for search: " + watch);
     }
 
     @Test
@@ -141,45 +151,47 @@ public class KMeansTest extends BaseDL4JTest {
             Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
             Nd4j.getRandom().setSeed(7);
             int numClusters = 3;
-            KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN, true);
-            double[] data = new double[]{
-                    15, 16,
-                    16, 18.5,
-                    17, 20.2,
-                    16.4, 17.12,
-                    17.23, 18.12,
-                    43, 43,
-                    44.43, 45.212,
-                    45.8, 54.23,
-                    46.313, 43.123,
-                    50.21, 46.3,
-                    99, 99.22,
-                    100.32, 98.123,
-                    100.32, 97.423,
-                    102, 93.23,
-                    102.23, 94.23
-            };
-            List<Point> points = Point.toPoints(Nd4j.createFromArray(data).reshape(15, 2));
+            for (boolean mode : useKMeansPlusPlus) {
+                KMeansClustering kMeansClustering = KMeansClustering.setup(numClusters, 1000, Distance.EUCLIDEAN, mode);
+                double[] data = new double[]{
+                        15, 16,
+                        16, 18.5,
+                        17, 20.2,
+                        16.4, 17.12,
+                        17.23, 18.12,
+                        43, 43,
+                        44.43, 45.212,
+                        45.8, 54.23,
+                        46.313, 43.123,
+                        50.21, 46.3,
+                        99, 99.22,
+                        100.32, 98.123,
+                        100.32, 97.423,
+                        102, 93.23,
+                        102.23, 94.23
+                };
+                List<Point> points = Point.toPoints(Nd4j.createFromArray(data).reshape(15, 2));
 
-            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+                ClusterSet clusterSet = kMeansClustering.applyTo(points);
 
 
-            INDArray row0 = Nd4j.createFromArray(new double[]{16.6575, 18.4850});
-            INDArray row1 = Nd4j.createFromArray(new double[]{32.6050, 31.1500});
-            INDArray row2 = Nd4j.createFromArray(new double[]{75.9348, 74.1990});
+                INDArray row0 = Nd4j.createFromArray(new double[]{16.6575, 18.4850});
+                INDArray row1 = Nd4j.createFromArray(new double[]{32.6050, 31.1500});
+                INDArray row2 = Nd4j.createFromArray(new double[]{75.9348, 74.1990});
 
             /*List<Cluster> clusters = clusterSet.getClusters();
             assertEquals(row0, clusters.get(0).getCenter().getArray());
             assertEquals(row1, clusters.get(1).getCenter().getArray());
             assertEquals(row2, clusters.get(2).getCenter().getArray());*/
 
-            PointClassification pointClassification = null;
-            for (Point p : points) {
-                pointClassification = clusterSet.classifyPoint(p);
-                System.out.println("Point: " + p.getArray() + " " + " assigned to cluster: " + pointClassification.getCluster().getCenter().getArray());
-                List<Cluster> clusters = clusterSet.getClusters();
-                for (int i = 0; i < clusters.size(); ++i)
-                    System.out.println("Choice: " + clusters.get(i).getCenter().getArray());
+                PointClassification pointClassification = null;
+                for (Point p : points) {
+                    pointClassification = clusterSet.classifyPoint(p);
+                    System.out.println("Point: " + p.getArray() + " " + " assigned to cluster: " + pointClassification.getCluster().getCenter().getArray());
+                    List<Cluster> clusters = clusterSet.getClusters();
+                    for (int i = 0; i < clusters.size(); ++i)
+                        System.out.println("Choice: " + clusters.get(i).getCenter().getArray());
+                }
             }
             /*assertEquals(Nd4j.createFromArray(new double[]{75.9348, 74.1990}),
                     pointClassification.getCluster().getCenter().getArray());*/
@@ -231,6 +243,41 @@ public class KMeansTest extends BaseDL4JTest {
             System.out.println("Centers: " + ch.getCenters());
             System.out.println("Distance: " + dist);
             System.out.println();
+        }
+    }
+
+    @Test
+    public void testInitClusters() {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        Nd4j.getRandom().setSeed(7);
+        {
+            KMeansClustering kMeansClustering = KMeansClustering.setup(5, 1, Distance.EUCLIDEAN, true);
+
+            double[][] dataArray = {{1000000.0, 2.8E7, 5.5E7, 8.2E7}, {2.8E7, 5.5E7, 8.2E7, 1.09E8}, {5.5E7, 8.2E7, 1.09E8, 1.36E8},
+                    {8.2E7, 1.09E8, 1.36E8, 1.63E8}, {1.09E8, 1.36E8, 1.63E8, 1.9E8}, {1.36E8, 1.63E8, 1.9E8, 2.17E8},
+                    {1.63E8, 1.9E8, 2.17E8, 2.44E8}, {1.9E8, 2.17E8, 2.44E8, 2.71E8}, {2.17E8, 2.44E8, 2.71E8, 2.98E8},
+                    {2.44E8, 2.71E8, 2.98E8, 3.25E8}, {2.71E8, 2.98E8, 3.25E8, 3.52E8}, {2.98E8, 3.25E8, 3.52E8, 3.79E8},
+                    {3.25E8, 3.52E8, 3.79E8, 4.06E8}, {3.52E8, 3.79E8, 4.06E8, 4.33E8}, {3.79E8, 4.06E8, 4.33E8, 4.6E8},
+                    {4.06E8, 4.33E8, 4.6E8, 4.87E8}, {4.33E8, 4.6E8, 4.87E8, 5.14E8}, {4.6E8, 4.87E8, 5.14E8, 5.41E8},
+                    {4.87E8, 5.14E8, 5.41E8, 5.68E8}, {5.14E8, 5.41E8, 5.68E8, 5.95E8}, {5.41E8, 5.68E8, 5.95E8, 6.22E8},
+                    {5.68E8, 5.95E8, 6.22E8, 6.49E8}, {5.95E8, 6.22E8, 6.49E8, 6.76E8}, {6.22E8, 6.49E8, 6.76E8, 7.03E8},
+                    {6.49E8, 6.76E8, 7.03E8, 7.3E8}, {6.76E8, 7.03E8, 7.3E8, 7.57E8}, {7.03E8, 7.3E8, 7.57E8, 7.84E8}};
+            INDArray data = Nd4j.createFromArray(dataArray);
+            List<Point> points = Point.toPoints(data);
+
+            ClusterSet clusterSet = kMeansClustering.applyTo(points);
+
+            double[] centroid1 = {2.44e8,    2.71e8,    2.98e8,    3.25e8};
+            double[] centroid2 = {5.14e8,    5.41e8,    5.68e8,    5.95e8};
+            double[] centroid3 = {1.63e8,     1.9e8,    2.17e8,    2.44e8};
+            double[] centroid4 = {6.76e8,    7.03e8,     7.3e8,    7.57e8};
+            double[] centroid5 = {4.06e8,    4.33e8,     4.6e8,    4.87e8};
+
+            assertArrayEquals(centroid1, clusterSet.getClusters().get(0).getCenter().getArray().toDoubleVector(), 1e-4);
+            assertArrayEquals(centroid2, clusterSet.getClusters().get(1).getCenter().getArray().toDoubleVector(), 1e-4);
+            assertArrayEquals(centroid3, clusterSet.getClusters().get(2).getCenter().getArray().toDoubleVector(), 1e-4);
+            assertArrayEquals(centroid4, clusterSet.getClusters().get(3).getCenter().getArray().toDoubleVector(), 1e-4);
+            assertArrayEquals(centroid5, clusterSet.getClusters().get(4).getCenter().getArray().toDoubleVector(), 1e-4);
         }
     }
 }

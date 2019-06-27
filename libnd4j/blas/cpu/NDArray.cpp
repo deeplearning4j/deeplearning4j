@@ -208,6 +208,23 @@ void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
     return nullptr;
 }
 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {

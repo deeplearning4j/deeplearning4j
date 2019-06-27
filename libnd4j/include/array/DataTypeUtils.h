@@ -28,7 +28,7 @@
 #include <op_boilerplate.h>
 #include <dll.h>
 #include <Environment.h>
-#include <ArrayOptions.h> 
+#include <ArrayOptions.h>
 #include <templatemath.h>
 #include <shape.h>
 #include <helpers/logger.h>
@@ -62,7 +62,7 @@ namespace nd4j {
         template <typename T>
         FORCEINLINE static _CUDA_HD T nanOrZero();
 
-        // returns the difference between 1.0 and the next representable value of the given floating-point type 
+        // returns the difference between 1.0 and the next representable value of the given floating-point type
         template <typename T>
         FORCEINLINE static T eps();
 
@@ -94,13 +94,13 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS ///// 
+///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
     FORCEINLINE nd4j::DataType DataTypeUtils::pickFloatingType(nd4j::DataType typeX) {
         // if proposed dataType is already floating point - return it
         if (isR(typeX))
-            return typeX;        
+            return typeX;
         return Environment::getInstance()->defaultFloatDataType();
     }
 
@@ -213,13 +213,13 @@ FORCEINLINE _CUDA_HD uint32_t DataTypeUtils::min<uint32_t>() {
 }
 
 template<>
-FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {         
-    return 1.175494e-38;    
+FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {
+    return 1.175494e-38;
 }
 
 template<>
 FORCEINLINE _CUDA_HD float16 DataTypeUtils::min<float16>() {
-    return (float16) 6.1035e-05;    
+    return (float16) 6.1035e-05;
 }
 
 template<>
@@ -228,8 +228,8 @@ FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min<bfloat16>() {
 }
 
 template<>
-FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {       
-    return 2.2250738585072014e-308;    
+FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {
+    return 2.2250738585072014e-308;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -280,17 +280,17 @@ FORCEINLINE _CUDA_HD Nd4jULong DataTypeUtils::max<Nd4jULong>() {
 }
 
 template <>
-FORCEINLINE _CUDA_HD float DataTypeUtils::max<float>() {    
+FORCEINLINE _CUDA_HD float DataTypeUtils::max<float>() {
     return 3.402823e+38;
 }
 
 template <>
-FORCEINLINE _CUDA_HD double DataTypeUtils::max<double>() {       
-    return 1.7976931348623157E308;   
+FORCEINLINE _CUDA_HD double DataTypeUtils::max<double>() {
+    return 1.7976931348623157E308;
 }
 
 template <>
-FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {       
+FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {
     return static_cast<float16>(65504.f);
 }
 
@@ -335,6 +335,8 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
             return std::string("INT8");
         case INT16:
             return std::string("INT16");
+        case UINT16:
+            return std::string("UINT16");
         case INT32:
             return std::string("INT32");
         case INT64:
@@ -361,7 +363,7 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
 
 template <typename T>
 FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo) {
-    
+
     for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
         if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
             newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
@@ -373,9 +375,9 @@ FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo,
 }
 
 ///////////////////////////////////////////////////////////////////
-// returns the difference between 1.0 and the next representable value of the given floating-point type 
+// returns the difference between 1.0 and the next representable value of the given floating-point type
 template <typename T>
-FORCEINLINE T DataTypeUtils::eps() {
+FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
         if (std::is_same<T, double>::value)
             return std::numeric_limits<double>::epsilon();
         else if (std::is_same<T, float>::value)
@@ -406,7 +408,7 @@ FORCEINLINE T DataTypeUtils::eps() {
             case nd4j::DataType::FLOAT8:
             case nd4j::DataType::QINT8:
             case nd4j::DataType::BOOL: return (size_t) 1;
-            
+
             case nd4j::DataType::BFLOAT16:
             case nd4j::DataType::HALF:
             case nd4j::DataType::INT16:

@@ -54,7 +54,7 @@ namespace nd4j {
     NDArray* NDArrayList::readRaw(int idx) {
         if (_chunks.count(idx) < 1) {
             nd4j_printf("Non-existent chunk requested: [%i]\n", idx);
-            throw std::runtime_error("Bad index");
+            throw std::invalid_argument("Bad index");
         }
 
         return _chunks[idx];
@@ -120,7 +120,7 @@ namespace nd4j {
         // storing reference
         _chunks[idx] = array;
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     std::vector<Nd4jLong>& NDArrayList::shape() {
@@ -152,8 +152,10 @@ namespace nd4j {
         std::vector<bool> bargs;
         int numElements = _elements.load();
 
-        for (int e = 0; e < numElements; e++)
+        for (int e = 0; e < numElements; e++) {
+            _chunks[e]->syncToDevice();
             inputs.emplace_back(_chunks[e]);
+        }
 
         iargs.push_back(_axis);
 

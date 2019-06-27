@@ -771,7 +771,7 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
 
 
 //////////////////////////////////////////////////////////////////////////
-void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
     // updates and indices have same length
     const Nd4jLong len = indices.lengthOf();

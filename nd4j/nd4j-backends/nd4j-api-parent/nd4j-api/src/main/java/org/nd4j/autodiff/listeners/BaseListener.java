@@ -36,6 +36,11 @@ public abstract class BaseListener implements Listener {
     }
 
     @Override
+    public void preOpExecution(SameDiff sd, At at, boolean training, SameDiffOp op) {
+        //No op
+    }
+
+    @Override
     public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
         //No op
     }

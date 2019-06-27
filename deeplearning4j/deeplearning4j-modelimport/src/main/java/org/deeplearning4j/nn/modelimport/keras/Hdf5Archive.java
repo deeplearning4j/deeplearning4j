@@ -47,6 +47,8 @@ import static org.bytedeco.hdf5.global.hdf5.*;
 @Slf4j
 public class Hdf5Archive implements Closeable {
 
+    public static final int MAX_BUFFER_SIZE_BYTES = (int)Math.pow(2, 28);       //256 MB
+
     /**
      * HDF5 library is not thread safe - possible to crash if multiple reads etc are performed concurrently
      * in multiple threads. This object is used for locking read etc activity using synchronized blocks
@@ -338,7 +340,7 @@ public class Hdf5Archive implements Closeable {
     private String readAttributeAsJson(Attribute attribute) throws UnsupportedKerasConfigurationException {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             VarLenType vl = attribute.getVarLenType();
-            int bufferSizeMult = 1;
+            int currBufferLength = 2048;
             String s;
             /* TODO: find a less hacky way to do this.
              * Reading variable length strings (from attributes) is a giant
@@ -349,8 +351,8 @@ public class Hdf5Archive implements Closeable {
              * buffer and repeat.
              */
             while (true) {
-                byte[] attrBuffer = new byte[bufferSizeMult * 2000];
-                BytePointer attrPointer = new BytePointer(attrBuffer);
+                byte[] attrBuffer = new byte[currBufferLength];
+                BytePointer attrPointer = new BytePointer(currBufferLength);
                 attribute.read(vl, attrPointer);
                 attrPointer.get(attrBuffer);
                 s = new String(attrBuffer);
@@ -362,9 +364,11 @@ public class Hdf5Archive implements Closeable {
                 } catch (IOException e) {
                     //OK - we don't know how long the buffer needs to be, so we'll try again with larger buffer
                 }
-                bufferSizeMult *= 2;
-                if (bufferSizeMult > 1024) {
-                    throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+
+                if(currBufferLength == MAX_BUFFER_SIZE_BYTES){
+                    throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute: size exceeds " + currBufferLength + " bytes");
+                } else {
+                    currBufferLength = (int)Math.min(MAX_BUFFER_SIZE_BYTES, currBufferLength * 4L);
                 }
             }
             vl.deallocate();

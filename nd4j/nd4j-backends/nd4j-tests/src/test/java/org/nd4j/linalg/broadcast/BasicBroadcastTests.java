@@ -122,6 +122,48 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_1() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.subi(y);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_2() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.divi(y);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_3() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.muli(y);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_4() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.addi(y);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_5() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.rsubi(y);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void basicBroadcastFailureTest_6() {
+        val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
+        val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
+        val z = x.rdivi(y);
+    }
+
     @Test
     public void basicBroadcastTest_8() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);

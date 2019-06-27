@@ -249,7 +249,7 @@ public class BertIterator implements MultiDataSetIterator {
             } else {
                 throw new RuntimeException();
             }
-            l[0] = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, numClasses);
+            l[0] = Nd4j.create(DataType.FLOAT, mbPadded, numClasses);
             for( int i=0; i<mb; i++ ){
                 l[0].putScalar(i, classLabels[i], 1.0);
             }
@@ -277,9 +277,9 @@ public class BertIterator implements MultiDataSetIterator {
             if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK2_IDX){
                 labelArr = Nd4j.create(DataType.INT, mbPadded, outLength);
             } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_NCL){
-                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), mbPadded, vocabSize, outLength);
+                labelArr = Nd4j.create(DataType.FLOAT, mbPadded, vocabSize, outLength);
             } else if(unsupervisedLabelFormat == UnsupervisedLabelFormat.RANK3_LNC){
-                labelArr = Nd4j.create(Nd4j.defaultFloatingPointType(), outLength, mbPadded, vocabSize);
+                labelArr = Nd4j.create(DataType.FLOAT, outLength, mbPadded, vocabSize);
             } else {
                 throw new IllegalStateException("Unknown unsupervised label format: " + unsupervisedLabelFormat);
             }
