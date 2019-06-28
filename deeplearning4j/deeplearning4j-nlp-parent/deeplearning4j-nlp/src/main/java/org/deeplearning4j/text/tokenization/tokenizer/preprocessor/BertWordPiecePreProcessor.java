@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 
 import java.text.Normalizer;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +71,11 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
             if(cp == 0 || cp == REPLACEMENT_CHAR || isControlCharacter(cp) || (stripAccents && Character.getType(cp) == Character.NON_SPACING_MARK))
                 continue;
 
+            //Convert to lower case if necessary
+            if(lowerCase){
+                cp = Character.toLowerCase(cp);
+            }
+
             //Replace whitespace chars with space
             if(isWhiteSpace(cp)) {
                 sb.append(' ');
@@ -87,11 +93,6 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
                 sb.appendCodePoint(cp);
                 sb.append(' ');
                 continue;
-            }
-
-            //Convert to lower case if necessary
-            if(lowerCase){
-                cp = Character.toLowerCase(cp);
             }
 
             //All other characters - keep
@@ -128,5 +129,28 @@ public class BertWordPiecePreProcessor implements TokenPreProcess {
                 (cp >= 0x2B820 && cp <= 0x2CEAF) ||
                 (cp >= 0xF900 && cp <= 0xFAFF) ||
                 (cp >= 0x2F800 && cp <= 0x2FA1F);
+    }
+
+
+    /**
+     * Reconstruct the String from tokens
+     * @param tokens
+     * @return
+     */
+    public static String reconstructFromTokens(List<String> tokens){
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(String s : tokens){
+            if(s.startsWith("##")){
+                sb.append(s.substring(2));
+            } else {
+                if(!first && !".".equals(s))
+                    sb.append(" ");
+                sb.append(s);
+                first = false;
+//            }
+            }
+        }
+        return sb.toString();
     }
 }

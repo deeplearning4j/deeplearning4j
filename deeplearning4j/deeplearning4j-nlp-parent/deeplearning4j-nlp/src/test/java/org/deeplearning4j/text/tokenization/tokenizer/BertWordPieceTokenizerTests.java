@@ -19,15 +19,13 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.LowCasePreProcessor;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiecePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -61,6 +59,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
             log.info("Position: [" + position + "], token1: '" + tok1 + "', token 2: '" + tok2 + "'");
             position++;
             assertEquals(tok1, tok2);
+
+            String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+            assertEquals(toTokenize, s2);
         }
     }
 
@@ -76,7 +77,6 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/05/24 - Disabled until dev branch merged - see issue #7657")
     public void testBertWordPieceTokenizer3() throws Exception {
         String toTokenize = "Donaudampfschifffahrtskapitänsmützeninnenfuttersaum";
         TokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
@@ -86,6 +86,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("Donau", "##dam", "##pf", "##schiff", "##fahrt", "##skap", "##itä", "##ns", "##m", "##ützen", "##innen", "##fu", "##tter", "##sa", "##um");
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+        assertEquals(toTokenize, s2);
     }
 
     @Test
@@ -98,6 +101,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("I", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+        assertEquals(toTokenize, s2);
     }
 
     @Test
@@ -112,6 +118,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("Donau", "##dam", "##pf", "##schiff", "##fahrt", "##s", "Kapitän", "##sm", "##ützen", "##innen", "##fu", "##tter", "##sa", "##um");
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+        assertEquals(toTokenize, s2);
     }
 
     @Test
@@ -125,6 +134,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+        assertEquals(toTokenize.toLowerCase(), s2);
     }
 
     @Test
@@ -138,6 +150,9 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         final List<String> expected = Arrays.asList("i", "saw", "a", "girl", "with", "a", "tele", "##scope", ".");
         assertEquals(expected, tokenizer.getTokens());
         assertEquals(expected, tokenizer2.getTokens());
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(tokenizer.getTokens());
+        assertEquals(toTokenize.toLowerCase(), s2);
     }
 
     @Test
@@ -187,5 +202,22 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
                 assertTrue(m, m.contains("invalid") && m.contains("token") && m.contains("preprocessor"));
             }
         }
+    }
+
+
+    @Test
+    public void testBertWordPieceTokenizer10() throws Exception {
+        File f = Resources.asFile("deeplearning4j-nlp/bert/uncased_L-12_H-768_A-12/vocab.txt");
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(f, true, true, StandardCharsets.UTF_8);
+
+        String s = "This is a sentence with Multiple Cases For Words. It should be coverted to Lower Case here.";
+
+        Tokenizer tokenizer = t.create(s);
+        List<String> list = tokenizer.getTokens();
+        System.out.println(list);
+
+        String s2 = BertWordPiecePreProcessor.reconstructFromTokens(list);
+        String exp = s.toLowerCase();
+        assertEquals(exp, s2);
     }
 }
