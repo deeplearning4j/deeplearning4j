@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 
@@ -51,6 +52,10 @@ public class Prod extends BaseReduceSameOp {
 
     public Prod(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
         super(x, z, keepDims, dimensions);
+    }
+
+    public Prod(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
     }
 
 

@@ -39,6 +39,11 @@ public class StandardDeviation extends Variance {
         super(sameDiff, i_v, biasCorrected, keepDims, dimensions );
     }
 
+    public StandardDeviation(INDArray x, boolean biasCorrected, boolean keepDims, int... dimension) {
+        super(x, biasCorrected, dimension);
+        this.keepDims = keepDims;
+    }
+
     public StandardDeviation(INDArray x, boolean biasCorrected, int... dimension) {
         super(x, biasCorrected, dimension);
     }

@@ -144,6 +144,11 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         this(x, null, dimensions);
     }
 
+    public BaseReduceOp(INDArray x, boolean keepDims, int... dimensions) {
+        this(x, null, dimensions);
+        this.keepDims = keepDims;
+    }
+
     public BaseReduceOp(INDArray x, INDArray y, int... dimensions) {
         this(x, y, null, dimensions);
     }

@@ -54,6 +54,9 @@ public class Max extends BaseReduceSameOp {
     public Max(INDArray x, int... axis) {
         super(x, null, null, axis);
     }
+    public Max(INDArray x, boolean keepDims, int... axis) {
+        super(x, keepDims, axis);
+    }
 
     public Max(INDArray x, INDArray z, int... axis) {
         super(x, null, z, axis);

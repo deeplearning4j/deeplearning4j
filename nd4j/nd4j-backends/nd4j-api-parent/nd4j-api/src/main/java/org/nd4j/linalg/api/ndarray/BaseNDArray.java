@@ -3883,12 +3883,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the normmax along the specified dimension
      *
      * @param dimension the dimension to getScalar the norm1 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm1 along the specified dimension
+     */
+    @Override
+    public INDArray normmax(boolean keepDims, int... dimension) {
+        validateNumericalArray("normmax", false);
+        return Nd4j.getExecutioner().exec(new NormMax(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the normmax along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
     @Override
     public INDArray normmax(int... dimension) {
-        validateNumericalArray("normmax", false);
-        return Nd4j.getExecutioner().exec(new NormMax(this, dimension));
+        return normmax(false, dimension);
     }
 
     /**
@@ -4612,12 +4624,37 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the product along a given dimension
      *
      * @param dimension the dimension to getScalar the product along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the product along the specified dimension
+     */
+    @Override
+    public INDArray prod(boolean keepDims, int... dimension) {
+        validateNumericalArray("prod", false);
+        return Nd4j.getExecutioner().exec(new Prod(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the product along a given dimension
+     *
+     * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
     @Override
     public INDArray prod(int... dimension) {
-        validateNumericalArray("prod", false);
-        return Nd4j.getExecutioner().exec(new Prod(this, dimension));
+        return prod(false, dimension);
+    }
+
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray mean(boolean keepDims, int... dimension) {
+        validateNumericalArray("mean", false);
+        return Nd4j.getExecutioner().exec(new Mean(this, keepDims, dimension));
     }
 
     /**
@@ -4628,8 +4665,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mean(int... dimension) {
-        validateNumericalArray("mean", false);
-        return Nd4j.getExecutioner().exec(new Mean(this, dimension));
+        return mean(false, dimension);
     }
 
     @Override
@@ -4639,9 +4675,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray mean(@NonNull INDArray result, int... dimension) {
+    public INDArray mean(@NonNull INDArray result, boolean keepDims, int... dimension) {
         validateNumericalArray("mean", false);
-        return Nd4j.getExecutioner().exec(new Mean(this, result, dimension));
+        return Nd4j.getExecutioner().exec(new Mean(this, result, keepDims, dimension));
+    }
+
+    @Override
+    public INDArray mean(@NonNull INDArray result, int... dimension) {
+        return mean(result, false, dimension);
     }
 
     /**
@@ -4673,12 +4714,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the overall max of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray max(boolean keepDims, int... dimension) {
+        validateNumericalArray("max", false);
+        return Nd4j.getExecutioner().exec(new Max(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the overall max of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
     public INDArray max(int... dimension) {
-        validateNumericalArray("max", false);
-        return Nd4j.getExecutioner().exec(new Max(this, dimension));
+        return max(false, dimension);
     }
 
     @Override
@@ -4691,12 +4744,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the overall min of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray min(boolean keepDims, int... dimension) {
+        validateNumericalArray("min", false);
+        return Nd4j.getExecutioner().exec(new Min(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the overall min of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
     public INDArray min(int... dimension) {
-        validateNumericalArray("min", false);
-        return Nd4j.getExecutioner().exec(new Min(this, dimension));
+        return min(false, dimension);
     }
 
     @Override
@@ -4764,9 +4829,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray sum(@NonNull INDArray result, int... dimension) {
+    public INDArray sum(@NonNull INDArray result, boolean keepDims, int... dimension) {
         validateNumericalArray("sum", true);
-        return Nd4j.getExecutioner().exec(new Sum(this, result, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, result, keepDims, dimension));
+    }
+
+    @Override
+    public INDArray sum(@NonNull INDArray result, int... dimension) {
+        return sum(result, false, dimension);
     }
 
 
@@ -4778,8 +4848,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray norm1(int... dimension) {
+        return norm1(false, dimension);
+    }
+
+
+    /**
+     * Returns the norm1 along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm1 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm1 along the specified dimension
+     */
+    @Override
+    public INDArray norm1(boolean keepDims, int... dimension) {
         validateNumericalArray("norm1", false);
-        return Nd4j.getExecutioner().exec(new Norm1(this, dimension));
+        return Nd4j.getExecutioner().exec(new Norm1(this, keepDims, dimension));
     }
 
 
@@ -4796,8 +4879,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray std(boolean biasCorrected, int... dimension) {
+        return std(biasCorrected, false, dimension);
+    }
+
+    @Override
+    public INDArray std(boolean biasCorrected, boolean keepDims, int... dimension) {
         validateNumericalArray("std", false);
-        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected, dimension));
+        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected, keepDims, dimension));
     }
 
     @Override
@@ -4810,12 +4898,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the norm2 along the specified dimension
      *
      * @param dimension the dimension to getScalar the norm2 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm2 along the specified dimension
+     */
+    @Override
+    public INDArray norm2(boolean keepDims, int... dimension) {
+        validateNumericalArray("norm2", false);
+        return Nd4j.getExecutioner().exec(new Norm2(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the norm2 along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
     @Override
     public INDArray norm2(int... dimension) {
-        validateNumericalArray("norm2", false);
-        return Nd4j.getExecutioner().exec(new Norm2(this, dimension));
+        return norm2(false, dimension);
     }
 
 

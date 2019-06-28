@@ -1250,6 +1250,58 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
+
+
+    @Override
+    public INDArray normmax(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray norm2(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray norm1(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray std(boolean biasCorrected, boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray prod(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray mean(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray mean(INDArray result, boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray max(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray min(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray sum(INDArray result, boolean keepDims, int... dimension) {
+        return null;
+    }
+
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
 
