@@ -45,6 +45,10 @@ public class Mean extends BaseReduceFloatOp {
         super(x, dimensions);
     }
 
+    public Mean(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     public Mean(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
         super(x, z, keepDims, dimensions);
     }

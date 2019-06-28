@@ -52,6 +52,10 @@ public class NormMax extends BaseReduceFloatOp {
         super(x, dimensions);
     }
 
+    public NormMax(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     @Override
     public INDArray noOp() {
         return Transforms.abs(x());
