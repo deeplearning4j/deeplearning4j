@@ -99,7 +99,7 @@ int[] shape = ...;	//Array shape here
 INDArray myArr = Nd4j.create(flat,shape,'c');
 ```
 
-Nd4j can create arrays initialized with zeros and ones using the functions `zeros` and `ones`.
+Nd4j can create arrays initialized with zeros and ones using the functions `zeros` and `ones`. The `rand` function allows you to create an array initialized with random values.
 The default datatype of the INDarray created is `float`. Some overloads allow you to set the datatype.
 
 ```java
@@ -109,6 +109,12 @@ INDArray  x = Nd4j.zeros(5);
 int [] shape = {5};
 x = Nd4j.zeros(shape, DataType.DOUBLE);
 //[         0,         0,         0,         0,         0], DOUBLE
+
+// For higher dimensions you can provide a shape array. 2D random matrix example:
+int rows = 4;
+int cols = 5;
+int[] shape = {rows, cols};
+INDArray x = Nd4j.rand(shape);
 ```
 
 Use the `arange` functions to create an array of evenly spaces values:
@@ -320,7 +326,44 @@ INDArray y2 = Nd4j.reverse(y.dup());
 
 ```
 
-For multidimensional arrays you should use `INDArray.get(NDArrayIndex...)`. See detailed documentation [here] (https://deeplearning4j.org/docs/latest/nd4j-overview#getset )
+For multidimensional arrays you should use `INDArray.get(NDArrayIndex...)`. The example below shows how to iterate over the rows and columns of a 2D array. Note that for 2D arrays we could have used the `getColumn` and `getRow` convenience methods. 
+
+```java
+// Iterate over the rows and columns of a 2d arrray.
+int rows = 4;
+int cols = 5;
+int[] shape = {rows, cols};
+
+INDArray x = Nd4j.rand(shape);
+/*
+[[    0.2228,    0.2871,    0.3880,    0.7167,    0.9951], 
+ [    0.7181,    0.8106,    0.9062,    0.9291,    0.5115], 
+ [    0.5483,    0.7515,    0.3623,    0.7797,    0.5887], 
+ [    0.6822,    0.7785,    0.4456,    0.4231,    0.9157]]
+*/
+        
+for (int row=0; row<rows; row++) {
+	INDArray y = x.get(NDArrayIndex.point(row), NDArrayIndex.all());
+	}
+/*
+[    0.2228,    0.2871,    0.3880,    0.7167,    0.9951]
+[    0.7181,    0.8106,    0.9062,    0.9291,    0.5115]
+[    0.5483,    0.7515,    0.3623,    0.7797,    0.5887]
+[    0.6822,    0.7785,    0.4456,    0.4231,    0.9157]
+*/
+	
+for (int col=0; col<cols; col++) {
+	INDArray y = x.get(NDArrayIndex.all(), NDArrayIndex.point(col));
+	}
+/*
+[    0.2228,    0.7181,    0.5483,    0.6822]
+[    0.2871,    0.8106,    0.7515,    0.7785]
+[    0.3880,    0.9062,    0.3623,    0.4456]
+[    0.7167,    0.9291,    0.7797,    0.4231]
+[    0.9951,    0.5115,    0.5887,    0.9157]
+*/
+	
+```
 
 ## Shape Manipulation
 ### Changing the shape of an array
