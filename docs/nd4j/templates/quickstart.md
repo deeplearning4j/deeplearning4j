@@ -21,14 +21,11 @@ ND4J is a scientific computing library for the JVM. It is meant to be used in pr
 This quickstart follows the same layout and approach of the [Numpy quickstart](https://docs.scipy.org/doc/numpy/user/quickstart.html). This should help people familiar with Python and Numpy get started quickly with Nd4J.
 
 ## Prerequisites
-<!--- // Java, Maven, git. Coding skills and hello world example. -->
-
-To follow the examples in this quick start you will need to know some Java. You can use Nd4J from any [JVM Language](https://en.wikipedia.org/wiki/List_of_JVM_languages). (For example: Scala, Kotlin). You will also need to install the following software on your computer:
-<!--- from the dl4j quickstart, pointing to the dl4j quiclstart for details. -->
+You can use Nd4J from any [JVM Language](https://en.wikipedia.org/wiki/List_of_JVM_languages). (For example: Scala, Kotlin). You can use Nd4J with any build tool. The sample code in this quick start uses the following:
+<!--- git allows us to start with a cleaner project than mvn create. -->
 * [Java (developer version)](./deeplearning4j-quickstart#Java) 1.7 or later (Only 64-Bit versions supported)
 * [Apache Maven](./deeplearning4j-quickstart#Maven) (automated build and dependency manager)
-<!--- git allows us to start with a cleaner project than mvn create. -->
-* [Git](./deeplearning4j-quickstart#Git)(distributed version control system)
+* [Git](./deeplearning4j-quickstart#Git) (distributed version control system)
 
 To improve readability we show you the output of `System.out.println(...)`.  But we have not show the print statement in the sample code. If you are confident you know how to use maven and git, please feel free to skip to the [Basics](#Basics). In the remainder of this section we will build a small 'hello ND4J' application to verify the prequisites are set up correctly.
 
@@ -52,11 +49,7 @@ When everything is set up correctly you should see the following output:
 ```
 
 ## Basics
-<!--- TODO: We will put some into this page. Start with refering to existing doc. -->
-While this quickstart is being build, please refer to our existing 
-[basics usage](./nd4j-basics) document.
-
-The main feature of Nd4j is the versatile n-dimensional array interface called INDArray. To improve performance Nd4j uses off-heap memory to store data. The INDArray is different from standard Java arrays.
+The main feature of Nd4j is the versatile n-dimensional array interface called INDArray. To improve performance Nd4j uses [off-heap memory](./deeplearning4j-config-memory) to store data. The INDArray is different from standard Java arrays.
 
 Some of the key properties and methods for an INDArray x are as follows:
 
