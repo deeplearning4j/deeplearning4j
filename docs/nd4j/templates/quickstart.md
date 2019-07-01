@@ -514,30 +514,61 @@ x2
 ## Functions and Methods Overview
 
 ### Array Creation
- [arange](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#arange-double-double- )
- [create](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#create-org.nd4j.linalg.api.buffer.DataBuffer- )
- [copy](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#copy-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- )
-empty, empty_like, eye, fromfile, fromfunction, identity, linspace, logspace, mgrid, ogrid, ones, ones_like, r, zeros, zeros_like
+ [arange](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#arange-double-double- ),
+ [create](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#create-org.nd4j.linalg.api.buffer.DataBuffer- ),
+ [copy](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#copy-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- ),
+ [empty](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#empty-org.nd4j.linalg.api.buffer.DataBuffer.Type- ), 
+ [empty_like](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#emptyLike-org.nd4j.linalg.api.ndarray.INDArray- ), 
+ [eye]( https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#eye-long- ), 
+ [linspace](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#linspace-double-double-long- ),
+ [meshgrid](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#meshgrid-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- ), 
+ [ones](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#ones-int...- ),
+ [ones_like](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#onesLike-org.nd4j.linalg.api.ndarray.INDArray- ), 
+ [rand](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#rand-int-int- ),
+ [readTxt](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#readTxt-java.lang.String- ),
+ [zeros](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#zeros-int...- ), 
+ [zeros_like](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#zerosLike-org.nd4j.linalg.api.ndarray.INDArray- )
 
 ### Conversions
-ndarray.astype, atleast_1d, atleast_2d, atleast_3d, mat
+[convertToDoubles](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#convertToDoubles-- ), 
+[convertToFloats](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#convertToFloats-- ), 
+[convertToHalfs](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#convertToHalfs-- )
 
-### Manipulations
-array_split, column_stack, concatenate, diagonal, dsplit, dstack, hsplit, hstack, ndarray.item, newaxis, ravel, repeat, reshape, resize, squeeze, swapaxes, take, transpose, vsplit, vstack
-
-### Questions
-all, any, nonzero, where
+### Manipulations 
+[concatenate](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#concat-int-org.nd4j.linalg.api.ndarray.INDArray...- ),
+[hstack](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#hstack-org.nd4j.linalg.api.ndarray.INDArray...- ), 
+ [ravel](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#ravel-- ),
+ [repeat](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#repeat-int-long...- ), 
+ [reshape](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#reshape-long...- ),
+[squeeze](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#squeeze-org.nd4j.linalg.api.ndarray.INDArray-int- ), 
+[swapaxes](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#swapAxes-int-int- ),
+[tear](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#tear-org.nd4j.linalg.api.ndarray.INDArray-int...- ),
+[transpose](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#transpose-- ),
+[vstack](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#vstack-org.nd4j.linalg.api.ndarray.INDArray...- )
 
 ### Ordering
-argmax, argmin, argsort, max, min, ptp, searchsorted, sort
+[argmax](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#argMax-int...- ),
+[max](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#max-int...- ),
+[min](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#min-int...- ),
+[sort](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#sort-org.nd4j.linalg.api.ndarray.INDArray-int-boolean- )
 
 ### Operations
-choose, compress, cumprod, cumsum, inner, ndarray.fill, imag, prod, put, putmask, real, sum
-Basic Statistics
-cov, mean, std, var
+[choice](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#choice-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- ),
+[cumsum](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#cumsum-int- ), 
+[mmul](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#mmul-org.nd4j.linalg.api.ndarray.INDArray- ), 
+[prod](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#prod-int...- ), 
+[put](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#put-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- ),
+[putWhere](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#putWhere-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.indexing.conditions.Condition- ),
+ [sum](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#sum-int...- )
+
+### Basic Statistics
+[covarianceMatrix](https://deeplearning4j.org/api/latest/org/nd4j/linalg/dimensionalityreduction/PCA.html#getCovarianceMatrix--),
+[mean](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#mean-int...- ),
+[std](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#std-int...- ),
+[var](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#var-int...- )
 
 ### Basic Linear Algebra
-cross, dot, outer, linalg.svd, vdot
-
-
-// From here the Numpy quickstart goes deeper. For now we stop here.
+<!--- Not too happy with these links and (lack of) javadoc in them. -->
+[cross](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ops/impl/shape/Cross.html ),
+ [dot](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ops/impl/accum/Dot.html ), [gesvd](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/blas/Lapack.html#gesvd-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- ),
+[mmul](https://deeplearning4j.org/api/latest/org/nd4j/linalg/api/ndarray/INDArray.html#mmul-org.nd4j.linalg.api.ndarray.INDArray-)
