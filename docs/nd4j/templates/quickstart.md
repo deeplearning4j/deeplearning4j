@@ -367,15 +367,177 @@ for (int col=0; col<cols; col++) {
 
 ## Shape Manipulation
 ### Changing the shape of an array
+The number of elements along each axis is in the shape. The shape can be changed with various methods,.
+```java
+INDArray x = Nd4j.rand(3,4);
+x.shape();
+// [3, 4]
+
+INDArray x2 = x.ravel();
+x2.shape();
+// [12]
+
+INDArray x3 = x.reshape(6,2).shape();
+x3.shape();
+//[6, 2]
+
+// Be aware that x, x2, and x3 share the same data. 
+x2.putScalar(5, -1.0);
+
+System.out.println( x);
+/*
+[[    0.0270,    0.3799,    0.5576,    0.3086], 
+ [    0.2266,   -1.0000,    0.1107,    0.4895], 
+ [    0.8431,    0.6011,    0.2996,    0.7500]]
+*/
+
+System.out.println( x2);
+// [    0.0270,    0.3799,    0.5576,    0.3086,    0.2266,   -1.0000,    0.1107,    0.4895,    0.8431,    0.6011,    0.2996,    0.7500]
+
+System.out.println( x3);
+/*        
+[[    0.0270,    0.3799], 
+ [    0.5576,    0.3086], 
+ [    0.2266,   -1.0000], 
+ [    0.1107,    0.4895], 
+ [    0.8431,    0.6011], 
+ [    0.2996,    0.7500]]
+*/
+```
+
 ### Stacking together different arrays
-### Splitting one array into several smaller ones
+Arrays can be stacked together using the `vstack` and `hstack` methods.
+
+```java
+INDArray x = Nd4j.rand(2,2);
+INDArray y = Nd4j.rand(2,2);
+
+x
+/*
+[[    0.1462,    0.5037], 
+ [    0.1418,    0.8645]]
+*/
+
+y;
+/*
+[[    0.2305,    0.4798], 
+ [    0.9407,    0.9735]]
+*/
+ 
+Nd4j.vstack(x, y);
+/*
+[[    0.1462,    0.5037], 
+ [    0.1418,    0.8645], 
+ [    0.2305,    0.4798], 
+ [    0.9407,    0.9735]]
+*/
+
+Nd4j.hstack(x, y);
+/*
+[[    0.1462,    0.5037,    0.2305,    0.4798], 
+ [    0.1418,    0.8645,    0.9407,    0.9735]]
+*/
+```
+
+<!--- No hsplit and vsplit functions in Nd4J. -->
+<!--- ### Splitting one array into several smaller ones -->
+
 
 ## Copies and View
+When working with INDArrays the data is not always copied. Here are three cases you should be aware of.
+
 ### No Copy at All
+Simple assignments make no copy of the data. Java passes objects by reference. No copies are made on a method call. 
+
+```java
+INDArray x = Nd4j.rand(2,2);
+INDArray y = x; // y and x point to the same INData object.
+
+public static void f(INDArray x){
+    // No copy is made. Any changes to x are visible after the function call.
+    }
+
+```
+
 ### View or Shallow Copy
+Some functions will return a view of an array. 
+
+```java
+INDArray x = Nd4j.rand(3,4);
+INDArray  x2 = x.ravel();
+INDArray  x3 = x.reshape(6,2);
+
+x2.putScalar(5, -1.0); // Changes x, x2 and x3
+
+x
+/*
+[[    0.8546,    0.1509,    0.0331,    0.1308], 
+ [    0.1753,   -1.0000,    0.2277,    0.1998], 
+ [    0.2741,    0.8257,    0.6946,    0.6851]]
+*/
+
+x2
+// [    0.8546,    0.1509,    0.0331,    0.1308,    0.1753,   -1.0000,    0.2277,    0.1998,    0.2741,    0.8257,    0.6946,    0.6851]
+
+x3
+/*
+[[    0.8546,    0.1509], 
+ [    0.0331,    0.1308], 
+ [    0.1753,   -1.0000], 
+ [    0.2277,    0.1998], 
+ [    0.2741,    0.8257], 
+ [    0.6946,    0.6851]]
+*/
+
+```
+
 ### Deep Copy
+To make a copy of the array use the `dup` method. This will give you a new array with new data.
+
+```java
+INDArray x = Nd4j.rand(3,4);
+INDArray  x2 = x.ravel().dup();
+
+x2.putScalar(5, -1.0); // Now only changes x2.
+        
+x
+/*
+[[    0.1604,    0.0322,    0.8910,    0.4604], 
+ [    0.7724,    0.1267,    0.1617,    0.7586], 
+ [    0.6117,    0.5385,    0.1251,    0.6886]]
+*/
+
+x2
+// [    0.1604,    0.0322,    0.8910,    0.4604,    0.7724,   -1.0000,    0.1617,    0.7586,    0.6117,    0.5385,    0.1251,    0.6886]
+```
 
 ## Functions and Methods Overview
-// List of links. Start with similar methods as the numpy quickstart.
+
+### Array Creation
+ [arange](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#arange-double-double- )
+ [create](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#create-org.nd4j.linalg.api.buffer.DataBuffer- )
+ [copy](https://deeplearning4j.org/api/latest/org/nd4j/linalg/factory/Nd4j.html#copy-org.nd4j.linalg.api.ndarray.INDArray-org.nd4j.linalg.api.ndarray.INDArray- )
+empty, empty_like, eye, fromfile, fromfunction, identity, linspace, logspace, mgrid, ogrid, ones, ones_like, r, zeros, zeros_like
+
+### Conversions
+ndarray.astype, atleast_1d, atleast_2d, atleast_3d, mat
+
+### Manipulations
+array_split, column_stack, concatenate, diagonal, dsplit, dstack, hsplit, hstack, ndarray.item, newaxis, ravel, repeat, reshape, resize, squeeze, swapaxes, take, transpose, vsplit, vstack
+
+### Questions
+all, any, nonzero, where
+
+### Ordering
+argmax, argmin, argsort, max, min, ptp, searchsorted, sort
+
+### Operations
+choose, compress, cumprod, cumsum, inner, ndarray.fill, imag, prod, put, putmask, real, sum
+Basic Statistics
+cov, mean, std, var
+
+### Basic Linear Algebra
+cross, dot, outer, linalg.svd, vdot
+
 
 // From here the Numpy quickstart goes deeper. For now we stop here.
