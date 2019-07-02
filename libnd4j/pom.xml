@@ -73,6 +73,7 @@
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
+        <libnd4j.buildthreads></libnd4j.buildthreads>
     </properties>
 
     <build>
@@ -85,6 +86,24 @@
         </extensions>
 
         <plugins>
+            <!-- Infer the number of CPU cores and put it in the cpu.core.count property -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${maven-build-helper-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>get-cpu-count</id>
+                        <goals>
+                            <goal>cpu-count</goal>
+                        </goals>
+                        <configuration>
+                            <cpuCount>cpu.core.count</cpuCount>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
@@ -154,6 +173,8 @@
                                 <argument>--compute</argument>
                                 <argument>${libnd4j.compute}</argument>
                                 <argument>${libnd4j.tests}</argument>
+                                <argument>-j</argument>
+                                <argument>${libnd4j.buildthreads}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -216,6 +237,30 @@
     </build>
 
     <profiles>
+        <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
+        <profile>
+            <id>libnd4-single-thread</id>
+            <activation>
+                <property>
+                    <name>libnd4j.singlethread</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.buildthreads>1</libnd4j.buildthreads>
+            </properties>
+        </profile>
+        <profile>
+            <id>libnd4-multi-thread</id>
+            <activation>
+                <property>
+                    <name>!libnd4j.singlethread</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- Note: CPU core count is from build helper plugin -->
+                <libnd4j.buildthreads>${cpu.core.count}</libnd4j.buildthreads>
+            </properties>
+        </profile>
         <profile>
             <id>chip</id>
             <activation>
