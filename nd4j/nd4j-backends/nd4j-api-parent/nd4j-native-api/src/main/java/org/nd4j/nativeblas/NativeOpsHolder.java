@@ -16,16 +16,14 @@
 
 package org.nd4j.nativeblas;
 
+import java.util.Properties;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Properties;
 
 /**
  * @author raver119@gmail.com
@@ -74,5 +72,4 @@ public class NativeOpsHolder {
     public static NativeOpsHolder getInstance() {
         return INSTANCE;
     }
-
 }
