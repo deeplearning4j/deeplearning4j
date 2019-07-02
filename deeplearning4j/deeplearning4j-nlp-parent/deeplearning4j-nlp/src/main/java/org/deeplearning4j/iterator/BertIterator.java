@@ -125,6 +125,7 @@ public class BertIterator implements MultiDataSetIterator {
     protected BertSequenceMasker masker = null;
     protected UnsupervisedLabelFormat unsupervisedLabelFormat = null;
     protected String maskToken;
+    protected String prependToken;
 
 
     protected List<String> vocabKeysAsList;
@@ -143,6 +144,7 @@ public class BertIterator implements MultiDataSetIterator {
         this.masker = b.masker;
         this.unsupervisedLabelFormat = b.unsupervisedLabelFormat;
         this.maskToken = b.maskToken;
+        this.prependToken = b.prependToken;
     }
 
     @Override
@@ -329,6 +331,9 @@ public class BertIterator implements MultiDataSetIterator {
         Tokenizer t = tokenizerFactory.create(sentence);
 
         List<String> tokens = new ArrayList<>();
+        if(prependToken != null)
+            tokens.add(prependToken);
+
         while (t.hasMoreTokens()) {
             String token = t.nextToken();
             tokens.add(token);
@@ -372,6 +377,7 @@ public class BertIterator implements MultiDataSetIterator {
         protected BertSequenceMasker masker = new BertMaskedLMMasker();
         protected UnsupervisedLabelFormat unsupervisedLabelFormat;
         protected String maskToken;
+        protected String prependToken;
 
         /**
          * Specify the {@link Task} the iterator should be set up for. See {@link BertIterator} for more details.
@@ -493,6 +499,19 @@ public class BertIterator implements MultiDataSetIterator {
          */
         public Builder maskToken(String maskToken){
             this.maskToken = maskToken;
+            return this;
+        }
+
+        /**
+         * Prepend the specified token to the sequences, when doing supervised training.<br>
+         * i.e., any token sequences will have this added at the start.<br>
+         * Some BERT/Transformer models may need this - for example sequences starting with a "[CLS]" token.<br>
+         * No token is prepended by default.
+         *
+         * @param prependToken The token to start each sequence with (null: no token will be prepended)
+         */
+        public Builder prependToken(String prependToken){
+            this.prependToken = prependToken;
             return this;
         }
 
