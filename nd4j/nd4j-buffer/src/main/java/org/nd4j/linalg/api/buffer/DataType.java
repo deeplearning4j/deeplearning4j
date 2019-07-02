@@ -125,6 +125,36 @@ public enum DataType {
     }
 
     /**
+     * @return the max number of significant decimal digits
+     */
+    public int precision(){
+        switch (this){
+            case DOUBLE:
+                return 17;
+            case FLOAT:
+                return 9;
+            case HALF:
+                return 5;
+            case BFLOAT16:
+                return 4;
+            case LONG:
+            case INT:
+            case SHORT:
+            case BYTE:
+            case UBYTE:
+            case BOOL:
+            case UTF8:
+            case COMPRESSED:
+            case UINT16:
+            case UINT32:
+            case UINT64:
+            case UNKNOWN:
+            default:
+                return -1;
+        }
+    }
+
+    /**
      * @return For fixed-width types, this returns the number of bytes per array element
      */
     public int width(){

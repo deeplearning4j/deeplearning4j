@@ -38,7 +38,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -5995,13 +5994,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public String toString() {
+        return toString(new NDArrayStrings());
+    }
+
+
+    @Override
+    public String toString(@NonNull NDArrayStrings options){
         if (!isCompressed() && !preventUnpack)
-            return new NDArrayStrings().format(this);
+            return options.format(this);
         else if (isCompressed() && compressDebug)
             return "COMPRESSED ARRAY. SYSTEM PROPERTY compressdebug is true. This is to prevent auto decompression from being triggered.";
         else if (preventUnpack)
             return "Array string unpacking is disabled.";
-        return new NDArrayStrings().format(this);
+        return options.format(this);
+    }
+
+    @Override
+    public String toString(long maxElements, boolean forceSummarize, int precision){
+        return toString(new NDArrayStrings(maxElements, forceSummarize, precision));
+    }
+
+
+    @Override
+    public String toStringFull(){
+        return toString(Long.MAX_VALUE, false, -1 * dataType().precision());
     }
 
     /**

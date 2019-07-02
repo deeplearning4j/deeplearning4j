@@ -442,7 +442,7 @@ public class Nd4j {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    public static void shuffle(INDArray toShuffle, Random random, int... dimension) {
+    public static void shuffle(INDArray toShuffle, Random random, @NonNull int... dimension) {
         INSTANCE.shuffle(toShuffle, random, dimension);
     }
 
@@ -453,7 +453,7 @@ public class Nd4j {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    public static void shuffle(INDArray toShuffle, int... dimension) {
+    public static void shuffle(INDArray toShuffle, @NonNull int... dimension) {
         //shuffle(toShuffle, new Random(), dimension);
         INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
@@ -466,7 +466,7 @@ public class Nd4j {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    public static void shuffle(Collection<INDArray> toShuffle, int... dimension) {
+    public static void shuffle(Collection<INDArray> toShuffle, @NonNull int... dimension) {
         //shuffle(toShuffle, new Random(), dimension);
         INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
@@ -478,7 +478,7 @@ public class Nd4j {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    public static void shuffle(Collection<INDArray> toShuffle, Random rnd, int... dimension) {
+    public static void shuffle(Collection<INDArray> toShuffle, Random rnd, @NonNull int... dimension) {
         //shuffle(toShuffle, new Random(), dimension);
         INSTANCE.shuffle(toShuffle, rnd, dimension);
     }
@@ -694,7 +694,7 @@ public class Nd4j {
      * @param dimension
      * @return
      */
-    public static INDArray argMax(INDArray arr, int... dimension) {
+    public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
         IMax imax = new IMax(arr, dimension);
         return Nd4j.getExecutioner().exec(imax);
     }
@@ -705,7 +705,7 @@ public class Nd4j {
      * @param dimension
      * @return
      */
-    public static INDArray argMin(INDArray arr, int... dimension) {
+    public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
         IMin imin = new IMin(arr, dimension);
         return Nd4j.getExecutioner().exec(imin);
     }
@@ -1748,7 +1748,7 @@ public class Nd4j {
     /**
      * DEPRECATED - use {@link #setDefaultDataTypes(DataType, DataType)}
      * This method sets dataType for the current JVM.
-     * @param dType Data type to set
+     * @param dtype Data type to set
      * @deprecated use {@link #setDefaultDataTypes(DataType, DataType)}. Equivalent to {@code setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()))}
      */
     @Deprecated
@@ -2195,7 +2195,7 @@ public class Nd4j {
      * @return the flattened representation of
      * these ndarrays
      */
-    public static INDArray toFlattened(INDArray... matrices) {
+    public static INDArray toFlattened(@NonNull INDArray... matrices) {
         return INSTANCE.toFlattened(matrices);
     }
 
@@ -2207,7 +2207,7 @@ public class Nd4j {
      * @return the flattened representation of
      * these ndarrays
      */
-    public static INDArray toFlattened(char order, INDArray... matrices) {
+    public static INDArray toFlattened(char order, @NonNull INDArray... matrices) {
         return INSTANCE.toFlattened(order, matrices);
     }
 
@@ -2947,7 +2947,7 @@ public class Nd4j {
         return choice(source, probs, numSamples, Nd4j.getRandom());
     }
 
-    public static INDArray appendBias(INDArray... vectors) {
+    public static INDArray appendBias(@NonNull INDArray... vectors) {
         INDArray ret = INSTANCE.appendBias(vectors);
         return ret;
     }
@@ -2968,23 +2968,37 @@ public class Nd4j {
     ////////////////////// RANDOM ///////////////////////////////
 
     /**
-     * Create a random ndarray with the given shape using
-     * the current time as the seed
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
      *
      * @param shape the shape of the ndarray
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape) {
+    public static INDArray rand(@NonNull int... shape) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
     }
 
-    public static INDArray rand(long[] shape) {
+    /**
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull long... shape) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
     }
 
-    public static INDArray rand(DataType dataType, long... shape) {
+
+    /**
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape and data type
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull DataType dataType, @NonNull long... shape) {
+        Preconditions.checkArgument(dataType.isFPType(),
+                "Can't create a random array of a non-floating point data type");
         INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
     }
@@ -2992,33 +3006,65 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape and array order
      *
+     * Values are sampled from a uniform distribution over (0, 1)
+     *
      * @param order the order of the ndarray to return
      * @param shape the shape of the ndarray
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(char order, int[] shape) {
+    public static INDArray rand(char order, @NonNull int... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order); //INSTANCE.rand(order, shape);
         return rand(ret);
     }
 
-    public static INDArray rand(DataType dataType, char order, int[] shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
+    /**
+     * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.buffer.DataType, char, long...))
+     */
+    @Deprecated
+    public static INDArray rand(@NonNull DataType dataType, int[] shape, char order) {
+        return rand(dataType, order, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * @deprecated use {@link org.nd4j.linalg.factory.Nd4j#rand(org.nd4j.linalg.api.buffer.DataType, char, long...)}
+     */
+    @Deprecated
+    public static INDArray rand(@NonNull DataType dataType, char order, @NonNull int... shape) {
+        return rand(dataType, order, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * Create a random ndarray with the given shape, data type, and array order
+     *
+     * Values are sampled from a uniform distribution over (0, 1)
+     *
+     * @param order the order of the ndarray to return
+     * @param shape the shape of the ndarray
+     * @param dataType the data type of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull DataType dataType, char order, @NonNull long... shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order); //INSTANCE.rand(order, shape);
         return rand(ret);
     }
 
-    public static INDArray rand(DataType dataType, int[] shape, char order) {
-        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
-        return rand(ret);
-    }
 
-    public static INDArray rand(DataType dataType, int[] shape) {
+    /**
+     * Create a random ndarray with the given shape and data type
+     *
+     * Values are sampled from a uniform distribution over (0, 1)
+     *
+     * @param shape the shape of the ndarray
+     * @param dataType the data type of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull DataType dataType, @NonNull int... shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()); //INSTANCE.rand(order, shape);
         return rand(ret);
     }
 
     /**
-     * Create a random ndarray with the given shape using
-     * the current time as the seed
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
      *
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
@@ -3035,6 +3081,8 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape and output order
      *
+     * Values are sampled from a uniform distribution over (0, 1)
+     *
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
@@ -3048,20 +3096,31 @@ public class Nd4j {
     }
 
     /**
-     * Create a random ndarray with the given shape using given seed
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
+     * using given seed
      *
      * @param shape the shape of the ndarray
      * @param seed  the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape, long seed) {
+    public static INDArray rand(long seed, @NonNull long... shape) {
         INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         return rand(ret, seed);
     }
 
+    /**
+     * @deprecated use {@link Nd4j#rand(long, long...)}
+     */
+    @Deprecated
+    public static INDArray rand(int[] shape, long seed) {
+        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
+        return rand(seed, ArrayUtil.toLongArray(shape));
+    }
+
 
     /**
-     * Create a random ndarray with the given shape using the given seed
+     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
+     * using the given seed
      *
      * @param rows    the number of rows in the matrix
      * @param columns the columns of the ndarray
@@ -3074,28 +3133,40 @@ public class Nd4j {
     }
 
     /**
+     * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.Random, long...)}
+     */
+    @Deprecated
+    public static INDArray rand(int[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        return rand(rng, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
      * Create a random ndarray with the given shape using the given RandomGenerator
      *
      * @param shape the shape of the ndarray
      * @param rng     the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(@NonNull org.nd4j.linalg.api.rng.Random rng, @NonNull long... shape) {
         INDArray ret = createUninitialized(shape, Nd4j.order()); //INSTANCE.rand(shape, rng);
         return rand(ret, rng);
     }
 
     /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param dist  distribution to use
-     * @return the random ndarray with the specified shape
+     * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.distribution.Distribution, long...)}
      */
-    public static INDArray rand(int[] shape, Distribution dist) {
-        //INDArray ret = INSTANCE.rand(shape, dist);
-        //logCreationIfNecessary(ret);
-        return dist.sample(shape);
+    @Deprecated
+    public static INDArray rand(int[] shape, @NonNull Distribution dist) {
+        return rand(dist, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * @deprecated use
+     * {@link org.nd4j.linalg.factory.Nd4j#rand(org.nd4j.linalg.api.rng.distribution.Distribution, long...)}
+     */
+    @Deprecated
+    public static INDArray rand(long[] shape, @NonNull Distribution dist) {
+        return rand(dist, shape);
     }
 
     /**
@@ -3105,7 +3176,7 @@ public class Nd4j {
      * @param dist  distribution to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(long[] shape, Distribution dist) {
+    public static INDArray rand(@NonNull Distribution dist, @NonNull long... shape) {
         //INDArray ret = INSTANCE.rand(shape, dist);
         //logCreationIfNecessary(ret);
         return dist.sample(shape);
@@ -3119,21 +3190,24 @@ public class Nd4j {
      * @param rng       the random generator to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(int rows, int columns, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = createUninitialized(new int[] {rows, columns}, order());//INSTANCE.rand(rows, columns, rng);
         return rand(ret, rng);
     }
 
     /**
-     * Generates a random matrix between min and max
-     *
-     * @param shape the number of rows of the matrix
-     * @param min   the minimum number
-     * @param max   the maximum number
-     * @param rng   the rng to use
-     * @return a random matrix of the specified shape and range
+     * @deprecated use {@link Nd4j#rand(double, double, org.nd4j.linalg.api.rng.Random, long...)}
      */
-    public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+    @Deprecated
+    public static INDArray rand(int[] shape, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        return rand(min, max, rng, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * @deprecated use {@link Nd4j#rand(double, double, org.nd4j.linalg.api.rng.Random, long...)}
+     */
+    @Deprecated
+    public static INDArray rand(long[] shape, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
         return rand(ret, min, max, rng);
     }
@@ -3147,7 +3221,7 @@ public class Nd4j {
      * @param rng   the rng to use
      * @return a random matrix of the specified shape and range
      */
-    public static INDArray rand(long[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng, @NonNull long... shape) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
         return rand(ret, min, max, rng);
     }
@@ -3162,7 +3236,7 @@ public class Nd4j {
      * @param rng     the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = createUninitialized(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
         return rand(ret, min, max, rng);
     }
@@ -3178,23 +3252,46 @@ public class Nd4j {
     }
 
     /**
-     * Random normal using the current time stamp
-     * as the seed
+     * Create a ndarray of the given shape with values from N(0,1)
      *
      * @param shape the shape of the ndarray
      * @return
      */
-    public static INDArray randn(int[] shape) {
-        INDArray ret = Nd4j.createUninitialized(shape, order());
-        return randn(ret);
+    public static INDArray randn(@NonNull int... shape) {
+        return randn(ArrayUtil.toLongArray(shape));
     }
 
-    public static INDArray randn(DataType dataType, long... shape) {
+
+    /**
+     * Create a ndarray of the given shape and data type with values from N(0,1)
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    public static INDArray randn(@NonNull DataType dataType, @NonNull int... shape) {
+        return randn(dataType, ArrayUtil.toLongArray(shape));
+    }
+
+
+    /**
+     * Create a ndarray of the given shape and data type with values from N(0,1)
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    public static INDArray randn(@NonNull DataType dataType, @NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, shape, order());
         return randn(ret);
     }
 
-    public static INDArray randn(long... shape) {
+
+    /**
+     * Create a ndarray of the given shape with values from N(0,1)
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    public static INDArray randn(@NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret);
     }
@@ -3205,7 +3302,7 @@ public class Nd4j {
      * @param order order of the output ndarray
      * @param shape the shape of the ndarray
      */
-    public static INDArray randn(char order, int[] shape) {
+    public static INDArray randn(char order, @NonNull int... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order);
         return randn(ret);
     }
@@ -3216,30 +3313,45 @@ public class Nd4j {
      * @param order order of the output ndarray
      * @param shape the shape of the ndarray
      */
-    public static INDArray randn(char order, long[] shape) {
+    public static INDArray randn(char order, @NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order);
         return randn(ret);
     }
 
-    public static INDArray randn(DataType dataType, char order, long[] shape) {
+
+    /**
+     * Random normal N(0,1) with the specified shape and array order
+     *
+     * @param order order of the output ndarray
+     * @param shape the shape of the ndarray
+     * @param dataType the data type of the ndarray
+     */
+    public static INDArray randn(@NonNull DataType dataType, char order, @NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
         return randn(ret);
     }
 
     /**
-     * Random normal using the specified seed
+     * @deprecated use {@link Nd4j#randn(long, long...)}
+     */
+    @Deprecated
+    public static INDArray randn(int[] shape, long seed) {
+        return randn(seed, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * Random normal N(0, 1) using the specified seed
      *
      * @param shape the shape of the ndarray
      * @return
      */
-    public static INDArray randn(int[] shape, long seed) {
+    public static INDArray randn(long seed, @NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret, seed);
     }
 
     /**
-     * Random normal using the current time stamp
-     * as the seed
+     * Random normal N(0, 1)
      *
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
@@ -3282,21 +3394,25 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return
      */
-    public static INDArray randn(long rows, long columns, org.nd4j.linalg.api.rng.Random r) {
+    public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         return randn(ret, r);
     }
 
     /**
-     * Random normal using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param r     the random generator to use
-     * @return
+     * @deprecated use {@link Nd4j#randn(org.nd4j.linalg.api.rng.Random, long...)}
      */
-    public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        final INDArray ret = Nd4j.createUninitialized(shape, order());
-        return randn(ret, r);
+    @Deprecated
+    public static INDArray randn(int[] shape, @NonNull org.nd4j.linalg.api.rng.Random r) {
+        return randn(r, ArrayUtil.toLongArray(shape));
+    }
+
+    /**
+     * @deprecated use {@link Nd4j#randn(org.nd4j.linalg.api.rng.Random, long...)}
+     */
+    @Deprecated
+    public static INDArray randn(long[] shape, @NonNull org.nd4j.linalg.api.rng.Random r) {
+        return randn(r, shape);
     }
 
     /**
@@ -3306,7 +3422,7 @@ public class Nd4j {
      * @param r     the random generator to use
      * @return
      */
-    public static INDArray randn(long[] shape, org.nd4j.linalg.api.rng.Random r) {
+    public static INDArray randn(@NonNull org.nd4j.linalg.api.rng.Random r, @NonNull long... shape) {
         final INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret, r);
     }
@@ -3340,7 +3456,7 @@ public class Nd4j {
      * @param rng     the random generator to use
      * @return the given target array
      */
-    public static INDArray rand(INDArray target, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         return getExecutioner().exec(new UniformDistribution(target), rng);
     }
 
@@ -3351,7 +3467,7 @@ public class Nd4j {
      * @param dist  distribution to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(INDArray target, Distribution dist) {
+    public static INDArray rand(INDArray target, @NonNull Distribution dist) {
         return dist.sample(target);
     }
 
@@ -3364,7 +3480,7 @@ public class Nd4j {
      * @param rng     the random generator to use
      * @return the given target array
      */
-    public static INDArray rand(INDArray target,  double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray rand(INDArray target,  double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         if (min > max)
             throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
         return getExecutioner().exec(new UniformDistribution(target, min, max), rng);
@@ -3388,7 +3504,7 @@ public class Nd4j {
      * @param rng     the random generator to use
      * @return the given target array
      */
-    public static INDArray randn(INDArray target, org.nd4j.linalg.api.rng.Random rng) {
+    public static INDArray randn(INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         return getExecutioner().exec(new GaussianDistribution(target), rng);
     }
 
@@ -3400,7 +3516,7 @@ public class Nd4j {
      * @param shape Shape of the result array
      * @return Result array
      */
-    public static INDArray randomBernoulli(double p, long... shape) {
+    public static INDArray randomBernoulli(double p, @NonNull long... shape) {
         return randomBernoulli(p, Nd4j.createUninitialized(shape));
     }
 
@@ -3426,7 +3542,7 @@ public class Nd4j {
      * @param shape   Shape of the result array
      * @return Result array
      */
-    public static INDArray randomBinomial(int nTrials, double p, long... shape) {
+    public static INDArray randomBinomial(int nTrials, double p, @NonNull long... shape) {
         return randomBinomial(nTrials, p, Nd4j.createUninitialized(shape));
     }
 
@@ -3569,7 +3685,7 @@ public class Nd4j {
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    public static INDArray create(boolean[][] data, long[] shape) {
+    public static INDArray create(boolean[][] data, @NonNull long... shape) {
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -3818,7 +3934,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(float[] data, int[] shape) {
+    public static INDArray create(float[] data, int... shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
         }
@@ -3834,7 +3950,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray create(float[] data, long[] shape) {
+    public static INDArray create(float[] data, long... shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
         }
@@ -3850,7 +3966,7 @@ public class Nd4j {
         return ret;
     }
 
-    public static INDArray create(double[] data, long[] shape) {
+    public static INDArray create(double[] data, long... shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
         }
@@ -3873,7 +3989,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(double[] data, int[] shape) {
+    public static INDArray create(double[] data, int... shape) {
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
@@ -4044,14 +4160,14 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static INDArray create(List<INDArray> list, int[] shape) {
+    public static INDArray create(List<INDArray> list, int... shape) {
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape);
         return ret;
     }
 
-    public static INDArray create(List<INDArray> list, long[] shape) {
+    public static INDArray create(List<INDArray> list, long... shape) {
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape);
@@ -4319,14 +4435,14 @@ public class Nd4j {
      * @param shape
      * @return
      */
-    public static INDArray create(DataBuffer data, int[] shape) {
+    public static INDArray create(DataBuffer data, int... shape) {
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape);
         return ret;
     }
 
-    public static INDArray create(DataBuffer data, long[] shape) {
+    public static INDArray create(DataBuffer data, long... shape) {
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape);
@@ -4709,7 +4825,7 @@ public class Nd4j {
      *
      * @param shape
      */
-    public static void checkShapeValues(long[] shape) {
+    public static void checkShapeValues(long... shape) {
         for (long e: shape) {
             if (e < 0)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
@@ -4721,7 +4837,7 @@ public class Nd4j {
      *
      * @param shape
      */
-    public static void checkShapeValues(int[] shape) {
+    public static void checkShapeValues(int... shape) {
         for (int e: shape) {
             if (e < 1)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
@@ -4729,7 +4845,7 @@ public class Nd4j {
         }
     }
 
-    protected static void checkShapeValues(int length, int[] shape) {
+    protected static void checkShapeValues(int length, int... shape) {
         checkShapeValues(shape);
 
         if (ArrayUtil.prodLong(shape) > length)
@@ -4737,7 +4853,7 @@ public class Nd4j {
                     + " doesn't match data length: " + length);
     }
 
-    protected static void checkShapeValues(int length, long[] shape) {
+    protected static void checkShapeValues(int length, long... shape) {
         checkShapeValues(shape);
 
         if (ArrayUtil.prodLong(shape) > length)
@@ -4832,7 +4948,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return the instance
      */
-    public static INDArray createUninitialized(int[] shape) {
+    public static INDArray createUninitialized(int... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 0.0);
         checkShapeValues(shape);
@@ -4840,7 +4956,7 @@ public class Nd4j {
         return createUninitialized(shape, Nd4j.order());
     }
 
-    public static INDArray createUninitialized(long[] shape) {
+    public static INDArray createUninitialized(long... shape) {
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
@@ -4852,7 +4968,7 @@ public class Nd4j {
      * @param shape
      * @return
      */
-    public static INDArray createUninitializedDetached(int[] shape) {
+    public static INDArray createUninitializedDetached(int... shape) {
         return createUninitializedDetached(shape, Nd4j.order());
     }
 
@@ -4862,7 +4978,7 @@ public class Nd4j {
      * @param shape
      * @return
      */
-    public static INDArray createUninitializedDetached(long[] shape) {
+    public static INDArray createUninitializedDetached(long... shape) {
         return createUninitializedDetached(shape, Nd4j.order());
     }
 
@@ -5081,7 +5197,7 @@ public class Nd4j {
         return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    public static INDArray zeros(DataType dataType, long... shape) {
+    public static INDArray zeros(DataType dataType, @NonNull long... shape) {
         return INSTANCE.create(dataType, shape, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -5244,7 +5360,7 @@ public class Nd4j {
      * @return the created ndarray
      */
 
-    public static INDArray ones(DataType dataType, long... shape) {
+    public static INDArray ones(DataType dataType, @NonNull long... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType, 1.0);
         INDArray ret = INSTANCE.createUninitialized(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -5258,7 +5374,7 @@ public class Nd4j {
      *
      * @param arrs the first matrix to concat
      */
-    public static INDArray hstack(INDArray... arrs) {
+    public static INDArray hstack(@NonNull INDArray... arrs) {
         INDArray ret = INSTANCE.hstack(arrs);
         return ret;
     }
@@ -5281,7 +5397,7 @@ public class Nd4j {
      *
      * @param arrs Arrays to vstack
      */
-    public static INDArray vstack(INDArray... arrs) {
+    public static INDArray vstack(@NonNull INDArray... arrs) {
         Preconditions.checkState(arrs != null && arrs.length > 0, "No input specified to vstack (null or length 0)");
         if(arrs[0].rank() == 1){
             //Edge case: vstack rank 1 arrays - gives rank 2... vstack([3],[3]) -> [2,3]
@@ -5387,7 +5503,7 @@ public class Nd4j {
      * @param arrays
      * @return
      */
-    public static INDArray accumulate(INDArray... arrays) {
+    public static INDArray accumulate(@NonNull INDArray... arrays) {
         if (arrays == null|| arrays.length == 0)
             throw new ND4JIllegalStateException("Input for accumulation is null or empty");
 
@@ -5428,7 +5544,7 @@ public class Nd4j {
      * @param indexes indexes from source array
      * @return
      */
-    public static INDArray pullRows(INDArray source, int sourceDimension, int[] indexes) {
+    public static INDArray pullRows(INDArray source, int sourceDimension, @NonNull int... indexes) {
         return pullRows(source, sourceDimension, indexes, Nd4j.order());
     }
 
@@ -5477,7 +5593,7 @@ public class Nd4j {
      * @param indexes indexes from source array
      * @return Destination array with specified tensors
      */
-    public static INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes){
+    public static INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, @NonNull int... indexes){
         if (sourceDimension >= source.rank())
             throw new IllegalStateException("Source dimension can't be higher the rank of source tensor");
 
@@ -5510,7 +5626,7 @@ public class Nd4j {
      * @return Output array
      * @see #concat(int, INDArray...)
      */
-    public static INDArray stack(int axis, INDArray... values){
+    public static INDArray stack(int axis, @NonNull INDArray... values){
         Preconditions.checkArgument(values != null && values.length > 0, "No inputs: %s", values);
         Preconditions.checkState(axis >= -(values[0].rank()+1) && axis < values[0].rank()+1, "Invalid axis: must be between " +
                 "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
@@ -5532,7 +5648,7 @@ public class Nd4j {
      * the ndarray shapes save the dimension shape specified
      * which is then the sum of the sizes along that dimension
      */
-    public static INDArray concat(int dimension, INDArray... toConcat) {
+    public static INDArray concat(int dimension, @NonNull INDArray... toConcat) {
         if(dimension < 0) {
             dimension += toConcat[0].rank();
         }
@@ -5550,7 +5666,7 @@ public class Nd4j {
      * @param toConcat
      * @return
      */
-    public static INDArray specialConcat(int dimension, INDArray... toConcat) {
+    public static INDArray specialConcat(int dimension, @NonNull INDArray... toConcat) {
         INDArray ret = INSTANCE.specialConcat(dimension, toConcat);
         return ret;
     }
@@ -5581,7 +5697,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static INDArray zeros(int... shape) {
+    public static INDArray zeros(@NonNull int... shape) {
         return Nd4j.create(shape);
     }
 
@@ -5592,7 +5708,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static INDArray zeros(long... shape) {
+    public static INDArray zeros(@NonNull long... shape) {
         return Nd4j.create(shape);
     }
 
@@ -5718,7 +5834,7 @@ public class Nd4j {
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
-    public static int[] getStrides(int[] shape) {
+    public static int[] getStrides(@NonNull int... shape) {
         return getStrides(shape, Nd4j.order());
     }
 
@@ -5730,7 +5846,7 @@ public class Nd4j {
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
-    public static long[] getStrides(long[] shape) {
+    public static long[] getStrides(@NonNull long... shape) {
         return getStrides(shape, Nd4j.order());
     }
 
@@ -5741,7 +5857,7 @@ public class Nd4j {
      * @param repeat the shape to repeat
      * @return the tiled ndarray
      */
-    public static INDArray tile(INDArray tile, int... repeat) {
+    public static INDArray tile(INDArray tile, @NonNull int... repeat) {
         int d = repeat.length;
         long[] shape = ArrayUtil.copy(tile.shape());
         long n = Math.max(tile.length(), 1);
@@ -5790,11 +5906,11 @@ public class Nd4j {
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
-    public static int[] getComplexStrides(int[] shape) {
+    public static int[] getComplexStrides(@NonNull int... shape) {
         return getComplexStrides(shape, Nd4j.order());
     }
 
-    public static long[] getComplexStrides(long[] shape) {
+    public static long[] getComplexStrides(@NonNull long... shape) {
         return getComplexStrides(shape, Nd4j.order());
     }
 
@@ -6134,7 +6250,7 @@ public class Nd4j {
      *
      * @return
      */
-    public static INDArray pile(INDArray... arrays) {
+    public static INDArray pile(@NonNull INDArray... arrays) {
         // if we have vectors as input, it's just vstack use case
 
         long[] shape = arrays[0].shape();
@@ -6169,7 +6285,7 @@ public class Nd4j {
      * @param dimensions
      * @return
      */
-    public static INDArray[] tear(INDArray tensor, int... dimensions) {
+    public static INDArray[] tear(INDArray tensor, @NonNull int... dimensions) {
         if (dimensions.length >= tensor.rank())
             throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
 
