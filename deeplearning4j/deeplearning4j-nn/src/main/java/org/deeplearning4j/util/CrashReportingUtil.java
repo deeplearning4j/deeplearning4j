@@ -16,7 +16,24 @@
 
 package org.deeplearning4j.util;
 
+import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputType;
+import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
+import static org.nd4j.systeminfo.SystemInfo.inferVersion;
+
 import com.jakewharton.byteunits.BinaryByteUnit;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -45,19 +62,8 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.versioncheck.VersionCheck;
-import org.nd4j.versioncheck.VersionInfo;
 import oshi.SystemInfo;
 import oshi.software.os.OperatingSystem;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputType;
-import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
 
 /**
  * A utility for generating crash reports when an out of memory error occurs.
@@ -396,8 +402,6 @@ public class CrashReportingUtil {
             sb.append(String.format(fGpu, "Name", "CC", "Total Memory", "Used Memory", "Free Memory")).append("\n");
             for (int i = 0; i < nDevices; i++) {
                 try {
-                    Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
-                    Constructor<?> constructor = c.getConstructor(long.class);
                     String name = nativeOps.getDeviceName(i);
                     long total = nativeOps.getDeviceTotalMemory(i);
                     long free = nativeOps.getDeviceFreeMemory(i);
@@ -636,27 +640,6 @@ public class CrashReportingUtil {
         }
         sb.append(fBytes("Total Activations Memory", totalActivationBytes));
         sb.append(fBytes("Total Activation Gradient Memory", totalExOutput));
-    }
-
-    public static Pair<String,String> inferVersion(){
-        List<VersionInfo> vi = VersionCheck.getVersionInfos();
-
-        String dl4jVersion = null;
-        String dl4jCudaArtifact = null;
-        for(VersionInfo v : vi){
-            if("org.deeplearning4j".equals(v.getGroupId()) && "deeplearning4j-core".equals(v.getArtifactId())){
-                String version = v.getBuildVersion();
-                if(version.contains("SNAPSHOT")){
-                    dl4jVersion = version + " (" + v.getCommitIdAbbrev() + ")";
-                }
-                dl4jVersion = version;
-            } else if("org.deeplearning4j".equals(v.getGroupId()) && v.getArtifactId() != null && v.getArtifactId().contains("deeplearning4j-cuda")){
-                dl4jCudaArtifact = v.getArtifactId();
-            }
-
-        }
-
-        return new Pair<>(dl4jVersion, dl4jCudaArtifact);
     }
 
 }
