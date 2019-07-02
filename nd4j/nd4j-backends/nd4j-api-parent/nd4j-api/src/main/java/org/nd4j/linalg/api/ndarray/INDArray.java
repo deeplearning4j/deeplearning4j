@@ -16,7 +16,11 @@
 
 package org.nd4j.linalg.api.ndarray;
 
+import static org.nd4j.linalg.factory.Nd4j.compressDebug;
+import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
+
 import com.google.flatbuffers.FlatBufferBuilder;
+import lombok.NonNull;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -28,6 +32,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.io.Serializable;
 import java.nio.LongBuffer;
 import java.util.List;
+import org.nd4j.linalg.string.NDArrayStrings;
 
 /**
  * Interface for an ndarray
@@ -1914,7 +1919,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param shape
      * @param stride
      */
-    public void setShapeAndStride(int[] shape, int[] stride);
+    void setShapeAndStride(int[] shape, int[] stride);
 
     /**
      * Set the ordering
@@ -2843,4 +2848,26 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return
      */
     //INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon);
+
+    /**
+     * Get a string representation of the array with configurable formatting
+     * @param options format options
+     */
+    String toString(@NonNull NDArrayStrings options);
+
+
+    /**
+     * Get a string representation of the array
+     *
+     * @param maxElements Summarize if more than maxElements in the array
+     * @param forceSummarize Force a summary instead of a full print
+     * @param precision The number of decimals to print.  Doesn't print trailing 0s if negative
+     */
+    String toString(long maxElements, boolean forceSummarize, int precision);
+
+    /**
+     * ToString with unlimited elements and precision
+     * @see org.nd4j.linalg.api.ndarray.BaseNDArray#toString(long, boolean, int)
+     */
+    String toStringFull();
 }
