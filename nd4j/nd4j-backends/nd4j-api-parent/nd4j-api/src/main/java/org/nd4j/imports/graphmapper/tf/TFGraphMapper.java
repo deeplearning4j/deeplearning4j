@@ -945,7 +945,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             } else if(tensorProto.getOp().equals("Assert")){
                 return org.nd4j.linalg.api.buffer.DataType.BOOL;
             }
-            log.warn("No TensorFlow descriptor found for tensor \"{}\", op \"{}\"", tensorProto.getName(), tensorProto.getOp());
+            //Not in ops.proto
+            log.debug("No TensorFlow descriptor found for tensor \"{}\", op \"{}\"", tensorProto.getName(), tensorProto.getOp());
 
             //No descriptor... try to fall back on common type attribute names
             if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
