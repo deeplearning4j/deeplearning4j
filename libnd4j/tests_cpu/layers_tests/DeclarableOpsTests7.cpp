@@ -113,7 +113,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    ASSERT_EQ(4,z->lengthOf());
+    ASSERT_EQ(3, z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -137,7 +137,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LEFT) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    ASSERT_EQ(4,z->lengthOf());
+    ASSERT_EQ(3,z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -160,7 +160,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_ONLY_SCALAR) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    ASSERT_EQ(4,z->lengthOf());
+    ASSERT_EQ(2,z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
@@ -183,7 +183,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_ONLY_SCALAR_GTE) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    ASSERT_EQ(4,z->lengthOf());
+    ASSERT_EQ(3,z->lengthOf());
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.indexing;
 
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
@@ -191,9 +192,9 @@ public class BooleanIndexing {
      * ffor the given conditions
      */
     public static INDArray chooseFrom(@NonNull  INDArray[] input,@NonNull  Condition condition) {
-        Choose choose = new Choose(input,condition);
-        Nd4j.getExecutioner().execAndReturn(choose);
-        int secondOutput = choose.getOutputArgument(1).getInt(0);
+        val choose = new Choose(input,condition);
+        val outputs = Nd4j.exec(choose);
+        int secondOutput = outputs[1].getInt(0);
         if(secondOutput < 1) {
             return null;
         }

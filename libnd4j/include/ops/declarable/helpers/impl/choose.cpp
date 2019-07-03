@@ -46,7 +46,8 @@ namespace helpers {
                 for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                     T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(0));
                     if(result2 > 0) {
-                        output->p(numResults, arg->e<T>(i));
+                        if (output != nullptr)
+                            output->p(numResults, arg->e<T>(i));
                         numResults++;
                     }
                 }
@@ -56,9 +57,10 @@ namespace helpers {
                 //for comparison
                 nd4j::NDArray arg1 = *arg;
                 for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
-                    T result2 = processElementCondition(mode, arg->e<T>(i), compScalar.e<T>(0));
+                    T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(i));
                     if(result2 > 0) {
-                        output->p(numResults, arg->e<T>(i));
+                        if (output != nullptr)
+                            output->p(numResults, arg->e<T>(i));
                         numResults++;
                     }
                 }
@@ -72,7 +74,8 @@ namespace helpers {
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition(mode, arg->e<T>(i), compScalar.e<T>(0));
                 if(result2 > 0) {
-                    output->p(numResults, arg->e<T>(i));
+                    if (output != nullptr)
+                        output->p(numResults, arg->e<T>(i));
                     numResults++;
                 }
             }
@@ -82,7 +85,6 @@ namespace helpers {
             numResult->p(0,numResults);
 
         return output;
-
     }
 
     nd4j::NDArray* processCondition(nd4j::LaunchContext * context, int mode,nd4j::NDArray *arg, nd4j::NDArray *comp, nd4j::NDArray *output, nd4j::NDArray *numResult, nd4j::NDArray& compScalar) {

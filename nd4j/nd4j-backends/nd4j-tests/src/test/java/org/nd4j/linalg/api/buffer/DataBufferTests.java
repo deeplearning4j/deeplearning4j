@@ -31,7 +31,6 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import sun.awt.image.DataBufferNative;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

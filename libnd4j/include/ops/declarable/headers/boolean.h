@@ -120,7 +120,7 @@ namespace nd4j {
          * @tparam T
          */
         #if NOT_EXCLUDED(OP_choose)
-        DECLARE_CUSTOM_OP(choose, -1, 1, false, -1, -1);
+        DECLARE_CUSTOM_OP(choose, -1, 1, false, -2, -1);
         #endif
 
         /**

@@ -68,10 +68,10 @@ namespace ops {
             auto blocks = INPUT_VARIABLE(1);
             auto crops = INPUT_VARIABLE(2);
 
-            block_dims = (int) blocks->lengthOf();
+            block_dims = (int) blocks->sizeAt(0);
 
             REQUIRE_TRUE(blocks->isVector() || blocks->lengthOf() == 1, 0, "BatchToSpace: blocks supposed to be vector or scalar, but got %iD instead", blocks->rankOf());
-            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "BatchToSpace: blocks length + 2 should match input rank at least");
+            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf(), 0, "BatchToSpace: blocks length + 1 should match input rank at least");
             REQUIRE_TRUE(crops->rankOf() == 2, 0, "BatchToSpace: padding should have rank of 2, but got %i instead", crops->rankOf());
             REQUIRE_TRUE(crops->columns() == 2 && blocks->lengthOf() == crops->rows(), 0, "BatchToSpace: padding should have M rows and 2 columns");
 
@@ -198,7 +198,7 @@ namespace ops {
             auto blocks = INPUT_VARIABLE(1);
             auto crops = INPUT_VARIABLE(2);
 
-            block_dims = (int) blocks->lengthOf();
+            block_dims = (int) blocks->sizeAt(0);
 
             block_shape = blocks->template asVectorT<int>();
             crops_shape = crops->template asVectorT<int>();
