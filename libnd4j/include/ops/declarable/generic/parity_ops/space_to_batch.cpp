@@ -75,7 +75,7 @@ namespace ops {
             block_shape.resize(block_dims);
             padding_shape.resize(M*2);
 
-            REQUIRE_TRUE(input->rankOf() >= 1 + M + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
+            REQUIRE_TRUE(input->rankOf() >= 1 + M, 0, "SpaceToBatch: blocks length + 1 should match input rank at least");
 
             int e = 0;
             for (; e < block_dims; e++)

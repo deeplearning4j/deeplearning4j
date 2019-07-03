@@ -127,5 +127,23 @@ TEST_F(BooleanOpsTests, Is_numeric_tensor_1) {
     nd4j::ops::is_numeric_tensor op;
 
     ASSERT_TRUE(op.evaluate({&x}));
+}
 
+TEST_F(BooleanOpsTests, test_where_1) {
+    auto x = NDArrayFactory::create<double>('c', {6}, { 1, -3, 4, 8, -2, 5 });
+    auto y = NDArrayFactory::create<double>('c', {6}, { 2, -3, 1, 1, -2, 1 });
+    auto e = NDArrayFactory::create<double>('c', {3}, { 4, 8, 5 });
+
+    nd4j:ops::choose op;
+
+    auto result = op.execute({&x, &y}, {}, {3});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
 }

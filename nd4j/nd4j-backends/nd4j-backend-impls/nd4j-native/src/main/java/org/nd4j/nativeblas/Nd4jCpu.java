@@ -2810,6 +2810,44 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
                 @Cast("bool") boolean descending);
 
+    public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                       Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                       Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                       Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
+                       Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+                       @Cast("bool") boolean descending);
+    public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                       Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                       Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                       Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
+                       Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+                       @Cast("bool") boolean descending);
+    public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                       Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                       Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                       Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
+                       Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+                       @Cast("bool") boolean descending);
+
+    public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                         Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                         Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                         Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
+                         Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+                         @Cast("bool") boolean descending);
+    public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                         Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                         Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                         Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
+                         Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+                         @Cast("bool") boolean descending);
+    public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                         Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                         Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                         Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
+                         Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+                         @Cast("bool") boolean descending);
+
     public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
                 Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
@@ -2834,6 +2872,56 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jLong*") long[] tadShapeInfo,
                 @Cast("Nd4jLong*") long[] tadOffsets,
                 @Cast("bool") boolean descending);
+
+    public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+                     IntPointer dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
+    public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+                     IntBuffer dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
+    public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+                     int[] dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
+
+    public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+                     IntPointer dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
+    public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+                     IntBuffer dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
+    public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                     Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
+                     Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+                     Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
+                     Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+                     int[] dimension,
+                     int dimensionLength,
+                     @Cast("bool") boolean descending);
 
 
     // special sort impl for sorting out COO indices and values
@@ -9629,8 +9717,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BROADCAST_BOOL(NAME) nd4j::BroadcastBoolOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 
 
-public static final int ALL_INTS =INT64;
-public static final int ALL_FLOATS =DOUBLE;
+public static final int ALL_INTS =UINT64;
+public static final int ALL_FLOATS =BFLOAT16;
 
 // #endif //TESTS_CPU_TYPE_BOILERPLATE_H
 
