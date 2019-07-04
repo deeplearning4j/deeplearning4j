@@ -70,6 +70,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
@@ -7871,6 +7872,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
                         arr[i][j][k][m] = (float) cnt++;
     }
 
+    @Test
+    public void testBatchToSpace(){
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 2, 4, 5);
+        DynamicCustomOp c = new BatchToSpace();
+
+        c.addInputArgument(
+                Nd4j.rand(DataType.FLOAT, new int[]{4, 4, 3}),
+                Nd4j.createFromArray(1, 2),
+                Nd4j.createFromArray(new int[][]{ new int[]{0, 0}, new int[]{0, 1} })
+        );
+        c.addOutputArgument(out);
+        Nd4j.getExecutioner().exec(c);
+
+        assertEquals(Nd4j.createFromArray(1f, 3f, 4f), out);
+    }
 
     private static INDArray fwd(INDArray input, INDArray W, INDArray b){
         INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));

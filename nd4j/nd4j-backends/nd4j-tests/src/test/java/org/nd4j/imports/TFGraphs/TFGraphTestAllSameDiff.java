@@ -67,50 +67,29 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     public static final String[] IGNORE_REGEXES = new String[]{
 
-            //Still failing: 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
+            //Still failing: 2019/07/01 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/eclipse/deeplearning4j/issues/7955
             "broadcast_dynamic_shape/1_4",
             "broadcast_dynamic_shape/2,2_1",
 
-            //Failing 2019/04/09 - JVM Crash - https://github.com/deeplearning4j/deeplearning4j/issues/7495
+            //Failing 2019/07/01 - Libnd4j Concat sizing issue - https://github.com/eclipse/deeplearning4j/issues/7963
             "boolean_mask/.*",
 
-            //Failing 2019/04/08 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Failing 2019/07/01 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
-            //Failing 2019/04/08 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 also exception
+            //Failing 2019/07/01 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
-
-            //Failures as of 2019/04/08: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "embedding_lookup/.*multiple.*",
-
-            //Failing 2019/04/08 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "where/cond_only.*",
-
-            //scatter_nd: a few cases failing as of 2019/04/08
-            "scatter_nd/rank2shape_2indices",
-            "scatter_nd/rank3shape_2indices",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
 
-            //2019/04/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
-            "topk/.*",
-
-            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
-            "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
-            "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
-
-            //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
-            "alpha_dropout/.*",
-            "layers_dropout/.*",
-
-            //Still failing as of 2019/04/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/07/02 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
-            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
+            //2019/07/02 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
 
-            //2019/04/08 - Couple of tests failing (InferenceSession issues)
+            //2019/07/02 - Couple of tests failing (InferenceSession issues)
             "rnn/bstack/d_.*",
 
             //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere

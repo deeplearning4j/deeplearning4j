@@ -57,6 +57,28 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
+
+
+            //2019/06/28 - Output incorrect, can't debug b/c https://github.com/eclipse/deeplearning4j/issues/7957
+            "cifar10_gan_85",
+
+            //2019/07/03 - java.lang.NullPointerException: varName is marked @NonNull but is null
+            // https://github.com/eclipse/deeplearning4j/issues/7975
+            "alexnet",
+
+            //2019/07/03 - Out of Memory error
+            "compression_residual_gru",
+
+            //2019/07/03 - calculateOutputDataTypes() has not been implemented for org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor
+            // https://github.com/eclipse/deeplearning4j/issues/7976
+            "deeplabv3_xception_ade20k_train",
+
+            //2019/07/03 - o.n.i.g.t.TFGraphMapper - No TensorFlow descriptor found for tensor "sample_sequence/model/h0/attn/MatMul", op "BatchMatMulV2"
+            //org.nd4j.linalg.exception.ND4JIllegalStateException: No tensorflow op found for Multinomial possibly missing operation class?
+            // @ TFGraphMapper.mapNodeType(TFGraphMapper.java:593)
+            // Missing Multinormal op, see https://github.com/eclipse/deeplearning4j/issues/7913
+            "gpt-2_117M",
+
             //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
             //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
@@ -69,10 +91,19 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             "faster_rcnn_resnet101_coco_2018_01_28",
 
             //2019/06/24 - JVM crash on linux-x86_64-cpu-avx2 and -avx512 CI machines only - runs fine elsewhere
-            "deeplabv3_pascal_train_aug_2018_01_04"
+            "deeplabv3_pascal_train_aug_2018_01_04",
     };
 
     public static final String[] IGNORE_REGEXES_LIBND4J_EXEC_ONLY = {
+
+            // Graph wasn't topsorted for all Keras RNNs (possible TF's too)
+            // https://github.com/eclipse/deeplearning4j/issues/7974
+            "PorV-RNN",
+            "temperature_bidirectional_63",
+            "temperature_stacked_63",
+            "text_gen_81",
+
+
             // 2019/05/20 - Buffer is too big to export? https://github.com/deeplearning4j/deeplearning4j/issues/7760
             // File: C:/DL4J/Git/deeplearning4j/libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h, Line 668
             //Expression: size() < FLATBUFFERS_MAX_BUFFER_SIZE

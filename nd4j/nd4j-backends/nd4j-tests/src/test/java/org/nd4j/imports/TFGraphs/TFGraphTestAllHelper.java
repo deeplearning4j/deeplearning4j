@@ -16,6 +16,7 @@
 
 package org.nd4j.imports.TFGraphs;
 
+import com.google.common.primitives.Doubles;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FilenameUtils;
@@ -181,7 +182,8 @@ public class TFGraphTestAllHelper {
                     if (tfPred.dataType() != nd4jPred.dataType())
                         nd4jPred = nd4jPred.castTo(tfPred.dataType());
 
-                    boolean eq = tfPred.equals(nd4jPred);
+                    boolean eq = getEqualityFunction(modelName, outputNode, tfPred, nd4jPred).apply(tfPred, nd4jPred);
+
                     if(!eq){
                         //Check for both NaN, both inf
                         if(tfPred.dataType().isFPType() && tfPred.equalShapes(nd4jPred) && tfPred.isNaN().castTo(DataType.INT).sumNumber().intValue() == tfPred.length()
@@ -714,4 +716,50 @@ public class TFGraphTestAllHelper {
         }
         return null;
     }
+
+    public static boolean equalsWithEps(double a, double b){
+        return Math.abs(a - b) <= 0.00001;
+    }
+
+    public static BiFunction<INDArray, INDArray, Boolean> getEqualityFunction(String modelName, String varName, INDArray tf, INDArray sd){
+        if(modelName.startsWith("topk")){
+            return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
+        }
+
+        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout"))
+            return (t, s) -> {
+                double[] tfNums = t.ravel().toDoubleVector();
+                double[] sdNums = s.ravel().toDoubleVector();
+
+                Double seen1 = null, seen2 = null;
+                for(int i = 0 ; i < tfNums.length ; i++){
+                    if(!equalsWithEps(tfNums[i], sdNums[i])){
+
+                        // if we have only seen one inequality so far, figure out which is the dropout
+                        if(seen1 != null && seen2 != null){
+                            if(equalsWithEps(tfNums[i], seen1) || equalsWithEps(sdNums[i], seen1)) // the dropout is in seen1
+                                seen2 = null;
+                            else if(equalsWithEps(tfNums[i], seen2) || equalsWithEps(sdNums[i], seen2)){ // the dropout is in seen2
+                                seen1 = seen2;
+                                seen2 = null;
+                            } else // neither match
+                                return false;
+                        }
+
+                        if(seen1 != null){
+                            if(!equalsWithEps(tfNums[i], seen1) && !equalsWithEps(sdNums[i], seen1))
+                                return false;
+                        } else {
+                            seen1 = tfNums[i];
+                            seen2 = sdNums[i];
+                        }
+                    }
+                }
+
+                return true;
+            };
+
+        return Object::equals;
+    }
+
 }
