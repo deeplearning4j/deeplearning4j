@@ -140,7 +140,6 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
         val jvmShapeInfo = shapeBuffer.asLong();
-        log.info("JVM shapeInfo: {}", jvmShapeInfo);
         val dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
 
         switch (dtype) {

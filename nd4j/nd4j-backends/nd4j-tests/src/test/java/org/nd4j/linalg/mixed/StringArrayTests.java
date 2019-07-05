@@ -104,6 +104,24 @@ public class StringArrayTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testBasicStrings_4a() {
+        val arrayX = Nd4j.scalar("alpha");
+
+        val fb = new FlatBufferBuilder();
+        val i = arrayX.toFlatArray(fb);
+        fb.finish(i);
+        val db = fb.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals("alpha", arrayX.getString(0));
+
+        assertEquals(arrayX, restored);
+        assertEquals("alpha", restored.getString(0));
+    }
+
+    @Test
     public void testBasicStrings_5() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayZ0 = arrayX.dup();

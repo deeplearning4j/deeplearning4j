@@ -256,6 +256,54 @@ public class NumpyFormatTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testFromNumpyScalar() throws Exception {
+        val out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
+        assertEquals(Nd4j.scalar(DataType.INT, 1), out);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void readNumpyCorruptHeader1() throws Exception {
+        File f = testDir.newFolder();
+
+        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=0; i<10; i++ ){
+            numpyBytes[i] = 0;
+        }
+        File fCorrupt = new File(f, "corrupt.npy");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+
+        INDArray act1 = Nd4j.createFromNpyFile(fValid);
+        assertEquals(exp, act1);
+
+        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void readNumpyCorruptHeader2() throws Exception {
+        File f = testDir.newFolder();
+
+        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=1; i<10; i++ ){
+            numpyBytes[i] = 0;
+        }
+        File fCorrupt = new File(f, "corrupt.npy");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+
+        INDArray act1 = Nd4j.createFromNpyFile(fValid);
+        assertEquals(exp, act1);
+
+        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+    }
+
     @Override
     public char ordering() {
         return 'c';
