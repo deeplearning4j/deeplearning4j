@@ -2077,7 +2077,8 @@ public class Shape {
             newStrides[nk] = last_stride;
         }
 
-        INDArray ret = Nd4j.create(arr.data(), newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
+        // we need to wrap buffer of a current array, to make sure it's properly marked as a View
+        INDArray ret = Nd4j.create(Nd4j.createBuffer(arr.data(), arr.offset(), arr.length()), newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
         return ret;
     }
 

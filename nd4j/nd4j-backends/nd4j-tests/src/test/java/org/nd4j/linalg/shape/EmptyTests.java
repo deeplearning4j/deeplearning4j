@@ -289,6 +289,15 @@ public class EmptyTests extends BaseNd4jTest {
         assertFalse(Nd4j.create(0).equalShapes(Nd4j.create(1, 0)));
     }
 
+    @Test
+    public void testEmptyWhere() {
+        val mask = Nd4j.createFromArray(false,     false,     false,     false,     false);
+        val result = Nd4j.where(mask, null, null);
+
+        assertTrue(result[0].isEmpty());
+        assertNotNull(result[0].shapeInfoDataBuffer().asLong());
+    }
+
     @Override
     public char ordering() {
         return 'c';

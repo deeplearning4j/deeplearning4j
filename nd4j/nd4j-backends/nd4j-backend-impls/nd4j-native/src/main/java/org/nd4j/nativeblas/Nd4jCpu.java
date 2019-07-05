@@ -678,6 +678,7 @@ bool verbose = false;
 
 // #include <array/ShapeList.h>
 // #include <array/ConstantDescriptor.h>
+// #include <helpers/ConstantShapeHelper.h>
 // #include <array/ConstantDataBuffer.h>
 // #include <helpers/ConstantHelper.h>
 // #include <array/TadPack.h>

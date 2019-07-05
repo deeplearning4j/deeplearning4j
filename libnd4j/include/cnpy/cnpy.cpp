@@ -393,6 +393,18 @@ cnpy::NpyArray cnpy::loadNpyFromPointer(char *data)  {
 * @return
 */
 cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
+    // check for magic header
+    if (data == nullptr)
+        throw std::runtime_error("NULL pointer doesn't look like a NumPy header");
+
+    if (data[0] == (char) 0x93) {
+        std::vector<char> exp({(char) 0x93, 'N', 'U', 'M', 'P', 'Y', (char) 0x01});
+        std::vector<char> hdr(data, data+7);
+        if (hdr != exp)
+            throw std::runtime_error("Pointer doesn't look like a NumPy header");
+    } else
+        throw std::runtime_error("Pointer doesn't look like a NumPy header");
+
     //move passed magic
     data += 11;
     unsigned int *shape;

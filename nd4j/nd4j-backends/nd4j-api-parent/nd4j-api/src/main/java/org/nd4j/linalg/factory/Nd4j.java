@@ -6996,14 +6996,14 @@ public class Nd4j {
             case UTF8: {
                 try {
                     val sb = bb.order(_order);
-                    val pos = bb.position();
-                    val arr = new byte[sb.limit() - sb.position()];
+                    val pos = sb.position();
+                    val arr = new byte[sb.limit() - pos];
 
                     for (int e = 0; e < arr.length; e++) {
-                        arr[e] = sb.get(e + sb.position());
+                        arr[e] = sb.get(e + pos);
                     }
 
-                    val buffer = new Utf8Buffer(arr, ArrayUtil.prod(shapeOf));
+                    val buffer = new Utf8Buffer(arr, prod);
                     return Nd4j.create(buffer, shapeOf);
                 } catch (Exception e) {
                     throw new RuntimeException(e);

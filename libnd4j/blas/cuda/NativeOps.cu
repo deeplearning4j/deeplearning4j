@@ -3276,7 +3276,10 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
     auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
 
     Nd4jLong *shapeBuffer;
-    if (_empty) {
+    if (shape.size() == 1 && shape[0] == 0) {
+        // scalar case
+        shapeBuffer = nd4j::ShapeBuilders::createScalarShapeInfo(dtype);
+    } else if (_empty) {
         if (shapeSize > 0)
             shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
         else
@@ -3284,5 +3287,5 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
     } else {
         shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
     }
-    return reinterpret_cast<Nd4jPointer>(shapeBuffer);
+    return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer, true));
 }

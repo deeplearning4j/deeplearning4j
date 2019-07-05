@@ -29,8 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson
@@ -487,6 +486,17 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
         assertEquals(exp, reshaped);
+    }
+
+    @Test
+    public void testViewAfterReshape() {
+        val x = Nd4j.rand(3,4);
+        val x2 = x.ravel();
+        val x3 = x.reshape(6,2);
+
+        assertFalse(x.isView());
+        assertTrue(x2.isView());
+        assertTrue(x3.isView());
     }
 
     @Override
