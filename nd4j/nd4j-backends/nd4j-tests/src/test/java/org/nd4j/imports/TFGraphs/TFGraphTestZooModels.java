@@ -69,8 +69,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             //2019/07/03 - Out of Memory error
             "compression_residual_gru",
 
-            //2019/07/03 - calculateOutputDataTypes() has not been implemented for org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor
-            // https://github.com/eclipse/deeplearning4j/issues/7976
+            //2019/07/03 - Out of Memory error
             "deeplabv3_xception_ade20k_train",
 
             //2019/07/03 - o.n.i.g.t.TFGraphMapper - No TensorFlow descriptor found for tensor "sample_sequence/model/h0/attn/MatMul", op "BatchMatMulV2"
