@@ -30,12 +30,10 @@ import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
@@ -61,10 +59,6 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
             //2019/06/28 - Output incorrect, can't debug b/c https://github.com/eclipse/deeplearning4j/issues/7957
             "cifar10_gan_85",
-
-            //2019/07/03 - java.lang.NullPointerException: varName is marked @NonNull but is null
-            // https://github.com/eclipse/deeplearning4j/issues/7975
-            "alexnet",
 
             //2019/07/03 - Out of Memory error
             "compression_residual_gru",

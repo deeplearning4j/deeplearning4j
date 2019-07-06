@@ -550,6 +550,8 @@ public abstract class DifferentialFunction {
                 continue;
 
             val var = sameDiff.getVarNameForFieldAndFunction(this,property);
+            if(var == null)
+                continue;   //Rarely (like Conv2D) properties will be optional. For example kH/kW args will be inferred from weight shape
             val fieldType = fields.get(property);
             val varArr = sameDiff.getArrForVarName(var);
             //already defined
