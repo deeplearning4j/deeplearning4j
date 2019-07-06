@@ -16,10 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -52,5 +56,14 @@ public class ResizeNearestNeighbor extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        if(inputDataTypes.get(0).isFPType())
+            return Collections.singletonList(inputDataTypes.get(0));
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }
