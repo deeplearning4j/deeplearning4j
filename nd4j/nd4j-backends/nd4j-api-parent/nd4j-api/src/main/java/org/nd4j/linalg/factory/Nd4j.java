@@ -343,27 +343,29 @@ public class Nd4j {
 
 
     /**
-     * @see #appendImpl(INDArray, int, double, int, boolean)
+     * Append the given array with the specified value size along a particular axis.
+     * The prepend method has the same signature and prepends the given array.
+     * @param arr the array to append to
+     * @param padAmount the pad amount of the array to be returned
+     * @param val the value to append
+     * @param axis the axis to append to
+     * @return the newly created array
      */
     public static INDArray append(INDArray arr, int padAmount, double val, int axis) {
         return appendImpl(arr, padAmount, val, axis, true);
     }
 
     /**
-     * @see #appendImpl(INDArray, int, double, int, boolean)
+     * @see #append(INDArray, int, double, int)
      */
     public static INDArray prepend(INDArray arr, int padAmount, double val, int axis) {
         return appendImpl(arr, padAmount, val, axis, false);
     }
 
     /**
-     * Append / Prepend the given array with the specified value size along a particular axis
-     * @param arr the array to append to
-     * @param padAmount the pad amount of the array to be returned
-     * @param val the value to append
-     * @param axis the axis to append to
-     * @param appendFlag flag to determine Append/Prepend.
-     * @return the newly created array
+     * Append / Prepend shared implementation.
+     * @param appendFlag flag to determine Append / Prepend.
+     * @see #append(INDArray, int, double, int)
      */
     private static INDArray appendImpl(INDArray arr, int padAmount, double val, int axis, boolean appendFlag){
         if (padAmount == 0)
