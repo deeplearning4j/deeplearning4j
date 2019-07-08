@@ -14,22 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.pooling;
+package org.deeplearning4j.rl4j.observation.preprocessors.pooling;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * An ObservationPool is used with the PoolingTransform. This interface supervises how observations are stored
- * and what is returned to the PoolingTransform.transform() method.
+ * ObservationPool is used with the PoolingDataSetPreProcessor. Used to supervise how data from the
+ * PoolingDataSetPreProcessor is stored.
  *
  * @author Alexandre Boulanger
  */
 public interface ObservationPool {
     void add(INDArray observation);
     INDArray[] get();
-
-    /**
-     * Should return true when there are enough element to work with.
-     */
-    boolean isReady();
+    boolean isAtFullCapacity();
+    void reset();
 }

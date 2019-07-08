@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.pooling;
+package org.deeplearning4j.rl4j.observation.preprocessors.pooling;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.nd4j.base.Preconditions;
@@ -22,8 +22,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * CircularFifoObservationPool is used with the PoolingTransform. The CircularFifoObservationPool will become ready
- * when <i>poolSize</i> elements have been added. After which the pool will return the most recent <i>poolSize</i> elements.
+ * CircularFifoObservationPool is used with the PoolingDataSetPreProcessor. This pool is a first-in first-out queue
+ * with a fixed size that replaces its oldest element if full.
  *
  * @author Alexandre Boulanger
  */
@@ -67,11 +67,13 @@ public class CircularFifoObservationPool implements ObservationPool {
         return array;
     }
 
-    /**
-     * @return True if the pool is full.
-     */
-    public boolean isReady() {
+    public boolean isAtFullCapacity() {
         return queue.isAtFullCapacity();
+    }
+
+    @Override
+    public void reset() {
+        queue.clear();
     }
 
     public static Builder builder() {

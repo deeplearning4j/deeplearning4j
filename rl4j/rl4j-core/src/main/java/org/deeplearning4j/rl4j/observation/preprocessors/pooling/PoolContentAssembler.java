@@ -14,23 +14,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation;
+package org.deeplearning4j.rl4j.observation.preprocessors.pooling;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
+ * A PoolContentAssembler is used with the PoolingDataSetPreProcessor. This interface defines how the array of INDArray
+ * returned by the ObservationPool is packaged into the single INDArray that will be set
+ * in the DataSet of PoolingDataSetPreProcessor.preProcess
+ *
  * @author Alexandre Boulanger
  */
-public class SimpleObservation implements Observation {
-
-    private final INDArray value;
-
-    public SimpleObservation(INDArray value) {
-        this.value = value;
-    }
-
-    @Override
-    public INDArray toNDArray() {
-        return value;
-    }
+public interface PoolContentAssembler {
+    INDArray assemble(INDArray[] poolContent);
 }

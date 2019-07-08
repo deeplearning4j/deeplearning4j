@@ -1,5 +1,6 @@
-package org.deeplearning4j.rl4j.observation.pooling;
+package org.deeplearning4j.rl4j.observation.preprocessor.pooling;
 
+import org.deeplearning4j.rl4j.observation.preprocessors.pooling.CircularFifoObservationPool;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,7 +22,7 @@ public class CircularFifoObservationPoolTest {
         CircularFifoObservationPool sut = new CircularFifoObservationPool();
 
         // Act
-        boolean isReady = sut.isReady();
+        boolean isReady = sut.isAtFullCapacity();
 
         // Assert
         assertFalse(isReady);
@@ -34,7 +35,7 @@ public class CircularFifoObservationPoolTest {
         sut.add(Nd4j.create(new double[] { 123.0 }));
 
         // Act
-        boolean isReady = sut.isReady();
+        boolean isReady = sut.isAtFullCapacity();
 
         // Assert
         assertFalse(isReady);
@@ -50,7 +51,7 @@ public class CircularFifoObservationPoolTest {
         sut.add(Nd4j.create(new double[] { 123.0 }));
 
         // Act
-        boolean isReady = sut.isReady();
+        boolean isReady = sut.isAtFullCapacity();
 
         // Assert
         assertTrue(isReady);
@@ -78,4 +79,23 @@ public class CircularFifoObservationPoolTest {
         assertEquals(6.0, result[3].getDouble(0), 0.0);
     }
 
+    @Test
+    public void when_resetIsCalled_expect_poolContentFlushed() {
+        // Assemble
+        CircularFifoObservationPool sut = CircularFifoObservationPool.builder().build();
+        sut.add(Nd4j.create(new double[] { 0.0 }));
+        sut.add(Nd4j.create(new double[] { 1.0 }));
+        sut.add(Nd4j.create(new double[] { 2.0 }));
+        sut.add(Nd4j.create(new double[] { 3.0 }));
+        sut.add(Nd4j.create(new double[] { 4.0 }));
+        sut.add(Nd4j.create(new double[] { 5.0 }));
+        sut.add(Nd4j.create(new double[] { 6.0 }));
+        sut.reset();
+
+        // Act
+        INDArray[] result = sut.get();
+
+        // Assert
+        assertEquals(0, result.length);
+    }
 }

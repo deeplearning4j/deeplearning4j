@@ -14,13 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation;
+package org.deeplearning4j.rl4j.observation.preprocessors;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 /**
+ * A base class for all DataSetPreProcessor that must be reset between each MDP sessions (games).
+ *
  * @author Alexandre Boulanger
  */
-public interface Observation {
-    INDArray toNDArray();
+public abstract class ResettableDataSetPreProcessor implements DataSetPreProcessor {
+    public abstract void reset();
 }
