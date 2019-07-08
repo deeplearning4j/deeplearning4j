@@ -375,8 +375,7 @@ public class Nd4j {
         INDArray concatArray = Nd4j.valueArrayOf(paShape, val, arr.dataType());
         return appendFlag ? Nd4j.concat(axis, arr, concatArray) : Nd4j.concat(axis, concatArray, arr);
     }
-
-
+    
     /**
      * Expand the array dimensions.
      * This is equivalent to
