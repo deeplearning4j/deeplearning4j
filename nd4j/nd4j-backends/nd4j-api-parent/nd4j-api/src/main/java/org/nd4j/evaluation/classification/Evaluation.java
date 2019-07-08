@@ -702,7 +702,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             builder.append("\nCost array: ").append(Arrays.toString(costArray.dup().data().asFloat()));
         }
         //Note that we could report micro-averaged too - but these are the same as accuracy
-        //"Note that for “micro�?-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
+        //"Note that for “micro-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
         //http://scikit-learn.org/stable/modules/model_evaluation.html
 
         builder.append("\n\n");
@@ -884,7 +884,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average precision, how many classes are excluded from the average due to
-     * no predictions – i.e., precision would be the edge case of 0/0
+     * no predictions - i.e., precision would be the edge case of 0/0
      *
      * @return Number of classes excluded from the  average precision
      */
@@ -894,7 +894,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average Recall, how many classes are excluded from the average due to
-     * no predictions – i.e., recall would be the edge case of 0/0
+     * no predictions - i.e., recall would be the edge case of 0/0
      *
      * @return Number of classes excluded from the average recall
      */
@@ -904,7 +904,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average F1, how many classes are excluded from the average due to
-     * no predictions – i.e., F1 would be calculated from a precision or recall of 0/0
+     * no predictions - i.e., F1 would be calculated from a precision or recall of 0/0
      *
      * @return Number of classes excluded from the average F1
      */
@@ -914,7 +914,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average FBeta, how many classes are excluded from the average due to
-     * no predictions – i.e., FBeta would be calculated from a precision or recall of 0/0
+     * no predictions - i.e., FBeta would be calculated from a precision or recall of 0/0
      *
      * @return Number of classes excluded from the average FBeta
      */

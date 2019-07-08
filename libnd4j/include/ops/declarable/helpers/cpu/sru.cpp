@@ -110,7 +110,7 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
 
     // x     input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     // w     2d tensor of weights [2*inSize x 6*inSize]
-    // b     row of biases with twice length [1 × 4*inSize]
+    // b     row of biases with twice length [1 x 4*inSize]
     // c0    2d tensor of initial state [bS x 2*inSize] at time t=0
     // mask  optional, 2d tensor of dropout mask [bS x 2*inSize]
 
@@ -193,7 +193,7 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
 
     // x  input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     // w  2d tensor of weights [2*inSize x 6*inSize]
-    // b  row of biases with twice length [1 × 4*inSize]
+    // b  row of biases with twice length [1 x 4*inSize]
     // c0 2d tensor of initial state [bS x 2*inSize] at time t=0
     // ct [time x bS x 2*inSize]
     // inGradC0 [bS x 2*inSize]

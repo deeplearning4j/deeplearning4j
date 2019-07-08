@@ -145,7 +145,7 @@ DECLARE_SHAPE_FN(sru) {
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     auto x        = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
     auto w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*K]
     auto c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
     auto c        = INPUT_VARIABLE(4);                // C, [bS x K x N]
     auto inGradCt = INPUT_VARIABLE(5);                // [bS x K]
@@ -331,7 +331,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
     
     auto x  = INPUT_VARIABLE(0);                                      // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     auto w  = INPUT_VARIABLE(1);                                      // W, 2d tensor of weights [2*inSize x 6*inSize]
-    auto b  = INPUT_VARIABLE(2);                                      // B, row of biases with twice length [1 × 4*inSize]
+    auto b  = INPUT_VARIABLE(2);                                      // B, row of biases with twice length [1 x 4*inSize]
     auto c0 = INPUT_VARIABLE(3);                                      // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
     NDArray* mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;  // optional, 2d tensor of dropout mask [bS x 2*inSize]
        
@@ -431,7 +431,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     
     auto x        = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     auto w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2*inSize x 6*inSize]
-    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4*inSize]
+    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 4*inSize]
     auto c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
     auto ct       = INPUT_VARIABLE(4);                // C, [time x bS x 2*inSize]
     auto inGradC0 = INPUT_VARIABLE(5);                // [bS x 2*inSize]
@@ -553,7 +553,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *  
@@ -572,7 +572,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *  
@@ -592,7 +592,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: 3d tensor of cell state [bS x K x N]
        *    5: 2d tensor of cell state gradients [bS x K]
@@ -622,7 +622,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     
 //     auto input   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
 //     auto weights = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-//     auto bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+//     auto bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*K]
 //     auto init    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
 //     NDArray* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
@@ -710,7 +710,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 // CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
 //     auto x   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
 //     auto w = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x inSize]
-//     auto b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*inSize]
+//     auto b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*inSize]
 //     auto c0    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
 //     NDArray* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
 
@@ -820,7 +820,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     auto x        = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
 //     auto w        = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
-//     auto b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 × 2*inSize]
+//     auto b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 x 2*inSize]
 //     auto c0       = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
 //     auto c        = INPUT_VARIABLE(4);                                   // C, [bS x inSize x time]
 //     auto inGradCt = INPUT_VARIABLE(5);                                   // [bS x inSize]

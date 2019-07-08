@@ -83,7 +83,7 @@ public class ScatterUpdate implements CustomOp {
      */
     @Override
     public String opName() {
-        return op.opName();
+        return "scatter_update";
     }
 
     /**

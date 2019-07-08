@@ -35,9 +35,24 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
+import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
+import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
+import org.nd4j.linalg.api.ops.custom.SpTreeCell;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.loss.bp.*;
+import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
+import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
+import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
@@ -49,21 +64,26 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.MergeSum;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
+import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation;
+import org.nd4j.linalg.api.ops.impl.transforms.Assert;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.TanDerivative;
 import org.nd4j.linalg.api.ops.persistence.RestoreV2;
@@ -71,6 +91,7 @@ import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
@@ -681,10 +702,22 @@ public class OpValidation {
             }
         }
 
+        int countLibnd4jIgnored = 0;
         if(logUnmappedLibnd4jOps ){
+            Set<String> ignoreLibnd4j = excludeFromLibnd4jCustomOpMapping();
             log.info(" --- Libnd4j Ops Not Mapped ---");
             for(long l : nonMappedLibnd4jOps){
                 Pair<List<String>,CustomOpDescriptor> p = dedupedCustomOps.get(l);
+                boolean foundIgnore = false;
+                for(String s : p.getFirst()){
+                    if(ignoreLibnd4j.contains(s)){
+                        foundIgnore = true;
+                        countLibnd4jIgnored++;
+                        break;
+                    }
+                }
+                if(foundIgnore)
+                    continue;
                 log.info("Not mapped libnd4j custom op: {} (hash: {})", p.getFirst(), l);
             }
         }
@@ -712,6 +745,7 @@ public class OpValidation {
         }
 
         if(logUnmappedTFOps){
+            log.info(" --- TF Ops Not Mapped for Import ---");
             Map<String,OpDef> allTFOps;
             try{
                 allTFOps = TensorflowDescriptorParser.opDescs();
@@ -760,7 +794,7 @@ public class OpValidation {
         String fracTfStr = String.format("%.2f", 100.0 * tfFrac);
 
         int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
-        String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
+        String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)(countTotalLibnd4jOps - countLibnd4jIgnored)));
 
         String fracTFMappedTested = String.format("%.2f", 100.0 * tfOpsWithImportTests / (double)(totalTFMappedOps-tfImportIgnored));
 
@@ -772,7 +806,7 @@ public class OpValidation {
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
         log.info("TF mapped ops:                        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
         log.info("SD ops with TF import mapping + test  {} of {} ({}%) - {} ignored for coverage", tfOpsWithImportTests, (totalTFMappedOps-tfImportIgnored), fracTFMappedTested, tfImportIgnored);
-        log.info("Libnd4j mapped ops:                   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
+        log.info("Libnd4j mapped ops:                   {} of {} ({}%) - {} excluded for coverage", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j, countLibnd4jIgnored);
         log.info("*****************************************************");
     }
 
@@ -832,9 +866,12 @@ public class OpValidation {
                 CumProdBp.class,
                 DotBp.class,
                 SquaredNormBp.class,
+                SoftmaxBp.class,
 
                 CubeDerivative.class,
                 ELUDerivative.class,
+                GELUDerivative.class,
+                PreciseGELUDerivative.class,
                 HardSigmoidDerivative.class,
                 HardTanhDerivative.class,
                 LeakyReLUDerivative.class,
@@ -872,13 +909,54 @@ public class OpValidation {
 
                 SliceBp.class,
                 StridedSliceBp.class,
+                MmulBp.class,
+                DotProductAttentionBp.class,
+                MultiHeadDotProductAttentionBp.class,
+                LayerNormBp.class,
+                StandardizeBp.class,
+                DynamicPartitionBp.class,
 
-                //We can't use these dropout ops in SameDiff: https://github.com/deeplearning4j/deeplearning4j/issues/5650
-                DropOut.class,
-                DropOutInverted.class,
-                AlphaDropOut.class,
-                Choice.class,
-                ProbablisticMerge.class
+                AbsoluteDifferenceLossBp.class,
+                CosineDistanceLossBp.class,
+                HingeLossBp.class,
+                HuberLossBp.class,
+                LogLossBp.class,
+                LogPoissonLossBp.class,
+                MeanPairwiseSquaredErrorLossBp.class,
+                MeanSquaredErrorLossBp.class,
+                SigmoidCrossEntropyLossBp.class,
+                SoftmaxCrossEntropyLossBp.class,
+                SparseSoftmaxCrossEntropyLossWithLogitsBp.class,
+
+                SegmentMaxBp.class,
+                SegmentMeanBp.class,
+                SegmentMinBp.class,
+                SegmentProdBp.class,
+                SegmentSumBp.class,
+                UnsortedSegmentMaxBp.class,
+                UnsortedSegmentMeanBp.class,
+                UnsortedSegmentMinBp.class,
+                UnsortedSegmentProdBp.class,
+                UnsortedSegmentSqrtNBp.class,
+                UnsortedSegmentSumBp.class,
+
+                //Not intended for general users; only used in DL4J SameDiff integration + tested adequately there
+                ExternalErrorsFunction.class,
+
+                //Meta-Ops: not available in SameDiff
+                InvertedPredicateMetaOp.class,
+                PostulateMetaOp.class,
+                PredicateMetaOp.class,
+                ReduceMetaOp.class,
+
+
+                //Ops not intended to be used in SameDiff:
+                BarnesEdgeForces.class,
+                BarnesHutGains.class,
+                BarnesHutSymmetrize.class,
+                SpTreeCell.class,
+                CbowRound.class,
+                SkipGramRound.class
         );
 
         return new HashSet<>(list);
@@ -907,9 +985,21 @@ public class OpValidation {
                 InvertPermutation.class,    //Uses integer indices
                 ConfusionMatrix.class,      //Integer indices
                 Linspace.class,             //No input array
-                //Exclude boolean operations:
+                Assert.class,
+                //Exclude boolean operations, boolean reductions, etc:
                 Any.class,
                 All.class,
+                IsInf.class,
+                org.nd4j.linalg.api.ops.impl.transforms.bool.IsInf.class,
+                IsNaN.class,
+                org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN.class,
+                BooleanNot.class,
+                Not.class,
+                MatchConditionTransform.class,
+                InTopK.class,
+                IsNonDecreasing.class,
+                IsStrictlyIncreasing.class,
+                IsNumericTensor.class,
                 //Exclude index accumulations (index out, not real-valued)
                 FirstIndex.class,
                 IAMax.class,
@@ -917,6 +1007,12 @@ public class OpValidation {
                 IMax.class,
                 IMin.class,
                 LastIndex.class,
+
+                //Exclude ops that output integer types only:
+                Shape.class,
+                ShapeN.class,
+                SizeAt.class,
+
                 //Exclude Random ops
                 RandomStandardNormal.class,
                 DistributionUniform.class,
@@ -949,7 +1045,12 @@ public class OpValidation {
                 ProdBp.class,
                 StandardDeviationBp.class,
                 SumBp.class,
-                VarianceBp.class
+                VarianceBp.class,
+
+                LogicalAnd.class,
+                LogicalNot.class,
+                LogicalOr.class,
+                LogicalXor.class
         );
 
         return new HashSet<>(list);
@@ -981,6 +1082,72 @@ public class OpValidation {
                 "BatchSelfAdjointEigV2",    //Deprecated in favor of "SelfAdjointEigV2"
                 "BatchSvd",                 //Deprecated in favor of "Svd"
 
+                //These we will likely neven support importing
+                "ExperimentalBytesProducedStatsDataset",
+                "ExperimentalCSVDataset",
+                "ExperimentalDatasetCardinality",
+                "ExperimentalDatasetToTFRecord",
+                "ExperimentalDenseToSparseBatchDataset",
+                "ExperimentalDirectedInterleaveDataset",
+                "ExperimentalGroupByReducerDataset",
+                "ExperimentalGroupByWindowDataset",
+                "ExperimentalIdentityIndexedDataset",
+                "ExperimentalIgnoreErrorsDataset",
+                "ExperimentalIndexedDatasetGet",
+                "ExperimentalIndexedDatasetMaterialize",
+                "ExperimentalIteratorGetDevice",
+                "ExperimentalLMDBDataset",
+                "ExperimentalLatencyStatsDataset",
+                "ExperimentalMapAndBatchDataset",
+                "ExperimentalMapDataset",
+                "ExperimentalMatchingFilesDataset",
+                "ExperimentalMaterializedIndexDatasetHandle",
+                "ExperimentalMaxIntraOpParallelismDataset",
+                "ExperimentalNonSerializableDataset",
+                "ExperimentalNumaMapAndBatchDataset",
+                "ExperimentalParallelInterleaveDataset",
+                "ExperimentalParseExampleDataset",
+                "ExperimentalPrivateThreadPoolDataset",
+                "ExperimentalRandomDataset",
+                "ExperimentalScanDataset",
+                "ExperimentalSetStatsAggregatorDataset",
+                "ExperimentalSleepDataset",
+                "ExperimentalSlidingWindowDataset",
+                "ExperimentalSqlDataset",
+                "ExperimentalStatsAggregatorHandle",
+                "ExperimentalStatsAggregatorSummary",
+                "ExperimentalThreadPoolDataset",
+                "ExperimentalThreadPoolHandle",
+                "ExperimentalUnbatchDataset",
+                "ExperimentalUniqueDataset",
+
+                "DebugIdentity",
+                "NcclAllReduce",
+                "NcclBroadcast",
+                "NcclReduce",
+
+                //Can't import these without embedding entire python runtime and dependencies
+                "PyFunc",
+                "PyFuncStateless",
+
+                //"QuantizedX" ops are deprecated / no longer supported ("standard" ops have quantized support in many cases)
+                "QuantizedAdd",
+                "QuantizedAvgPool",
+                "QuantizedBatchNormWithGlobalNormalization",
+                "QuantizedBiasAdd",
+                "QuantizedConcat",
+                "QuantizedConv2D",
+                "QuantizedInstanceNorm",
+                "QuantizedMatMul",
+                "QuantizedMaxPool",
+                "QuantizedMul",
+                "QuantizedRelu",
+                "QuantizedRelu6",
+                "QuantizedReluX",
+                "QuantizedReshape",
+                "QuantizedResizeBilinear",
+
+
                 //All of the following ops - not available in TF (can't find them) - op mapping is wrong?
                 //TODO: Check these and remove the import mapping from the Java classes if they are indeed bad
                 "HardTanh",
@@ -993,12 +1160,37 @@ public class OpValidation {
                 "absargmin",
                 "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
                 "count_zero"
-
-
-
         );
 
         return new HashSet<>(list);
+    }
+
+
+    /**
+     * These ops are ones we will never map at Java level for one reason or another
+     */
+    private static Set<String> excludeFromLibnd4jCustomOpMapping(){
+        Set<String> out = new HashSet<>();
+        Collections.addAll(out,
+                //Test and misc ops:
+                "TestOp2i2o", "testop2i2o",
+                "firas_sparse",
+                "test_output_reshape",
+                "test_scalar",
+                "testcustom",
+                "testreduction",
+
+                //"to_x" ops - we'll use cast instead in SameDiff (which supports all dtypes)
+                "to_double",
+                "to_float16",
+                "to_float32",
+                "to_int32",
+                "to_int64",
+                "to_uint32",
+                "to_uint64"
+                );
+
+        return out;
     }
 
 }
