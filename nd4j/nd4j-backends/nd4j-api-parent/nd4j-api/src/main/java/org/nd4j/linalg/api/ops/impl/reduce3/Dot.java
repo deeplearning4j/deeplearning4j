@@ -28,7 +28,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Dot product
+ * Dot product.
+ *
  * @author Adam Gibson
  */
 public class Dot extends BaseReduce3Op {
@@ -37,21 +38,42 @@ public class Dot extends BaseReduce3Op {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Dot() {}
+    public Dot() {
+    }
 
+    /**
+     * Full array dot product reduction, optionally along specified dimensions.<br>
+     * See <a href="https://en.wikipedia.org/wiki/Dot_product">wikipedia</a> for details.
+     *
+     * @param x          input variable.
+     * @param y          input variable.
+     * @param z          (optional) place holder for the result. Must have the expected shape.
+     * @param dimensions (optional) Dimensions to reduce over. If dimensions are not specified, full array reduction is performed.
+     * @see org.nd4j.linalg.ops.transforms.Transforms#dot Transforms.dot(...) for a wrapper around the common use case of 2 INDArrays.
+     */
     public Dot(INDArray x, INDArray y, INDArray z, int... dimensions) {
         this(x, y, z, true, false, dimensions);
     }
 
-    public Dot(INDArray x, INDArray y,  int... dimensions) {
+
+    /**
+     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     */
+    public Dot(INDArray x, INDArray y, int... dimensions) {
         this(x, y, null, dimensions);
     }
 
+    /**
+     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     */
     public Dot(INDArray x, INDArray y, INDArray z) {
         this(x, y, z, null);
     }
 
-    public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
+    /**
+     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     */
+    public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, y, z, keepDims, false, dimensions);
     }
 
