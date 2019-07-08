@@ -343,16 +343,29 @@ public class Nd4j {
 
 
     /**
-     * Append the given
-     * array with the specified value size
-     * along a particular axis
+     * @see #appendImpl(INDArray, int, double, int, boolean)
+     */
+    public static INDArray append(INDArray arr, int padAmount, double val, int axis) {
+        return appendImpl(arr, padAmount, val, axis, true);
+    }
+
+    /**
+     * @see #appendImpl(INDArray, int, double, int, boolean)
+     */
+    public static INDArray prepend(INDArray arr, int padAmount, double val, int axis) {
+        return appendImpl(arr, padAmount, val, axis, false);
+    }
+
+    /**
+     * Append / Prepend the given array with the specified value size along a particular axis
      * @param arr the array to append to
      * @param padAmount the pad amount of the array to be returned
      * @param val the value to append
      * @param axis the axis to append to
+     * @param appendFlag flag to determine Append/Prepend.
      * @return the newly created array
      */
-    public static INDArray append(INDArray arr, int padAmount, double val, int axis) {
+    private static INDArray appendImpl(INDArray arr, int padAmount, double val, int axis, boolean appendFlag){
         if (padAmount == 0)
             return arr;
         long[] paShape = ArrayUtil.copy(arr.shape());
@@ -360,30 +373,9 @@ public class Nd4j {
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
         INDArray concatArray = Nd4j.valueArrayOf(paShape, val, arr.dataType());
-        return Nd4j.concat(axis, arr, concatArray);
+        return appendFlag ? Nd4j.concat(axis, arr, concatArray) : Nd4j.concat(axis, concatArray, arr);
     }
 
-    /**
-     * Append the given
-     * array with the specified value size
-     * along a particular axis
-     * @param arr the array to append to
-     * @param padAmount the pad amount of the array to be returned
-     * @param val the value to append
-     * @param axis the axis to append to
-     * @return the newly created array
-     */
-    public static INDArray prepend(INDArray arr, int padAmount, double val, int axis) {
-        if (padAmount == 0)
-            return arr;
-
-        long[] paShape = ArrayUtil.copy(arr.shape());
-        if (axis < 0)
-            axis = axis + arr.shape().length;
-        paShape[axis] = padAmount;
-        INDArray concatArr = Nd4j.valueArrayOf(paShape, val, arr.dataType());
-        return Nd4j.concat(axis, concatArr, arr);
-    }
 
     /**
      * Expand the array dimensions.
