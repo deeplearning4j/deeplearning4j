@@ -189,7 +189,6 @@ public class Nd4j {
 
     protected static AtomicBoolean fallbackMode;
 
-
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
     protected static ReferenceQueue<DataBuffer> bufferQueue = new ReferenceQueue<>();
@@ -204,25 +203,17 @@ public class Nd4j {
         nd4j.initContext();
     }
 
-
     public enum PadMode {
         CONSTANT, EDGE, LINEAR_RAMP, MAXIMUM, MEAN, MEDIAN, MINIMUM, REFLECT, SYMMETRIC, WRAP
 
     }
 
     /**
-     * Pad the given ndarray to the size along each dimension
-     * @param toPad the ndarray to pad
-     * @param padWidth the width to pad along each dimension
-     * @param padMode the mode to pad in
-     * @return the padded ndarray
-     * based on the specified mode
+     * @see #pad(INDArray, int[][], PadMode)
      */
     public static INDArray pad(INDArray toPad, int[][] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(toPad.shape()), padMode);
     }
-
-
 
     /**
      * Pad the given ndarray to the size along each dimension
@@ -244,8 +235,6 @@ public class Nd4j {
                     sizes.add(padWidth[i]);
                 }
 
-
-
                 INDArray ret = toPad;
                 for (int i = 0; i < toPad.rank(); i++) {
                     int[] pad = sizes.get(i);
@@ -275,13 +264,7 @@ public class Nd4j {
     }
 
     /**
-     * Pad the given ndarray to the size along each dimension
-     * @param toPad the ndarray to pad
-     * @param padWidth the width to pad along each dimension
-     * @param constantValues the values to append for each dimension
-     * @param padMode the mode to pad in
-     * @return the padded ndarray
-     * based on the specified mode
+     * @see #pad(INDArray, int[][], PadMode)
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, List<double[]> constantValues, PadMode padMode) {
         switch (padMode) {
@@ -296,9 +279,8 @@ public class Nd4j {
                     sizes.add(padWidth);
                 }
 
-
-
                 INDArray ret = toPad;
+                //TODO: Remove duplicate code.
                 for (int i = 0; i < toPad.rank(); i++) {
                     int[] pad = sizes.get(i);
                     double[] constant = constantValues.get(i);
@@ -310,7 +292,6 @@ public class Nd4j {
                         constant[0] = val;
                         constant[1] = val;
                     }
-
 
                     double beforeVal = constant[0];
                     double afterVal = constant[1];
@@ -327,20 +308,12 @@ public class Nd4j {
         }
     }
 
-
-
     /**
-     * Pad the given ndarray to the size along each dimension
-     * @param toPad the ndarray to pad
-     * @param padWidth the width to pad along each dimension
-     * @param padMode the mode to pad in
-     * @return the padded ndarray
-     * based on the specified mode
+     * @see #pad(INDArray, int[][], PadMode)
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth), padMode);
     }
-
 
     /**
      * Append the given array with the specified value size along a particular axis.
@@ -415,7 +388,6 @@ public class Nd4j {
         return input.reshape(input.ordering(), newShape);
     }
 
-
     /**
      * Backend specific:
      * Returns whether specifying the order
@@ -450,7 +422,6 @@ public class Nd4j {
         //shuffle(toShuffle, new Random(), dimension);
         INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
-
 
     /**
      * Symmetric in place shuffle of an ndarray
@@ -488,8 +459,6 @@ public class Nd4j {
 
         INSTANCE.shuffle(toShuffle, rnd, dimensions);
     }
-
-
 
     /**
      * The reference queue used for cleaning up
