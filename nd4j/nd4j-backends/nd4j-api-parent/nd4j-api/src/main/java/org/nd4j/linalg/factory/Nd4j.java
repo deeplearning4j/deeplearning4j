@@ -490,10 +490,12 @@ public class Nd4j {
         return DISTRIBUTION_FACTORY;
     }
 
+    // TODO: unused, uncommented method.
     public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
         ndArrayFactoryClazz = clazz;
     }
 
+    // TODO: unused, uncommented method.
     public static void setSparseNDArrayClazz(Class<? extends NDArrayFactory> clazz) {
         sparseNDArrayClazz = clazz;
     }
@@ -504,7 +506,6 @@ public class Nd4j {
      * @return the current random generator
      */
     public static org.nd4j.linalg.api.rng.Random getRandom() {
-
         return randomFactory.getRandom();
     }
 
@@ -537,7 +538,6 @@ public class Nd4j {
         CONVOLUTION_INSTANCE = convolutionInstance;
     }
 
-
     /**
      * Returns the shape of the ndarray
      * @param arr the array to get the shape of
@@ -556,6 +556,7 @@ public class Nd4j {
      * slice is the specified shape
      */
     public static INDArray create(int[] sliceShape, float[]... arrays) {
+        //TODO: Remove duplicate code.
         int slices = arrays.length;
         INDArray ret = Nd4j.create(ArrayUtil.combine(new int[] {slices}, sliceShape));
         for (int i = 0; i < ret.slices(); i++)
@@ -563,10 +564,19 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #create(LongShapeDescriptor)
+     */
     public static INDArray create(LongShapeDescriptor descriptor) {
         return create(descriptor, true);
     }
 
+    /**
+     * Create an ndarray based on the given description,
+     * @param descriptor object with data for array creation.
+     * @param initialize true/false creates initialized/uninitialized array.
+     * @return the ndarray of the specified description.
+     */
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
         if(descriptor.isEmpty() && descriptor.rank() == 0){
             return Nd4j.empty(descriptor.dataType());
@@ -578,12 +588,7 @@ public class Nd4j {
     }
 
     /**
-     * Create an ndarray based on the given data
-     * @param sliceShape the shape of each slice
-     * @param arrays the arrays of data to create
-     * @return the ndarray of the specified shape where
-     * number of slices is equal to array length and each
-     * slice is the specified shape
+     * @see #create(int[], float[]...)
      */
     public static INDArray create(int[] sliceShape, double[]... arrays) {
         int slices = arrays.length;
@@ -593,29 +598,30 @@ public class Nd4j {
         return ret;
     }
 
-
     /**
-     * Get the operation executioner instance
+     * Get the operation executioner instance.
      *
-     * @return the operation executioner instance
+     * @return the operation executioner instance.
      */
     public static OpExecutioner getExecutioner() {
         return OP_EXECUTIONER_INSTANCE;
     }
 
     /**
+     * Get the data buffer factory instance.
      *
-     * @return
+     * @return the data buffer factory instance.
      */
     public static DataBufferFactory getDataBufferFactory() {
         return DATA_BUFFER_FACTORY_INSTANCE;
     }
 
-
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
+     *
+     * TODO: unused method.
      */
     public static void setParams(INDArray theta, Collection<INDArray>... matrices) {
         int index = 0;
@@ -632,7 +638,6 @@ public class Nd4j {
         if (index != theta.length()) {
             throw new AssertionError("Did not entirely use the theta vector");
         }
-
     }
 
     /**
@@ -646,15 +651,13 @@ public class Nd4j {
      */
     public static INDArray rollAxis(INDArray a, int axis) {
         return rollAxis(a, axis, 0);
-
     }
 
-
     /**
-     *
-     * @param arr
-     * @param dimension
-     * @return
+     * Get the maximum (argmax) or minimum (argmin) values for a dimension.
+     * @param arr input array.
+     * @param dimension the dimension along which to get the maximum
+     * @return array of maximum values.
      */
     public static INDArray argMax(INDArray arr, int... dimension) {
         IMax imax = new IMax(arr, dimension);
@@ -662,10 +665,7 @@ public class Nd4j {
     }
 
     /**
-     *
-     * @param arr
-     * @param dimension
-     * @return
+     * @see #argMax(INDArray, int...)
      */
     public static INDArray argMin(INDArray arr, int... dimension) {
         IMin imin = new IMin(arr, dimension);
@@ -703,8 +703,6 @@ public class Nd4j {
 
     }
 
-
-
     /**
      * Tensor matrix multiplication.
      * Both tensors must be the same rank
@@ -735,7 +733,6 @@ public class Nd4j {
 
         int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
 
-
         List<Integer> listB = new ArrayList<>();
         for (int i = 0; i < b.rank(); i++) {
             if (!Ints.contains(axes[1], i))
@@ -753,6 +750,7 @@ public class Nd4j {
         //if listA and listB are empty these donot initialize.
         //so initializing with {1} which will then get overriden if not empty
         long[] newShapeA = {-1, n2};
+        //TODO: remove duplicate code.
         long[] oldShapeA;
         if (listA.size() == 0) {
             oldShapeA = new long[] {1};
@@ -768,7 +766,6 @@ public class Nd4j {
             n3 *= b.size(axes[1][i]);
         }
 
-
         long[] newShapeB = {n3, -1};
         long[] oldShapeB;
         if (listB.size() == 0) {
@@ -779,7 +776,6 @@ public class Nd4j {
                 oldShapeB[i] = b.size((int) oldShapeB[i]);
         }
 
-
         INDArray at = a.permute(newAxesA).reshape(newShapeA);
         INDArray bt = b.permute(newAxesB).reshape(newShapeB);
         INDArray ret = at.mmul(bt,result);
@@ -787,7 +783,6 @@ public class Nd4j {
         long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
         return ret.reshape(aPlusB);
     }
-
 
     /**
      * Tensor matrix multiplication.
@@ -816,7 +811,6 @@ public class Nd4j {
     }
 
     /**
-     *
      * matrix multiply: implements op(a)*op(b)
      *
      * where op(x) means transpose x (or not) depending on
@@ -838,7 +832,8 @@ public class Nd4j {
         return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
     }
 
-    /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
+    /**
+     *  Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
      * depending on setting of arguments transposeA and transposeB.<br>
      * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
      * i.e., the result array must not be a view. An exception will be thrown otherwise.<br>
@@ -867,7 +862,6 @@ public class Nd4j {
         getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }
-
 
     /**
      * Matrix multiplication/dot product
@@ -932,6 +926,7 @@ public class Nd4j {
      * Given a sequence of Iterators over a transform of matrices, fill in all of
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
+     * TODO: unused method.
      */
     public static void setParams(INDArray theta, Iterator<? extends INDArray>... matrices) {
         int index = 0;
@@ -945,11 +940,9 @@ public class Nd4j {
             }
         }
 
-
         if (index != theta.length()) {
             throw new AssertionError("Did not entirely use the theta vector");
         }
-
     }
 
     /**
@@ -961,94 +954,165 @@ public class Nd4j {
         return INSTANCE;
     }
 
+    /**
+     * The factory used for creating sparse arrays.
+     * @return the factory used for creating sparse arrays.
+     */
     public static NDArrayFactory sparseFactory() {
         return SPARSE_INSTANCE;
     }
 
+    // TODO: We forward the following methods with a default dimension argument. Doc should say something about that.
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)
+     */
     public static INDArray cumsum(INDArray compute) {
         return compute.cumsum(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#max(int...)
+     */
     public static INDArray max(INDArray compute) {
         return compute.max(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#min(int...)
+     */
     public static INDArray min(INDArray compute) {
         return compute.min(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#prod(int...)
+     */
     public static INDArray prod(INDArray compute) {
         return compute.prod(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)
+     */
     public static INDArray normmax(INDArray compute) {
         return compute.normmax(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)
+     */
     public static INDArray norm2(INDArray compute) {
         return compute.norm2(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)
+     */
     public static INDArray norm1(INDArray compute) {
         return compute.norm1(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#std(int...)
+     */
     public static INDArray std(INDArray compute) {
         return compute.std(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#var(int...)
+     */
     public static INDArray var(INDArray compute) {
         return compute.var(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#sum(int...)
+     */
     public static INDArray sum(INDArray compute) {
         return compute.sum(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#mean(int...)
+     */
     public static INDArray mean(INDArray compute) {
         return compute.mean(Integer.MAX_VALUE);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)
+     */
     public static INDArray cumsum(INDArray compute, int dimension) {
         return compute.cumsum(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#max(int...)
+     */
     public static INDArray max(INDArray compute, int dimension) {
         return compute.max(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#min(int...)
+     */
     public static INDArray min(INDArray compute, int dimension) {
         return compute.min(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#prod(int...)
+     */
     public static INDArray prod(INDArray compute, int dimension) {
         return compute.prod(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)
+     */
     public static INDArray normmax(INDArray compute, int dimension) {
         return compute.normmax(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)
+     */
     public static INDArray norm2(INDArray compute, int dimension) {
         return compute.norm2(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)
+     */
     public static INDArray norm1(INDArray compute, int dimension) {
         return compute.norm1(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#std(int...)
+     */
     public static INDArray std(INDArray compute, int dimension) {
         return compute.std(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#var(int...)
+     */
     public static INDArray var(INDArray compute, int dimension) {
         return compute.var(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#sum(int...)
+     */
     public static INDArray sum(INDArray compute, int dimension) {
         return compute.sum(dimension);
     }
 
+    /**
+     * @see org.nd4j.linalg.api.ndarray.INDArray#mean(int...)
+     */
     public static INDArray mean(INDArray compute, int dimension) {
         return compute.mean(dimension);
     }
