@@ -1925,10 +1925,10 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
-
+    int axis = 0;
     NDArray images = NDArrayFactory::create<double>('c', {1,2,2,1}, {1,2,3,4});
     NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
-    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {axis});
     NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
@@ -1949,10 +1949,10 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
-
+    int axis = 0;
     NDArray images    = NDArrayFactory::create<float>('c', {1,2,2,1}, {1,2,3,4});
     NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
-    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    NDArray boxI = NDArrayFactory::create<int>('c', {1}, {axis});
     NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});

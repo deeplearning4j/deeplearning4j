@@ -842,9 +842,10 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_2) {
 }
 
 TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_3) {
+    int axis = 0;
     auto x = NDArrayFactory::create<double>('c', {1}, {10});
-    auto begin = NDArrayFactory::create<int>('c', {1}, {(int)0});
-    auto end = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    auto begin = NDArrayFactory::create<int>('c', {1}, {axis});
+    auto end = NDArrayFactory::create<int>('c', {1}, {axis});
     auto stride = NDArrayFactory::create<int>('c', {1}, {1});
     //x.linspace(1);
     //auto exp = NDArrayFactory::create<double>('c', {1,3,4,5});

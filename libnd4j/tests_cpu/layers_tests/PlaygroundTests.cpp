@@ -1601,6 +1601,30 @@ TEST_F(PlaygroundTests, test_assign_float) {
 
 }
 
+TEST_F(PlaygroundTests, test_hash_1) {
+    std::vector<int> vec;
+    for (int e = 1; e < 100000; e++)
+        vec.emplace_back(e);
+
+    int size = vec.size();
+    int r = 0;
+    PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:r)
+    for (int e = 0; e < size; e++) {
+        r += 31 * vec[e];
+    }
+
+    nd4j_printf("Result: %i\n", r);
+}
+
+TEST_F(PlaygroundTests, test_hash_2) {
+    auto x = NDArrayFactory::create<int>('c', {5, 10000});
+    x.linspace(1.f);
+
+    //auto h = x.reduceNumber(reduce::LongOps::HashCode);
+
+    //h.printIndexedBuffer("hash");
+}
+
 /*
 TEST_F(PlaygroundTests, test_manual_loop) {
     const unsigned int len = 32 * 128 * 256 * 256;

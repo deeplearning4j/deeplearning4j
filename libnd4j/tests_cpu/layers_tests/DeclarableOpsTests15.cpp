@@ -250,6 +250,46 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests15, test_hashCode_1) {
+    auto x = NDArrayFactory::create<int>('c', {10});
+    auto y = NDArrayFactory::create<int>('c', {10});
+
+    x.linspace(1.);
+    y.linspace(2.);
+
+    nd4j::ops::hashcode op;
+    auto resultA0 = op.execute({&x}, {}, {});
+    auto resultA1 = op.execute({&x}, {}, {});
+    auto resultB0 = op.execute({&y}, {}, {});
+
+    ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
+    ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
+
+    delete resultA0;
+    delete resultA1;
+    delete resultB0;
+}
+
+TEST_F(DeclarableOpsTests15, test_hashCode_2) {
+    auto x = NDArrayFactory::create<int>('c', {1027});
+    auto y = NDArrayFactory::create<int>('c', {1027});
+
+    x.linspace(1.);
+    y.linspace(2.);
+
+    nd4j::ops::hashcode op;
+    auto resultA0 = op.execute({&x}, {}, {});
+    auto resultA1 = op.execute({&x}, {}, {});
+    auto resultB0 = op.execute({&y}, {}, {});
+
+    ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
+    ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
+
+    delete resultA0;
+    delete resultA1;
+    delete resultB0;
+}
+
 TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
     auto x0 = NDArrayFactory::create<Nd4jLong>(5);
     auto x1 = NDArrayFactory::create<float>('c', {5, 1, 4}, {0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f, 0.50563407f, 0.89252293f, 0.5461209f, 0.92336726f, 0.085571885f, 0.7937801f, 0.65908563f, 0.55552566f, 0.15962744f, 0.30874777f, 0.15476847f, 0.46954823f, 0.9938899f, 0.6112741f});

@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -5445,6 +5446,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public int hashCode() {
+        val longHash = Nd4j.exec(new HashCode(this))[0].getLong(0);
+        return Math.abs(longHash) <= Integer.MAX_VALUE ? (int) longHash : (int) (longHash % Integer.MAX_VALUE);
+    }
+
+    @Override
     public DataBuffer shapeInfoDataBuffer() {
         return shapeInformation;
     }
@@ -6826,4 +6833,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray ulike() {
         return Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
     }
+
+
 }

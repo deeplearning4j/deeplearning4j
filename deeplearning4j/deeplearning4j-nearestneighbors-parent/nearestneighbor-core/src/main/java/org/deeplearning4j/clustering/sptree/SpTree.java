@@ -29,7 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 
@@ -55,20 +56,20 @@ public class SpTree implements Serializable {
     private int nodeCapacity;
     private int numChildren = 2;
     private boolean isLeaf = true;
-    private Set<INDArray> indices;
+    private Collection<INDArray> indices;
     private SpTree[] children;
     private static Logger log = LoggerFactory.getLogger(SpTree.class);
     private String similarityFunction = Distance.EUCLIDEAN.toString();
 
 
 
-    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
+    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Collection<INDArray> indices,
                   String similarityFunction) {
         init(parent, data, corner, width, indices, similarityFunction);
     }
 
 
-    public SpTree(INDArray data, Set<INDArray> indices, String similarityFunction) {
+    public SpTree(INDArray data, Collection<INDArray> indices, String similarityFunction) {
         this.indices = indices;
         this.N = data.rows();
         this.D = data.columns();
@@ -90,26 +91,26 @@ public class SpTree implements Serializable {
     }
 
 
-    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices) {
+    public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Collection<INDArray> indices) {
         this(parent, data, corner, width, indices, "euclidean");
     }
 
 
-    public SpTree(INDArray data, Set<INDArray> indices) {
+    public SpTree(INDArray data, Collection<INDArray> indices) {
         this(data, indices, "euclidean");
     }
 
 
 
     public SpTree(INDArray data) {
-        this(data, new HashSet<INDArray>());
+        this(data, new ArrayList<INDArray>());
     }
 
     public MemoryWorkspace workspace() {
         return null;
     }
 
-    private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
+    private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Collection<INDArray> indices,
                       String similarityFunction) {
 
         this.parent = parent;

@@ -115,6 +115,11 @@ public class ScrollableMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public void remove() {
+        //
+    }
+
+    @Override
     public MultiDataSet next(int i) {
         throw new UnsupportedOperationException();
     }

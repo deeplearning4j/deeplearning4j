@@ -596,8 +596,6 @@ public class GradCheckUtil {
         DifferentialFunction[] dfs = sd.functions();
         List<SDVariable> vars = sd.variables();
 
-        Set<SDVariable> varsSet = new HashSet<>(vars);
-        Preconditions.checkState(vars.size() == varsSet.size(), "Duplicate variables in variables() list");
         Set<String> varSetStr = new HashSet<>();
         for(SDVariable v : vars){
             if(varSetStr.contains(v.getVarName())){
@@ -605,6 +603,7 @@ public class GradCheckUtil {
             }
             varSetStr.add(v.getVarName());
         }
+        Preconditions.checkState(vars.size() == varSetStr.size(), "Duplicate variables in variables() list");
 
         //1. Check incomingArgsReverse and outgoingArgsReverse
         Map<String,SameDiffOp> ops = sd.getOps();
