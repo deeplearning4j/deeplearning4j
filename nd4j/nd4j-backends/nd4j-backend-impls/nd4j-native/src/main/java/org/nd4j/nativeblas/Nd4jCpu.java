@@ -16724,6 +16724,26 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+
+        /**
+         * This operation calculates hash code, optionally along dimension
+         */
+//         #if NOT_EXCLUDED(OP_hashcode)
+        @Namespace("nd4j::ops") public static class hashcode extends DeclarableReductionOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public hashcode(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public hashcode(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public hashcode position(long position) {
+                return (hashcode)super.position(position);
+            }
+        
+                                                                                    public hashcode() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
     
 
 

@@ -173,6 +173,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp.class,
             org.nd4j.linalg.api.ops.impl.nlp.CbowRound.class,
             org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound.class,
+            org.nd4j.linalg.api.ops.impl.reduce.HashCode.class,
             org.nd4j.linalg.api.ops.impl.reduce.Mmul.class,
             org.nd4j.linalg.api.ops.impl.reduce.MmulBp.class,
             org.nd4j.linalg.api.ops.impl.reduce.Moments.class,

@@ -199,6 +199,13 @@ namespace nd4j {
                 DECLARE_CONFIGURABLE_OP(standardize, 1, 1, true, 0, -2);
                 DECLARE_CUSTOM_OP(standardize_bp, 2, 1, false, 0, -2);
         #endif
+
+        /**
+         * This operation calculates hash code, optionally along dimension
+         */
+        #if NOT_EXCLUDED(OP_hashcode)
+        DECLARE_REDUCTION_OP(hashcode, 1, 1, false, 0, 0);
+        #endif
     }
 }
 
