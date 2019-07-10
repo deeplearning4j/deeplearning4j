@@ -1,6 +1,8 @@
 package org.nd4j.imports.listeners;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,8 +17,11 @@ import java.util.Map;
 /**
  * Small utility for debugging Tensorflow import.
  *
+ * If you get a java.lang.NoSuchMethodError: java.nio.ByteBuffer.rewind() run with Java 9 or higher
  *
  * Quick and dirty Python code to generate test data: (this is slow and could no doubt be improved)
+ *
+ * Also available in TFOpsTests via ZooEvaluation#write_intermediates
  *
  * <pre>
  * {@code
@@ -71,10 +76,16 @@ import java.util.Map;
  */
 public class ImportModelDebugger {
 
+    @Test
+    @Ignore
+    public void doTest(){
+        main(new String[0]);
+    }
+
     public static void main(String[] args) {
 
-        File modelFile = new File("C:\\Temp\\TF_Graphs\\faster_rcnn_resnet101_coco_2018_01_28\\frozen_inference_graph.pb");
-        File rootDir = new File("C:\\Temp\\TF_Test");
+        File modelFile = new File("C:\\Temp\\TF_Graphs\\cifar10_gan_85\\tf_model.pb");
+        File rootDir = new File("C:\\Temp\\TF_Graphs\\cifar10_gan_85");
 
         SameDiff sd = TFGraphMapper.getInstance().importGraph(modelFile);
 
