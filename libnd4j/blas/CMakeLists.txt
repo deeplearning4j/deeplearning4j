@@ -29,6 +29,21 @@ if(APPLE)
     link_directories(/lib)
 endif()
 
+if (APPLE_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAPPLE_BUILD=true")
+endif()
+
+if (ANDROID_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID_BUILD=true")
+endif()
+
+if (IOS_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIOS_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIOS_BUILD=true")
+endif()
+
 if(WIN32)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
