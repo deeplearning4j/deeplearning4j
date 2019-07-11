@@ -1119,8 +1119,8 @@ public class Nd4j {
 
     /**
      * Create a view of a data buffer
-     * that leverages the underlying storage of the buffer
-     * with a new view
+     * Leverages the underlying storage of the buffer with a new view
+     *
      * @param underlyingBuffer the underlying buffer
      * @param offset the offset for the view
      * @return the new view of the data buffer
@@ -1129,9 +1129,7 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer, offset, length);
     }
 
-
     /**
-     *
      * Create a buffer equal of length prod(shape)
      *
      * @param shape the shape of the buffer to create
@@ -1145,15 +1143,14 @@ public class Nd4j {
     }
 
     /**
-     * Creates a buffer of the specified opType
-     * and length with the given byte buffer.
+     * Creates a buffer of the specified opType and length with the given byte buffer.
      *
      * This will wrap the buffer as a reference (no copy)
      * if the allocation opType is the same.
      * @param buffer the buffer to create from
      * @param type the opType of buffer to create
      * @param length the length of the buffer
-     * @return
+     * @return the created buffer
      */
     public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length, long offset) {
         switch (type) {
@@ -1167,7 +1164,6 @@ public class Nd4j {
                 throw new IllegalArgumentException("Illegal opType " + type);
         }
     }
-
 
     /**
      * Create a buffer based on the data opType
@@ -1214,7 +1210,6 @@ public class Nd4j {
         else
             ret = null;
 
-
         return ret;
     }
 
@@ -1243,9 +1238,17 @@ public class Nd4j {
         }
     }
 
-
+    /**
+     * Creates a buffer of the specified type and length with the given pointer.
+     *
+     * @param pointer pointer to data to create from.
+     * @param length the length of the buffer
+     * @param dataType the opType of buffer to create,
+     * @return the created buffer
+     */
     public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = null;
+        //TODO: remove dupplicate code.
         switch (dataType) {
             case LONG:
                 nPointer =  new LongPointer(pointer);
@@ -1281,6 +1284,16 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
+    /**
+     * Creates a buffer of the specified type and length with the given pointer at the specified device.
+     * (This method is relevant only for a CUDA backend).
+     *
+     * @param pointer        pointer to data to create from.
+     * @param devicePointer  pointer to device to create in (only implemented in the CUDA backend)
+     * @param length         the length of the buffer
+     * @param dataType       the opType of buffer to create,
+     * @return               the created buffer
+     */
     public static DataBuffer createBuffer(@NonNull Pointer pointer, @NonNull Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = null;
         switch (dataType) {
@@ -1342,8 +1355,6 @@ public class Nd4j {
         return ret;
     }
 
-
-
     /**
      * Create a buffer equal of length prod(shape)
      *
@@ -1366,7 +1377,12 @@ public class Nd4j {
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-
+    /**
+     *
+     * @param shape
+     * @param type
+     * @return
+     */
     public static DataBuffer createBufferDetached(int[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
         if (type == DataType.INT)
@@ -1377,6 +1393,7 @@ public class Nd4j {
             return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
 
         return type == DataType.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+
     }
 
     public static DataBuffer createBuffer(long[] shape, DataType type) {
