@@ -59,9 +59,6 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             //2019/07/10 - Libnd4j assign error - https://github.com/eclipse/deeplearning4j/issues/8002
             "xlnet_cased_L-24_H-1024_A-16",
 
-            //2019/06/28 - Output incorrect, can't debug b/c https://github.com/eclipse/deeplearning4j/issues/7957
-            "cifar10_gan_85",
-
             //2019/07/03 - Out of Memory error
             "compression_residual_gru",
 

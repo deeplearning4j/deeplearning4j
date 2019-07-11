@@ -48,7 +48,7 @@ import java.util.Map;
 public abstract class BaseOp extends DifferentialFunction implements Op {
 
     protected INDArray x, y, z;
-    protected Object[] extraArgs;
+
     @Getter @Setter
     protected String xVertexId,yVertexId,zVertexId;
     // cached instance, for dataType checks

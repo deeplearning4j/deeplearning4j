@@ -79,19 +79,6 @@ public class Pow extends BaseScalarOp {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val weightsName = nodeDef.getInput(1);
-        val tmp = initWith.getArrForVarName(weightsName);
-
-        // if second argument is scalar - we should provide array of same shape
-        if (tmp != null) {
-            if (tmp.isScalar()) {
-                this.pow = tmp.getDouble(0);
-            }
-        }
-    }
-
-    @Override
     public String onnxName() {
         return "Pow";
     }
