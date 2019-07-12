@@ -1984,13 +1984,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickDeviceWrite();
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
-
-        // just to ensure it's not purged
-        extras.address();
-        tempX.address();
-        buffers.getClass();
-
-
         return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
     }
 
@@ -2171,14 +2164,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return Collections.emptyList();
         }
 
-        val inputBuffers = new PointerPointer<>(op.inputArguments().length);
+        val inputBuffers = new PointerPointer<>(op.inputArguments().length * 2);
         val inputShapes = new PointerPointer<>(op.inputArguments().length);
 
         int cnt= 0;
         for (val in: op.inputArguments()) {
             // NOT A TYPO: shape functions work on host side only
-            if (!in.isEmpty())
+            if (!in.isEmpty()) {
                 inputBuffers.put(cnt, in.data().addressPointer());
+                inputBuffers.put(cnt + op.inputArguments().length, AtomicAllocator.getInstance().getPointer(in.data()));
+            }
+
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 

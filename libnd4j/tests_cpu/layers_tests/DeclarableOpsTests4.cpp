@@ -1933,7 +1933,7 @@ TEST_F(DeclarableOpsTests4, triu_bp_test1) {
     auto gradO = NDArrayFactory::create<double>('c', {2, 3, 2});
     gradO = 0.5;
 
-    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.,0.5,0.,0. ,0.,0. ,0.,0.5,0.,0. ,0.,0.});
+    auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {0.,0.5,0.,0. ,0.,0.       ,0.,0.5,0.,0. ,0.,0.});
 
     nd4j::ops::triu_bp op;
     auto results = op.execute({&input, &gradO}, {}, {1});

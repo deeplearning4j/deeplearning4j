@@ -31,36 +31,36 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
-    auto x      = INPUT_VARIABLE(0);                   // input [bS x inSize]
-    auto hLast  = INPUT_VARIABLE(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
-    auto Wru    = INPUT_VARIABLE(2);                   // RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
-    auto Wc     = INPUT_VARIABLE(3);                   // C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
-    auto bru    = INPUT_VARIABLE(4);                   // reset and update biases, [2*numUnits] - reset and update gates
-    auto bc     = INPUT_VARIABLE(5);                   // cell biases, [numUnits]
+    auto x      = INPUT_VARIABLE(0);                   // input [bS, nIn], nIn - input size
+    auto hLast  = INPUT_VARIABLE(1);                   // previous cell output [bS, nU],  that is at previous time step t-1, nU - number of units
+    auto Wru    = INPUT_VARIABLE(2);                   // RU weights - [nIn+nU, 2*nU] - reset and update gates (input/recurrent weights)
+    auto Wc     = INPUT_VARIABLE(3);                   // C weights - [nIn+nU, nU] - cell gate (input/recurrent weights)
+    auto bru    = INPUT_VARIABLE(4);                   // reset and update biases, [2*nU] - reset and update gates
+    auto bc     = INPUT_VARIABLE(5);                   // cell biases, [nU]
 
-    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, numUnits]
-    auto u    =  OUTPUT_VARIABLE(1);                  // Update gate output [bS, numUnits]
-    auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, numUnits]
-    auto h    =  OUTPUT_VARIABLE(3);                  // current cell output [bS, numUnits]
+    auto r    =  OUTPUT_VARIABLE(0);                  // Reset gate output [bS, nU]
+    auto u    =  OUTPUT_VARIABLE(1);                  // Update gate output [bS, nU]
+    auto c    =  OUTPUT_VARIABLE(2);                  // Cell gate output [bS, nU]
+    auto h    =  OUTPUT_VARIABLE(3);                  // current cell output [bS, nU]
 
     REQUIRE_TRUE(x->rankOf()==2 && hLast->rankOf()==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", x->rankOf(), hLast->rankOf());
 
-    const int rank     = x->rankOf();
-    const auto bS       = x->sizeAt(0);
-    const auto nIn   = x->sizeAt(1);
-    const auto nU = hLast->sizeAt(1);
+    const int rank = x->rankOf();
+    const auto bS  = x->sizeAt(0);
+    const auto nIn = x->sizeAt(1);
+    const auto nU  = hLast->sizeAt(1);
 
     REQUIRE_TRUE(x->sizeAt(0) == hLast->sizeAt(0), 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
     REQUIRE_TRUE(Wru->rankOf()==2 && Wc->rankOf()==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", Wru->rankOf(), Wc->rankOf());
-    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i", Wru->sizeAt(0));
-    REQUIRE_TRUE(Wru->sizeAt(1)==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru->sizeAt(1));
-    REQUIRE_TRUE(Wc->sizeAt(1)==nU, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc->sizeAt(1));
-    REQUIRE_TRUE(bru->rankOf()==1 && bru->sizeAt(0)==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
-    REQUIRE_TRUE(bc->rankOf()==1 && bc->sizeAt(0)==nU, 0, "gruCell: cell biases must be rank 1, size numUnits");
+    REQUIRE_TRUE(Wru->sizeAt(0)==(nIn+nU) && Wc->sizeAt(0)==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to nIn + nU, got %i", Wru->sizeAt(0));
+    REQUIRE_TRUE(Wru->sizeAt(1)==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*nU, got %i", Wru->sizeAt(1));
+    REQUIRE_TRUE(Wc->sizeAt(1)==nU, 0, "gruCell: Weights (cell) size(1) must be equal to nU, got %i", Wc->sizeAt(1));
+    REQUIRE_TRUE(bru->rankOf()==1 && bru->sizeAt(0)==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*nU");
+    REQUIRE_TRUE(bc->rankOf()==1 && bc->sizeAt(0)==nU, 0, "gruCell: cell biases must be rank 1, size nU");
     REQUIRE_TRUE(r->rankOf()==2 && u->rankOf()==2 && c->rankOf()==2 && h->rankOf()==2 &&
                  r->sizeAt(0)==bS && u->sizeAt(0)==bS && c->sizeAt(0)==bS && h->sizeAt(0)==bS &&
                  r->sizeAt(1)==nU && u->sizeAt(1)==nU && c->sizeAt(1)==nU && h->sizeAt(1)==nU,
-                 0, "gruCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == numUnits");
+                 0, "gruCell: Output arrays must all be rank 2 with size(0) == batchSize and size(1) == nU");
 
     helpers::gruCell(block.launchContext(), x, hLast, Wru, Wc, bru, bc, r, u, c, h);
 
@@ -80,39 +80,39 @@ DECLARE_TYPES(gruCell) {
 
 DECLARE_SHAPE_FN(gruCell) {
 
-    auto x      = inputShape->at(0);                   // input [bS x inSize]
-    auto hLast  = inputShape->at(1);                   // previous cell output [bS x numUnits],  that is at previous time step t-1
-    auto Wru    = inputShape->at(2);                   // RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
-    auto Wc     = inputShape->at(3);                   // C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
-    auto bru    = inputShape->at(4);                   // reset and update biases, [2*numUnits] - reset and update gates
-    auto bc     = inputShape->at(5);                   // cell biases, [numUnits]
+    auto x      = inputShape->at(0);                   // input [bS x nIn]
+    auto hLast  = inputShape->at(1);                   // previous cell output [bS x nU],  that is at previous time step t-1
+    auto Wru    = inputShape->at(2);                   // RU weights - [(nIn+nU), 2*nU] - reset and update gates (input/recurrent weights)
+    auto Wc     = inputShape->at(3);                   // C weights - [(nIn+nU), nU] - cell gate (input/recurrent weights)
+    auto bru    = inputShape->at(4);                   // reset and update biases, [2*nU] - reset and update gates
+    auto bc     = inputShape->at(5);                   // cell biases, [nU]
 
     REQUIRE_TRUE(shape::rank(x)==2 && shape::rank(hLast)==2, 0, "gruCell: Input ranks must be 2 for inputs 0 and 1 (x, hLast) - got %i, %i", shape::rank(x), shape::rank(hLast));
 
     const int rank     = x[0];
     const auto bS       = x[1];
-    const auto inSize   = x[2];
-    const auto numUnits = hLast[2];
+    const auto nIn   = x[2];
+    const auto nU = hLast[2];
 
     REQUIRE_TRUE(x[1] == hLast[1], 0, "gruCell: Input minibatch sizes (dimension 0) must be same for x and hLast");
     REQUIRE_TRUE(shape::rank(Wru)==2 && shape::rank(Wc)==2, 0, "gruCell: weight arrays (Wru, Wc) arrays must be 2, got %i and %i", shape::rank(Wru), shape::rank(Wc));
-    REQUIRE_TRUE(Wru[1]==(inSize+numUnits) && Wc[1]==(inSize+numUnits), 0, "gruCell: Weights size(0) must be equal to inSize + numUnits, got %i and %i", Wru[1], Wc[1]);
-    REQUIRE_TRUE(Wru[2]==(2*numUnits), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*numUnits, got %i", Wru[2]);
-    REQUIRE_TRUE(Wc[2]==numUnits, 0, "gruCell: Weights (cell) size(1) must be equal to numUnits, got %i", Wc[2]);
-    REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*numUnits), 0, "gruCell: reset/update biases must be rank 1, size 2*numUnits");
-    REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==numUnits, 0, "gruCell: cell biases must be rank 1, size numUnits");
+    REQUIRE_TRUE(Wru[1]==(nIn+nU) && Wc[1]==(nIn+nU), 0, "gruCell: Weights size(0) must be equal to nIn + nU, got %i and %i", Wru[1], Wc[1]);
+    REQUIRE_TRUE(Wru[2]==(2*nU), 0, "gruCell: Weights (reset and update) size(1) must be equal to 2*nU, got %i", Wru[2]);
+    REQUIRE_TRUE(Wc[2]==nU, 0, "gruCell: Weights (cell) size(1) must be equal to nU, got %i", Wc[2]);
+    REQUIRE_TRUE(shape::rank(bru)==1 && bru[1]==(2*nU), 0, "gruCell: reset/update biases must be rank 1, size 2*nU");
+    REQUIRE_TRUE(shape::rank(bc)==1 && bc[1]==nU, 0, "gruCell: cell biases must be rank 1, size nU");
 
     Nd4jLong *s0(nullptr);
-    ALLOCATE(s0, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
+    ALLOCATE(s0, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x nU]
 
     s0[0] = rank;
     s0[1] = bS;
-    s0[2] = numUnits;
+    s0[2] = nU;
 
     ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
     auto ts0 = ConstantShapeHelper::getInstance()->createFromExisting(s0, block.workspace());
 
-    //4 output shapes, all [bs, numUnits]
+    //4 output shapes, all [bs, nU]
     return SHAPELIST(ts0, ts0, ts0, ts0);
 }
 

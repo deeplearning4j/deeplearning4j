@@ -28,6 +28,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.imports.TFGraphs.NodeReader;
+import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -118,6 +119,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class Nd4jTestsC extends BaseNd4jTest {
 
     DataType initialType;
+    Level1 l1;
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -125,6 +127,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
         this.initialType = Nd4j.dataType();
+        l1 = Nd4j.getBlasWrapper().level1();
     }
 
 
@@ -431,7 +434,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testMmulOp() {
+    public void testMmulOp() throws Exception {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
         INDArray z = Nd4j.create(2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{14, 32}, {32, 77}});
@@ -2797,15 +2800,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testDot() {
+    public void testDot() throws Exception {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4});
+
+        assertEquals(10.f, vec1.sumNumber().floatValue(), 1e-5);
+        assertEquals(10.f, vec2.sumNumber().floatValue(), 1e-5);
+
         assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);
 
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray row = matrix.getRow(1);
-        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
 
+        assertEquals(7.0f, row.sumNumber().floatValue(), 1e-5f);
+
+        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
     }
 
 
@@ -2815,8 +2824,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(Arrays.equals(new long[] {5, 5}, eye.shape()));
         eye = Nd4j.eye(5);
         assertTrue(Arrays.equals(new long[] {5, 5}, eye.shape()));
-
-
     }
 
     @Test
@@ -4223,6 +4230,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
         assertEquals(10, matrix.rows());
         assertEquals(6, matrix.columns());
+
+        log.info("Result: {}", matrix);
 
         for (int x = 0; x < 10; x++) {
             assertEquals((double) x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);

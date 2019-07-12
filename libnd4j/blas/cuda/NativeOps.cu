@@ -1489,14 +1489,8 @@ void NativeOps::specialConcat(
         Nd4jPointer *inputShapeInfo,
         void *dZ,
         Nd4jLong *dZShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-    nd4j::SpecialMethods<float>::concatCpuGeneric(
-            dimension,
-            numArrays,
-            data,
-            inputShapeInfo,
-            dZ,
-            dZShapeInfo);
 
+    BUILD_SINGLE_SELECTOR(ArrayOptions::dataType(dZShapeInfo), nd4j::SpecialMethods ,::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
 }
 
 
@@ -2578,8 +2572,9 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 
 		// we shouldn't copy buffer if that's empty array
 		void *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+        void *bufferD_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputShapes];
 
-		auto array = new nd4j::NDArray(buffer_, shape_);
+		auto array = new nd4j::NDArray(buffer_, bufferD_, shape_);
 
 		// block should contain references to proper variable
 		varSpace.putVariable(1, e, array);

@@ -323,40 +323,148 @@ void trace(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) 
     manager.synchronize();
 }
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void triuBPCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int diag) {
 
+    // x and z have same shapes
+    const auto x = reinterpret_cast<const T*>(vx);  // gradO
+          auto z = reinterpret_cast<T*>(vz);        // gradI
 
+    __shared__ int rank, areSameOffsets;                // xRank = zRank
+    __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen = zLen
 
+    if (threadIdx.x == 0) {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
-
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+        rank = shape::rank(xShapeInfo);
+        len  = shape::length(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
     }
 
-    void triuBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
-        BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), LIBND4J_TYPES);
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < len; i += totalThreads) {
+
+        shape::index2coords(rank, zShapeInfo + 1, i, len, coords);
+
+        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+
+        if((coords[rank - 2] + diag > coords[rank - 1]))    // row + diag > col
+            z[zOffset] = 0;
+        else
+            z[zOffset] = x[areSameOffsets ? zOffset : shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int diag) {
+
+    triuBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, diag);
+}
+BUILD_SINGLE_TEMPLATE(template void triuBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int diag), LIBND4J_TYPES);
+
+///////////////////////////////////////////////////////////////////
+void triuBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * gradO.rankOf() + 128;
+
+    PointersManager manager(context, "triuBP");
+
+    NDArray::prepareSpecialUse({&gradI}, {&gradO});
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), triuBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&gradI}, {&gradO});
+
+    manager.synchronize();
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void tileBPCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, Nd4jLong* globMem) {
+
+    // x and z have same shapes
+    const auto x = reinterpret_cast<const T*>(vx);  // gradO
+          auto z = reinterpret_cast<T*>(vz);        // gradI
+
+    __shared__ int xRank, zRank;                // xRank >= zRank
+    __shared__ Nd4jLong numOfXOffsets, zLen, totalThreads, *sharedMem;  // xLen >= zLen
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        xRank = shape::rank(zShapeInfo);
+        zLen  = shape::length(zShapeInfo);
+        numOfXOffsets = shape::length(xShapeInfo) / zLen;
+
+        totalThreads = gridDim.x * blockDim.x;
     }
 
-    BUILD_SINGLE_TEMPLATE(template void triuBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    auto memBuff  = sharedMem + threadIdx.x * 2 * xRank;
+    auto xOffsets = globMem + tid * numOfXOffsets;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, zLen);
+
+        shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff);
+
+        z[zOffset] = x[xOffsets[0]];                    // first offset
+        for (Nd4jLong j = 1; j < numOfXOffsets; ++j)    // rest offsets
+            z[zOffset] += x[xOffsets[j]];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, Nd4jLong* globMem) {
+
+    tileBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, globMem);
+}
+BUILD_SINGLE_TEMPLATE(template void tileBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, Nd4jLong* globMem), FLOAT_TYPES);
+
+
+//////////////////////////////////////////////////////////////////////////
+void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+
+    NDArray memBuff('c', gradO.getShapeAsVector(), nd4j::DataType::INT64, context);        // empty auxiliary array for storing device memory which will be used in kernel calculations
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * 2 * gradO.rankOf() + 128;
+
+    PointersManager manager(context, "tileBP");
+
+    NDArray::prepareSpecialUse({&gradI}, {&gradO, &memBuff});
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), reinterpret_cast<Nd4jLong*>(memBuff.specialBuffer())), FLOAT_TYPES);
+    NDArray::registerSpecialUse({&gradI}, {&gradO, &memBuff});
+
+    manager.synchronize();
+}
+
+
+
+
+
+
+
+
+
+
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -1036,18 +1144,6 @@ void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, 
         scatterSimpleKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input.getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), xLength, packX.numberOfTads(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), iLength, updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), uLength);
     }
 
-    //////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    static void tileBP_(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
-
-    }
-
-    void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
-        BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (context, gradO, gradI, reps), FLOAT_TYPES);
-    }
-
-
-    BUILD_SINGLE_TEMPLATE(template void tileBP_, (nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
 
     void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
         auto xType = input.dataType();

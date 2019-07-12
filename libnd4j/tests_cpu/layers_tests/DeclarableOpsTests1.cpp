@@ -2595,7 +2595,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_1) {
 
     NDArray input('c', {N,bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2*K,6*K}, nd4j::DataType::DOUBLE);
-    NDArray bias('c', {1,4*K}, nd4j::DataType::DOUBLE);
+    NDArray bias('c', {4*K}, nd4j::DataType::DOUBLE);
     NDArray init('c', {bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray mask('c', {bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray expState('c', {N,bS,2*K}, {1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857});
@@ -2635,7 +2635,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 
     auto input = NDArrayFactory::create<double>('c', {N,bS,2*K});
     auto weights = NDArrayFactory::create<double>('c', {2*K,6*K});
-    auto bias = NDArrayFactory::create<double>('c', {1,4*K});
+    auto bias = NDArrayFactory::create<double>('c', {4*K});
     auto init = NDArrayFactory::create<double>('c', {bS,2*K});
     auto mask = NDArrayFactory::create<double>('c', {bS,2*K});
     NDArray state('c', {N,bS,2*K}, stateBuff);
@@ -2646,8 +2646,8 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 
     NDArray expGradX('c', {N,bS,2*K}, expGradXBuff);
     NDArray expGradW('c', {N,2*K,6*K}, expGradWBuff);
-    auto expGradB = NDArrayFactory::create<double>('c', {1,4*K});
-    gradBias.reduceAlongDimension(reduce::Sum, &expGradB, {0}, false, true);    // [bS x 4K] -> [1 x 4K]
+    auto expGradB = NDArrayFactory::create<double>('c', {4*K});
+    gradBias.reduceAlongDimension(reduce::Sum, &expGradB, {0});    // [bS, 4K] -> [4K]
     NDArray expGradInit('c', {bS,2*K}, expGradInitBuff);
 
     input.assign(1.5);

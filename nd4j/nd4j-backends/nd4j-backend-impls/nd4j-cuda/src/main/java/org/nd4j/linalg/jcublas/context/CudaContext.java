@@ -17,9 +17,13 @@
 package org.nd4j.linalg.jcublas.context;
 
 import lombok.Data;
+import lombok.val;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
@@ -46,7 +50,6 @@ public class CudaContext {
     //private CUevent cUevent;
     private cudaStream_t oldStream;
 
-    private cudaStream_t cublasStream;
     private cudaStream_t solverStream;
 
     private cudaStream_t specialStream;
@@ -130,17 +133,11 @@ public class CudaContext {
         //        ContextHolder.getInstance().setContext();
         if (nativeOps.streamSynchronize(oldStream) == 0)
             throw new ND4JIllegalStateException("CUDA stream synchronization failed");
-
-        if (syncCuBlas)
-            syncCublasStream();
     }
 
-    public void syncCublasStream() {
-        if (cublasStream != null) {
-            if (nativeOps.streamSynchronize(cublasStream) == 0)
-                throw new ND4JIllegalStateException("CUDA stream synchronization failed");
-        } else
-            throw new IllegalStateException("cuBLAS stream isnt set");
+    public Pointer getCublasStream() {
+        val lptr = new PointerPointer(this.getOldStream());
+        return lptr.get(0);
     }
 
 

@@ -32,30 +32,48 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
 __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
-								 const void *vy, const Nd4jLong *yShapeInfo,
-									   void *vz) {
+		   			 	  const void *vy, const Nd4jLong *yShapeInfo,
+						        void *vz) {
 
 	const auto x = reinterpret_cast<const X*>(vx);
 	const auto y = reinterpret_cast<const Y*>(vy);
 		  auto z = reinterpret_cast<X*>(vz);
 
-	__shared__ Nd4jLong  len;
+	__shared__ Nd4jLong xzLen, totalThreads, *sharedMem;
+	__shared__ int xzRank, yRank;
 
-	if (threadIdx.x == 0)
-		len = shape::length(xShapeInfo);
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+		xzLen = shape::length(xShapeInfo);
+		totalThreads = gridDim.x * blockDim.x;
+
+		xzRank = shape::rank(xShapeInfo);
+		yRank  = shape::rank(yShapeInfo);
+	}
 
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-	const auto totalThreads = gridDim.x * blockDim.x;
+	Nd4jLong* coords = sharedMem + threadIdx.x * xzRank;
 
-	for (int i = tid; i < len; i += totalThreads) {
+	for (int i = tid; i < xzLen; i += totalThreads) {
 
-		const auto xzOffset = shape::getIndexOffset(i, xShapeInfo, len);
-		const auto xVal     = x[xzOffset];
+    	shape::index2coords(xzRank, xShapeInfo + 1, i, xzLen, coords);
 
-		if(xVal < 0)
-			z[xzOffset] = xVal * y[shape::subArrayOffset(i, xShapeInfo, yShapeInfo)];
+		const auto xzOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xzRank + 1, coords, xzRank);
+
+		const auto xVal = x[xzOffset];
+
+		if(xVal < 0) {
+
+			for (uint j = 0; j < yRank; ++j)
+				if(yShapeInfo[j + 1] == 1)
+					coords[j + 1] = 0;
+
+			z[xzOffset] = xVal * y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + yRank + 1, coords + 1, yRank)];
+		}
 		else
 			z[xzOffset] = xVal;
 	}
@@ -63,27 +81,120 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
+linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
 
-	preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
+	preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
 }
 
 ///////////////////////////////////////////////////////////////////
 void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
-	if(!input.isActualOnDeviceSide()) input.syncToDevice();
-	if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();
+
+	PointersManager manager(context, "prelu");
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
 	const auto xType = input.dataType();
 	const auto yType = alpha.dataType();
-	int threadsPerBlock = MAX_NUM_THREADS;
-	int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
-	BUILD_DOUBLE_SELECTOR(xType, yType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES);
+	NDArray::prepareSpecialUse({&output}, {&input, &alpha});
+	BUILD_DOUBLE_SELECTOR(xType, yType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES);
+	NDArray::registerSpecialUse({&output}, {&input, &alpha});
 
-	input.tickReadHost();
-	alpha.tickReadHost();
-	output.tickWriteDevice();
+	manager.synchronize();
 }
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
+								   const void *vAlpha, const Nd4jLong *alphaShapeInfo,
+								   const void *vdLdO,  const Nd4jLong *dLdOShapeInfo,
+										 void *vdLdI,  const Nd4jLong *dLdIShapeInfo,
+										 void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
+
+	const auto in    = reinterpret_cast<const X*>(vIn);
+	const auto alpha = reinterpret_cast<const Y*>(vAlpha);
+	const auto dLdO  = reinterpret_cast<const Y*>(vdLdO);
+		  auto dLdI  = reinterpret_cast<Y*>(vdLdI);
+		  auto dLdA  = reinterpret_cast<Y*>(vdLdA);
+
+	__shared__ Nd4jLong inLen, totalThreads, *sharedMem;
+	__shared__ int inRank, alphaRank;
+
+	if (threadIdx.x == 0) {
+		extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+		inLen = shape::length(inShapeInfo);
+		totalThreads = gridDim.x * blockDim.x;
+
+		inRank     = shape::rank(inShapeInfo);
+		alphaRank  = shape::rank(alphaShapeInfo);
+	}
+
+	__syncthreads();
+
+	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+	Nd4jLong* coords = sharedMem + threadIdx.x * inRank;
+
+	for (int i = tid; i < inLen; i += totalThreads) {
+
+    	shape::index2coords(inRank, inShapeInfo + 1, i, inLen, coords);
+
+		const auto inOffset   = shape::getOffset(0, inShapeInfo   + 1, inShapeInfo   + inRank + 1, coords, inRank);
+		const auto dLdOOffset = shape::getOffset(0, dLdOShapeInfo + 1, dLdOShapeInfo + inRank + 1, coords, inRank);
+		const auto dLdIOffset = shape::getOffset(0, dLdIShapeInfo + 1, dLdIShapeInfo + inRank + 1, coords, inRank);
+
+		const auto xVal = in[inOffset];
+		const auto grO  = dLdO[dLdOOffset];
+
+		if(xVal < 0) {
+
+			for (uint j = 0; j < alphaRank; ++j)
+				if(alphaShapeInfo[j + 1] == 1)
+					coords[j + 1] = 0;
+
+			const auto alphaOffset = shape::getOffset(0, alphaShapeInfo + 1, alphaShapeInfo + alphaRank + 1, coords + 1, alphaRank);
+			const auto dLdAOffset  = shape::getOffset(0, dLdAShapeInfo  + 1, dLdAShapeInfo  + alphaRank + 1, coords + 1, alphaRank);
+
+			dLdI[dLdIOffset] =  grO * alpha[alphaOffset];
+
+			nd4j::math::atomics::nd4j_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
+		}
+		else
+			dLdI[dLdIOffset] = grO;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
+
+	preluBPCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void preluBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+
+	dLdA.nullify();
+
+	PointersManager manager(context, "preluBP");
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
+
+	const auto xType = input.dataType();
+	const auto zType = alpha.dataType();
+
+	NDArray::prepareSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
+	BUILD_DOUBLE_SELECTOR(xType, zType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), LIBND4J_TYPES, FLOAT_TYPES);
+	NDArray::registerSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
+
+	manager.synchronize();
+}
+
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
@@ -439,88 +550,6 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 	output.tickWriteDevice();
 }
 
-///////////////////////////////////////////////////////////////////
-template<typename X, typename Y>
-__global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeInfo,
-								   const void *vAlpha, const Nd4jLong *alphaShapeInfo,
-								   const void *vdLdO,  const Nd4jLong *dLdOShapeInfo,
-										 void *vdLdI,  const Nd4jLong *dLdIShapeInfo,
-										 void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
-
-	const auto in    = reinterpret_cast<const X*>(vIn);
-	const auto alpha = reinterpret_cast<const Y*>(vAlpha);
-	const auto dLdO  = reinterpret_cast<const Y*>(vdLdO);
-		  auto dLdI  = reinterpret_cast<Y*>(vdLdI);
-		  auto dLdA  = reinterpret_cast<Y*>(vdLdA);
-
-	__shared__ Nd4jLong alphaLen;
-
-	if (threadIdx.x == 0)
-		alphaLen = shape::length(alphaShapeInfo);
-
-	__syncthreads();
-
-	const auto i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= alphaLen) return;
-
-	Nd4jLong inputIdxs[MAX_RANK*2];
-	int numIdxs = shape::outerArrayOffsets(inputIdxs, i, inShapeInfo, alphaShapeInfo);
-	Nd4jLong dLdOIdxs[MAX_RANK*2];
-	shape::outerArrayOffsets(dLdOIdxs, i, dLdOShapeInfo, alphaShapeInfo);
-	Nd4jLong dLdIIdxs[MAX_RANK*2];
-	shape::outerArrayOffsets(dLdIIdxs, i, dLdIShapeInfo, alphaShapeInfo);
-
-	const auto alphaOffset = shape::getIndexOffset(i, alphaShapeInfo, alphaLen);
-	const auto dLdAOffset  = shape::getIndexOffset(i, dLdAShapeInfo, alphaLen);
-
-	for(Nd4jLong j = 0; j < numIdxs; ++j) {
-
-		const auto inInd   = inputIdxs[j];
-		const auto dLdOInd = dLdOIdxs[j];
-		const auto dLdIInd = dLdIIdxs[j];
-
-		if(in[inInd] < 0) {
-			dLdI[dLdIInd] = dLdO[dLdOInd] * alpha[alphaOffset];
-			auto prevVal = dLdA[dLdAOffset];
-			prevVal = prevVal + dLdO[dLdOInd] * in[inInd];
-			dLdA[dLdAOffset] = prevVal;
-		}
-		else
-			dLdI[dLdIInd] = dLdO[dLdOInd];
-	}
-}
-
-
-template<typename X, typename Y>
-__host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo) {
-
-	preluBPCuda<X, Y><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
-}
-
-
-	//////////////////////////////////////////////////////////////////////////
-	void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
-
-		if(!input.isActualOnDeviceSide()) input.syncToDevice();
-		if(!alpha.isActualOnDeviceSide()) alpha.syncToDevice();
-		if(!dLdO.isActualOnDeviceSide())  dLdO.syncToDevice();
-
-		const auto xType = input.dataType();
-		const auto zType = dLdO.dataType();
-
-		int threadsPerBlock = MAX_NUM_THREADS;
-		int blocksPerGrid = (alpha.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
-		BUILD_DOUBLE_SELECTOR(xType, zType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), LIBND4J_TYPES, FLOAT_TYPES);
-
-		input.tickReadHost();
-		alpha.tickReadHost();
-		dLdO.tickReadHost();
-		dLdI.tickWriteDevice();
-		dLdA.tickWriteDevice();
-
-	}
-
 
 	template <typename T>
 	linkage void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
@@ -545,8 +574,8 @@ __host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int thr
 
 
 BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void preluCudaLauncher,   (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void preluBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void preluCudaLauncher,   (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void preluBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void softMaxForVectorCudaLauncher, (const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz), FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void softMaxDerivForVectorCudaLauncher, (const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz), FLOAT_TYPES);
 

@@ -39,7 +39,6 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
     std::vector<int> sharedAxes = *block.getIArguments();
 
     const int inputRank     = input->rankOf();
-    const int alphaRank     = alpha->rankOf();
     const int numSharedAxes = sharedAxes.size();            // can be zero as well
     const Nd4jLong inputLen = input->lengthOf();
     const Nd4jLong alphaLen = alpha->lengthOf();
@@ -91,7 +90,6 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     std::vector<int> sharedAxes = *block.getIArguments();
 
     const int inputRank     = input->rankOf();
-    const int alphaRank     = alpha->rankOf();
     const int numSharedAxes = sharedAxes.size();            // can be zero as well
     const Nd4jLong inputLen = input->lengthOf();
     const Nd4jLong alphaLen = alpha->lengthOf();

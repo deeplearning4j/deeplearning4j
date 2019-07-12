@@ -360,12 +360,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         for (INDArray m : matrices) {
+            if (m.isEmpty())
+                continue;
 
             CudaContext context = allocator.getFlowController().prepareAction(ret, m);
 
             if (m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride()
                             && ret.elementWiseStride() == 1) {
                 // do memcpy in proper direction and forget about that
+                // FIXME: get rid of this
+                ((BaseCudaDataBuffer) m.data()).lazyAllocateHostPointer();
                 allocator.memcpyAsync(ret.data(), new CudaPointer(allocator.getHostPointer(m).address()),
                                 AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)),
                                 linearIndex * (m.data().dataType() == DataType.DOUBLE ? 8
@@ -560,6 +564,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         for (int i = 0; i < toConcat.length; i++) {
+            ((BaseCudaDataBuffer) toConcat[i].data()).lazyAllocateHostPointer();
+
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
 
@@ -577,15 +583,15 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         outputShape[dimension] = sumAlongDim;
 
-        val dummy = new PointerPointer(new Pointer[] {null});
 
         val ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
+        ((BaseCudaDataBuffer) ret.data()).lazyAllocateHostPointer();
 
-        nativeOps.specialConcat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+        nativeOps.specialConcat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+                    null, null);
 
 
         AllocationPoint point = allocator.getAllocationPoint(ret);
@@ -780,8 +786,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             allocator.getFlowController().registerAction(context, target, arrays);
 
-            tempX.address();
-
             return target;
         } else {
             long len = target.lengthLong();
@@ -803,9 +807,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].lengthLong() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
+                ((BaseCudaDataBuffer) arrays[i].data()).lazyAllocateHostPointer();
+
                 dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
             }
 
+            if (target != null)
+                ((BaseCudaDataBuffer) target.data()).lazyAllocateHostPointer();
 
             nativeOps.accumulate(extras,
                     dataPointers,
@@ -821,7 +829,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
             AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
-
 
 
             return target;
@@ -893,8 +900,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             allocator.getFlowController().registerAction(context, target, arrays);
 
-            tempX.address();
-
             return target;
         } else {
             // otherwise we do averging on CPU side
@@ -918,8 +923,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].lengthLong() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
+                ((BaseCudaDataBuffer) arrays[i].data()).lazyAllocateHostPointer();
+
                 dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
             }
+
+            if (target != null)
+                ((BaseCudaDataBuffer) target.data()).lazyAllocateHostPointer();
 
             nativeOps.average(extras,
                     dataPointers,
@@ -1114,8 +1124,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         // just to keep reference
-        shuffle.address();
-        hostPointers.address();
+        //shuffle.address();
+        //hostPointers.address();
 
         tempX.dataType();
         tempShapes.dataType();

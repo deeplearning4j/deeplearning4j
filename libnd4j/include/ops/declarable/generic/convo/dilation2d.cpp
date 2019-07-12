@@ -35,8 +35,8 @@ namespace ops {
         REQUIRE_TRUE(input->rankOf() == 4, 0, "Dilation2D: input should be 4D");
         REQUIRE_TRUE(weights->rankOf() == 3, 0, "Dilation2D: weights should be 3D");
 
-        const int batch_size = input->sizeAt(0);
-        const int depth = input->sizeAt(3);
+        const int bS = input->sizeAt(0);
+        const int iC = input->sizeAt(3);
         const bool isSameShape = INT_ARG(0) == 1;
 
         REQUIRE_TRUE(input->sizeAt(3) == weights->sizeAt(2), 0, "Dilation2D: number of input channels doesn't match number of channels in weights: %i vs %i", input->sizeAt(3), weights->sizeAt(2));
@@ -66,17 +66,17 @@ namespace ops {
         }
 
 
-        int stride_rows = 0, stride_cols = 0;
-        int rate_rows = 0, rate_cols = 0;
-        int pad_top = 0, pad_left = 0;
-        int out_rows = 0, out_cols = 0;
+        int sH = 0, sW = 0;
+        int dH = 0, dW = 0;
+        int pH = 0, pW = 0;
+        int oH = 0, oW = 0;
 
-        helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
 
 
-        REQUIRE_TRUE(out_rows > 0 && out_cols > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", out_rows, out_cols);
+        REQUIRE_TRUE(oH > 0 && oW > 0, 0, "Dilation2D: outY and outX should have positive values, but got [%i, %i] instead", oH, oW);
 
-        helpers::dilation2d(block.launchContext(), input, weights, output, stride_rows, stride_cols, rate_rows, rate_cols, pad_top, pad_left);
+        helpers::dilation2d(block.launchContext(), input, weights, output, sH, sW, pH, pW, dH, dW);
 
         return Status::OK();
     }
@@ -91,8 +91,8 @@ namespace ops {
         auto input = inputShape->at(0);
         auto weights = inputShape->at(1);
 
-        const int batch_size = shape::sizeAt(input, 0);
-        const int depth = shape::sizeAt(input, 3);
+        const int bS = shape::sizeAt(input, 0);
+        const int iC = shape::sizeAt(input, 3);
         const bool isSameShape = INT_ARG(0) == 1;
 
         std::vector<int> strides(4);
@@ -121,14 +121,14 @@ namespace ops {
                 strides[cnt] = INT_ARG(e++);
         }
 
-        int stride_rows = 0, stride_cols = 0;
-        int rate_rows = 0, rate_cols = 0;
-        int pad_top = 0, pad_left = 0;
-        int out_rows = 0, out_cols = 0;
+        int sH = 0, sW = 0;
+        int dH = 0, dW = 0;
+        int pH = 0, pW = 0;
+        int oH = 0, oW = 0;
 
-        helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
+        helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
 
-        std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
+        std::array<Nd4jLong, 4> shape = {{bS, oH, oW, iC}};
         newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }

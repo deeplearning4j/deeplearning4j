@@ -1215,10 +1215,14 @@ public class Nd4j {
 
     protected static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
         switch (dataType) {
+            case UINT64:
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
+            case UINT32:
             case INT:
                 return IntIndexer.create((IntPointer) pointer);
+            case UINT16:
+                return UShortIndexer.create((ShortPointer) pointer);
             case SHORT:
                 return ShortIndexer.create((ShortPointer) pointer);
             case BYTE:
@@ -1229,6 +1233,8 @@ public class Nd4j {
                 return BooleanIndexer.create((BooleanPointer) pointer);
             case FLOAT:
                 return FloatIndexer.create((FloatPointer) pointer);
+            case BFLOAT16:
+                return Bfloat16Indexer.create((ShortPointer) pointer);
             case HALF:
                 return HalfIndexer.create((ShortPointer) pointer);
             case DOUBLE:
@@ -1297,12 +1303,15 @@ public class Nd4j {
     public static DataBuffer createBuffer(@NonNull Pointer pointer, @NonNull Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = null;
         switch (dataType) {
+            case UINT64:
             case LONG:
                 nPointer =  new LongPointer(pointer);
                 break;
+            case UINT32:
             case INT:
                 nPointer =  new IntPointer(pointer);
                 break;
+            case UINT16:
             case SHORT:
                 nPointer =  new ShortPointer(pointer);
                 break;
@@ -1315,11 +1324,12 @@ public class Nd4j {
             case BOOL:
                 nPointer =  new BooleanPointer(pointer);
                 break;
-            case FLOAT:
-                nPointer =  new FloatPointer(pointer);
-                break;
+            case BFLOAT16:
             case HALF:
                 nPointer =  new ShortPointer(pointer);
+                break;
+            case FLOAT:
+                nPointer =  new FloatPointer(pointer);
                 break;
             case DOUBLE:
                 nPointer =  new DoublePointer(pointer);

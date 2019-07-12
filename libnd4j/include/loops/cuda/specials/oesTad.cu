@@ -92,7 +92,6 @@ __global__ void execOesTadKernelKey(void *vx, Nd4jLong *xShapeInfo,
     }
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,

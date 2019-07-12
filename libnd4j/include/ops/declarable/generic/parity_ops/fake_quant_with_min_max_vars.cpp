@@ -46,8 +46,11 @@ namespace nd4j {
                 max = &m2;
             }
             auto output  = OUTPUT_VARIABLE(0);
-            int numBits = INT_ARG(0);
-            bool narrowed = INT_ARG(1);
+            int numBits = 8;
+            if (block.getIArguments() && block.getIArguments()->size())
+                numBits = INT_ARG(0);
+            bool narrowed = false;
+            //INT_ARG(1);
             if (block.getIArguments()->size() == 2) {
                 numBits = INT_ARG(0);
                 narrowed = INT_ARG(1);

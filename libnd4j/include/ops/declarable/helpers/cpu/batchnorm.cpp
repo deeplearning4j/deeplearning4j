@@ -45,7 +45,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
     }
 
     // auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);   //  sigmaInvGam = 1 / sqrt(variance + epsilon)
-    // if(gamma != nullptr) sigmaInvGam *= *gamma;                   
+    // if(gamma != nullptr) sigmaInvGam *= *gamma;
 
     const T* sigmaBuff = sigmaInvGam.bufferAsT<T>();
     const T* meanBuff  = mean->bufferAsT<T>();
@@ -60,8 +60,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
     uint inShapeInfoCast[MAX_RANK];
     uint meanShapeInfoCast[MAX_RANK];
     bool canCastIn   = nd4j::DataTypeUtils::castShapeInfo(inShapeInfo, inShapeInfoCast);
-    bool canCastMean = nd4j::DataTypeUtils::castShapeInfo(meanShapeInfo, meanShapeInfoCast);    
-    
+    bool canCastMean = nd4j::DataTypeUtils::castShapeInfo(meanShapeInfo, meanShapeInfoCast);
+
     const Nd4jLong step = lenBig / lenSmall;
     std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
@@ -70,58 +70,62 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
     if(beta != nullptr) {
         const T* betaBuff  = beta->bufferAsT<T>();
         PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {                        
+        {
             const auto threadNum = omp_get_thread_num();
             Nd4jLong* inOffsets = new Nd4jLong[step];
-    
-            for (int j = 0; j < lenSmall; ++j) {            
-                
+            Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
+
+            for (int j = 0; j < lenSmall; ++j) {
+
                 const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
                 if (!isOwner) continue;
-    
+
                 const Nd4jLong start = j * step;
                 const Nd4jLong end   = start + step;
-    
+
                 // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);
                 // calculate offset for input and output (all of them have the same shape)
-                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
+                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
 
                 PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < step; ++i) {                    
+                for (Nd4jLong i = 0; i < step; ++i) {
                     auto offsetBig = inOffsets[i];
                     outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall] + betaBuff[offsetSmall];
                 }
             }
             delete []inOffsets;
-        }    
+            delete []memBuff;
+        }
     }
     else {
         PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {                        
+        {
             const auto threadNum = omp_get_thread_num();
             Nd4jLong* inOffsets = new Nd4jLong[step];
-    
-            for (int j = 0; j < lenSmall; ++j) {            
-                
+            Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
+
+            for (int j = 0; j < lenSmall; ++j) {
+
                 const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
                 if (!isOwner) continue;
-    
+
                 const Nd4jLong start = j * step;
                 const Nd4jLong end   = start + step;
-    
+
                 // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);            
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);
                 // calculate offset for input and output (all of them have the same shape)
-                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, dimsToExclude.data());
+                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
 
                 PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < step; ++i) {                    
+                for (Nd4jLong i = 0; i < step; ++i) {
                     auto offsetBig = inOffsets[i];
                     outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall];
                 }
             }
             delete []inOffsets;
+            delete []memBuff;
         }
     }
 }

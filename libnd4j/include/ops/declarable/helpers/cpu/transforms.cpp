@@ -43,8 +43,8 @@ static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const N
 
     PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())
     for(int i = 0; i < dLen; ++i) {
-        if(dOdI.e<T>(i) != (T)0.f)
-            dOdI.p(i,  T(1.f));
+        if(dOdI.t<T>(i) != static_cast<T>(0.f))
+            dOdI.t<T>(i) = static_cast<T>(1.f);
     }
 
     // FIXME: !!!

@@ -44,9 +44,9 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
 
     template <typename T>
-    int _dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+    int dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         //NativeOps native;
-        //nd4j::graph::RandomGenerator nodeRng(seed);   //static int _dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+        //nd4j::graph::RandomGenerator nodeRng(seed);   //static int dropOutFunctor_(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         //NativeOps native;
         //native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
@@ -78,9 +78,9 @@ namespace helpers {
             // broadcast chunk to full matrix
             std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
             dropOutMultiplier->assign(1.f);
-        
+
             *dropOutMultiplier += *chunk;
-        
+
              output->assign(*input * *dropOutMultiplier); //input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
         }
 
@@ -90,10 +90,10 @@ namespace helpers {
     int dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         auto xType = input->dataType();
 
-        BUILD_SINGLE_SELECTOR(xType, return _dropOutFunctor, (context, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, return dropOutFunctor_, (context, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _dropOutFunctor, (graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int dropOutFunctor_, (graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue);, FLOAT_TYPES);
 
 /////////////////////////////////// backrpopagations ///////////////////////////////////////////////
     template <typename T>

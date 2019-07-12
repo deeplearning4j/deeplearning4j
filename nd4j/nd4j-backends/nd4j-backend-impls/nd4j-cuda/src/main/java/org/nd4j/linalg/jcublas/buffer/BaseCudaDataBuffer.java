@@ -241,7 +241,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         initPointers(length, Nd4j.sizeOfDataType(dtype), initialize);
     }
 
-    protected void lazyAllocateHostPointer() {
+    public void lazyAllocateHostPointer() {
         if (allocationPoint.getPointers().getHostPointer() == null)
             initHostPointerAndIndexer();
     }

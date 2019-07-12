@@ -2093,13 +2093,22 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2107,7 +2116,7 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, svd_test2) {
 
-    auto x= NDArrayFactory::create<float>('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
+    auto x = NDArrayFactory::create<float>('c', {7,6}, {0. ,-9. ,-6 ,9 ,-10 ,-12 ,2 ,13 ,5 ,-11 ,20 ,-17 ,1 ,-2 ,-11 ,3 ,-8 ,3 ,-14 ,19 ,-20 ,20 ,-17 ,-5 ,6 ,-16 ,0 ,-1 ,-16 ,11 ,7 ,-19 ,2 ,-17 ,17 ,-16, 4, -9, 1, -15, 7, -2});
     auto expS= NDArrayFactory::create<float>('c', {6}, {56.76573,  39.11776,  26.00713,  11.83606, 6.16578, 3.99672});
     auto expU= NDArrayFactory::create<float>('c', {7,7}, {-0.13417,-0.12443, -0.68854,  0.5196 ,  0.21706,  0.03974,  0.41683, 0.347  , 0.62666, -0.04964, -0.01912,  0.66932,  0.1457 , -0.12183,-0.17329,-0.14666, -0.19639, -0.55355,  0.0614 ,  0.75729,  0.1619 ,-0.64703, 0.37056, -0.37398, -0.32922, -0.0186 , -0.35656, -0.26134,-0.08027,-0.64405, -0.0127 , -0.06934,  0.59287, -0.14956, -0.44712, 0.55906,-0.06235, -0.58017, -0.12911, -0.359  , -0.00393, -0.44877, 0.30645,-0.11953, -0.09083, -0.54163,  0.14283, -0.50417,  0.56178});
     auto expV= NDArrayFactory::create<float>('c', {6,6}, {0.2508 ,-0.2265 , 0.01689,  0.04486,  0.53132,  0.77537,-0.32281, 0.74559, 0.41845, -0.13821,  0.37642,  0.06315, 0.33139,-0.05528, 0.47186,  0.73171,  0.18905, -0.3055 ,-0.57263, 0.06276,-0.09542,  0.59396, -0.36152,  0.419  , 0.59193, 0.4361 , 0.13557, -0.03632, -0.5755 ,  0.32944,-0.21165,-0.44227, 0.75794, -0.29895, -0.27993,  0.13187});
@@ -2121,13 +2130,22 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2149,13 +2167,22 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2177,13 +2204,22 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2205,13 +2241,22 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2220,56 +2265,27 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
 TEST_F(DeclarableOpsTests3, svd_test6) {
 
     auto x= NDArrayFactory::create<float>('c', {2,2,5,5}, {-7. ,17 ,4 ,-10 ,5 ,1 ,-5 ,-19 ,13 ,-8 ,9 ,13 ,19 ,13 ,-2
-            ,-8 ,10 ,-9 ,0 ,-20 ,-2 ,14 ,19 ,5 ,-18 ,4 ,-13 ,12 ,-10
-            ,5 ,-10 ,-10 ,17 ,-5 ,-2 ,10 ,5 ,-4 ,-11 ,15 ,-3 ,15 ,-17
-            ,-20 ,-10 ,-4 ,12 ,-9 ,16 ,13 ,10 ,-19 ,2 ,-9 ,-10 ,8 ,-2
-            ,-4 ,3 ,7 ,10 ,-19 ,-11 ,-4 ,-6 ,2 ,-12 ,6 ,-4 ,-14 ,14
-            ,16 ,7 ,19 ,-17 ,2 ,-14 ,5 ,-1 ,16 ,19 ,-11 ,-14 ,-16
-            ,-19 ,15 ,-18 ,-12 ,-16 ,16 ,1 ,5 ,7 ,8 ,2 ,13 ,-3 ,6 ,2 ,-5});
+                                                ,-8 ,10 ,-9 ,0 ,-20 ,-2 ,14 ,19 ,5 ,-18 ,4 ,-13 ,12 ,-10 ,5 ,-10 ,-10 ,17 ,-5 ,-2 ,10 ,5 ,-4 ,-11 ,15 ,-3 ,15 ,-17
+                                                ,-20 ,-10 ,-4 ,12 ,-9 ,16 ,13 ,10 ,-19 ,2 ,-9 ,-10 ,8 ,-2 ,-4 ,3 ,7 ,10 ,-19 ,-11 ,-4 ,-6 ,2 ,-12 ,6 ,-4 ,-14 ,14
+                                                ,16 ,7 ,19 ,-17 ,2 ,-14 ,5 ,-1 ,16 ,19 ,-11 ,-14 ,-16 ,-19 ,15 ,-18 ,-12 ,-16 ,16 ,1 ,5 ,7 ,8 ,2 ,13 ,-3 ,6 ,2 ,-5});
     auto expS= NDArrayFactory::create<float>('c', {2,2,5}, {40.95395,  31.46869,  24.79993,  12.33768,   1.80031,
-                                        38.18412,  31.52287,  23.52755,  11.79484,   1.90195,
-                                        39.34498,  32.54861,  17.52492,   7.03003,   2.2399,
-                                        44.72126,  32.3164 ,  16.60139,   6.88783,   0.78122});
+                                                        38.18412,  31.52287,  23.52755,  11.79484,   1.90195,
+                                                        39.34498,  32.54861,  17.52492,   7.03003,   2.2399,
+                                                        44.72126,  32.3164 ,  16.60139,   6.88783,   0.78122});
     auto expU= NDArrayFactory::create<float>('c', {2,2,5,5},  {0.25441,  0.16908, -0.68564,  0.58844, -0.30054,
-                                           -0.32285, -0.58332,  0.3451 ,  0.4746 , -0.45953,
-                                           0.58332,  0.10605,  0.51533,  0.50234,  0.36136,
-                                           0.12588, -0.73123, -0.37812, -0.00215,  0.55361,
-                                           0.68915, -0.2919 ,  0.04767, -0.4197 , -0.51132,
-                                           0.44464, -0.25326, -0.42493, -0.01712, -0.74653,
-                                           0.516  , -0.16688,  0.1854 , -0.77155,  0.27611,
-                                           -0.19321, -0.14317, -0.85886, -0.15224,  0.42585,
-                                           -0.60155, -0.68323,  0.18819, -0.29053, -0.22696,
-                                           -0.36993,  0.64862, -0.10956, -0.54483, -0.36552,
-                                           -0.57697, -0.32277,  0.11229,  0.55495,  0.4923 ,
-                                           -0.02937,  0.01689, -0.63257,  0.57075, -0.52245,
-                                           -0.56002, -0.2036 , -0.53119, -0.6022 ,  0.01017,
-                                           -0.33605, -0.35257,  0.53215, -0.04936, -0.69075,
-                                           0.48958, -0.85427, -0.14796, -0.03449,  0.08633,
-                                           0.15008,  0.60996,  0.31071, -0.67721,  0.22421,
-                                           0.67717, -0.59857,  0.04372, -0.2565 ,  0.33979,
-                                           0.68116,  0.49852, -0.13441,  0.51374, -0.07421,
-                                           -0.20066,  0.04504,  0.42865,  0.44418,  0.75939,
-                                           0.12113, -0.13826,  0.83651,  0.11988, -0.50209});
+                                           -0.32285, -0.58332,  0.3451 ,  0.4746 , -0.45953,0.58332,  0.10605,  0.51533,  0.50234,  0.36136,0.12588, -0.73123, -0.37812, -0.00215,  0.55361,
+                                           0.68915, -0.2919 ,  0.04767, -0.4197 , -0.51132,0.44464, -0.25326, -0.42493, -0.01712, -0.74653,0.516  , -0.16688,  0.1854 , -0.77155,  0.27611,
+                                           -0.19321, -0.14317, -0.85886, -0.15224,  0.42585,-0.60155, -0.68323,  0.18819, -0.29053, -0.22696,-0.36993,  0.64862, -0.10956, -0.54483, -0.36552,
+                                           -0.57697, -0.32277,  0.11229,  0.55495,  0.4923 ,-0.02937,  0.01689, -0.63257,  0.57075, -0.52245,-0.56002, -0.2036 , -0.53119, -0.6022 ,  0.01017,
+                                           -0.33605, -0.35257,  0.53215, -0.04936, -0.69075,0.48958, -0.85427, -0.14796, -0.03449,  0.08633,0.15008,  0.60996,  0.31071, -0.67721,  0.22421,
+                                           0.67717, -0.59857,  0.04372, -0.2565 ,  0.33979,0.68116,  0.49852, -0.13441,  0.51374, -0.07421,-0.20066,  0.04504,  0.42865,  0.44418,  0.75939,0.12113, -0.13826,  0.83651,  0.11988, -0.50209});
     auto expV= NDArrayFactory::create<float>('c', {2,2,5,5}, {0.01858,  0.17863,  0.51259,  0.14048,  0.82781,
-                                          0.59651, -0.13439, -0.395  ,  0.66979,  0.14654,
-                                          0.73731,  0.47061,  0.19357, -0.41127, -0.16817,
-                                          0.1047 , -0.29727,  0.73711,  0.38235, -0.45951,
-                                          -0.29873,  0.80012, -0.02078,  0.4651 , -0.23201,
-                                          -0.05314, -0.0419 , -0.52146,  0.77792,  0.344  ,
-                                          -0.66438,  0.05648,  0.03756, -0.31531,  0.67422,
-                                          0.74471,  0.01504, -0.03081, -0.24335,  0.62049,
-                                          0.03172,  0.91947,  0.30828,  0.23713,  0.04796,
-                                          -0.01311,  0.38652, -0.79415, -0.42423, -0.19945,
-                                          -0.13783, -0.54667, -0.58527,  0.49955,  0.3001 ,
-                                          0.85214,  0.01628,  0.02688, -0.02891,  0.52157,
-                                          0.16608, -0.20181,  0.61371,  0.69894, -0.25794,
-                                          0.45726, -0.33952, -0.32659, -0.18938, -0.73015,
-                                          0.13486,  0.73816, -0.41646,  0.47458, -0.1956 ,
-                                          0.5536 , -0.137  ,  0.64688,  0.50536,  0.03017,
-                                          -0.51827, -0.31837, -0.16732,  0.71378, -0.30425,
-                                          -0.39314,  0.15266,  0.63693, -0.30945, -0.5663 ,
-                                          -0.51981,  0.03325,  0.37603,  0.05147,  0.76462,
-                                          -0.01282,  0.92491, -0.08042,  0.36977, -0.03428});
+                                          0.59651, -0.13439, -0.395  ,  0.66979,  0.14654,0.73731,  0.47061,  0.19357, -0.41127, -0.16817,0.1047 , -0.29727,  0.73711,  0.38235, -0.45951,
+                                          -0.29873,  0.80012, -0.02078,  0.4651 , -0.23201,-0.05314, -0.0419 , -0.52146,  0.77792,  0.344  ,-0.66438,  0.05648,  0.03756, -0.31531,  0.67422,
+                                          0.74471,  0.01504, -0.03081, -0.24335,  0.62049,0.03172,  0.91947,  0.30828,  0.23713,  0.04796,-0.01311,  0.38652, -0.79415, -0.42423, -0.19945,
+                                          -0.13783, -0.54667, -0.58527,  0.49955,  0.3001 ,0.85214,  0.01628,  0.02688, -0.02891,  0.52157,0.16608, -0.20181,  0.61371,  0.69894, -0.25794,
+                                          0.45726, -0.33952, -0.32659, -0.18938, -0.73015,0.13486,  0.73816, -0.41646,  0.47458, -0.1956 ,0.5536 , -0.137  ,  0.64688,  0.50536,  0.03017,
+                                          -0.51827, -0.31837, -0.16732,  0.71378, -0.30425,-0.39314,  0.15266,  0.63693, -0.30945, -0.5663 ,-0.51981,  0.03325,  0.37603,  0.05147,  0.76462,-0.01282,  0.92491, -0.08042,  0.36977, -0.03428});
 
     nd4j::ops::svd op;
     auto results = op.execute({&x}, {}, {1, 1, 16});
@@ -2280,13 +2296,22 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2451,13 +2476,22 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //    auto *u = results->at(1);
 //    auto *v = results->at(2);
 
-//    ASSERT_TRUE(expS.isSameShape(s));
-//    ASSERT_TRUE(expU.isSameShape(u));
-//    ASSERT_TRUE(expV.isSameShape(v));
+    // ASSERT_TRUE(expS.isSameShape(s));
+    // ASSERT_TRUE(expU.isSameShape(u));
+    // ASSERT_TRUE(expV.isSameShape(v));
 
-//    ASSERT_TRUE(expS.equalsTo(s));
-//    ASSERT_TRUE(expU.equalsTo(u));
-//    ASSERT_TRUE(expV.equalsTo(v));
+    // ASSERT_TRUE(expS.equalsTo(s));
+
+    // if(nd4j::Environment::getInstance()->isCPU()) {
+    //     ASSERT_TRUE(expU.equalsTo(u));
+    //     ASSERT_TRUE(expV.equalsTo(v));
+    // }
+    // else {
+    //     for(uint i = 0; i < expU.lengthOf(); ++i)
+    //         ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+    //     for(uint i = 0; i < expV.lengthOf(); ++i)
+    //         ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    // }
 
 //    delete results;
 // }
@@ -2555,13 +2589,22 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
-    ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
-
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
     ASSERT_TRUE(expV.isSameShape(v));
+
+    ASSERT_TRUE(expS.equalsTo(s));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
 
     delete results;
 }
@@ -2659,9 +2702,42 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
     auto *u = results->at(1);
     auto *v = results->at(2);
 
+    ASSERT_TRUE(expS.isSameShape(s));
+    ASSERT_TRUE(expU.isSameShape(u));
+    ASSERT_TRUE(expV.isSameShape(v));
+
     ASSERT_TRUE(expS.equalsTo(s));
-    ASSERT_TRUE(expU.equalsTo(u));
-    ASSERT_TRUE(expV.equalsTo(v));
+
+    if(nd4j::Environment::getInstance()->isCPU()) {
+        ASSERT_TRUE(expU.equalsTo(u));
+        ASSERT_TRUE(expV.equalsTo(v));
+    }
+    else {
+        for(uint i = 0; i < expU.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.t<float>(i)), nd4j::math::nd4j_abs(u->t<float>(i)), 1e-5);
+        for(uint i = 0; i < expV.lengthOf(); ++i)
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.t<float>(i)), nd4j::math::nd4j_abs(v->t<float>(i)), 1e-5);
+    }
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, svd_test11) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {1.,2.,3.,4.,5.,6.,7.,8.,9.});
+    auto expS = NDArrayFactory::create<double>('c', {3});
+    auto expU = NDArrayFactory::create<double>('c', {3,3});
+    auto expV = NDArrayFactory::create<double>('c', {3,3});
+
+    nd4j::ops::svd op;
+    auto results = op.execute({&x}, {}, {0, 1, 16});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto s = results->at(0);
+    auto u = results->at(1);
+    auto v = results->at(2);
 
     ASSERT_TRUE(expS.isSameShape(s));
     ASSERT_TRUE(expU.isSameShape(u));
@@ -2669,7 +2745,6 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     delete results;
 }
-
 
 
 
