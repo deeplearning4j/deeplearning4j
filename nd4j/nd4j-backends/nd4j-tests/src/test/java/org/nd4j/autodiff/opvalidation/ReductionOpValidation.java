@@ -827,7 +827,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             int[] d = dims.get(t);
             for (int i = 0; i < 7; i++) {
 
-                int[] dim = d.length == 0 ? null : d;
+                int[] dim = d.length == 0 ? new int[0] : d;
 
                 SameDiff sd = SameDiff.create();
                 SDVariable s = sd.var("in", in);
