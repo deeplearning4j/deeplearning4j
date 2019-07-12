@@ -1378,9 +1378,10 @@ public class Nd4j {
     }
 
     /**
+     * Create a buffer equal of length prod(shape)
      *
-     * @param shape
-     * @param type
+     * @param shape the shape of the buffer to create
+     * @param type the opType to create
      * @return
      */
     public static DataBuffer createBufferDetached(int[] shape, DataType type) {
@@ -1396,6 +1397,9 @@ public class Nd4j {
 
     }
 
+    /**
+     * @see #createBuffer(int[], DataType)
+     */
     public static DataBuffer createBuffer(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
 
@@ -1412,6 +1416,9 @@ public class Nd4j {
     }
 
 
+    /**
+     * @see #createBufferDetached(int[], DataType)
+     */
     public static DataBuffer createBufferDetached(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
         switch (type){
@@ -1465,7 +1472,6 @@ public class Nd4j {
                 throw new IllegalArgumentException("Illegal opType " + type);
         }
     }
-
 
     /**
      * Create a buffer based on the data opType
@@ -1557,10 +1563,7 @@ public class Nd4j {
     }
 
     /**
-     *
-     * @param length
-     * @param initialize
-     * @return
+     * @see #createBuffer(DataType dataType, long length, boolean initialize)
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret = createBuffer(Nd4j.dataType(), length, initialize);
@@ -1568,69 +1571,66 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Create a data buffer based on datatype.
+     * @param dataType the type of buffer to create
+     * @param length  the length of the buffer
+     * @param initialize  flag to leave the underlying memory (false) or initialize with zero (true).
+     * @return the created buffer.
+     */
     public static DataBuffer createBuffer(DataType dataType, long length, boolean initialize) {
         return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType,length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Create a data buffer based on datatype, workspace.
+     * @param dataType the type of buffer to create
+     * @param length  the length of the buffer
+     * @param initialize  flag to leave the underlying memory (false) or initialize with zero (true).
+     * @param workspace workspace to use for buffer creation.
+     * @return the created buffer.
+     */
     public static DataBuffer createBuffer(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace) {
         return workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType,length, initialize, workspace);
     }
 
     /**
      * Create a buffer based on the data opType
-     *
      * @param data the data to create the buffer with
      * @return the created buffer
      */
     public static DataBuffer createBuffer(float[] data) {
-        DataBuffer ret;
-        //if (dataType() == DataType.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        //else if (dataType() == DataType.HALF)
-//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-//        else
-//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
-        return ret;
-    }
-
-    public static DataBuffer createBufferDetached(float[] data) {
-        DataBuffer ret;
-        //if (dataType() == DataType.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
-        //else if (dataType() == DataType.HALF)
-//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
-//        else
-//            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
-        return ret;
-    }
-
-    public static DataBuffer createBufferDetached(double[] data) {
-        DataBuffer ret;
-        //if (dataType() == DataType.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
-        //else if (dataType() == DataType.HALF)
-//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
-//        else
-//            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
-        return ret;
+        return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * Create a buffer based on the data opType
-     *
-     * @param data the data to create the buffer with
+     * Create a buffer based on underlying array.
+     * @param data data to create the buffer with
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(double[] data) {
-        DataBuffer ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+    public static DataBuffer createBufferDetached(float[] data) {
+        return DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
     }
 
     /**
-     * This method creates
-     * @param data
-     * @param dataType
-     * @return
+     * @see #createBufferDetached(float[])
+     */
+    public static DataBuffer createBufferDetached(double[] data) {
+        return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+    }
+
+    /**
+     * @see #createBuffer(float[])
+     */
+    public static DataBuffer createBuffer(double[] data) {
+        return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    /**
+     * Create a buffer based on the data of the underlying java array with the specified type..
+     * @param data underlying java array
+     * @param dataType specified type.
+     * @return created buffer,
      */
     public static DataBuffer createTypedBuffer(double[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1638,134 +1638,205 @@ public class Nd4j {
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(int[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(short[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(byte[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType)
+     */
     public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         buffer.setData(data);
         return buffer;
     }
 
-    ////////////////
-
+    /**
+     * Create a buffer based on the data of the underlying java array, specified type and workspace
+     * @param data underlying java array
+     * @param dataType specified type.
+     * @param workspace specified workspace.
+     * @return created buffer,
+     */
     public static DataBuffer createTypedBuffer(double[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(int[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(short[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(byte[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     */
     public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         buffer.setData(data);
         return buffer;
     }
 
-    ////////////////
-
+    /**
+     *  Create am uninitialized  buffer based on the data of the underlying java array and specified type.
+     * @param data underlying java array
+     * @param dataType specified type.
+     * @return
+     */
     public static DataBuffer createTypedBufferDetached(double[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * @see #createTypedBufferDetached(double[], DataType)
+     */
     public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
 
+    /**
+     * Set the factory instance for INDArray creation.
+     * @param factory new INDArray factory
+     */
     public static void setFactory(NDArrayFactory factory) {
         INSTANCE = factory;
     }
 
+    /**
+     * Set the factory instance for sparse INDArray creation.
+     * @param factory new INDArray factory
+     */
     public static void setSparseFactory(NDArrayFactory factory) {
         SPARSE_INSTANCE = factory;
     }
@@ -1791,7 +1862,7 @@ public class Nd4j {
     /**
      * DEPRECATED - use {@link #setDefaultDataTypes(DataType, DataType)}
      * This method sets dataType for the current JVM.
-     * @param dType Data type to set
+     * @param dtype Data type to set
      * @deprecated use {@link #setDefaultDataTypes(DataType, DataType)}. Equivalent to {@code setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()))}
      */
     @Deprecated
@@ -1818,24 +1889,24 @@ public class Nd4j {
     }
 
     /**
-     *
-     * @return
+     * Retrieve the Nd4J backend.
+     * @return the Nd4J backend.
      */
     public static Nd4jBackend getBackend() {
         return backend;
     }
 
     /**
-     *
-     * @return
+     * Retrieve the BLAS wrapper.
+     * @return the BLAS wrapper.
      */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
     }
 
     /**
-     *
-     * @return
+     * Retreive the sparse BLAS wrapper.
+     * @return the sparse BLAS wrapper.
      */
     public static BlasWrapper getSparseBlasWrapper() {
         return SPARSE_BLAS_WRAPPER_INSTANCE;
@@ -1915,7 +1986,23 @@ public class Nd4j {
         return ret;
     }
 
-
+    /**
+     * Sort all elements of an array.
+     *
+     * sorts all elements of an array. For multi dimansional arrays the result depends on the array ordering]
+     *
+     * Nd4j.factory().setOrder('f');
+     * INDArray x = Nd4j.arange(4).reshape(2,2);
+     * Nd4j.sort(x, true);
+     * gives: [[         0,    2.0000], [    1.0000,    3.0000]]
+     *
+     * The same ode with .setOrder('c')
+     * [[         0,    1.0000], [    2.0000,    3.0000]]
+     *
+     * @param ndarray array to sort
+     * @param ascending true for ascending, false for descending
+     * @return
+     */
     public static INDArray sort(INDArray ndarray, boolean ascending) {
         return getNDArrayFactory().sort(ndarray, !ascending);
     }
@@ -2254,8 +2341,6 @@ public class Nd4j {
         return INSTANCE.toFlattened(order, matrices);
     }
 
-
-
     /**
      * Create the identity ndarray
      *
@@ -2334,8 +2419,6 @@ public class Nd4j {
             throw new RuntimeException("Error writing output", e);
         }
     }
-
-
 
     /**
      * Array written to outputstream
