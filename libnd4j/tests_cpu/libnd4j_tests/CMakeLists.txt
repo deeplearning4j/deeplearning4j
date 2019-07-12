@@ -193,6 +193,7 @@ if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
     endif()
 endif()
 
+file(GLOB_RECURSE PERF_SOURCES false ../../include/performance/*.cpp ../../include/performance/*.h)
 file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../../include/exceptions/*.cpp ../../include/exceptions/*.h)
 file(GLOB_RECURSE EXEC_SOURCES false ../../include/execution/*.cpp ../../include/execution/*.h)
 file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
@@ -234,7 +235,7 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
     ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
-    ${OPS_SOURCES} ${TEST_SOURCES})
+    ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
 target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
 

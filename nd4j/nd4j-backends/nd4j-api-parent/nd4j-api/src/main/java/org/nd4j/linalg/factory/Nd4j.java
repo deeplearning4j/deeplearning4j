@@ -1386,15 +1386,39 @@ public class Nd4j {
      */
     public static DataBuffer createBufferDetached(int[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
-        if (type == DataType.INT)
-            return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        if (type == DataType.LONG)
-            return DATA_BUFFER_FACTORY_INSTANCE.createLong(new long[]{length});
-        else if (type == DataType.HALF)
-            return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
-
-        return type == DataType.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
-
+        switch (type){
+            case DOUBLE:
+                return DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+            case FLOAT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case HALF:
+                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+            case BFLOAT16:
+                return DATA_BUFFER_FACTORY_INSTANCE.createBFloat16(length);
+            case UINT64:
+                return DATA_BUFFER_FACTORY_INSTANCE.createULong(length);
+            case LONG:
+                return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
+            case UINT32:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUInt(length);
+            case INT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            case UINT16:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUShort(length);
+            case SHORT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createShort(length);
+            case UBYTE:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUByte(length);
+            case BYTE:
+                return DATA_BUFFER_FACTORY_INSTANCE.createByte(length);
+            case BOOL:
+                return DATA_BUFFER_FACTORY_INSTANCE.createBool(length);
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot create type: " + type);
+        }
     }
 
     /**
@@ -1403,16 +1427,39 @@ public class Nd4j {
     public static DataBuffer createBuffer(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
 
-        if (type == DataType.INT)
-            return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataType.LONG)
-            return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataType.HALF)
-            return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataType.DOUBLE)
-            return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+        switch (type) {
+            case BOOL:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createBool(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createBool(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case UBYTE:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createUByte(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createUByte(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case UINT16:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createUShort(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createUShort(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case UINT32:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createUInt(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createUInt(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case UINT64:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createULong(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createULong(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case BYTE:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createByte(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createByte(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case SHORT:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createShort(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createShort(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case INT:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case LONG:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case HALF:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case BFLOAT16:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createBFloat16(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createBFloat16(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case FLOAT:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case DOUBLE:
+                return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot create type: " + type);
+        }
     }
 
 
@@ -1424,19 +1471,31 @@ public class Nd4j {
         switch (type){
 
             case DOUBLE:
-                DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+                return DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
             case FLOAT:
-                DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+                return DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
             case HALF:
                 return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+            case BFLOAT16:
+                return DATA_BUFFER_FACTORY_INSTANCE.createBFloat16(length);
+            case UINT64:
+                return DATA_BUFFER_FACTORY_INSTANCE.createULong(length);
             case LONG:
                 return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
+            case UINT32:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUInt(length);
             case INT:
                 return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            case UINT16:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUShort(length);
             case SHORT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createShort(length);
             case UBYTE:
+                return DATA_BUFFER_FACTORY_INSTANCE.createUByte(length);
             case BYTE:
+                return DATA_BUFFER_FACTORY_INSTANCE.createByte(length);
             case BOOL:
+                return DATA_BUFFER_FACTORY_INSTANCE.createBool(length);
             case UTF8:
             case COMPRESSED:
             case UNKNOWN:

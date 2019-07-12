@@ -70,6 +70,7 @@ namespace nd4j {
         _devicePointers.resize(numDevices);
         _deviceOffsets.resize(numDevices);
         _cache.resize(numDevices);
+        _counters.resize(numDevices);
 
         // filling all pointers
         for (int e = 0; e < numDevices; e++) {
@@ -83,6 +84,7 @@ namespace nd4j {
             _devicePointers[e] = constant;
             _deviceOffsets[e] = 0;
             _cache[e] = devCache;
+            _counters[e] = 0L;
         }
 
         //
@@ -115,6 +117,7 @@ namespace nd4j {
             constantPtr = _devicePointers[deviceId];
             constantOffset = _deviceOffsets[deviceId];
         }
+
         if (constantOffset + numBytes >= CONSTANT_LIMIT) {
             int8_t *ptr = nullptr;
             ALLOCATE_SPECIAL(ptr, workspace, numBytes, int8_t);
@@ -154,7 +157,9 @@ namespace nd4j {
         if (holder->hasBuffer(dataType)) {
             return holder->getConstantDataBuffer(dataType);
         } else {
-            auto cbuff = new int8_t[descriptor.length() * DataTypeUtils::sizeOf(dataType)];
+            auto numBytes = descriptor.length() * DataTypeUtils::sizeOf(dataType);
+            auto cbuff = new int8_t[numBytes];
+            _counters[deviceId] += numBytes;
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {
@@ -170,6 +175,14 @@ namespace nd4j {
 
             return holder->getConstantDataBuffer(dataType);
         }
+    }
+
+    Nd4jLong ConstantHelper::getCachedAmount(int deviceId) {
+        int numDevices = getNumberOfDevices();
+        if (deviceId > numDevices || deviceId < 0)
+            return 0L;
+        else
+            return _counters[deviceId];
     }
 
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;

@@ -45,10 +45,26 @@ namespace nd4j {
                                    const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
                                    const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat){
 
-                const int seqLen = xSeq->sizeAt(0);
-                const int mb = xSeq->sizeAt(1);
-                const int inSize = xSeq->sizeAt(2);
-                const int outSize = iSeq->sizeAt(2);
+                int seqLen, mb, inSize, outSize;
+
+                if(dataFormat == 0) {
+                    seqLen  = xSeq->sizeAt(0);
+                    mb      = xSeq->sizeAt(1);
+                    inSize  = xSeq->sizeAt(2);
+                    outSize = iSeq->sizeAt(2);
+                }
+                else if(dataFormat == 1) {
+                    seqLen  = xSeq->sizeAt(2);
+                    mb      = xSeq->sizeAt(0);
+                    inSize  = xSeq->sizeAt(1);
+                    outSize = iSeq->sizeAt(1);
+                }
+                else if(dataFormat == 2) {
+                    seqLen  = xSeq->sizeAt(1);
+                    mb      = xSeq->sizeAt(0);
+                    inSize  = xSeq->sizeAt(2);
+                    outSize = iSeq->sizeAt(2);
+                }
 
                 const std::vector<Nd4jLong> inSliceShape({mb,inSize});
                 const std::vector<Nd4jLong> outSliceShape({mb,outSize});

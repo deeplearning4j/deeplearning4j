@@ -1161,4 +1161,10 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer constantBuffer(int dtype, DoublePointer data, int length);
 
     public abstract Pointer constantBuffer(int dtype, @Cast("Nd4jLong *") LongPointer data, int length);
+
+    public abstract String runLightBenchmarkSuit(boolean printOut);
+
+    public abstract String runFullBenchmarkSuit(boolean printOut);
+
+    public abstract long getCachedMemory(int deviceId);
 }

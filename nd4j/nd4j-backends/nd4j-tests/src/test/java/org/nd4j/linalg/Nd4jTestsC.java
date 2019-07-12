@@ -3307,6 +3307,28 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testCreateDetached_1() {
+        val shape = new int[]{10};
+        val dataTypes = new DataType[] {DataType.DOUBLE, DataType.BOOL, DataType.BYTE, DataType.UBYTE, DataType.SHORT, DataType.UINT16, DataType.INT, DataType.UINT32, DataType.LONG, DataType.UINT64, DataType.FLOAT, DataType.BFLOAT16, DataType.HALF};
+
+        for(DataType dt : dataTypes){
+            val dataBuffer = Nd4j.createBufferDetached(shape, dt);
+            assertEquals(dt, dataBuffer.dataType());
+        }
+    }
+
+    @Test
+    public void testCreateDetached_2() {
+        val shape = new long[]{10};
+        val dataTypes = new DataType[] {DataType.DOUBLE, DataType.BOOL, DataType.BYTE, DataType.UBYTE, DataType.SHORT, DataType.UINT16, DataType.INT, DataType.UINT32, DataType.LONG, DataType.UINT64, DataType.FLOAT, DataType.BFLOAT16, DataType.HALF};
+
+        for(DataType dt : dataTypes){
+            val dataBuffer = Nd4j.createBufferDetached(shape, dt);
+            assertEquals(dt, dataBuffer.dataType());
+        }
+    }
+
+    @Test
     public void testPairwiseMixedC() {
         int[] shape2 = {12, 8};
         int length = ArrayUtil.prod(shape2);
@@ -7888,6 +7910,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(Nd4j.createFromArray(1f, 3f, 4f), out);
     }
+
 
     private static INDArray fwd(INDArray input, INDArray W, INDArray b){
         INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));

@@ -204,6 +204,9 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray* NDArrayFactory::create_(const bool scalar, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::create_(const int8_t scalar, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::create_(const uint8_t scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const uint16_t scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const uint32_t scalar, nd4j::LaunchContext * context);
+    template NDArray* NDArrayFactory::create_(const uint64_t scalar, nd4j::LaunchContext * context);
     template NDArray* NDArrayFactory::create_(const int16_t scalar, nd4j::LaunchContext * context);
 
     template <typename T>

@@ -760,6 +760,13 @@ public:
     int getDeviceMajor(int deviceId);
 
     /**
+     * This method returns amount of cached memory
+     * @param deviceId
+     * @return
+     */
+    Nd4jLong getCachedMemory(int deviceId);
+
+    /**
      *
      * @param ptrToDeviceId
      * @return
@@ -1653,6 +1660,7 @@ public:
 
     int unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId);
 
+    void deleteCharArray(Nd4jPointer pointer);
     void deleteIntArray(Nd4jPointer pointer);
     void deleteLongArray(Nd4jPointer pointer);
     void deletePointerArray(Nd4jPointer pointer);
@@ -1690,6 +1698,10 @@ public:
     nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length);
     nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, double *data, int length);
     nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
+
+
+    const char* runLightBenchmarkSuit(bool printOut);
+    const char* runFullBenchmarkSuit(bool printOut);
 };
 
 

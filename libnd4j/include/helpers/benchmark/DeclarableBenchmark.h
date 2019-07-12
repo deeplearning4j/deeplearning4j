@@ -36,7 +36,7 @@ namespace nd4j {
         nd4j::graph::Context *_context = nullptr;
     public:
         DeclarableBenchmark(nd4j::ops::DeclarableOp &op, std::string name = 0) : OpBenchmark() {
-            _op = ops::OpRegistrator::getInstance()->getOperation(op.getOpHash());
+            _op = &op; //ops::OpRegistrator::getInstance()->getOperation(op.getOpHash());
             _testName = name;
         }
 

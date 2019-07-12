@@ -72,6 +72,9 @@ bool experimentalSupport = false;
 #include <graph/ResultWrapper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/ConstantTadHelper.h>
+#include <performance/benchmarking/BenchmarkSuit.h>
+#include <performance/benchmarking/FullBenchmarkSuit.h>
+#include <performance/benchmarking/LightBenchmarkSuit.h>
 
 using namespace nd4j;
 
@@ -2304,6 +2307,11 @@ void NativeOps::deletePointerArray(Nd4jPointer pointer) {
     delete[] ptr;
 }
 
+void NativeOps::deleteCharArray(Nd4jPointer pointer) {
+    auto ptr = reinterpret_cast<char *>(pointer);
+    delete[] ptr;
+}
+
 void NativeOps::deleteIntArray(Nd4jPointer pointer) {
     auto ptr = reinterpret_cast<int *>(pointer);
     delete[] ptr;
@@ -2790,6 +2798,38 @@ void NativeOps::sortTadByValue(Nd4jPointer *extraPointers,
     auto yType = ArrayOptions::dataType(yShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByValue(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+const char* NativeOps::runLightBenchmarkSuit(bool printOut) {
+    nd4j::LightBenchmarkSuit suit;
+    auto result = suit.runSuit();
+
+    if (printOut)
+        nd4j_printf("%s\n", result.data());
+
+    auto chars = new char[result.length()+1];
+    std::memcpy(chars, result.data(), result.length());
+    chars[result.length()] = (char) 0x0;
+
+    return chars;
+}
+
+Nd4jLong NativeOps::getCachedMemory(int deviceId) {
+    return nd4j::ConstantHelper::getInstance()->getCachedAmount(deviceId);
+}
+
+const char* NativeOps::runFullBenchmarkSuit(bool printOut) {
+    nd4j::FullBenchmarkSuit suit;
+    auto result = suit.runSuit();
+
+    if (printOut)
+        nd4j_printf("%s\n", result.data());
+
+    auto chars = new char[result.length()+1];
+    std::memcpy(chars, result.data(), result.length());
+    chars[result.length()] = (char) 0x0;
+
+    return chars;
 }
 
 

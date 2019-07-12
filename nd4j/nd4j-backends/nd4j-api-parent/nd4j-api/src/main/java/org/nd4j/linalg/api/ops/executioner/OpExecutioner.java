@@ -463,4 +463,8 @@ public interface OpExecutioner {
     DataBuffer createConstantBuffer(int[] values, DataType desiredType);
     DataBuffer createConstantBuffer(float[] values, DataType desiredType);
     DataBuffer createConstantBuffer(double[] values, DataType desiredType);
+
+
+    String runLightBenchmarkSuit(boolean printOut);
+    String runFullBenchmarkSuit(boolean printOut);
 }

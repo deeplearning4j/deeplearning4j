@@ -2185,4 +2185,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             sb.append(". Output var names: ").append(Arrays.toString(outNames));
         }
     }
+
+
+    @Override
+    public String runLightBenchmarkSuit(boolean printOut) {
+        return loop.runLightBenchmarkSuit(printOut);
+    }
+
+    @Override
+    public String runFullBenchmarkSuit(boolean printOut) {
+        return loop.runFullBenchmarkSuit(printOut);
+    }
 }

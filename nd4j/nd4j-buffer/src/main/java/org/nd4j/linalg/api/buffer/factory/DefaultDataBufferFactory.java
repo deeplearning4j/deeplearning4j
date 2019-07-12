@@ -355,9 +355,130 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createBFloat16(long length) {
+        return new BFloat16Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length) {
+        return new UInt32Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length) {
+        return new UInt16Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length) {
+        return new UInt8Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createULong(long length) {
+        return new UInt64Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createBool(long length) {
+        return new BoolBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createShort(long length) {
+        return new Int16Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createByte(long length) {
+        return new Int8Buffer(length);
+    }
+
+    @Override
+    public DataBuffer createBFloat16(long length, boolean initialize) {
+        return new BFloat16Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length, boolean initialize) {
+        return new UInt32Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length, boolean initialize) {
+        return new UInt16Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length, boolean initialize) {
+        return new UInt8Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createULong(long length, boolean initialize) {
+        return new UInt64Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createBool(long length, boolean initialize) {
+        return new BoolBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createShort(long length, boolean initialize) {
+        return new Int16Buffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createByte(long length, boolean initialize) {
+        return new Int8Buffer(length, initialize);
+    }
+
+    @Override
     public DataBuffer createInt(long length, boolean initialize) {
         return new IntBuffer(length, initialize);
     }
+
+    @Override
+    public DataBuffer createBFloat16(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new BFloat16Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new UInt32Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new UInt16Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new UInt8Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createULong(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new UInt64Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createBool(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new BoolBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createShort(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new Int16Buffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createByte(long length, boolean initialize,  MemoryWorkspace workspace) {
+        return new Int8Buffer(length, initialize, workspace);
+    }
+
 
     @Override
     public DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace) {
@@ -665,12 +786,12 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createHalf(long length) {
-        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+        return new HalfBuffer(length);
     }
 
     @Override
     public DataBuffer createHalf(long length, boolean initialize) {
-        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+        return new HalfBuffer(length, initialize);
     }
 
     /**

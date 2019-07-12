@@ -38,6 +38,8 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <array>
+#include <performance/benchmarking/FullBenchmarkSuit.h>
+#include <performance/benchmarking/LightBenchmarkSuit.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -163,6 +165,12 @@ TEST_F(PlaygroundTests, BroadcastOps2d) {
     helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
 }
  */
+
+TEST_F(PlaygroundTests, test_benchmark_suit_1) {
+    //LightBenchmarkSuit suit;
+    //auto output = suit.runSuit();
+    //nd4j_printf("SUIT OUTPUT\n%s\n", output.data());
+}
 
 TEST_F(PlaygroundTests, test_small_reductions) {
     auto f = NDArrayFactory::create<float>('c', {1024 ,1024});

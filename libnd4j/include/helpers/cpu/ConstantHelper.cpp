@@ -30,9 +30,11 @@ namespace nd4j {
     ConstantHelper::ConstantHelper() {
         int numDevices = getNumberOfDevices();
         _cache.resize(numDevices);
+        _counters.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
             std::map<ConstantDescriptor, ConstantHolder> map;
             _cache[e] = map;
+            _counters[e] = 0L;
         }
     }
 
@@ -44,8 +46,14 @@ namespace nd4j {
     }
 
     void* ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
+        if (workspace == nullptr) {
+            auto deviceId = getCurrentDevice();
+            _counters[deviceId] += numBytes;
+        }
+
         int8_t *ptr = nullptr;
         ALLOCATE(ptr, workspace, numBytes, int8_t);
+
         std::memcpy(ptr, src, numBytes);
         return ptr;
     }
@@ -71,7 +79,9 @@ namespace nd4j {
         if (holder->hasBuffer(dataType))
             return holder->getConstantDataBuffer(dataType);
         else {
-            int8_t *cbuff = new int8_t[descriptor.length() * DataTypeUtils::sizeOf(dataType)];
+            auto size = descriptor.length() * DataTypeUtils::sizeOf(dataType);
+            auto cbuff = new int8_t[size];
+            _counters[deviceId] += size;
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {
@@ -85,6 +95,14 @@ namespace nd4j {
 
             return holder->getConstantDataBuffer(dataType);
         }
+    }
+
+    Nd4jLong ConstantHelper::getCachedAmount(int deviceId) {
+        int numDevices = getNumberOfDevices();
+        if (deviceId > numDevices || deviceId < 0)
+            return 0L;
+        else
+            return _counters[deviceId];
     }
 
     nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;
