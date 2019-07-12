@@ -53,6 +53,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
@@ -245,6 +246,14 @@ public class SameDiff extends SDBaseOps {
     private Map<int[], Op> opsForResult;
     private boolean resolvedVariables = false;
 
+
+
+    @Getter
+    private Stack<ArgumentInterceptor> argumentInterceptors = new Stack<>();
+    @Getter
+    private Set<ArgumentInterceptor> pausedArgumentInterceptors = new HashSet<>();
+
+    private Set<String> blockNames = new HashSet<>();
 
     @Getter
     @Setter
@@ -472,7 +481,10 @@ public class SameDiff extends SDBaseOps {
         if(scope == null){
             return name;
         }
-        return scope + "/" + name;
+        if(!name.startsWith(scope + "/"))
+            return scope + "/" + name;
+        else
+            return name;
     }
 
     //Intentionally package private
@@ -532,6 +544,24 @@ public class SameDiff extends SDBaseOps {
         return ns;
     }
 
+
+    public List<SameDiffOp> getOpsInScope(NameScope scope){
+        ArrayList<SameDiffOp> ops = new ArrayList<>();
+        for(SameDiffOp v : this.ops.values()){
+            if(v.getName().startsWith(scope.getName()))
+                ops.add(v);
+        }
+        return ops;
+    }
+
+    public List<SDVariable> getVariablesInScope(NameScope scope){
+        ArrayList<SDVariable> vars = new ArrayList<>();
+        for(SDVariable v : variables()){
+            if(v.getVarName().startsWith(scope.getName()))
+                vars.add(v);
+        }
+        return vars;
+    }
 
     /**
      * @param sameDiff
@@ -1110,6 +1140,19 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Remove a property to resolve added with {@link #addPropertyToResolve(DifferentialFunction, String)}
+     *
+     * @param forFunction the function to add the property to resolve for
+     * @param arrayName   the array name
+     */
+    public void removePropertyToResolve(DifferentialFunction forFunction, String arrayName) {
+        if (propertiesToResolve.containsKey(forFunction.getOwnName())) {
+            List<String> newVal = propertiesToResolve.get(forFunction.getOwnName());
+            newVal.remove(arrayName);
+        }
+    }
+
+    /**
      * Return the properties to resolve for the given function.
      * This is typically used right before execution in model import in
      * {@link DifferentialFunction#resolvePropertiesFromSameDiffBeforeExecution()}
@@ -1273,12 +1316,109 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Add a new argument interceptor to the interceptor stack
+     *
+     * For internal use only.
+     *
+     * When a op is added with arguments, most recent argument interceptor is called on it.
+     * If ops are added in that interceptor, the next most recent will be called on their args, and so on.
+     *
+     * @param interceptor  the argument interceptor to add
+     */
+    public void addArgumentInterceptor(@NonNull ArgumentInterceptor interceptor){
+        argumentInterceptors.push(interceptor);
+    }
+
+    private boolean isArgumentInterceptorPaused(@NonNull ArgumentInterceptor interceptor){
+        return pausedArgumentInterceptors.contains(interceptor);
+    }
+
+    private ArgumentInterceptor getArgumentInterceptorToUse(){
+
+        if(argumentInterceptors.isEmpty())
+            return null;
+
+        ArgumentInterceptor use = argumentInterceptors.peek();
+        int i = 1;
+        while(isArgumentInterceptorPaused(use)){
+            if(argumentInterceptors.size() - i < 0)
+                return null;
+
+            use = argumentInterceptors.elementAt(argumentInterceptors.size() - i);
+            i++;
+        }
+
+        return use;
+    }
+
+    /**
+     * Remote the top (most recently added) argument interceptor
+     *
+     * For internal use only.
+     */
+    public void removeArgumentInterceptor(){
+        if(!argumentInterceptors.isEmpty())
+            argumentInterceptors.pop();
+    }
+
+    /**
+     * Pause the top (most recently added) argument interceptor
+     *
+     * For internal use only.
+     */
+    public void pauseArgumentInterceptor(){
+        pausedArgumentInterceptors.add(argumentInterceptors.peek());
+    }
+
+    /**
+     * Pause the given argument interceptor
+     *
+     * For internal use only.
+     *
+     * @param interceptor  the argument interceptor to pause
+     */
+    public void pauseArgumentInterceptor(@NonNull ArgumentInterceptor interceptor){
+        pausedArgumentInterceptors.add(interceptor);
+    }
+
+    /**
+     * Unpause the top (most recently added) argument interceptor
+     *
+     * For internal use only.
+     */
+    public void unpauseArgumentInterceptor(){
+        pausedArgumentInterceptors.remove(argumentInterceptors.peek());
+    }
+
+    /**
+     * Unpause the top given argument interceptor
+     *
+     * For internal use only.
+     *
+     * @param interceptor  the argument interceptor to unpause
+     */
+    public void unpauseArgumentInterceptor(@NonNull ArgumentInterceptor interceptor){
+        pausedArgumentInterceptors.remove(interceptor);
+    }
+
+    /**
      * Adds incoming arguments for the specified differential function to the graph
      *
      * @param variables Name of the variables that are arguments (inputs) to the specified function
      * @param function  Function
      */
     public void addArgsFor(String[] variables, DifferentialFunction function) {
+
+        ArgumentInterceptor interceptor = getArgumentInterceptorToUse();
+
+        if(interceptor != null) {
+            pauseArgumentInterceptor(interceptor);
+            for (int i = 0; i < variables.length; i++) {
+                variables[i] = interceptor.intercept(getVariable(variables[i])).getVarName();
+            }
+            unpauseArgumentInterceptor(interceptor);
+        }
+
         if (function.getOwnName() == null)
             throw new ND4JIllegalStateException("Instance id can not be null. Function not initialized properly");
 
@@ -1309,7 +1449,6 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
-
     /**
      * Adds incoming arguments for the specified differential function to the graph
      *
@@ -1317,6 +1456,7 @@ public class SameDiff extends SDBaseOps {
      * @param function  Function
      */
     public void addArgsFor(SDVariable[] variables, DifferentialFunction function) {
+
         String[] varNames = new String[variables.length];
         for (int i = 0; i < varNames.length; i++) {
             if (variables[i] == null)
@@ -1324,6 +1464,58 @@ public class SameDiff extends SDBaseOps {
             varNames[i] = variables[i].getVarName();
         }
         addArgsFor(varNames, function);
+    }
+
+    /**
+     * Replaces the argument at i with newArg for function
+     * Does not use (or remove) ArgumentInterceptor stuff
+     */
+    public void replaceArgFor(int i, @NonNull SDVariable newArg, @NonNull DifferentialFunction function){
+
+        Preconditions.checkArgument(i < function.args().length, "Index out of range: function " +
+                function.getOwnName() + " only has " + function.args().length + " args but you are trying" +
+                "to replace the argument at " + i);
+
+        String oldName = function.arg(i).getVarName();
+        String newName = newArg.getVarName();
+
+        if(function.arg(i).isPlaceHolder() && !newArg.isPlaceHolder()){
+            boolean otherPlaceholders = false;
+            for(int j = 0 ; j < function.argNames().length ; j++){
+                if(j == i)
+                    continue;
+
+                if(function.arg(j).isPlaceHolder())
+                    otherPlaceholders = true;
+            }
+
+            if(!otherPlaceholders)
+                placeHolderFunctions.remove(function.getOwnName());
+        } else if(!function.arg(i).isPlaceHolder() && newArg.isPlaceHolder()){
+            if(!placeHolderFunctions.contains(function.getOwnName()))
+                placeHolderFunctions.add(function.getOwnName());
+        }
+
+        List<String> oldArgs = ops.get(function.getOwnName()).getInputsToOp();
+        oldArgs = new ArrayList<>(oldArgs);
+        oldArgs.set(i, newName);
+        ops.get(function.getOwnName()).setInputsToOp(oldArgs);
+
+        List<String> funcs = this.variables.get(newName).getInputsForOp();
+
+        if (funcs == null) {
+            funcs = new ArrayList<>();
+            this.variables.get(newName).setInputsForOp(funcs);
+        }
+        if(!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
+            funcs.add(function.getOwnName());
+
+        List<String> oldFuncs = this.variables.get(oldName).getInputsForOp();
+        if(oldFuncs != null) {
+            if(!ArrayUtils.contains(function.argNames(), oldName))
+                oldFuncs.remove(function.getOwnName());
+        }
+
     }
 
     /**
@@ -1519,6 +1711,7 @@ public class SameDiff extends SDBaseOps {
 
                 //A bit of a hack for TF import: some TF graphs have Switch ops, where the output of one branch isn't consumed
                 // by any ops. Consequently, during execution this "output" might never be available. So we'll exclude the output of execution here
+                // This applies to SameDiff while loops as well
                 if(o.getOp() instanceof Switch){
                     continue;
                 }
@@ -2239,6 +2432,7 @@ public class SameDiff extends SDBaseOps {
         if (name == null || name.length() < 1)
             name = getNewVarName();
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
+        name = v.getVarName();
         variables.put(name, Variable.builder().name(name).variable(v).build());
         constantArrays.put(name, new DeviceLocalNDArray(constant));
         return v;
@@ -2305,6 +2499,7 @@ public class SameDiff extends SDBaseOps {
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                              org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         String withScope = nameWithScope(name);
+
         if (variables.containsKey(withScope)) {
             if(nameScopes.isEmpty()){
                 throw new IllegalArgumentException("Another variable with the name " + name + " already exists (current name scope: \""
@@ -3414,12 +3609,9 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Creates a while statement
-     *
-     * @param sameDiffConditional
-     * @param loopBody
-     * @return
+     * @deprecated Use {@link SDBaseOps#whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
      */
+    @Deprecated
     public While whileStatement(SameDiffConditional sameDiffConditional,
                                 SameDiffFunctionDefinition conditionBody,
                                 SameDiffFunctionDefinition loopBody
@@ -3435,11 +3627,9 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * @param conditional
-     * @param trueBody
-     * @param falseBody
-     * @return
+     * @deprecated Use {@link SDBaseOps#ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
      */
+    @Deprecated
     public If ifStatement(SameDiffConditional conditional,
                           SameDiffFunctionDefinition conditionBody,
                           SameDiffFunctionDefinition trueBody,
@@ -5466,5 +5656,27 @@ public class SameDiff extends SDBaseOps {
         return out;
     }
 
+    /**
+     * For internal use only.
+     * Creates a new discinct block name from baseName.
+     * Block names are used by If and While
+     */
+    public String newBlockName(String baseName){
+
+        if(baseName == null)
+            return null;
+
+        if(!blockNames.contains(baseName)){
+            blockNames.add(baseName);
+            return baseName;
+        } else {
+            int i = 1;
+            while(blockNames.contains(baseName + "_" + i)){
+                i++;
+            }
+            blockNames.add(baseName + "_" + i);
+            return baseName + "_" + i;
+        }
+    }
 
 }

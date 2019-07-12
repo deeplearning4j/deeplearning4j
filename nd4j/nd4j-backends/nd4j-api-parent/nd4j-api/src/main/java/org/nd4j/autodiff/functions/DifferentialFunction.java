@@ -451,6 +451,17 @@ public abstract class DifferentialFunction {
         }
     }
 
+    public void replaceArg(int i, SDVariable newArg){
+        if(sameDiff != null){
+            sameDiff.replaceArgFor(i, newArg, this);
+            if(args()[i].isPlaceHolder() && !newArg.isPlaceHolder()){
+                sameDiff.removePropertyToResolve(this, args()[i].getVarName());
+            } else if(!args()[i].isPlaceHolder() && newArg.isPlaceHolder()){
+                sameDiff.addPropertyToResolve(this, newArg.getVarName());
+            }
+        }
+    }
+
 
     /**
      * Return the output variables for this differential function.
@@ -652,9 +663,9 @@ public abstract class DifferentialFunction {
                     scope = "";
                 else
                     scope = scope + "/";
-                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
+                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex).replace(":", "_");
                 while(sameDiff.functionExists(varName)) {
-                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
+                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex).replace(":", "_");
                     argIndex++;
                 }
 

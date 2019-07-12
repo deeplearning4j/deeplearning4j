@@ -129,4 +129,39 @@ public class NameScopeTests extends BaseNd4jTest {
             }
         }
     }
+
+    @Test
+    public void testNoNesting(){
+        SameDiff SD = SameDiff.create();
+
+        SDVariable a = SD.constant(4);
+
+        NameScope scope = SD.withNameScope("test");
+
+        SDVariable out = SD.argmax(a);
+
+        out.add(45);
+
+        scope.close();
+
+        assertTrue("Var with name test/imax_1 exists", SD.variableMap().containsKey("test/imax_1"));
+    }
+
+    @Test
+    public void testNoTesting2(){
+        SameDiff SD = SameDiff.create();
+
+        SDVariable a = SD.constant(4);
+        SDVariable b = SD.constant(5).lt(4);
+
+        NameScope scope = SD.withNameScope("test");
+
+        SDVariable out = SD.f().switchOp(a, b)[0];
+
+        out.add(45);
+
+        scope.close();
+
+        assertTrue("Var with name test/switch:1 exists", SD.variableMap().containsKey("test/switch:1"));
+    }
 }

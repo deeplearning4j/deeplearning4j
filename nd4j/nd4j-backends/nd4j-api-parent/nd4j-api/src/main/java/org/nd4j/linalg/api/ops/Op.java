@@ -69,14 +69,10 @@ public interface Op {
         CONDITIONAL,
         LOOP,
         LOOP_COND,
-        IF,
         RETURN,
-        ENTER,
-        EXIT,
-        NEXT_ITERATION,
         RANDOM,
-        MERGE,
         SUMMARYSTATS,
+        LOGIC
     }
 
     /**

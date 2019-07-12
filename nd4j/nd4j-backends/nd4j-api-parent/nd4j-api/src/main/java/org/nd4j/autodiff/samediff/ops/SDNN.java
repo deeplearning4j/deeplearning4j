@@ -412,6 +412,29 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * Log softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable logSoftmax(SDVariable x, int dimension) {
+        return logSoftmax(null, x, dimension);
+    }
+
+    /**
+     * Log softmax activation
+     *
+     * @param name Variable name
+     * @param x    Input variable
+     * @return Output variable
+     */
+    public SDVariable logSoftmax(String name, SDVariable x, int dimension) {
+        validateFloatingPoint("log softmax", x);
+        SDVariable ret = f().logSoftmax(x, dimension);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * Element-wise rectified linear function with specified cutoff:<br>
      * out[i] = in[i] if in[i] >= cutoff
      * out[i] = 0 otherwise
@@ -588,6 +611,28 @@ public class SDNN extends SDOps {
     public SDVariable softmax(String name, SDVariable x) {
         validateFloatingPoint("softmax", x);
         SDVariable result = f().softmax(x);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable softmax(SDVariable x, int dimension) {
+        return softmax(null, x, dimension);
+    }
+
+    /**
+     * Softmax activation
+     *
+     * @param x Input variable
+     * @return Output variable
+     */
+    public SDVariable softmax(String name, SDVariable x, int dimension) {
+        validateFloatingPoint("softmax", x);
+        SDVariable result = f().softmax(x, dimension);
         return updateVariableNameAndReference(result, name);
     }
 

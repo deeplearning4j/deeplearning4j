@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -24,6 +25,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.Op.Type;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -34,10 +36,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@NoArgsConstructor
 public class Exit extends BaseCompatOp {
+
+    public Exit(SameDiff sameDiff, SDVariable x) {
+        super(sameDiff, new SDVariable[]{x});
+    }
+
+    /**
+     * WARNING: do not change without changing serialization methods
+     * See {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper#getOpNum(String, Type)}
+     *  and {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder#customOpClassForHashAndName(long, String)}
+     */
+    public static final String OP_NAME = "exit";
+    public static final int OP_NUM = 90;
+
     @Override
     public String opName() {
-        return "exit";
+        return OP_NAME;
     }
 
     @Override
@@ -61,7 +77,7 @@ public class Exit extends BaseCompatOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.EXIT;
+        return Type.LOGIC;
     }
 
     @Override
