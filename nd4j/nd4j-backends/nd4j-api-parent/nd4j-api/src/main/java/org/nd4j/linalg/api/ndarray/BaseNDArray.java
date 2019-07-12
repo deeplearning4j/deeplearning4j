@@ -4003,7 +4003,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray rsubi(INDArray other, INDArray result) {
         validateNumericalArray("rsubi", false);
         if (other.isScalar()) {
-            return this.addi(other.getDouble(0), result);
+            return this.rsubi(other.getDouble(0), result);
         }
 
         if (isScalar()) {

@@ -15377,7 +15377,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
        *
@@ -15410,7 +15410,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
-       *    2: row of biases with twice length [1 × 4K]
+       *    2: row of biases with twice length [1 x 4K]
        *    3: 2d tensor of previous cell state [bS x 2K]
        *    4: optional, 2d tensor of dropout mask [bS x 2K]
        *  
@@ -15444,7 +15444,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: 3d tensor of cell state [bS x K x N]
        *    5: 2d tensor of cell state gradients [bS x K]
@@ -15482,7 +15482,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        * Input arrays: 
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
-       *    2: row of biases with twice length [1 × 4K]
+       *    2: row of biases with twice length [1 x 4K]
        *    3: 2d tensor of previous cell state [bS x 2K]
        *    4: 3d tensor of cell state [N x bS x 2K]
        *    5: 2d tensor of cell state gradients [bS x 2K]
@@ -15681,7 +15681,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell state [batchSize x inSize], that is at previous time step t-1
        *    2: weights [inSize x 3*inSize]
-       *    3: biases [1 × 2*inSize]
+       *    3: biases [1 x 2*inSize]
        * 
        * Output arrays: 
        *    0: current cell output [batchSize x inSize], that is at current time step t

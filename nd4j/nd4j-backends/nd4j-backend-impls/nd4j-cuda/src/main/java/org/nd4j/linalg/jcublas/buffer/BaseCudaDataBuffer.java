@@ -567,6 +567,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         return allocationPoint.getPointers().getHostPointer().address();
     }
 
+    @Override
+    public Pointer pointer() {
+        // FIXME: very bad thing,
+        lazyAllocateHostPointer();
+
+        return super.pointer();
+    }
+
 
     /**
      *
@@ -672,7 +680,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
     }
 
-
     public void set(long[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
 
@@ -698,11 +705,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             case UBYTE: {
+                data = ArrayUtil.cutBelowZero(data);
                     for (int e = 0; e < data.length; e++) {
                         put(e, data[e]);
                     }
                 }
                 break;
+            case UINT16:
+                data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                     val pointer = new ShortPointer(ArrayUtil.toShorts(data));
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
@@ -714,6 +724,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             case UINT32:
+                data = ArrayUtil.cutBelowZero(data);
             case INT: {
                     val pointer = new IntPointer(ArrayUtil.toInts(data));
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
@@ -725,6 +736,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 }
                 break;
             case UINT64:
+                data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                     val pointer = new LongPointer(data);
                     val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));

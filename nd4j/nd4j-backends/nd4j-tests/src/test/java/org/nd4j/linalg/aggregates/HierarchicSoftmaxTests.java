@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
@@ -95,17 +96,17 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
     @Test
     public void testSGGradient1() {
-        INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
-        INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
-        INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
-        INDArray expTable = Nd4j.create(10000).assign(0.5f);
+        INDArray syn0 = Nd4j.create(DataType.DOUBLE, 10, 10).assign(0.01f);
+        INDArray syn1 = Nd4j.create(DataType.DOUBLE,10, 10).assign(0.02f);
+        INDArray syn1Neg = Nd4j.create(DataType.DOUBLE,10, 10).assign(0.03f);
+        INDArray expTable = Nd4j.create(DataType.DOUBLE,10000).assign(0.5f);
 
         double lr = 0.001;
 
         int idxSyn0 = 0;
 
-        INDArray expSyn0 = Nd4j.create(10).assign(0.01001f);
-        INDArray expSyn1_1 = Nd4j.create(10).assign(0.020005);
+        INDArray expSyn0 = Nd4j.create(DataType.DOUBLE,10).assign(0.01001f);
+        INDArray expSyn1_1 = Nd4j.create(DataType.DOUBLE,10).assign(0.020005);
 
         INDArray syn0row = syn0.getRow(idxSyn0);
 

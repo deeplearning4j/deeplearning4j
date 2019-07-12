@@ -93,8 +93,12 @@ namespace helpers {
         if (comp != nullptr)
             comp->syncToHost();
 
-        output->syncToHost();
-        numResult->syncToHost();
+        if (output != nullptr)
+            output->syncToHost();
+
+        if (numResult != nullptr)
+            numResult->syncToHost();
+
         compScalar.syncToHost();
 
         BUILD_SINGLE_SELECTOR(arg->dataType(), return processCondition_, (mode, arg, comp, output, numResult, compScalar), FLOAT_TYPES);
@@ -104,8 +108,12 @@ namespace helpers {
         if (comp != nullptr)
             comp->syncToDevice();
 
-        output->syncToDevice();
-        numResult->syncToDevice();
+        if (output != nullptr)
+            output->syncToDevice();
+
+        if (numResult != nullptr)
+            numResult->syncToDevice();
+        
         compScalar.syncToDevice();
 
     }

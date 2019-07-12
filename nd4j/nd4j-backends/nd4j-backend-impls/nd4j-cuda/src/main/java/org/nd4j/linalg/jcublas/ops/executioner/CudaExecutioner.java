@@ -61,6 +61,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -1495,7 +1496,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
-        DataBuffer surfaceBuffer = getBuffer(batch);
+        val surfaceBuffer = (BaseCudaDataBuffer) getBuffer(batch);
+        surfaceBuffer.lazyAllocateHostPointer();
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
@@ -2238,152 +2240,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (op.opName().equalsIgnoreCase("im2col")) {
-            val xArr = op.inputArguments()[0];
-            val zArr = op.outputArguments()[0];
-
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr, xArr);
-
-            if (extraz.get() == null)
-                extraz.set(new PointerPointer(32));
-
-            PointerPointer xShapeHost =
-                    extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
-                            context.getOldStream(), // 1
-                            AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
-                            context.getBufferReduction(), // 4
-                            context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
-                            null,
-                            AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
-                    );
-
-
-            val x = AtomicAllocator.getInstance().getPointer(xArr, context);
-            val z = AtomicAllocator.getInstance().getPointer(zArr, context);
-
-            val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
-            val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
-
-            val hxShape = AtomicAllocator.getInstance().getHostPointer(xArr.shapeInfoDataBuffer());
-            val hzShape = AtomicAllocator.getInstance().getHostPointer(zArr.shapeInfoDataBuffer());
-
-            double zeroPad = 0.0;
-            if(op.tArgs() != null && op.tArgs().length > 0){
-                zeroPad = op.tArgs()[0];
-            }
-            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8], zeroPad};
-            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass, xArr.dataType());
-            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
-
-            nativeOps.execTransformSame(xShapeHost, 9,
-                    null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    null, (LongPointer) hzShape, z, (LongPointer) zShape, extraArgs);
-
-            //AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
-            AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
-
-            Nd4j.getExecutioner().commit();
-
-            return op.outputArguments();
-        } else if (op.opName().equalsIgnoreCase("col2im")) {
-            val dtype = Nd4j.dataType();
-
-            val xArr = op.inputArguments()[0];
-            val zArr = op.outputArguments()[0];
-
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr, xArr);
-
-            if (extraz.get() == null)
-                extraz.set(new PointerPointer(32));
-
-            PointerPointer xShapeHost =
-                    extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
-                            context.getOldStream(), // 1
-                            AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
-                            context.getBufferReduction(), // 4
-                            context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
-                            null,
-                            AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
-                    );
-
-
-            val x = AtomicAllocator.getInstance().getPointer(xArr, context);
-            val z = AtomicAllocator.getInstance().getPointer(zArr, context);
-
-            val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
-            val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
-
-            val hxShape = AtomicAllocator.getInstance().getHostPointer(xArr.shapeInfoDataBuffer());
-            val hzShape = AtomicAllocator.getInstance().getHostPointer(zArr.shapeInfoDataBuffer());
-
-            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7]};
-            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass, xArr.dataType());
-            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
-
-
-            nativeOps.execTransformSame(xShapeHost, 8,
-                    null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    null, (LongPointer) hzShape, z, (LongPointer) zShape, extraArgs);
-
-            //AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
-            AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
-
-            //Nd4j.getExecutioner().commit();
-            return op.outputArguments();
-        } else if (op.opName().equalsIgnoreCase("pooling2d")) {
-            val dtype = Nd4j.dataType();
-
-            val xArr = op.inputArguments()[0];
-            val zArr = op.outputArguments()[0];
-
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(zArr, xArr);
-
-            if (extraz.get() == null)
-                extraz.set(new PointerPointer(32));
-
-            PointerPointer xShapeHost =
-                    extraz.get().put(AddressRetriever.retrieveHostPointer(xArr.shapeInfoDataBuffer()), // 0
-                            context.getOldStream(), // 1
-                            AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
-                            context.getBufferAllocation(), // 3
-                            context.getBufferReduction(), // 4
-                            context.getBufferScalar(), // 5
-                            context.getBufferSpecial(),
-                            null,
-                            AddressRetriever.retrieveHostPointer(zArr.shapeInfoDataBuffer())
-                    );
-
-
-            val x = AtomicAllocator.getInstance().getPointer(xArr, context);
-            val z = AtomicAllocator.getInstance().getPointer(zArr, context);
-
-            val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
-            val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
-
-            val hxShape = AtomicAllocator.getInstance().getHostPointer(xArr.shapeInfoDataBuffer());
-            val hzShape = AtomicAllocator.getInstance().getHostPointer(zArr.shapeInfoDataBuffer());
-
-            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8]};
-            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass, zArr.dataType());
-            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
-
-
-            nativeOps.execTransformFloat(xShapeHost, 23,
-                    null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    zArr.data().addressPointer(), (LongPointer) hzShape, z, (LongPointer) zShape,
-                    extraArgs);
-
-            // AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
-            AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
-
-            return op.outputArguments();
-        }
-
-        Nd4j.getExecutioner().commit();
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
         val context = (CudaOpContext) buildContext();

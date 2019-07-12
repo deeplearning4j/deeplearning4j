@@ -1133,6 +1133,33 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static int[] cutBelowZero(int[] data) {
+        val ret = new int[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+    public static long[] cutBelowZero(long[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+    public static short[] cutBelowZero(short[] data) {
+        val ret = new short[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+    public static byte[] cutBelowZero(byte[] data) {
+        val ret = new byte[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
 
     /**
      * Return a copy of this array with the

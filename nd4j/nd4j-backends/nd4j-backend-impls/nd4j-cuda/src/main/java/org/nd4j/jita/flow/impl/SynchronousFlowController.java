@@ -18,6 +18,7 @@ package org.nd4j.jita.flow.impl;
 
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -95,7 +96,7 @@ public class SynchronousFlowController implements FlowController {
     }
 
     @Override
-    public void synchronizeToDevice(AllocationPoint point) {
+    public void synchronizeToDevice(@NonNull AllocationPoint point) {
         if (point.isConstant())
             return;
 
