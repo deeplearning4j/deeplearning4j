@@ -575,7 +575,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119_1) {
     z->printShapeInfo("Stitch Shape");
     ASSERT_TRUE(z->isSameShape(exp));
     ASSERT_TRUE(z->equalsTo(exp));
-    
+
     delete result;
 }
 
@@ -6242,23 +6242,18 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_CumSum_BP_1) {
+TEST_F(DeclarableOpsTests7, cumsum_bp_1) {
 
     auto x = NDArrayFactory::create<double>('c', {3, 4});
-//    auto y = NDArrayFactory::create<double>('c', {3, 4});
-//    auto z; // = NDArrayFactory::create<double>('c', {4});
     auto eps = NDArrayFactory::create<double>('c', {3, 4});
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, {12.f, 11.f, 10.f, 9.f, 8.f, 7.f,
                                       6.f,  5.f,  4.f, 3.f, 2.f, 1.f});
     x.linspace(1);
     eps.assign(1.f);
 
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
     nd4j::ops::cumsum_bp op;
     auto result = op.execute({&x, &eps}, {}, {0,0});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
-//    output->printShapeInfo("Result shape is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -6266,27 +6261,21 @@ TEST_F(DeclarableOpsTests7, Test_CumSum_BP_1) {
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
-//    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_CumSum_BP_2) {
+TEST_F(DeclarableOpsTests7, cumsum_bp_2) {
     auto x = NDArrayFactory::create<double>('c', {3, 4});
-//    auto y = NDArrayFactory::create<double>('c', {3, 4});
-//    auto z; // = NDArrayFactory::create<double>('c', {4});
     auto eps = NDArrayFactory::create<double>('c', {3, 4});
     auto exp = NDArrayFactory::create<double>('c', {3, 4}, { 11.f, 10.f, 9.f, 8.f, 7.f, 6.f,
                                       5.f,  4.f, 3.f, 2.f, 1.f, 0.f});
     x.linspace(1);
-//    exp.linspace(1);
     eps.assign(1.f);
 
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
+
     nd4j::ops::cumsum_bp op;
     auto result = op.execute({&x, &eps}, {}, {1,0});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
-//    output->printShapeInfo("Result shape is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -6294,14 +6283,11 @@ TEST_F(DeclarableOpsTests7, Test_CumSum_BP_2) {
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_3) {
+TEST_F(DeclarableOpsTests7, cumsum_bp_3) {
     auto x = NDArrayFactory::create<double>('c', {3, 4});
-//    auto y = NDArrayFactory::create<double>('c', {3, 4});
-//    auto z; // = NDArrayFactory::create<double>('c', {4});
     auto eps = NDArrayFactory::create<double>('c', {3, 4});
     auto exp = NDArrayFactory::create<double>('c', {3, 4});
 
@@ -6309,16 +6295,11 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_3) {
     exp.linspace(0);
     eps.assign(1.f);
 
-//    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
     nd4j::ops::cumsum_bp op;
     auto result = op.execute({&x, &eps}, {}, {1,1});
     auto output = result->at(0);
-//    output->printIndexedBuffer("Result is");
-//    output->printShapeInfo("Result shape is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-//    ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;

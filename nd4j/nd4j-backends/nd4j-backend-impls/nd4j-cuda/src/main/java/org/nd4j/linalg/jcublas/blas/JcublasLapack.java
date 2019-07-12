@@ -17,6 +17,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -81,7 +83,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -89,7 +91,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgetrf_bufferSize(solverDn, M, N, (FloatPointer) xAPointer.getDevicePointer(), M,
                     (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
@@ -147,15 +150,16 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            CublasPointer xAPointer = new CublasPointer(a, ctx);
+            val xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDgetrf_bufferSize(solverDn, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
                     (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
@@ -167,7 +171,7 @@ public class JcublasLapack extends BaseLapack {
             int worksize = worksizeBuffer.getInt(0);
 
             // Now allocate memory for the workspace, the permutation matrix and a return code
-            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+            val workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
             // Do the actual LU decomp
             stat = cusolverDnDgetrf(solverDn, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
@@ -218,7 +222,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new IllegalStateException("solverSetStream failed");
 
@@ -227,7 +231,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgeqrf_bufferSize(solverDn, M, N,
                     (FloatPointer) xAPointer.getDevicePointer(), M,
@@ -333,7 +338,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -342,7 +347,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDgeqrf_bufferSize(solverDn, M, N,
                     (DoublePointer) xAPointer.getDevicePointer(), M,
@@ -441,7 +447,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -449,7 +455,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSpotrf_bufferSize(solverDn, uplo, N,
                     (FloatPointer) xAPointer.getDevicePointer(), N,
@@ -524,7 +531,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(solverDn, new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(solverDn, new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -532,7 +539,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDpotrf_bufferSize(solverDn, uplo, N,
                     (DoublePointer) xAPointer.getDevicePointer(), N,
@@ -656,7 +664,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -664,7 +672,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgesvd_bufferSize(solverDn, M, N, (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
             );
@@ -765,7 +774,7 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            int result = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new BlasException("solverSetStream failed");
 
@@ -773,7 +782,8 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgesvd_bufferSize(solverDn, M, N, (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
             );
@@ -851,14 +861,16 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (status == 0) {
                 // transfer the INDArray into GPU memory
                 CublasPointer xAPointer = new CublasPointer(a, ctx);
                 CublasPointer xRPointer = new CublasPointer(R, ctx);
 
                 // this output - indicates how much memory we'll need for the real operation
-                DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+                val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+                worksizeBuffer.lazyAllocateHostPointer();
+
                 status = cusolverDnSsyevd_bufferSize(
                         solverDn, jobz, uplo, M,
                         (FloatPointer) xAPointer.getDevicePointer(), M,
@@ -869,7 +881,7 @@ public class JcublasLapack extends BaseLapack {
                     int worksize = worksizeBuffer.getInt(0);
 
                     // allocate memory for the workspace, the non-converging row buffer and a return code
-                    Pointer workspace = new Workspace(worksize * 4);    //4 = float width
+                    val workspace = new Workspace(worksize * 4);    //4 = float width
 
                     INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                             Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1, 1}, A.dataType()));
@@ -924,14 +936,16 @@ public class JcublasLapack extends BaseLapack {
 
         // synchronized on the solver
         synchronized (handle) {
-            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getCublasStream()));
             if (status == 0) {
                 // transfer the INDArray into GPU memory
                 CublasPointer xAPointer = new CublasPointer(a, ctx);
                 CublasPointer xRPointer = new CublasPointer(R, ctx);
 
                 // this output - indicates how much memory we'll need for the real operation
-                DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+                val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+                worksizeBuffer.lazyAllocateHostPointer();
+
                 status = cusolverDnDsyevd_bufferSize(
                         solverDn, jobz, uplo, M,
                         (DoublePointer) xAPointer.getDevicePointer(), M,

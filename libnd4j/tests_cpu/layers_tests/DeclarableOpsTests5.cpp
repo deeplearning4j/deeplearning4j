@@ -177,9 +177,9 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printShapeInfo("RES shape");
-    x.printShapeInfo("EXP shape");
-    z->printIndexedBuffer("RES output");
+    // z->printShapeInfo("RES shape");
+    // x.printShapeInfo("EXP shape");
+    // z->printIndexedBuffer("RES output");
     ASSERT_TRUE(x.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1335,11 +1335,11 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     auto results = op.execute({&input}, {}, {});
     auto output = results->at(0);
     double traceM = matrix.getTrace();
-    nd4j_printf("Trace for matrix is %f\n", traceM);
+    // nd4j_printf("Trace for matrix is %f\n", traceM);
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(output));
-    exp.printIndexedBuffer("EXP TRACE");
-    output->printIndexedBuffer("OUT TRACE");
+    // exp.printIndexedBuffer("EXP TRACE");
+    // output->printIndexedBuffer("OUT TRACE");
     ASSERT_TRUE(exp.equalsTo(output));
 
     delete results;

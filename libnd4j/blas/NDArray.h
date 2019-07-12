@@ -1143,9 +1143,9 @@ namespace nd4j {
         *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
-        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
-        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
-        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, superdiagonal "upper" remains unaffected
+        *   'b' - fill in both directions, both "lower" and "upper" are taken into account
         * rest of target elements are equal to this array elements
         * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */

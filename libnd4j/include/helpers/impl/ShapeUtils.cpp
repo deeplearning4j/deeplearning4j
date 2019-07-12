@@ -552,7 +552,7 @@ std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDAr
 // evaluate shapeInfo for resulting array from tile operation
 Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, nd4j::memory::Workspace* workspace) {
     // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-    int dim = reps.size();
+    int repsSize = reps.size();
     int product = 1;
     for(const auto& item : reps)
         product *= item;
@@ -560,24 +560,24 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = arr.rankOf();
-    int diff = rankOld - dim;
+    int diff = rankOld - repsSize;
 
     // evaluate new shapeInfo
     Nd4jLong* newShapeInfo = nullptr;
     if(diff < 0) {
-        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(dim), Nd4jLong);
-        newShapeInfo[0] = dim;                  // set new rank
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(repsSize), Nd4jLong);
+        newShapeInfo[0] = repsSize;                  // set new rank
         for(int i=1; i <= -diff; ++i)
             newShapeInfo[i] = 1;                // set unities to be new dimensions at left-hand side of newShapeInfo shape place
         memcpy(newShapeInfo + 1 - diff, arr.getShapeInfo() + 1, rankOld*sizeof(Nd4jLong));       // copy old dimensions to the right-hand side of newShapeInfo shape place
-        for(int i=1; i <= dim; ++i)
+        for(int i=1; i <= repsSize; ++i)
             newShapeInfo[i] *= reps[i - 1];     // set new shape by multiplying old dimensions by corresponding numbers from reps
     }
     else {
         ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rankOld), Nd4jLong);
         memcpy(newShapeInfo, arr.getShapeInfo(), shape::shapeInfoByteLength(rankOld));      // copy all elements of _shapeInfo to newShapeInfo
-        for(int i=1; i <= dim; ++i)
-            newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps
+        for(int i=1; i <= repsSize; ++i)
+            newShapeInfo[rankOld + 1 - i] *= reps[repsSize - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps
     }
     shape::updateStrides(newShapeInfo, arr.ordering());
     ArrayOptions::setDataType(newShapeInfo, arr.dataType());

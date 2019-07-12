@@ -228,7 +228,7 @@ void* NDArray::getSpecialBuffer() const {
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
-    int dim = reps.size();
+    const int repsSize = reps.size();
     int product = 1;
     for(const auto& item : reps)
         product *= item;
@@ -236,11 +236,11 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = rankOf();
-    int diff = rankOld - dim;
+    int diff = rankOld - repsSize;
     if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
         NDArray result(*this);
         if(diff < 0) {      // reshape to higher dimension
-            std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
+            std::vector<Nd4jLong> shapeNew = reps;               // there is requirement to have unities at first "diff" positions of new shape
             memcpy(&shapeNew[-diff], result.getShapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
             result.reshapei(ordering(), shapeNew);
         }

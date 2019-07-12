@@ -29,18 +29,18 @@ namespace ops  {
 
 CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     auto x = INPUT_VARIABLE(0);
-    
+
     const int rank =  x->rankOf();
     REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
     const bool fullUV = (bool)INT_ARG(0);
     const bool calcUV = (bool)INT_ARG(1);
-    const int switchNum = INT_ARG(2);    
-    
-    #ifndef __CUDABLAS__
+    const int switchNum = INT_ARG(2);
+
+    // #ifndef __CUDABLAS__
     helpers::svd(block.launchContext(), x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
-    #endif
-         
+    // #endif
+
     return Status::OK();;
 }
 
@@ -56,28 +56,28 @@ DECLARE_SHAPE_FN(svd) {
     auto inShapeInfo = inputShape->at(0);
     bool fullUV = (bool)INT_ARG(0);
     bool calcUV = (bool)INT_ARG(1);
-    
+
     const int rank = inShapeInfo[0];
     REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
-    const int diagSize = inShapeInfo[rank] < inShapeInfo[rank-1] ? inShapeInfo[rank] : inShapeInfo[rank-1];        
-    
+    const int diagSize = inShapeInfo[rank] < inShapeInfo[rank-1] ? inShapeInfo[rank] : inShapeInfo[rank-1];
+
     Nd4jLong* sShapeInfo(nullptr);
     if(rank == 2) {
-        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong); 
+        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
         sShapeInfo[0] = 1;
         sShapeInfo[1] = diagSize;
     }
     else {
-        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong); 
+        ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank-1), Nd4jLong);
         sShapeInfo[0] = rank - 1;
         for(int i=1; i <= rank-2; ++i)
             sShapeInfo[i] = inShapeInfo[i];
         sShapeInfo[rank-1] = diagSize;
     }
-    
+
     ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
-    
+
     if(calcUV){
 
         Nd4jLong *uShapeInfo(nullptr), *vShapeInfo(nullptr);
@@ -93,10 +93,10 @@ DECLARE_SHAPE_FN(svd) {
             vShapeInfo[rank-1] = vShapeInfo[rank];
             vShapeInfo[rank] = diagSize;
         }
-    
+
         shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
         shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
-    
+
         auto result = SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(sShapeInfo)), ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(uShapeInfo)), ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(vShapeInfo)));
         RELEASE(sShapeInfo, block.workspace());
         RELEASE(uShapeInfo, block.workspace());

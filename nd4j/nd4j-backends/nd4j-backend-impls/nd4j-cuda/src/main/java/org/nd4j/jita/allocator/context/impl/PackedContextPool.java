@@ -62,11 +62,11 @@ public class PackedContextPool extends BasicContextPool implements ContextPool {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
                         log.debug("Creating new cuBLAS handle for device [{}]", deviceId);
 
-                        cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
+                        //cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
-                        cublasHandle_t handle = createNewCublasHandle(cublasStream);
+                        cublasHandle_t handle = createNewCublasHandle(context.getOldStream());
                         context.setHandle(handle);
-                        context.setCublasStream(cublasStream);
+                        //context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
 

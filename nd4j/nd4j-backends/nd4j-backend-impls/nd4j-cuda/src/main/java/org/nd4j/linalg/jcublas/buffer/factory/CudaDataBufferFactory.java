@@ -72,10 +72,18 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaFloatDataBuffer(underlyingBuffer, length, offset);
             case HALF:
                 return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(underlyingBuffer, length, offset);
+            case UINT64:
+                return new CudaUInt64DataBuffer(underlyingBuffer, length, offset);
             case LONG:
                 return new CudaLongDataBuffer(underlyingBuffer, length, offset);
+            case UINT32:
+                return new CudaUInt32DataBuffer(underlyingBuffer, length, offset);
             case INT:
                 return new CudaIntDataBuffer(underlyingBuffer, length, offset);
+            case UINT16:
+                return new CudaUInt16DataBuffer(underlyingBuffer, length, offset);
             case SHORT:
                 return new CudaShortDataBuffer(underlyingBuffer, length, offset);
             case UBYTE:
@@ -684,16 +692,32 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(Pointer pointer, DataType type, long length, Indexer indexer) {
         switch (type) {
+            case UINT64:
+                return new CudaUInt64DataBuffer(pointer, indexer, length);
             case LONG:
                 return new CudaLongDataBuffer(pointer, indexer, length);
+            case UINT32:
+                return new CudaUInt32DataBuffer(pointer, indexer, length);
             case INT:
                 return new CudaIntDataBuffer(pointer, indexer, length);
+            case UINT16:
+                return new CudaUInt16DataBuffer(pointer, indexer, length);
+            case SHORT:
+                return new CudaShortDataBuffer(pointer, indexer, length);
+            case UBYTE:
+                return new CudaUByteDataBuffer(pointer, indexer, length);
+            case BYTE:
+                return new CudaByteDataBuffer(pointer, indexer, length);
             case DOUBLE:
                 return new CudaDoubleDataBuffer(pointer, indexer, length);
             case FLOAT:
                 return new CudaFloatDataBuffer(pointer, indexer, length);
             case HALF:
                 return new CudaHalfDataBuffer(pointer, indexer, length);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(pointer, indexer, length);
+            case BOOL:
+                return new CudaBoolDataBuffer(pointer, indexer, length);
         }
 
         throw new IllegalArgumentException("Illegal dtype " + type);
@@ -702,16 +726,32 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(Pointer pointer, Pointer specialPointer, DataType type, long length, Indexer indexer) {
         switch (type) {
+            case UINT64:
+                return new CudaUInt64DataBuffer(pointer, specialPointer, indexer, length);
             case LONG:
                 return new CudaLongDataBuffer(pointer, specialPointer, indexer, length);
+            case UINT32:
+                return new CudaUInt32DataBuffer(pointer, specialPointer, indexer, length);
             case INT:
                 return new CudaIntDataBuffer(pointer, specialPointer, indexer, length);
+            case UINT16:
+                return new CudaUInt16DataBuffer(pointer, specialPointer, indexer, length);
+            case SHORT:
+                return new CudaShortDataBuffer(pointer, specialPointer, indexer, length);
+            case UBYTE:
+                return new CudaUByteDataBuffer(pointer, specialPointer, indexer, length);
+            case BYTE:
+                return new CudaByteDataBuffer(pointer, specialPointer, indexer, length);
             case DOUBLE:
                 return new CudaDoubleDataBuffer(pointer, specialPointer, indexer, length);
             case FLOAT:
                 return new CudaFloatDataBuffer(pointer, specialPointer, indexer, length);
             case HALF:
                 return new CudaHalfDataBuffer(pointer, specialPointer, indexer, length);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(pointer, specialPointer, indexer, length);
+            case BOOL:
+                return new CudaBoolDataBuffer(pointer, specialPointer, indexer, length);
         }
 
         throw new IllegalArgumentException("Illegal dtype " + type);

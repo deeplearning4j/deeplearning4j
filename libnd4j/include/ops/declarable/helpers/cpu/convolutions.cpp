@@ -1418,18 +1418,15 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                         sum += pIn[kh + kw];
 
-
-                                auto oi = b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3;
-
-                                if (extraParam0 == 0) {       //Exclude padding
-                                    int _a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
-                                    int _b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
-
-                                    sum /=  _a * _b;   //Accounts for dilation
-                                } else if (extraParam0 == 1)  //Include padding
+                                if (extraParam0 == 0) {                     //Exclude padding
+                                    int a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
+                                    int b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
+                                    sum /=  static_cast<T>(a * b);          //  Accounts for dilation
+                                }
+                                else if (extraParam0 == 1)                  //Include padding
                                     sum /= kProd;
 
-                                out[oi] = sum;
+                                out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                             }
                         }
                     }

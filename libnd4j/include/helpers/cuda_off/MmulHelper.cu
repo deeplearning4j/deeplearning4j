@@ -22,7 +22,6 @@
 #include <cublas_v2.h>
 #include "../MmulHelper.h"
 #include <specials_cuda.h>
-#include <helpers/PointersManager.h>
 
 namespace nd4j {
 

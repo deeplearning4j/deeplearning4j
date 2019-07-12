@@ -732,10 +732,81 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
     manager.synchronize();
 }
 
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+__global__ void scatterForLossCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                         void *vy, const Nd4jLong *yShapeInfo,
+                                         void *vz, const Nd4jLong *zShapeInfo) {
 
+    const auto x = reinterpret_cast<const X*>(vx);
+          auto y = reinterpret_cast<Z*>(vy);
+          auto z = reinterpret_cast<Z*>(vz);
 
-void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+    __shared__ Nd4jLong xLen, *sharedMem;
+    __shared__ int xRank;   // xRank = zRank, yRank = xRank + 1
 
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        xLen  = shape::length(xShapeInfo);
+        xRank = shape::rank(xShapeInfo);
+    }
+
+    __syncthreads();
+
+    const auto xInd = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if(xInd >= xLen)
+        return;
+
+    auto coords = sharedMem + threadIdx.x * (xRank + 1);
+
+    shape::index2coords(xRank, xShapeInfo + 1, xInd, xLen, coords);
+
+    // y last coordinate
+    coords[xRank] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords, xRank)];
+
+    const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank + 2, coords, xRank + 1);
+
+    if(z == nullptr) { // gradient calculation
+        y[yOffset] -= 1.f;
+    }
+    else {
+        z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords, xRank)] = y[yOffset];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+static void scatterForLossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong* xShapeInfo, void *vy, const Nd4jLong* yShapeInfo, void *vz, const Nd4jLong* zShapeInfo) {
+
+    scatterForLossCuda<X, Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+}
+
+///////////////////////////////////////////////////////////////////
+void scatterForLoss(nd4j::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
+    // shapes of indices and output must be the same
+    // shape of indices should be the same as updates shape with last dimension excluded, for example if updates is {a,b,c} then indices should be {a,b}
+
+    PointersManager manager(context, "scatterForLoss");
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = updates.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+
+    if(calcGrad) {
+        NDArray::prepareSpecialUse({&updates}, {&indices});
+        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr), INTEGER_TYPES, FLOAT_TYPES);
+        NDArray::registerSpecialUse({&updates}, {&indices});
+    }
+    else {
+        NDArray::prepareSpecialUse({&output}, {&indices, &updates});
+        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), INTEGER_TYPES, FLOAT_TYPES);
+        NDArray::registerSpecialUse({&output}, {&indices, &updates});
+    }
+
+    manager.synchronize();
 }
 
 

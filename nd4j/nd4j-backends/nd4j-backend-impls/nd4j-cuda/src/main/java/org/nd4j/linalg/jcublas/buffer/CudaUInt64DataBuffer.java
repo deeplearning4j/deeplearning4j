@@ -100,6 +100,10 @@ public class CudaUInt64DataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset, workspace);
     }
 
+    public CudaUInt64DataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
+    }
+
     public CudaUInt64DataBuffer(double[] data) {
         super(data);
     }

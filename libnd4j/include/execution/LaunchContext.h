@@ -86,6 +86,7 @@ class ND4J_EXPORT LaunchContext {
 
 		FORCEINLINE void setCudaStream(cudaStream_t* cudaStream)  {_cudaStream = cudaStream;};
 		FORCEINLINE void setCudaSpecialStream(cudaStream_t* cudaStream)  {_cudaSpecialStream = cudaStream;};
+		FORCEINLINE void setCublasHandle(void *handle) {_cublasHandle = handle; };
 
 
 #endif // JCPP

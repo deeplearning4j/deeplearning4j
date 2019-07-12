@@ -803,8 +803,12 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
                         sum += x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
 
-            if (extraParam0 == 0)         //Exclude padding
-                sum /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
+            if (extraParam0 == 0) {         //Exclude padding
+                uint a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
+                uint b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
+                uint c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
+                sum /=  static_cast<T>(a * b * c);                                       //  /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
+            }
             else if (extraParam0 == 1)    //Include padding
                 sum /= kProd;
 

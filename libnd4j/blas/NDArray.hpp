@@ -2371,7 +2371,7 @@ void NDArray::tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target) {
         if(i > rankOf())
             repeats[newRank-i] = shape[newRank - i];
         else
-        repeats[newRank-i] = shape[newRank - i] / thisShape[rankOf() - i];
+            repeats[newRank-i] = shape[newRank - i] / thisShape[rankOf() - i];
     }
 
     tilei(repeats);

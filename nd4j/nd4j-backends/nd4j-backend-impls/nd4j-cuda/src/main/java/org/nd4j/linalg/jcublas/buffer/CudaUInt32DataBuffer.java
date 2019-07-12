@@ -42,6 +42,10 @@ public class CudaUInt32DataBuffer extends BaseCudaDataBuffer {
         super(pointer, indexer, length);
     }
 
+    public CudaUInt32DataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
+    }
+
     /**
      * Base constructor
      *

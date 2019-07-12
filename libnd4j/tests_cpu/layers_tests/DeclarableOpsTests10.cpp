@@ -392,30 +392,6 @@ TEST_F(DeclarableOpsTests10, CosineDistance_SGO_Test_2) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests10, svd_test11) {
-
-    auto x = NDArrayFactory::create<double>('c', {3,3}, {1.,2.,3.,4.,5.,6.,7.,8.,9.});
-    auto expS = NDArrayFactory::create<double>('c', {3});
-    auto expU = NDArrayFactory::create<double>('c', {3,3});
-    auto expV = NDArrayFactory::create<double>('c', {3,3});
-
-    nd4j::ops::svd op;
-    auto results = op.execute({&x}, {}, {0, 1, 16});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto s = results->at(0);
-    auto u = results->at(1);
-    auto v = results->at(2);
-
-    ASSERT_TRUE(expS.isSameShape(s));
-    ASSERT_TRUE(expU.isSameShape(u));
-    ASSERT_TRUE(expV.isSameShape(v));
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, TestMarixBandPart_Test_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 3});

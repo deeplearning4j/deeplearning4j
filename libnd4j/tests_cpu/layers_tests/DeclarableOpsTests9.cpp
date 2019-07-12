@@ -236,45 +236,6 @@ TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     ASSERT_EQ(e, z);
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, tile_bp_test1) {
-
-    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
-    auto gradO    = NDArrayFactory::create<double>('c', {4, 9});
-    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
-
-    gradO.linspace(0.01, 0.01);
-
-    nd4j::ops::tile_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {2, 3});
-    auto gradI = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(gradIExp.isSameShape(gradI));
-    ASSERT_TRUE(gradIExp.equalsTo(gradI));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, tile_bp_test2) {
-
-    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
-    auto gradO    = NDArrayFactory::create<double>('c', {2, 9});
-    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.12, 0.15, 0.18, 0.39, 0.42, 0.45});
-
-    gradO.linspace(0.01, 0.01);
-
-    nd4j::ops::tile_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {1, 3});
-    auto gradI = results->at(0);
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(gradIExp.isSameShape(gradI));
-    ASSERT_TRUE(gradIExp.equalsTo(gradI));
-
-    delete results;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test1) {
 
@@ -624,6 +585,45 @@ TEST_F(DeclarableOpsTests9, concat_test16) {
     ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_bp_test1) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    auto gradO    = NDArrayFactory::create<double>('c', {4, 9});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
+
+    gradO.linspace(0.01, 0.01);
+
+    nd4j::ops::tile_bp op;
+    auto results = op.execute({&input, &gradO}, {}, {2, 3});
+    auto gradI = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_bp_test2) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    auto gradO    = NDArrayFactory::create<double>('c', {2, 9});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.12, 0.15, 0.18, 0.39, 0.42, 0.45});
+
+    gradO.linspace(0.01, 0.01);
+
+    nd4j::ops::tile_bp op;
+    auto results = op.execute({&input, &gradO}, {}, {1, 3});
+    auto gradI = results->at(0);
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2623,21 +2623,52 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
     auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});
+    auto exp = NDArrayFactory::create<double>('c', {2,3,4}, {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 3, 3, 3, 3});
     x.linspace(1);
-    dLdzX.linspace(1);
-    dLdzY.linspace(2);
-    dLdzZ.linspace(3);
+//    dLdzX.linspace(1);
+//    dLdzY.linspace(2);
+//    dLdzZ.linspace(3);
+    dLdzX.assign(1);
+    dLdzY.assign(2);
+    dLdzZ.assign(3);
 
     nd4j::ops::dynamic_partition op1;
     auto res1 = op1.execute({&x, &y}, {}, {3});
 
     nd4j::ops::dynamic_partition_bp op2;
-    auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
+    auto res2 = op2.execute({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
     ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
     ASSERT_TRUE(res2->size() == 2);
+//    printf("How many: %ul\n", res2->size());
+//    res2->at(0)->printBuffer("Ouputput0");
+//    res2->at(1)->printBuffer("Ouputput1");
+    ASSERT_TRUE(res2->at(0)->equalsTo(exp));
     delete res1;
     delete res2;
 }
+//////////////////////////////////////////////////////////////////////
+//TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_2) {
+//
+//    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+//    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
+//    auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
+//    auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
+//    auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});
+//    x.linspace(1);
+//    dLdzX.linspace(1);
+//    dLdzY.linspace(1);
+//    dLdzZ.linspace(1);
+//
+//    const OpArgsHolder argsHolderFF({&x, &y}, {}, {3});
+//    const OpArgsHolder argsHolderBP({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
+//
+//    nd4j::ops::dynamic_partition opFF;
+//    nd4j::ops::dynamic_partition_bp opBP;
+//
+//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+//
+//    ASSERT_TRUE(isGradCorrect);
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
@@ -2914,13 +2945,29 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-    //res->printIndexedBuffer("Output for Cholesky");
+//    res->printIndexedBuffer("Output for Cholesky1");
     ASSERT_TRUE(exp.equalsTo(res));
     delete result;
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
+
+    NDArray x = NDArrayFactory::create<double>('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
+    NDArray exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
+
+    nd4j::ops::cholesky op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto res = result->at(0);
+//    res->printIndexedBuffer("Output for Cholesky 2");
+    ASSERT_TRUE(exp.equalsTo(res));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
 
     NDArray x = NDArrayFactory::create<float>('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
     NDArray exp = NDArrayFactory::create<float>('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
@@ -2930,7 +2977,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-    //res->printIndexedBuffer("Output for Cholesky");
+//    res->printIndexedBuffer("Output for Cholesky 3");
     ASSERT_TRUE(exp.equalsTo(res));
     delete result;
 }
