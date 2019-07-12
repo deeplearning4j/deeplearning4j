@@ -109,9 +109,9 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //2019/06/22 - Known issue: https://github.com/eclipse/deeplearning4j/issues/7935
             "fake_quant/min_max_vars/.*",
             "fake_quant/min_max_args/.*",
-
+      
             //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
-            "multinormal/.*"
+            "multinomial/.*"
     };
 
     @BeforeClass

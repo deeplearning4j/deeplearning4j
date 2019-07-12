@@ -521,6 +521,12 @@ public class OpValidation {
                 currCount++;
                 opsWithTFMappingTFImportCounts.put(d.getClass(), currCount);
 
+                currCount = fwdPassCoverageCountPerClass.get(d.getClass());
+                if(currCount == null)
+                    currCount = 0;
+                currCount++;
+                fwdPassCoverageCountPerClass.put(d.getClass(), currCount);
+
                 for(String s : tfNames){
                     currCount = tfMappedOpsImportTestCounts.get(s);
                     if(currCount == null)
