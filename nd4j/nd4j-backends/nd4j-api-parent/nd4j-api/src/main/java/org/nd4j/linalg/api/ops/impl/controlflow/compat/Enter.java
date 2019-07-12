@@ -17,11 +17,13 @@
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.Op.Type;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -32,13 +34,38 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class Enter extends BaseCompatOp {
 
     protected boolean isConstant;
 
+    public Enter(SameDiff sameDiff, SDVariable[] inputs){
+        super(sameDiff, inputs);
+    }
+
+    public Enter(SameDiff sameDiff, String frameName, SDVariable input){
+        super(sameDiff, new SDVariable[]{input});
+        this.frameName = frameName;
+        isConstant = input.isConstant();
+    }
+
+    public Enter(SameDiff sameDiff, String frameName, SDVariable input, boolean isConstant){
+        super(sameDiff, new SDVariable[]{input});
+        this.frameName = frameName;
+        this.isConstant = isConstant;
+    }
+
+    /**
+     * WARNING: do not change without changing serialization methods
+     * See {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper#getOpNum(String, Type)}
+     *  and {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder#customOpClassForHashAndName(long, String)}
+     */
+    public static final String OP_NAME = "enter";
+    public static final int OP_NUM = 100;
+
     @Override
     public String opName() {
-        return "enter";
+        return OP_NAME;
     }
 
     @Override
@@ -62,7 +89,7 @@ public class Enter extends BaseCompatOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.ENTER;
+        return Type.LOGIC;
     }
 
     @Override

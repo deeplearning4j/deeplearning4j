@@ -39,6 +39,9 @@ import java.util.List;
  */
 
 public class LogSoftMax extends DynamicCustomOp {
+
+    private Integer dimension = null;
+
     public LogSoftMax(SameDiff sameDiff, SDVariable i_v) {
         super(sameDiff, i_v);
     }
@@ -54,6 +57,12 @@ public class LogSoftMax extends DynamicCustomOp {
         this(x, x);
     }
 
+    public LogSoftMax(SameDiff sameDiff, SDVariable i_v, int dimension) {
+        this(sameDiff, i_v);
+        this.dimension = dimension;
+        addIArgument(dimension);
+    }
+
 
     @Override
     public String opName() {
@@ -66,8 +75,13 @@ public class LogSoftMax extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0));
-        return Collections.singletonList(ret);
+        if(dimension == null) {
+            SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0));
+            return Collections.singletonList(ret);
+        } else {
+            SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0), dimension);
+            return Collections.singletonList(ret);
+        }
     }
 
     @Override

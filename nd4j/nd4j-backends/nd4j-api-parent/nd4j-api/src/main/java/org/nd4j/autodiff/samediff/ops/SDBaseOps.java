@@ -16,12 +16,25 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
+import com.google.common.collect.Sets;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.samediff.ArgumentInterceptor;
+import org.nd4j.autodiff.samediff.NameScope;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.samediff.SameDiffLambda;
+import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda;
+import org.nd4j.autodiff.samediff.SameDiffSingleLambda;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -3141,5 +3154,305 @@ public abstract class SDBaseOps {
     public SDVariable zerosLike(String name, @NonNull SDVariable input) {
         SDVariable ret = f().zerosLike(name, input);
         return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
+     * See {@link #any(String, SDVariable, int...)}
+     */
+    public SDVariable any(SDVariable x, int... dimensions){
+        return any(null, x, dimensions);
+    }
+    //TODO check any w/ no dimensions
+
+    /**
+     * Boolean or array reduction operation, optionally along specified dimensions
+     *
+     * @param name   Name of the output variable
+     * @param x   Input variable
+     * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable any(String name, SDVariable x, int... dimensions){
+        validateBool("any", x);
+        SDVariable ret = f().any(x, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
+     * See {@link #all(String, SDVariable, int...)}
+     */
+    public SDVariable all(SDVariable x, int... dimensions){
+        return all(null, x, dimensions);
+    }
+
+
+    /**
+     * Boolean and array reduction operation, optionally along specified dimensions
+     *
+     * @param name   Name of the output variable
+     * @param x   Input variable
+     * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
+     */
+    public SDVariable all(String name, SDVariable x, int... dimensions){
+        validateBool("all", x);
+        SDVariable ret = f().all(x, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * See {@link #whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
+     */
+    public SDVariable[] whileLoop(@NonNull SDVariable[] loopVars,
+            @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+        return whileLoop(null, null, loopVars, cond, body);
+    }
+
+    /**
+     * See {@link #whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
+     */
+    public SDVariable[] whileLoop(String loopName, @NonNull SDVariable[] loopVars,
+            @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+        return whileLoop(null, loopName, loopVars, cond, body);
+    }
+
+    /**
+     * Constructs a While loop using the tensorflow style control flow operations (Switch, Merge, Enter, Exit, and NextIteration)
+     *
+     * Repeatedly executes body on the loop variables and updates them with the results, until cond evaluates to false
+     *
+     * Note that cond and body lambdas are only called once to construct the graph.  The constructed graph is used for further iterations.
+     *
+     * See <a href="http://download.tensorflow.org/paper/white_paper_tf_control_flow_implementation_2017_11_1.pdf">Tensorflow Control Flow Implementation</a>
+     *
+     * @param outputNames  Names to give the output variables.  If null, doesn't rename
+     * @param loopName  The name of the loop block and frame (must be unique).  If null, uses "if"
+     * @param loopVars  Loop variables' inputs
+     * @param cond  A lambda evaluating to the loop condition
+     * @param body  A lambda doing the loop operation and returning the new loop variable values
+     * @return  The values of the loop variables once condition is false
+     */
+    public SDVariable[] whileLoop(String[] outputNames, final String loopName, @NonNull SDVariable[] loopVars,
+            @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+
+        final String frameName = sd().newBlockName(loopName == null ? "while" : loopName);
+
+        NameScope loopScope = sd().withNameScope(frameName);
+
+        //SDVariable counter = SD.scalar(SD.generateNewVarName("counter", 0), 0);
+
+        SDVariable[] entered = new SDVariable[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            entered[i] = f().enter(loopVars[i], frameName);
+        }
+
+        //counter = SD.f().enter(counter, frameName);
+
+        SDVariable[] merged = new SDVariable[loopVars.length];
+        Merge[] mergeOps = new Merge[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            // the second arg will later be replaced with the output of NextIteration
+            // but that isn't available yet (and can't be, as it depends on this)
+            mergeOps[i] = new Merge(sd(), entered[i], entered[i]);
+            merged[i] = mergeOps[i].outputVariable();
+        }
+
+        //Merge counterMerge = new Merge(SD, counter, counter);
+        //counter = counterMerge.outputVariable();
+
+        NameScope condScope = sd().withNameScope("cond");
+        SDVariable cond_result = cond.define(sd(), merged);
+        condScope.close();
+
+
+        if (cond_result.dataType() != DataType.BOOL)
+            throw new IllegalStateException("Can not use " + cond_result.getVarName() + " as the condition of an While loop, the condition must be a boolean.");
+
+
+        final Set<String> alreadyEntered = Sets.newHashSet();
+        SDVariable[] trueSwitches = new SDVariable[loopVars.length];
+        SDVariable[] exits = new SDVariable[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            SDVariable[] s = f().switchOp(merged[i], cond_result);
+            trueSwitches[i] = s[1];
+            alreadyEntered.add(s[1].getVarName());
+            exits[i] = f().exit(s[0]);
+        }
+
+        //SDVariable[] cs = SD.f().switchOp(counter, cond_result);
+        //SDVariable counterExit = SD.f().exit(cs[0]);
+        //counter = cs[1];
+
+        final Set<String> declared = Sets.newHashSet(sd().variableMap().keySet());
+        final Map<String, SDVariable> done = new HashMap<>();
+
+        sd().addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                if(!declared.contains(argument.getVarName()))
+                    return argument;
+
+                if(alreadyEntered.contains(argument.getVarName()))
+                    return argument;
+
+                if(done.containsKey(argument.getVarName()))
+                    return done.get(argument.getVarName());
+
+                SDVariable e = f().enter(argument, frameName, true);
+                done.put(argument.getVarName(), e);
+                return e;
+            }
+        });
+
+        NameScope bodyScope = sd().withNameScope("body");
+        SDVariable[] outs = body.define(sd(), trueSwitches);
+        bodyScope.close();
+        sd().removeArgumentInterceptor();
+
+        //counter.add(1);
+
+        for(int i = 0 ; i < loopVars.length ; i++){
+            SDVariable n = f().nextIteration(outs[i]);
+            mergeOps[i].replaceArg(1,n);
+        }
+
+        //counterMerge.replaceArg(1, counter);
+
+        loopScope.close();
+        return updateVariableNamesAndReferences(exits, outputNames);
+    }
+
+    /**
+     * See {@link #ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
+     */
+    public SDVariable ifCond(@NonNull SameDiffNoArgSingleLambda cond,
+            @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+        return ifCond(null, null, cond, trueBody, falseBody);
+    }
+
+
+    /**
+     * See {@link #ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
+     */
+    public SDVariable ifCond(String ifName, @NonNull SameDiffNoArgSingleLambda cond,
+            @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+        return ifCond(null, ifName, cond, trueBody, falseBody);
+    }
+
+    /**
+     * Constructs a If statement using the tensorflow style control flow operations (Switch and Merge)
+     *
+     * If the result of cond is true, returns the result of trueBody, otherwise returns the result of falseBody
+     *
+     * Note that cond and body lambdas are only called once to construct the graph.  The constructed graph is used to evaluate.
+     *
+     * See <a href="http://download.tensorflow.org/paper/white_paper_tf_control_flow_implementation_2017_11_1.pdf">Tensorflow Control Flow Implementation</a>
+     *
+     * @param outputName Name to give the output variable.  If null, doesn't rename
+     * @param ifName  The name of the if block.  If null, uses "if"
+     * @param cond  A lambda evaluating to the if condition
+     * @param trueBody  A lambda to be executed if cond is true (the if block)
+     * @param falseBody  A lambda to be executed if cond is false (the else block)
+     * @return The value of trueBody if cond is true, or falseBody if it isn't
+     */
+    public SDVariable ifCond(String outputName, String ifName, @NonNull SameDiffNoArgSingleLambda cond,
+            @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+
+        ifName = sd().newBlockName(ifName == null ? "if" : ifName);
+
+        NameScope ifScope = sd().withNameScope(ifName);
+
+        NameScope condScope = sd().withNameScope("cond");
+        final SDVariable pred = cond.define(sd());
+        condScope.close();
+
+        if (pred.dataType() != DataType.BOOL) {
+            //cleanup partially added block
+
+            for(SDVariable v : sd().getVariablesInScope(ifScope))
+                sd().getVariables().remove(v.getVarName());
+
+            for(SameDiffOp op : sd().getOpsInScope(ifScope)) {
+                for(String in : op.getInputsToOp()){
+                    sd().removeArgFromFunction(in, op.getOp());
+                }
+                sd().getOps().remove(op.getName());
+            }
+
+
+            throw new IllegalStateException("Can not use " + pred.getVarName()
+                    + " as the condition of an If statement, the condition must be a boolean.");
+        }
+
+        final Map<String, SDVariable[]> switches = new HashMap<>();
+
+        final Set<String> declared = Sets.newHashSet(sd().variableMap().keySet());
+
+        sd().addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                // if its declared in the if, we don't care acout it
+                if(!declared.contains(argument.getVarName()))
+                    return argument;
+
+                // if we've already added a switch, move on
+                if(switches.containsKey(argument.getVarName()))
+                    return switches.get(argument.getVarName())[1];
+
+                SDVariable[] s = f().switchOp(argument, pred);
+                switches.put(argument.getVarName(), s);
+                return s[1];
+            }
+        });
+        NameScope trueScope = sd().withNameScope("trueBody");
+        SDVariable trueOut = trueBody.define(sd());
+        sd().removeArgumentInterceptor();
+
+        if(declared.contains(trueOut.getVarName())) {
+            SDVariable[] s = f().switchOp(trueOut, pred);
+            switches.put(trueOut.getVarName(), s);
+            trueOut = s[1];
+        }
+
+        trueScope.close();
+
+        final Set<String> declared2 = Sets.newHashSet(sd().variableMap().keySet());
+        sd().addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                // if its declared in the if, we don't care acout it
+                if(!declared2.contains(argument.getVarName()))
+                    return argument;
+
+                // if we've already added a switch, move on
+                if(switches.containsKey(argument.getVarName()))
+                    return switches.get(argument.getVarName())[0];
+
+                SDVariable[] s = f().switchOp(argument, pred);
+                switches.put(argument.getVarName(), s);
+                return s[0];
+            }
+        });
+        NameScope falseScope = sd().withNameScope("falseBody");
+        SDVariable falseOut = falseBody.define(sd());
+        sd().removeArgumentInterceptor();
+
+        if(declared2.contains(falseOut.getVarName())) {
+            SDVariable[] s = f().switchOp(falseOut, pred);
+            switches.put(falseOut.getVarName(), s);
+            falseOut = s[0];
+        }
+        falseScope.close();
+
+        SDVariable output = f().merge(trueOut, falseOut);
+
+        ifScope.close();
+
+        return updateVariableNameAndReference(output, outputName);
     }
 }

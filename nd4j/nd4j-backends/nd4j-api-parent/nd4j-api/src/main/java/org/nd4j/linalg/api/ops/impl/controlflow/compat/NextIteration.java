@@ -16,11 +16,13 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.Op.Type;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -31,10 +33,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@NoArgsConstructor
 public class NextIteration extends BaseCompatOp {
+
+    public NextIteration(SameDiff sameDiff, SDVariable x) {
+        super(sameDiff, new SDVariable[]{x});
+    }
+
+    /**
+     * WARNING: do not change without changing serialization methods
+     * See {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper#getOpNum(String, Type)}
+     *  and {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder#customOpClassForHashAndName(long, String)}
+     */
+    public static final String OP_NAME = "next_iteration";
+    public static final int OP_NUM = 80;
+
     @Override
     public String opName() {
-        return "next_iteration";
+        return OP_NAME;
     }
 
     @Override
@@ -58,7 +74,7 @@ public class NextIteration extends BaseCompatOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.NEXT_ITERATION;
+        return Type.LOGIC;
     }
 
     @Override

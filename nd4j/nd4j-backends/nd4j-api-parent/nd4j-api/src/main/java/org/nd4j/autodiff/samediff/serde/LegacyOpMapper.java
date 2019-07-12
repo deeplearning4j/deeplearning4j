@@ -126,12 +126,7 @@ public class LegacyOpMapper {
             case CONDITIONAL:
             case LOOP:
             case LOOP_COND:
-            case IF:
             case RETURN:
-            case ENTER:
-            case EXIT:
-            case NEXT_ITERATION:
-            case MERGE:
             default:
                 throw new UnsupportedOperationException("Unable to map op " + opNum + " of type " + opType);
         }

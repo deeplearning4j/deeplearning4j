@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.Op.Type;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -41,9 +42,21 @@ public class Merge extends BaseCompatOp {
         
     }
 
+    /**
+     * WARNING: do not change without changing serialization methods
+     * See {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper#getOpNum(String, Type)}
+     *  and {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder#customOpClassForHashAndName(long, String)}
+     */
+    public static final String OP_NAME = "merge";
+    public static final int OP_NUM = 60;
+
+    public Merge(SameDiff sd, SDVariable a, SDVariable b){
+        this(sd, new SDVariable[]{a, b});
+    }
+
     @Override
     public String opName() {
-        return "merge";
+        return OP_NAME;
     }
 
     @Override
@@ -72,7 +85,7 @@ public class Merge extends BaseCompatOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.MERGE;
+        return Type.LOGIC;
     }
 
     @Override

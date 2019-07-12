@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff;
 
+import java.util.Objects;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
@@ -91,7 +92,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
         String nameScope = sameDiff.currentNameScope();
-        if(nameScope != null){
+        if(nameScope != null && !varName.startsWith(nameScope + "/")){
             varName = nameScope + "/" + varName;
         }
 
@@ -1786,26 +1787,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        SDVariable that = (SDVariable) o;
-
-        if (varName != null ? !varName.equals(that.varName) : that.varName != null) return false;
-        return weightInitScheme != null ? weightInitScheme.equals(that.weightInitScheme) : that.weightInitScheme == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (varName != null ? varName.hashCode() : 0);
-        result = 31 * result + (weightInitScheme != null ? weightInitScheme.hashCode() : 0);
-        return result;
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -1965,5 +1946,36 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         }
         return x;
     }
-   
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof SDVariable)) {
+            return false;
+        }
+
+        SDVariable that = (SDVariable) o;
+
+        if (!Objects.equals(varName, that.varName)) {
+            return false;
+        }
+        if (variableType != that.variableType) {
+            return false;
+        }
+        if(sameDiff != that.sameDiff){
+            return false;
+        }
+        return dataType == that.dataType;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (varName != null ? varName.hashCode() : 0);
+        result = 31 * result + (variableType != null ? variableType.hashCode() : 0);
+        result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
+        return result;
+    }
 }

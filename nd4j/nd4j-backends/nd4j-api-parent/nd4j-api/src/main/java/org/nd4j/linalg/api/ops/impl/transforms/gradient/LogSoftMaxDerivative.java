@@ -43,6 +43,11 @@ public class LogSoftMaxDerivative extends DynamicCustomOp {
         super(null, new INDArray[]{in, gradO}, new INDArray[]{out});
     }
 
+    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable arg, SDVariable wrt, int dimension) {
+        this(sameDiff, arg, wrt);
+        this.addIArgument(dimension);
+    }
+
     /**
      * The opName of this operation
      *

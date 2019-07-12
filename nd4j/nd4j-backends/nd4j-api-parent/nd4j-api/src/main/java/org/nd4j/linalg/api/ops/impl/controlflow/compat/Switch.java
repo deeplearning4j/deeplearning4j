@@ -16,12 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import com.google.common.collect.Lists;
+import lombok.Getter;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.Op.Type;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -37,15 +40,27 @@ import java.util.Map;
  */
 public class Switch extends BaseCompatOp {
 
+    @Getter
+    private SDVariable predicate;
+
     public Switch(SameDiff sameDiff, SDVariable input, SDVariable predicate){
         super(sameDiff, new SDVariable[]{input, predicate});
+        this.predicate = predicate;
     }
 
     public Switch(){ }
 
+    /**
+     * WARNING: do not change without changing serialization methods
+     * See {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper#getOpNum(String, Type)}
+     *  and {@link org.nd4j.imports.converters.DifferentialFunctionClassHolder#customOpClassForHashAndName(long, String)}
+     */
+    public static final String OP_NAME = "switch";
+    public static final int OP_NUM = 30;
+
     @Override
     public String opName() {
-        return "switch";
+        return OP_NAME;
     }
 
     @Override
@@ -72,7 +87,7 @@ public class Switch extends BaseCompatOp {
 
     @Override
     public Op.Type opType() {
-        return Op.Type.IF;
+        return Type.LOGIC;
     }
 
     @Override
