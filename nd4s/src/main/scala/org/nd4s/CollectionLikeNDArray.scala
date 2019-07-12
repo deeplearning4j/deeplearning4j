@@ -19,7 +19,7 @@ import org.nd4s.Implicits._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.Op
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4s.ops.{ BitFilterOps, FilterOps, MapOps }
+import org.nd4s.ops.{ BitFilterOps, FilterOps, FunctionalOpExecutioner, MapOps }
 
 import scalaxy.loops._
 import scala.language.postfixOps
@@ -33,7 +33,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
 
   def filter(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner
+    ev.reshape(FunctionalOpExecutioner.apply
                  .exec(FilterOps(ev.linearView(underlying), f): Op)
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)
@@ -41,7 +41,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
 
   def filterBit(f: Double => Boolean)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner
+    ev.reshape(FunctionalOpExecutioner.apply
                  .exec(BitFilterOps(ev.linearView(underlying), f): Op)
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)
@@ -49,7 +49,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
 
   def map(f: Double => Double)(implicit ev: NDArrayEvidence[A, _]): A = notCleanedUp { _ =>
     val shape = underlying.shape()
-    ev.reshape(Nd4j.getExecutioner
+    ev.reshape(FunctionalOpExecutioner.apply
                  .exec(MapOps(ev.linearView(underlying), f): Op)
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)

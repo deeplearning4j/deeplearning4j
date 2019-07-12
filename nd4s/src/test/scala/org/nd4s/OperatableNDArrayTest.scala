@@ -26,27 +26,27 @@ import org.scalatest.{ FlatSpec, Matchers }
 class OperatableNDArrayTest extends FlatSpec with Matchers {
   "RichNDArray" should "use the apply method to access values" in {
     // -- 2D array
-    val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
+    val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array[Int](1, 4): _*)
 
     nd2.get(0) should be(1)
-    nd2.get(3, 0) should be(4)
+    nd2.get(0, 3) should be(4)
 
     // -- 3D array
-    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array[Int](2, 2, 2): _*)
     nd3.get(0, 0, 0) should be(1)
     nd3.get(1, 1, 1) should be(8)
 
   }
 
   it should "use transpose abbreviation" in {
-    val nd1 = Nd4j.create(Array[Double](1, 2, 3), Array(3, 1))
+    val nd1 = Nd4j.create(Array[Double](1, 2, 3), Array(3, 1): _*)
     nd1.shape should equal(Array(3, 1))
     val nd1t = nd1.T
     nd1t.shape should equal(Array(1, 3))
   }
 
   it should "add correctly" in {
-    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2): _*)
     val b = a + 100
     a.get(0, 0, 0) should be(1)
     b.get(0, 0, 0) should be(101)
@@ -55,7 +55,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "subtract correctly" in {
-    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2): _*)
     val b = a - 100
     a.get(0, 0, 0) should be(1)
     b.get(0, 0, 0) should be(-99)
@@ -69,7 +69,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "divide correctly" in {
-    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2): _*)
     val b = a / a
     a.get(1, 1, 1) should be(8)
     b.get(1, 1, 1) should be(1)
@@ -78,7 +78,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "element-by-element multiply correctly" in {
-    val a = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
+    val a = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1): _*)
     val b = a * a
     a.get(3) should be(4) // [1.0, 2.0, 3.0, 4.0
     b.get(3) should be(16) // [1.0 ,4.0 ,9.0 ,16.0]
@@ -87,7 +87,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "use the update method to mutate values" in {
-    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2))
+    val nd3 = Nd4j.create(Array[Double](1, 2, 3, 4, 5, 6, 7, 8), Array(2, 2, 2): _*)
     nd3(0) = 11
     nd3.get(0) should be(11)
 
@@ -125,7 +125,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     val s: String = Nd4j.create(2, 2) + ""
   }
 
-  "Sum function" should "choose return value depending on INDArray type" ignore {
+  "Sum function" should "choose return value depending on INDArray type" in {
     val ndArray =
       Array(
         Array(1, 2),

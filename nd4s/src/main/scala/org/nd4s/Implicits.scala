@@ -12,12 +12,14 @@
   * under the License.
   *
   * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+    ******************************************************************************/
 package org.nd4s
 
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.{ INDArrayIndex, NDArrayIndex }
+
 import scala.collection.breakOut
 object Implicits {
 
@@ -34,7 +36,7 @@ object Implicits {
   implicit def sliceProjection2NDArray(sliced: SliceProjectedNDArray): INDArray = sliced.array
 
   /*
-   Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
+     Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
    */
 
   implicit def floatArray2INDArray(s: Array[Float]): FloatArray2INDArray =
@@ -48,7 +50,7 @@ object Implicits {
       Nd4j.create(underlying, shape, ord.value, offset)
 
     def asNDArray(shape: Int*): INDArray =
-      Nd4j.create(underlying, shape.toArray: _*)
+      Nd4j.create(underlying.toArray, shape.toArray: _*)
 
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
@@ -64,7 +66,7 @@ object Implicits {
       Nd4j.create(underlying, shape, offset, ord.value)
 
     def asNDArray(shape: Int*): INDArray =
-      Nd4j.create(underlying, shape.toArray: _*)
+      Nd4j.create(underlying.toArray, shape.toArray: _*)
 
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
@@ -76,54 +78,168 @@ object Implicits {
   implicit def jintColl2INDArray(s: Seq[java.lang.Integer]): IntArray2INDArray =
     new IntArray2INDArray(s.map(x => x: Int)(breakOut))
   class IntArray2INDArray(val underlying: Array[Int]) extends AnyVal {
-    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray =
-      Nd4j.create(underlying.map(_.toFloat), shape, ord.value, offset)
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
+      val strides = Nd4j.getStrides(shape, ord.value)
+      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.INT)
+    }
 
-    def asNDArray(shape: Int*): INDArray =
-      Nd4j.create(underlying.map(_.toFloat), shape.toArray: _*)
-
-    def toNDArray: INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)
   }
 
-  implicit class FloatMtrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
+  implicit def longColl2INDArray(s: Seq[Long]): LongArray2INDArray =
+    new LongArray2INDArray(s.toArray)
+  implicit def longArray2INDArray(s: Array[Long]): LongArray2INDArray =
+    new LongArray2INDArray(s)
+  implicit def jlongColl2INDArray(s: Seq[java.lang.Long]): LongArray2INDArray =
+    new LongArray2INDArray(s.map(x => x: Long)(breakOut))
+  class LongArray2INDArray(val underlying: Array[Long]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
+      val strides = Nd4j.getStrides(shape, ord.value)
+      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.LONG)
+    }
+
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)
+  }
+
+  implicit def shortColl2INDArray(s: Seq[Short]): ShortArray2INDArray =
+    new ShortArray2INDArray(s.toArray)
+  implicit def shortArray2INDArray(s: Array[Short]): ShortArray2INDArray =
+    new ShortArray2INDArray(s)
+  implicit def jshortColl2INDArray(s: Seq[java.lang.Short]): ShortArray2INDArray =
+    new ShortArray2INDArray(s.map(x => x: Short)(breakOut))
+  class ShortArray2INDArray(val underlying: Array[Short]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
+      val strides = Nd4j.getStrides(shape, ord.value)
+      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.SHORT)
+    }
+
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)
+  }
+
+  implicit def byteColl2INDArray(s: Seq[Byte]): ByteArray2INDArray =
+    new ByteArray2INDArray(s.toArray)
+  implicit def byteArray2INDArray(s: Array[Byte]): ByteArray2INDArray =
+    new ByteArray2INDArray(s)
+  implicit def jbyteColl2INDArray(s: Seq[java.lang.Byte]): ByteArray2INDArray =
+    new ByteArray2INDArray(s.map(x => x: Byte)(breakOut))
+  class ByteArray2INDArray(val underlying: Array[Byte]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
+      val strides = Nd4j.getStrides(shape, ord.value)
+      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.BYTE)
+    }
+
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)
+  }
+
+  implicit def booleanColl2INDArray(s: Seq[Boolean]): BooleanArray2INDArray =
+    new BooleanArray2INDArray(s.toArray)
+  implicit def booleanArray2INDArray(s: Array[Boolean]): BooleanArray2INDArray =
+    new BooleanArray2INDArray(s)
+  implicit def jbooleanColl2INDArray(s: Seq[java.lang.Boolean]): BooleanArray2INDArray =
+    new BooleanArray2INDArray(s.map(x => x: Boolean)(breakOut))
+  class BooleanArray2INDArray(val underlying: Array[Boolean]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
+      val strides = Nd4j.getStrides(shape, ord.value)
+      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.BOOL)
+    }
+
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)
+  }
+
+  implicit def stringArray2INDArray(s: Array[String]): StringArray2INDArray =
+    new StringArray2INDArray(s)
+  implicit def stringArray2CollArray(s: Seq[String]): StringArray2INDArray =
+    new StringArray2INDArray(s.toArray)
+  implicit def jstringColl2INDArray(s: Seq[java.lang.String]): StringArray2INDArray =
+    new StringArray2INDArray(s.map(x => x: String)(breakOut))
+  class StringArray2INDArray(val underlying: Array[String]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = ???
+
+    def asNDArray(shape: Int*): INDArray = ???
+
+    def toNDArray: INDArray = Nd4j.create(underlying: _*)
+  }
+
+  implicit class FloatMatrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
       Nd4j.create(underlying.map(_.toArray).toArray, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
 
-  implicit class FloatArrayMtrix2INDArray(val underlying: Array[Array[Float]]) extends AnyVal {
+  implicit class FloatArrayMatrix2INDArray(val underlying: Array[Array[Float]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
       Nd4j.create(underlying, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
-  implicit class DoubleMtrix2INDArray(val underlying: Seq[Seq[Double]]) extends AnyVal {
+  implicit class DoubleMatrix2INDArray(val underlying: Seq[Seq[Double]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
       Nd4j.create(underlying.map(_.toArray).toArray, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
 
-  implicit class DoubleArrayMtrix2INDArray(val underlying: Array[Array[Double]]) extends AnyVal {
+  implicit class DoubleArrayMatrix2INDArray(val underlying: Array[Array[Double]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
       Nd4j.create(underlying, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
-  implicit class IntMtrix2INDArray(val underlying: Seq[Seq[Int]]) extends AnyVal {
+  implicit class IntMatrix2INDArray(val underlying: Seq[Seq[Int]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
-      Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray, ord.value)
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
     def toNDArray: INDArray =
-      Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray)
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
   }
 
-  implicit class IntArrayMtrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
+  implicit class IntArrayMatrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
     def mkNDArray(ord: NDOrdering): INDArray =
-      Nd4j.create(underlying.map(_.map(_.toFloat)), ord.value)
-    def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)))
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying.map(_.toArray).toArray)
   }
 
-  implicit class Num2Scalar[T](val underlying: T)(implicit ev: Numeric[T]) {
+  implicit class LongMatrix2INDArray(val underlying: Seq[Seq[Long]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray =
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
+    def toNDArray: INDArray =
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
+  }
+
+  implicit class LongArrayMatrix2INDArray(val underlying: Array[Array[Long]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray =
+      Nd4j.createFromArray(underlying.map(_.toArray).toArray)
+    def toNDArray: INDArray = Nd4j.createFromArray(underlying.map(_.toArray).toArray)
+  }
+
+  /*implicit class Num2Scalar[T](val underlying: T)(implicit ev: Numeric[T]) {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
+  }*/
+
+  implicit class Float2Scalar(val underlying: Float) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class Double2Scalar(val underlying: Double) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class Long2Scalar(val underlying: Long) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class Int2Scalar(val underlying: Int) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class Byte2Scalar(val underlying: Byte) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class Boolean2Scalar(val underlying: Boolean) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit class String2Scalar(val underlying: String) {
+    def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit def intArray2IndexRangeArray(arr: Array[Int]): Array[IndexRange] =

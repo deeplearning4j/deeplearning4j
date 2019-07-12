@@ -48,6 +48,7 @@ trait SliceableNDArray[A <: INDArray] {
       ev.create(filtered, targetShape, NDOrdering(underlying.ordering()), 0)
 
     } else {
+
       ev.get(underlying, getINDArrayIndexfrom(target: _*): _*)
     }
   }
@@ -121,10 +122,10 @@ trait SliceableNDArray[A <: INDArray] {
         underlying.shape().map(_.toInt).toList
 
     val originalTarget =
-      if (underlying.isRowVector && target.size == 1)
+      /*if (underlying.isRowVector && target.size == 1)
         IntRange(0) +: target
-      else
-        target
+      else*/
+      target
 
     @tailrec
     def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[INDArrayIndex]): List[INDArrayIndex] =

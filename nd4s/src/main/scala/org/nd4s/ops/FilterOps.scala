@@ -54,4 +54,12 @@ class FilterOps(_x: INDArray, len: Int, f: Double => Boolean)
 
   override def op(origin: Float): Float = if (f(origin)) origin else 0
 
+  override def op(origin: Short): Short = if (f(origin)) origin else 0
+
+  override def op(origin: Int): Int = if (f(origin)) origin else 0
+
+  override def op(origin: Long): Long = if (f(origin)) origin else 0
+
+  override def op(origin: String): String = ???
+
 }
