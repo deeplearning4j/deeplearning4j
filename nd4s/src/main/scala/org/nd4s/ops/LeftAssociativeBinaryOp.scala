@@ -34,5 +34,13 @@ trait LeftAssociativeBinaryOp {
 
   def op(origin: Float): Float
 
+  def op(origin: Short): Short
+
+  def op(origin: Int): Int
+
+  def op(origin: Long): Long
+
+  def op(origin: String): String
+
 //  def op(origin: IComplexNumber): IComplexNumber
 }

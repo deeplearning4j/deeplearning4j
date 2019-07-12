@@ -29,7 +29,7 @@ class DSLSpec extends FlatSpec with Matchers {
 
     // This test just verifies that an INDArray gets wrapped with an implicit conversion
 
-    val nd = Nd4j.create(Array[Float](1, 2), Array(2, 1))
+    val nd = Nd4j.create(Array[Float](1, 2), Array(2, 1): _*)
     val nd1 = nd + 10L // + creates new array, += modifies in place
 
     nd.get(0) should equal(1)

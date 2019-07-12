@@ -49,4 +49,11 @@ class MapOps(_x: INDArray, f: Double => Double) extends BaseScalarOp(_x, null, _
 
   override def op(origin: Float): Float = f(origin).toFloat
 
+  override def op(origin: Short): Short = f(origin).toShort
+
+  override def op(origin: Int): Int = f(origin).toInt
+
+  override def op(origin: Long): Long = f(origin).toLong
+
+  override def op(origin: String): String = ???
 }

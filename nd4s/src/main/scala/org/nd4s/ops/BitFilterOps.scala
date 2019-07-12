@@ -55,4 +55,11 @@ class BitFilterOps(_x: INDArray, len: Int, f: Double => Boolean)
 
   override def op(origin: Float): Float = if (f(origin)) 1 else 0
 
+  override def op(origin: Short): Short = if (f(origin)) 1 else 0
+
+  override def op(origin: Int): Int = if (f(origin)) 1 else 0
+
+  override def op(origin: Long): Long = if (f(origin)) 1 else 0
+
+  override def op(origin: String): String = ???
 }
