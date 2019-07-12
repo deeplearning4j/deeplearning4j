@@ -42,13 +42,13 @@ CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 2) {
     auto b    = INPUT_VARIABLE(8);                    // biases, [4*numUnits]
 
     auto i   =  OUTPUT_VARIABLE(0);                   // Output - input modulation gate activations [seqLen, bS, numUnits]
-    auto c   =  OUTPUT_VARIABLE(1);                      // Activations, cell state (pre tanh) [seqLen, bs, numUnits]
+    auto c   =  OUTPUT_VARIABLE(1);                   // Activations, cell state (pre tanh) [seqLen, bs, numUnits]
     auto f   =  OUTPUT_VARIABLE(2);                   // Output - forget gate activations [seqLen, bs, numUnits]
     auto o   =  OUTPUT_VARIABLE(3);                   // Output - output gate activations [seqLen, bs, numUnits]
     auto z   =  OUTPUT_VARIABLE(4);                   // Output - input gate activations [seqLen, bs, numUnits]
     auto h   =  OUTPUT_VARIABLE(5);                   // Cell state, post tanh [seqLen, bs, numUnits]
     auto y   =  OUTPUT_VARIABLE(6);                   // current cell output [seqLen, bS, numProj], time t
-    
+
     const int peephole   = INT_ARG(0);                     // if 1, provide peephole connections
     const int dataFormat = INT_ARG(1);                     // 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
     const double forgetBias   = T_ARG(0);
@@ -117,7 +117,7 @@ DECLARE_SHAPE_FN(lstmBlock) {
 
     //7 outputs, all same shape/type
     return SHAPELIST(s1, s1, s1, s1, s1, s1, s1);
-}   
+}
 
 }
 }

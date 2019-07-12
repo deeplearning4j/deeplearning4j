@@ -311,3 +311,27 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
+    int seqLength = 32;
+    int m = 64;
+    int n = 32;
+
+    auto x0 = NDArrayFactory::create<Nd4jLong>(5);
+    auto x1 = NDArrayFactory::create<float>('f', {m, n, seqLength});
+    auto x2 = NDArrayFactory::create<float>('f', {m, n});
+    auto x3 = NDArrayFactory::create<float>('f', {m, n});
+    auto x4 = NDArrayFactory::create<float>('f', {2 * n, 4 * n});
+    auto x5 = NDArrayFactory::create<float>('f', {n});
+    auto x6 = NDArrayFactory::create<float>('f', {n});
+    auto x7 = NDArrayFactory::create<float>('f', {n});
+    auto x8 = NDArrayFactory::create<float>('f', {4 * n});
+
+    nd4j::ops::lstmBlock op;
+    auto result = op.execute({&x0, &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8}, {1.0, 0.0}, {0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    delete result;
+}

@@ -30,11 +30,11 @@ namespace nd4j {
         _rIterations = runIterations;
     }
 
-    void BenchmarkHelper::printHeader() {
-        nd4j_printf("TestName\tOpNum\tWarmup\tNumIter\tDataType\tInplace\tShape\tStrides\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n","");
+    std::string BenchmarkHelper::printHeader() {
+        return std::string("TestName\tOpNum\tWarmup\tNumIter\tDataType\tInplace\tShape\tStrides\tAxis\tOrders\tavg (us)\tmedian (us)\tmin (us)\tmax (us)\tstdev (us)\n");
     }
 
-    void BenchmarkHelper::benchmarkOperation(OpBenchmark &benchmark) {
+    std::string BenchmarkHelper::benchmarkOperation(OpBenchmark &benchmark) {
 
         for (uint i = 0; i < _wIterations; i++)
             benchmark.executeOnce();
@@ -57,9 +57,9 @@ namespace nd4j {
         std::sort(timings.begin(), timings.end());
         Nd4jLong median = timings[_rIterations / 2];
 
-        NDArray n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
+        auto n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
 
-        double stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+        auto stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
         auto min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
         auto max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
 
@@ -71,10 +71,16 @@ namespace nd4j {
         auto a = benchmark.axis();
         auto inpl = benchmark.inplace();
 
+        std::string temp;
+        temp.resize(65536);
+
         // printing out stuff
-        nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
+        snprintf(const_cast<char *>(temp.data()), temp.length(), "%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
                     _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), strides.c_str(), a.c_str(), o.c_str(),
                     nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
+
+        auto pos = temp.find('\n');
+        return temp.substr(0, pos + 1);
     }
 
     void BenchmarkHelper::benchmarkScalarOperation(scalar::Ops op, std::string testName, double value, NDArray &x, NDArray &z) {
@@ -126,47 +132,44 @@ namespace nd4j {
                     nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
-    void BenchmarkHelper::runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg) {
+    std::string BenchmarkHelper::runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg) {
         std::vector<OpBenchmark*> ops(benchmarks);
-        runOperationSuit(ops, msg);
+        return runOperationSuit(ops, msg);
     }
 
-    void BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg) {
+    std::string BenchmarkHelper::runOperationSuit(OpBenchmark* benchmark) {
+        return benchmarkOperation(*benchmark);
+    }
+
+    std::string BenchmarkHelper::runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg) {
+        std::string result;
+
         if (msg != nullptr && postHeaders) {
-            nd4j_printf("\n%s\n", msg);
+            result += "\n";
+            result += msg;
+            result += "\n";
         }
 
         if (postHeaders)
-            printHeader();
+            result += printHeader();
 
         for (auto v:benchmarks)
-            benchmarkOperation(*v);
+            result += benchmarkOperation(*v);
+
+        return result;
     }
 
-    void BenchmarkHelper::runScalarSuit() {
-        printHeader();
-
-        std::initializer_list<std::initializer_list<Nd4jLong>> shapes = {{100}, {32, 256}, {32, 150, 200}, {32, 3, 244, 244}, {32, 64, 128, 256}};
-        std::initializer_list<nd4j::DataType> dataTypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE};
-        std::initializer_list<nd4j::scalar::Ops> ops = {scalar::Add, scalar::Divide, scalar::Pow};
-
-        for (const auto &d:dataTypes) {
-            for (const auto &o:ops) {
-                for (const auto &s:shapes) {
-                    //benchmarkScalarOperation(o, 2.0, s, d);
-                }
-            }
-        }
-    }
-
-    void BenchmarkHelper::runOperationSuit(DeclarableBenchmark *op, const std::function<Context* (Parameters &)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(DeclarableBenchmark *op, const std::function<Context* (Parameters &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string result;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            result += "\n";
+            result += message;
+            result += "\n";
         }
 
-        printHeader();
+        result += printHeader();
 
         std::vector<OpBenchmark*> list;
 
@@ -175,25 +178,26 @@ namespace nd4j {
 
             auto clone = reinterpret_cast<DeclarableBenchmark*>(op->clone());
             clone->setContext(ctx);
-            list.emplace_back(clone);
+
+            result += runOperationSuit(clone);
+
+            delete clone;
         }
 
-        runOperationSuit(list, false);
-
-        // removing everything
-        for (auto v:list) {
-            delete reinterpret_cast<DeclarableBenchmark*>(v);
-        }
+        return result;
     }
 
-    void BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -217,16 +221,20 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<ScalarBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+        std::string output;
+
         ResultSet x;
         x.setNonRemovable();
         ResultSet z;
@@ -248,23 +256,27 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        runOperationSuit(result, message);
+        output += runOperationSuit(result, message);
 
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<ScalarBenchmark*>(v);
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
-
+    std::string BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -288,16 +300,20 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<TransformBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+        std::string output;
+
         ResultSet x;
         x.setNonRemovable();
         ResultSet z;
@@ -319,22 +335,27 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        runOperationSuit(result, message);
+        output += runOperationSuit(result, message);
 
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<TransformBenchmark*>(v);
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&)>& func, ParametersBatch &parametersBatch, const char *message) {
+        std::string output;
         auto parameters = parametersBatch.parameters();
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -358,16 +379,19 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<ReductionBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&)>& func, const char *message) {
+        std::string output;
         ResultSet x;
         x.setNonRemovable();
         ResultSet z;
@@ -389,19 +413,24 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        runOperationSuit(result, message);
+        output += runOperationSuit(result, message);
 
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<ReductionBenchmark*>(v);
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
         printHeader();
@@ -436,16 +465,20 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<ReductionBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
+        std::string output;
+
         ResultSet x;
         x.setNonRemovable();
         ResultSet y;
@@ -474,22 +507,27 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        runOperationSuit(result, message);
+        output += runOperationSuit(result, message);
 
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<ReductionBenchmark*>(v);
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(BroadcastBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(BroadcastBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -518,23 +556,28 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<BroadcastBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -562,16 +605,20 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<PairwiseBenchmark*>(v);
             }
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet&, ResultSet&, ResultSet &)>& func, const char *message) {
+        std::string output;
+
         ResultSet x;
         x.setNonRemovable();
         ResultSet y;
@@ -597,22 +644,27 @@ namespace nd4j {
             result.emplace_back(clone);
         }
 
-        runOperationSuit(result, message);
+        output += runOperationSuit(result, message);
 
         // removing everything
         for (auto v:result) {
             delete reinterpret_cast<PairwiseBenchmark*>(v);
         }
+
+        return output;
     }
 
-    void BenchmarkHelper::runOperationSuit(MatrixBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
+    std::string BenchmarkHelper::runOperationSuit(MatrixBenchmark *op, const std::function<void (Parameters &, ResultSet&, ResultSet&, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message) {
         auto parameters = parametersBatch.parameters();
+        std::string output;
 
         if (message != nullptr) {
-            nd4j_printf("\n%s\n", message);
+            output += "\n";
+            output += message;
+            output += "\n";
         }
 
-        printHeader();
+        output += printHeader();
 
         for (auto &p: parameters) {
             ResultSet x;
@@ -637,12 +689,14 @@ namespace nd4j {
                 result.emplace_back(clone);
             }
 
-            runOperationSuit(result, false);
+            output += runOperationSuit(result, false);
 
             // removing everything
             for (auto v:result) {
                 delete reinterpret_cast<MatrixBenchmark*>(v);
             }
         }
+
+        return output;
     }
 }

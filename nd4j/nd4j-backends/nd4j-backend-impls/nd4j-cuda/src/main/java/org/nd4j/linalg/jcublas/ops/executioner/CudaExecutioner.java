@@ -2757,6 +2757,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         return buffer;
     }
+
+    @Override
+    public String runLightBenchmarkSuit(boolean printOut) {
+        return nativeOps.runLightBenchmarkSuit(printOut);
+    }
+
+    @Override
+    public String runFullBenchmarkSuit(boolean printOut) {
+        return nativeOps.runFullBenchmarkSuit(printOut);
+    }
 }
 
 

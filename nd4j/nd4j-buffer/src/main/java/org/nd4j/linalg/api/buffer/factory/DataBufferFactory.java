@@ -355,6 +355,7 @@ public interface DataBufferFactory {
 
     DataBuffer create(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace);
 
+
     /**
      * Create an int data buffer
      *
@@ -362,6 +363,33 @@ public interface DataBufferFactory {
      * @return the create data buffer
      */
     DataBuffer createInt(long length);
+
+    DataBuffer createBFloat16(long length);
+    DataBuffer createByte(long length);
+    DataBuffer createShort(long length);
+    DataBuffer createBool(long length);
+    DataBuffer createUShort(long length);
+    DataBuffer createUInt(long length);
+    DataBuffer createUByte(long length);
+    DataBuffer createULong(long length);
+
+    DataBuffer createBFloat16(long length, boolean initialize);
+    DataBuffer createByte(long length, boolean initialize);
+    DataBuffer createShort(long length, boolean initialize);
+    DataBuffer createBool(long length, boolean initialize);
+    DataBuffer createUShort(long length, boolean initialize);
+    DataBuffer createUInt(long length, boolean initialize);
+    DataBuffer createUByte(long length, boolean initialize);
+    DataBuffer createULong(long length, boolean initialize);
+
+    DataBuffer createBFloat16(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createByte(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createShort(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createBool(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createUShort(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createUInt(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createUByte(long length, boolean initialize, MemoryWorkspace workspace);
+    DataBuffer createULong(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Create an int data buffer, with optional initialization

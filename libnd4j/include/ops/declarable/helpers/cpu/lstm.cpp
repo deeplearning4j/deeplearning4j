@@ -171,15 +171,8 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     const int numUnits    = cLast->sizeAt(1);
 
     //Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
-    nd4j::ops::concat concat;
-    Context cContext(119);
     auto concatOut = NDArrayFactory::create(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(), xt->getContext());
-    cContext.setInputArray(0, const_cast<NDArray*>(xt), false);
-    cContext.setInputArray(1, const_cast<NDArray*>(yLast), false);
-    cContext.setOutputArray(0, &concatOut, false);
-    cContext.getIArguments()->emplace_back(1);
-
-    concat.execute(&cContext);
+    helpers::concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, {1});
 
     //NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
     std::vector<Nd4jLong> shape = {bS, 4*numUnits};

@@ -1978,6 +1978,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native int getDeviceMajor(int deviceId);
 
     /**
+     * This method returns amount of cached memory
+     * @param deviceId
+     * @return
+     */
+    public native @Cast("Nd4jLong") long getCachedMemory(int deviceId);
+
+    /**
      *
      * @param ptrToDeviceId
      * @return
@@ -2976,6 +2983,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     public native int unregisterGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId);
 
+    public native void deleteCharArray(@Cast("Nd4jPointer") Pointer pointer);
     public native void deleteIntArray(@Cast("Nd4jPointer") Pointer pointer);
     public native void deleteLongArray(@Cast("Nd4jPointer") Pointer pointer);
     public native void deletePointerArray(@Cast("Nd4jPointer") Pointer pointer);
@@ -3038,6 +3046,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, DoubleBuffer data, int length);
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, double[] data, int length);
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, ConstantDescriptor descriptor);
+
+
+    public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
+    public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
 }
 
 

@@ -47,6 +47,8 @@
 using namespace nd4j;
 
 #include <loops/special_kernels.h>
+#include <performance/benchmarking/FullBenchmarkSuit.h>
+#include <performance/benchmarking/LightBenchmarkSuit.h>
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -2804,6 +2806,11 @@ void NativeOps::deletePointerArray(Nd4jPointer pointer) {
     delete[] ptr;
 }
 
+void NativeOps::deleteCharArray(Nd4jPointer pointer) {
+    auto ptr = reinterpret_cast<char *>(pointer);
+    delete[] ptr;
+}
+
 void NativeOps::deleteIntArray(Nd4jPointer pointer) {
 	auto ptr = reinterpret_cast<int *>(pointer);
 	delete[] ptr;
@@ -3288,4 +3295,36 @@ Nd4jPointer NativeOps::shapeBufferForNumpy(Nd4jPointer npyArray) {
         shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
     }
     return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer, true));
+}
+
+const char* NativeOps::runLightBenchmarkSuit(bool printOut) {
+    nd4j::LightBenchmarkSuit suit;
+    auto result = suit.runSuit();
+
+    if (printOut)
+        nd4j_printf("%s\n", result.data());
+
+    auto chars = new char[result.length()+1];
+    std::memcpy(chars, result.data(), result.length());
+    chars[result.length()] = (char) 0x0;
+
+    return chars;
+}
+
+const char* NativeOps::runFullBenchmarkSuit(bool printOut) {
+    nd4j::FullBenchmarkSuit suit;
+    auto result = suit.runSuit();
+
+    if (printOut)
+        nd4j_printf("%s\n", result.data());
+
+    auto chars = new char[result.length()+1];
+    std::memcpy(chars, result.data(), result.length());
+    chars[result.length()] = (char) 0x0;
+
+    return chars;
+}
+
+Nd4jLong NativeOps::getCachedMemory(int deviceId) {
+    return nd4j::ConstantHelper::getInstance()->getCachedAmount(deviceId);
 }

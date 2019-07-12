@@ -419,6 +419,126 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createBFloat16(long length) {
+        return new CudaBfloat16DataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length) {
+        return new CudaUInt32DataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length) {
+        return new CudaUInt16DataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length) {
+        return new CudaUByteDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createULong(long length) {
+        return new CudaUInt64DataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createBool(long length) {
+        return new CudaBoolDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createShort(long length) {
+        return new CudaShortDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createByte(long length) {
+        return new CudaByteDataBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createBFloat16(long length, boolean initialize) {
+        return new CudaBfloat16DataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length, boolean initialize) {
+        return new CudaUInt32DataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length, boolean initialize) {
+        return new CudaUInt16DataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length, boolean initialize) {
+        return new CudaUByteDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createULong(long length, boolean initialize) {
+        return new CudaUInt64DataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createBool(long length, boolean initialize) {
+        return new CudaBoolDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createShort(long length, boolean initialize) {
+        return new CudaShortDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createByte(long length, boolean initialize) {
+        return new CudaByteDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createBFloat16(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaBfloat16DataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUInt(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaUInt32DataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUShort(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaUInt16DataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createUByte(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaUByteDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createULong(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaUInt64DataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createBool(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaBoolDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createShort(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaShortDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createByte(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaByteDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(long length, boolean initialize) {
         return new CudaIntDataBuffer(length, initialize);
     }
