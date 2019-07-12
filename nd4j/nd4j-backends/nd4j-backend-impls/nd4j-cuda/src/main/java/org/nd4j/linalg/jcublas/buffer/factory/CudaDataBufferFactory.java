@@ -414,6 +414,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaFloatDataBuffer(length, initialize, workspace);
             case HALF:
                 return new CudaHalfDataBuffer(length, initialize, workspace);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(length, initialize, workspace);
             case BOOL:
                 return new CudaBoolDataBuffer(length, initialize, workspace);
             default:

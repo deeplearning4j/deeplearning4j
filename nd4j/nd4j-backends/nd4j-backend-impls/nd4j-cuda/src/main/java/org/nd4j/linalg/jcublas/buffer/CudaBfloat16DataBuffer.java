@@ -187,6 +187,11 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         setData(ArrayUtil.toShorts(data));
     }
 
+    @Override
+    public void setData(long[] data) {
+        setData(ArrayUtil.toShorts(data));
+    }
+
 
 
     @Override

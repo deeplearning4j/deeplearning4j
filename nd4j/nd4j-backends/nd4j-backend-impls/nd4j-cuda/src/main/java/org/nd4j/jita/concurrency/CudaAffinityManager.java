@@ -379,7 +379,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public void ensureLocation(INDArray array, Location location) {
-        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        // to location to ensure for empty array
+        if (array.isEmpty())
+            return;
+
+        val point = AtomicAllocator.getInstance().getAllocationPoint(array);
         switch (location) {
             case HOST: {
                     AtomicAllocator.getInstance().synchronizeHostData(array);
@@ -399,7 +403,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public Location getActiveLocation(INDArray array) {
-        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        if (array.isEmpty())
+            return Location.EVERYWHERE;
+
+        val point = AtomicAllocator.getInstance().getAllocationPoint(array);
 
         if (point.isActualOnDeviceSide() && point.isActualOnHostSide()) {
             return Location.EVERYWHERE;

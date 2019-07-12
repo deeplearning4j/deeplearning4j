@@ -44,6 +44,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Ignore
 @Slf4j
 @RunWith(Parameterized.class)
 public class CompressionTests extends BaseNd4jTest {
