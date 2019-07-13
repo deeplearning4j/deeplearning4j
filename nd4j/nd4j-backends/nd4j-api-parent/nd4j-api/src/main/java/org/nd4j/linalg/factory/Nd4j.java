@@ -2409,7 +2409,7 @@ public class Nd4j {
      * Write NDArray to a text file
      *
      * @param write Array to write
-     * @param filePath
+     * @param filePath path to write to
      */
     public static void writeTxt(INDArray write, String filePath) {
         try {
@@ -2421,26 +2421,17 @@ public class Nd4j {
     }
 
     /**
-     * Array written to outputstream
-     *
-     * @param os the outputstream stream ndarray
-     * @param split
      * @deprecated custom col separators are no longer supported; uses ","
-     * @param precision
      * @deprecated precision can no longer be specified. The array is written in scientific notation.
-     * Use {@link #writeTxtString(INDArray, OutputStream)}
+     * @see #writeTxtString(INDArray, OutputStream)
      */
     public static void writeTxtString(INDArray write, OutputStream os, String split, int precision) {
         writeTxtString(write,os);
     }
 
     /**
-     *
-     * @param write
-     * @param os
-     * @param precision
      * @deprecated precision can no longer be specified. The array is written in scientific notation.
-     * Use {@link #writeTxtString(INDArray, OutputStream)}
+     * @see #writeTxtString(INDArray, OutputStream)
      */
     @Deprecated
     public static void writeTxtString(INDArray write, OutputStream os, int precision) {
@@ -2448,11 +2439,8 @@ public class Nd4j {
     }
 
     /**
-     * @param write
-     * @param os
-     * @param split
      * @deprecated column separator can longer be specified; Uses ","
-     * Use {@link #writeTxtString(INDArray, OutputStream)} instead
+     * @see #writeTxtString(INDArray, OutputStream)
      */
     @Deprecated
     public static void writeTxtString(INDArray write, OutputStream os, String split) {
@@ -2461,8 +2449,8 @@ public class Nd4j {
 
     /**
      * Write ndarray as text to output stream
-     * @param write
-     * @param os
+     * @param write Array to write
+     * @param os    stream to write too.
      */
     public static void writeTxtString(INDArray write, OutputStream os) {
         try {
