@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -29,19 +30,35 @@ import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
  */
 public class CompositeDataSetPreProcessor implements DataSetPreProcessor {
 
+    private final boolean stopOnEmptyDataSet;
     private DataSetPreProcessor[] preProcessors;
 
     /**
      * @param preProcessors Preprocessors to apply. They will be applied in this order
      */
-    public CompositeDataSetPreProcessor(DataSetPreProcessor... preProcessors){
+    public CompositeDataSetPreProcessor(DataSetPreProcessor... preProcessors) {
+        this(false, preProcessors);
+    }
+
+    public CompositeDataSetPreProcessor(boolean stopOnEmptyDataSet, DataSetPreProcessor... preProcessors){
+        this.stopOnEmptyDataSet = stopOnEmptyDataSet;
         this.preProcessors = preProcessors;
     }
 
     @Override
     public void preProcess(DataSet dataSet) {
+        Preconditions.checkNotNull(dataSet, "Encountered null dataSet");
+
+        if(stopOnEmptyDataSet && dataSet.isEmpty()) {
+            return;
+        }
+
         for(DataSetPreProcessor p : preProcessors){
             p.preProcess(dataSet);
+
+            if(stopOnEmptyDataSet && dataSet.isEmpty()) {
+                return;
+            }
         }
     }
 }

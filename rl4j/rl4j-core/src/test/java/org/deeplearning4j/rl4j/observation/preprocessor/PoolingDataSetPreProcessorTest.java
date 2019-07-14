@@ -1,8 +1,7 @@
 package org.deeplearning4j.rl4j.observation.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.PoolingDataSetPreProcessor;
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.ObservationPool;
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.PoolContentAssembler;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.ObservationPool;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.PoolContentAssembler;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

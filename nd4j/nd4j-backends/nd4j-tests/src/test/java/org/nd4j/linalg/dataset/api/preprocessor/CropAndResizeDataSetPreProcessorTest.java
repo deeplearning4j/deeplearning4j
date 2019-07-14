@@ -1,6 +1,6 @@
-package org.deeplearning4j.rl4j.observation.preprocessor;
+package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.CropAndResizeDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.preprocessor.CropAndResizeDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.observation.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.SkippingDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

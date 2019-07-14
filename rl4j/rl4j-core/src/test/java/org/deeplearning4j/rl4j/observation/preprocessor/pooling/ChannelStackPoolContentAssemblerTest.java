@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.observation.preprocessor.pooling;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.ChannelStackPoolContentAssembler;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

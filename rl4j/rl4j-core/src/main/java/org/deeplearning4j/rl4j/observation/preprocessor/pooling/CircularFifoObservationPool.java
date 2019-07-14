@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.preprocessors.pooling;
+package org.deeplearning4j.rl4j.observation.preprocessor.pooling;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.nd4j.base.Preconditions;

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.preprocessors;
+package org.deeplearning4j.rl4j.observation.preprocessor;
 
 import lombok.Builder;
 import org.nd4j.base.Preconditions;

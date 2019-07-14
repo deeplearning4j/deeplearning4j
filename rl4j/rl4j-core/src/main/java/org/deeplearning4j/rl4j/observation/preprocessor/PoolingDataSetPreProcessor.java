@@ -14,12 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.preprocessors;
+package org.deeplearning4j.rl4j.observation.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.ChannelStackPoolContentAssembler;
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.PoolContentAssembler;
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.CircularFifoObservationPool;
-import org.deeplearning4j.rl4j.observation.preprocessors.pooling.ObservationPool;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.ChannelStackPoolContentAssembler;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.PoolContentAssembler;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.CircularFifoObservationPool;
+import org.deeplearning4j.rl4j.observation.preprocessor.pooling.ObservationPool;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;

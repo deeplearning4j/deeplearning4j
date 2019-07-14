@@ -1,6 +1,6 @@
-package org.deeplearning4j.rl4j.observation.preprocessor;
+package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.PermuteDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.preprocessor.PermuteDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

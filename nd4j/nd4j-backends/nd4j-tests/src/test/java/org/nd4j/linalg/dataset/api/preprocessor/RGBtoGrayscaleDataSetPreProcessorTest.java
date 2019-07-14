@@ -1,6 +1,6 @@
-package org.deeplearning4j.rl4j.observation.preprocessor;
+package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.deeplearning4j.rl4j.observation.preprocessors.RGBtoGrayscaleDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.preprocessor.RGBtoGrayscaleDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -41,32 +41,61 @@ public class RGBtoGrayscaleDataSetPreProcessorTest {
         int width = 5;
 
         RGBtoGrayscaleDataSetPreProcessor sut = new RGBtoGrayscaleDataSetPreProcessor();
-        INDArray input = Nd4j.create(new int[] { 1, numChannels, height, width });
+        INDArray input = Nd4j.create(new int[] { 2, numChannels, height, width });
 
-        // Black
+        // Black, Example 1
         input.putScalar(new int[] { 0, 0, 0, 0 }, 0.0 );
         input.putScalar(new int[] { 0, 1, 0, 0 }, 0.0 );
         input.putScalar(new int[] { 0, 2, 0, 0 }, 0.0 );
 
-        // White
+        // White, Example 1
         input.putScalar(new int[] { 0, 0, 0, 1 }, 255.0 );
         input.putScalar(new int[] { 0, 1, 0, 1 }, 255.0 );
         input.putScalar(new int[] { 0, 2, 0, 1 }, 255.0 );
 
-        // Red
+        // Red, Example 1
         input.putScalar(new int[] { 0, 0, 0, 2 }, 255.0 );
         input.putScalar(new int[] { 0, 1, 0, 2 }, 0.0 );
         input.putScalar(new int[] { 0, 2, 0, 2 }, 0.0 );
 
-        // Green
+        // Green, Example 1
         input.putScalar(new int[] { 0, 0, 0, 3 }, 0.0 );
         input.putScalar(new int[] { 0, 1, 0, 3 }, 255.0 );
         input.putScalar(new int[] { 0, 2, 0, 3 }, 0.0 );
 
-        // Blue
+        // Blue, Example 1
         input.putScalar(new int[] { 0, 0, 0, 4 }, 0.0 );
         input.putScalar(new int[] { 0, 1, 0, 4 }, 0.0 );
         input.putScalar(new int[] { 0, 2, 0, 4 }, 255.0 );
+
+
+        // Black, Example 2
+        input.putScalar(new int[] { 1, 0, 0, 4 }, 0.0 );
+        input.putScalar(new int[] { 1, 1, 0, 4 }, 0.0 );
+        input.putScalar(new int[] { 1, 2, 0, 4 }, 0.0 );
+
+        // White, Example 2
+        input.putScalar(new int[] { 1, 0, 0, 3 }, 255.0 );
+        input.putScalar(new int[] { 1, 1, 0, 3 }, 255.0 );
+        input.putScalar(new int[] { 1, 2, 0, 3 }, 255.0 );
+
+        // Red, Example 2
+        input.putScalar(new int[] { 1, 0, 0, 2 }, 255.0 );
+        input.putScalar(new int[] { 1, 1, 0, 2 }, 0.0 );
+        input.putScalar(new int[] { 1, 2, 0, 2 }, 0.0 );
+
+        // Green, Example 2
+        input.putScalar(new int[] { 1, 0, 0, 1 }, 0.0 );
+        input.putScalar(new int[] { 1, 1, 0, 1 }, 255.0 );
+        input.putScalar(new int[] { 1, 2, 0, 1 }, 0.0 );
+
+        // Blue, Example 2
+        input.putScalar(new int[] { 1, 0, 0, 0 }, 0.0 );
+        input.putScalar(new int[] { 1, 1, 0, 0 }, 0.0 );
+        input.putScalar(new int[] { 1, 2, 0, 0 }, 255.0 );
+
+
+
 
         DataSet ds = new DataSet(input, null);
 
@@ -77,10 +106,22 @@ public class RGBtoGrayscaleDataSetPreProcessorTest {
         INDArray result = ds.getFeatures();
         long[] shape = result.shape();
 
+        assertEquals(3, shape.length);
+        assertEquals(2, shape[0]);
+        assertEquals(1, shape[1]);
+        assertEquals(5, shape[2]);
+
         assertEquals(0.0, result.getDouble(new long[] { 0, 0, 0 }), 0.05);
         assertEquals(255.0, result.getDouble(new long[] { 0, 0, 1 }), 0.05);
         assertEquals(255.0 * 0.3, result.getDouble(new long[] { 0, 0, 2 }), 0.05);
         assertEquals(255.0 * 0.59, result.getDouble(new long[] { 0, 0, 3 }), 0.05);
         assertEquals(255.0 * 0.11, result.getDouble(new long[] { 0, 0, 4 }), 0.05);
+
+        assertEquals(0.0, result.getDouble(new long[] { 1, 0, 4 }), 0.05);
+        assertEquals(255.0, result.getDouble(new long[] { 1, 0, 3 }), 0.05);
+        assertEquals(255.0 * 0.3, result.getDouble(new long[] { 1, 0, 2 }), 0.05);
+        assertEquals(255.0 * 0.59, result.getDouble(new long[] { 1, 0, 1 }), 0.05);
+        assertEquals(255.0 * 0.11, result.getDouble(new long[] { 1, 0, 0 }), 0.05);
+
     }
 }
