@@ -2534,6 +2534,16 @@ public class Nd4j {
         return readNumpy(DataType.FLOAT, filePath, split, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Read array from input stream.
+     *
+     * @param dataType datatype of array
+     * @param filePath the input stream
+     * @param split    the split separator
+     * @param charset the  charset
+     * @return the deserialized array.
+     * @throws IOException
+     */
     public static INDArray readNumpy(@NonNull DataType dataType, @NonNull InputStream filePath, @NonNull String split, @NonNull Charset charset) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(filePath, charset));
         String line;
@@ -2580,9 +2590,6 @@ public class Nd4j {
         return ret;
     }
 
-
-
-
     /**
      * Read line via input streams
      *
@@ -2594,6 +2601,11 @@ public class Nd4j {
         return readNumpy(DataType.FLOAT, filePath, split);
     }
 
+    /**
+     * Read array via input stream using standard UTF-8 encoding.
+     *
+     * @see #readNumpy(DataType, InputStream, String , Charset)
+     */
     public static INDArray readNumpy(DataType dataType, String filePath, String split) throws IOException {
         try(InputStream is = new FileInputStream(filePath)) {
             return readNumpy(dataType, is, split, StandardCharsets.UTF_8);
@@ -2610,21 +2622,22 @@ public class Nd4j {
         return readNumpy(DataType.FLOAT, filePath);
     }
 
+    /**
+     * Read array with default split and UTF-8 encoding.
+     *
+     * @see #readNumpy(DataType, InputStream, String , Charset)
+     */
     public static INDArray readNumpy(DataType dataType, String filePath) throws IOException {
         return readNumpy(dataType, filePath, " ");
     }
 
-
-
     /**
      * Raad an ndarray from an input stream
-     * @param reader the input stream to use
-     * @return the given ndarray
-     * @throws IOException
+     *
+     * @see #read(DataInputStream)
      */
     public static INDArray read(InputStream reader) throws IOException {
         return read(new DataInputStream(reader));
-
     }
 
     /**
@@ -2738,10 +2751,6 @@ public class Nd4j {
         return newArr;
     }
 
-
-
-
-
     /**
      * Read line via input streams
      *
@@ -2777,19 +2786,18 @@ public class Nd4j {
     }
 
     /**
+     * Create array based in data buffer and shape info,
      *
-     * @param data
-     * @param shapeInfo
-     * @return
+     * @param data Data buffer.
+     * @param shapeInfo shape information.
+     * @return new INDArray.
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
         val jvmShapeInfo = shapeInfo.asLong();
-        val rank = Shape.rank(jvmShapeInfo);
         val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
         val shape = Shape.shape(jvmShapeInfo);
         val strides = Shape.stridesOf(jvmShapeInfo);
         val order = Shape.order(jvmShapeInfo);
-        long offset = 0;
         INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
@@ -2798,10 +2806,11 @@ public class Nd4j {
     }
 
     /**
+     * Create array based in data buffer and shape info,
      *
-     * @param data
-     * @param shapeInfo
-     * @return
+     * @param data data buffer.
+     * @param shapeInfo shape information.
+     * @return new INDArray.
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, long[]> shapeInfo) {
         int rank = Shape.rank(shapeInfo.getFirst());
@@ -2813,8 +2822,6 @@ public class Nd4j {
 
         return result;
     }
-
-
 
     /**
      * Read in an ndarray from a data input stream
@@ -2844,10 +2851,8 @@ public class Nd4j {
             shapeInformation.put(shapeInformation.length() - 3, extras);
         }
 
-
         return createArrayFromShapeBuffer(data, shapeInformation);
     }
-
 
     /**
      * Write an ndarray to the specified outputstream
@@ -2882,7 +2887,6 @@ public class Nd4j {
         bos.close();
     }
 
-
     /**
      * Read a binary ndarray from the given file
      * @param read the nd array to read
@@ -2896,7 +2900,6 @@ public class Nd4j {
         dis.close();
         return ret;
     }
-
 
     /**
      * Clear nans from an ndarray
@@ -2933,7 +2936,7 @@ public class Nd4j {
 
     /**
      * Create a 1D array of evenly spaced values between {@code begin} (inclusive) and {@code end} (exclusive)
-     * with a step size of 1
+     * with a step size.
      *
      * @param begin the begin of the range (inclusive)
      * @param end   the end of the range (exclusive)
@@ -2945,6 +2948,12 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Create a 1D array of evenly spaced values between {@code begin} (inclusive) and {@code end} (exclusive)
+     * with a step size of 1
+     *
+     * @see #arange(double, double, double)
+     */
     public static INDArray arange(double begin, double end) {
         INDArray ret = INSTANCE.arange(begin, end, 1);
         return ret;
@@ -2954,8 +2963,7 @@ public class Nd4j {
      * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
      * with a step size of 1
      *
-     * @param end   the end of the range (exclusive)
-     * @return the 1D range vector
+     * @see #arange(double, double, double)
      */
     public static INDArray arange(double end) {
         return arange(0, end);
@@ -3004,14 +3012,14 @@ public class Nd4j {
         return diag(x, 0);
     }
 
-
     /**
      * This method samples value from Source array to Target, with probabilites provided in Probs argument
      *
-     * @param source
-     * @param probs
-     * @param target
-     * @return
+     * @param source source array.
+     * @param probs array with probabilities.
+     * @param target destination array.
+     * @param rng Random number generator.
+     * @return the destination (target) array.
      */
     public static INDArray choice(@NonNull INDArray source, @NonNull INDArray probs, @NonNull INDArray target,
                                   @NonNull org.nd4j.linalg.api.rng.Random rng) {
@@ -3022,24 +3030,28 @@ public class Nd4j {
     }
 
     /**
-     * This method samples value from Source array to Target, with probabilites provided in Probs argument
+     * This method samples value from Source array to Target,the default random number generator.
      *
-     * @param source
-     * @param probs
-     * @param target
-     * @return
+     * @see #choice(INDArray, INDArray, INDArray, org.nd4j.linalg.api.rng.Random)
      */
     public static INDArray choice(INDArray source, INDArray probs, INDArray target) {
         return choice(source, probs, target, Nd4j.getRandom());
     }
 
     /**
-     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     *
      *
      * @param source
      * @param probs
      * @param numSamples
      * @return
+     */
+
+    /**
+     * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs.
+     *
+     * @param numSamples number of samples to take. (size of the new NDArray).
+     * @see #choice(INDArray, INDArray, int, org.nd4j.linalg.api.rng.Random)
      */
     public static INDArray choice(INDArray source, INDArray probs, int numSamples,
                                   @NonNull org.nd4j.linalg.api.rng.Random rng) {
@@ -3051,11 +3063,9 @@ public class Nd4j {
 
     /**
      * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
+     * using the default random number generator.
      *
-     * @param source
-     * @param probs
-     * @param numSamples
-     * @return
+     * @see #choice(INDArray, INDArray, int, org.nd4j.linalg.api.rng.Random)
      */
     public static INDArray choice(INDArray source, INDArray probs, int numSamples) {
         return choice(source, probs, numSamples, Nd4j.getRandom());
@@ -3093,11 +3103,20 @@ public class Nd4j {
         return rand(ret);
     }
 
+    /**
+     * @see #rand(int[])
+     */
     public static INDArray rand(long[] shape) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
     }
 
+    /**
+     * Create a random ndarray with given type and shape.
+     * @param dataType datatype
+     * @param shape shape
+     * @return new array.
+     */
     public static INDArray rand(DataType dataType, long... shape) {
         INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
         return rand(ret);
@@ -3115,16 +3134,35 @@ public class Nd4j {
         return rand(ret);
     }
 
+    /**
+     * Create a random ndarray with the given datatype, order and shape.
+     *
+     * The datatype must be one of the floating point types.
+     *
+     * @param dataType dtatatype
+     * @param order order
+     * @param shape shape
+     * @return
+     */
     public static INDArray rand(DataType dataType, char order, int[] shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
         return rand(ret);
     }
 
+    /**
+     * @see #rand(DataType, char, int[])
+     */
     public static INDArray rand(DataType dataType, int[] shape, char order) {
         INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
         return rand(ret);
     }
 
+    /**
+     * Create a random ndarray with the given datatype and shape.
+     * using the default Nd4j order.
+     *
+     * @see #rand(DataType, char, int[])
+     */
     public static INDArray rand(DataType dataType, int[] shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()); //INSTANCE.rand(order, shape);
         return rand(ret);
@@ -3296,18 +3334,29 @@ public class Nd4j {
      * as the seed
      *
      * @param shape the shape of the ndarray
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(int[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret);
     }
 
+    /**
+     * Random normal ndarray of given datatype and shape,
+     * @param dataType datatype to use, must be a float type datatype.
+     * @param shape shape for the new array.
+     * @return new array with random values
+     */
     public static INDArray randn(DataType dataType, long... shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, shape, order());
         return randn(ret);
     }
 
+    /**
+     * Random normal ndarray of given shape. defaults to FLOAT and c-order.
+     * @param shape shape for the new array.
+     * @return new array with random values
+     */
     public static INDArray randn(long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret);
@@ -3318,6 +3367,7 @@ public class Nd4j {
      *
      * @param order order of the output ndarray
      * @param shape the shape of the ndarray
+     * @return new array with random values
      */
     public static INDArray randn(char order, int[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order);
@@ -3329,12 +3379,17 @@ public class Nd4j {
      *
      * @param order order of the output ndarray
      * @param shape the shape of the ndarray
+     * @return new array with random values
      */
     public static INDArray randn(char order, long[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order);
         return randn(ret);
     }
 
+
+    /**
+     * @see #rand(DataType, char, int[])
+     */
     public static INDArray randn(DataType dataType, char order, long[] shape) {
         INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
         return randn(ret);
