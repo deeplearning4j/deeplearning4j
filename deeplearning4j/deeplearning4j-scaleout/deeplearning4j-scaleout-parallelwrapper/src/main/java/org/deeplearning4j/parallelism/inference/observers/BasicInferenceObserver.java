@@ -20,8 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.Semaphore;
 
 /**
  * Simple Observer implementation for
@@ -31,23 +30,24 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Slf4j
 public class BasicInferenceObserver implements Observer {
-    private AtomicBoolean finished;
-
-    public BasicInferenceObserver() {
-        finished = new AtomicBoolean(false);
-    }
+    private Semaphore semaphore = new Semaphore(0);
+    volatile private boolean finished = false;
 
     @Override
-    public void update(Observable o, Object arg) {
-        finished.set(true);
+    synchronized public void update(Observable o, Object arg) {
+        if (!finished) {
+            finished = true;
+            semaphore.release(Integer.MAX_VALUE);
+        }
     }
 
-    /**
-     * FOR DEBUGGING ONLY, TO BE REMOVED BEFORE MERGE
-     */
     public void waitTillDone() {
-        while (!finished.get()) {
-            LockSupport.parkNanos(1000);
+        if (!finished) {
+            try {
+                semaphore.acquire();
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 }
