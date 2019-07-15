@@ -28,6 +28,7 @@
 #include <NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <types/types.h>
+#include <helpers/Loops.h>
 
 namespace nd4j {
 
@@ -36,26 +37,87 @@ namespace nd4j {
 * along a particular dimension
 */
 template <typename T>
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+        const uint numOfArrs = inArrs.size();
+
+        int outDim;
+        const bool isOutputVector = output.isCommonVector(outDim);
+
+        if(isOutputVector || (axis == 0 && output.ordering() == 'c')) {
+
+            bool allVectorsOrScalars = true;
+            const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();
+
+            std::vector<int> nonUnityDim(numOfArrs);
+            std::vector<Nd4jLong> zOffset(numOfArrs);
+
+            for(int i = 0; i < numOfArrs; i++) {
+                allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+                if(!allVectorsOrScalars)
+                    break;
+                if(i == 0)  zOffset[0] = 0;
+                else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();
+            }
+
+            if(allVectorsOrScalars) {
+
+                T* outBuff = output.bufferAsT<T>();
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (uint r = 0; r < numOfArrs; r++) {
+
+                    const uint arrLen = inArrs[r]->lengthOf();
+                    const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+
+                    T *z = outBuff + zOffset[r];
+                    T *x = inArrs[r]->bufferAsT<T>();
+
+                    if(outEws == 1 && xEws == 1)
+                        for (uint e = 0; e < arrLen; e++)
+                            z[e] = x[e];
+                    else
+                        for (uint e = 0; e < arrLen; e++)
+                            z[e * outEws] = x[e * xEws];
+                }
+                return;
+            }
+        }
+
+        const int rank  = inArrs[0]->rankOf();
+        const int rank2 = 2*rank;
+        std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
+
+        // take into account indices for first array
+        indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
+
+        // loop through the rest of input arrays
+        for(int i = 1; i < numOfArrs; ++i) {
+            indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
+            indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+        }
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(int i = 0; i < numOfArrs; ++i) {
+            auto temp = output(indices[i], true);
+            nd4j::TransformLoops<T,T,T>::template loopTransform<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
+        }
+}
+
+/**
+* Concatneate multi array of the same shape together
+* along a particular dimension
+*/
+template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong *resultShapeInfo) {
     auto result = reinterpret_cast<T *>(vresult);
-
-    std::vector<Nd4jLong> iArgs = {dimension};
-    std::vector<double> tArgs;
-    std::vector<bool> bArgsEmpty;
     std::vector<NDArray*> inputs(numArrays);
-    std::vector<NDArray*> outputs(1);
 
-    outputs[0] = new NDArray(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
+    NDArray output(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
 
     for(int i = 0; i < numArrays; ++i)
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
-    nd4j::ops::concat op;
-    auto status = op.execute(inputs, outputs, tArgs, iArgs, bArgsEmpty);
-    if(status != Status::OK())
-        throw std::runtime_error("concatCpuGeneric fails to be executed !");
-    
-    delete outputs[0];
+    nd4j::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
     for(int i = 0; i < numArrays; ++i)
         delete inputs[i];

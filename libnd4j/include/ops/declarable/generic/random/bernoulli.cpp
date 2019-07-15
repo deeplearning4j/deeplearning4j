@@ -44,7 +44,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
             auto f = T_ARG(0);
 
-            RandomLauncher::fillBernoulli(rng, z, f);
+            RandomLauncher::fillBernoulli(block.launchContext(), rng, z, f);
 
             return Status::OK();
         }

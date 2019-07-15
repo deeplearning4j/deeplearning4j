@@ -128,6 +128,10 @@ namespace functions {
             }
             __syncthreads();
 
+            auto xOrder = shape::order(xShapeInfo);
+            auto yOrder = shape::order(tadOnlyShapeInfo);
+            auto zOrder = shape::order(tadOnlyShapeInfoZ);
+
             for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
 
@@ -135,7 +139,7 @@ namespace functions {
                 auto rZ = z + tadOffsetsZ[r];
 
 
-                if(tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1) {
+                if(tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1 && xOrder == yOrder && xOrder == zOrder) {
                     for (int i = threadIdx.x; i < tadLength; i+= blockDim.x)
                         rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS]);
                 }
@@ -190,6 +194,9 @@ namespace functions {
             }
             __syncthreads();
 
+            auto xOrder = shape::order(tadOnlyShapeInfo);
+            auto yOrder = shape::order(yShapeInfo);
+            auto zOrder = shape::order(tadOnlyShapeInfoZ);
 
             for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
@@ -197,7 +204,7 @@ namespace functions {
                 auto rZ = z + tadOffsetsZ[r];
 
 
-                if(tadEWS > 0 && zEWS > 0 && yEWS > 0) {
+                if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && xOrder == yOrder && xOrder == zOrder) {
                     for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) 
                         rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]); 
                 }

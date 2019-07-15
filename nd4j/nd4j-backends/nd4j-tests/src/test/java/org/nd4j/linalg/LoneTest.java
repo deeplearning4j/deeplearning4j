@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -60,7 +60,7 @@ public class LoneTest extends BaseNd4jTest {
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(DataType.DOUBLE, 10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
-        Nd4j.getExecutioner().exec(new OldSoftMax(input, output));
+        Nd4j.getExecutioner().exec(new SoftMax(input, output));
     }
 
     @Override

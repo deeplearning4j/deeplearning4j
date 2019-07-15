@@ -23,12 +23,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldLogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -158,9 +158,9 @@ public class CrashTest extends BaseNd4jTest {
 
 
         // logisoftmax, softmax & softmax derivative
-        Nd4j.getExecutioner().exec(new OldSoftMax(x));
-        Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
-        Nd4j.getExecutioner().exec(new OldLogSoftMax(x));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(x));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMaxDerivative(x));
+        Nd4j.getExecutioner().exec((CustomOp) new LogSoftMax(x));
 
 
         // BooleanIndexing

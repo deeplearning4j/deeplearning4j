@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
@@ -671,7 +672,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
                     t = sd.nn().softmax(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldSoftMax(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new SoftMax(ia.dup()))[0]);
                     break;
                 case 24:
                     t = sd.math().sqrt(in);

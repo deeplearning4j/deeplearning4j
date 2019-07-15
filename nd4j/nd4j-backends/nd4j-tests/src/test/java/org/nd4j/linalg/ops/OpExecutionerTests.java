@@ -24,6 +24,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -42,11 +43,11 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SetRange;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -304,11 +305,11 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testRowSoftmax() {
-        OpExecutioner opExecutioner = Nd4j.getExecutioner();
-        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        OldSoftMax softMax = new OldSoftMax(arr);
-        opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        val opExecutioner = Nd4j.getExecutioner();
+        val arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
+        val softMax = new SoftMax(arr);
+        opExecutioner.exec((CustomOp) softMax);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
     }
 
 
@@ -373,7 +374,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testSoftmax() {
         INDArray vec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         INDArray matrix = vec.dup().reshape('f', 2, 3);
-        Nd4j.getExecutioner().exec(new OldSoftMax(matrix));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(matrix));
         INDArray matrixAssertion = Nd4j.create(
                 new double[] {0.015876241, 0.015876241, 0.11731043, 0.11731043, 0.86681336, 0.86681336},
                 new int[] {2, 3}, 'f');
@@ -384,7 +385,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testOtherSoftmax() {
         INDArray vec = Nd4j.linspace(1, 18, 18, DataType.DOUBLE);
         INDArray matrix = vec.dup().reshape('f', 3, 6);
-        Nd4j.getExecutioner().exec(new OldSoftMax(matrix));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(matrix));
         INDArray assertion = Nd4j.create(new double[] {2.9067235E-7, 2.9067235E-7, 2.9067235E-7, 5.8383102E-6,
                 5.8383102E-6, 5.8383102E-6, 1.1726559E-4, 1.1726559E-4, 1.1726559E-4, 0.0023553425,
                 0.0023553425, 0.0023553425, 0.047308315, 0.047308315, 0.047308315, 0.95021296, 0.95021296,
@@ -517,9 +518,9 @@ public class OpExecutionerTests extends BaseNd4jTest {
                 0.3049033, 0.29277474, 0.29136384, 0.30316526, 0.2807459}, new int[] {150, 3}, 'f');
 
         System.out.println("Data:" + input.data().length());
-        OldSoftMax softMax = new OldSoftMax(input);
-        Nd4j.getExecutioner().exec(softMax);
-        assertEquals(assertion, softMax.z());
+        val softMax = new SoftMax(input);
+        Nd4j.getExecutioner().exec((CustomOp) softMax);
+        assertEquals(assertion, softMax.outputArguments()[0]);
 
     }
 
@@ -557,9 +558,9 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testSoftMax() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        OldSoftMax softMax = new OldSoftMax(arr);
-        opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        val softMax = new SoftMax(arr);
+        opExecutioner.exec((CustomOp) softMax);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
     }
 
     @Test

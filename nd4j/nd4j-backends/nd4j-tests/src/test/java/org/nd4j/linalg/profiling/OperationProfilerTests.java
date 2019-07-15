@@ -381,30 +381,32 @@ public class OperationProfilerTests extends BaseNd4jTest {
             INDArray x = Nd4j.create(1000, 1000).assign(1.0);
             INDArray y = Nd4j.create(1000, 1000).assign(1.0);
 
-            for (int e = 0; e < 10000; e++) {
+            int iterations = 100;
+
+            for (int e = 0; e < iterations; e++) {
                 x.addi(y);
             }
 
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
             val nanosC = System.nanoTime();
-            for (int e = 0; e < 10000; e++) {
+            for (int e = 0; e < iterations; e++) {
                 x.addi(y);
             }
             val nanosD = System.nanoTime();
 
-            val avgB = (nanosD - nanosC) / 10000;
+            val avgB = (nanosD - nanosC) / iterations;
 
 
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
 
             val nanosA = System.nanoTime();
-            for (int e = 0; e < 10000; e++) {
+            for (int e = 0; e < iterations; e++) {
                 x.addi(y);
             }
             val nanosB = System.nanoTime();
 
-            val avgA = (nanosB - nanosA) / 10000;
+            val avgA = (nanosB - nanosA) / iterations;
 
 
             log.info("A: {}; B: {}", avgA, avgB);

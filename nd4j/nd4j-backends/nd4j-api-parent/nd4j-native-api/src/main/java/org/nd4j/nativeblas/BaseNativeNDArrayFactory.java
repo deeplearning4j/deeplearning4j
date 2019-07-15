@@ -610,6 +610,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     bb2.put((byte)((s >> 8) & 0xff));
                     bb2.put((byte)(s & 0xff));
                 }
+                Nd4j.getAffinityManager().tagLocation(arr, AffinityManager.Location.HOST);
                 map.put(fName, arr.reshape(order, shape));
             } else if(dt == DataType.LONG){
                 long[] d = new long[(int)size];
