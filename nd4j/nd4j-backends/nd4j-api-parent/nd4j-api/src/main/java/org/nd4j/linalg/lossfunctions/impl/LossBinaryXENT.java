@@ -25,8 +25,8 @@ import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
@@ -121,7 +121,7 @@ public class LossBinaryXENT implements ILossFunction {
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
             //TODO Post GPU support for custom ops: Use LogSoftMax op to avoid numerical issues when calculating score
-            INDArray logsoftmax = Nd4j.getExecutioner().exec(new OldSoftMax(preOutput.dup()));
+            INDArray logsoftmax = Nd4j.exec((CustomOp) new SoftMax(preOutput, preOutput.ulike(), -1))[0];
             Transforms.log(logsoftmax, false);
             scoreArr = logsoftmax.muli(labels);
 

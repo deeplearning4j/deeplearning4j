@@ -19,20 +19,27 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+
+import java.nio.Buffer;
 
 /**
  * Softmax derivative
  *
  * @author Adam Gibson
  */
-public class SoftMaxDerivative extends OldSoftMax {
+public class SoftMaxDerivative extends SoftMax {
     public SoftMaxDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
+        super(sameDiff, new SDVariable[]{i_v1, i_v2});
     }
 
     public SoftMaxDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
+        super(sameDiff, new SDVariable[]{ i_v1, i_v2}, inPlace);
     }
 
     public SoftMaxDerivative(INDArray x, INDArray z) {
@@ -40,10 +47,12 @@ public class SoftMaxDerivative extends OldSoftMax {
     }
 
     public SoftMaxDerivative(INDArray x) {
-        super(x);
+        super(x, x);
     }
 
     public SoftMaxDerivative() {}
+
+
 
     @Override
     public int opNum() {

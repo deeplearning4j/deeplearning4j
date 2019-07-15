@@ -19,10 +19,14 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
+import java.nio.Buffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -53,10 +57,6 @@ public class SoftMax extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
-    public SoftMax(INDArray input, INDArray result){
-        super(new INDArray[]{input}, new INDArray[]{result});
-    }
-
     public SoftMax(SameDiff sameDiff, SDVariable[] args, int dimension) {
         super(sameDiff, args, false);
         this.dimension = dimension;
@@ -75,12 +75,18 @@ public class SoftMax extends BaseDynamicTransformOp {
         addIArgument(dimension);
     }
 
+    public SoftMax(INDArray input){
+        this(input, input);
+    }
+
+    public SoftMax(INDArray input, INDArray result){
+        this(input, result, -1);
+    }
 
     @Override
     public String opName() {
         return "softmax";
     }
-
 
     @Override
     public String onnxName() {

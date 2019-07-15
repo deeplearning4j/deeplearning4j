@@ -41,9 +41,9 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BroadcastOp;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
@@ -72,13 +72,13 @@ import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
@@ -94,8 +94,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.profiler.OpProfiler;
-import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -2919,7 +2917,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
-        Nd4j.getExecutioner().exec(new OldSoftMax(input, output));
+        Nd4j.getExecutioner().exec(new SoftMax(input, output));
     }
 
     @Test
@@ -3134,7 +3132,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSoftmaxRow() {
         for (int i = 0; i < 20; i++) {
             INDArray arr1 = Nd4j.zeros(1, 100);
-            Nd4j.getExecutioner().execAndReturn(new OldSoftMax(arr1));
+            Nd4j.getExecutioner().execAndReturn(new SoftMax(arr1));
             System.out.println(Arrays.toString(arr1.data().asFloat()));
         }
     }
@@ -3779,7 +3777,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
                 for (int i = 0; i < 3; i++) {
                     INDArray subset = result12.tensorAlongDimension(i, 1, 2);//result12.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all());
-                    assertEquals("Failed for subset " + i, bc12, subset);
+                    assertEquals("Failed for subset [" + i + "] orders [" + orderArr + "/" + orderbc + "]", bc12, subset);
                 }
             }
         }
@@ -5725,9 +5723,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val reference = original.dup(original.ordering());
         val expected = original.dup(original.ordering());
 
-        Nd4j.getExecutioner().execAndReturn(new OldSoftMax(expected));
+        Nd4j.getExecutioner().execAndReturn((CustomOp) new SoftMax(expected, expected, -1));
 
-        val result = Nd4j.getExecutioner().exec(new OldSoftMax(original, original.dup(original.ordering())));
+        val result = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(original, original.dup(original.ordering())))[0];
 
         assertEquals(reference, original);
         assertEquals(expected, result);

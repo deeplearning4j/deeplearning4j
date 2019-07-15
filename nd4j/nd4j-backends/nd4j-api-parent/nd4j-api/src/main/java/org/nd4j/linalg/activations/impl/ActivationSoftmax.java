@@ -20,7 +20,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -34,14 +35,14 @@ public class ActivationSoftmax extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new OldSoftMax(in));
+        Nd4j.getExecutioner().execAndReturn((CustomOp) new SoftMax(in, in));
         return in;
     }
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray out = Nd4j.getExecutioner().exec(new OldSoftMax(in));
+        INDArray out = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(in, in.ulike()))[0];
         INDArray x = out.mul(epsilon).sum(1);
         INDArray dLdz = out.mul(epsilon.subColumnVector(x));
         return new Pair<>(dLdz, null);

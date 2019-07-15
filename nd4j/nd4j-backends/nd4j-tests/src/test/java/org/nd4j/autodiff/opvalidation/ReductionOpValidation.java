@@ -31,6 +31,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -1083,7 +1084,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
-        Nd4j.exec(new SoftMax(exec, exec, 1));
+        Nd4j.exec((CustomOp) new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1111,7 +1112,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
         exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
-        Nd4j.exec(new SoftMax(exec, exec, 1));
+        Nd4j.exec((CustomOp) new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1141,7 +1142,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(-2)));
         exec.addi(Nd4j.tile(mask.reshape(2, 1, 3, 1), 1, 5, 1, 2).sub(1).muli(1e9));
-        Nd4j.exec(new SoftMax(exec, exec, -2));
+        Nd4j.exec((CustomOp) new SoftMax(exec, exec, -2));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1169,7 +1170,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(-2)));
-        Nd4j.exec(new SoftMax(exec, exec, -2));
+        Nd4j.exec((CustomOp) new SoftMax(exec, exec, -2));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
@@ -1249,7 +1250,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
         exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
-        Nd4j.exec(new SoftMax(exec, exec, 1));
+        Nd4j.exec((CustomOp) new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         for (char queryOrder : new char[]{'f', 'c'}) {

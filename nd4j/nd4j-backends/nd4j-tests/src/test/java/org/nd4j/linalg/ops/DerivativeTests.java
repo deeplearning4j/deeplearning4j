@@ -25,7 +25,9 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
@@ -217,8 +219,8 @@ public class DerivativeTests extends BaseNd4jTest {
                 }
             }
 
-            INDArray sm = Nd4j.getExecutioner().exec(new OldSoftMax(z.dup()));
-            INDArray zPrime = Nd4j.getExecutioner().exec(new SoftMaxDerivative(z));
+            INDArray sm = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(z.dup()))[0];
+            INDArray zPrime = Nd4j.getExecutioner().exec((CustomOp) new SoftMaxDerivative(z))[0];
             System.out.println(Arrays.toString(sm.data().asDouble()));
             System.out.println(Arrays.toString(zPrime.data().asDouble()));
             assertNotEquals(sm, zPrime);
@@ -396,7 +398,7 @@ public class DerivativeTests extends BaseNd4jTest {
         //random array represeting preout
         INDArray X = Nd4j.rand(1, 2);
         //preout transformed to y_hat with softmax
-        INDArray YHat = Nd4j.getExecutioner().exec(new OldSoftMax(X.dup()));
+        INDArray YHat = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(X.dup()))[0];
 
         //hard coding something to construct a function with, using MSE
         INDArray Y = Nd4j.create(new double[][] {{0.123, 1 - 0.123}});
@@ -404,7 +406,7 @@ public class DerivativeTests extends BaseNd4jTest {
         //This is the MSE now
         double lossHere = Transforms.pow(Y.sub(YHat), 2).sumNumber().doubleValue();
 
-        INDArray softmaxDer = Nd4j.getExecutioner().exec(new SoftMaxDerivative(X.dup()));
+        INDArray softmaxDer = Nd4j.getExecutioner().exec((CustomOp) new SoftMaxDerivative(X.dup()))[0];
 
         //the way we apply the chain rule now is 2*(y-yhat)*softmaxder
         INDArray dLdY = Y.sub(YHat).mul(-2);
@@ -444,13 +446,13 @@ public class DerivativeTests extends BaseNd4jTest {
             double x = X.getDouble(0, i);
             Xiplus = X.dup();
             Xiplus.put(0, i, x + epsilon);
-            YHatplus = Nd4j.getExecutioner().exec(new OldSoftMax(Xiplus.dup()));
+            YHatplus = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(Xiplus.dup()))[0];
             lossplus = Transforms.pow(Y.sub(YHatplus), 2).sumNumber().doubleValue();
 
             // -epsilon
             Ximinus = X.dup();
             Ximinus.put(0, i, x - epsilon);
-            YHatminus = Nd4j.getExecutioner().exec(new OldSoftMax(Ximinus.dup()));
+            YHatminus = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(Ximinus.dup()))[0];
             lossminus = Transforms.pow(Y.sub(YHatminus), 2).sumNumber().doubleValue();
 
             double gradienti = (lossplus - lossminus) / (2 * epsilon);
@@ -479,16 +481,16 @@ public class DerivativeTests extends BaseNd4jTest {
 
         INDArray X = Nd4j.rand(1, someLength);
         //preout transformed to y_hat with softmax
-        INDArray YHat = Nd4j.getExecutioner().exec(new OldSoftMax(X.dup()));
+        INDArray YHat = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(X.dup()))[0];
 
         //hard coding something to construct a function with, using MSE
         INDArray temp = Nd4j.rand(1, someLength);
-        INDArray Y = Nd4j.getExecutioner().exec(new OldSoftMax(temp));
+        INDArray Y = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(temp))[0];
 
         //This is the MSE now
         double lossHere = Transforms.pow(Y.sub(YHat), 2).sumNumber().doubleValue();
 
-        INDArray softmaxDer = Nd4j.getExecutioner().exec(new SoftMaxDerivative(X.dup()));
+        INDArray softmaxDer = Nd4j.getExecutioner().exec((CustomOp) new SoftMaxDerivative(X.dup()))[0];
 
         //the way we apply the chain rule now is 2*(y-yhat)*softmaxder
         INDArray dLdY = Y.sub(YHat).mul(-2);
@@ -511,13 +513,13 @@ public class DerivativeTests extends BaseNd4jTest {
             double x = X.getDouble(0, i);
             Xiplus = X.dup();
             Xiplus.put(0, i, x + epsilon);
-            YHatplus = Nd4j.getExecutioner().exec(new OldSoftMax(Xiplus.dup()));
+            YHatplus = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(Xiplus.dup()))[0];
             lossplus = Transforms.pow(Y.sub(YHatplus), 2).sumNumber().doubleValue();
 
             // -epsilon
             Ximinus = X.dup();
             Ximinus.put(0, i, x - epsilon);
-            YHatminus = Nd4j.getExecutioner().exec(new OldSoftMax(Ximinus.dup()));
+            YHatminus = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(Ximinus.dup()))[0];
             lossminus = Transforms.pow(Y.sub(YHatminus), 2).sumNumber().doubleValue();
 
             double gradienti = (lossplus - lossminus) / (2 * epsilon);
@@ -538,14 +540,14 @@ public class DerivativeTests extends BaseNd4jTest {
         // this is only for X a row vector
         // should return rank 2 matrix diagonal elements are pi*(1-pi)
         //rest are -pi*pj
-        INDArray p = Nd4j.getExecutioner().exec(new OldSoftMax(X.dup()));
+        INDArray p = Nd4j.getExecutioner().exec((CustomOp) new SoftMax(X.dup()))[0];
         INDArray pCol = p.dup().transpose();
         INDArray pipj = pCol.mmul(p);
         pipj.muli(-1);
 
         //so now pipj is correct except for the diagonal elements
         // which by the way is what our current softmax der gives us
-        INDArray diagp = Nd4j.getExecutioner().exec(new SoftMaxDerivative(X.dup()));
+        INDArray diagp = Nd4j.getExecutioner().exec((CustomOp) new SoftMaxDerivative(X.dup()))[0];
 
 
         //ugly for loop to correct diag elements

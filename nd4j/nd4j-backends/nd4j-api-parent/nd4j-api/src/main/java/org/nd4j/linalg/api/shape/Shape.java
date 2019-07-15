@@ -1334,6 +1334,17 @@ public class Shape {
         }
     }
 
+    public static boolean isVector(LongBuffer shapeInfo) {
+        int rank = Shape.rank(shapeInfo);
+        if (rank > 2 || rank < 1)
+            return false;
+        else {
+            long len = Shape.length(shapeInfo);
+            val shape = Shape.shapeOf(shapeInfo);
+            return shape.get(0) == len || shape.get(1) == len;
+        }
+    }
+
     /**
      * Returns whether the given shape is a vector
      *
@@ -2498,6 +2509,14 @@ public class Shape {
         return ret;
     }
 
+    public static int length(LongBuffer buffer) {
+        int ret = 1;
+        val shape = Shape.shapeOf(buffer);
+        int rank = Shape.rank(buffer);
+        for (int i = 0; i < rank; i++)
+            ret *= shape.get(i);
+        return ret;
+    }
 
     /**
      * Gets the rank given the shape info buffer
@@ -2764,8 +2783,8 @@ public class Shape {
      * @param rank the rank to get the length for
      * @return rank * 2 + 4
      */
-    public static int shapeInfoLength(int rank) {
-        return rank * 2 + 4;
+    public static int shapeInfoLength(long rank) {
+        return (int) rank * 2 + 4;
     }
 
     public static int shapeInfoLength(long[] shape) {
@@ -3072,6 +3091,11 @@ public class Shape {
         return buffer.get(length2 - 2);
     }
 
+    public static long elementWiseStride(LongBuffer buffer) {
+        int length2 = shapeInfoLength(buffer.get(0));
+        return buffer.get(length2 - 2);
+    }
+
     /**
      * Get the element wise stride for the
      * shape info buffer
@@ -3177,40 +3201,6 @@ public class Shape {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         buffer.put(length - 1, (int) order);
         throw new RuntimeException("setOrder called");
-    }
-
-    /**
-     * Creates the shape information buffer
-     * given the shape,stride
-     * @param shape the shape for the buffer
-     * @param stride the stride for the buffer
-     * @param offset the offset for the buffer
-     * @param elementWiseStride the element wise stride for the buffer
-     * @param order the order for the buffer
-     * @return the shape information buffer given the parameters
-     */
-    public static DataBuffer createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
-        if (shape.length != stride.length)
-            throw new IllegalStateException("Shape and stride must be the same length");
-
-        int rank = shape.length;
-        int shapeBuffer[] = new int[rank * 2 + 4];
-        shapeBuffer[0] = rank;
-        int count = 1;
-        for (int e = 0; e < shape.length; e++)
-            shapeBuffer[count++] = shape[e];
-
-        for (int e = 0; e < stride.length; e++)
-            shapeBuffer[count++] = stride[e];
-
-        shapeBuffer[count++] = (int) offset;
-        shapeBuffer[count++] = elementWiseStride;
-        shapeBuffer[count] = (int) order;
-
-        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
-        ret.setConstant(true);
-
-        return ret;
     }
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
@@ -3438,9 +3428,20 @@ public class Shape {
 
     public static boolean contentEquals(long[] arr, IntBuffer other) {
         for (int i = 0; i < arr.length; i++) {
-            Buffer buffer2 = (Buffer) other;
-            buffer2.position(i);
-            if (arr[i] != other.get()) {
+            val t = arr[i];
+            val o = other.get(i);
+            if (t != o) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean contentEquals(long[] arr, LongBuffer other) {
+        for (int i = 0; i < arr.length; i++) {
+            val t = arr[i];
+            val o = other.get(i);
+            if (t != o) {
                 return false;
             }
         }

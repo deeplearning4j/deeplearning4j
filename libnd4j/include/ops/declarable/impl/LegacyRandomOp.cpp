@@ -81,7 +81,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0); //NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillUniform(block.randomGenerator(), z, from, to);
+                    RandomLauncher::fillUniform(block.launchContext(), block.randomGenerator(), z, from, to);
 
                     // FIXME:
                     //OVERWRITE_RESULT(z);
@@ -105,7 +105,7 @@ namespace nd4j {
                         if (!block.isInplace())
                             z->assign(input);
 
-                        RandomLauncher::applyDropOut(block.randomGenerator(), z, prob);
+                        RandomLauncher::applyDropOut(block.launchContext(), block.randomGenerator(), z, prob);
                     }
                     break;
                 case nd4j::random::DropOutInverted: {
@@ -140,7 +140,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillGaussian(block.randomGenerator(), z, mean, stdev);
+                    RandomLauncher::fillGaussian(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
                     //OVERWRITE_RESULT(z);
@@ -168,7 +168,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0); // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillBernoulli(block.randomGenerator(), z, prob);
+                    RandomLauncher::fillBernoulli(block.launchContext(), block.randomGenerator(), z, prob);
 
                     // FIXME:
                     //OVERWRITE_RESULT(z);
@@ -201,7 +201,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillBinomial(block.randomGenerator(), z, trials, prob);
+                    RandomLauncher::fillBinomial(block.launchContext(), block.randomGenerator(), z, trials, prob);
 
                     // FIXME: !!!
                     //OVERWRITE_RESULT(z);
@@ -233,7 +233,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);//NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillLogNormal(block.randomGenerator(), z, mean, stdev);
+                    RandomLauncher::fillLogNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!
                     //OVERWRITE_RESULT(z);
@@ -265,7 +265,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0); // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
-                    RandomLauncher::fillTruncatedNormal(block.randomGenerator(), z, mean, stdev);
+                    RandomLauncher::fillTruncatedNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
                     // FIXME: !!!
                     //OVERWRITE_RESULT(z);
@@ -301,7 +301,7 @@ namespace nd4j {
                     if (!block.isInplace())
                         z->assign(input);
 
-                    RandomLauncher::applyAlphaDropOut(block.randomGenerator(), z, prob, a, b, pa);
+                    RandomLauncher::applyAlphaDropOut(block.launchContext(), block.randomGenerator(), z, prob, a, b, pa);
                 }
                     break;
                 case nd4j::random::Linspace: {

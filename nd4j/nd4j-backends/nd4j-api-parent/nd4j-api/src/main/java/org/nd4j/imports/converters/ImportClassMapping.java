@@ -541,8 +541,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.strict.Log.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.Log1p.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid.class,
-            org.nd4j.linalg.api.ops.impl.transforms.strict.OldLogSoftMax.class,
-            org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh.class,

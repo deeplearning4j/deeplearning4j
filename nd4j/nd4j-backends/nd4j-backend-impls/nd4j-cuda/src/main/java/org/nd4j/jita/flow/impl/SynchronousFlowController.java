@@ -72,7 +72,7 @@ public class SynchronousFlowController implements FlowController {
     public void synchronizeToHost(AllocationPoint point) {
 
         if (!point.isActualOnHostSide()) {
-            CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+            val context = (CudaContext) allocator.getDeviceContext().getContext();
 
             if (!point.isConstant())
                 waitTillFinished(point);
@@ -102,7 +102,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnDeviceSide()) {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-                CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+                val context = (CudaContext) allocator.getDeviceContext().getContext();
 
                 long perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -135,17 +135,17 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareActionAllWrite(INDArray... operands) {
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-        int cId = allocator.getDeviceId();
+        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val cId = allocator.getDeviceId();
 
         for (INDArray operand : operands) {
-            if (operand == null)
+            if (operand == null || operand.isEmpty())
                 continue;
 
             Nd4j.getCompressor().autoDecompress(operand);
 
-            AllocationPoint pointData = allocator.getAllocationPoint(operand);
-            AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
+            val pointData = allocator.getAllocationPoint(operand);
+            val pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
 
             pointData.acquireLock();
 
@@ -168,15 +168,15 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
-        int cId = allocator.getDeviceId();
+        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val cId = allocator.getDeviceId();
 
 
-        if (result != null) {
+        if (result != null && !result.isEmpty()) {
             Nd4j.getCompressor().autoDecompress(result);
             prepareDelayedMemory(result);
-            AllocationPoint pointData = allocator.getAllocationPoint(result);
-            AllocationPoint pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
+            val pointData = allocator.getAllocationPoint(result);
+            val pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
 
             pointData.acquireLock();
 
@@ -196,13 +196,13 @@ public class SynchronousFlowController implements FlowController {
         }
 
         for (INDArray operand : operands) {
-            if (operand == null)
+            if (operand == null || operand.isEmpty())
                 continue;
 
             Nd4j.getCompressor().autoDecompress(operand);
 
-            AllocationPoint pointData = allocator.getAllocationPoint(operand);
-            AllocationPoint pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
+            val pointData = allocator.getAllocationPoint(operand);
+            val pointShape = allocator.getAllocationPoint(operand.shapeInfoDataBuffer());
 
             pointData.acquireLock();
 
@@ -256,7 +256,7 @@ public class SynchronousFlowController implements FlowController {
             if (operand == null)
                 continue;
 
-            AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            val pointOperand = allocator.getAllocationPoint(operand);
             pointOperand.tickDeviceWrite();
             eventsProvider.storeEvent(pointOperand.getLastWriteEvent());
             pointOperand.setLastWriteEvent(eventsProvider.getEvent());
@@ -266,9 +266,10 @@ public class SynchronousFlowController implements FlowController {
     }
 
     public void registerAction(CudaContext context, INDArray result, INDArray... operands) {
-        if (result == null)
+        if (result == null || result.isEmpty())
             return;
-        AllocationPoint point = allocator.getAllocationPoint(result);
+
+        val point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
         eventsProvider.storeEvent(point.getLastWriteEvent());
         point.setLastWriteEvent(eventsProvider.getEvent());
@@ -276,10 +277,10 @@ public class SynchronousFlowController implements FlowController {
         point.releaseLock();
 
         for (INDArray operand : operands) {
-            if (operand == null)
+            if (operand == null || operand.isEmpty())
                 continue;
 
-            AllocationPoint pointOperand = allocator.getAllocationPoint(operand);
+            val pointOperand = allocator.getAllocationPoint(operand);
             pointOperand.releaseLock();
             eventsProvider.storeEvent(pointOperand.getLastReadEvent());
             pointOperand.setLastReadEvent(eventsProvider.getEvent());
@@ -289,7 +290,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = (CudaContext) allocator.getDeviceContext().getContext();
 
         if (result != null) {
             result.acquireLock();
@@ -299,6 +300,7 @@ public class SynchronousFlowController implements FlowController {
         for (AllocationPoint operand : operands) {
             if (operand == null)
                 continue;
+
             operand.acquireLock();
             operand.setCurrentContext(context);
         }
@@ -313,15 +315,16 @@ public class SynchronousFlowController implements FlowController {
 
     protected void prepareDelayedMemory(INDArray array) {
         if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED) {
-            AllocationPoint pointData = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
-            AllocationPoint pointShape = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
+            val pointData = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
+            val pointShape = allocator.getAllocationPoint(array.shapeInfoDataBuffer());
 
             if (pointData.getAllocationStatus() != AllocationStatus.DEVICE)
                 prepareDelayedMemory(array.data());
 
             if (pointShape.getAllocationStatus() == AllocationStatus.HOST) {
-                DataBuffer oShape = array.shapeInfoDataBuffer();
-                DataBuffer nShape = Nd4j.getConstantHandler().relocateConstantSpace(oShape);
+                val oShape = array.shapeInfoDataBuffer();
+                val nShape = Nd4j.getConstantHandler().relocateConstantSpace(oShape);
+
                 if (nShape == oShape)
                     Nd4j.getConstantHandler().moveToConstantSpace(nShape);
                 ((JCublasNDArray) array).setShapeInfoDataBuffer(nShape);

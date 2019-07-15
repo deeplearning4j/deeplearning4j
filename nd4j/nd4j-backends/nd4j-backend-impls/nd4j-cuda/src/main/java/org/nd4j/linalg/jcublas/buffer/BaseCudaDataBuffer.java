@@ -568,6 +568,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public long platformAddress() {
+        return allocationPoint.getPointers().getDevicePointer().address();
+    }
+
+    @Override
     public Pointer pointer() {
         // FIXME: very bad thing,
         lazyAllocateHostPointer();

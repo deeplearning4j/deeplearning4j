@@ -26,6 +26,7 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.base.Preconditions;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -515,7 +516,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
 
                 // in case of regular accumulation we don't care about array state before op
-                ret = Nd4j.createUninitialized(dtype, retShape);
+                ret = Nd4j.create(dtype, retShape);
             }
             op.setZ(ret);
         } else {
@@ -536,11 +537,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(IndexAccumulation op) {
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
-        if (op.z() == null) {
-            long[] retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
 
-            INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-            op.setZ(ret);
+        if (op.x().isEmpty()) {
+            for (val d:dimension) {
+                Preconditions.checkArgument(op.x().shape()[d] != 0, "IndexReduce can't be issued along axis with 0 in shape");
+            }
+        }
+
+        if (op.z() == null) {
+            val retShape = Shape.reductionShape(op.x(), dimension, true, op.isKeepDims());
+            op.setZ(Nd4j.createUninitialized(DataType.LONG, retShape));
         }
 
         long st = profilingConfigurableHookIn(op);
@@ -556,10 +562,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return op.x();
         }
 
+        if (op.z().isEmpty())
+            return op.z();
+
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+        val context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         val hostXShapeInfo =
                 op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());

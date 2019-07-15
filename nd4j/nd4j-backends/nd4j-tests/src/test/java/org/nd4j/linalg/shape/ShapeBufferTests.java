@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.shape;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,18 +49,17 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testRank() {
-        int[] shape = {2, 4};
-        int[] stride = {1, 2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
-        int rank = 2;
-        assertEquals(rank, Shape.rank(buff));
-
+        long[] shape = {2, 4};
+        long[] stride = {1, 2};
+        val shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
+        val buff = shapeInfoBuffer.asNioLong();
+        assertEquals(2, Shape.rank(buff));
     }
 
 
     @Test
     public void testArrCreationShape() {
-        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        val arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         for (int i = 0; i < 2; i++)
             assertEquals(2, arr.size(i));
         int[] stride = ArrayUtil.calcStrides(new int[] {2, 2});
@@ -70,12 +70,13 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testShape() {
-        int[] shape = {2, 4};
-        int[] stride = {1, 2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
-        IntBuffer shapeView = Shape.shapeOf(buff);
+        long[] shape = {2, 4};
+        long[] stride = {1, 2};
+        val shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
+        val buff = shapeInfoBuffer.asNioLong();
+        val shapeView = Shape.shapeOf(buff);
         assertTrue(Shape.contentEquals(shape, shapeView));
-        IntBuffer strideView = Shape.stride(buff);
+        val strideView = Shape.stride(buff);
         assertTrue(Shape.contentEquals(stride, strideView));
         assertEquals('c', Shape.order(buff));
         assertEquals(1, Shape.elementWiseStride(buff));
@@ -86,9 +87,9 @@ public class ShapeBufferTests extends BaseNd4jTest {
 
     @Test
     public void testBuff() {
-        int[] shape = {1, 2};
-        int[] stride = {1, 2};
-        IntBuffer buff = Shape.createShapeInformation(shape, stride, 0, 1, 'c').asNioInt();
+        long[] shape = {1, 2};
+        long[] stride = {1, 2};
+        val buff = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false).asNioLong();
         assertTrue(Shape.isVector(buff));
     }
 

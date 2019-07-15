@@ -2661,4 +2661,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.indexer = null;
         this.pointer = null;
     }
+
+    @Override
+    public long platformAddress() {
+        return address();
+    }
 }

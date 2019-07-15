@@ -1429,15 +1429,17 @@ public class RandomTests extends BaseNd4jTest {
 
     @Test
     public void testRngRepeatabilityUniform(){
+        val nexp = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.getRandom().setSeed(12345);
-        INDArray out1 = Nd4j.create(DataType.FLOAT, 10);
+        val out1 = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out1, 0.0, 1.0));
 
         Nd4j.getRandom().setSeed(12345);
-        INDArray out2 = Nd4j.create(DataType.FLOAT, 10);
+        val out2 = Nd4j.create(DataType.FLOAT, 10);
         Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out2, 0.0, 1.0));
 
         assertEquals(out1, out2);
+        assertNotEquals(nexp, out1);
     }
 
     @Test

@@ -30,6 +30,8 @@
 #include <pointercast.h>
 
 namespace nd4j {
+    class NDArray;
+
     //FIXME: get rid of this redefinition
     typedef union
     {
@@ -47,6 +49,7 @@ namespace nd4j {
     template <typename T>
     class ND4J_EXPORT SpecialMethods {
     public:
+        static void concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
         static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *result, Nd4jLong *resultShapeInfo);
         static void accumulateGeneric(void **x, void *z, Nd4jLong *zShapeInfo, int n, const Nd4jLong length);
         static void averageGeneric(void **x, void *z, Nd4jLong  *zShapeInfo, int n, const Nd4jLong length, bool propagate);

@@ -619,9 +619,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                             "Illegal concatenation at array " + i + " and shape element " + j);
                 }
             }
-
-
-            //log.info("Shape[{}]: {}", i, Arrays.toString(toConcat[i].shapeInfoDataBuffer().asInt()));
         }
 
         if (allScalars) {
@@ -630,8 +627,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             outputShape[dimension] = sumAlongDim;
         }
 
-        //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
-
         INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
         nativeOps.concat(null, dimension, toConcat.length,
@@ -639,11 +634,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 null, null,
                     ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     null, null,
-                    //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
 
         return ret;
-        // return super.concat(dimension,toConcat);
     }
 
 

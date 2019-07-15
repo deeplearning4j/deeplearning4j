@@ -85,6 +85,14 @@ public interface DataBuffer extends Serializable, AutoCloseable {
     long address();
 
     /**
+     * Returns the address of platform-specific pointer:
+     * - for native backend that'll be host pointer
+     * - for cuda backend that'll be device pointer
+     * @return
+     */
+    long platformAddress();
+
+    /**
      * Returns true if the underlying data source
      * is the same for both buffers (referential equals)
      * @param buffer whether the buffer is the same underlying data or not
