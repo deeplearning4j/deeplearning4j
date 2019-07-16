@@ -331,7 +331,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
         assertArrayEquals(exp, arr);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = RuntimeException.class)
     public void testTypesValidation_3() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 

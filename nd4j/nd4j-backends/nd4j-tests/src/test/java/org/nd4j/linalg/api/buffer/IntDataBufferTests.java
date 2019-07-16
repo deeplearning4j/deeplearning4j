@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -85,10 +87,12 @@ public class IntDataBufferTests extends BaseNd4jTest {
     public void testReallocation() {
         DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
-        int[] old = buffer.asInt();
         buffer.reallocate(6);
+        val old = buffer.asInt();
         assertEquals(6, buffer.capacity());
-        assertArrayEquals(old, buffer.asInt());
+        val newContent = buffer.asInt();
+        assertEquals(6, newContent.length);
+        assertArrayEquals(old, Arrays.copyOf(newContent, old.length));
     }
 
     @Test
@@ -98,12 +102,14 @@ public class IntDataBufferTests extends BaseNd4jTest {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
         DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
-        int[] old = buffer.asInt();
+        val old = buffer.asInt();
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
-        assertArrayEquals(old, buffer.asInt());
+        val newContent = buffer.asInt();
+        assertEquals(6, newContent.length);
+        assertArrayEquals(old, Arrays.copyOf(newContent, old.length));
         workspace.close();
     }
 

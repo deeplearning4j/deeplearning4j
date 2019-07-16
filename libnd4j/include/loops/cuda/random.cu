@@ -152,9 +152,9 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
-                }
+
                 __syncthreads();
 
 
@@ -213,9 +213,9 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
-                }
+
                 __syncthreads();
 
 
@@ -262,9 +262,9 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
-                }
+
                 __syncthreads();
 
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;

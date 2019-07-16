@@ -1724,9 +1724,9 @@ namespace nd4j {
             }
         };
 
-        TransformBenchmark tbSoftmax(transform::StrictOps::SoftMax, "softmax");
+        //TransformBenchmark tbSoftmax(transform::StrictOps::SoftMax, "softmax");
 
-        output += helper.runOperationSuit(&tbSoftmax, generator2, batch2, "Softmax");
+        //output += helper.runOperationSuit(&tbSoftmax, generator2, batch2, "Softmax");
 
         return output;
     }

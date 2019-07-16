@@ -774,78 +774,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
     if (xType != zType || !DataTypeUtils::isR(xType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformStrict requires X & Z to have same floating point type", xType, zType);
 
-    switch (opNum) {
-        case transform::SoftMax:
-        case transform::SoftMaxDerivative:
-        case transform::LogSoftMax: {
-                if (shape::isVector(hXShapeInfo)) {
-                    int length = shape::length(hXShapeInfo);
-                    int block = nd4j::math::nd4j_min<int>(length, 256);
-
-                    launchDims.x = 1;
-                    launchDims.y = block;
-                    launchDims.z += (block * sizeof(double) * 4);
-
-                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, lc->getAllocationPointer(), lc->getReductionPointer(), nullptr, nullptr), FLOAT_TYPES);
-                } else {
-                    auto shape = shape::shapeOf(hXShapeInfo);
-                    auto reductionPointer = lc->getReductionPointer();
-					auto allocationPointer = lc->getAllocationPointer();
-					auto specialPointer = reinterpret_cast<double *>(allocationPointer);
-
-                    // special pointer for special buffer for special ops
-                    auto dimension = reinterpret_cast<int *>(specialPointer);
-                    auto maxDimension = dimension + 1;
-                    auto maxShapeBuffer = reinterpret_cast<Nd4jLong *>(maxDimension + 1);
-                    auto special = reinterpret_cast<double *> (maxShapeBuffer + (MAX_RANK * 2 + 4));
-
-
-                    Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
-                    auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
-
-                    prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // max 3
-                    execReduceSame(lc, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // sub 1
-                    execBroadcast(lc, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // exp 3
-                    execTransformFloat(lc, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    //sum 1
-                    execReduceSame(lc, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
-
-                    // divide 3
-                    execBroadcast(lc, broadcast::Divide, hZ, hZShapeInfo, dZ, dZShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // log 3
-                    if (opNum == transform::LogSoftMax)
-                        execTransformFloat(lc, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                    else if (opNum == transform::SoftMaxDerivative)
-                        execTransformStrict(lc, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-
-                    nd4j::DebugHelper::checkErrorCode(stream, "SoftMax(...) failed");
-
-                    delete hostMaxShapeBuffer;
-                }
-            }
-            break;
-        default: {
-            BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
-        }
-    }
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -869,22 +798,8 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
     if (!DataTypeUtils::isR(zType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type", zType);
 
-    if (opNum == transform::Histogram) {
-        dim3 launchDims(256, 256, 32768);
-
-        Nd4jPointer maskedallocationPointer;
-        auto length = shape::length(hZShapeInfo);
-        cudaMalloc(reinterpret_cast<void **>(&maskedallocationPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
-        auto imaskedallocationPointer = reinterpret_cast<int *>(maskedallocationPointer);
-
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, imaskedallocationPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
-
-        checkCudaErrors(cudaStreamSynchronize(*stream));
-        cudaFree(maskedallocationPointer);
-    } else {
-        dim3 launchDims(512, 512, 16384);
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
-    }
+    dim3 launchDims(512, 512, 16384);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 
@@ -1197,12 +1112,15 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     dim3 launchDims = dim3(512, 512, 32768);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, stream, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1224,14 +1142,17 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1254,14 +1175,17 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////

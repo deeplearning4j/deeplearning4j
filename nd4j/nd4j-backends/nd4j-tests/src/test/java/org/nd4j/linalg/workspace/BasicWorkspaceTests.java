@@ -673,7 +673,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         workspace.initializeWorkspace();
         long reqMemory = 12 * Nd4j.sizeOfDataType(arrayCold.dataType());
-        assertEquals(reqMemory + reqMemory % 8 + Nd4j.sizeOfDataType(DOUBLE), workspace.getCurrentSize());
+        assertEquals(reqMemory + reqMemory % 8, workspace.getCurrentSize());
 
 
         log.info("-----------------------");
@@ -692,7 +692,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             array.addi(1.0);
 
-            assertEquals(reqMem + reqMem % 8 + Nd4j.sizeOfDataType(DOUBLE), workspace.getPrimaryOffset());
+            assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
 
             assertEquals("Failed on iteration " + x, 10, array.sumNumber().doubleValue(), 0.01);
 
@@ -746,7 +746,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         INDArray dup = array.dup();
 
-        assertEquals((reqMemory + reqMemory % 8) * 2 + Nd4j.sizeOfDataType(DOUBLE), workspace.getPrimaryOffset());
+        assertEquals((reqMemory + reqMemory % 8) * 2, workspace.getPrimaryOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
 

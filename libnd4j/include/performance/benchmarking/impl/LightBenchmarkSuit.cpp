@@ -60,11 +60,11 @@ namespace nd4j {
         sbRelu.setY(NDArrayFactory::create_<T>(0.0));
 
         TransformBenchmark tbSigmoid(transform::StrictOps::Sigmoid, "sigmoid");
-        TransformBenchmark tbSoftmax(transform::StrictOps::SoftMax, "softmax");
+        //TransformBenchmark tbSoftmax(transform::StrictOps::SoftMax, "softmax");
 
         output += helper.runOperationSuit(&sbRelu, generator, batch, "RELU");
         output += helper.runOperationSuit(&tbSigmoid, generator, batch, "Sigmoid");
-        output += helper.runOperationSuit(&tbSigmoid, generator, batch, "Softmax");
+        //output += helper.runOperationSuit(&tbSigmoid, generator, batch, "Softmax");
 
         return output;
     }

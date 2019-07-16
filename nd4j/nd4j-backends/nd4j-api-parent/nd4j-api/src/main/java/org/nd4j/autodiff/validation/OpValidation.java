@@ -70,10 +70,10 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
+import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -888,7 +888,6 @@ public class OpValidation {
                 SELUDerivative.class,
                 SigmoidDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
                 SwishDerivative.class,
@@ -987,7 +986,6 @@ public class OpValidation {
                 OneHot.class,
                 BinaryMinimalRelativeError.class,
                 BinaryMinimalRelativeError.class,
-                Histogram.class,
                 InvertPermutation.class,    //Uses integer indices
                 ConfusionMatrix.class,      //Integer indices
                 Linspace.class,             //No input array
@@ -1056,7 +1054,9 @@ public class OpValidation {
                 LogicalAnd.class,
                 LogicalNot.class,
                 LogicalOr.class,
-                LogicalXor.class
+                LogicalXor.class,
+
+                Histogram.class
         );
 
         return new HashSet<>(list);

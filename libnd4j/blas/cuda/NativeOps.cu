@@ -1958,7 +1958,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers,
                           void *extraArguments) {
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1970,7 +1970,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 						   void *extraArguments) {
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1984,7 +1984,7 @@ void NativeOps::execRandom(Nd4jPointer *extraPointers, int opNum, Nd4jPointer st
 							void *extraArguments) {
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, extraPointers, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
 }
 
 

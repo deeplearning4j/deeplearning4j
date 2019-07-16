@@ -747,88 +747,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                              int *allocationPointer, Z *reductionPointer, 
                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-            int numBins = (int) extraParams[0];
-            Z min_val = extraParams[1];
-            Z max_val = extraParams[2];
 
-            int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-            __shared__ Z *bins;
-            __shared__ int length;
-            __shared__ Z *reductor;
-            if (threadIdx.x == 0) {
-                extern __shared__ unsigned char shmem[];
-                bins = (Z *) shmem;
-                reductor = ((Z *) allocationPointer) + (numBins * blockIdx.x);
-
-                length = shape::length(xShapeBuffer);
-            }
-            __syncthreads();
-
-            Z binSize = (max_val - min_val) / (numBins);
-
-            for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                bins[e] = (Z) 0.0f;
-            }
-            __syncthreads();
-
-            for (int e = tid; e < length; e+= blockDim.x * gridDim.x) {
-                int idx = (int) ((dx[e] - min_val) / binSize);
-				    if (idx < 0) idx = 0;
-					else if (idx >= numBins) idx = numBins - 1;
-
-				nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (Z) 1.0f);
-            }
-            __syncthreads();
-
-            // transfer shared memory to reduction memory
-
-
-            if (gridDim.x > 1) {
-                unsigned int *tc = (unsigned int *)reductionPointer;
-                __shared__ bool amLast;
-
-                for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                    reductor[e] = bins[e];
-                }
-                __threadfence();
-                __syncthreads();
-
-                if (threadIdx.x == 0) {
-						unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
-						amLast = (ticket == gridDim.x - 1);
-				}
-				__syncthreads();
-
-				if (amLast) {
-				    tc[16384] = 0;
-
-                    // nullify shared memory for future accumulation
-                    for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                        bins[e] = (Z) 0.0f;
-                    }
-
-                    // accumulate reduced bins
-                    for (int r = 0; r < gridDim.x; r++) {
-                        Z *ptrBuf = ((Z *)allocationPointer) + (r * numBins);
-
-                        for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                            bins[e] += ptrBuf[e];
-                        }
-                    }
-                    __syncthreads();
-
-                    // write them out to Z
-                    for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                        result[e] = bins[e];
-                    }
-				}
-            } else {
-                // if there's only 1 block - just write away data
-                for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                    result[e] = bins[e];
-                }
-            }
 
 		};
 #endif
@@ -840,52 +759,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 				Nd4jLong *zShapeBuffer,
 				Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-			int length = shape::length(xShapeBuffer);
-			int _threads = 2;
 
-			int numBins = (int) extraParams[0];
-			int span = (length / _threads) + 8;
-
-			// get min over input
-            T min_val = extraParams[1];
-            T max_val = extraParams[2];
-
-			T binSize = (max_val - min_val) / (numBins);
-
-
-            PRAGMA_OMP_PARALLEL_THREADS(_threads)
-			{
-				int tid, start, end;
-
-				int *bins = new int[numBins];
-                std::memset(bins, 0, sizeof(int) * numBins);
-				tid = omp_get_thread_num();
-				start = span * tid;
-				end = span * (tid + 1);
-				if (end > length) end = length;
-
-				PRAGMA_OMP_SIMD
-				for (int x = start; x < end; x++) {
-					int idx = (int) ((dx[x] - min_val) / binSize);
-					if (idx < 0)
-						idx = 0;
-					else if (idx >= numBins)
-						idx = numBins - 1;
-
-					bins[idx]++;
-				}
-
-                PRAGMA_OMP_CRITICAL
-				{
-                    PRAGMA_OMP_SIMD
-					for (int x = 0; x < numBins; x++) {
-						result[x] += bins[x];
-					}
-
-				}
-
-				delete[] bins;
-			}
 
 		}
 

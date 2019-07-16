@@ -441,8 +441,8 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
         INDArray arr = Nd4j.linspace(1,4,4, Nd4j.dataType()).reshape(2,2);
-        INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr},Arrays.asList(2.0), Collections.emptyList(),new GreaterThan());
-        assertEquals(4,filtered.length());
+        INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr}, Arrays.asList(2.0), Collections.emptyList(),new GreaterThan());
+        assertEquals(2, filtered.length());
     }
 
 
@@ -450,7 +450,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testChooseGreaterThanZero() {
         INDArray zero = Nd4j.linspace(0,4,4, Nd4j.dataType());
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{zero},Arrays.asList(0.0), Collections.emptyList(),new GreaterThan());
-        assertEquals(3,filtered.length());
+        assertEquals(3, filtered.length());
     }
 
     @Test

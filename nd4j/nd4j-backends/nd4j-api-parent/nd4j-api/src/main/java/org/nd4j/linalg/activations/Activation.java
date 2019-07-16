@@ -19,20 +19,6 @@ package org.nd4j.linalg.activations;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.impl.*;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
-import org.nd4j.linalg.api.ops.impl.scalar.Step;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
-import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 
 /**
  * This enum is the factory for the activation function.

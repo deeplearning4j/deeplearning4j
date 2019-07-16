@@ -107,9 +107,6 @@
 
 
 #define TRANSFORM_STRICT_OPS \
-        (0, SoftMax), \
-        (1, SoftMaxDerivative), \
-        (2, LogSoftMax) ,\
         (3, ELUDerivative), \
         (4, TanhDerivative), \
         (5, HardTanhDerivative), \
@@ -167,9 +164,7 @@
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
-        (0, Histogram), \
         (1, Sqrt), \
-        (2, Pooling2D) ,\
         (3, RSqrt)
 
 

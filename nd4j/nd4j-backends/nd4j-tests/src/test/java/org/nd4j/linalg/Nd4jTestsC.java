@@ -79,7 +79,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -929,13 +928,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         op = new BroadcastAddOp(z, bias, z, 3);
         Nd4j.getExecutioner().exec(op); //Crashing here, when we are doing exactly the same thing as before...
         System.out.println("Second: OK");
-    }
-
-    @Test
-    public void testSoftmaxDerivative() {
-        INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).reshape(1, -1).transpose();
-        INDArray output = Nd4j.create(10, 1);
-        Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
     }
 
 
@@ -7242,19 +7234,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             fail("Expected exception");
         } catch (IllegalStateException e){
             assertTrue(e.getMessage(), e.getMessage().contains("shape"));
-        }
-    }
-
-
-    @Test
-    public void testInvalidTransformsSoftmax(){
-        INDArray arr = Nd4j.zeros(2,3,4);
-        try{
-            Transforms.softmax(arr);
-            fail("Expected exception");
-        } catch (IllegalArgumentException e){
-            //OK
-            assertTrue(e.getMessage().contains("rank 2"));
         }
     }
 
