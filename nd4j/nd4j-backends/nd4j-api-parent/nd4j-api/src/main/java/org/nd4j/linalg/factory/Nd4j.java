@@ -3139,7 +3139,7 @@ public class Nd4j {
      *
      * The datatype must be one of the floating point types.
      *
-     * @param dataType dtatatype
+     * @param dataType datatype
      * @param order order
      * @param shape shape
      * @return
@@ -3662,10 +3662,14 @@ public class Nd4j {
         return create(data, order());
     }
 
+    /**
+     * Create a vector based on a java boolean array.
+     * @param data java boolean array
+     * @return the created ndarray.
+     */
     public static INDArray create(boolean[] data) {
         return INSTANCE.create(data, new long[]{data.length}, new long[]{1}, DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
-
 
     /**
      * Creates a row vector with the data
@@ -3689,9 +3693,9 @@ public class Nd4j {
     }
 
     /**
-     * Creates a row vector with the data
+     * Create double array based on java double array.
      *
-     * @param data the columns of the ndarray
+     * @param data java double array,
      * @return the created ndarray
      */
     public static INDArray create(double[] data) {
@@ -3699,79 +3703,124 @@ public class Nd4j {
     }
 
     /**
-     *
-     * @param data
-     * @return
+     * Create 2D float array based on java 2d float array.
+     * @param data java 2d arrau.
+     * @return the created ndarray.
      */
     public static INDArray create(float[][] data) {
         return INSTANCE.create(data);
     }
 
     /**
-     *
-     * @param data
-     * @param ordering
-     * @return
+     * Create 2D float array based on java 2d float array and ordering.
+     * @param data java 2d arrau.
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created ndarray.
      */
     public static INDArray create(float[][] data, char ordering) {
         return INSTANCE.create(data, ordering);
     }
 
-
     /**
-     * Create an ndarray based on the given data layout
+     * Create 2D double array based on java 2d double array. and ordering
      *
      * @param data the data to use
-     * @return an ndarray with the given data layout
+     * @return the created ndarray.
      */
     public static INDArray create(double[][] data) {
         return INSTANCE.create(data);
     }
 
+    /**
+     * Create 2D long array based on java 2d long array.
+     * @param data java 2d long array
+     * @return the created ndarray.
+     */
     public static INDArray create(long[][] data) {
         val shape = new long[]{data.length, data[0].length};
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Create 2D boolean array based on java 2d boolean array.
+     * @param data java 2d boolean array.
+     * @return the created ndarray.
+     */
     public static INDArray create(boolean[][] data) {
         val shape = new long[]{data.length, data[0].length};
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Create a boolean array with given shape based on java 2d boolean array.
+     * @param data java 2d boolean array.
+     * @param shape desired shape of new array.
+     * @return the created ndarray.
+     */
     public static INDArray create(boolean[][] data, long[] shape) {
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Create a 3D double array based on the 3D java double array.
+     * @param data java 3d double array.
+     * @return the created ndarray.
+     */
     public static INDArray create(double[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
     }
 
+    /**
+     * Create a 3D float array based on the 3D java float array.
+     * @param data java 3d float array.
+     * @return the created ndarray.
+     */
     public static INDArray create(float[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
     }
 
+    /**
+     * create 3D int array based on 3D java int array.
+     * @param data java 3D i array.
+     * @return the created ndarray.
+     */
     public static INDArray create(int[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
     }
 
+    /**
+     * Create 4D double array based on 4D java double array.
+     * @param data java 4D double array.
+     * @return the created ndarray.
+     */
     public static INDArray create(double[][][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
     }
 
+    /**
+     * Create 4D float array based on 4D java float array.
+     * @param data java 4D float array.
+     * @return the created ndarray.
+     */
     public static INDArray create(float[][][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
     }
 
+    /**
+     * Create 4D int array based on 4D java int array.
+     * @param data java 4D int array.
+     * @return the created ndarray.
+     */
     public static INDArray create(int[][][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
     }
 
 
     /**
-     *
-     * @param data
-     * @param ordering
-     * @return
+     * Create a 2D double array based on a 2D java double array with given ordering.
+     * @param data java 2D double array.
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created ndarray,
      */
     public static INDArray create(double[][] data, char ordering) {
         return INSTANCE.create(data, ordering);
@@ -3791,6 +3840,7 @@ public class Nd4j {
      * Creates a row vector with the data
      *
      * @param data the columns of the ndarray
+     * @param order Fortran 'f' or C/C++ 'c' ordering.
      * @return the created ndarray
      */
     public static INDArray create(float[] data, char order) {
@@ -3802,6 +3852,7 @@ public class Nd4j {
      * Creates a row vector with the data
      *
      * @param data the columns of the ndarray
+     * @param order Fortran 'f' or C/C++ 'c' ordering.
      * @return the created ndarray
      */
     public static INDArray create(double[] data, char order) {
@@ -3813,6 +3864,7 @@ public class Nd4j {
      * Creates a row vector with the specified number of columns
      *
      * @param columns the columns of the ndarray
+     * @param order Fortran 'f' or C/C++ 'c' ordering.
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
@@ -3820,81 +3872,125 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Create a 1D float array in soecified order initialized with zero.
+     * @param columns number of elements.
+     * @param order Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created ndarray.
+     */
     public static INDArray zeros(int columns, char order) {
         return Nd4j.create(columns, order);
     }
 
-
+    /**
+     * Create an array of the specified type and shape initialized with values from a java 1d array.
+     * @param data java array used for initialisation. Must have at least the number of elements required.
+     * @param shape desired shape of new array.
+     * @param type Datatype of the new array. Does not need to match int. data will be converted.
+     * @return the created ndarray.
+     */
     public static INDArray create(int[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(long[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(double[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(float[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return  INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(short[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(byte[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], DataType)
+     */
     public static INDArray create(boolean[] data, long[] shape, DataType type) {
-        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     ////////////////////////////////////////////////
 
+    /**
+     * Create an array of the specified type, shape and stride initialized with values from a java 1d array.
+     * @param data java array used for initialisation. Must have at least the number of elements required.
+     * @param shape desired shape of new array.
+     * @param strides stride, separation of elements in each dimension.
+     * @param order Fortran 'f' or C/C++ 'c' ordering.
+     * @param type Datatype of the new array. Does not need to match int. data will be converted.
+     * @return the created ndarray.
+     */
     public static INDArray create(int[] data, long[] shape, long[]strides, char order, DataType type) {
         val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
         return ret;
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(float[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(short[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(byte[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * @see #create(int[], long[], long[], char, DataType)
+     */
     public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -4003,6 +4099,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #create(float[], int[])
+     */
     public static INDArray create(float[] data, long[] shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
@@ -4019,6 +4118,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #create(float[], int[])
+     */
     public static INDArray create(double[] data, long[] shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
@@ -4036,7 +4138,7 @@ public class Nd4j {
     }
 
     /**
-     * Create an ndrray with the specified shape
+     * Create an array of the specified shape initialized with values from a java 1d array.
      *
      * @param data  the data to use with tne ndarray
      * @param shape the shape of the ndarray
@@ -4077,6 +4179,15 @@ public class Nd4j {
     }
 
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param order
+     * @return
+     */
     public static INDArray create(double[] data, long[] shape, long[] stride, long offset, char order) {
         checkShapeValues(data.length, shape);
 
