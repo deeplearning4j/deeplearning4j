@@ -206,6 +206,13 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_hashcode)
         DECLARE_REDUCTION_OP(hashcode, 1, 1, false, 0, 0);
         #endif
+
+        /**
+         * This operation calculates number of entries per bin
+         */
+        #if NOT_EXCLUDED(OP_histogram)
+        DECLARE_CUSTOM_OP(histogram, 1, 1, false, 0, 1);
+        #endif
     }
 }
 

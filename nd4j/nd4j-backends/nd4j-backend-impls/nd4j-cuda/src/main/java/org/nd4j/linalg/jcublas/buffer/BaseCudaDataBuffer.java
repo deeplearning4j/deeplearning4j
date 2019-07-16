@@ -1529,85 +1529,40 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         Nd4j.getExecutioner().commit();
 
 
-            AllocationPoint old = allocationPoint;
-            allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
+        AllocationPoint old = allocationPoint;
+        allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
 
-            Nd4j.getDeallocatorService().pickObject(this);
-            trackingPoint = allocationPoint.getObjectId();
+        Nd4j.getDeallocatorService().pickObject(this);
+        trackingPoint = allocationPoint.getObjectId();
+        val oldLength = this.length;
+        this.length = length;
 
-            switch(dataType()){
-                case DOUBLE:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
-                    indexer = DoubleIndexer.create((DoublePointer) pointer);
-                    break;
-                case FLOAT:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
-                    indexer = FloatIndexer.create((FloatPointer) pointer);
-                    break;
-                case BFLOAT16:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
-                    indexer = Bfloat16Indexer.create((ShortPointer) pointer);
-                    break;
-                case HALF:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
-                    indexer = ShortIndexer.create((ShortPointer) pointer);
-                    break;
-                case LONG:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
-                    indexer = LongIndexer.create((LongPointer) pointer);
-                    break;
-                case UINT64:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
-                    indexer = LongIndexer.create((LongPointer) pointer);
-                    break;
-                case INT:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
-                    indexer = IntIndexer.create((IntPointer) pointer);
-                    break;
-                case UINT32:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
-                    indexer = IntIndexer.create((IntPointer) pointer);
-                    break;
-                case SHORT:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
-                    indexer = ShortIndexer.create((ShortPointer) pointer);
-                    break;
-                case UINT16:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
-                    indexer = UShortIndexer.create((ShortPointer) pointer);
-                    break;
-                case BYTE:
-                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
-                    indexer = ByteIndexer.create((BytePointer) pointer);
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-            }
+        // if original buffer had host pointer allocated, we'll reallocate host buffer as well
+        if (old.getHostPointer() != null) {
+            lazyAllocateHostPointer();
+        }
 
-            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(allocationPoint.getDevicePointer(), 0, length * elementSize, 0, context.getSpecialStream());
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(allocationPoint.getDevicePointer(), 0, length * elementSize, 0, context.getSpecialStream());
 
-            MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
-            val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (old.isActualOnDeviceSide()) {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getDevicePointer(), this.length * elementSize, CudaConstants.cudaMemcpyDeviceToDevice, context.getSpecialStream());
-            } else if (old.isActualOnHostSide()) {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getHostPointer(), this.length * elementSize, CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
-                direction = MemcpyDirection.HOST_TO_DEVICE;
-            }
+        if (old.isActualOnDeviceSide()) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getDevicePointer(), oldLength * elementSize, CudaConstants.cudaMemcpyDeviceToDevice, context.getSpecialStream());
+        } else if (old.isActualOnHostSide()) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), old.getHostPointer(), oldLength * elementSize, CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
+            direction = MemcpyDirection.HOST_TO_DEVICE;
+        }
 
-            context.getSpecialStream().synchronize();
+        context.getSpecialStream().synchronize();
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(allocationPoint.getDeviceId(), perfD, allocationPoint.getNumberOfBytes(), direction);
+        PerformanceTracker.getInstance().helperRegisterTransaction(allocationPoint.getDeviceId(), perfD, allocationPoint.getNumberOfBytes(), direction);
 
-            allocationPoint.tickDeviceWrite();
-            // we're keeping pointer reference for JVM
-            pointer.address();
+        allocationPoint.tickDeviceWrite();
 
-
-            // we need to update length with new value now
-            //this.length = length;
+        // we need to update length with new value now
+        //this.length = length;
         if(isAttached()){
             // do nothing here, that's workspaces
         } else{
@@ -1619,7 +1574,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public long capacity() {
-        return pointer.capacity();
+        if (allocationPoint.getHostPointer() != null)
+            return pointer.capacity();
+        else
+            return length;
     }
 
     @Override

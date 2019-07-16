@@ -827,6 +827,9 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -842,6 +845,9 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -859,6 +865,9 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 

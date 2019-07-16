@@ -16754,6 +16754,27 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                 }
 //         #endif
+
+        /**
+         * This operation calculates number of entries per bin
+         */
+//         #if NOT_EXCLUDED(OP_histogram)
+        @Namespace("nd4j::ops") public static class histogram extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public histogram(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public histogram(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public histogram position(long position) {
+                return (histogram)super.position(position);
+            }
+        
+                                                                                    public histogram() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
     
 
 

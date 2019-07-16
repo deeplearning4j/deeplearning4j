@@ -50,9 +50,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
@@ -876,14 +877,14 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testHistogram1() {
         INDArray x = Nd4j.linspace(1, 1000, 100000, DataType.DOUBLE);
-        INDArray z = Nd4j.zeros(DataType.DOUBLE,new long[]{20});
+        INDArray z = Nd4j.zeros(DataType.LONG,new long[]{20});
 
         INDArray xDup = x.dup();
         INDArray zDup = z.dup();
 
-        INDArray zExp = Nd4j.create(DataType.DOUBLE, 20).assign(5000);
+        INDArray zExp = Nd4j.create(DataType.LONG, 20).assign(5000);
 
-        Histogram histogram = new Histogram(x, z);
+        val histogram = new Histogram(x, z);
 
         Nd4j.getExecutioner().exec(histogram);
 
@@ -899,16 +900,13 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testHistogram2() {
         INDArray x = Nd4j.create(new float[] {0f, 0f, 0f, 5f, 5f, 5f, 10f, 10f, 10f});
 
-
         INDArray xDup = x.dup();
 
-        INDArray zExp = Nd4j.zeros(DataType.FLOAT, 10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
+        INDArray zExp = Nd4j.zeros(DataType.LONG, 10).putScalar(0, 3).putScalar(5, 3).putScalar(9, 3);
 
-        Histogram histogram = new Histogram(x, 10);
+        val histogram = new Histogram(x, 10);
 
-        Nd4j.getExecutioner().exec(histogram);
-
-        INDArray z = histogram.z();
+        val z = Nd4j.getExecutioner().exec(histogram)[0];
 
         assertEquals(xDup, x);
 
