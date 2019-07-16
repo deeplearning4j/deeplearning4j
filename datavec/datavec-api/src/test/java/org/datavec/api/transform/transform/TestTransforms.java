@@ -1321,6 +1321,91 @@ public class TestTransforms {
         assertEquals(expTrimLast, tLast.mapSequence(seq));
     }
 
+    @Test
+    public void testSequenceTrimToLengthTransform(){
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        List<List<Writable>> expTrimLength3 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
+
+        Schema s = new Schema.Builder()
+                .addColumnsDouble("first", "second", "third")
+                .build();
+
+        TransformProcess p = new TransformProcess.Builder(s)
+                .trimSequenceToLength(3)
+                .build();
+
+        List<List<Writable>> out = p.executeSequence(seq);
+        assertEquals(expTrimLength3, out);
+
+
+        List<List<Writable>> seq2 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)));
+
+        out = p.executeSequence(seq2);
+        assertEquals(seq2, out);
+
+        String json = p.toJson();
+        TransformProcess tp2 = TransformProcess.fromJson(json);
+        assertEquals(expTrimLength3, tp2.executeSequence(seq));
+        assertEquals(seq2, tp2.executeSequence(seq2));
+    }
+
+    @Test
+    public void testSequenceTrimToLengthTransformTrimOrPad(){
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)),
+                Arrays.<Writable>asList(new DoubleWritable(12), new DoubleWritable(13), new DoubleWritable(14)));
+
+        List<List<Writable>> seq2 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)));
+
+        List<List<Writable>> expTrimLength4 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        Schema s = new Schema.Builder()
+                .addColumnsDouble("first", "second", "third")
+                .build();
+
+        TransformProcess p = new TransformProcess.Builder(s)
+                .trimOrPadSequenceToLength(4, Arrays.<Writable>asList(new DoubleWritable(900), new DoubleWritable(901), new DoubleWritable(902)))
+                .build();
+
+        List<List<Writable>> out = p.executeSequence(seq);
+        assertEquals(expTrimLength4, out);
+
+
+        List<List<Writable>> exp2 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(900), new DoubleWritable(901), new DoubleWritable(902)),
+                Arrays.<Writable>asList(new DoubleWritable(900), new DoubleWritable(901), new DoubleWritable(902)));
+
+        out = p.executeSequence(seq2);
+        assertEquals(exp2, out);
+
+
+        String json = p.toJson();
+        TransformProcess tp2 = TransformProcess.fromJson(json);
+        assertEquals(expTrimLength4, tp2.executeSequence(seq));
+        assertEquals(exp2, tp2.executeSequence(seq2));
+    }
+
 
     @Test
     public void testSequenceOffsetTransform(){
