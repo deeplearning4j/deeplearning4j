@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import lombok.Builder;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -47,7 +46,7 @@ public class RGBtoGrayscaleDataSetPreProcessor implements DataSetPreProcessor {
         long[] originalShape = originalFeatures.shape();
 
         // result shape is NHW
-        INDArray result = Nd4j.create(new long[]{originalShape[0], originalShape[2], originalShape[3]});
+        INDArray result = Nd4j.create(originalShape[0], originalShape[2], originalShape[3]);
 
         for(long n = 0, numExamples = originalShape[0]; n < numExamples; ++n) {
             // Extract channels

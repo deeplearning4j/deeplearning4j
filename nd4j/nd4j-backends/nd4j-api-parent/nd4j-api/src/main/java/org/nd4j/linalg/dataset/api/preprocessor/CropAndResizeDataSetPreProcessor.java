@@ -57,13 +57,13 @@ public class CropAndResizeDataSetPreProcessor implements DataSetPreProcessor {
      * @param resizeMethod
      */
     public CropAndResizeDataSetPreProcessor(int originalHeight, int originalWidth, int cropYStart, int cropXStart, int resizedHeight, int resizedWidth, int numChannels, ResizeMethod resizeMethod) {
-        Preconditions.checkArgument(originalHeight > 0, "originalHeight must be greater than 0");
-        Preconditions.checkArgument(originalWidth > 0, "originalWidth must be greater than 0");
-        Preconditions.checkArgument(cropYStart >= 0, "cropYStart must be positive");
-        Preconditions.checkArgument(cropXStart >= 0, "cropXStart must be positive");
-        Preconditions.checkArgument(resizedHeight > 0, "resizedHeight must be greater than 0");
-        Preconditions.checkArgument(resizedWidth > 0, "resizedWidth must be greater than 0");
-        Preconditions.checkArgument(numChannels > 0, "numChannels must be greater than 0");
+        Preconditions.checkArgument(originalHeight > 0, "originalHeight must be greater than 0, got %s", originalHeight);
+        Preconditions.checkArgument(originalWidth > 0, "originalWidth must be greater than 0, got %s", originalWidth);
+        Preconditions.checkArgument(cropYStart >= 0, "cropYStart must be greater or equal to 0, got %s", cropYStart);
+        Preconditions.checkArgument(cropXStart >= 0, "cropXStart must be greater or equal to 0, got %s", cropXStart);
+        Preconditions.checkArgument(resizedHeight > 0, "resizedHeight must be greater than 0, got %s", resizedHeight);
+        Preconditions.checkArgument(resizedWidth > 0, "resizedWidth must be greater than 0, got %s", resizedWidth);
+        Preconditions.checkArgument(numChannels > 0, "numChannels must be greater than 0, got %s", numChannels);
 
         resizedShape = new long[] { 1, resizedHeight, resizedWidth, numChannels };
 

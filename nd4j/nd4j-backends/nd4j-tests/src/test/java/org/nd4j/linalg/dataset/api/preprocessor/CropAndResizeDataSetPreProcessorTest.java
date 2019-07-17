@@ -1,6 +1,5 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import org.nd4j.linalg.dataset.api.preprocessor.CropAndResizeDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,12 +14,12 @@ public class CropAndResizeDataSetPreProcessorTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void when_originalHeightIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(0, 15, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void when_originalWidthIsZero_expect_IllegalArgumentException() {
-        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, -1, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
+        CropAndResizeDataSetPreProcessor sut = new CropAndResizeDataSetPreProcessor(10, 0, 5, 5, 4, 3, 3, CropAndResizeDataSetPreProcessor.ResizeMethod.NearestNeighbor);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -81,7 +80,7 @@ public class CropAndResizeDataSetPreProcessorTest {
         for(int c = 0; c < numChannels; ++c) {
             for(int h = 0; h < height; ++h) {
                 for(int w = 0; w < width; ++w) {
-                    input.putScalar(new int[] { 0, h, w, c}, c*100 + h*10 + w);
+                    input.putScalar(0, h, w, c, c*100 + h*10 + w);
                 }
             }
         }
@@ -100,34 +99,33 @@ public class CropAndResizeDataSetPreProcessorTest {
         assertEquals(3, shape[3]);
 
         // Test a few values
-        assertEquals(55.0, results.getDouble(new long[] { 0, 0, 0, 0 }), 0.0);
-        assertEquals(155.0, results.getDouble(new long[] { 0, 0, 0, 1 }), 0.0);
-        assertEquals(255.0, results.getDouble(new long[] { 0, 0, 0, 2 }), 0.0);
+        assertEquals(55.0, results.getDouble(0, 0, 0, 0), 0.0);
+        assertEquals(155.0, results.getDouble(0, 0, 0, 1), 0.0);
+        assertEquals(255.0, results.getDouble(0, 0, 0, 2), 0.0);
 
-        assertEquals(56.0, results.getDouble(new long[] { 0, 0, 1, 0 }), 0.0);
-        assertEquals(156.0, results.getDouble(new long[] { 0, 0, 1, 1 }), 0.0);
-        assertEquals(256.0, results.getDouble(new long[] { 0, 0, 1, 2 }), 0.0);
+        assertEquals(56.0, results.getDouble(0, 0, 1, 0), 0.0);
+        assertEquals(156.0, results.getDouble(0, 0, 1, 1), 0.0);
+        assertEquals(256.0, results.getDouble(0, 0, 1, 2), 0.0);
 
-        assertEquals(57.0, results.getDouble(new long[] { 0, 0, 2, 0 }), 0.0);
-        assertEquals(157.0, results.getDouble(new long[] { 0, 0, 2, 1 }), 0.0);
-        assertEquals(257.0, results.getDouble(new long[] { 0, 0, 2, 2 }), 0.0);
+        assertEquals(57.0, results.getDouble(0, 0, 2, 0), 0.0);
+        assertEquals(157.0, results.getDouble(0, 0, 2, 1), 0.0);
+        assertEquals(257.0, results.getDouble(0, 0, 2, 2), 0.0);
 
-        assertEquals(65.0, results.getDouble(new long[] { 0, 1, 0, 0 }), 0.0);
-        assertEquals(165.0, results.getDouble(new long[] { 0, 1, 0, 1 }), 0.0);
-        assertEquals(265.0, results.getDouble(new long[] { 0, 1, 0, 2 }), 0.0);
+        assertEquals(65.0, results.getDouble(0, 1, 0, 0), 0.0);
+        assertEquals(165.0, results.getDouble(0, 1, 0, 1), 0.0);
+        assertEquals(265.0, results.getDouble(0, 1, 0, 2), 0.0);
 
-        assertEquals(66.0, results.getDouble(new long[] { 0, 1, 1, 0 }), 0.0);
-        assertEquals(166.0, results.getDouble(new long[] { 0, 1, 1, 1 }), 0.0);
-        assertEquals(266.0, results.getDouble(new long[] { 0, 1, 1, 2 }), 0.0);
+        assertEquals(66.0, results.getDouble(0, 1, 1, 0), 0.0);
+        assertEquals(166.0, results.getDouble(0, 1, 1, 1), 0.0);
+        assertEquals(266.0, results.getDouble(0, 1, 1, 2), 0.0);
 
-        assertEquals(75.0, results.getDouble(new long[] { 0, 2, 0, 0 }), 0.0);
-        assertEquals(175.0, results.getDouble(new long[] { 0, 2, 0, 1 }), 0.0);
-        assertEquals(275.0, results.getDouble(new long[] { 0, 2, 0, 2 }), 0.0);
+        assertEquals(75.0, results.getDouble(0, 2, 0, 0), 0.0);
+        assertEquals(175.0, results.getDouble(0, 2, 0, 1), 0.0);
+        assertEquals(275.0, results.getDouble(0, 2, 0, 2), 0.0);
 
-        assertEquals(76.0, results.getDouble(new long[] { 0, 2, 1, 0 }), 0.0);
-        assertEquals(176.0, results.getDouble(new long[] { 0, 2, 1, 1 }), 0.0);
-        assertEquals(276.0, results.getDouble(new long[] { 0, 2, 1, 2 }), 0.0);
-
+        assertEquals(76.0, results.getDouble(0, 2, 1, 0), 0.0);
+        assertEquals(176.0, results.getDouble(0, 2, 1, 1), 0.0);
+        assertEquals(276.0, results.getDouble(0, 2, 1, 2), 0.0);
     }
 
 }

@@ -26,15 +26,15 @@ public class ChannelStackPoolContentAssemblerTest {
         assertEquals(2, result.shape()[1]);
         assertEquals(2, result.shape()[2]);
 
-        assertEquals(poolContent[0].getDouble(new int[] { 0, 0 }), result.getDouble(new int[] { 0, 0, 0 }), 0.0001);
-        assertEquals(poolContent[0].getDouble(new int[] { 0, 1 }), result.getDouble(new int[] { 0, 0, 1 }), 0.0001);
-        assertEquals(poolContent[0].getDouble(new int[] { 1, 0 }), result.getDouble(new int[] { 0, 1, 0 }), 0.0001);
-        assertEquals(poolContent[0].getDouble(new int[] { 1, 1 }), result.getDouble(new int[] { 0, 1, 1 }), 0.0001);
+        assertEquals(poolContent[0].getDouble(0, 0), result.getDouble(0, 0, 0), 0.0001);
+        assertEquals(poolContent[0].getDouble(0, 1), result.getDouble(0, 0, 1), 0.0001);
+        assertEquals(poolContent[0].getDouble(1, 0), result.getDouble(0, 1, 0), 0.0001);
+        assertEquals(poolContent[0].getDouble(1, 1), result.getDouble(0, 1, 1), 0.0001);
 
-        assertEquals(poolContent[1].getDouble(new int[] { 0, 0 }), result.getDouble(new int[] { 1, 0, 0 }), 0.0001);
-        assertEquals(poolContent[1].getDouble(new int[] { 0, 1 }), result.getDouble(new int[] { 1, 0, 1 }), 0.0001);
-        assertEquals(poolContent[1].getDouble(new int[] { 1, 0 }), result.getDouble(new int[] { 1, 1, 0 }), 0.0001);
-        assertEquals(poolContent[1].getDouble(new int[] { 1, 1 }), result.getDouble(new int[] { 1, 1, 1 }), 0.0001);
+        assertEquals(poolContent[1].getDouble(0, 0), result.getDouble(1, 0, 0), 0.0001);
+        assertEquals(poolContent[1].getDouble(0, 1), result.getDouble(1, 0, 1), 0.0001);
+        assertEquals(poolContent[1].getDouble(1, 0), result.getDouble(1, 1, 0), 0.0001);
+        assertEquals(poolContent[1].getDouble(1, 1), result.getDouble(1, 1, 1), 0.0001);
 
     }
 

@@ -39,11 +39,11 @@ public class PermuteDataSetPreProcessorTest {
         int height = 5;
         int width = 4;
         PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NCHWtoNHWC);
-        INDArray input = Nd4j.create(new int[] { 1, numChannels, height, width });
+        INDArray input = Nd4j.create(1, numChannels, height, width);
         for(int c = 0; c < numChannels; ++c) {
             for(int h = 0; h < height; ++h) {
                 for(int w = 0; w < width; ++w) {
-                    input.putScalar(new int[] { 0, c, h, w }, c*100.0 + h*10.0 + w);
+                    input.putScalar(0, c, h, w, c*100.0 + h*10.0 + w);
                 }
             }
         }
@@ -60,20 +60,20 @@ public class PermuteDataSetPreProcessorTest {
         assertEquals(width, shape[2]);
         assertEquals(numChannels, shape[3]);
 
-        assertEquals(0.0, result.getDouble(new int[] { 0, 0, 0, 0 }), 0.0);
-        assertEquals(1.0, result.getDouble(new int[] { 0, 0, 1, 0 }), 0.0);
-        assertEquals(2.0, result.getDouble(new int[] { 0, 0, 2, 0 }), 0.0);
-        assertEquals(3.0, result.getDouble(new int[] { 0, 0, 3, 0 }), 0.0);
+        assertEquals(0.0, result.getDouble(0, 0, 0, 0), 0.0);
+        assertEquals(1.0, result.getDouble(0, 0, 1, 0), 0.0);
+        assertEquals(2.0, result.getDouble(0, 0, 2, 0), 0.0);
+        assertEquals(3.0, result.getDouble(0, 0, 3, 0), 0.0);
 
-        assertEquals(110.0, result.getDouble(new int[] { 0, 1, 0, 1 }), 0.0);
-        assertEquals(111.0, result.getDouble(new int[] { 0, 1, 1, 1 }), 0.0);
-        assertEquals(112.0, result.getDouble(new int[] { 0, 1, 2, 1 }), 0.0);
-        assertEquals(113.0, result.getDouble(new int[] { 0, 1, 3, 1 }), 0.0);
+        assertEquals(110.0, result.getDouble(0, 1, 0, 1), 0.0);
+        assertEquals(111.0, result.getDouble(0, 1, 1, 1), 0.0);
+        assertEquals(112.0, result.getDouble(0, 1, 2, 1), 0.0);
+        assertEquals(113.0, result.getDouble(0, 1, 3, 1), 0.0);
 
-        assertEquals(210.0, result.getDouble(new int[] { 0, 1, 0, 2 }), 0.0);
-        assertEquals(211.0, result.getDouble(new int[] { 0, 1, 1, 2 }), 0.0);
-        assertEquals(212.0, result.getDouble(new int[] { 0, 1, 2, 2 }), 0.0);
-        assertEquals(213.0, result.getDouble(new int[] { 0, 1, 3, 2 }), 0.0);
+        assertEquals(210.0, result.getDouble(0, 1, 0, 2), 0.0);
+        assertEquals(211.0, result.getDouble(0, 1, 1, 2), 0.0);
+        assertEquals(212.0, result.getDouble(0, 1, 2, 2), 0.0);
+        assertEquals(213.0, result.getDouble(0, 1, 3, 2), 0.0);
 
     }
 
@@ -84,7 +84,7 @@ public class PermuteDataSetPreProcessorTest {
         int height = 5;
         int width = 4;
         PermuteDataSetPreProcessor sut = new PermuteDataSetPreProcessor(PermuteDataSetPreProcessor.PermutationTypes.NHWCtoNCHW);
-        INDArray input = Nd4j.create(new int[] { 1, height, width, numChannels });
+        INDArray input = Nd4j.create(1, height, width, numChannels);
         for(int c = 0; c < numChannels; ++c) {
             for(int h = 0; h < height; ++h) {
                 for(int w = 0; w < width; ++w) {
@@ -105,20 +105,20 @@ public class PermuteDataSetPreProcessorTest {
         assertEquals(height, shape[2]);
         assertEquals(width, shape[3]);
 
-        assertEquals(0.0, result.getDouble(new int[] { 0, 0, 0, 0 }), 0.0);
-        assertEquals(1.0, result.getDouble(new int[] { 0, 0, 0, 1 }), 0.0);
-        assertEquals(2.0, result.getDouble(new int[] { 0, 0, 0, 2 }), 0.0);
-        assertEquals(3.0, result.getDouble(new int[] { 0, 0, 0, 3 }), 0.0);
+        assertEquals(0.0, result.getDouble(0, 0, 0, 0), 0.0);
+        assertEquals(1.0, result.getDouble(0, 0, 0, 1), 0.0);
+        assertEquals(2.0, result.getDouble(0, 0, 0, 2), 0.0);
+        assertEquals(3.0, result.getDouble(0, 0, 0, 3), 0.0);
 
-        assertEquals(110.0, result.getDouble(new int[] { 0, 1, 1, 0 }), 0.0);
-        assertEquals(111.0, result.getDouble(new int[] { 0, 1, 1, 1 }), 0.0);
-        assertEquals(112.0, result.getDouble(new int[] { 0, 1, 1, 2 }), 0.0);
-        assertEquals(113.0, result.getDouble(new int[] { 0, 1, 1, 3 }), 0.0);
+        assertEquals(110.0, result.getDouble(0, 1, 1, 0), 0.0);
+        assertEquals(111.0, result.getDouble(0, 1, 1, 1), 0.0);
+        assertEquals(112.0, result.getDouble(0, 1, 1, 2), 0.0);
+        assertEquals(113.0, result.getDouble(0, 1, 1, 3), 0.0);
 
-        assertEquals(210.0, result.getDouble(new int[] { 0, 2, 1, 0 }), 0.0);
-        assertEquals(211.0, result.getDouble(new int[] { 0, 2, 1, 1 }), 0.0);
-        assertEquals(212.0, result.getDouble(new int[] { 0, 2, 1, 2 }), 0.0);
-        assertEquals(213.0, result.getDouble(new int[] { 0, 2, 1, 3 }), 0.0);
+        assertEquals(210.0, result.getDouble(0, 2, 1, 0), 0.0);
+        assertEquals(211.0, result.getDouble(0, 2, 1, 1), 0.0);
+        assertEquals(212.0, result.getDouble(0, 2, 1, 2), 0.0);
+        assertEquals(213.0, result.getDouble(0, 2, 1, 3), 0.0);
 
     }
 }

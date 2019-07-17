@@ -38,7 +38,7 @@ public class CompositeDataSetPreProcessorTest {
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(true);
         CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor(preProcessor1, preProcessor2);
-        DataSet ds = new DataSet(Nd4j.rand(new long[] { 2, 2 }), null);
+        DataSet ds = new DataSet(Nd4j.rand(2, 2), null);
 
         // Act
         sut.preProcess(ds);
@@ -54,7 +54,7 @@ public class CompositeDataSetPreProcessorTest {
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(true);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(true);
         CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor(true, preProcessor1, preProcessor2);
-        DataSet ds = new DataSet(Nd4j.rand(new long[] { 2, 2 }), null);
+        DataSet ds = new DataSet(Nd4j.rand(2, 2), null);
 
         // Act
         sut.preProcess(ds);
@@ -70,7 +70,7 @@ public class CompositeDataSetPreProcessorTest {
         TestDataSetPreProcessor preProcessor1 = new TestDataSetPreProcessor(false);
         TestDataSetPreProcessor preProcessor2 = new TestDataSetPreProcessor(false);
         CompositeDataSetPreProcessor sut = new CompositeDataSetPreProcessor(true, preProcessor1, preProcessor2);
-        DataSet ds = new DataSet(Nd4j.rand(new long[] { 2, 2 }), null);
+        DataSet ds = new DataSet(Nd4j.rand(2, 2), null);
 
         // Act
         sut.preProcess(ds);

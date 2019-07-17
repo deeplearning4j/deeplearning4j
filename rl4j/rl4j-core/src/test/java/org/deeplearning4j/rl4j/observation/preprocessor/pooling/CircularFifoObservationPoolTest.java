@@ -46,8 +46,8 @@ public class CircularFifoObservationPoolTest {
         CircularFifoObservationPool sut = CircularFifoObservationPool.builder()
                 .poolSize(2)
                 .build();
-        sut.add(Nd4j.create(new double[] { 123.0 }));
-        sut.add(Nd4j.create(new double[] { 123.0 }));
+        sut.add(Nd4j.createFromArray(123.0));
+        sut.add(Nd4j.createFromArray(123.0));
 
         // Act
         boolean isReady = sut.isAtFullCapacity();
@@ -60,13 +60,13 @@ public class CircularFifoObservationPoolTest {
     public void when_addMoreThanSize_expect_getReturnOnlyLastElements() {
         // Assemble
         CircularFifoObservationPool sut = CircularFifoObservationPool.builder().build();
-        sut.add(Nd4j.create(new double[] { 0.0 }));
-        sut.add(Nd4j.create(new double[] { 1.0 }));
-        sut.add(Nd4j.create(new double[] { 2.0 }));
-        sut.add(Nd4j.create(new double[] { 3.0 }));
-        sut.add(Nd4j.create(new double[] { 4.0 }));
-        sut.add(Nd4j.create(new double[] { 5.0 }));
-        sut.add(Nd4j.create(new double[] { 6.0 }));
+        sut.add(Nd4j.createFromArray(0.0));
+        sut.add(Nd4j.createFromArray(1.0));
+        sut.add(Nd4j.createFromArray(2.0));
+        sut.add(Nd4j.createFromArray(3.0));
+        sut.add(Nd4j.createFromArray(4.0));
+        sut.add(Nd4j.createFromArray(5.0));
+        sut.add(Nd4j.createFromArray(6.0));
 
         // Act
         INDArray[] result = sut.get();
@@ -82,13 +82,13 @@ public class CircularFifoObservationPoolTest {
     public void when_resetIsCalled_expect_poolContentFlushed() {
         // Assemble
         CircularFifoObservationPool sut = CircularFifoObservationPool.builder().build();
-        sut.add(Nd4j.create(new double[] { 0.0 }));
-        sut.add(Nd4j.create(new double[] { 1.0 }));
-        sut.add(Nd4j.create(new double[] { 2.0 }));
-        sut.add(Nd4j.create(new double[] { 3.0 }));
-        sut.add(Nd4j.create(new double[] { 4.0 }));
-        sut.add(Nd4j.create(new double[] { 5.0 }));
-        sut.add(Nd4j.create(new double[] { 6.0 }));
+        sut.add(Nd4j.createFromArray(0.0));
+        sut.add(Nd4j.createFromArray(1.0));
+        sut.add(Nd4j.createFromArray(2.0));
+        sut.add(Nd4j.createFromArray(3.0));
+        sut.add(Nd4j.createFromArray(4.0));
+        sut.add(Nd4j.createFromArray(5.0));
+        sut.add(Nd4j.createFromArray(6.0));
         sut.reset();
 
         // Act
