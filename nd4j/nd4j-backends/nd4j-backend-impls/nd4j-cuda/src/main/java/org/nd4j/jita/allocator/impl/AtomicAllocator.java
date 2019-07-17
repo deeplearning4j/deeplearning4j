@@ -529,7 +529,7 @@ public class AtomicAllocator implements Allocator {
      * @param objectId
      * @return
      */
-    protected AllocationPoint getAllocationPoint(Long objectId) {
+    protected AllocationPoint getAllocationPoint(@NonNull Long objectId) {
         return allocationsMap.get(objectId);
     }
 
