@@ -4160,6 +4160,8 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
+     * TODO: No usages found, candidate for deletion/depreciation.
+     *
      * @param shape  the shape of the ndarray
      * @param stride the stride for the ndarray
      * @param offset the offset of the ndarray
@@ -4180,6 +4182,9 @@ public class Nd4j {
 
 
     /**
+     * * Creates an ndarray
+     *
+     *TODO: used in one test. has unused paratmeter. Candidate for deletion/depreciation.
      *
      * @param data
      * @param shape
@@ -4197,6 +4202,8 @@ public class Nd4j {
 
     /**
      * Creates an ndarray with the specified shape
+     *
+     * TODO: No usages found, candidate for deletion/depreciation.
      *
      * @param data    the data to use with the ndarray
      * @param rows    the rows of the ndarray
@@ -4216,6 +4223,8 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
+     * TODO: No usages found, candidate for deletion/depreciation.
+     *
      * @param data    the data to use with tne ndarray
      * @param rows    the rows of the ndarray
      * @param columns the columns of the ndarray
@@ -4234,6 +4243,8 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
+     * TODO: No usages found, candidate for deletion/depreciation.
+     *
      * @param shape  the shape of the ndarray
      * @param offset the offset of the ndarray
      * @return the instance
@@ -4251,6 +4262,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * TODO: No usages found, candidate for deletion/depreciation.
+     */
     public static INDArray create(float[] data, long[] shape, long offset) {
         if (shape.length == 1) {
             if (shape[0] != data.length)
@@ -4265,11 +4279,14 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified shape
+     * Create an array.
+     * Use specified shape and ordering initialized with values from a java 1d array starting at offset.
      *
-     * @param shape  the shape of the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
+     * @param data java array used for initialisation. Must have at least the number of elements required.
+     * @param shape  desired shape of new array.
+     * @param offset the offset of data array used for initialisation.
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created ndarray.
      */
     public static INDArray create(double[] data, int[] shape, long offset, char ordering) {
         if (shape.length == 1) {
@@ -4284,6 +4301,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #create(double[], int[], long, char )
+     */
     public static INDArray create(double[] data, long[] shape, long offset, char ordering) {
         if (shape.length == 1) {
             if (shape[0] != data.length)
@@ -4298,11 +4318,12 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified shape
+     * Create an array of the specified type, shape and stride initialized with values from a java 1d array using offset.
      *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
+     * @param data java array used for initialisation. Must have at least the number of elements required.
+     * @param shape desired shape of new array.
+     * @param stride stride, separation of elements in each dimension.
+     * @param offset the offset of data array used for initialisation.
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, long offset) {
@@ -4319,9 +4340,10 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified shape
+     * Creates an array with the specified shape from a list of arrays.
      *
-     * @param shape the shape of the ndarray
+     * @param list list of arrays.
+     * @param shape desired shape of new array. Must match the resulting shape of combining the list.
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape) {
@@ -4331,6 +4353,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #create(List, int[])
+     */
     public static INDArray create(List<INDArray> list, long[] shape) {
         checkShapeValues(shape);
 
@@ -4345,16 +4370,18 @@ public class Nd4j {
      * @param columns the columns of the ndarray
      * @param stride  the stride for the ndarray
      * @param offset  the offset of the ndarray
-     * @return the instance
+     * @return the created ndarray.
      */
     public static INDArray create(int rows, int columns, int[] stride, long offset) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
-        INDArray ret = INSTANCE.create(rows, columns, stride, offset);
-        return ret;
+        return  INSTANCE.create(rows, columns, stride, offset);
     }
 
+    /**
+     * @see #create(int , int , int[] , long )
+     */
     public static INDArray zeros(int rows, int columns, int[] stride, long offset) {
         return create(rows, columns, stride, offset);
     }
@@ -4375,6 +4402,9 @@ public class Nd4j {
 
     }
 
+    /**
+     * @see #create(int[] , int[] , long )
+     */
     public static INDArray zeros(int[] shape, int[] stride, long offset) {
         return create(shape, stride, offset);
     }
@@ -4391,6 +4421,9 @@ public class Nd4j {
         return create(rows, columns, stride, order());
     }
 
+    /**
+     * @see #create(int, int, int[], char)
+     */
     public static INDArray zeros(int rows, int columns, int[] stride) {
         return create(rows, columns, stride, order());
     }
@@ -4407,10 +4440,7 @@ public class Nd4j {
     }
 
     /**
-     *
-     * @param shape
-     * @param stride
-     * @return
+     * @see #create(int[], int[])
      */
     public static INDArray create(long[] shape, long[] stride) {
         return create(shape, stride, order());
@@ -4418,10 +4448,7 @@ public class Nd4j {
 
 
     /**
-     *
-     * @param shape
-     * @param stride
-     * @return
+     * @see #create(int[], int[])
      */
     public static INDArray zeros(int[] shape, int[] stride) {
         return create(shape, stride);
@@ -4459,12 +4486,19 @@ public class Nd4j {
         return create(shape, order());
     }
 
+    /**
+     * Create an array with specified shape and datatype.
+     *
+     * @param type Datatype of the new array.
+     * @param shape  desired shape of new array.
+     * @return the created ndarray.
+     */
     public static INDArray create(DataType type, long... shape) {
         return create(type, shape, order());
     }
 
     /**
-     *
+     * TODO: No usages found, candidate for deletion/depreciation.
      * @param data
      * @param shape
      * @param stride
