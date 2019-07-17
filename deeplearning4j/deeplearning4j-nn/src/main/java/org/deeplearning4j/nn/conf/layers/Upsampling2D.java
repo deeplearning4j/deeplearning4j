@@ -116,7 +116,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         val im2colSizePerEx =
-                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * size[0] * size[1] * size[2];
+                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * size[0] * size[1];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
