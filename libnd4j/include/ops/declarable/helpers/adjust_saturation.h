@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
     template <typename T>
-    static FORCEINLINE void rgb_to_hsv(nd4j::LaunchContext * context, T r, T g, T b, T* h, T* s, T* v) {
+    static FORCEINLINE _CUDA_HD void rgb_to_hsv(T r, T g, T b, T* h, T* s, T* v) {
         T vv = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
         T range = vv - nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
         if (vv > 0) {
@@ -54,7 +54,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static FORCEINLINE void hsv_to_rgb(nd4j::LaunchContext * context, T h, T s, T v, T* r, T* g, T* b) {
+    static FORCEINLINE _CUDA_HD void hsv_to_rgb(T h, T s, T v, T* r, T* g, T* b) {
         T c = s * v;
         T m = v - c;
         T dh = h * 6;

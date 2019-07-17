@@ -1327,7 +1327,7 @@ void NativeOps::concat(
     // take into account indices for first array
     auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
     indices[0][2 * axis + 1] = axisSize;
-    printf("The axe size is %lld\n", axisSize);
+    //printf("The axe size is %lld\n", axisSize);
     // loop through the rest of input arrays
     for(int i = 1; i < numArrays; ++i) {
         indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
