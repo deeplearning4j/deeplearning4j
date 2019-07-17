@@ -602,20 +602,6 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
                        tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
 }
 
-TEST_F(LegacyOpsTests, Softmax_119_1) {
-    auto x = NDArrayFactory::create<float>('c', {10, 10});
-    x.linspace(1.0);
-
-    x.applyTransform(transform::StrictOps::SoftMax);
-}
-
-TEST_F(LegacyOpsTests, Softmax_119_2) {
-    auto x = NDArrayFactory::create<float>('f', {10, 5});
-    auto z = NDArrayFactory::create<float>('f', {10, 5});
-    x.linspace(1.0);
-
-    x.applyTransform(transform::StrictOps::SoftMax, &z);
-}
 
 TEST_F(LegacyOpsTests, test_inverse_broadcast_1) {
     auto x = NDArrayFactory::create<float>('c', {4}, {2.0f, 2.0f, 2.0f, 2.0f});
