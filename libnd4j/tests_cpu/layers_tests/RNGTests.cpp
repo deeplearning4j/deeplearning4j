@@ -105,8 +105,8 @@ TEST_F(RNGTests, Test_Dropout_1) {
 
     //x0.applyRandom(random::DropOut, _rngA, nullptr, &x0, prob);
     //x1.applyRandom(random::DropOut, _rngB, nullptr, &x1, prob);
-    RandomLauncher::applyDropOut(_rngA, &x0, 0.5);
-    RandomLauncher::applyDropOut(_rngB, &x1, 0.5);
+    RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5);
+    RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
     //x0.printIndexedBuffer("Dropout");
     // this check is required to ensure we're calling wrong signature
@@ -126,8 +126,8 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
 
     //x0.template applyRandom<randomOps::DropOutInverted<float>>(_rngA, nullptr, &x0, prob);
     //x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
-    RandomLauncher::applyInvertedDropOut(_rngA, &x0, 0.5);
-    RandomLauncher::applyInvertedDropOut(_rngB, &x1, 0.5);
+    RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5);
+    RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
     //x0.printIndexedBuffer("DropoutInverted");
     // this check is required to ensure we're calling wrong signature
@@ -141,8 +141,8 @@ TEST_F(RNGTests, Test_Launcher_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::applyDropOut(_rngA, &x0, 0.5f);
-    RandomLauncher::applyDropOut(_rngB, &x1, 0.5f);
+    RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5f);
+    RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -156,8 +156,8 @@ TEST_F(RNGTests, Test_Launcher_2) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::applyInvertedDropOut(_rngA, &x0, 0.5f);
-    RandomLauncher::applyInvertedDropOut(_rngB, &x1, 0.5f);
+    RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5f);
+    RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -171,8 +171,8 @@ TEST_F(RNGTests, Test_Launcher_3) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::applyAlphaDropOut(_rngA, &x0, 0.5f, 0.2f, 0.1f, 0.3f);
-    RandomLauncher::applyAlphaDropOut(_rngB, &x1, 0.5f, 0.2f, 0.1f, 0.3f);
+    RandomLauncher::applyAlphaDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5f, 0.2f, 0.1f, 0.3f);
+    RandomLauncher::applyAlphaDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5f, 0.2f, 0.1f, 0.3f);
 
     //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
@@ -186,8 +186,8 @@ TEST_F(RNGTests, Test_Uniform_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
-    RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -204,7 +204,7 @@ TEST_F(RNGTests, Test_Uniform_1) {
 TEST_F(RNGTests, Test_Uniform_3) {
     auto x0 = NDArrayFactory::create<double>('c', {1000000});
 
-    RandomLauncher::fillUniform(_rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
 
     for (int e = 0; e < x0.lengthOf(); e++) {
         auto v = x0.t<double>(e);
@@ -216,8 +216,8 @@ TEST_F(RNGTests, Test_Bernoulli_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillBernoulli(_rngA, &x0, 1.0f);
-    RandomLauncher::fillBernoulli(_rngB, &x1, 1.0f);
+    RandomLauncher::fillBernoulli(LaunchContext::defaultContext(), _rngA, &x0, 1.0f);
+    RandomLauncher::fillBernoulli(LaunchContext::defaultContext(), _rngB, &x1, 1.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -230,8 +230,8 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillGaussian(_rngA, &x0, 1.0f, 2.0f);
-    RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     //x0.printIndexedBuffer("x0");
     //x1.printIndexedBuffer("x1");
@@ -246,8 +246,8 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillGaussian(_rngA, &x0, 0.0f, 1.0f);
-    RandomLauncher::fillGaussian(_rngB, &x1, 0.0f, 1.0f);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
 
     //x0.printIndexedBuffer("x0");
     //x1.printIndexedBuffer("x1");
@@ -551,8 +551,8 @@ TEST_F(RNGTests, Test_Binomial_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillBinomial(_rngA, &x0, 3, 2.0f);
-    RandomLauncher::fillBinomial(_rngB, &x1, 3, 2.0f);
+    RandomLauncher::fillBinomial(LaunchContext::defaultContext(), _rngA, &x0, 3, 2.0f);
+    RandomLauncher::fillBinomial(LaunchContext::defaultContext(), _rngB, &x1, 3, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
@@ -569,7 +569,7 @@ TEST_F(RNGTests, Test_Uniform_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillUniform(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     auto op = new nd4j::ops::LegacyRandomOp(0);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
@@ -589,7 +589,7 @@ TEST_F(RNGTests, Test_Gaussian_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillGaussian(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     auto op = new nd4j::ops::LegacyRandomOp(random::GaussianDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
@@ -609,7 +609,7 @@ TEST_F(RNGTests, Test_LogNorm_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillLogNormal(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillLogNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     auto op = new nd4j::ops::LegacyRandomOp(random::LogNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
@@ -629,7 +629,7 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillTruncatedNormal(_rngB, &x1, 1.0f, 2.0f);
+    RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     auto op = new nd4j::ops::LegacyRandomOp(random::TruncatedNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
@@ -649,7 +649,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillBinomial(_rngB, &x1, 3, 0.5f);
+    RandomLauncher::fillBinomial(LaunchContext::defaultContext(), _rngB, &x1, 3, 0.5f);
 
     auto op = new nd4j::ops::LegacyRandomOp(random::BinomialDistributionEx);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
@@ -670,7 +670,7 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-    RandomLauncher::fillBernoulli(_rngB, &x1, 0.5f);
+    RandomLauncher::fillBernoulli(LaunchContext::defaultContext(), _rngB, &x1, 0.5f);
 
     auto op = new nd4j::ops::LegacyRandomOp(random::BernoulliDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {});
