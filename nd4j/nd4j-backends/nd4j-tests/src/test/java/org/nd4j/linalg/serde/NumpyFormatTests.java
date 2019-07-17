@@ -304,6 +304,12 @@ public class NumpyFormatTests extends BaseNd4jTest {
         boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testAbsentNumpyFile_1() throws Exception {
+        val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
+        INDArray act1 = Nd4j.createFromNpyFile(f);
+    }
+
     @Override
     public char ordering() {
         return 'c';
