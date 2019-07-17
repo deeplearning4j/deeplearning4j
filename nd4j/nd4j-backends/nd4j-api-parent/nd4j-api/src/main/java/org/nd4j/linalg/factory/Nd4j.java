@@ -6595,6 +6595,9 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray createFromNpyFile(File file) {
+        if (!file.exists())
+            throw new IllegalArgumentException("File [" + file.getAbsolutePath() + "] doesn't exist");
+
         return INSTANCE.createFromNpyFile(file);
     }
 
